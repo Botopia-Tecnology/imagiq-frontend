@@ -45,11 +45,30 @@ export class ApiClient {
     endpoint: string,
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
-    // Implementation will be here
-    return {
-      data: {} as T,
-      success: true,
+    const url = `${this.baseURL}${endpoint}`;
+    const config: RequestInit = {
+      headers: this.headers,
+      ...options,
     };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      return {
+        data: data as T,
+        success: response.ok,
+        message: data.message,
+        errors: data.errors,
+      };
+    } catch (error) {
+      console.error("API request failed:", error);
+      return {
+        data: {} as T,
+        success: false,
+        message: "Request failed",
+      };
+    }
   }
 
   // HTTP methods
@@ -57,14 +76,14 @@ export class ApiClient {
     return this.request<T>(endpoint, { method: "GET" });
   }
 
-  async post<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "POST",
       body: JSON.stringify(data),
     });
   }
 
-  async put<T>(endpoint: string, data?: any): Promise<ApiResponse<T>> {
+  async put<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: "PUT",
       body: JSON.stringify(data),

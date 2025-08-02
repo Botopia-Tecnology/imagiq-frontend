@@ -8,6 +8,14 @@
  * - Integración con PostHog para análisis avanzado
  */
 
+interface UserPreferences {
+  categories: string[];
+  priceRange: { min: number; max: number };
+  brands: string[];
+  notifications: boolean;
+  theme: string;
+}
+
 export const useUserPreferences = () => {
   // User preferences management
   return {
@@ -18,13 +26,16 @@ export const useUserPreferences = () => {
       notifications: true,
       theme: "light",
     },
-    updatePreferences: (newPreferences: any) => {},
+    updatePreferences: (newPreferences: UserPreferences) => {
+      console.log("Updating preferences:", newPreferences);
+    },
     loading: false,
   };
 };
 
 export const useConsumptionPatterns = (userId?: string) => {
   // Analysis of user consumption patterns
+  console.log("Loading consumption patterns for user:", userId);
   return {
     patterns: {
       mostViewedCategories: [],
@@ -34,7 +45,9 @@ export const useConsumptionPatterns = (userId?: string) => {
       seasonalTrends: [],
     },
     loading: false,
-    refreshPatterns: () => {},
+    refreshPatterns: () => {
+      console.log("Refreshing patterns");
+    },
   };
 };
 

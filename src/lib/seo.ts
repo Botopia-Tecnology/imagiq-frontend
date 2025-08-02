@@ -40,7 +40,13 @@ export const generateMetaDescription = (
 };
 
 // Generate structured data for products
-export const generateProductStructuredData = (product: any) => {
+export const generateProductStructuredData = (product: {
+  name: string;
+  description: string;
+  images: string[];
+  price: number;
+  inStock: boolean;
+}) => {
   return {
     "@context": "https://schema.org",
     "@type": "Product",

@@ -126,7 +126,7 @@ export interface UserActivity {
     | "purchase"
     | "review";
   timestamp: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   metadata?: {
     source: string;
     campaign?: string;

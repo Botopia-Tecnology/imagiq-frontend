@@ -8,7 +8,7 @@
 
 export interface AnalyticsEvent {
   event: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
   userId?: string;
   sessionId?: string;
   timestamp?: string;
@@ -183,7 +183,7 @@ export interface SessionReplayData {
   events: Array<{
     type: string;
     timestamp: string;
-    data: Record<string, any>;
+    data: Record<string, unknown>;
   }>;
   device: {
     type: "desktop" | "mobile" | "tablet";
@@ -205,7 +205,7 @@ export interface ABTestVariant {
   description: string;
   trafficAllocation: number;
   isControl: boolean;
-  changes: Record<string, any>;
+  changes: Record<string, unknown>;
 }
 
 export interface ABTestResult {
@@ -232,11 +232,11 @@ export interface DashboardWidget {
   id: string;
   type: "metric" | "chart" | "table" | "heatmap" | "funnel";
   title: string;
-  data: any;
+  data: unknown;
   config: {
     chartType?: "line" | "bar" | "pie" | "area";
     timeRange?: string;
-    filters?: Record<string, any>;
+    filters?: Record<string, unknown>;
     refreshInterval?: number;
   };
   position: {

@@ -17,9 +17,6 @@ const publicRoutes = ["/", "/productos", "/login", "/register", "/soporte"];
 // Admin routes that require special permissions
 const adminRoutes = ["/dashboard"];
 
-// API routes that might need rate limiting
-const apiRoutes = ["/api"];
-
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -56,9 +53,16 @@ export function middleware(request: NextRequest) {
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 
   // Analytics tracking headers for PostHog
-  if (request.geo) {
-    response.headers.set("X-User-Country", request.geo.country || "US");
-    response.headers.set("X-User-City", request.geo.city || "Unknown");
+  // Note: geo is available in production with Vercel or other platforms
+  interface RequestGeo {
+    country?: string;
+    city?: string;
+  }
+
+  const geo = (request as NextRequest & { geo?: RequestGeo }).geo;
+  if (geo) {
+    response.headers.set("X-User-Country", geo.country || "US");
+    response.headers.set("X-User-City", geo.city || "Unknown");
   }
 
   return response;

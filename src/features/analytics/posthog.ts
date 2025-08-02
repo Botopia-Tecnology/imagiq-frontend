@@ -14,7 +14,7 @@
 // PostHog event types
 export interface AnalyticsEvent {
   event: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
   userId?: string;
 }
 
@@ -26,7 +26,7 @@ export const trackEvent = (event: AnalyticsEvent) => {
 
 export const identifyUser = (
   userId: string,
-  userProperties?: Record<string, any>
+  userProperties?: Record<string, unknown>
 ) => {
   // PostHog user identification
   console.log("Identifying user:", userId, userProperties);
@@ -34,7 +34,7 @@ export const identifyUser = (
 
 export const trackPageView = (
   page: string,
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 ) => {
   // PostHog page view tracking
   console.log("Page view:", page, properties);
@@ -43,7 +43,7 @@ export const trackPageView = (
 export const trackConversion = (
   conversionType: string,
   value?: number,
-  properties?: Record<string, any>
+  properties?: Record<string, unknown>
 ) => {
   // Conversion tracking for sales and goals
   console.log("Conversion:", conversionType, value, properties);

@@ -16,10 +16,10 @@ const POSTHOG_HOST =
 // PostHog client configuration
 export const posthogConfig = {
   api_host: POSTHOG_HOST,
-  loaded: (posthog: any) => {
+  loaded: (posthog: unknown) => {
     // PostHog loaded callback
     if (process.env.NODE_ENV === "development") {
-      console.log("PostHog loaded successfully");
+      console.log("PostHog loaded successfully", posthog);
     }
   },
   capture_pageview: true,
@@ -50,15 +50,15 @@ export const initPostHog = () => {
   console.log("Initializing PostHog with key:", POSTHOG_KEY);
 };
 
-// PostHog utilities
+// PostHog utilities - Mock implementation for now
 export const posthogUtils = {
   // Identify user
-  identify: (userId: string, userProperties?: Record<string, any>) => {
+  identify: (userId: string, userProperties?: Record<string, unknown>) => {
     console.log("PostHog identify:", userId, userProperties);
   },
 
   // Track custom event
-  capture: (eventName: string, properties?: Record<string, any>) => {
+  capture: (eventName: string, properties?: Record<string, unknown>) => {
     console.log("PostHog capture:", eventName, properties);
   },
 
@@ -88,3 +88,8 @@ export const posthogUtils = {
     console.log("PostHog reset user");
   },
 };
+
+// Initialize PostHog when the module loads
+if (typeof window !== "undefined") {
+  initPostHog();
+}

@@ -1,17 +1,14 @@
-/**
- * Componente Modal Reutilizable
- * - Overlay con backdrop
- * - Animaciones de entrada y salida
- * - Manejo de escape key y click fuera
- * - Accesibilidad con focus trap
- * - Diferentes tamaños y variantes
- */
+"use client";
+
+import React from "react";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg";
   children: React.ReactNode;
 }
 
@@ -22,10 +19,34 @@ export default function Modal({
   size = "md",
   children,
 }: ModalProps) {
+  const sizes = {
+    sm: "max-w-md",
+    md: "max-w-lg",
+    lg: "max-w-2xl",
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <>
-      {/* Modal implementation will be here */}
-      {children}
-    </>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose} />
+      <div
+        className={cn(
+          "relative bg-white rounded-lg shadow-xl w-full mx-4",
+          sizes[size]
+        )}
+      >
+        <div className="flex items-center justify-between p-4 border-b">
+          {title && <h3 className="text-lg font-semibold">{title}</h3>}
+          <button
+            onClick={onClose}
+            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="p-4">{children}</div>
+      </div>
+    </div>
   );
 }

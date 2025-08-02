@@ -112,7 +112,7 @@ export interface ProductSEO {
   metaDescription?: string;
   keywords?: string[];
   canonicalUrl?: string;
-  structuredData?: Record<string, any>;
+  structuredData?: Record<string, unknown>;
 }
 
 export interface ProductRatings {
@@ -161,7 +161,7 @@ export interface ProductSearchFilters {
   rating?: number;
   inStock?: boolean;
   tags?: string[];
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   sortBy?:
     | "relevance"
     | "price_asc"
@@ -180,7 +180,7 @@ export interface ProductSearchResult {
   limit: number;
   totalPages: number;
   filters: {
-    availableFilters: Record<string, any>;
+    availableFilters: Record<string, unknown>;
     appliedFilters: ProductSearchFilters;
   };
 }

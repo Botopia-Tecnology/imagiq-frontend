@@ -13,18 +13,18 @@ export const useIntersectionObserver = (options?: IntersectionObserverInit) => {
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    // Intersection observer implementation will be here
+    const element = ref.current;
+    if (!element) return;
+
     const observer = new IntersectionObserver(([entry]) => {
       setIsIntersecting(entry.isIntersecting);
     }, options);
 
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
+    observer.observe(element);
 
     return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
+      if (element) {
+        observer.unobserve(element);
       }
     };
   }, [options]);

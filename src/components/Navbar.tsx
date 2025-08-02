@@ -14,6 +14,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search, MapPin, User, ShoppingCart, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -96,6 +97,10 @@ export default function Navbar() {
 
   // Refs para mejorar el manejo de hover
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Hook para detectar la ruta actual
+  const pathname = usePathname();
+  const isLoginPage = pathname === "/login";
 
   // Hooks personalizados
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -275,7 +280,10 @@ export default function Navbar() {
       `}</style>
 
       <header
-        className="text-white sticky top-0 z-50"
+        className={cn(
+          "text-white z-50",
+          isLoginPage ? "relative" : "sticky top-0"
+        )}
         style={{ backgroundColor: "#14182A" }}
       >
         {/* Barra superior */}
@@ -360,16 +368,16 @@ export default function Navbar() {
 
               {/* Usuario */}
               <Link
-                href={isAuthenticated ? "/perfil" : "/login"}
+                href={isAuthenticated ? "/dashboard" : "/login"}
                 className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors"
                 onClick={() =>
                   posthogUtils.capture("user_icon_click", {
                     user_authenticated: isAuthenticated,
-                    destination: isAuthenticated ? "profile" : "login",
+                    destination: isAuthenticated ? "dashboard" : "login",
                   })
                 }
                 data-track="user-button"
-                title={isAuthenticated ? "Mi cuenta" : "Ingresar"}
+                title={isAuthenticated ? "Dashboard" : "Ingresar"}
               >
                 <User className="w-5 h-5" />
               </Link>
@@ -511,12 +519,12 @@ export default function Navbar() {
               {/* Información adicional del usuario en móvil */}
               <div className="mt-4 space-y-2">
                 <Link
-                  href={isAuthenticated ? "/perfil" : "/login"}
+                  href={isAuthenticated ? "/dashboard" : "/login"}
                   className="flex items-center space-x-3 w-full py-4 px-4 text-white bg-gray-800/50 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-700/50 hover:border-gray-600"
                   onClick={() => {
                     posthogUtils.capture("mobile_user_click", {
                       user_authenticated: isAuthenticated,
-                      destination: isAuthenticated ? "profile" : "login",
+                      destination: isAuthenticated ? "dashboard" : "login",
                     });
                     setIsMobileMenuOpen(false);
                   }}
@@ -524,11 +532,11 @@ export default function Navbar() {
                   <User className="w-5 h-5 text-green-400" />
                   <div>
                     <div className="font-medium text-base">
-                      {isAuthenticated ? "Mi cuenta" : "Iniciar sesión"}
+                      {isAuthenticated ? "Dashboard" : "Iniciar sesión"}
                     </div>
                     <div className="text-sm text-gray-400">
                       {isAuthenticated
-                        ? "Perfil y configuración"
+                        ? "Panel de administración"
                         : "Acceder a tu cuenta"}
                     </div>
                   </div>

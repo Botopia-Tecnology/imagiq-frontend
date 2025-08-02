@@ -9,123 +9,99 @@
 
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 
 interface User {
-  id: string;
-  firstName: string;
-  lastName: string;
+  id: number;
   email: string;
-}
-
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-interface RegisterData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  password: string;
+  name: string;
+  role: "user" | "admin" | "superadmin";
+  avatar?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  loading: boolean;
   isAuthenticated: boolean;
-  login: (credentials: LoginCredentials) => Promise<void>;
+  isLoading: boolean;
+  login: (userData: User) => Promise<void>;
   logout: () => void;
-  register: (userData: RegisterData) => Promise<void>;
+  hasRole: (role: string | string[]) => boolean;
+  isAdmin: () => boolean;
+  isSuperAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuthContext = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuthContext must be used within AuthProvider");
-  }
-  return context;
-};
-
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize auth state from localStorage/cookies
+  // Check for existing session on mount
   useEffect(() => {
-    const token = localStorage.getItem("auth-token");
-    const userData = localStorage.getItem("user-data");
-
-    if (token && userData) {
-      setUser(JSON.parse(userData));
-      setIsAuthenticated(true);
+    const savedUser = localStorage.getItem("imagiq_user");
+    if (savedUser) {
+      try {
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+      } catch (error) {
+        console.error("Error parsing saved user data:", error);
+        localStorage.removeItem("imagiq_user");
+      }
     }
-
-    setLoading(false);
+    setIsLoading(false);
   }, []);
 
-  const login = async (credentials: LoginCredentials) => {
-    setLoading(true);
-    try {
-      // Simulate login API call
-      const mockUser: User = {
-        id: "1",
-        firstName: "Usuario",
-        lastName: "Test",
-        email: credentials.email,
-      };
-
-      setUser(mockUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("auth-token", "mock-token");
-      localStorage.setItem("user-data", JSON.stringify(mockUser));
-    } catch (error) {
-      console.error("Login error:", error);
-    } finally {
-      setLoading(false);
-    }
+  // Login function
+  const login = async (userData: User) => {
+    setUser(userData);
+    localStorage.setItem("imagiq_user", JSON.stringify(userData));
   };
 
+  // Logout function
   const logout = () => {
     setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem("auth-token");
-    localStorage.removeItem("user-data");
+    localStorage.removeItem("imagiq_user");
   };
 
-  const register = async (userData: RegisterData) => {
-    setLoading(true);
-    try {
-      // Simulate register API call
-      const newUser: User = {
-        id: "1",
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        email: userData.email,
-      };
+  // Role checking utilities
+  const hasRole = (roles: string | string[]) => {
+    if (!user) return false;
+    const roleArray = Array.isArray(roles) ? roles : [roles];
+    return roleArray.includes(user.role);
+  };
 
-      setUser(newUser);
-      setIsAuthenticated(true);
-      localStorage.setItem("auth-token", "mock-token");
-      localStorage.setItem("user-data", JSON.stringify(newUser));
-    } catch (error) {
-      console.error("Register error:", error);
-    } finally {
-      setLoading(false);
-    }
+  const isAdmin = () => {
+    return hasRole(["admin", "superadmin"]);
+  };
+
+  const isSuperAdmin = () => {
+    return hasRole("superadmin");
   };
 
   const value: AuthContextType = {
     user,
-    loading,
-    isAuthenticated,
+    isAuthenticated: !!user,
+    isLoading,
     login,
     logout,
-    register,
+    hasRole,
+    isAdmin,
+    isSuperAdmin,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}
+
+export function useAuthContext() {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuthContext must be used within an AuthProvider");
+  }
+  return context;
+}

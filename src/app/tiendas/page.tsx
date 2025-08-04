@@ -12,5 +12,6 @@ export default function TiendasPage() {
 
 export const metadata = {
   title: "Tiendas Samsung - Encuentra tu tienda más cercana",
-  description: "Localiza las tiendas Samsung más cercanas a ti. Información completa de contacto, horarios y ubicación.",
+  description:
+    "Localiza las tiendas Samsung más cercanas a ti. Información completa de contacto, horarios y ubicación.",
 };

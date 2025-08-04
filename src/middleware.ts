@@ -12,7 +12,14 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Public routes that don't require authentication
-const publicRoutes = ["/", "/productos", "/login", "/register", "/soporte", "/tiendas"];
+const publicRoutes = [
+  "/",
+  "/productos",
+  "/login",
+  "/register",
+  "/soporte",
+  "/tiendas",
+];
 
 // Admin routes that require special permissions
 const adminRoutes = ["/dashboard"];

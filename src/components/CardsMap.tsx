@@ -90,41 +90,7 @@ export const StoreCard: React.FC<StoreCardProps> = ({
           </div>
         </div>
 
-        {/* Actions Section */}
-        <div className="pt-3 border-t border-gray-100 space-y-3">
-          {/* Main Action Button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onDirectionsClick(store);
-            }}
-            className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-200 flex items-center justify-center space-x-2 shadow-md hover:shadow-lg transform hover:scale-[1.01] active:scale-[0.99]"
-          >
-            <Navigation className="w-4 h-4" />
-            <span>Cómo llegar</span>
-          </button>
-
-          {/* Secondary Actions */}
-          <div className="grid grid-cols-2 gap-2">
-            <a
-              href={`tel:${store.phone}`}
-              className="bg-green-600 hover:bg-green-700 text-white py-2.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-1.5 shadow-sm hover:shadow-md transform hover:scale-[1.01] active:scale-[0.99]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>Llamar</span>
-            </a>
-
-            <a
-              href={`mailto:${store.email}`}
-              className="bg-gray-600 hover:bg-gray-700 text-white py-2.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center justify-center space-x-1.5 shadow-sm hover:shadow-md transform hover:scale-[1.01] active:scale-[0.99]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <span className="text-sm">✉️</span>
-              <span>Email</span>
-            </a>
-          </div>
-        </div>
+        
       </div>
     </div>
   );

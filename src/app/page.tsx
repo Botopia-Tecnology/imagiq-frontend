@@ -9,6 +9,7 @@ import { BenefitsSection } from "@/components/sections/BenefitsSection";
 import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
+import { LocationMap } from "@/components/LocationMap";
 
 export default function HomePage() {
   return (
@@ -24,6 +25,12 @@ export default function HomePage() {
         <FeaturedProducts />
         <BenefitsSection />
         <TestimonialsSection />
+        {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
+        <section id="tiendas" className="py-16 bg-white">
+          <div className="container mx-auto px-6">
+            <LocationMap />
+          </div>
+        </section>
         <CTASection />
       </div>
     </>

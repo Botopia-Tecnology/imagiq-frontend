@@ -36,15 +36,15 @@ const navigationItems = [
   },
   {
     name: "Dispositivos móviles",
-    href: "/tienda/novedades",
-    description: "Últimos productos y lanzamientos",
-    category: "nuevos",
+    href: "/tienda/dispositivos-moviles",
+    description: "Smartphones, tablets y accesorios",
+    category: "moviles",
   },
   {
     name: "Televisores y AV",
-    href: "/tienda/recomendados",
-    description: "Productos más populares y mejor valorados",
-    category: "populares",
+    href: "/tienda/televisores",
+    description: "Smart TVs, audio y video",
+    category: "televisores",
   },
   {
     name: "Electrodomésticos",
@@ -284,23 +284,27 @@ export default function Navbar() {
           "text-white z-50",
           isLoginPage ? "relative" : "sticky top-0"
         )}
-        style={{ backgroundColor: "#14182A" }}
+        style={{ backgroundColor: "#22528D" }}
       >
-        {/* Barra superior */}
-        <div className="container mx-auto px-6">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo optimizado usando componente con tamaño personalizado */}
-            <Logo
-              width={180}
-              height={180}
-              onClick={() =>
-                posthogUtils.capture("logo_click", { source: "navbar" })
-              }
-            />
+        {/* Barra principal */}
+        <div className="w-full">
+          <div className="flex items-center justify-between h-20 px-8">
+            {/* Logo Samsung-style */}
+            <div className="flex items-center">
+              <Link
+                href="/"
+                className="text-white text-2xl font-bold tracking-wider"
+                onClick={() =>
+                  posthogUtils.capture("logo_click", { source: "navbar" })
+                }
+              >
+                SAMSUNG
+              </Link>
+            </div>
 
-            {/* Iconos de la derecha con búsqueda - exactos a Samsung Store */}
-            <div className="flex items-center space-x-4">
-              {/* Barra de búsqueda - se expande al hover */}
+            {/* Iconos de la derecha */}
+            <div className="flex items-center space-x-6">
+              {/* Barra de búsqueda */}
               <div className="hidden md:flex items-center group relative">
                 <form
                   onSubmit={handleSearchSubmit}
@@ -314,7 +318,7 @@ export default function Navbar() {
                     onFocus={handleSearchFocus}
                     onBlur={handleSearchBlur}
                     className={cn(
-                      "transition-all duration-300 ease-in-out h-10 rounded-full bg-gray-600 border-0 text-white placeholder-gray-400 focus:outline-none",
+                      "transition-all duration-300 ease-in-out h-10 rounded-full bg-white/10 border-0 text-white placeholder-gray-300 focus:outline-none focus:bg-white/20",
                       "w-0 pl-0 pr-0 group-hover:w-80 group-hover:pl-4 group-hover:pr-12",
                       (isSearchFocused || searchQuery.length > 0) &&
                         "w-80 pl-4 pr-12"
@@ -323,7 +327,7 @@ export default function Navbar() {
                   />
                   <button
                     type="button"
-                    className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors absolute right-0"
+                    className="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors absolute right-0"
                     data-track="search-button"
                   >
                     <Search className="w-5 h-5" />
@@ -354,9 +358,9 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Ubicación */}
+              {/* Iconos de acción */}
               <button
-                className="hidden md:flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors"
+                className="hidden md:flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors"
                 onClick={() =>
                   posthogUtils.capture("location_click", { source: "navbar" })
                 }
@@ -366,10 +370,9 @@ export default function Navbar() {
                 <MapPin className="w-5 h-5" />
               </button>
 
-              {/* Usuario */}
               <Link
                 href={isAuthenticated ? "/dashboard" : "/login"}
-                className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors"
+                className="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors"
                 onClick={() =>
                   posthogUtils.capture("user_icon_click", {
                     user_authenticated: isAuthenticated,
@@ -382,10 +385,9 @@ export default function Navbar() {
                 <User className="w-5 h-5" />
               </Link>
 
-              {/* Carrito */}
               <Link
                 href="/checkout"
-                className="flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors relative"
+                className="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors relative"
                 onClick={handleCartClick}
                 data-track="cart-button"
                 title="Carrito de compras"
@@ -398,9 +400,8 @@ export default function Navbar() {
                 )}
               </Link>
 
-              {/* Menú móvil */}
               <button
-                className="md:hidden flex items-center justify-center w-10 h-10 text-gray-400 hover:text-white transition-colors"
+                className="md:hidden flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 data-track="mobile-menu-button"
               >
@@ -412,12 +413,10 @@ export default function Navbar() {
               </button>
             </div>
           </div>
-        </div>
 
-        {/* Menú de navegación principal - exacto a Samsung Store */}
-        <nav className="hidden md:block" style={{ backgroundColor: "#14182A" }}>
-          <div className="container mx-auto px-6">
-            <div className="flex items-center justify-center space-x-16 py-6">
+          {/* Menú de navegación principal */}
+          <nav className="hidden md:block">
+            <div className="flex items-center justify-center space-x-12 py-4 px-8">
               {navigationItems.map((item) => (
                 <div
                   key={item.name}
@@ -431,29 +430,26 @@ export default function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className="text-gray-300 hover:text-white text-sm font-normal transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg hover:bg-gray-700/20"
+                    className="text-white/90 hover:text-white text-sm font-normal transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg hover:bg-white/10"
                     onClick={() => handleNavClick(item)}
                     data-track={`nav-${item.category}`}
                   >
                     {item.name}
                   </Link>
 
-                  {/* Optimized dropdown rendering */}
+                  {/* Dropdown rendering */}
                   {renderDropdown(item.name)}
                 </div>
               ))}
             </div>
-          </div>
-        </nav>
+          </nav>
+        </div>
 
         {/* Menú móvil */}
         {isMobileMenuOpen && (
-          <div
-            className="md:hidden fixed inset-x-0 top-16 bg-gray-900 shadow-2xl border-t border-gray-700 z-40 max-h-[calc(100vh-4rem)] overflow-y-auto"
-            style={{ backgroundColor: "#1a1f35" }}
-          >
+          <div className="md:hidden fixed inset-x-0 top-20 bg-white shadow-2xl border-t border-gray-200 z-40 max-h-[calc(100vh-5rem)] overflow-y-auto">
             <div className="px-4 py-6">
-              {/* Búsqueda móvil mejorada */}
+              {/* Búsqueda móvil */}
               <div className="mb-6">
                 <form onSubmit={handleSearchSubmit} className="relative">
                   <input
@@ -461,24 +457,24 @@ export default function Navbar() {
                     placeholder="¿Qué estás buscando?"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full h-12 pl-4 pr-12 rounded-lg bg-gray-800 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
+                    className="w-full h-12 pl-4 pr-12 rounded-lg bg-gray-100 border border-gray-300 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-base"
                   />
                   <button
                     type="submit"
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors p-1"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors p-1"
                   >
                     <Search className="w-5 h-5" />
                   </button>
                 </form>
               </div>
 
-              {/* Enlaces de navegación móvil con mejor diseño */}
+              {/* Enlaces de navegación móvil */}
               <div className="space-y-1">
                 {navigationItems.map((item, index) => (
                   <Link
                     key={item.name}
                     href={item.href}
-                    className="block py-4 px-4 text-white bg-gray-800/50 hover:bg-gray-700 rounded-lg transition-all duration-200 animate-dropdown-item border border-gray-700/50 hover:border-gray-600"
+                    className="block py-4 px-4 text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 animate-dropdown-item border border-gray-200"
                     onClick={() => handleNavClick(item)}
                     style={{
                       animationDelay: `${index * 50}ms`,
@@ -487,40 +483,39 @@ export default function Navbar() {
                     <div className="font-medium text-base mb-1">
                       {item.name}
                     </div>
-                    <div className="text-sm text-gray-400 leading-relaxed">
+                    <div className="text-sm text-gray-600 leading-relaxed">
                       {item.description}
                     </div>
                   </Link>
                 ))}
               </div>
 
-              {/* Opciones adicionales móvil mejoradas */}
-              <div className="mt-6 pt-6 border-t border-gray-700">
+              {/* Opciones adicionales móvil */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
                 <button
-                  className="flex items-center space-x-3 w-full py-4 px-4 text-white bg-gray-800/50 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-700/50 hover:border-gray-600"
+                  className="flex items-center space-x-3 w-full py-4 px-4 text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200"
                   onClick={() =>
                     posthogUtils.capture("mobile_location_click", {
                       source: "mobile_menu",
                     })
                   }
                 >
-                  <MapPin className="w-5 h-5 text-blue-400" />
+                  <MapPin className="w-5 h-5 text-blue-600" />
                   <div>
                     <div className="font-medium text-base">
                       Encontrar tienda
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-gray-600">
                       Ubicaciones cercanas
                     </div>
                   </div>
                 </button>
               </div>
 
-              {/* Información adicional del usuario en móvil */}
               <div className="mt-4 space-y-2">
                 <Link
                   href={isAuthenticated ? "/dashboard" : "/login"}
-                  className="flex items-center space-x-3 w-full py-4 px-4 text-white bg-gray-800/50 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-700/50 hover:border-gray-600"
+                  className="flex items-center space-x-3 w-full py-4 px-4 text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200"
                   onClick={() => {
                     posthogUtils.capture("mobile_user_click", {
                       user_authenticated: isAuthenticated,
@@ -529,12 +524,12 @@ export default function Navbar() {
                     setIsMobileMenuOpen(false);
                   }}
                 >
-                  <User className="w-5 h-5 text-green-400" />
+                  <User className="w-5 h-5 text-green-600" />
                   <div>
                     <div className="font-medium text-base">
                       {isAuthenticated ? "Dashboard" : "Iniciar sesión"}
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-gray-600">
                       {isAuthenticated
                         ? "Panel de administración"
                         : "Acceder a tu cuenta"}
@@ -544,17 +539,17 @@ export default function Navbar() {
 
                 <Link
                   href="/checkout"
-                  className="flex items-center justify-between w-full py-4 px-4 text-white bg-gray-800/50 hover:bg-gray-700 rounded-lg transition-all duration-200 border border-gray-700/50 hover:border-gray-600"
+                  className="flex items-center justify-between w-full py-4 px-4 text-gray-900 bg-gray-50 hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-200"
                   onClick={() => {
                     handleCartClick();
                     setIsMobileMenuOpen(false);
                   }}
                 >
                   <div className="flex items-center space-x-3">
-                    <ShoppingCart className="w-5 h-5 text-orange-400" />
+                    <ShoppingCart className="w-5 h-5 text-orange-600" />
                     <div>
                       <div className="font-medium text-base">Carrito</div>
-                      <div className="text-sm text-gray-400">
+                      <div className="text-sm text-gray-600">
                         {itemCount > 0
                           ? `${itemCount} producto${itemCount > 1 ? "s" : ""}`
                           : "Sin productos"}
@@ -572,10 +567,10 @@ export default function Navbar() {
           </div>
         )}
 
-        {/* Overlay para cerrar menú móvil al tocar fuera */}
+        {/* Overlay para cerrar menú móvil */}
         {isMobileMenuOpen && (
           <div
-            className="md:hidden fixed inset-0 bg-black/50 z-30 top-16"
+            className="md:hidden fixed inset-0 bg-black/50 z-30 top-20"
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}

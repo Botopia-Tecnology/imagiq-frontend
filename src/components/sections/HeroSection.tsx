@@ -99,8 +99,8 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative w-full h-[100vh] min-h-[700px] md:min-h-[800px] lg:min-h-[900px] overflow-hidden"
-      style={{ marginTop: "-1px" }}
+      className="relative w-full h-[85vh] min-h-[700px] md:min-h-[800px] lg:min-h-[600px] overflow-hidden"
+      style={{ marginTop: "-10px" }}
     >
       {/* Base background color */}
       <div
@@ -118,8 +118,8 @@ export default function HeroSection() {
         style={{
           background: `radial-gradient(ellipse at center, 
             rgba(255, 255, 255, 0.3) 0%, 
-            rgba(255, 255, 255, 0.15) 25%, 
-            rgba(255, 255, 255, 0.05) 50%, 
+            rgba(255, 255, 255, 0.18) 25%, 
+            rgba(255, 255, 255, 0.10) 50%, 
             transparent 70%)`,
           top: "-1px",
           height: "calc(100% + 1px)",
@@ -213,31 +213,31 @@ export default function HeroSection() {
 
             {/* Right side - Content desktop */}
             <div className="flex-1 text-white max-w-2xl pl-8 xl:pl-12 text-left">
-              <h1 className="text-5xl lg:text-6xl font-bold mb-6 leading-tight text-white drop-shadow-lg">
+              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 leading-tight text-white drop-shadow-lg">
                 {currentSlideData.title}
               </h1>
 
-              <h2 className="text-2xl md:text-3xl font-normal mb-8 opacity-90 text-white drop-shadow-md">
+              <h2 className="text-lg md:text-xl lg:text-2xl font-normal mb-6 opacity-90 text-white drop-shadow-md">
                 {currentSlideData.subtitle}
               </h2>
 
-              <p className="text-lg lg:text-xl leading-relaxed mb-10 opacity-85 max-w-xl text-gray-200">
+              <p className="text-sm lg:text-base leading-relaxed mb-8 opacity-85 max-w-lg text-gray-200">
                 {currentSlideData.description}
               </p>
 
               {/* Price section desktop */}
-              <div className="mb-10">
-                <div className="inline-block bg-white/20 backdrop-blur-xl rounded-3xl px-8 py-6 border border-white/30 shadow-2xl">
+              <div className="mb-8">
+                <div className="inline-block bg-white/20 backdrop-blur-xl rounded-2xl lg:rounded-3xl px-6 lg:px-8 py-4 lg:py-5 border border-white/30 shadow-2xl">
                   <div className="text-center">
-                    <p className="text-base opacity-90 mb-2 text-white font-medium">
+                    <p className="text-sm opacity-90 mb-2 text-white font-medium">
                       {currentSlideData.offerText}
                     </p>
                     <div className="flex items-center justify-center space-x-3">
-                      <span className="text-5xl font-bold text-white drop-shadow-md">
+                      <span className="text-3xl lg:text-4xl font-bold text-white drop-shadow-md">
                         {currentSlideData.price}
                       </span>
                     </div>
-                    <p className="text-base opacity-80 mt-2 text-gray-100">
+                    <p className="text-sm opacity-80 mt-2 text-gray-100">
                       Precio Normal:{" "}
                       <span className="line-through">
                         {currentSlideData.originalPrice}
@@ -248,13 +248,13 @@ export default function HeroSection() {
               </div>
 
               {/* Action buttons desktop */}
-              <div className="flex space-x-6">
-                <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-10 py-5 rounded-3xl font-semibold text-xl transition-all duration-300 transform hover:scale-105 shadow-xl">
+              <div className="flex space-x-4 mb-10">
+                <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-8 py-4 rounded-2xl lg:rounded-3xl font-semibold text-base lg:text-lg transition-all duration-300 transform hover:scale-105 shadow-xl">
                   {currentSlideData.buttonText}
                 </button>
 
-                <button className="bg-transparent hover:bg-white/10 text-white p-5 rounded-3xl transition-all duration-300 transform hover:scale-105 border-2 border-white/40 hover:border-white/60 shadow-lg">
-                  <Heart className="w-7 h-7" />
+                <button className="bg-transparent hover:bg-white/10 text-white p-4 rounded-2xl lg:rounded-3xl transition-all duration-300 transform hover:scale-105 border-2 border-white/40 hover:border-white/60 shadow-lg">
+                  <Heart className="w-5 h-5 lg:w-6 lg:h-6" />
                 </button>
               </div>
             </div>

@@ -2,11 +2,9 @@
  * 🏠 PÁGINA PRINCIPAL - IMAGIQ ECOMMERCE
  */
 
-import { HeroSection } from "@/components/sections/HeroSection";
+import HeroSection from "@/components/sections/HeroSection";
 import { CategoriesSection } from "@/components/sections/CategoriesSection";
 import { FeaturedProducts } from "@/components/sections/FeaturedProducts";
-import { BenefitsSection } from "@/components/sections/BenefitsSection";
-import { TestimonialsSection } from "@/components/sections/TestimonialsSection";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import { LocationMap } from "@/components/LocationMap";
@@ -23,8 +21,6 @@ export default function HomePage() {
         <HeroSection />
         <CategoriesSection />
         <FeaturedProducts />
-        <BenefitsSection />
-        <TestimonialsSection />
         {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
         <section id="tiendas" className="py-16 bg-white">
           <div className="container mx-auto px-6">

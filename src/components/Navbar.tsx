@@ -21,7 +21,6 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import Logo from "./Logo";
 import DispositivosMovilesDropdown from "./Dropdowns/Dispositivos_Moviles";
 import TelevisionesDropdown from "./Dropdowns/Televisiones";
 import ElectrodomesticosDropdown from "./Dropdowns/Electrodomesticos";
@@ -281,13 +280,19 @@ export default function Navbar() {
 
       <header
         className={cn(
-          "text-white z-50",
+          "text-white z-50 relative",
           isLoginPage ? "relative" : "sticky top-0"
         )}
-        style={{ backgroundColor: "#22528D" }}
+        style={{
+          background: "linear-gradient(to bottom, #1A4880, #24538F)",
+        }}
       >
+        {/* Samsung-style subtle white overlay for clean look */}
+        {/* <div className="absolute inset-0 bg-gradient-to-r "></div> */}
+        {/* <div className="absolute inset-0 bg-gradient-to-b "></div> */}
+
         {/* Barra principal */}
-        <div className="w-full">
+        <div className="w-full relative z-10">
           <div className="flex items-center justify-between h-20 px-8">
             {/* Logo Samsung-style */}
             <div className="flex items-center">
@@ -416,7 +421,7 @@ export default function Navbar() {
 
           {/* Menú de navegación principal */}
           <nav className="hidden md:block">
-            <div className="flex items-center justify-center space-x-12 py-4 px-8">
+            <div className="flex items-center justify-center space-x-12 py-4 px-8 ">
               {navigationItems.map((item) => (
                 <div
                   key={item.name}
@@ -430,7 +435,7 @@ export default function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className="text-white/90 hover:text-white text-sm font-normal transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg hover:bg-white/10"
+                    className="text-white/90 hover:text-white text-md font-bold transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg hover:bg-white/10"
                     onClick={() => handleNavClick(item)}
                     data-track={`nav-${item.category}`}
                   >

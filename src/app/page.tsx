@@ -4,7 +4,7 @@
 
 import HeroSection from "@/components/sections/HeroSection";
 import { CategoriesSection } from "@/components/sections/CategoriesSection";
-import { FeaturedProducts } from "@/components/sections/FeaturedProducts";
+import { Ofertas } from "@/components/sections/Ofertas";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import { LocationMap } from "@/components/LocationMap";
@@ -20,7 +20,7 @@ export default function HomePage() {
       <div className="min-h-screen">
         <HeroSection />
         <CategoriesSection />
-        <FeaturedProducts />
+        <Ofertas />
         {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
         <section id="tiendas" className="py-16 bg-white">
           <div className="container mx-auto px-6">

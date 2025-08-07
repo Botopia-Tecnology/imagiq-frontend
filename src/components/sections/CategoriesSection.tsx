@@ -22,20 +22,20 @@ import tabletImage from "../../img/categorias/Tabletas.png";
 import ElectrodomesticosImage from "../../img/categorias/Electrodomesticos.png";
 import monitorImage from "../../img/categorias/Tv_Monitores.png";
 
-// Datos de las categorías con las imágenes reales
+// Datos de las categorías con las rutas correctas
 const categories = [
   {
     id: 1,
     title: "Smartphones",
     image: smartphoneImage,
-    href: "/tienda/dispositivos-moviles/smartphones",
+    href: "/productos/DispositivosMoviles?section=smartphones",
     description: "Los últimos Galaxy y más",
   },
   {
     id: 2,
     title: "Tabletas",
     image: tabletImage,
-    href: "/tienda/dispositivos-moviles/tabletas",
+    href: "/productos/DispositivosMoviles?section=tabletas",
     description: "Galaxy Tab para trabajo y entretenimiento",
   },
   {

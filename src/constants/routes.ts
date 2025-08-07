@@ -77,9 +77,13 @@ export const API_ROUTES = {
 
 // Navigation structure for UI
 export const NAVIGATION = [
-  { name: "Inicio", href: PUBLIC_ROUTES.HOME },
-  { name: "Productos", href: PUBLIC_ROUTES.PRODUCTS },
-  { name: "Soporte", href: PUBLIC_ROUTES.SUPPORT },
+  { name: "Ofertas", href: "/tienda/outlet" },
+  { name: "Dispositivos móviles", href: "/productos/DispositivosMoviles" },
+  { name: "Televisores y AV", href: "/tienda/televisores" },
+  { name: "Electrodomésticos", href: "/tienda/electrodomesticos" },
+  { name: "Tiendas", href: "/tiendas" },
+  { name: "Servicio Técnico", href: "/soporte" },
+  { name: "Ventas corporativas", href: "/ventas-corporativas" },
 ];
 
 // Breadcrumb configurations

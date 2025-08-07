@@ -1,13 +1,20 @@
+/**
+ * 📺 DROPDOWN TELEVISIONES - IMAGIQ ECOMMERCE
+ *
+ * Dropdown simple del navbar con solo títulos y estilos, sin imágenes.
+ */
+
 "use client";
 
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
-const televisionesAV = [
-  { name: "Televisores", href: "/televisores-av/televisores" },
-  { name: "Dispositivos de audio", href: "/televisores-av/dispositivos-audio" },
-  { name: "Proyectores", href: "/televisores-av/proyectores" },
-  { name: "Accesorios para TV", href: "/televisores-av/accesorios-tv" },
+const categories = [
+  { name: "Smart TV", href: "/productos/Televisores?section=smart-tv" },
+  { name: "QLED TV", href: "/productos/Televisores?section=qled" },
+  { name: "Crystal UHD", href: "/productos/Televisores?section=crystal-uhd" },
+  { name: "Barras de Sonido", href: "/productos/Audio?section=barras-sonido" },
+  { name: "Sistemas de Audio", href: "/productos/Audio?section=sistemas" },
 ];
 
 export default function TelevisionesDropdown() {
@@ -20,9 +27,9 @@ export default function TelevisionesDropdown() {
   };
 
   return (
-    <div className="absolute top-full left-10 transform -translate-x-1/6 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-3 px-5 min-w-[220px] z-[60] animate-dropdown-enter">
+    <div className="absolute top-full left-10 transform -translate-x-1/6 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-3 px-5 min-w-[220px] z-[70] animate-dropdown-enter">
       <div className="space-y-1.5">
-        {televisionesAV.map((item, index) => (
+        {categories.map((item, index) => (
           <Link
             key={item.name}
             href={item.href}

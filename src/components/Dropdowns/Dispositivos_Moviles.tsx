@@ -4,11 +4,17 @@ import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
 const dispositivosMoviles = [
-  { name: "Smartphones", href: "/dispositivos-moviles/smartphones" },
-  { name: "Tabletas", href: "/dispositivos-moviles/tabletas" },
-  { name: "Relojes", href: "/dispositivos-moviles/relojes" },
-  { name: "Galaxy Buds", href: "/dispositivos-moviles/galaxy-buds" },
-  { name: "Accesorios", href: "/dispositivos-moviles/accesorios" },
+  {
+    name: "Smartphones",
+    href: "/productos/DispositivosMoviles?section=smartphones",
+  },
+  { name: "Tabletas", href: "/productos/DispositivosMoviles?section=tabletas" },
+  { name: "Relojes", href: "/productos/DispositivosMoviles?section=relojes" },
+  { name: "Galaxy Buds", href: "/productos/DispositivosMoviles?section=buds" },
+  {
+    name: "Accesorios",
+    href: "/productos/DispositivosMoviles?section=accesorios",
+  },
 ];
 
 export default function DispositivosMovilesDropdown() {
@@ -21,7 +27,7 @@ export default function DispositivosMovilesDropdown() {
   };
 
   return (
-    <div className="absolute top-full left-12 transform -translate-x-1/6 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-3 px-5 min-w-[200px] z-[60] animate-dropdown-enter">
+    <div className="absolute top-full left-12 transform -translate-x-1/6 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-3 px-5 min-w-[200px] z-[70] animate-dropdown-enter">
       <div className="space-y-1.5">
         {dispositivosMoviles.map((item, index) => (
           <Link

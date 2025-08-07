@@ -15,6 +15,7 @@ import type { NextRequest } from "next/server";
 const publicRoutes = [
   "/",
   "/productos",
+  "/productos/DispositivosMoviles",
   "/login",
   "/register",
   "/soporte",

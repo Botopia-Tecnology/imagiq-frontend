@@ -69,7 +69,7 @@ export default function HeroSection() {
 
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000); // Change slide every 5 seconds
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
@@ -100,7 +100,7 @@ export default function HeroSection() {
   return (
     <section
       className="relative w-full h-[85vh] min-h-[700px] md:min-h-[800px] lg:min-h-[600px] overflow-hidden"
-      style={{ marginTop: "-10px" }}
+      style={{ marginTop: "0px" }} // Cambiar de -10px a 0px para eliminar overlap
     >
       {/* Base background color */}
       <div

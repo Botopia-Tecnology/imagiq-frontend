@@ -3,11 +3,10 @@
  *
  * Componente de navegación empresarial con:
  * - Diseño idéntico a Samsung Store de las imágenes
+ * - Funcionalidad de scroll para ocultar menú de navegación
+ * - Iconos a la derecha solo en dispositivos móviles
+ * - Sin línea divisoria
  * - Integración completa con PostHog para tracking
- * - Búsqueda optimizada con debounce
- * - Carrito de compras con estado global
- * - Responsive design y accesibilidad
- * - Analytics automáticos de navegación
  */
 
 "use client";
@@ -35,7 +34,7 @@ const navigationItems = [
   },
   {
     name: "Dispositivos móviles",
-    href: "/tienda/dispositivos-moviles",
+    href: "/productos/DispositivosMoviles",
     description: "Smartphones, tablets y accesorios",
     category: "moviles",
   },
@@ -93,6 +92,7 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Refs para mejorar el manejo de hover
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -106,6 +106,17 @@ export default function Navbar() {
   const { itemCount } = useCartContext();
   const { isAuthenticated } = useAuthContext();
 
+  // Detectar scroll para ocultar menú de navegación
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      setIsScrolled(scrollTop > 100);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   // Tracking de PostHog para búsquedas
   useEffect(() => {
     if (debouncedSearch.length > 2) {
@@ -115,7 +126,7 @@ export default function Navbar() {
         user_authenticated: isAuthenticated,
       });
 
-      // Simular búsqueda (aquí se integraría con el microservicio)
+      // Simular búsqueda
       setSearchResults([
         {
           id: 1,
@@ -136,8 +147,6 @@ export default function Navbar() {
       nav_href: item.href,
       user_authenticated: isAuthenticated,
     });
-
-    // Cerrar menú móvil si está abierto
     setIsMobileMenuOpen(false);
   };
 
@@ -159,7 +168,6 @@ export default function Navbar() {
   };
 
   const handleSearchBlur = () => {
-    // Delay para permitir clicks en resultados
     setTimeout(() => {
       setIsSearchFocused(false);
       setSearchResults([]);
@@ -174,15 +182,12 @@ export default function Navbar() {
         source: "navbar",
         results_count: searchResults.length,
       });
-
-      // Redirigir a página de resultados
       window.location.href = `/productos?q=${encodeURIComponent(
         searchQuery.trim()
       )}`;
     }
   };
 
-  // Optimized dropdown handlers
   const handleDropdownEnter = (dropdownName: string) => {
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
@@ -196,7 +201,6 @@ export default function Navbar() {
     }, 150);
   };
 
-  // Render dropdown component based on active dropdown
   const renderDropdown = (itemName: string) => {
     if (activeDropdown !== itemName) return null;
 
@@ -229,12 +233,10 @@ export default function Navbar() {
     }
   };
 
-  // Check if item has dropdown
   const hasDropdown = (itemName: string): itemName is DropdownItemType => {
     return DROPDOWN_ITEMS.includes(itemName as DropdownItemType);
   };
 
-  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (dropdownTimeoutRef.current) {
@@ -242,6 +244,11 @@ export default function Navbar() {
       }
     };
   }, []);
+
+  // Detectar si estamos en páginas de productos para usar navbar blanco
+  const isProductPage =
+    pathname.startsWith("/productos") ||
+    pathname.includes("/DispositivosMoviles");
 
   return (
     <>
@@ -280,25 +287,32 @@ export default function Navbar() {
 
       <header
         className={cn(
-          "text-white z-50 relative",
-          isLoginPage ? "relative" : "sticky top-0"
+          "text-white z-50 transition-all duration-300",
+          isLoginPage ? "relative" : "sticky top-0",
+          // Navbar blanco para páginas de productos
+          isProductPage && "text-gray-900 bg-white shadow-md",
+          // Ajustar altura cuando está scrolled
+          isScrolled ? "shadow-lg" : ""
         )}
-        style={{
-          background: "linear-gradient(to bottom, #1A4880, #24538F)",
-        }}
+        style={
+          !isProductPage
+            ? {
+                background: "linear-gradient(to bottom, #1A4880, #24538F)",
+              }
+            : {}
+        }
       >
-        {/* Samsung-style subtle white overlay for clean look */}
-        {/* <div className="absolute inset-0 bg-gradient-to-r "></div> */}
-        {/* <div className="absolute inset-0 bg-gradient-to-b "></div> */}
-
         {/* Barra principal */}
         <div className="w-full relative z-10">
-          <div className="flex items-center justify-between h-20 px-8">
+          <div className="flex items-center justify-between h-15 px-8">
             {/* Logo Samsung-style */}
             <div className="flex items-center">
               <Link
                 href="/"
-                className="text-white text-2xl font-bold tracking-wider"
+                className={cn(
+                  "text-2xl font-bold tracking-wider transition-colors",
+                  isProductPage ? "text-gray-900" : "text-white"
+                )}
                 onClick={() =>
                   posthogUtils.capture("logo_click", { source: "navbar" })
                 }
@@ -307,9 +321,9 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Iconos de la derecha */}
+            {/* Iconos de la derecha - solo visible en móvil o siempre según el diseño */}
             <div className="flex items-center space-x-6">
-              {/* Barra de búsqueda */}
+              {/* Barra de búsqueda - solo en desktop */}
               <div className="hidden md:flex items-center group relative">
                 <form
                   onSubmit={handleSearchSubmit}
@@ -323,17 +337,23 @@ export default function Navbar() {
                     onFocus={handleSearchFocus}
                     onBlur={handleSearchBlur}
                     className={cn(
-                      "transition-all duration-300 ease-in-out h-10 rounded-full bg-white/10 border-0 text-white placeholder-gray-300 focus:outline-none focus:bg-white/20",
+                      "transition-all duration-300 ease-in-out h-10 rounded-full border-0 focus:outline-none",
+                      isProductPage
+                        ? "bg-gray-100 text-gray-900 placeholder-gray-500 focus:bg-gray-200"
+                        : "bg-white/10 text-white placeholder-gray-300 focus:bg-white/20",
                       "w-0 pl-0 pr-0 group-hover:w-80 group-hover:pl-4 group-hover:pr-12",
                       (isSearchFocused || searchQuery.length > 0) &&
                         "w-80 pl-4 pr-12"
                     )}
-                    data-track="search-input"
                   />
                   <button
                     type="button"
-                    className="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors absolute right-0"
-                    data-track="search-button"
+                    className={cn(
+                      "flex items-center justify-center w-10 h-10 transition-colors absolute right-0",
+                      isProductPage
+                        ? "text-gray-500 hover:text-gray-700"
+                        : "text-white/70 hover:text-white"
+                    )}
                   >
                     <Search className="w-5 h-5" />
                   </button>
@@ -365,11 +385,15 @@ export default function Navbar() {
 
               {/* Iconos de acción */}
               <button
-                className="hidden md:flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors"
+                className={cn(
+                  "hidden md:flex items-center justify-center w-10 h-10 transition-colors",
+                  isProductPage
+                    ? "text-gray-500 hover:text-gray-700"
+                    : "text-white/70 hover:text-white"
+                )}
                 onClick={() =>
                   posthogUtils.capture("location_click", { source: "navbar" })
                 }
-                data-track="location-button"
                 title="Ubicación"
               >
                 <MapPin className="w-5 h-5" />
@@ -377,14 +401,18 @@ export default function Navbar() {
 
               <Link
                 href={isAuthenticated ? "/dashboard" : "/login"}
-                className="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors"
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 transition-colors",
+                  isProductPage
+                    ? "text-gray-500 hover:text-gray-700"
+                    : "text-white/70 hover:text-white"
+                )}
                 onClick={() =>
                   posthogUtils.capture("user_icon_click", {
                     user_authenticated: isAuthenticated,
                     destination: isAuthenticated ? "dashboard" : "login",
                   })
                 }
-                data-track="user-button"
                 title={isAuthenticated ? "Dashboard" : "Ingresar"}
               >
                 <User className="w-5 h-5" />
@@ -392,9 +420,13 @@ export default function Navbar() {
 
               <Link
                 href="/checkout"
-                className="flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors relative"
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 transition-colors relative",
+                  isProductPage
+                    ? "text-gray-500 hover:text-gray-700"
+                    : "text-white/70 hover:text-white"
+                )}
                 onClick={handleCartClick}
-                data-track="cart-button"
                 title="Carrito de compras"
               >
                 <ShoppingCart className="w-5 h-5" />
@@ -406,9 +438,13 @@ export default function Navbar() {
               </Link>
 
               <button
-                className="md:hidden flex items-center justify-center w-10 h-10 text-white/70 hover:text-white transition-colors"
+                className={cn(
+                  "md:hidden flex items-center justify-center w-10 h-10 transition-colors",
+                  isProductPage
+                    ? "text-gray-500 hover:text-gray-700"
+                    : "text-white/70 hover:text-white"
+                )}
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                data-track="mobile-menu-button"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-5 h-5" />
@@ -419,9 +455,14 @@ export default function Navbar() {
             </div>
           </div>
 
-          {/* Menú de navegación principal */}
-          <nav className="hidden md:block">
-            <div className="flex items-center justify-center space-x-12 py-4 px-8 ">
+          {/* Menú de navegación principal - se oculta al hacer scroll */}
+          <nav
+            className={cn(
+              "hidden md:block transition-all duration-300 overflow-visible relative",
+              isScrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+            )}
+          >
+            <div className="flex items-center justify-center space-x-12 py-4 px-8">
               {navigationItems.map((item) => (
                 <div
                   key={item.name}
@@ -435,19 +476,32 @@ export default function Navbar() {
                 >
                   <Link
                     href={item.href}
-                    className="text-white/90 hover:text-white text-md font-bold transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg hover:bg-white/10"
+                    className={cn(
+                      "text-md font-bold transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg",
+                      isProductPage
+                        ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                        : "text-white/90 hover:text-white hover:bg-white/10"
+                    )}
                     onClick={() => handleNavClick(item)}
-                    data-track={`nav-${item.category}`}
                   >
                     {item.name}
                   </Link>
 
-                  {/* Dropdown rendering */}
+                  {/* Dropdown rendering - Corregido para funcionar siempre */}
                   {renderDropdown(item.name)}
                 </div>
               ))}
             </div>
           </nav>
+
+          {/* Contenedor fijo para dropdowns cuando navbar está collapsed */}
+          {isScrolled && activeDropdown && (
+            <div className="absolute top-full left-0 w-full z-50">
+              <div className="flex justify-center">
+                <div className="relative">{renderDropdown(activeDropdown)}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Menú móvil */}

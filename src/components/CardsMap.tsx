@@ -1,16 +1,24 @@
 import React from "react";
-import { MapPin, Phone, Clock, Navigation } from "lucide-react";
-import { Store } from "./LocationsArray";
+import { MapPin, Phone, Clock } from "lucide-react";
 
-interface StoreCardProps {
-  store: Store;
-  onDirectionsClick: (store: Store) => void;
+interface Location {
+  id: number;
+  name: string;
+  address: string;
+  hours: string;
+  phone: string;
+  lat: number;
+  lng: number;
+  city?: string;
+  mall?: string;
 }
 
-export const StoreCard: React.FC<StoreCardProps> = ({
-  store,
-  onDirectionsClick,
-}) => {
+interface StoreCardProps {
+  store: Location;
+  onDirectionsClick?: (store: Location) => void;
+}
+
+export const StoreCard: React.FC<StoreCardProps> = ({ store, onDirectionsClick }) => {
   return (
     <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-4 min-w-[300px] max-w-[340px] relative backdrop-blur-sm overflow-hidden">
       {/* Arrow pointing up to marker */}
@@ -24,10 +32,12 @@ export const StoreCard: React.FC<StoreCardProps> = ({
             <h3 className="font-bold text-gray-900 text-base leading-tight pr-2">
               {store.name}
             </h3>
-            <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200 whitespace-nowrap">
-              <MapPin className="w-3 h-3 mr-1" />
-              {store.city}
-            </span>
+            {store.city && (
+              <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200 whitespace-nowrap">
+                <MapPin className="w-3 h-3 mr-1" />
+                {store.city}
+              </span>
+            )}
           </div>
 
           {store.mall && (
@@ -90,8 +100,20 @@ export const StoreCard: React.FC<StoreCardProps> = ({
           </div>
         </div>
 
-        
+        {/* Directions Button */}
+        {onDirectionsClick && (
+          <div className="pt-3 border-t border-gray-100">
+            <button
+              onClick={() => onDirectionsClick(store)}
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors duration-200"
+            >
+              Cómo llegar
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 };
+
+export type { Location };

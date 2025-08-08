@@ -13,7 +13,7 @@
 
 import { useState } from "react";
 import Image, { StaticImageData } from "next/image";
-import { Star, Heart, ShoppingCart, Info } from "lucide-react";
+import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
@@ -46,8 +46,6 @@ export default function ProductCard({
   name,
   image,
   colors,
-  rating,
-  reviewCount,
   price,
   originalPrice,
   discount,

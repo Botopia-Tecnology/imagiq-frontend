@@ -8,7 +8,7 @@
  */
 
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import oferta1 from "../../img/ofertas/oferta1.gif";
 import oferta2 from "../../img/ofertas/oferta2.png";
@@ -39,7 +39,6 @@ const ofertasData = [
 export const Ofertas = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [visibleItems, setVisibleItems] = useState(3);
-  const sliderRef = useRef<HTMLDivElement>(null);
 
   // Update visible items based on screen size
   useEffect(() => {
@@ -245,3 +244,4 @@ export const Ofertas = () => {
     </section>
   );
 };
+

@@ -297,6 +297,19 @@ export default function LocationMap() {
     );
   }
 
+  // Convert Store to Location for StoreCard compatibility
+  const convertStoreToLocation = (store: Store) => ({
+    id: store.id || 0,
+    name: store.name,
+    address: store.address,
+    hours: store.hours,
+    phone: store.phone,
+    lat: store.position[0],
+    lng: store.position[1],
+    city: store.city,
+    mall: store.mall,
+  });
+
   // Store marker component with improved functionality
   const StoreMarkerComponent = ({ store }: { store: Store }) => {
     const isHovered = hoveredStore?.name === store.name;
@@ -392,8 +405,14 @@ export default function LocationMap() {
               }}
             >
               <StoreCard
-                store={store}
-                onDirectionsClick={handleDirectionsClick}
+                store={convertStoreToLocation(store)}
+                onDirectionsClick={(locationStore) => {
+                  // Convert Location back to Store for the handler
+                  const originalStore = stores.find(s => s.name === locationStore.name);
+                  if (originalStore) {
+                    handleDirectionsClick(originalStore);
+                  }
+                }}
               />
             </div>
           </Popup>

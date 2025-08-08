@@ -73,7 +73,6 @@ export default function LoginPage() {
 
   // Animation states
   const [isVisible, setIsVisible] = useState(false);
-  const [fieldFocus, setFieldFocus] = useState<string | null>(null);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -274,8 +273,6 @@ export default function LoginPage() {
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
-                  onFocus={() => setFieldFocus("email")}
-                  onBlur={() => setFieldFocus(null)}
                   className={cn(
                     "w-full px-4 py-3 bg-white/5 border rounded-lg text-white placeholder-blue-200/50 transition-all duration-200 focus:outline-none focus:ring-1 backdrop-blur-sm font-light",
                     getFieldError("email")
@@ -303,8 +300,6 @@ export default function LoginPage() {
                   onChange={(e) =>
                     handleInputChange("password", e.target.value)
                   }
-                  onFocus={() => setFieldFocus("password")}
-                  onBlur={() => setFieldFocus(null)}
                   className={cn(
                     "w-full px-4 py-3 bg-white/5 border rounded-lg text-white placeholder-blue-200/50 transition-all duration-200 focus:outline-none focus:ring-1 backdrop-blur-sm font-light",
                     getFieldError("password")
@@ -404,4 +399,3 @@ export default function LoginPage() {
     </div>
   );
 }
-

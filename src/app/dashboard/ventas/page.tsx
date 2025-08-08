@@ -8,13 +8,16 @@
  */
 
 export default function VentasPage() {
-  //   return (
-  // <div>
-  {
-    /* Sales management components will be here */
-  }
-  {
-    /* </div> */
-  }
-  //   );
+  return (
+    <div className="min-h-screen bg-white flex items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">
+          Gestión de Ventas
+        </h1>
+        <p className="text-gray-600">
+          Dashboard de ventas en construcción. Aquí se mostrarán métricas y reportes detallados.
+        </p>
+      </div>
+    </div>
+  );
 }

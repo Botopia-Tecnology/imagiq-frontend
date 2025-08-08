@@ -10,6 +10,7 @@
 
 // Store type definition
 export type Store = {
+  id: number;
   name: string;
   address: string;
   phone: string;
@@ -24,6 +25,7 @@ export type Store = {
 export const stores: Store[] = [
   // Bogotá
   {
+    id: 1,
     name: "Samsung Store Calle 116",
     address: "Calle 116 #15b-94",
     phone: "7441176 Ext 1093",
@@ -34,6 +36,7 @@ export const stores: Store[] = [
     position: [4.701, -74.0426],
   },
   {
+    id: 2,
     name: "Samsung Store Centro Comercial Andino",
     address: "Carrera 11 # 82-71 Segundo piso al lado de Galeria Cano",
     phone: "7441176 Ext 1103",
@@ -45,6 +48,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Andino",
   },
   {
+    id: 3,
     name: "Samsung Store Centro Comercial Centro Mayor",
     address: "Cl. 38A Sur #34d-51 Primer piso al lado de Samsonite",
     phone: "7441176 Ext 1101",
@@ -56,6 +60,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Centro Mayor",
   },
   {
+    id: 4,
     name: "Samsung Store Centro Comercial Gran Plaza Bosa",
     address: "Cl. 65 Sur #51 N° 78 H Frente a YOI",
     phone: "744 1176 Ext 1109",
@@ -66,6 +71,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Gran Plaza Bosa",
   },
   {
+    id: 5,
     name: "Samsung Store Centro Comercial Hayuelos",
     address: "Cl. 20 # 82 - 52 Primer piso frente a Falabella y Starbucks",
     phone: "7441176 Ext 1077",
@@ -77,6 +83,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Hayuelos",
   },
   {
+    id: 6,
     name: "Samsung Store Centro Comercial Plaza Central",
     address: "Cra 65 # 11-50 Isla Primer piso al lado de Miniso",
     phone: "7441176 Ext 1099",
@@ -88,6 +95,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Plaza Central",
   },
   {
+    id: 7,
     name: "Samsung Store Centro Comercial Mallplaza (Calima)",
     address: "Avenida Cra 30 #19 Isla primer piso frente almacen BATA",
     phone: "7441176 Ext 1091",
@@ -98,6 +106,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Mallplaza",
   },
   {
+    id: 8,
     name: "Samsung Store Centro Comercial Multiplaza",
     address:
       "Calle 19 A # 72 - 57 Isla KA-09 Primer piso frente a Bosi y Chevignon",
@@ -110,6 +119,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Multiplaza",
   },
   {
+    id: 9,
     name: "Samsung Store Centro Comercial Nuestro Bogotá",
     address:
       "Av. Carrera 86 # 55A - 75 Engativá Primer piso entrada principal frente a Miniso",
@@ -121,6 +131,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Nuestro Bogotá",
   },
   {
+    id: 10,
     name: "Samsung Store Centro Comercial Parque La Colina",
     address: "Cra 58D # 146 - 51. Local 256",
     phone: "7441176 Ext 1038",
@@ -132,6 +143,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Parque La Colina",
   },
   {
+    id: 11,
     name: "Samsung Store Centro Comercial Plaza Imperial",
     address: "Avenida Cra 104 # 148-07 Isla Primer Piso frente a Koaj",
     phone: "7441176 Ext 1097",
@@ -143,6 +155,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Plaza Imperial",
   },
   {
+    id: 12,
     name: "Samsung Store Centro Comercial Santa Fe Bogotá",
     address:
       "Calle 185 No. 45 - 03 Isla primer piso plaza Francia frente a Jumbo",
@@ -155,6 +168,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Santa Fe",
   },
   {
+    id: 13,
     name: "Samsung Store Centro Comercial Tintal Plaza",
     address:
       "Cra. 86 # 6 - 37, Kennedy, Bogotá Primer piso por la entrada 4 al lado de la Isla de ETB",
@@ -166,6 +180,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Tintal Plaza",
   },
   {
+    id: 14,
     name: "Samsung Store Centro Comercial Unicentro Bogotá",
     address: "Carrera 15 # 124 - 30, Primer piso Isla frente a MNG",
     phone: "7441176 Ext 1041",
@@ -179,6 +194,7 @@ export const stores: Store[] = [
 
   // Bucaramanga
   {
+    id: 15,
     name: "Samsung Store Centro Comercial Cacique",
     address: "Transversal 93 N° 34 ­ 99 El Tejar. Local 432",
     phone: "7441176 Ext 1070",
@@ -190,6 +206,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Cacique",
   },
   {
+    id: 16,
     name: "Samsung Store Centro Comercial Caracolí",
     address:
       "Carrera 27 # 29-145 Cañaveral Isla primer piso frente a Velez y Adidas",
@@ -203,6 +220,7 @@ export const stores: Store[] = [
 
   // Cali
   {
+    id: 17,
     name: "Samsung Store Centro Comercial Chipichape",
     address: "Cl. 38 Nte. #6N – 45 Segundo Piso diagonal a Toy Smart",
     phone: "7441176 Ext 1117",
@@ -213,6 +231,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Chipichape",
   },
   {
+    id: 18,
     name: "Samsung Store Centro Comercial Jardín Plaza Cali",
     address: "Cra 98 # 16-200. L-161",
     phone: "7441176 Ext 1063",
@@ -223,6 +242,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Jardín Plaza",
   },
   {
+    id: 19,
     name: "Samsung Store Centro Comercial Mallplaza Cali",
     address:
       "Calle 5ta No. 52-140, Cali, está ubicado en el Nivel 1, al lado de las escaleras eléctricas, frente a Ikea",
@@ -234,6 +254,7 @@ export const stores: Store[] = [
     mall: "Centro Comercial Mallplaza",
   },
   {
+    id: 20,
     name: "Samsung Store Centro Comercial Unicentro Cali",
     address: "Cra. 100 #5-169, Las Vegas local 112",
     phone: "7441176 Ext 1059",
@@ -246,6 +267,7 @@ export const stores: Store[] = [
 
   // Chía
   {
+    id: 21,
     name: "Samsung Store Centro Comercial Fontanar (Chía)",
     address: "Vía Chía Km 2.5 Cajicá . Local 223",
     phone: "7441176 Ext 1047",
@@ -259,6 +281,7 @@ export const stores: Store[] = [
 
   // Cúcuta
   {
+    id: 22,
     name: "Samsung Store Centro Comercial Jardín Plaza Cúcuta",
     address: "Anillo vial oriental # 13-70. L-11C",
     phone: "7441176 Ext 1080",
@@ -272,6 +295,7 @@ export const stores: Store[] = [
 
   // Ibagué
   {
+    id: 23,
     name: "Samsung Store Centro Comercial La Estación",
     address: "Cl. 60 #12-2 23 Local 119",
     phone: "7441176 Ext 1055",
@@ -284,6 +308,7 @@ export const stores: Store[] = [
 
   // Manizales
   {
+    id: 24,
     name: "Samsung Store Centro Comercial Fundadores",
     address:
       "Calle 33 b # 20 03 Isla lateral al Banco Davivienda frente a BigJhon",

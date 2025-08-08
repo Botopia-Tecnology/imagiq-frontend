@@ -244,4 +244,3 @@ export const Ofertas = () => {
     </section>
   );
 };
-

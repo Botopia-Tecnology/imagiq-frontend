@@ -12,13 +12,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import {
-  Filter,
-  Grid3X3,
-  List,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Filter, Grid3X3, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
 import FilterSidebar, {
@@ -419,4 +413,3 @@ export default function ElectrodomesticosPage() {
     </div>
   );
 }
-      

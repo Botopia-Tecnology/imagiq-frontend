@@ -18,7 +18,10 @@ interface StoreCardProps {
   onDirectionsClick?: (store: Location) => void;
 }
 
-export const StoreCard: React.FC<StoreCardProps> = ({ store, onDirectionsClick }) => {
+export const StoreCard: React.FC<StoreCardProps> = ({
+  store,
+  onDirectionsClick,
+}) => {
   return (
     <div className="bg-white rounded-xl shadow-xl border border-gray-100 p-4 min-w-[300px] max-w-[340px] relative backdrop-blur-sm overflow-hidden">
       {/* Arrow pointing up to marker */}

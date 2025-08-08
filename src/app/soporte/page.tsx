@@ -15,7 +15,8 @@ export default function SupportPage() {
           Soporte al Cliente
         </h1>
         <p className="text-gray-600">
-          Esta página está en construcción. Pronto tendremos un sistema completo de soporte.
+          Esta página está en construcción. Pronto tendremos un sistema completo
+          de soporte.
         </p>
       </div>
     </div>

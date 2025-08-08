@@ -28,7 +28,7 @@ import televisoresImg from "../../../img/categorias/Tv_Monitores.png";
 const mockTelevisoresProducts = [
   {
     id: "samsung-qled-55",
-    name: "Samsung QLED 4K 55\" Q80C",
+    name: 'Samsung QLED 4K 55" Q80C',
     image: televisoresImg,
     colors: [
       { name: "black", hex: "#000000", label: "Negro" },
@@ -42,7 +42,7 @@ const mockTelevisoresProducts = [
   },
   {
     id: "samsung-crystal-43",
-    name: "Samsung Crystal UHD 4K 43\" CU7000",
+    name: 'Samsung Crystal UHD 4K 43" CU7000',
     image: televisoresImg,
     colors: [
       { name: "black", hex: "#000000", label: "Negro" },
@@ -254,4 +254,3 @@ export default function TelevisoresPage() {
     </div>
   );
 }
-      

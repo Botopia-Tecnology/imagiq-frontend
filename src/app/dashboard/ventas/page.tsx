@@ -15,7 +15,8 @@ export default function VentasPage() {
           Gestión de Ventas
         </h1>
         <p className="text-gray-600">
-          Dashboard de ventas en construcción. Aquí se mostrarán métricas y reportes detallados.
+          Dashboard de ventas en construcción. Aquí se mostrarán métricas y
+          reportes detallados.
         </p>
       </div>
     </div>

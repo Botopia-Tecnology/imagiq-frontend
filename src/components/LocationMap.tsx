@@ -408,7 +408,9 @@ export default function LocationMap() {
                 store={convertStoreToLocation(store)}
                 onDirectionsClick={(locationStore) => {
                   // Convert Location back to Store for the handler
-                  const originalStore = stores.find(s => s.name === locationStore.name);
+                  const originalStore = stores.find(
+                    (s) => s.name === locationStore.name
+                  );
                   if (originalStore) {
                     handleDirectionsClick(originalStore);
                   }

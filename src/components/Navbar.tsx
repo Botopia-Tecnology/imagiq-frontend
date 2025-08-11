@@ -29,13 +29,13 @@ const navigationItems = [
   {
     name: "Ofertas",
     href: "/tienda/outlet",
-    description: "Ofertas especiales hasta 70% OFF",
+
     category: "promociones",
   },
   {
     name: "Dispositivos móviles",
     href: "/productos/DispositivosMoviles",
-    description: "Smartphones, tablets y accesorios",
+
     category: "moviles",
   },
   {
@@ -93,6 +93,11 @@ export default function Navbar() {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
+  // Estados adicionales para posicionamiento de dropdowns
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    [key: string]: { top: number; left: number };
+  }>({});
+  const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   // Refs para mejorar el manejo de hover
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -193,6 +198,19 @@ export default function Navbar() {
       clearTimeout(dropdownTimeoutRef.current);
     }
     setActiveDropdown(dropdownName);
+
+    // Calcular la posición del dropdown basado en el elemento padre
+    const navItemElement = navItemRefs.current[dropdownName];
+    if (navItemElement) {
+      const rect = navItemElement.getBoundingClientRect();
+      setDropdownPosition({
+        ...dropdownPosition,
+        [dropdownName]: {
+          top: rect.bottom,
+          left: rect.left + rect.width / 2,
+        },
+      });
+    }
   };
 
   const handleDropdownLeave = () => {
@@ -204,30 +222,15 @@ export default function Navbar() {
   const renderDropdown = (itemName: string) => {
     if (activeDropdown !== itemName) return null;
 
-    const dropdownProps = {
-      onMouseEnter: () => handleDropdownEnter(itemName),
-      onMouseLeave: handleDropdownLeave,
-    };
+    const pos = dropdownPosition[itemName] || { top: 0, left: 0 };
 
     switch (itemName as DropdownItemType) {
       case "Dispositivos móviles":
-        return (
-          <div {...dropdownProps}>
-            <DispositivosMovilesDropdown />
-          </div>
-        );
+        return <DispositivosMovilesDropdown position={pos} />;
       case "Televisores y AV":
-        return (
-          <div {...dropdownProps}>
-            <TelevisionesDropdown />
-          </div>
-        );
+        return <TelevisionesDropdown position={pos} />;
       case "Electrodomésticos":
-        return (
-          <div {...dropdownProps}>
-            <ElectrodomesticosDropdown />
-          </div>
-        );
+        return <ElectrodomesticosDropdown position={pos} />;
       default:
         return null;
     }
@@ -286,27 +289,32 @@ export default function Navbar() {
       `}</style>
 
       <header
+        data-navbar="true"
         className={cn(
-          "text-white z-50 transition-all duration-300",
+          "text-white transition-all duration-300 w-full",
           isLoginPage ? "relative" : "sticky top-0",
           // Navbar blanco para páginas de productos
           isProductPage && "text-gray-900 bg-white shadow-md",
           // Ajustar altura cuando está scrolled
           isScrolled ? "shadow-lg" : ""
         )}
-        style={
-          !isProductPage
+        style={{
+          zIndex: 99999,
+          ...(!isProductPage
             ? {
                 background: "linear-gradient(to bottom, #1A4880, #24538F)",
               }
-            : {}
-        }
+            : {}),
+        }}
       >
         {/* Barra principal */}
-        <div className="w-full relative z-10">
-          <div className="flex items-center justify-between h-15 px-8">
+        <div
+          className="w-full relative overflow-hidden"
+          style={{ zIndex: 99999 }}
+        >
+          <div className="flex items-center justify-between h-15 px-4 md:px-8 max-w-full">
             {/* Logo Samsung-style */}
-            <div className="flex items-center">
+            <div className="flex items-center flex-shrink-0">
               <Link
                 href="/"
                 className={cn(
@@ -322,7 +330,7 @@ export default function Navbar() {
             </div>
 
             {/* Iconos de la derecha - solo visible en móvil o siempre según el diseño */}
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 md:space-x-6 flex-shrink-0">
               {/* Barra de búsqueda - solo en desktop */}
               <div className="hidden md:flex items-center group relative">
                 <form
@@ -341,9 +349,9 @@ export default function Navbar() {
                       isProductPage
                         ? "bg-gray-100 text-gray-900 placeholder-gray-500 focus:bg-gray-200"
                         : "bg-white/10 text-white placeholder-gray-300 focus:bg-white/20",
-                      "w-0 pl-0 pr-0 group-hover:w-80 group-hover:pl-4 group-hover:pr-12",
+                      "w-0 pl-0 pr-0 group-hover:w-64 lg:group-hover:w-80 group-hover:pl-4 group-hover:pr-12",
                       (isSearchFocused || searchQuery.length > 0) &&
-                        "w-80 pl-4 pr-12"
+                        "w-64 lg:w-80 pl-4 pr-12"
                     )}
                   />
                   <button
@@ -458,47 +466,54 @@ export default function Navbar() {
           {/* Menú de navegación principal - se oculta al hacer scroll */}
           <nav
             className={cn(
-              "hidden md:block transition-all duration-300 overflow-visible relative",
-              isScrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
+              "hidden md:block transition-all duration-300 relative",
+              isScrolled
+                ? "max-h-0 opacity-0 overflow-hidden"
+                : "max-h-20 opacity-100"
             )}
           >
-            <div className="flex items-center justify-center space-x-12 py-4 px-8">
-              {navigationItems.map((item) => (
-                <div
-                  key={item.name}
-                  className="relative"
-                  onMouseEnter={() => {
-                    if (hasDropdown(item.name)) {
-                      handleDropdownEnter(item.name);
-                    }
-                  }}
-                  onMouseLeave={handleDropdownLeave}
-                >
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      "text-md font-bold transition-all duration-300 whitespace-nowrap block py-3 px-4 rounded-lg",
-                      isProductPage
-                        ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                        : "text-white/90 hover:text-white hover:bg-white/10"
-                    )}
-                    onClick={() => handleNavClick(item)}
+            <div className="w-full overflow-x-auto">
+              <div className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
+                {navigationItems.map((item) => (
+                  <div
+                    key={item.name}
+                    ref={(el) => (navItemRefs.current[item.name] = el)}
+                    className="relative flex-shrink-0"
+                    onMouseEnter={() => {
+                      if (hasDropdown(item.name)) {
+                        handleDropdownEnter(item.name);
+                      }
+                    }}
+                    onMouseLeave={handleDropdownLeave}
                   >
-                    {item.name}
-                  </Link>
-
-                  {/* Dropdown rendering - Corregido para funcionar siempre */}
-                  {renderDropdown(item.name)}
-                </div>
-              ))}
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "text-sm lg:text-md font-bold transition-all duration-300 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg",
+                        isProductPage
+                          ? "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                          : "text-white/90 hover:text-white hover:bg-white/10"
+                      )}
+                      onClick={() => handleNavClick(item)}
+                    >
+                      {item.name}
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </div>
           </nav>
 
           {/* Contenedor fijo para dropdowns cuando navbar está collapsed */}
           {isScrolled && activeDropdown && (
-            <div className="absolute top-full left-0 w-full z-50">
+            <div
+              className="absolute top-full left-0 w-full"
+              style={{ zIndex: 999999 }}
+            >
               <div className="flex justify-center">
-                <div className="relative">{renderDropdown(activeDropdown)}</div>
+                <div className="relative" style={{ zIndex: 999999 }}>
+                  {renderDropdown(activeDropdown)}
+                </div>
               </div>
             </div>
           )}
@@ -634,6 +649,11 @@ export default function Navbar() {
           />
         )}
       </header>
+
+      {/* Renderizado de todos los dropdowns en el portal */}
+      <div id="dropdowns-container" className="dropdown-portal">
+        {activeDropdown && renderDropdown(activeDropdown)}
+      </div>
     </>
   );
 }

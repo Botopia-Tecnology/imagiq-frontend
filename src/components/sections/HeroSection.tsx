@@ -100,7 +100,10 @@ export default function HeroSection() {
   return (
     <section
       className="relative w-full h-[85vh] min-h-[700px] md:min-h-[800px] lg:min-h-[600px] overflow-hidden"
-      style={{ marginTop: "0px" }} // Cambiar de -10px a 0px para eliminar overlap
+      style={{
+        marginTop: "0px",
+        zIndex: 1,
+      }}
     >
       {/* Base background color */}
       <div

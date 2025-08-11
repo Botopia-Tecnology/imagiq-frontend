@@ -3,6 +3,13 @@
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
+interface DropdownProps {
+  position?: {
+    top: number;
+    left: number;
+  };
+}
+
 const dispositivosMoviles = [
   {
     name: "Smartphones",
@@ -17,7 +24,9 @@ const dispositivosMoviles = [
   },
 ];
 
-export default function DispositivosMovilesDropdown() {
+export default function DispositivosMovilesDropdown({
+  position = { top: 60, left: 250 },
+}: DropdownProps) {
   const handleItemClick = (itemName: string, href: string) => {
     posthogUtils.capture("dropdown_item_click", {
       category: "Dispositivos móviles",
@@ -27,17 +36,25 @@ export default function DispositivosMovilesDropdown() {
   };
 
   return (
-    <div className="absolute top-full left-12 transform -translate-x-1/6 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-3 px-5 min-w-[200px] z-[70] animate-dropdown-enter">
+    <div
+      data-dropdown="dispositivos-moviles"
+      className="fixed bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px]"
+      style={{
+        zIndex: 999999,
+        top: position.top + 5,
+        left: position.left - 100,
+        transform: "none",
+        boxShadow:
+          "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+      }}
+    >
       <div className="space-y-1.5">
-        {dispositivosMoviles.map((item, index) => (
+        {dispositivosMoviles.map((item) => (
           <Link
             key={item.name}
             href={item.href}
-            className="block text-gray-800 hover:text-gray-900 text-base font-medium py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-all duration-150 animate-dropdown-item"
+            className="block text-gray-800 hover:text-gray-900 text-base font-medium py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-all duration-150"
             onClick={() => handleItemClick(item.name, item.href)}
-            style={{
-              animationDelay: `${index * 30}ms`,
-            }}
           >
             {item.name}
           </Link>

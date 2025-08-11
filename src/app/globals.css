@@ -362,3 +362,76 @@ Purpose: Custom styling for interactive map and store cards
 END LEAFLET MAP CUSTOMIZATION
 =================================================================
 */
+
+/* 
+=================================================================
+NAVBAR DROPDOWNS - MAXIMUM Z-INDEX
+=================================================================
+*/
+
+/* Forzar z-index máximo para dropdowns del navbar */
+.navbar-dropdown {
+  z-index: 999999 !important;
+  position: absolute !important;
+}
+
+/* Asegurar que el navbar esté por encima de todo */
+header[data-navbar] {
+  z-index: 99999 !important;
+  position: sticky !important;
+}
+
+/* Hero section debe estar por debajo del navbar */
+section[data-hero] {
+  z-index: 1 !important;
+}
+
+/* Cualquier dropdown debe tener prioridad máxima */
+[data-dropdown] {
+  z-index: 999999 !important;
+  position: absolute !important;
+}
+
+/* 
+=================================================================
+NAVBAR DROPDOWNS - ULTRA PRIORITY
+=================================================================
+*/
+
+/* Portal contenedor de dropdowns */
+.dropdown-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  z-index: 999999;
+  pointer-events: none;
+}
+
+/* Hacer que solo los dropdowns activos reciban eventos */
+[data-dropdown] {
+  pointer-events: auto;
+  z-index: 999999;
+}
+
+/* Asegurarnos que los dropdowns siempre estén por encima */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  z-index: 99998;
+}
+
+/* SIMPLE scrollbar hiding ONLY for specific elements */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}

@@ -435,3 +435,120 @@ body::after {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* 
+=================================================================
+GIF PAUSE CONTROL
+=================================================================
+*/
+
+@keyframes gifPause {
+  to {
+    visibility: hidden;
+  }
+}
+
+.gif-paused img {
+  /* Técnica para pausar GIFs en diferentes navegadores */
+  animation-play-state: paused !important;
+  -webkit-animation-play-state: paused !important;
+}
+
+/* 
+=================================================================
+GIF PAUSE CONTROL - ENHANCED VERSION
+=================================================================
+*/
+
+/* Contenedor para la imagen estática */
+.static-image-container {
+  position: relative;
+}
+
+.static-image-container img {
+  /* Asegura que la imagen estática no se anime */
+  animation: none !important;
+  -webkit-animation: none !important;
+}
+
+/* Asegura que el GIF no se reproduzca en Firefox */
+@-moz-document url-prefix() {
+  .static-image-container img {
+    visibility: visible !important;
+  }
+}
+
+/* Ajuste para Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .static-image-container img {
+      -webkit-animation: none !important;
+    }
+  }
+}
+
+/* Ajuste para Chrome */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .static-image-container img {
+    animation: none !important;
+  }
+}
+
+/* 
+=================================================================
+GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
+=================================================================
+*/
+
+/* Contenedor para la imagen estática */
+.static-image-container {
+  position: relative;
+}
+
+.static-image-container img {
+  /* Asegura que la imagen estática no se anime */
+  animation: none !important;
+  -webkit-animation: none !important;
+}
+
+/* Asegura que el GIF no se reproduzca en Firefox */
+@-moz-document url-prefix() {
+  .static-image-container img {
+    visibility: visible !important;
+  }
+}
+
+/* Ajuste para Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .static-image-container img {
+      -webkit-animation: none !important;
+    }
+  }
+}
+
+/* Ajuste para Chrome */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .static-image-container img {
+    animation: none !important;
+  }
+}
+
+/* Animaciones para transiciones suaves entre GIF y estático */
+@keyframes fadeIn {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Clase para transición suave al finalizar GIF */
+.gif-transition {
+  transition: opacity 0.3s ease-out;
+}

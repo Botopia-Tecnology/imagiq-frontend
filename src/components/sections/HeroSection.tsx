@@ -1,20 +1,16 @@
 /**
  * 🦸 HERO SECTION - IMAGIQ ECOMMERCE
- *
- * Sección principal de la landing page con:
- * - Banner principal con ofertas destacadas
- * - CTAs de conversión principales
- * - Integración con PostHog para tracking
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import gifAudifonos from "@/img/gif/gif_audifonos.gif";
 import samsungLogo from "@/img/Samsung_black.png";
+import { useGifOnce } from "@/hooks/useGifOnce";
 
 // Hero slides data matching Samsung style
 const heroSlides = [
@@ -63,6 +59,14 @@ export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
+  // Usar el hook personalizado con transición suave
+  // Duración del GIF: 2950ms, Duración de fade: 400ms
+  const { isGifPlaying, imgRef, staticImageUrl, isTransitioning } = useGifOnce(
+    gifAudifonos.src,
+    2950,
+    400
+  );
+
   // Auto-slide functionality
   useEffect(() => {
     if (!isAutoPlaying) return;
@@ -73,6 +77,16 @@ export default function HeroSection() {
 
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
+
+  // Función para determinar qué imagen mostrar
+  const getImageSrc = (slideData) => {
+    // Si la animación inicial no se ha completado, mostrar el GIF
+    if (isGifPlaying) {
+      return slideData.gifSrc;
+    }
+    // Si ya se completó, mostrar la imagen estática
+    return slideData.gifSrc; // Fallback al GIF si no hay imagen estática
+  };
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
@@ -104,6 +118,7 @@ export default function HeroSection() {
         marginTop: "0px",
         zIndex: 1,
       }}
+      data-hero="true"
     >
       {/* Base background color */}
       <div
@@ -147,21 +162,47 @@ export default function HeroSection() {
               </h2>
             </div>
 
-            {/* GIF centrado en móvil */}
+            {/* GIF centrado en móvil - CON TRANSICIÓN SUAVE */}
             <div className="flex justify-center items-center">
               <div className="relative">
-                <Image
-                  src={currentSlideData.gifSrc}
-                  alt="Galaxy Buds Core"
-                  width={600}
-                  height={600}
-                  className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain"
-                  style={{
-                    filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
-                  }}
-                  unoptimized
-                  priority
-                />
+                {isGifPlaying ? (
+                  // GIF animado con transición suave
+                  <div
+                    className={`transition-opacity duration-300 ${
+                      isTransitioning ? "opacity-50" : "opacity-100"
+                    }`}
+                  >
+                    <Image
+                      ref={imgRef}
+                      src={heroSlides[currentSlide].gifSrc}
+                      alt="Galaxy Buds Core"
+                      width={600}
+                      height={600}
+                      className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain"
+                      style={{
+                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
+                      }}
+                      unoptimized={true}
+                      priority
+                    />
+                  </div>
+                ) : (
+                  // Imagen estática con transición de entrada
+                  <div className="animate-fade-in">
+                    <Image
+                      src={staticImageUrl || heroSlides[currentSlide].gifSrc}
+                      alt="Galaxy Buds Core"
+                      width={600}
+                      height={600}
+                      className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain"
+                      style={{
+                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
+                      }}
+                      unoptimized={false}
+                      priority
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -196,21 +237,47 @@ export default function HeroSection() {
 
           {/* Layout desktop - horizontal como antes */}
           <div className="hidden lg:flex items-center justify-between h-full">
-            {/* Left side - Product GIF desktop */}
+            {/* Left side - Product GIF desktop - CON TRANSICIÓN SUAVE */}
             <div className="flex-1 flex justify-center items-center">
               <div className="relative">
-                <Image
-                  src={currentSlideData.gifSrc}
-                  alt="Galaxy Buds Core"
-                  width={600}
-                  height={600}
-                  className="w-[500px] h-[500px] xl:w-[600px] xl:h-[600px] object-contain"
-                  style={{
-                    filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
-                  }}
-                  unoptimized
-                  priority
-                />
+                {isGifPlaying ? (
+                  // GIF animado con transición suave
+                  <div
+                    className={`transition-opacity duration-300 ${
+                      isTransitioning ? "opacity-50" : "opacity-100"
+                    }`}
+                  >
+                    <Image
+                      ref={imgRef}
+                      src={heroSlides[currentSlide].gifSrc}
+                      alt="Galaxy Buds Core"
+                      width={600}
+                      height={600}
+                      className="w-[500px] h-[500px] xl:w-[600px] xl:h-[600px] object-contain"
+                      style={{
+                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
+                      }}
+                      unoptimized={true}
+                      priority
+                    />
+                  </div>
+                ) : (
+                  // Imagen estática con transición de entrada
+                  <div className="animate-fade-in">
+                    <Image
+                      src={staticImageUrl || heroSlides[currentSlide].gifSrc}
+                      alt="Galaxy Buds Core"
+                      width={600}
+                      height={600}
+                      className="w-[500px] h-[500px] xl:w-[600px] xl:h-[600px] object-contain"
+                      style={{
+                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
+                      }}
+                      unoptimized={false}
+                      priority
+                    />
+                  </div>
+                )}
               </div>
             </div>
 

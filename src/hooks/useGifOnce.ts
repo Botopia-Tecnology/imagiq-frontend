@@ -5,13 +5,13 @@
  * - Evita cambios bruscos al terminar la animación
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, MutableRefObject } from "react";
 
 type UseGifOnceReturn = {
   isGifPlaying: boolean;
-  imgRef: React.RefObject<HTMLImageElement>;
+  imgRef: MutableRefObject<HTMLImageElement | null>; // Cambiado a MutableRefObject
   staticImageUrl: string | null;
-  isTransitioning: boolean; // Estado adicional para transiciones suaves
+  isTransitioning: boolean;
 };
 
 export const useGifOnce = (
@@ -22,7 +22,8 @@ export const useGifOnce = (
   const [isGifPlaying, setIsGifPlaying] = useState(true);
   const [staticImageUrl, setStaticImageUrl] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
+  // Usar MutableRefObject en lugar de RefObject
+  const imgRef = useRef<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const initialLoadRef = useRef(true);
 
@@ -103,5 +104,6 @@ export const useGifOnce = (
     }
   };
 
+  // Retornamos el objeto con los valores y referencias necesarios
   return { isGifPlaying, imgRef, staticImageUrl, isTransitioning };
 };

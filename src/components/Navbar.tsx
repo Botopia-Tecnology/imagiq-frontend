@@ -1,17 +1,10 @@
 /**
  * 🧭 NAVBAR PRINCIPAL - IMAGIQ ECOMMERCE
- *
- * Componente de navegación empresarial con:
- * - Diseño idéntico a Samsung Store de las imágenes
- * - Funcionalidad de scroll para ocultar menú de navegación
- * - Iconos a la derecha solo en dispositivos móviles
- * - Sin línea divisoria
- * - Integración completa con PostHog para tracking
  */
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, RefCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Search, MapPin, User, ShoppingCart, Menu, X } from "lucide-react";
@@ -253,6 +246,16 @@ export default function Navbar() {
     pathname.startsWith("/productos") ||
     pathname.includes("/DispositivosMoviles");
 
+  // Corrección del tipo para la función ref
+  const setNavItemRef: RefCallback<HTMLDivElement> = (el) => {
+    if (el) {
+      const itemName = el.getAttribute("data-item-name");
+      if (itemName) {
+        navItemRefs.current[itemName] = el;
+      }
+    }
+  };
+
   return (
     <>
       <style jsx global>{`
@@ -477,7 +480,8 @@ export default function Navbar() {
                 {navigationItems.map((item) => (
                   <div
                     key={item.name}
-                    ref={(el) => (navItemRefs.current[item.name] = el)}
+                    data-item-name={item.name}
+                    ref={setNavItemRef}
                     className="relative flex-shrink-0"
                     onMouseEnter={() => {
                       if (hasDropdown(item.name)) {

@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
@@ -77,16 +77,6 @@ export default function HeroSection() {
 
     return () => clearInterval(interval);
   }, [isAutoPlaying]);
-
-  // Función para determinar qué imagen mostrar
-  const getImageSrc = (slideData) => {
-    // Si la animación inicial no se ha completado, mostrar el GIF
-    if (isGifPlaying) {
-      return slideData.gifSrc;
-    }
-    // Si ya se completó, mostrar la imagen estática
-    return slideData.gifSrc; // Fallback al GIF si no hay imagen estática
-  };
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);

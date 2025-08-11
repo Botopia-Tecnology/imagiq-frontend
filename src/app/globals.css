@@ -552,3 +552,7 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 .gif-transition {
   transition: opacity 0.3s ease-out;
 }
+/* Clase para transición suave al finalizar GIF */
+.gif-transition {
+  transition: opacity 0.3s ease-out;
+}

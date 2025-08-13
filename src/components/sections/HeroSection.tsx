@@ -5,11 +5,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import gifAudifonos from "@/img/gif/gif_audifonos.gif";
-import samsungLogo from "@/img/Samsung_black.png";
+import samsungLogoBlack from "@/img/Samsung_black.png";
+import samsungLogoWhite from "@/img/logo_Samsung.png";
 import { useGifOnce } from "@/hooks/useGifOnce";
 
 // Hero slides data matching Samsung style
@@ -56,6 +58,9 @@ const heroSlides = [
 ];
 
 export default function HeroSection() {
+  const pathname = usePathname();
+  const isHome = pathname === "/";
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
@@ -72,7 +77,7 @@ export default function HeroSection() {
     if (!isAutoPlaying) return;
 
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+      setCurrentSlide((prev: number) => (prev + 1) % heroSlides.length);
     }, 5000);
 
     return () => clearInterval(interval);
@@ -87,14 +92,14 @@ export default function HeroSection() {
 
   const goToPrevious = () => {
     setCurrentSlide(
-      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length
+      (prev: number) => (prev - 1 + heroSlides.length) % heroSlides.length
     );
     setIsAutoPlaying(false);
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
 
   const goToNext = () => {
-    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+    setCurrentSlide((prev: number) => (prev + 1) % heroSlides.length);
     setIsAutoPlaying(false);
     setTimeout(() => setIsAutoPlaying(true), 10000);
   };
@@ -103,11 +108,8 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative w-full h-[85vh] min-h-[700px] md:min-h-[800px] lg:min-h-[600px] overflow-hidden"
-      style={{
-        marginTop: "0px",
-        zIndex: 1,
-      }}
+      className="relative w-full min-h-screen h-[70rem] mt-[-18%] md:mt-[-10%] overflow-hidden"
+      style={{ zIndex: 1 }}
       data-hero="true"
     >
       {/* Base background color */}
@@ -139,9 +141,12 @@ export default function HeroSection() {
 
       {/* Slide container - responsive layout optimizado para móvil */}
       <div className="relative w-full h-full flex items-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full max-w-7xl py-8 lg:py-0">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full max-w-7xl">
           {/* Layout móvil - columna única centrada */}
-          <div className="flex flex-col items-center justify-center h-full space-y-6 lg:hidden">
+          <div
+            className="flex flex-col items-center justify-center h-full space-y-6 lg:hidden"
+            style={{ minHeight: "calc(100vh - 0px)" }}
+          >
             {/* Títulos en móvil */}
             <div className="text-center">
               <h1 className="text-3xl sm:text-4xl font-bold mb-3 leading-tight text-white drop-shadow-lg">
@@ -228,7 +233,10 @@ export default function HeroSection() {
           {/* Layout desktop - horizontal como antes */}
           <div className="hidden lg:flex items-center justify-between h-full">
             {/* Left side - Product GIF desktop - CON TRANSICIÓN SUAVE */}
-            <div className="flex-1 flex justify-center items-center">
+            <div
+              className="flex-1 flex justify-center items-center"
+              style={{ minHeight: "calc(100vh - 0px)" }}
+            >
               <div className="relative">
                 {isGifPlaying ? (
                   // GIF animado con transición suave
@@ -356,11 +364,14 @@ export default function HeroSection() {
       {/* Samsung logo - responsive sizing and positioning */}
       <div className="absolute bottom-6 sm:bottom-8 lg:bottom-12 right-4 sm:right-6 lg:right-12">
         <Image
-          src={samsungLogo.src}
+          src={isHome ? samsungLogoWhite : samsungLogoBlack}
           alt="Samsung"
           width={120}
           height={40}
-          className="h-6 sm:h-8 lg:h-10 w-auto opacity-80"
+          className={cn(
+            "h-6 sm:h-8 lg:h-10 w-auto opacity-80",
+            isHome ? "" : ""
+          )}
           priority
         />
       </div>

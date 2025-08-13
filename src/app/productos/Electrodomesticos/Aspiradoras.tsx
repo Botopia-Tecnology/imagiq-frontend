@@ -1,3 +1,7 @@
+/**
+ * 🧭 SECCIÓN DE ASPIRADORAS - IMAGIQ ECOMMERCE
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,101 +15,120 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+
+import aspiradoraImg from "../../../img/Electrodomesticos/Electrodomesticos3.png";
 import refrigeradorImg from "../../../img/Electrodomesticos/Electrodomesticos1.png";
 import lavadoraImg from "../../../img/Electrodomesticos/Electrodomesticos2.png";
 import microondasImg from "../../../img/Electrodomesticos/Electrodomesticos4.png";
-import aspiradoraImg from "../../../img/Electrodomesticos/Electrodomesticos3.png";
 
 const applianceCategories: Category[] = [
   {
-    id: "refrigeradores",
-    name: "Refrigeradores",
-    subtitle: "",
-    image: refrigeradorImg,
-    href: "/productos/Electrodomesticos?section=refrigeradores",
-  },
-  {
-    id: "lavadoras",
-    name: "Lavadoras",
-    subtitle: "",
-    image: lavadoraImg,
-    href: "/productos/Electrodomesticos?section=lavadoras",
-  },
-  {
-    id: "microondas",
-    name: "Microondas",
-    subtitle: "",
-    image: microondasImg,
-    href: "/productos/Electrodomesticos?section=microondas",
-  },
-  {
-    id: "aspiradoras",
+    id: "1",
     name: "Aspiradoras",
-    subtitle: "",
     image: aspiradoraImg,
-    href: "/productos/Electrodomesticos?section=aspiradoras",
+    trackingPrefix: "aspiradora_category",
+  },
+  {
+    id: "2",
+    name: "Refrigeradores",
+    image: refrigeradorImg,
+    trackingPrefix: "refrigerador_category",
+  },
+  {
+    id: "3",
+    name: "Lavadoras",
+    image: lavadoraImg,
+    trackingPrefix: "lavadora_category",
+  },
+  {
+    id: "4",
+    name: "Microondas",
+    image: microondasImg,
+    trackingPrefix: "microondas_category",
   },
 ];
 
-const refrigeradoresFilters: FilterConfig = {
-  tipo: [
-    "French Door",
-    "Side by Side",
-    "Top Freezer",
-    "Bottom Freezer",
-    "Multi-Door",
-  ],
-  capacidad: ["<400L", "400-500L", "500-600L", ">600L"],
-  color: ["Inox", "Negro", "Blanco", "Gris", "Beige"],
-  eficienciaEnergetica: ["A+++", "A++", "A+", "A"],
-  caracteristicas: [
-    "Family Hub",
-    "Dispensador de agua/hielo",
-    "No Frost",
-    "Twin Cooling",
-    "WiFi",
-    "Compresor Digital Inverter",
-  ],
-  rangoPrecio: [
-    { label: "Menos de $1.000.000", min: 0, max: 1000000 },
-    { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
-    { label: "$2.000.000 - $4.000.000", min: 2000000, max: 4000000 },
-    { label: "Más de $4.000.000", min: 4000000, max: Infinity },
-  ],
+const aspiradorasFilters: FilterConfig = {
+  tipo: {
+    label: "Tipo",
+    options: [
+      { value: "vertical", label: "Vertical" },
+      { value: "robot", label: "Robot" },
+      { value: "de_cylinder", label: "De cilindro" },
+    ],
+  },
+  precio: {
+    label: "Rango de precio",
+    options: [
+      { value: "0-100", label: "Menos de $100" },
+      { value: "100-300", label: "Entre $100 y $300" },
+      { value: "300-500", label: "Entre $300 y $500" },
+      { value: "500+", label: "Más de $500" },
+    ],
+  },
+  marca: {
+    label: "Marca",
+    options: [
+      { value: "samsung", label: "Samsung" },
+      { value: "lg", label: "LG" },
+      { value: "whirlpool", label: "Whirlpool" },
+      { value: "philips", label: "Philips" },
+    ],
+  },
 };
 
-const refrigeradorProducts = [
+const aspiradoraProducts = [
   {
-    id: "rf28r7351sr",
-    name: "Samsung Refrigerador French Door 27.4 pies RF28R7351SR",
-    image: refrigeradorImg,
-    colors: [
-      { name: "steel", hex: "#71717A", label: "Acero Inoxidable" },
-    ] as ProductColor[],
-    rating: 4.8,
-    reviewCount: 452,
-    price: "$ 4.499.000",
-    originalPrice: "$ 4.999.000",
-    discount: "-10%",
+    id: "1",
+    name: "Aspiradora Samsung Jet 90",
+    image: aspiradoraImg,
+    colors: ["#ffffff", "#000000"],
+    rating: 4.5,
+    reviewCount: 120,
+    price: 299.99,
+    originalPrice: 399.99,
+    discount: 25,
     isNew: true,
   },
   {
-    id: "rs27t5200s9",
-    name: "Samsung Refrigerador Side by Side 27 pies RS27T5200S9",
-    image: refrigeradorImg,
-    colors: [
-      { name: "steel", hex: "#71717A", label: "Acero Inoxidable" },
-      { name: "black", hex: "#000000", label: "Negro" },
-    ] as ProductColor[],
-    rating: 4.6,
-    reviewCount: 326,
-    price: "$ 2.899.000",
-    originalPrice: "$ 3.299.000",
-    discount: "-12%",
+    id: "2",
+    name: "Aspiradora LG CordZero",
+    image: aspiradoraImg,
+    colors: ["#ffffff"],
+    rating: 4.7,
+    reviewCount: 95,
+    price: 349.99,
+    originalPrice: 449.99,
+    discount: 22,
+    isNew: false,
+  },
+  {
+    id: "3",
+    name: "Aspiradora de cilindro Whirlpool",
+    image: aspiradoraImg,
+    colors: ["#ff0000", "#0000ff"],
+    rating: 4.2,
+    reviewCount: 80,
+    price: 199.99,
+    originalPrice: 249.99,
+    discount: 20,
+    isNew: false,
+  },
+  {
+    id: "4",
+    name: "Robot Aspirador Philips",
+    image: aspiradoraImg,
+    colors: ["#000000"],
+    rating: 4.8,
+    reviewCount: 60,
+    price: 499.99,
+    originalPrice: 599.99,
+    discount: 16,
+    isNew: true,
   },
 ];
 
-export default function RefrigeradoresSection() {
+export default function AspiradorasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
@@ -113,11 +136,11 @@ export default function RefrigeradoresSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(16);
+  const [resultCount] = useState(8);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
-      section: "refrigeradores",
+      section: "aspiradoras",
       category: "electrodomesticos",
     });
   }, []);
@@ -149,20 +172,20 @@ export default function RefrigeradoresSection() {
     <div className="min-h-screen bg-white">
       <CategorySlider
         categories={applianceCategories}
-        trackingPrefix="refrigerador_category"
+        trackingPrefix="aspiradora_category"
       />
 
       <div className="container mx-auto px-6 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <FilterSidebar
-              filterConfig={refrigeradoresFilters}
+              filterConfig={aspiradorasFilters}
               filters={filters}
               onFilterChange={handleFilterChange}
               resultCount={resultCount}
               expandedFilters={expandedFilters}
               onToggleFilter={toggleFilter}
-              trackingPrefix="refrigerador_filter"
+              trackingPrefix="aspiradora_filter"
             />
           </aside>
 
@@ -175,7 +198,7 @@ export default function RefrigeradoresSection() {
                   : "grid-cols-1"
               )}
             >
-              {refrigeradorProducts.map((product) => (
+              {aspiradoraProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -194,21 +217,21 @@ export default function RefrigeradoresSection() {
                       product_name: product.name,
                       product_color: color,
                       product_price: product.price,
-                      category: "refrigeradores",
+                      category: "aspiradoras",
                     });
                   }}
                   onMoreInfo={(productId: string) => {
                     posthogUtils.capture("product_info", {
                       product_id: productId,
                       product_name: product.name,
-                      category: "refrigeradores",
+                      category: "aspiradoras",
                     });
                   }}
                   onToggleFavorite={(productId: string) => {
                     posthogUtils.capture("toggle_favorite", {
                       product_id: productId,
                       product_name: product.name,
-                      category: "refrigeradores",
+                      category: "aspiradoras",
                     });
                   }}
                   className={viewMode === "list" ? "flex-row" : ""}
@@ -222,13 +245,13 @@ export default function RefrigeradoresSection() {
       <MobileFilterModal
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
-        filterConfig={refrigeradoresFilters}
+        filterConfig={aspiradorasFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
         resultCount={resultCount}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
-        trackingPrefix="refrigerador_filter"
+        trackingPrefix="aspiradora_filter"
       />
     </div>
   );

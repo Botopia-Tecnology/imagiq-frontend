@@ -16,6 +16,7 @@ const publicRoutes = [
   "/",
   "/productos",
   "/productos/DispositivosMoviles",
+  "/productos/Electrodomesticos", // <-- Añade esta línea
   "/login",
   "/register",
   "/soporte",
@@ -27,6 +28,14 @@ const adminRoutes = ["/dashboard"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Permitir acceso público a todas las subrutas de Electrodomesticos igual que DispositivosMoviles
+  if (
+    pathname.startsWith("/productos/DispositivosMoviles") ||
+    pathname.startsWith("/productos/Electrodomesticos")
+  ) {
+    return NextResponse.next();
+  }
 
   // Check if user is authenticated (token in cookies/headers)
   const token = request.cookies.get("auth-token")?.value;

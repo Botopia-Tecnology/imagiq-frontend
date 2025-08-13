@@ -11,6 +11,7 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import aireImg from "../../../img/Electrodomesticos/Electrodomesticos4.png";
 import refrigeradorImg from "../../../img/Electrodomesticos/Electrodomesticos1.png";
 import lavadoraImg from "../../../img/Electrodomesticos/Electrodomesticos2.png";
 import microondasImg from "../../../img/Electrodomesticos/Electrodomesticos4.png";
@@ -45,67 +46,68 @@ const applianceCategories: Category[] = [
     image: aspiradoraImg,
     href: "/productos/Electrodomesticos?section=aspiradoras",
   },
+  {
+    id: "aire-acondicionado",
+    name: "Aire Acondicionado",
+    subtitle: "",
+    image: aireImg,
+    href: "/productos/Electrodomesticos?section=aire-acondicionado",
+  },
 ];
 
-const refrigeradoresFilters: FilterConfig = {
-  tipo: [
-    "French Door",
-    "Side by Side",
-    "Top Freezer",
-    "Bottom Freezer",
-    "Multi-Door",
-  ],
-  capacidad: ["<400L", "400-500L", "500-600L", ">600L"],
-  color: ["Inox", "Negro", "Blanco", "Gris", "Beige"],
+const aireFilters: FilterConfig = {
+  tipo: ["Split", "Inverter", "Portátil", "Cassette", "Ventana"],
+  capacidad: ["9000 BTU", "12000 BTU", "18000 BTU", "24000 BTU"],
+  color: ["Blanco", "Gris", "Negro"],
   eficienciaEnergetica: ["A+++", "A++", "A+", "A"],
   caracteristicas: [
-    "Family Hub",
-    "Dispensador de agua/hielo",
-    "No Frost",
-    "Twin Cooling",
     "WiFi",
-    "Compresor Digital Inverter",
+    "Filtro antibacteriano",
+    "Deshumidificador",
+    "Auto limpieza",
+    "Silencioso",
+    "Control remoto",
   ],
   rangoPrecio: [
-    { label: "Menos de $1.000.000", min: 0, max: 1000000 },
-    { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
-    { label: "$2.000.000 - $4.000.000", min: 2000000, max: 4000000 },
-    { label: "Más de $4.000.000", min: 4000000, max: Infinity },
+    { label: "Menos de $1.500.000", min: 0, max: 1500000 },
+    { label: "$1.500.000 - $2.500.000", min: 1500000, max: 2500000 },
+    { label: "Más de $2.500.000", min: 2500000, max: Infinity },
   ],
 };
 
-const refrigeradorProducts = [
+const aireProducts = [
   {
-    id: "rf28r7351sr",
-    name: "Samsung Refrigerador French Door 27.4 pies RF28R7351SR",
-    image: refrigeradorImg,
+    id: "ar12t93",
+    name: "Samsung Aire Acondicionado Split Inverter 12000 BTU AR12T93",
+    image: aireImg,
     colors: [
-      { name: "steel", hex: "#71717A", label: "Acero Inoxidable" },
+      { name: "white", hex: "#FFFFFF", label: "Blanco" },
+      { name: "gray", hex: "#808080", label: "Gris" },
     ] as ProductColor[],
     rating: 4.8,
-    reviewCount: 452,
-    price: "$ 4.499.000",
-    originalPrice: "$ 4.999.000",
-    discount: "-10%",
+    reviewCount: 45,
+    price: "$ 2.199.000",
+    originalPrice: "$ 2.499.000",
+    discount: "-12%",
     isNew: true,
   },
   {
-    id: "rs27t5200s9",
-    name: "Samsung Refrigerador Side by Side 27 pies RS27T5200S9",
-    image: refrigeradorImg,
+    id: "ar18t93",
+    name: "Samsung Aire Acondicionado Split Inverter 18000 BTU AR18T93",
+    image: aireImg,
     colors: [
-      { name: "steel", hex: "#71717A", label: "Acero Inoxidable" },
-      { name: "black", hex: "#000000", label: "Negro" },
+      { name: "white", hex: "#FFFFFF", label: "Blanco" },
+      { name: "gray", hex: "#808080", label: "Gris" },
     ] as ProductColor[],
-    rating: 4.6,
-    reviewCount: 326,
-    price: "$ 2.899.000",
-    originalPrice: "$ 3.299.000",
-    discount: "-12%",
+    rating: 4.7,
+    reviewCount: 32,
+    price: "$ 2.799.000",
+    originalPrice: "$ 3.099.000",
+    discount: "-10%",
   },
 ];
 
-export default function RefrigeradoresSection() {
+export default function AireAcondicionadoSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
@@ -113,11 +115,11 @@ export default function RefrigeradoresSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(16);
+  const [resultCount] = useState(5);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
-      section: "refrigeradores",
+      section: "aire-acondicionado",
       category: "electrodomesticos",
     });
   }, []);
@@ -149,20 +151,20 @@ export default function RefrigeradoresSection() {
     <div className="min-h-screen bg-white">
       <CategorySlider
         categories={applianceCategories}
-        trackingPrefix="refrigerador_category"
+        trackingPrefix="aire_category"
       />
 
       <div className="container mx-auto px-6 py-8">
         <div className="flex gap-8">
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <FilterSidebar
-              filterConfig={refrigeradoresFilters}
+              filterConfig={aireFilters}
               filters={filters}
               onFilterChange={handleFilterChange}
               resultCount={resultCount}
               expandedFilters={expandedFilters}
               onToggleFilter={toggleFilter}
-              trackingPrefix="refrigerador_filter"
+              trackingPrefix="aire_filter"
             />
           </aside>
 
@@ -175,7 +177,7 @@ export default function RefrigeradoresSection() {
                   : "grid-cols-1"
               )}
             >
-              {refrigeradorProducts.map((product) => (
+              {aireProducts.map((product) => (
                 <ProductCard
                   key={product.id}
                   id={product.id}
@@ -194,21 +196,21 @@ export default function RefrigeradoresSection() {
                       product_name: product.name,
                       product_color: color,
                       product_price: product.price,
-                      category: "refrigeradores",
+                      category: "aire-acondicionado",
                     });
                   }}
                   onMoreInfo={(productId: string) => {
                     posthogUtils.capture("product_info", {
                       product_id: productId,
                       product_name: product.name,
-                      category: "refrigeradores",
+                      category: "aire-acondicionado",
                     });
                   }}
                   onToggleFavorite={(productId: string) => {
                     posthogUtils.capture("toggle_favorite", {
                       product_id: productId,
                       product_name: product.name,
-                      category: "refrigeradores",
+                      category: "aire-acondicionado",
                     });
                   }}
                   className={viewMode === "list" ? "flex-row" : ""}
@@ -222,13 +224,13 @@ export default function RefrigeradoresSection() {
       <MobileFilterModal
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
-        filterConfig={refrigeradoresFilters}
+        filterConfig={aireFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
         resultCount={resultCount}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
-        trackingPrefix="refrigerador_filter"
+        trackingPrefix="aire_filter"
       />
     </div>
   );

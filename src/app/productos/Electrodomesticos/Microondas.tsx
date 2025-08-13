@@ -19,18 +19,17 @@ const navigationItems = [
   {
     name: "Ofertas",
     href: "/tienda/outlet",
-
     category: "promociones",
   },
   {
     name: "Dispositivos móviles",
     href: "/productos/DispositivosMoviles",
-
     category: "moviles",
   },
   {
     name: "Televisores y AV",
     href: "/tienda/televisores",
+    description: "Smart TVs, audio y video",
     category: "televisores",
   },
   {
@@ -211,11 +210,11 @@ export default function Navbar() {
 
     switch (itemName as DropdownItemType) {
       case "Dispositivos móviles":
-        return null; // <DispositivosMovilesDropdown position={pos} />;
+        return null;
       case "Televisores y AV":
-        return null; // <TelevisionesDropdown position={pos} />;
+        return null;
       case "Electrodomésticos":
-        return null; // <ElectrodomesticosDropdown position={pos} />;
+        return null;
       default:
         return null;
     }

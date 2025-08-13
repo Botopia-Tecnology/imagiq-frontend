@@ -3,30 +3,30 @@
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
-interface DropdownProps {
-  position?: {
-    top: number;
-    left: number;
-  };
-}
-
 const dispositivosMoviles = [
   {
     name: "Smartphones",
     href: "/productos/DispositivosMoviles?section=smartphones",
   },
-  { name: "Tabletas", href: "/productos/DispositivosMoviles?section=tabletas" },
-  { name: "Relojes", href: "/productos/DispositivosMoviles?section=relojes" },
-  { name: "Galaxy Buds", href: "/productos/DispositivosMoviles?section=buds" },
+  {
+    name: "Tabletas",
+    href: "/productos/DispositivosMoviles?section=tabletas",
+  },
+  {
+    name: "Relojes",
+    href: "/productos/DispositivosMoviles?section=relojes",
+  },
+  {
+    name: "Galaxy Buds",
+    href: "/productos/DispositivosMoviles?section=buds",
+  },
   {
     name: "Accesorios",
     href: "/productos/DispositivosMoviles?section=accesorios",
   },
 ];
 
-export default function DispositivosMovilesDropdown({
-  position = { top: 60, left: 250 },
-}: DropdownProps) {
+export default function DispositivosMovilesDropdown() {
   const handleItemClick = (itemName: string, href: string) => {
     posthogUtils.capture("dropdown_item_click", {
       category: "Dispositivos móviles",
@@ -38,15 +38,7 @@ export default function DispositivosMovilesDropdown({
   return (
     <div
       data-dropdown="dispositivos-moviles"
-      className="fixed bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px]"
-      style={{
-        zIndex: 999999,
-        top: position.top + 5,
-        left: position.left - 100,
-        transform: "none",
-        boxShadow:
-          "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-      }}
+      className="absolute top-full left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px] transition-all duration-200"
     >
       <div className="space-y-1.5">
         {dispositivosMoviles.map((item) => (

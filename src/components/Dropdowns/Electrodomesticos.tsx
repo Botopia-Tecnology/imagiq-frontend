@@ -9,13 +9,6 @@
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
-interface DropdownProps {
-  position?: {
-    top: number;
-    left: number;
-  };
-}
-
 const categories = [
   {
     name: "Refrigeradores",
@@ -43,9 +36,7 @@ const categories = [
   },
 ];
 
-export default function ElectrodomesticosDropdown({
-  position = { top: 60, left: 450 },
-}: DropdownProps) {
+export default function ElectrodomesticosDropdown() {
   const handleItemClick = (itemName: string, href: string) => {
     posthogUtils.capture("dropdown_item_click", {
       category: "Electrodomésticos",
@@ -57,15 +48,7 @@ export default function ElectrodomesticosDropdown({
   return (
     <div
       data-dropdown="electrodomesticos"
-      className="fixed bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[240px]"
-      style={{
-        zIndex: 999999,
-        top: position.top + 5,
-        left: position.left - 120,
-        transform: "none",
-        boxShadow:
-          "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
-      }}
+      className="absolute top-full left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[240px] transition-all duration-200"
     >
       <div className="space-y-1.5">
         {categories.map((item) => (

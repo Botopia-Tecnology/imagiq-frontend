@@ -29,6 +29,11 @@ const adminRoutes = ["/dashboard"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // Permitir acceso público a archivos estáticos en la raíz de public (ej: /videoplayback.mp4)
+  if (pathname.match(/^\/[\w\-]+\.\w+$/)) {
+    return NextResponse.next();
+  }
+
   // Permitir acceso público a todas las subrutas de Electrodomesticos igual que DispositivosMoviles
   if (
     pathname.startsWith("/productos/DispositivosMoviles") ||

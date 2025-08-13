@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import gifAudifonos from "@/img/gif/gif_audifonos.gif";
 import samsungLogoBlack from "@/img/Samsung_black.png";
 import samsungLogoWhite from "@/img/logo_Samsung.png";
+import samsungLogoGray from "@/img/samsung_gray.png";
+
 import { useGifOnce } from "@/hooks/useGifOnce";
 
 // Hero slides data matching Samsung style
@@ -108,278 +110,226 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative w-full min-h-screen h-[70rem] mt-[-18%] md:mt-[-10%] overflow-hidden"
+      className="relative w-full min-h-screen flex items-center justify-center mt-[-18%] md:mt-[-9.5%] bg-[#24538F] overflow-hidden"
       style={{ zIndex: 1 }}
       data-hero="true"
     >
-      {/* Base background color */}
+      {/* Fondo gradiente y spotlight */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#4A7AC7] via-[#7CA6E6] to-[#24538F]" />
       <div
-        className="absolute inset-0 transition-all duration-1000"
+        className="absolute inset-0"
         style={{
-          backgroundColor: currentSlideData.bgColor,
-          top: "-1px",
-          height: "calc(100% + 1px)",
+          background:
+            "radial-gradient(ellipse at center, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.10) 40%, transparent 80%)",
         }}
       />
-
-      {/* Spotlight effect - responsive radial gradient */}
-      <div
-        className="absolute inset-0 transition-all duration-1000"
-        style={{
-          background: `radial-gradient(ellipse at center, 
-            rgba(255, 255, 255, 0.3) 0%, 
-            rgba(255, 255, 255, 0.18) 25%, 
-            rgba(255, 255, 255, 0.10) 50%, 
-            transparent 70%)`,
-          top: "-1px",
-          height: "calc(100% + 1px)",
-        }}
-      />
-
-      {/* Subtle depth overlays */}
-      <div className="absolute inset-0 bg-gradient-to-r from-blue-900/10 via-transparent to-blue-900/10"></div>
-
-      {/* Slide container - responsive layout optimizado para móvil */}
-      <div className="relative w-full h-full flex items-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 h-full max-w-7xl">
-          {/* Layout móvil - columna única centrada */}
-          <div
-            className="flex flex-col items-center justify-center h-full space-y-6 lg:hidden"
-            style={{ minHeight: "calc(100vh - 0px)" }}
-          >
-            {/* Títulos en móvil */}
-            <div className="text-center">
-              <h1 className="text-3xl sm:text-4xl font-bold mb-3 leading-tight text-white drop-shadow-lg">
-                {currentSlideData.title}
-              </h1>
-              <h2 className="text-xl sm:text-2xl font-normal opacity-90 text-white drop-shadow-md">
-                {currentSlideData.subtitle}
-              </h2>
+      {/* Layout principal desktop */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-row items-center justify-center py-8">
+        {/* Columna izquierda: Características y descripción */}
+        <div className="w-1/3 flex flex-col items-start justify-center px-6">
+          <h2 className="text-lg lg:text-xl font-semibold text-white mb-2 text-left tracking-tight">
+            {currentSlideData.subtitle}
+          </h2>
+          <p className="text-xs lg:text-sm text-white/90 mb-6 text-left max-w-xs leading-relaxed">
+            {currentSlideData.description}
+          </p>
+          {/* Características con iconos */}
+          <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 w-full max-w-xs">
+            <div className="flex flex-col items-center">
+              <svg width="48" height="28" viewBox="0 0 48 28" fill="none">
+                <rect
+                  x="2"
+                  y="8"
+                  width="36"
+                  height="8"
+                  rx="4"
+                  fill="#fff"
+                  fillOpacity="0.7"
+                />
+                <rect
+                  x="10"
+                  y="2"
+                  width="20"
+                  height="20"
+                  rx="10"
+                  fill="#fff"
+                  fillOpacity="0.7"
+                />
+              </svg>
+              <span className="text-[11px] text-white/80 mt-1 text-center font-medium">
+                Cancelación activa de ruido
+              </span>
             </div>
-
-            {/* GIF centrado en móvil - CON TRANSICIÓN SUAVE */}
-            <div className="flex justify-center items-center">
-              <div className="relative">
-                {isGifPlaying ? (
-                  // GIF animado con transición suave
-                  <div
-                    className={`transition-opacity duration-300 ${
-                      isTransitioning ? "opacity-50" : "opacity-100"
-                    }`}
-                  >
-                    <Image
-                      ref={imgRef}
-                      src={heroSlides[currentSlide].gifSrc}
-                      alt="Galaxy Buds Core"
-                      width={600}
-                      height={600}
-                      className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain"
-                      style={{
-                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
-                      }}
-                      unoptimized={true}
-                      priority
-                    />
-                  </div>
-                ) : (
-                  // Imagen estática con transición de entrada
-                  <div className="animate-fade-in">
-                    <Image
-                      src={staticImageUrl || heroSlides[currentSlide].gifSrc}
-                      alt="Galaxy Buds Core"
-                      width={600}
-                      height={600}
-                      className="w-[280px] h-[280px] sm:w-[320px] sm:h-[320px] object-contain"
-                      style={{
-                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
-                      }}
-                      unoptimized={false}
-                      priority
-                    />
-                  </div>
-                )}
-              </div>
+            <div className="flex flex-col items-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2C7.03 2 2.73 6.11 2.05 11.02C2.02 11.18 2 11.34 2 11.5C2 16.52 6.48 21 12 21C17.52 21 22 16.52 22 11.5C22 11.34 21.98 11.18 21.95 11.02C21.27 6.11 16.97 2 12 2Z"
+                  fill="#fff"
+                  fillOpacity="0.7"
+                />
+              </svg>
+              <span className="text-[11px] text-white/80 mt-1 text-center font-medium">
+                Certificación IPX
+              </span>
             </div>
-
-            {/* Precio y botón en móvil */}
-            <div className="text-center space-y-6">
-              {/* Price section móvil */}
-              <div className="inline-block bg-white/20 backdrop-blur-xl rounded-2xl px-6 py-4 border border-white/30 shadow-2xl">
-                <div className="text-center">
-                  <p className="text-sm opacity-90 mb-2 text-white font-medium">
-                    {currentSlideData.offerText}
-                  </p>
-                  <div className="flex items-center justify-center space-x-3">
-                    <span className="text-3xl sm:text-4xl font-bold text-white drop-shadow-md">
-                      {currentSlideData.price}
-                    </span>
-                  </div>
-                  <p className="text-sm opacity-80 mt-2 text-gray-100">
-                    Precio Normal:{" "}
-                    <span className="line-through">
-                      {currentSlideData.originalPrice}
-                    </span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Botón de compra móvil */}
-              <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-8 py-4 rounded-2xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-xl w-full max-w-xs">
-                {currentSlideData.buttonText}
-              </button>
+            <div className="flex flex-col items-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill="#fff" fillOpacity="0.7" />
+                <path
+                  d="M12 8V12L14 14"
+                  stroke="#24538F"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-[11px] text-white/80 mt-1 text-center font-medium">
+                Diseño intuitivo y cómodo
+              </span>
             </div>
-          </div>
-
-          {/* Layout desktop - horizontal como antes */}
-          <div className="hidden lg:flex items-center justify-between h-full">
-            {/* Left side - Product GIF desktop - CON TRANSICIÓN SUAVE */}
-            <div
-              className="flex-1 flex justify-center items-center"
-              style={{ minHeight: "calc(100vh - 0px)" }}
-            >
-              <div className="relative">
-                {isGifPlaying ? (
-                  // GIF animado con transición suave
-                  <div
-                    className={`transition-opacity duration-300 ${
-                      isTransitioning ? "opacity-50" : "opacity-100"
-                    }`}
-                  >
-                    <Image
-                      ref={imgRef}
-                      src={heroSlides[currentSlide].gifSrc}
-                      alt="Galaxy Buds Core"
-                      width={600}
-                      height={600}
-                      className="w-[500px] h-[500px] xl:w-[600px] xl:h-[600px] object-contain"
-                      style={{
-                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
-                      }}
-                      unoptimized={true}
-                      priority
-                    />
-                  </div>
-                ) : (
-                  // Imagen estática con transición de entrada
-                  <div className="animate-fade-in">
-                    <Image
-                      src={staticImageUrl || heroSlides[currentSlide].gifSrc}
-                      alt="Galaxy Buds Core"
-                      width={600}
-                      height={600}
-                      className="w-[500px] h-[500px] xl:w-[600px] xl:h-[600px] object-contain"
-                      style={{
-                        filter: "drop-shadow(0 15px 30px rgba(0,0,0,0.15))",
-                      }}
-                      unoptimized={false}
-                      priority
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Right side - Content desktop */}
-            <div className="flex-1 text-white max-w-2xl pl-8 xl:pl-12 text-left">
-              <h1 className="text-3xl lg:text-4xl xl:text-5xl font-bold mb-4 leading-tight text-white drop-shadow-lg">
-                {currentSlideData.title}
-              </h1>
-
-              <h2 className="text-lg md:text-xl lg:text-2xl font-normal mb-6 opacity-90 text-white drop-shadow-md">
-                {currentSlideData.subtitle}
-              </h2>
-
-              <p className="text-sm lg:text-base leading-relaxed mb-8 opacity-85 max-w-lg text-gray-200">
-                {currentSlideData.description}
-              </p>
-
-              {/* Price section desktop */}
-              <div className="mb-8">
-                <div className="inline-block bg-white/20 backdrop-blur-xl rounded-2xl lg:rounded-3xl px-6 lg:px-8 py-4 lg:py-5 border border-white/30 shadow-2xl">
-                  <div className="text-center">
-                    <p className="text-sm opacity-90 mb-2 text-white font-medium">
-                      {currentSlideData.offerText}
-                    </p>
-                    <div className="flex items-center justify-center space-x-3">
-                      <span className="text-3xl lg:text-4xl font-bold text-white drop-shadow-md">
-                        {currentSlideData.price}
-                      </span>
-                    </div>
-                    <p className="text-sm opacity-80 mt-2 text-gray-100">
-                      Precio Normal:{" "}
-                      <span className="line-through">
-                        {currentSlideData.originalPrice}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Action buttons desktop */}
-              <div className="flex space-x-4 mb-10">
-                <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-8 py-4 rounded-2xl lg:rounded-3xl font-semibold text-base lg:text-lg transition-all duration-300 transform hover:scale-105 shadow-xl">
-                  {currentSlideData.buttonText}
-                </button>
-
-                <button className="bg-transparent hover:bg-white/10 text-white p-4 rounded-2xl lg:rounded-3xl transition-all duration-300 transform hover:scale-105 border-2 border-white/40 hover:border-white/60 shadow-lg">
-                  <Heart className="w-5 h-5 lg:w-6 lg:h-6" />
-                </button>
-              </div>
+            <div className="flex flex-col items-center">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path
+                  d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2Z"
+                  fill="#fff"
+                  fillOpacity="0.7"
+                />
+                <path
+                  d="M8 12L12 16L16 12"
+                  stroke="#24538F"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-[11px] text-white/80 mt-1 text-center font-medium">
+                Conectividad básica con IA
+              </span>
             </div>
           </div>
         </div>
+        {/* Columna central: GIF producto */}
+        <div className="w-1/2 flex items-center justify-center px-2">
+          <div className="relative flex items-center justify-center">
+            {isGifPlaying ? (
+              <div
+                className={`transition-opacity duration-300 ${
+                  isTransitioning ? "opacity-50" : "opacity-100"
+                }`}
+              >
+                <Image
+                  ref={imgRef}
+                  src={heroSlides[currentSlide].gifSrc}
+                  alt="Galaxy Buds Core"
+                  width={540}
+                  height={540}
+                  className="w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] lg:w-[540px] lg:h-[540px] object-contain drop-shadow-2xl"
+                  unoptimized={true}
+                  priority
+                />
+              </div>
+            ) : (
+              <div className="animate-fade-in">
+                <Image
+                  src={staticImageUrl || heroSlides[currentSlide].gifSrc}
+                  alt="Galaxy Buds Core"
+                  width={540}
+                  height={540}
+                  className="w-[220px] h-[220px] sm:w-[300px] sm:h-[300px] lg:w-[540px] lg:h-[540px] object-contain drop-shadow-2xl"
+                  unoptimized={false}
+                  priority
+                />
+              </div>
+            )}
+          </div>
+        </div>
+        {/* Columna derecha: Título, precio y botón */}
+        <div className="w-1/3 flex flex-col items-end justify-center ">
+          <h1 className="text-3xl sm:text-3xl lg:text-5xl font-bold text-white mb-2 text-right leading-tight tracking-tight">
+            {currentSlideData.title}
+            <span className="block ml-2 mt-1">
+              <Image
+                src={samsungLogoGray}
+                alt="Samsung"
+                width={90}
+                height={54}
+                className="inline h-10 w-auto align-middle"
+                priority
+              />
+            </span>
+          </h1>
+          <div className="w-full max-w-xs bg-white/10 backdrop-blur-xl rounded-xl px-6 py-5 border border-white/30 shadow-2xl mb-4 flex flex-col items-end">
+            <p className="text-xs text-white font-medium mb-1 text-right">
+              {currentSlideData.offerText}
+            </p>
+            <div className="flex items-center justify-end space-x-2">
+              <span className="text-3xl lg:text-4xl font-bold text-white drop-shadow-md">
+                {currentSlideData.price}
+              </span>
+            </div>
+            <p className="text-xs text-gray-100 text-right">
+              Precio Normal:{" "}
+              <span className="line-through">
+                {currentSlideData.originalPrice}
+              </span>
+            </p>
+          </div>
+          <div className="flex items-center space-x-2 w-full max-w-xs">
+            <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full">
+              {currentSlideData.buttonText}
+            </button>
+            <button className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 transform hover:scale-105 border-2 border-white/40 hover:border-white/60 shadow-lg flex items-center justify-center">
+              <Heart className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
       </div>
-
-      {/* Navigation arrows - responsive positioning */}
+      {/* Navegación y logo Samsung */}
+      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center">
+        {/* Slide indicators */}
+        <div className="flex items-center justify-center space-x-3 mb-4">
+          {heroSlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={cn(
+                "w-2.5 h-2.5 rounded-full transition-all duration-300 shadow-md",
+                currentSlide === index
+                  ? "bg-black scale-125 shadow-lg"
+                  : "bg-black/40 hover:bg-black/60"
+              )}
+            />
+          ))}
+        </div>
+        {/* Logo Samsung */}
+        <div className="flex items-center justify-center">
+          <Image
+            src={isHome ? samsungLogoWhite : samsungLogoBlack}
+            alt="Samsung"
+            width={110}
+            height={32}
+            className="h-7 w-auto opacity-80"
+            priority
+          />
+        </div>
+      </div>
+      {/* Flechas navegación */}
       <button
         onClick={goToPrevious}
-        className="absolute left-2 sm:left-4 lg:left-6 top-1/2 transform -translate-y-1/2 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white p-3 lg:p-4 rounded-full transition-all duration-300 border border-white/20 shadow-lg"
+        className="absolute left-6 top-1/2 transform -translate-y-1/2 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white p-2 rounded-full transition-all duration-300 border border-white/20 shadow-lg"
       >
-        <ChevronLeft className="w-5 h-5 lg:w-7 lg:h-7" />
+        <ChevronLeft className="w-5 h-5" />
       </button>
-
       <button
         onClick={goToNext}
-        className="absolute right-2 sm:right-4 lg:right-6 top-1/2 transform -translate-y-1/2 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white p-3 lg:p-4 rounded-full transition-all duration-300 border border-white/20 shadow-lg"
+        className="absolute right-6 top-1/2 transform -translate-y-1/2 bg-white/15 hover:bg-white/25 backdrop-blur-md text-white p-2 rounded-full transition-all duration-300 border border-white/20 shadow-lg"
       >
-        <ChevronRight className="w-5 h-5 lg:w-7 lg:h-7" />
+        <ChevronRight className="w-5 h-5" />
       </button>
-
-      {/* Slide indicators - responsive positioning */}
-      <div className="absolute bottom-6 sm:bottom-8 lg:bottom-12 left-1/2 transform -translate-x-1/2 flex space-x-3 lg:space-x-4">
-        {heroSlides.map((_, index) => (
-          <button
-            key={index}
-            onClick={() => goToSlide(index)}
-            className={cn(
-              "w-3 h-3 lg:w-4 lg:h-4 rounded-full transition-all duration-300 shadow-md",
-              currentSlide === index
-                ? "bg-white scale-125 shadow-lg"
-                : "bg-white/60 hover:bg-white/80"
-            )}
-          />
-        ))}
-      </div>
-
-      {/* Samsung logo - responsive sizing and positioning */}
-      <div className="absolute bottom-6 sm:bottom-8 lg:bottom-12 right-4 sm:right-6 lg:right-12">
-        <Image
-          src={isHome ? samsungLogoWhite : samsungLogoBlack}
-          alt="Samsung"
-          width={120}
-          height={40}
-          className={cn(
-            "h-6 sm:h-8 lg:h-10 w-auto opacity-80",
-            isHome ? "" : ""
-          )}
-          priority
-        />
-      </div>
-
-      {/* Auto-play indicator - responsive positioning */}
+      {/* Indicador de auto-play */}
       {isAutoPlaying && (
-        <div className="absolute top-4 sm:top-6 right-4 sm:right-6">
-          <div className="w-2 h-2 sm:w-3 sm:h-3 bg-white/60 rounded-full animate-pulse"></div>
+        <div className="absolute top-6 right-6">
+          <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
         </div>
       )}
     </section>

@@ -578,7 +578,7 @@ export default function Navbar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "text-lg lg:text-smlg font-semibold transition-all duration-300 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg",
+                        "text-lg lg:text-lg font-semibold transition-all duration-300 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg",
                         isHome
                           ? "text-white/90 hover:text-white hover:bg-white/10"
                           : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"

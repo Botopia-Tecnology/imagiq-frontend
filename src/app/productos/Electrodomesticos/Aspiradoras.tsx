@@ -5,9 +5,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
@@ -26,55 +25,41 @@ const applianceCategories: Category[] = [
     id: "1",
     name: "Aspiradoras",
     image: aspiradoraImg,
-    trackingPrefix: "aspiradora_category",
+    subtitle: "Aspiradoras de alta potencia",
+    href: "/productos/aspiradoras",
   },
   {
     id: "2",
     name: "Refrigeradores",
     image: refrigeradorImg,
-    trackingPrefix: "refrigerador_category",
+    subtitle: "Refrigeradores de última generación",
+    href: "/productos/refrigeradores",
   },
   {
     id: "3",
     name: "Lavadoras",
     image: lavadoraImg,
-    trackingPrefix: "lavadora_category",
+    subtitle: "Lavadoras eficientes",
+    href: "/productos/lavadoras",
   },
   {
     id: "4",
     name: "Microondas",
     image: microondasImg,
-    trackingPrefix: "microondas_category",
+    subtitle: "Microondas modernos",
+    href: "/productos/microondas",
   },
 ];
 
 const aspiradorasFilters: FilterConfig = {
-  tipo: {
-    label: "Tipo",
-    options: [
-      { value: "vertical", label: "Vertical" },
-      { value: "robot", label: "Robot" },
-      { value: "de_cylinder", label: "De cilindro" },
-    ],
-  },
-  precio: {
-    label: "Rango de precio",
-    options: [
-      { value: "0-100", label: "Menos de $100" },
-      { value: "100-300", label: "Entre $100 y $300" },
-      { value: "300-500", label: "Entre $300 y $500" },
-      { value: "500+", label: "Más de $500" },
-    ],
-  },
-  marca: {
-    label: "Marca",
-    options: [
-      { value: "samsung", label: "Samsung" },
-      { value: "lg", label: "LG" },
-      { value: "whirlpool", label: "Whirlpool" },
-      { value: "philips", label: "Philips" },
-    ],
-  },
+  tipo: ["Vertical", "Robot", "De cilindro"],
+  precio: [
+    "Menos de $100",
+    "Entre $100 y $300",
+    "Entre $300 y $500",
+    "Más de $500",
+  ],
+  marca: ["Samsung", "LG", "Whirlpool", "Philips"],
 };
 
 const aspiradoraProducts = [
@@ -82,48 +67,54 @@ const aspiradoraProducts = [
     id: "1",
     name: "Aspiradora Samsung Jet 90",
     image: aspiradoraImg,
-    colors: ["#ffffff", "#000000"],
+    colors: [
+      { name: "white", hex: "#ffffff", label: "Blanco" },
+      { name: "black", hex: "#000000", label: "Negro" },
+    ],
     rating: 4.5,
     reviewCount: 120,
-    price: 299.99,
-    originalPrice: 399.99,
-    discount: 25,
+    price: "$299.99",
+    originalPrice: "$399.99",
+    discount: "-25%",
     isNew: true,
   },
   {
     id: "2",
     name: "Aspiradora LG CordZero",
     image: aspiradoraImg,
-    colors: ["#ffffff"],
+    colors: [{ name: "white", hex: "#ffffff", label: "Blanco" }],
     rating: 4.7,
     reviewCount: 95,
-    price: 349.99,
-    originalPrice: 449.99,
-    discount: 22,
+    price: "$349.99",
+    originalPrice: "$449.99",
+    discount: "-22%",
     isNew: false,
   },
   {
     id: "3",
     name: "Aspiradora de cilindro Whirlpool",
     image: aspiradoraImg,
-    colors: ["#ff0000", "#0000ff"],
+    colors: [
+      { name: "red", hex: "#ff0000", label: "Rojo" },
+      { name: "blue", hex: "#0000ff", label: "Azul" },
+    ],
     rating: 4.2,
     reviewCount: 80,
-    price: 199.99,
-    originalPrice: 249.99,
-    discount: 20,
+    price: "$199.99",
+    originalPrice: "$249.99",
+    discount: "-20%",
     isNew: false,
   },
   {
     id: "4",
     name: "Robot Aspirador Philips",
     image: aspiradoraImg,
-    colors: ["#000000"],
+    colors: [{ name: "black", hex: "#000000", label: "Negro" }],
     rating: 4.8,
     reviewCount: 60,
-    price: 499.99,
-    originalPrice: 599.99,
-    discount: 16,
+    price: "$499.99",
+    originalPrice: "$599.99",
+    discount: "-16%",
     isNew: true,
   },
 ];
@@ -133,8 +124,6 @@ export default function AspiradorasSection() {
     new Set(["tipo"])
   );
   const [filters, setFilters] = useState<FilterState>({});
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(8);
 
@@ -192,10 +181,7 @@ export default function AspiradorasSection() {
           <main className="flex-1">
             <div
               className={cn(
-                "grid gap-6",
-                viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
+                "grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               )}
             >
               {aspiradoraProducts.map((product) => (
@@ -220,13 +206,6 @@ export default function AspiradorasSection() {
                       category: "aspiradoras",
                     });
                   }}
-                  onMoreInfo={(productId: string) => {
-                    posthogUtils.capture("product_info", {
-                      product_id: productId,
-                      product_name: product.name,
-                      category: "aspiradoras",
-                    });
-                  }}
                   onToggleFavorite={(productId: string) => {
                     posthogUtils.capture("toggle_favorite", {
                       product_id: productId,
@@ -234,7 +213,6 @@ export default function AspiradorasSection() {
                       category: "aspiradoras",
                     });
                   }}
-                  className={viewMode === "list" ? "flex-row" : ""}
                 />
               ))}
             </div>

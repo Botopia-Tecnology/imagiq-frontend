@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, RefCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Search, User, ShoppingCart, MapPin } from "lucide-react";
+import { Search, User, ShoppingCart } from "lucide-react";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -255,7 +255,6 @@ export default function Navbar() {
     !isScrolledNavbar &&
     !isLogin &&
     (isProductDetail || (isHome && !isScrolled));
-  const showBlackLogoMobile = isLogin || isScrolledNavbar || isNavbarItem;
 
   return (
     <>

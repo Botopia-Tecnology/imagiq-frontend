@@ -38,7 +38,6 @@ interface ProductCardProps {
   isFavorite?: boolean;
   onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
-  onMoreInfo?: (productId: string) => void;
   className?: string;
 }
 
@@ -54,7 +53,6 @@ export default function ProductCard({
   isFavorite = false,
   onAddToCart,
   onToggleFavorite,
-  onMoreInfo,
   className,
 }: ProductCardProps) {
   const router = useRouter();

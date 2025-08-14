@@ -19,6 +19,7 @@ const publicRoutes = [
   "/productos/Electrodomesticos", // <-- Añade esta línea
   "/productos/view",
   "/login",
+  "/login/CreateAccount",
   "/register",
   "/soporte",
   "/tiendas",

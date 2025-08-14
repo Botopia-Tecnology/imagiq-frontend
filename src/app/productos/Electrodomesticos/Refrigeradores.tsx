@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
 import FilterSidebar, {
@@ -110,8 +109,7 @@ export default function RefrigeradoresSection() {
     new Set(["tipo"])
   );
   const [filters, setFilters] = useState<FilterState>({});
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("relevancia");
+  // Eliminados viewMode y sortBy por no usarse
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
 
@@ -169,10 +167,7 @@ export default function RefrigeradoresSection() {
           <main className="flex-1">
             <div
               className={cn(
-                "grid gap-6",
-                viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
+                "grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               )}
             >
               {refrigeradorProducts.map((product) => (
@@ -197,13 +192,6 @@ export default function RefrigeradoresSection() {
                       category: "refrigeradores",
                     });
                   }}
-                  onMoreInfo={(productId: string) => {
-                    posthogUtils.capture("product_info", {
-                      product_id: productId,
-                      product_name: product.name,
-                      category: "refrigeradores",
-                    });
-                  }}
                   onToggleFavorite={(productId: string) => {
                     posthogUtils.capture("toggle_favorite", {
                       product_id: productId,
@@ -211,7 +199,7 @@ export default function RefrigeradoresSection() {
                       category: "refrigeradores",
                     });
                   }}
-                  className={viewMode === "list" ? "flex-row" : ""}
+                  // className eliminado, solo usar el default
                 />
               ))}
             </div>

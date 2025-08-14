@@ -4,17 +4,10 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
-import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
-import FilterSidebar, {
-  MobileFilterModal,
-  type FilterConfig,
-  type FilterState,
-} from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
+import { useState } from "react";
+import ProductCard from "../components/ProductCard";
+import FilterSidebar from "../components/FilterSidebar";
+import CategorySlider from "../components/CategorySlider";
 
 import hornosImg from "../../../img/Electrodomesticos/Electrodomesticos4.png";
 import refrigeradorImg from "../../../img/Electrodomesticos/Electrodomesticos1.png";
@@ -26,145 +19,127 @@ const applianceCategories = [
   {
     id: "hornos",
     name: "Hornos",
-    imageSrc: hornosImg,
-    imageAlt: "Hornos",
+    image: hornosImg,
+    subtitle: "Hornos de última generación",
+    href: "/productos/hornos",
   },
   {
     id: "refrigeradores",
     name: "Refrigeradores",
-    imageSrc: refrigeradorImg,
-    imageAlt: "Refrigeradores",
+    image: refrigeradorImg,
+    subtitle: "Refrigeradores de última generación",
+    href: "/productos/refrigeradores",
   },
   {
     id: "lavadoras",
     name: "Lavadoras",
-    imageSrc: lavadoraImg,
-    imageAlt: "Lavadoras",
+    image: lavadoraImg,
+    subtitle: "Lavadoras eficientes",
+    href: "/productos/lavadoras",
   },
   {
     id: "microondas",
     name: "Microondas",
-    imageSrc: microondasImg,
-    imageAlt: "Microondas",
+    image: microondasImg,
+    subtitle: "Microondas modernos",
+    href: "/productos/microondas",
   },
   {
     id: "aspiradoras",
     name: "Aspiradoras",
-    imageSrc: aspiradoraImg,
-    imageAlt: "Aspiradoras",
+    image: aspiradoraImg,
+    subtitle: "Aspiradoras de alta potencia",
+    href: "/productos/aspiradoras",
   },
 ];
 
-const hornosFilters = [
-  {
-    id: "tipo",
-    name: "Tipo",
-    options: [
-      { value: "convencional", label: "Convencional" },
-      { value: "digital", label: "Digital" },
-      { value: "microondas", label: "Microondas" },
-    ],
-  },
-  {
-    id: "marca",
-    name: "Marca",
-    options: [
-      { value: "samsung", label: "Samsung" },
-      { value: "lg", label: "LG" },
-      { value: "whirlpool", label: "Whirlpool" },
-    ],
-  },
-  {
-    id: "precio",
-    name: "Rango de precio",
-    options: [
-      { value: "0-100", label: "Menos de $100" },
-      { value: "100-300", label: "Entre $100 y $300" },
-      { value: "300-500", label: "Entre $300 y $500" },
-      { value: "500+", label: "Más de $500" },
-    ],
-  },
-];
+const hornosFilters = {
+  tipo: ["Convencional", "Digital", "Microondas"],
+  marca: ["Samsung", "LG", "Whirlpool"],
+  precio: [
+    "Menos de $100",
+    "Entre $100 y $300",
+    "Entre $300 y $500",
+    "Más de $500",
+  ],
+};
 
 const hornosProducts = [
   {
-    id: 1,
+    id: "1",
     name: "Horno Samsung Digital",
-    price: 299.99,
-    imageSrc: "/img/productos/hornodigital.jpg",
-    imageAlt: "Horno Samsung Digital",
+    price: "$299.99",
+    image: hornosImg,
     colors: [
-      { name: "Negro", class: "bg-black", selectedClass: "ring-gray-900" },
-      {
-        name: "Acero inoxidable",
-        class: "bg-gray-300",
-        selectedClass: "ring-gray-900",
-      },
-    ] as ProductColor[],
+      { name: "negro", hex: "#000000", label: "Negro" },
+      { name: "acero", hex: "#B0B0B0", label: "Acero inoxidable" },
+    ],
+    isNew: true,
+    discount: "-10%",
+    originalPrice: "$349.99",
+    rating: 4.7,
+    reviewCount: 32,
   },
   {
-    id: 2,
+    id: "2",
     name: "Horno Whirlpool Convencional",
-    price: 199.99,
-    imageSrc: "/img/productos/hornoconvencional.jpg",
-    imageAlt: "Horno Whirlpool Convencional",
+    price: "$199.99",
+    image: hornosImg,
     colors: [
-      { name: "Blanco", class: "bg-white", selectedClass: "ring-gray-900" },
-      { name: "Negro", class: "bg-black", selectedClass: "ring-gray-900" },
-    ] as ProductColor[],
+      { name: "blanco", hex: "#FFFFFF", label: "Blanco" },
+      { name: "negro", hex: "#000000", label: "Negro" },
+    ],
+    isNew: false,
+    discount: "-15%",
+    originalPrice: "$229.99",
+    rating: 4.5,
+    reviewCount: 21,
   },
   {
-    id: 3,
+    id: "3",
     name: "Horno LG Microondas",
-    price: 149.99,
-    imageSrc: "/img/productos/hornomicroondas.jpg",
-    imageAlt: "Horno LG Microondas",
+    price: "$149.99",
+    image: hornosImg,
     colors: [
-      {
-        name: "Plateado",
-        class: "bg-gray-400",
-        selectedClass: "ring-gray-900",
-      },
-      { name: "Negro", class: "bg-black", selectedClass: "ring-gray-900" },
-    ] as ProductColor[],
+      { name: "plateado", hex: "#C0C0C0", label: "Plateado" },
+      { name: "negro", hex: "#000000", label: "Negro" },
+    ],
+    isNew: false,
+    discount: "-8%",
+    originalPrice: "$159.99",
+    rating: 4.2,
+    reviewCount: 12,
   },
 ];
 
 export default function HornosSection() {
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [filters, setFilters] = useState<FilterState>(
-    hornosFilters.reduce((acc, filter) => {
-      acc[filter.id] = filter.options.reduce((o, option) => {
-        o[option.value] = false;
-        return o;
-      }, {} as Record<string, boolean>);
-      return acc;
-    }, {} as FilterState)
+  const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
+    new Set(["tipo"])
   );
-  const [filteredProducts, setFilteredProducts] = useState(hornosProducts);
+  const [filters, setFilters] = useState<Record<string, string[]>>({});
+  const [resultCount] = useState(3);
 
-  useEffect(() => {
-    // Aplicar filtros a los productos (simulación)
-    let newFilteredProducts = hornosProducts;
-
-    // Filtrado por ejemplo
-    if (filters.tipo.convencional) {
-      newFilteredProducts = newFilteredProducts.filter((product) =>
-        product.name.includes("Convencional")
-      );
-    }
-
-    setFilteredProducts(newFilteredProducts);
-  }, [filters]);
-
-  const handleFilterChange = (filterId: string, optionValue: string) => {
-    setFilters((prevFilters) => ({
-      ...prevFilters,
-      [filterId]: {
-        ...prevFilters[filterId],
-        [optionValue]: !prevFilters[filterId][optionValue],
-      },
+  const handleFilterChange = (
+    filterType: string,
+    value: string,
+    checked: boolean
+  ) => {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: checked
+        ? [...(prev[filterType] || []), value]
+        : (prev[filterType] || []).filter((item) => item !== value),
     }));
+  };
+
+  const toggleFilter = (filterKey: string) => {
+    const newExpanded = new Set(expandedFilters);
+    if (newExpanded.has(filterKey)) {
+      newExpanded.delete(filterKey);
+    } else {
+      newExpanded.add(filterKey);
+    }
+    setExpandedFilters(newExpanded);
   };
 
   return (
@@ -176,8 +151,13 @@ export default function HornosSection() {
           {/* Filtros */}
           <div className="hidden lg:block lg:w-1/4">
             <FilterSidebar
-              filters={hornosFilters}
+              filterConfig={hornosFilters}
+              filters={filters}
               onFilterChange={handleFilterChange}
+              resultCount={resultCount}
+              expandedFilters={expandedFilters}
+              onToggleFilter={toggleFilter}
+              trackingPrefix="hornos_filter"
               className="sticky top-20"
             />
           </div>
@@ -188,14 +168,26 @@ export default function HornosSection() {
             <div className="hidden lg:block mb-8">
               <CategorySlider
                 categories={applianceCategories}
-                title="Categorías relacionadas"
+                trackingPrefix="hornos_category"
               />
             </div>
 
             {/* Productos filtrados */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {hornosProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  image={product.image}
+                  colors={product.colors}
+                  rating={product.rating}
+                  reviewCount={product.reviewCount}
+                  price={product.price}
+                  originalPrice={product.originalPrice}
+                  discount={product.discount}
+                  isNew={product.isNew}
+                />
               ))}
             </div>
           </div>
@@ -203,22 +195,14 @@ export default function HornosSection() {
 
         {/* Botón de filtro móvil */}
         <div className="lg:hidden mt-4">
-          <button
-            onClick={() => setFilterOpen(true)}
-            className="flex items-center justify-center w-full px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200"
-          >
-            <Filter className="w-5 h-5 mr-2" />
+          <button className="flex items-center justify-center w-full px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow-md hover:bg-blue-700 transition-all duration-200">
+            {/* Puedes usar un icono de filtro aquí si lo tienes importado */}
             Filtrar productos
           </button>
         </div>
 
         {/* Modal de filtro móvil */}
-        <MobileFilterModal
-          open={filterOpen}
-          onClose={() => setFilterOpen(false)}
-          filters={hornosFilters}
-          onFilterChange={handleFilterChange}
-        />
+        {/* Fin de la sección */}
       </div>
     </div>
   );

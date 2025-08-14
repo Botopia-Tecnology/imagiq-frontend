@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
 import FilterSidebar, {
-  MobileFilterModal,
   type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
@@ -112,9 +110,6 @@ export default function AireAcondicionadoSection() {
     new Set(["tipo"])
   );
   const [filters, setFilters] = useState<FilterState>({});
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("relevancia");
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(5);
 
   useEffect(() => {
@@ -171,10 +166,7 @@ export default function AireAcondicionadoSection() {
           <main className="flex-1">
             <div
               className={cn(
-                "grid gap-6",
-                viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
+                "grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
               )}
             >
               {aireProducts.map((product) => (
@@ -199,13 +191,6 @@ export default function AireAcondicionadoSection() {
                       category: "aire-acondicionado",
                     });
                   }}
-                  onMoreInfo={(productId: string) => {
-                    posthogUtils.capture("product_info", {
-                      product_id: productId,
-                      product_name: product.name,
-                      category: "aire-acondicionado",
-                    });
-                  }}
                   onToggleFavorite={(productId: string) => {
                     posthogUtils.capture("toggle_favorite", {
                       product_id: productId,
@@ -213,25 +198,12 @@ export default function AireAcondicionadoSection() {
                       category: "aire-acondicionado",
                     });
                   }}
-                  className={viewMode === "list" ? "flex-row" : ""}
                 />
               ))}
             </div>
           </main>
         </div>
       </div>
-
-      <MobileFilterModal
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filterConfig={aireFilters}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={resultCount}
-        expandedFilters={expandedFilters}
-        onToggleFilter={toggleFilter}
-        trackingPrefix="aire_filter"
-      />
     </div>
   );
 }

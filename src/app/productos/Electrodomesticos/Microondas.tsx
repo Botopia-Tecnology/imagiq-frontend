@@ -206,8 +206,6 @@ export default function Navbar() {
   const renderDropdown = (itemName: string) => {
     if (activeDropdown !== itemName) return null;
 
-    const pos = dropdownPosition[itemName] || { top: 0, left: 0 };
-
     switch (itemName as DropdownItemType) {
       case "Dispositivos móviles":
         return null;

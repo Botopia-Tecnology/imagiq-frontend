@@ -207,8 +207,6 @@ export default function Navbar() {
   const renderDropdown = (itemName: string) => {
     if (activeDropdown !== itemName) return null;
 
-    const pos = dropdownPosition[itemName] || { top: 0, left: 0 };
-
     switch (itemName as DropdownItemType) {
       case "Dispositivos móviles":
         return null; // <DispositivosMovilesDropdown position={pos} />;
@@ -553,9 +551,7 @@ export default function Navbar() {
                     <div className="font-medium text-base mb-1">
                       {item.name}
                     </div>
-                    <div className="text-sm text-gray-600 leading-relaxed">
-                      {item.description}
-                    </div>
+                    <div className="text-sm text-gray-600 leading-relaxed"></div>
                   </Link>
                 ))}
               </div>

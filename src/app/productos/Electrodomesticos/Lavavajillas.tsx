@@ -19,39 +19,44 @@ const navigationItems = [
   {
     name: "Ofertas",
     href: "/tienda/outlet",
-
     category: "promociones",
+    description: "Descubre las mejores ofertas y promociones.",
   },
   {
     name: "Dispositivos móviles",
     href: "/productos/DispositivosMoviles",
-
     category: "moviles",
+    description: "Smartphones, tablets y wearables.",
   },
   {
     name: "Televisores y AV",
     href: "/tienda/televisores",
     category: "televisores",
+    description: "Televisores, audio y video de última generación.",
   },
   {
     name: "Electrodomésticos",
     href: "/productos/Electrodomesticos?section=refrigeradores",
     category: "hogar",
+    description: "Refrigeradores, lavadoras y más para tu hogar.",
   },
   {
     name: "Tiendas",
     href: "/tiendas",
     category: "ubicaciones",
+    description: "Encuentra nuestras tiendas físicas.",
   },
   {
     name: "Servicio Técnico",
     href: "/soporte",
     category: "servicio",
+    description: "Soporte y servicio técnico especializado.",
   },
   {
     name: "Ventas corporativas",
     href: "/ventas-corporativas",
     category: "corporativo",
+    description: "Soluciones para empresas y negocios.",
   },
 ];
 
@@ -206,8 +211,6 @@ export default function Navbar() {
 
   const renderDropdown = (itemName: string) => {
     if (activeDropdown !== itemName) return null;
-
-    const pos = dropdownPosition[itemName] || { top: 0, left: 0 };
 
     switch (itemName as DropdownItemType) {
       case "Dispositivos móviles":

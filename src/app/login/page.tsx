@@ -23,34 +23,22 @@ import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
 import Logo from "@/components/Logo";
+import { Usuario } from "@/types/user";
 
-// Hardcoded users for testing - will be replaced with microservice
-const DEMO_USERS = [
-  {
-    id: 1,
-    email: "superadmin@imagiq.com",
-    password: "superadmin123",
-    role: "superadmin" as const,
-    name: "Super Administrador",
-    avatar: "/avatars/superadmin.jpg",
-  },
-  {
-    id: 2,
-    email: "admin@imagiq.com",
-    password: "admin123",
-    role: "admin" as const,
-    name: "Administrador",
-    avatar: "/avatars/admin.jpg",
-  },
-  {
-    id: 3,
-    email: "user@imagiq.com",
-    password: "user123",
-    role: "user" as const,
-    name: "Usuario",
-    avatar: "/avatars/user.jpg",
-  },
-];
+// API endpoint for authentication
+const AUTH_API_URL = "http://localhost:3001/api/auth/login";
+
+// Login success response
+interface LoginSuccessResponse {
+  access_token: string;
+  user: Omit<Usuario, "contrasena" | "tipo_documento" | "numero_documento">;
+}
+
+// Login error response
+interface LoginErrorResponse {
+  status: number;
+  message: string;
+}
 
 interface LoginError {
   field?: string;
@@ -129,51 +117,71 @@ export default function LoginPage() {
     setErrors([]);
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // API call to authentication microservice
+      const response = await fetch(AUTH_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          contrasena: formData.password,
+        }),
+      });
 
-      // Find user in demo data
-      const user = DEMO_USERS.find(
-        (u) => u.email === formData.email && u.password === formData.password
-      );
-
-      if (!user) {
-        throw new Error("Credenciales inválidas");
+      if (!response.ok) {
+        // Handle error response
+        const errorResult: LoginErrorResponse = await response.json();
+        throw new Error(errorResult.message || "Error de autenticación");
       }
+
+      // Handle success response
+      const result: LoginSuccessResponse = await response.json();
+
+      if (!result.access_token || !result.user) {
+        throw new Error("Respuesta de servidor inválida");
+      }
+
+      const { user, access_token } = result;
 
       // Track successful login attempt
       posthogUtils.capture("login_attempt", {
         email: formData.email,
-        user_role: user.role,
+        user_role: user.rol,
         success: true,
       });
 
       // Show success animation
       setLoginSuccess(true);
 
-      // Login user
+      // Store token (for future API calls)
+      localStorage.setItem("imagiq_token", access_token);
+
+      // Map user data to our internal format
       await login({
         id: user.id,
         email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
+        name: `${user.nombre} ${user.apellido}`,
+        role: user.rol === "admin" ? "admin" : "user",
+        avatar: undefined, // No avatar in current response
       });
 
       // Track successful login
       posthogUtils.capture("login_success", {
         user_id: user.id,
-        user_role: user.role,
+        user_role: user.rol,
         email: user.email,
       });
 
       // Redirect after success animation
       setTimeout(() => {
-        router.push(user.role === "user" ? "/tienda" : "/dashboard");
+        router.push(user.rol === "admin" ? "/dashboard" : "/tienda");
       }, 1500);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Error de conexión";
+        error instanceof Error
+          ? error.message
+          : "Error de conexión con el servidor";
       setErrors([{ message: errorMessage }]);
 
       posthogUtils.capture("login_error", {
@@ -361,20 +369,6 @@ export default function LoginPage() {
             <p className="text-blue-200/50 text-xs font-light">
               ¿Necesitas acceso? Contacta al administrador
             </p>
-          </div>
-        </div>
-
-        {/* Demo credentials - minimal card */}
-        <div className="mt-4 p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-          <h3 className="text-blue-200/80 font-light mb-2 text-xs text-center">
-            Credenciales de prueba
-          </h3>
-          <div className="space-y-1 text-xs text-blue-200/60 font-light">
-            <div className="text-center">
-              superadmin@imagiq.com / superadmin123
-            </div>
-            <div className="text-center">admin@imagiq.com / admin123</div>
-            <div className="text-center">user@imagiq.com / user123</div>
           </div>
         </div>
       </div>

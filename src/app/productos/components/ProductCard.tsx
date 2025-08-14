@@ -12,6 +12,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,7 +38,6 @@ interface ProductCardProps {
   isFavorite?: boolean;
   onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
-  onMoreInfo?: (productId: string) => void;
   className?: string;
 }
 
@@ -53,9 +53,9 @@ export default function ProductCard({
   isFavorite = false,
   onAddToCart,
   onToggleFavorite,
-  onMoreInfo,
   className,
 }: ProductCardProps) {
+  const router = useRouter();
   const [selectedColor, setSelectedColor] = useState<ProductColor>(colors[0]);
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -101,9 +101,8 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
-    if (!onMoreInfo) return;
-
-    onMoreInfo(id);
+    // Navega usando el id del mock, no el nombre ni slug
+    router.push(`/productos/view/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,

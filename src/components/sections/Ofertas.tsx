@@ -76,16 +76,16 @@ export const Ofertas = () => {
   };
 
   return (
-    <section className="py-8">
-      <div className="container mx-auto px-4 py-12">
+    <section className="py-8 w-full max-w-full overflow-hidden">
+      <div className="container mx-auto px-4 py-12 max-w-full overflow-hidden">
         <h2 className="text-4xl font-bold text-center mb-10 text-gray-800 lg:text-3xl md:text-2xl sm:text-xl">
           Ofertas para ti
         </h2>
 
-        <div className="relative flex items-center max-w-7xl mx-auto">
+        <div className="relative flex items-center max-w-7xl mx-auto w-full overflow-hidden">
           {/* Left navigation arrow - outside card */}
           <button
-            className="hidden md:flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-700 hover:bg-gray-100 hover:shadow-lg transition-all duration-300 z-10 mr-6"
+            className="hidden md:flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-700 hover:bg-gray-100 hover:shadow-lg transition-all duration-300 z-10 mr-4 lg:mr-6 flex-shrink-0"
             onClick={prevSlide}
             aria-label="Ver ofertas anteriores"
           >
@@ -105,7 +105,7 @@ export const Ofertas = () => {
           </button>
 
           {/* Large single card containing products */}
-          <div className="bg-[#C8D7E8] rounded-3xl overflow-hidden shadow-sm p-4 md:p-8 flex-1 relative">
+          <div className="bg-[#C8D7E8] rounded-3xl shadow-sm p-4 md:p-8 flex-1 relative min-w-0 max-w-full overflow-hidden">
             {/* Mobile navigation arrows - inside card */}
             <button
               className="md:hidden absolute left-2 top-1/2 transform -translate-y-1/2 flex items-center justify-center w-8 h-8 bg-white rounded-full shadow-md text-gray-700 hover:bg-gray-100 transition-all duration-300 z-10"
@@ -148,11 +148,11 @@ export const Ofertas = () => {
             </button>
 
             {/* Desktop: Grid layout */}
-            <div className="hidden md:grid grid-cols-3 gap-8 items-center">
+            <div className="hidden md:grid grid-cols-3 gap-4 lg:gap-8 items-center w-full">
               {ofertasData.map((oferta) => (
                 <div
                   key={oferta.id}
-                  className="relative flex flex-col items-center"
+                  className="relative flex flex-col items-center min-w-0 max-w-full"
                 >
                   {oferta.discount && (
                     <div className="absolute -top-2 -right-2 bg-blue-500 text-white font-bold py-2 px-4 rounded-full text-sm z-10">
@@ -160,18 +160,18 @@ export const Ofertas = () => {
                     </div>
                   )}
 
-                  <div className="w-full flex justify-center py-6 h-80">
+                  <div className="w-full flex justify-center py-6 h-80 overflow-hidden">
                     <Image
                       src={oferta.image}
                       alt={oferta.title}
                       width={300}
                       height={300}
-                      className="object-contain max-h-full transition-transform duration-300"
+                      className="object-contain max-h-full max-w-full transition-transform duration-300"
                       unoptimized={true}
                     />
                   </div>
 
-                  <h3 className="text-sm font-medium text-center mt-4 text-gray-800 px-2">
+                  <h3 className="text-sm font-medium text-center mt-4 text-gray-800 px-2 leading-tight break-words overflow-hidden">
                     {oferta.title}
                   </h3>
                 </div>
@@ -179,7 +179,7 @@ export const Ofertas = () => {
             </div>
 
             {/* Mobile: Slider layout */}
-            <div className="md:hidden overflow-hidden">
+            <div className="md:hidden w-full overflow-hidden">
               <div
                 className="flex transition-transform duration-500 ease-in-out"
                 style={{
@@ -190,7 +190,7 @@ export const Ofertas = () => {
                 {ofertasData.map((oferta) => (
                   <div
                     key={oferta.id}
-                    className="relative flex flex-col items-center px-4"
+                    className="relative flex flex-col items-center px-4 min-w-0 overflow-hidden"
                     style={{ width: `${100 / ofertasData.length}%` }}
                   >
                     {oferta.discount && (
@@ -210,7 +210,7 @@ export const Ofertas = () => {
                       />
                     </div>
 
-                    <h3 className="text-xs font-medium text-center mt-2 text-gray-800 px-2">
+                    <h3 className="text-xs font-medium text-center mt-2 text-gray-800 px-2 break-words overflow-hidden">
                       {oferta.title}
                     </h3>
                   </div>
@@ -221,7 +221,7 @@ export const Ofertas = () => {
 
           {/* Right navigation arrow - outside card (desktop only) */}
           <button
-            className="hidden md:flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-700 hover:bg-gray-100 hover:shadow-lg transition-all duration-300 z-10 ml-6"
+            className="hidden md:flex items-center justify-center w-12 h-12 bg-white rounded-full shadow-md text-gray-700 hover:bg-gray-100 hover:shadow-lg transition-all duration-300 z-10 ml-4 lg:ml-6 flex-shrink-0"
             onClick={nextSlide}
             aria-label="Ver más ofertas"
           >

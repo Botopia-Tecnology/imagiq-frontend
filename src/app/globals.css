@@ -1,3 +1,19 @@
+@import url("sweetalert2/dist/sweetalert2.min.css");
+/* Samsung Sharp Sans font-face for web (variable weight) */
+@font-face {
+  font-family: "SamsungSharpSans";
+  src: url("/fonts/SamsungSharpSans.woff2") format("woff2"),
+    url("/fonts/SamsungSharpSans.woff") format("woff");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+html,
+body,
+* {
+  font-family: "SamsungSharpSans", "Montserrat", Arial, sans-serif !important;
+}
 @import "tailwindcss";
 @import "tw-animate-css";
 /* @import 'leaflet/dist/leaflet.css'; */
@@ -362,3 +378,197 @@ Purpose: Custom styling for interactive map and store cards
 END LEAFLET MAP CUSTOMIZATION
 =================================================================
 */
+
+/* 
+=================================================================
+NAVBAR DROPDOWNS - MAXIMUM Z-INDEX
+=================================================================
+*/
+
+/* Forzar z-index máximo para dropdowns del navbar */
+.navbar-dropdown {
+  z-index: 999999 !important;
+  position: absolute !important;
+}
+
+/* Asegurar que el navbar esté por encima de todo */
+header[data-navbar] {
+  z-index: 99999 !important;
+  position: sticky !important;
+}
+
+/* Hero section debe estar por debajo del navbar */
+section[data-hero] {
+  z-index: 1 !important;
+}
+
+/* Cualquier dropdown debe tener prioridad máxima */
+[data-dropdown] {
+  z-index: 999999 !important;
+  position: absolute !important;
+}
+
+/* 
+=================================================================
+NAVBAR DROPDOWNS - ULTRA PRIORITY
+=================================================================
+*/
+
+/* Portal contenedor de dropdowns */
+.dropdown-portal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  z-index: 999999;
+  pointer-events: none;
+}
+
+/* Hacer que solo los dropdowns activos reciban eventos */
+[data-dropdown] {
+  pointer-events: auto;
+  z-index: 999999;
+}
+
+/* Asegurarnos que los dropdowns siempre estén por encima */
+body::after {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  z-index: 99998;
+}
+
+/* SIMPLE scrollbar hiding ONLY for specific elements */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* 
+=================================================================
+GIF PAUSE CONTROL
+=================================================================
+*/
+
+@keyframes gifPause {
+  to {
+    visibility: hidden;
+  }
+}
+
+.gif-paused img {
+  /* Técnica para pausar GIFs en diferentes navegadores */
+  animation-play-state: paused !important;
+  -webkit-animation-play-state: paused !important;
+}
+
+/* 
+=================================================================
+GIF PAUSE CONTROL - ENHANCED VERSION
+=================================================================
+*/
+
+/* Contenedor para la imagen estática */
+.static-image-container {
+  position: relative;
+}
+
+.static-image-container img {
+  /* Asegura que la imagen estática no se anime */
+  animation: none !important;
+  -webkit-animation: none !important;
+}
+
+/* Asegura que el GIF no se reproduzca en Firefox */
+@-moz-document url-prefix() {
+  .static-image-container img {
+    visibility: visible !important;
+  }
+}
+
+/* Ajuste para Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .static-image-container img {
+      -webkit-animation: none !important;
+    }
+  }
+}
+
+/* Ajuste para Chrome */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .static-image-container img {
+    animation: none !important;
+  }
+}
+
+/* 
+=================================================================
+GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
+=================================================================
+*/
+
+/* Contenedor para la imagen estática */
+.static-image-container {
+  position: relative;
+}
+
+.static-image-container img {
+  /* Asegura que la imagen estática no se anime */
+  animation: none !important;
+  -webkit-animation: none !important;
+}
+
+/* Asegura que el GIF no se reproduzca en Firefox */
+@-moz-document url-prefix() {
+  .static-image-container img {
+    visibility: visible !important;
+  }
+}
+
+/* Ajuste para Safari */
+@media not all and (min-resolution: 0.001dpcm) {
+  @supports (-webkit-appearance: none) {
+    .static-image-container img {
+      -webkit-animation: none !important;
+    }
+  }
+}
+
+/* Ajuste para Chrome */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  .static-image-container img {
+    animation: none !important;
+  }
+}
+
+/* Animaciones para transiciones suaves entre GIF y estático */
+@keyframes fadeIn {
+  from {
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+/* Clase para transición suave al finalizar GIF */
+.gif-transition {
+  transition: opacity 0.3s ease-out;
+}
+/* Clase para transición suave al finalizar GIF */
+.gif-transition {
+  transition: opacity 0.3s ease-out;
+}

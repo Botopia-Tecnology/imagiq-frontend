@@ -251,9 +251,6 @@ export default function RelojesSection() {
                   onAddToCart={(productId: string, color: string) => {
                     console.log(`Añadir al carrito: ${productId} - ${color}`);
                   }}
-                  onMoreInfo={(productId: string) => {
-                    console.log(`Más información: ${productId}`);
-                  }}
                   onToggleFavorite={(productId: string) => {
                     console.log(`Toggle favorito: ${productId}`);
                   }}

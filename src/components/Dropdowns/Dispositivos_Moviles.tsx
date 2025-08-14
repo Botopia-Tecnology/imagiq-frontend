@@ -8,9 +8,18 @@ const dispositivosMoviles = [
     name: "Smartphones",
     href: "/productos/DispositivosMoviles?section=smartphones",
   },
-  { name: "Tabletas", href: "/productos/DispositivosMoviles?section=tabletas" },
-  { name: "Relojes", href: "/productos/DispositivosMoviles?section=relojes" },
-  { name: "Galaxy Buds", href: "/productos/DispositivosMoviles?section=buds" },
+  {
+    name: "Tabletas",
+    href: "/productos/DispositivosMoviles?section=tabletas",
+  },
+  {
+    name: "Relojes",
+    href: "/productos/DispositivosMoviles?section=relojes",
+  },
+  {
+    name: "Galaxy Buds",
+    href: "/productos/DispositivosMoviles?section=buds",
+  },
   {
     name: "Accesorios",
     href: "/productos/DispositivosMoviles?section=accesorios",
@@ -27,17 +36,17 @@ export default function DispositivosMovilesDropdown() {
   };
 
   return (
-    <div className="absolute top-full left-12 transform -translate-x-1/6 mt-2 bg-white rounded-xl shadow-lg border border-gray-100 py-3 px-5 min-w-[200px] z-[70] animate-dropdown-enter">
+    <div
+      data-dropdown="dispositivos-moviles"
+      className="absolute top-full left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px] transition-all duration-200"
+    >
       <div className="space-y-1.5">
-        {dispositivosMoviles.map((item, index) => (
+        {dispositivosMoviles.map((item) => (
           <Link
             key={item.name}
             href={item.href}
-            className="block text-gray-800 hover:text-gray-900 text-base font-medium py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-all duration-150 animate-dropdown-item"
+            className="block text-gray-800 hover:text-gray-900 text-base font-medium py-1.5 px-2 rounded-lg hover:bg-gray-50 transition-all duration-150"
             onClick={() => handleItemClick(item.name, item.href)}
-            style={{
-              animationDelay: `${index * 30}ms`,
-            }}
           >
             {item.name}
           </Link>

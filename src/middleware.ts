@@ -16,7 +16,10 @@ const publicRoutes = [
   "/",
   "/productos",
   "/productos/DispositivosMoviles",
+  "/productos/Electrodomesticos", // <-- Añade esta línea
+  "/productos/view",
   "/login",
+  "/login/CreateAccount",
   "/register",
   "/soporte",
   "/tiendas",
@@ -27,6 +30,20 @@ const adminRoutes = ["/dashboard"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Permitir acceso público a archivos estáticos en la raíz de public (ej: /videoplayback.mp4)
+  if (pathname.match(/^\/[\w\-]+\.\w+$/)) {
+    return NextResponse.next();
+  }
+
+  // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
+  if (
+    pathname.startsWith("/productos/DispositivosMoviles") ||
+    pathname.startsWith("/productos/Electrodomesticos") ||
+    pathname.startsWith("/productos/view")
+  ) {
+    return NextResponse.next();
+  }
 
   // Check if user is authenticated (token in cookies/headers)
   const token = request.cookies.get("auth-token")?.value;

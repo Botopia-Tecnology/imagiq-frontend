@@ -5,7 +5,36 @@
  * - Historial y patrones de comportamiento
  */
 
+// Interface from the backend microservice
+export interface Usuario {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  email_verificado?: boolean;
+  contrasena: string;
+  rol: "usuario" | "admin";
+  activo?: boolean;
+  bloqueado?: boolean;
+  fecha_creacion?: Date;
+  ultimo_login?: Date | null;
+  tipo_documento: string;
+  numero_documento: string;
+  telefono: string;
+  codigo_pais: string;
+}
+
+// Internal user interface for the frontend
 export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: "user" | "admin" | "superadmin";
+  avatar?: string;
+}
+
+// Legacy interface - keeping for compatibility
+export interface UserLegacy {
   id: string;
   email: string;
   firstName: string;

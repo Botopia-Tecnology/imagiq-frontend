@@ -11,46 +11,26 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  AlertCircle,
-  CheckCircle,
-  Loader2,
-} from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import Logo from "@/components/Logo";
+import { Usuario } from "@/types/user";
+import { notifyLoginSuccess, notifyError } from "./notifications";
 
-// Hardcoded users for testing - will be replaced with microservice
-const DEMO_USERS = [
-  {
-    id: 1,
-    email: "superadmin@imagiq.com",
-    password: "superadmin123",
-    role: "superadmin" as const,
-    name: "Super Administrador",
-    avatar: "/avatars/superadmin.jpg",
-  },
-  {
-    id: 2,
-    email: "admin@imagiq.com",
-    password: "admin123",
-    role: "admin" as const,
-    name: "Administrador",
-    avatar: "/avatars/admin.jpg",
-  },
-  {
-    id: 3,
-    email: "user@imagiq.com",
-    password: "user123",
-    role: "user" as const,
-    name: "Usuario",
-    avatar: "/avatars/user.jpg",
-  },
-];
+// API endpoint for authentication
+const AUTH_API_URL = "http://localhost:3001/api/auth/login";
+
+// Login success response
+interface LoginSuccessResponse {
+  access_token: string;
+  user: Omit<Usuario, "contrasena" | "tipo_documento" | "numero_documento">;
+}
+
+// Login error response
+interface LoginErrorResponse {
+  status: number;
+  message: string;
+}
 
 interface LoginError {
   field?: string;
@@ -58,8 +38,23 @@ interface LoginError {
 }
 
 export default function LoginPage() {
+  // ...existing code...
   const router = useRouter();
   const { login, isAuthenticated } = useAuthContext();
+
+  // Detectar redirect a CreateAccount y navegar automáticamente
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const redirect = params.get("redirect");
+      if (redirect === "/login/CreateAccount") {
+        // Usar setTimeout para asegurar que router esté inicializado
+        setTimeout(() => {
+          router.replace("/login/CreateAccount");
+        }, 0);
+      }
+    }
+  }, [router]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -70,9 +65,11 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<LoginError[]>([]);
   const [loginSuccess, setLoginSuccess] = useState(false);
-
-  // Animation states
-  const [isVisible, setIsVisible] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalContent, setModalContent] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -81,20 +78,25 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, router]);
 
-  // Trigger entrance animation
-  useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
-
   // Form validation
   const validateForm = (): boolean => {
     const newErrors: LoginError[] = [];
 
     if (!formData.email.trim()) {
-      newErrors.push({ field: "email", message: "El email es requerido" });
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.push({ field: "email", message: "Formato de email inválido" });
+      newErrors.push({
+        field: "email",
+        message: "El correo electrónico o móvil es requerido",
+      });
+    } else {
+      // Permitir email o número móvil (10 dígitos, solo números)
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+      const isMobile = /^\d{10}$/.test(formData.email);
+      if (!isEmail && !isMobile) {
+        newErrors.push({
+          field: "email",
+          message: "Ingresa un correo válido o un número móvil de 10 dígitos",
+        });
+      }
     }
 
     if (!formData.password.trim()) {
@@ -122,6 +124,11 @@ export default function LoginPage() {
         email: formData.email,
         error_count: errors.length,
       });
+      setModalContent({
+        type: "error",
+        message: "Verifica los datos ingresados.",
+      });
+      setShowModal(true);
       return;
     }
 
@@ -129,59 +136,102 @@ export default function LoginPage() {
     setErrors([]);
 
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Find user in demo data
-      const user = DEMO_USERS.find(
-        (u) => u.email === formData.email && u.password === formData.password
-      );
-
-      if (!user) {
-        throw new Error("Credenciales inválidas");
+      // API call to authentication microservice
+      const response = await fetch(AUTH_API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          contrasena: formData.password,
+        }),
+      });
+      // Si la respuesta no es válida, mostrar error
+      if (!response || typeof response.status !== "number") {
+        const msg =
+          "No se pudo conectar con el servidor. Verifica que el backend esté corriendo.";
+        setModalContent({ type: "error", message: msg });
+        setShowModal(true);
+        await notifyError(msg, "Login fallido");
+        setErrors([{ message: msg }]);
+        setIsLoading(false);
+        return;
       }
-
-      // Track successful login attempt
+      if (!response.ok) {
+        let errorMsg = "Error de autenticación";
+        try {
+          const errorResult: LoginErrorResponse = await response.json();
+          if (
+            errorResult.message &&
+            errorResult.message.toLowerCase().includes("correo") &&
+            errorResult.message.toLowerCase().includes("no existe")
+          ) {
+            errorMsg = "No existe una cuenta con ese correo electrónico.";
+          } else {
+            errorMsg = errorResult.message || errorMsg;
+          }
+        } catch {
+          // Error al parsear JSON
+        }
+        setModalContent({ type: "error", message: errorMsg });
+        setShowModal(true);
+        await notifyError(errorMsg, "Login fallido");
+        setErrors([{ message: errorMsg }]);
+        setIsLoading(false);
+        return;
+      }
+      // Handle success response
+      const result: LoginSuccessResponse = await response.json();
+      if (!result.access_token || !result.user) {
+        const msg = "Respuesta de servidor inválida";
+        setModalContent({ type: "error", message: msg });
+        setShowModal(true);
+        await notifyError(msg, "Login fallido");
+        setErrors([{ message: msg }]);
+        setIsLoading(false);
+        return;
+      }
+      const { user, access_token } = result;
       posthogUtils.capture("login_attempt", {
         email: formData.email,
-        user_role: user.role,
+        user_role: user.rol,
         success: true,
       });
-
-      // Show success animation
       setLoginSuccess(true);
-
-      // Login user
-      await login({
+      setModalContent({
+        type: "success",
+        message: `¡Bienvenido, ${user.nombre}! Has iniciado sesión correctamente.`,
+      });
+      setShowModal(true);
+      await notifyLoginSuccess(user.nombre);
+      localStorage.setItem("imagiq_token", access_token);
+      login({
         id: user.id,
         email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
+        name: `${user.nombre} ${user.apellido}`,
+        role: user.rol === "admin" ? "admin" : "user",
+        avatar: undefined,
       });
-
-      // Track successful login
       posthogUtils.capture("login_success", {
         user_id: user.id,
-        user_role: user.role,
+        user_role: user.rol,
         email: user.email,
       });
-
-      // Redirect after success animation
       setTimeout(() => {
-        router.push(user.role === "user" ? "/tienda" : "/dashboard");
-      }, 1500);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Error de conexión";
-      setErrors([{ message: errorMessage }]);
-
+        router.push(user.rol === "admin" ? "/dashboard" : "/tienda");
+      }, 500);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error de conexión";
+      setModalContent({ type: "error", message: msg });
+      setShowModal(true);
+      await notifyError(msg, "Login fallido");
+      setErrors([{ message: msg }]);
+      setIsLoading(false);
       posthogUtils.capture("login_error", {
         email: formData.email,
-        error: errorMessage,
+        error: msg,
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -204,196 +254,192 @@ export default function LoginPage() {
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center relative overflow-hidden py-16 md:py-24"
-      style={{
-        background: "linear-gradient(135deg, #14182A 0%, #0c4da2 100%)",
-      }}
-    >
-      {/* Minimal animated background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-1/4 left-1/4 w-80 h-80 bg-blue-400/5 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e6eef5] via-white to-[#b3c7db] relative mb-10">
+      {/* Avatar circle */}
+      <div className="w-16 h-16 rounded-full bg-[#b3c7db] shadow-lg mx-auto mb-6 flex items-center justify-center">
+        <svg width="32" height="32" fill="none" viewBox="0 0 32 32">
+          <circle cx="16" cy="16" r="16" fill="#b3c7db" />
+          <text
+            x="50%"
+            y="54%"
+            textAnchor="middle"
+            fontSize="14"
+            fill="#002142"
+            fontFamily="sans-serif"
+            dy=".3em"
+          >
+            👤
+          </text>
+        </svg>
       </div>
 
-      {/* Main container */}
-      <div
-        className={cn(
-          "relative z-10 w-full max-w-sm mx-4 transition-all duration-700 ease-out",
-          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-        )}
-      >
-        {/* Login card - minimalist design */}
-        <div className="bg-white/8 backdrop-blur-md rounded-2xl p-8 border border-white/10">
-          {/* Logo and title */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-6">
-              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-sm">
-                <Logo width={148} height={148} />
-              </div>
-            </div>
-            <h1 className="text-2xl font-light text-white mb-2">Bienvenido</h1>
-            <p className="text-blue-200/70 text-sm font-light">
-              Accede a tu cuenta
-            </p>
+      {/* Card container */}
+      <div className="w-full max-w-md mx-auto bg-white border border-[#002142]/20 rounded-2xl shadow-lg p-8 flex flex-col items-center animate-fade-in">
+        {/* Title */}
+        <h2
+          className="text-center text-2xl font-semibold mb-6"
+          style={{ color: "#002142" }}
+        >
+          Iniciar sesión
+        </h2>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="w-full flex flex-col gap-5">
+          {/* Email field */}
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium mb-1"
+              style={{ color: "#002142" }}
+            >
+              Correo electrónico o número móvil
+            </label>
+            <input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleInputChange("email", e.target.value)}
+              className="w-full px-4 py-2 border border-[#002142]/30 rounded-lg text-[#002142] placeholder-[#4a5a6a] focus:outline-none focus:ring-2 focus:ring-[#002142]/40 text-base font-normal bg-[#e6eef5] transition-all duration-200"
+              placeholder="Ingresa tu correo o móvil"
+              disabled={isLoading || loginSuccess}
+              autoComplete="username"
+            />
+            {getFieldError("email") && (
+              <p className="text-red-500 text-xs mt-1">
+                {getFieldError("email")?.message}
+              </p>
+            )}
           </div>
 
-          {/* Success message - minimal */}
-          {loginSuccess && (
-            <div className="mb-6 p-3 bg-blue-500/10 border border-blue-400/20 rounded-lg">
-              <div className="flex items-center justify-center text-blue-200">
-                <CheckCircle className="w-4 h-4 mr-2" />
-                <span className="text-sm font-light">Acceso exitoso</span>
-              </div>
+          {/* Password field */}
+          <div>
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium mb-1"
+              style={{ color: "#002142" }}
+            >
+              Contraseña
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                className="w-full px-4 py-2 border border-[#002142]/30 rounded-lg text-[#002142] placeholder-[#4a5a6a] focus:outline-none focus:ring-2 focus:ring-[#002142]/40 text-base font-normal bg-[#e6eef5] transition-all duration-200"
+                placeholder="Ingresa tu contraseña"
+                disabled={isLoading || loginSuccess}
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#4a5a6a] hover:text-[#002142]"
+                disabled={isLoading || loginSuccess}
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5" />
+                ) : (
+                  <Eye className="w-5 h-5" />
+                )}
+              </button>
             </div>
-          )}
+            {getFieldError("password") && (
+              <p className="text-red-500 text-xs mt-1">
+                {getFieldError("password")?.message}
+              </p>
+            )}
+          </div>
 
-          {/* General errors - minimal */}
+          {/* General errors */}
           {getGeneralErrors().map((error, index) => (
             <div
               key={index}
-              className="mb-6 p-3 bg-red-500/10 border border-red-400/20 rounded-lg"
+              className="w-full flex items-center text-red-500 text-sm gap-2"
             >
-              <div className="flex items-center justify-center text-red-200">
-                <AlertCircle className="w-4 h-4 mr-2" />
-                <span className="text-sm font-light">{error.message}</span>
-              </div>
+              <AlertCircle className="w-4 h-4" />
+              <span>{error.message}</span>
             </div>
           ))}
-
-          {/* Login form - clean and minimal */}
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Email field */}
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange("email", e.target.value)}
-                  className={cn(
-                    "w-full px-4 py-3 bg-white/5 border rounded-lg text-white placeholder-blue-200/50 transition-all duration-200 focus:outline-none focus:ring-1 backdrop-blur-sm font-light",
-                    getFieldError("email")
-                      ? "border-red-400/40 focus:ring-red-400/30 focus:border-red-400/40"
-                      : "border-white/10 hover:border-white/20 focus:ring-blue-400/30 focus:border-blue-400/40"
-                  )}
-                  placeholder="Email"
-                  disabled={isLoading || loginSuccess}
-                />
-                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-blue-200/40" />
-              </div>
-              {getFieldError("email") && (
-                <p className="text-red-300/80 text-xs font-light">
-                  {getFieldError("email")?.message}
-                </p>
-              )}
-            </div>
-
-            {/* Password field */}
-            <div className="space-y-2">
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) =>
-                    handleInputChange("password", e.target.value)
-                  }
-                  className={cn(
-                    "w-full px-4 py-3 bg-white/5 border rounded-lg text-white placeholder-blue-200/50 transition-all duration-200 focus:outline-none focus:ring-1 backdrop-blur-sm font-light",
-                    getFieldError("password")
-                      ? "border-red-400/40 focus:ring-red-400/30 focus:border-red-400/40"
-                      : "border-white/10 hover:border-white/20 focus:ring-blue-400/30 focus:border-blue-400/40"
-                  )}
-                  placeholder="Contraseña"
-                  disabled={isLoading || loginSuccess}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-200/40 hover:text-blue-200/70 transition-colors duration-200"
-                  disabled={isLoading || loginSuccess}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-              {getFieldError("password") && (
-                <p className="text-red-300/80 text-xs font-light">
-                  {getFieldError("password")?.message}
-                </p>
-              )}
-            </div>
-
-            {/* Submit button - minimal */}
-            <button
-              type="submit"
-              disabled={isLoading || loginSuccess}
-              className={cn(
-                "w-full py-3 mt-6 rounded-lg font-light text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-400/40",
-                isLoading || loginSuccess
-                  ? "bg-blue-600/30 cursor-not-allowed"
-                  : "bg-blue-600/80 hover:bg-blue-600 active:bg-blue-700"
-              )}
-            >
-              {isLoading ? (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  <span>Verificando</span>
-                </div>
-              ) : loginSuccess ? (
-                <div className="flex items-center justify-center">
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  Acceso exitoso
-                </div>
+          {/* Modal feedback (SweetAlert2) */}
+          {showModal && modalContent && (
+            <div className="w-full flex items-center justify-center mt-2">
+              {modalContent.type === "success" ? (
+                <span className="text-green-600 text-sm font-semibold">
+                  {modalContent.message}
+                </span>
               ) : (
-                "Iniciar Sesión"
+                <span className="text-red-500 text-sm font-semibold">
+                  {modalContent.message}
+                </span>
               )}
-            </button>
-          </form>
-
-          {/* Footer - minimal */}
-          <div className="mt-6 text-center">
-            <p className="text-blue-200/50 text-xs font-light">
-              ¿Necesitas acceso? Contacta al administrador
-            </p>
-          </div>
-        </div>
-
-        {/* Demo credentials - minimal card */}
-        <div className="mt-4 p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-          <h3 className="text-blue-200/80 font-light mb-2 text-xs text-center">
-            Credenciales de prueba
-          </h3>
-          <div className="space-y-1 text-xs text-blue-200/60 font-light">
-            <div className="text-center">
-              superadmin@imagiq.com / superadmin123
             </div>
-            <div className="text-center">admin@imagiq.com / admin123</div>
-            <div className="text-center">user@imagiq.com / user123</div>
+          )}
+
+          {/* Submit button */}
+          <button
+            type="submit"
+            disabled={isLoading || loginSuccess}
+            className="w-full py-2 rounded-full bg-[#002142] text-white text-base font-semibold mt-3 shadow hover:bg-[#003366] transition-all duration-200 disabled:bg-[#b3c7db] disabled:text-[#4a5a6a]"
+          >
+            {isLoading ? "Verificando..." : "Entrar"}
+          </button>
+        </form>
+
+        {/* Terms and links */}
+        <div className="w-full text-xs text-[#002142] text-center mt-6">
+          Al continuar, aceptas los{" "}
+          <a href="#" className="underline text-[#002142]">
+            Términos de uso
+          </a>{" "}
+          y la{" "}
+          <a href="#" className="underline text-[#002142]">
+            Política de privacidad
+          </a>
+          .<br />
+          <div className="flex justify-between mt-3">
+            <a href="#" className="underline text-[#002142]">
+              ¿Problemas para iniciar sesión?
+            </a>
+            <a href="#" className="underline text-[#002142]">
+              ¿Olvidaste tu contraseña?
+            </a>
           </div>
         </div>
       </div>
 
-      <style jsx global>{`
-        @keyframes pulse-minimal {
-          0%,
-          100% {
-            opacity: 0.05;
-            transform: scale(1);
-          }
-          50% {
-            opacity: 0.1;
-            transform: scale(1.02);
-          }
-        }
+      {/* Divider and create account button */}
+      <div className="w-full max-w-md mx-auto flex flex-col items-center mt-8">
+        <div className="w-full flex items-center gap-3 mb-4">
+          <hr className="flex-1 border-[#002142]/30" />
+          <span className="text-xs text-[#002142]">
+            ¿Nuevo en la comunidad?
+          </span>
+          <hr className="flex-1 border-[#002142]/30" />
+        </div>
+        <button
+          type="button"
+          className="w-full py-2 rounded-full border-2 border-[#002142] text-[#002142] text-base font-semibold bg-white hover:bg-[#e6eef5] transition-all duration-200 shadow"
+          onClick={() => router.push("/login/CreateAccount")}
+        >
+          Crear una cuenta
+        </button>
+      </div>
 
-        .animate-pulse-minimal {
-          animation: pulse-minimal 8s ease-in-out infinite;
+      <style jsx>{`
+        .animate-fade-in {
+          animation: fadeIn 0.7s cubic-bezier(0.39, 0.575, 0.565, 1) both;
+        }
+        @keyframes fadeIn {
+          0% {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </div>

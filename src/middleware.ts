@@ -17,6 +17,7 @@ const publicRoutes = [
   "/productos",
   "/productos/DispositivosMoviles",
   "/productos/Electrodomesticos", // <-- Añade esta línea
+  "/productos/view",
   "/login",
   "/register",
   "/soporte",
@@ -34,10 +35,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Permitir acceso público a todas las subrutas de Electrodomesticos igual que DispositivosMoviles
+  // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
   if (
     pathname.startsWith("/productos/DispositivosMoviles") ||
-    pathname.startsWith("/productos/Electrodomesticos")
+    pathname.startsWith("/productos/Electrodomesticos") ||
+    pathname.startsWith("/productos/view")
   ) {
     return NextResponse.next();
   }

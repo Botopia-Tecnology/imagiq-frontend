@@ -142,8 +142,9 @@ export default function Navbar() {
     const navItem = navItemRefs.current[dropdownName];
     if (navItem) {
       const rect = navItem.getBoundingClientRect();
+      // El dropdown debe aparecer justo debajo del item, sin modificar el top
       setDropdownCoords({
-        top: rect.bottom + window.scrollY,
+        top: rect.bottom,
         left: rect.left + window.scrollX,
         width: rect.width,
       });
@@ -229,6 +230,26 @@ export default function Navbar() {
     }
   };
 
+  // Detectar si está en la vista de más información del producto
+  const isProductDetail =
+    pathname.startsWith("/productos/") &&
+    !pathname.includes("/productos/DispositivosMoviles");
+  // Detectar si está en un item del navbar (rutas principales)
+  const isNavbarItem = navbarRoutes.some((route) => pathname === route.href);
+  // Detectar si estamos en el hero con scroll
+  const isHeroScrolled = isHome && isScrolled;
+  // Lógica para fondo, color de items y logo
+  const isScrolledNavbar =
+    (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
+  const showBlackLogo = isScrolledNavbar || isNavbarItem || isHeroScrolled;
+  const showWhiteItems =
+    !isScrolledNavbar && (isProductDetail || (isHome && !isScrolled));
+
+  // Variables para menú móvil
+  const showWhiteItemsMobile =
+    !isScrolledNavbar && (isProductDetail || (isHome && !isScrolled));
+  const showBlackLogoMobile = isScrolledNavbar || isNavbarItem;
+
   return (
     <>
       <style jsx global>{`
@@ -313,10 +334,12 @@ export default function Navbar() {
         data-navbar="true"
         className={cn(
           "fixed top-0 left-0 w-full z-50 transition-all duration-300",
-          isHome
-            ? isScrolled
-              ? "bg-white shadow"
-              : "bg-transparent"
+          isScrolledNavbar
+            ? "bg-white shadow"
+            : isHome && !isScrolled
+            ? "bg-transparent"
+            : isProductDetail
+            ? "bg-transparent"
             : "bg-white shadow"
         )}
         style={{ boxShadow: "none" }}
@@ -337,13 +360,7 @@ export default function Navbar() {
                 aria-label="Inicio"
               >
                 <Image
-                  src={
-                    isHome
-                      ? isScrolled
-                        ? logoSamsungBlack
-                        : logoSamsungWhite
-                      : logoSamsungBlack
-                  }
+                  src={showBlackLogo ? logoSamsungBlack : logoSamsungWhite}
                   alt="Samsung Logo"
                   height={32}
                   style={{ minWidth: 120, width: "auto" }}
@@ -378,14 +395,11 @@ export default function Navbar() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </form>
+                {/* Icono de búsqueda desktop */}
                 <button
                   className={cn(
                     "flex items-center justify-center w-10 h-10 transition-colors absolute right-0",
-                    isHome
-                      ? isScrolled
-                        ? "text-black"
-                        : "text-white"
-                      : "text-black"
+                    showWhiteItems ? "text-white" : "text-black"
                   )}
                   title="Buscar"
                   onClick={() =>
@@ -395,7 +409,13 @@ export default function Navbar() {
                   }
                   style={{ zIndex: 1001 }}
                 >
-                  <Search className="w-6 h-6" />
+                  <Search
+                    className={
+                      showWhiteItems
+                        ? "w-6 h-6 text-white"
+                        : "w-6 h-6 text-black"
+                    }
+                  />
                 </button>
               </div>
 
@@ -404,11 +424,7 @@ export default function Navbar() {
                 href={isAuthenticated ? "/dashboard" : "/login"}
                 className={cn(
                   "flex items-center justify-center w-10 h-10",
-                  isHome
-                    ? isScrolled
-                      ? "text-black"
-                      : "text-white"
-                    : "text-black"
+                  showWhiteItems ? "text-white" : "text-black"
                 )}
                 title={isAuthenticated ? "Dashboard" : "Ingresar"}
                 onClick={() =>
@@ -426,11 +442,7 @@ export default function Navbar() {
                 href="/checkout"
                 className={cn(
                   "flex items-center justify-center w-10 h-10 relative",
-                  isHome
-                    ? isScrolled
-                      ? "text-black"
-                      : "text-white"
-                    : "text-black"
+                  showWhiteItems ? "text-white" : "text-black"
                 )}
                 title="Carrito de compras"
                 onClick={handleCartClick}
@@ -453,11 +465,7 @@ export default function Navbar() {
                   <button
                     className={cn(
                       "flex items-center justify-center w-10 h-10 text-white text-2xl font-bold",
-                      isHome
-                        ? isScrolled
-                          ? "text-black"
-                          : "text-white"
-                        : "text-black"
+                      showWhiteItemsMobile ? "text-white" : "text-black"
                     )}
                     title={
                       searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
@@ -489,11 +497,7 @@ export default function Navbar() {
                     href="/checkout"
                     className={cn(
                       "flex items-center justify-center w-10 h-10 relative text-white",
-                      isHome
-                        ? isScrolled
-                          ? "text-black"
-                          : "text-white"
-                        : "text-black"
+                      showWhiteItemsMobile ? "text-white" : "text-black"
                     )}
                     title="Carrito"
                     onClick={handleCartClick}
@@ -508,11 +512,7 @@ export default function Navbar() {
                   <button
                     className={cn(
                       "flex items-center justify-center w-10 h-10 text-white",
-                      isHome
-                        ? isScrolled
-                          ? "text-black"
-                          : "text-white"
-                        : "text-black"
+                      showWhiteItemsMobile ? "text-white" : "text-black"
                     )}
                     aria-label="Abrir menú"
                     onClick={() => setIsMobileMenuOpen((open) => !open)}
@@ -577,12 +577,12 @@ export default function Navbar() {
                   >
                     <Link
                       href={item.href}
-                      className={cn(
-                        "text-lg lg:text-lg font-semibold transition-all duration-300 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg",
-                        isHome
-                          ? "text-white/90 hover:text-white hover:bg-white/10"
-                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                      )}
+                      className={
+                        "text-lg lg:text-lg font-semibold transition-all duration-300 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg" +
+                        (showWhiteItems
+                          ? " text-white/90 hover:text-white hover:bg-white/10"
+                          : " text-gray-700 hover:text-gray-900 hover:bg-gray-100")
+                      }
                       onClick={() => handleNavClick(item)}
                     >
                       {item.name}
@@ -621,7 +621,12 @@ export default function Navbar() {
                     <Link
                       key={item.name}
                       href={item.href}
-                      className="text-lg font-semibold py-3 px-4 rounded-lg text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                      className={
+                        "text-lg font-semibold py-3 px-4 rounded-lg transition-all duration-200" +
+                        (showWhiteItemsMobile
+                          ? " text-white/90 hover:text-white hover:bg-white/10"
+                          : " text-gray-900 hover:bg-gray-100")
+                      }
                       onClick={() => handleNavClick(item)}
                     >
                       {item.name}

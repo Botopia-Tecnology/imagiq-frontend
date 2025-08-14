@@ -57,6 +57,7 @@ export default function Navbar() {
   // Hook para detectar la ruta actual
   const pathname = usePathname();
   const isHome = pathname === "/";
+  const isLogin = pathname === "/login";
 
   // Hooks personalizados
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -241,14 +242,20 @@ export default function Navbar() {
   // Lógica para fondo, color de items y logo
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  const showBlackLogo = isScrolledNavbar || isNavbarItem || isHeroScrolled;
+  // Mostrar logo negro si está en login, o lógica original
+  const showBlackLogo =
+    isLogin || isScrolledNavbar || isNavbarItem || isHeroScrolled;
   const showWhiteItems =
-    !isScrolledNavbar && (isProductDetail || (isHome && !isScrolled));
+    !isScrolledNavbar &&
+    !isLogin &&
+    (isProductDetail || (isHome && !isScrolled));
 
   // Variables para menú móvil
   const showWhiteItemsMobile =
-    !isScrolledNavbar && (isProductDetail || (isHome && !isScrolled));
-  const showBlackLogoMobile = isScrolledNavbar || isNavbarItem;
+    !isScrolledNavbar &&
+    !isLogin &&
+    (isProductDetail || (isHome && !isScrolled));
+  const showBlackLogoMobile = isLogin || isScrolledNavbar || isNavbarItem;
 
   return (
     <>

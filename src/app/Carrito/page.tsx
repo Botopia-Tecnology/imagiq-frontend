@@ -7,14 +7,11 @@
  * - Tracking de eventos de conversión y abandono
  */
 
+import Details from "./Details";
+
+/**
+ * Página principal del carrito y checkout
+ */
 export default function CheckoutPage() {
-  //   return (
-  // <div>
-  {
-    /* Checkout process components will be here */
-  }
-  {
-    /* </div> */
-  }
-  //   );
+  return <Details />;
 }

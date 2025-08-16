@@ -15,6 +15,18 @@ interface Product {
   image: string;
 }
 
+interface Product {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
+export type CartProduct = {
+  id: string;
+  quantity: number;
+};
+
 export const useCart = () => {
   // Cart logic will be implemented here
   return {

@@ -101,9 +101,15 @@ export default function RootLayout({
             <AuthProvider>
               <UserPreferencesProvider>
                 <CartProvider>
-                  <div className="min-h-screen flex flex-col">
+                  {/* Detectar si estamos en móvil y hay scroll para agregar pt-16 */}
+                  <div
+                    id="main-layout"
+                    className="min-h-screen flex flex-col md:mr-0"
+                  >
                     <Navbar />
-                    <main className="flex-1">{children}</main>
+                    <main className="flex-1" id="main-content">
+                      {children}
+                    </main>
                     <Footer />
                   </div>
                 </CartProvider>

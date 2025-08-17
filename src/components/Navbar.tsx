@@ -53,6 +53,8 @@ export default function Navbar() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
+  // Normaliza la ruta para comparar solo el path
+  const cleanPath = pathname.split(/[?#]/)[0];
   const isHome = pathname === "/";
   const isLogin = pathname === "/login";
   const debouncedSearch = useDebounce(searchQuery, 300);
@@ -208,12 +210,27 @@ export default function Navbar() {
   const isProductDetail =
     pathname.startsWith("/productos/") &&
     !pathname.includes("/productos/DispositivosMoviles");
-  const isNavbarItem = navbarRoutes.some((route) => pathname === route.href);
+  // Detectar si estamos en DispositivosMoviles o Electrodomesticos (con o sin params)
+  const isDispositivosMoviles = pathname.startsWith(
+    "/productos/DispositivosMoviles"
+  );
+  const isElectrodomesticos = pathname.startsWith(
+    "/productos/Electrodomesticos"
+  );
+  const isNavbarItem = navbarRoutes.some((route) =>
+    pathname.startsWith(route.href)
+  );
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
+  // Forzar logo negro en DispositivosMoviles y Electrodomesticos
   const showBlackLogo =
-    isLogin || isScrolledNavbar || isNavbarItem || isHeroScrolled;
+    isLogin ||
+    isScrolledNavbar ||
+    isNavbarItem ||
+    isHeroScrolled ||
+    isDispositivosMoviles ||
+    isElectrodomesticos;
   const showWhiteItems =
     !isScrolledNavbar &&
     !isLogin &&
@@ -229,9 +246,9 @@ export default function Navbar() {
       <header
         data-navbar="true"
         className={cn(
-          "w-full  z-50 transition-all duration-300",
-          "sticky top-0 left-0 md:static", // móvil sticky arriba, desktop normal
-          isScrolledNavbar
+          "w-full z-50 transition-all duration-300",
+          "sticky top-0 left-0 md:static",
+          isDispositivosMoviles || isElectrodomesticos || isScrolledNavbar
             ? "bg-white shadow"
             : isHome && !isScrolled
             ? "bg-transparent"
@@ -240,6 +257,8 @@ export default function Navbar() {
             : "bg-white shadow"
         )}
         style={{ boxShadow: "none" }}
+        role="navigation"
+        aria-label="Navegación principal"
       >
         <div className="flex items-center justify-between h-16 px-8 max-w-full">
           {/* Logo Samsung-style */}
@@ -313,8 +332,13 @@ export default function Navbar() {
             <Link
               href={isAuthenticated ? "/dashboard" : "/login"}
               className={cn(
-                "flex items-center justify-center w-10 h-10",
-                showWhiteItems ? "text-white" : "text-black"
+                "flex items-center justify-center w-10 h-10 text-black",
+                // Forzar negro en DispositivosMoviles y Electrodomesticos
+                isDispositivosMoviles || isElectrodomesticos
+                  ? "text-black"
+                  : showWhiteItems
+                  ? "text-white"
+                  : "text-black"
               )}
               title={isAuthenticated ? "Dashboard" : "Ingresar"}
               onClick={() =>
@@ -331,8 +355,12 @@ export default function Navbar() {
             <Link
               href="/carrito"
               className={cn(
-                "flex items-center justify-center w-10 h-10 relative",
-                showWhiteItems ? "text-white" : "text-black"
+                "flex items-center justify-center w-10 h-10 relative text-black",
+                isDispositivosMoviles || isElectrodomesticos
+                  ? "text-black"
+                  : showWhiteItems
+                  ? "text-white"
+                  : "text-black"
               )}
               title="Carrito de compras"
               onClick={handleCartClick}
@@ -347,7 +375,7 @@ export default function Navbar() {
           </div>
 
           {/* Navbar móvil igual a la imagen: logo, buscador, carrito, hamburguesa */}
-          <div className="flex md:hidden items-center justify-end w-full px-4 space-x-4">
+          <div className="flex md:hidden items-center justify-end w-full px-4 space-x-4 text-black">
             {/* Logo */}
             <div className="flex items-center space-x-4 relative">
               {/* Icono buscador SIEMPRE visible en móvil */}
@@ -448,39 +476,76 @@ export default function Navbar() {
               : "max-h-20 opacity-100"
           )}
         >
-          <div className="w-full">
-            <div className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
-              {navbarRoutes.map((item) => (
-                <div
+          <ul className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
+            {navbarRoutes.map((item) => {
+              // Indicador activo: cubre coincidencia exacta, rutas hijas y query params para Electrodomésticos
+              let isActive = false;
+              if (item.name === "Electrodomésticos") {
+                isActive = pathname.startsWith("/productos/Electrodomesticos");
+              } else {
+                isActive =
+                  pathname === item.href ||
+                  pathname.startsWith(item.href + "/") ||
+                  pathname.startsWith(item.href + "?") ||
+                  pathname.startsWith(item.href + "#") ||
+                  cleanPath === item.href ||
+                  cleanPath.startsWith(item.href + "/") ||
+                  cleanPath.startsWith(item.href + "?") ||
+                  cleanPath.startsWith(item.href + "#");
+              }
+              return (
+                <li
                   key={item.name}
-                  data-item-name={item.name}
-                  ref={setNavItemRef}
-                  className="relative flex-shrink-0"
-                  onMouseEnter={() => {
-                    if (hasDropdown(item.name)) {
-                      handleDropdownEnter(item.name);
-                    }
-                  }}
-                  onMouseLeave={handleDropdownLeave}
+                  className="relative"
+                  aria-current={isActive ? "page" : undefined}
                 >
-                  <Link
-                    href={item.href}
-                    className={
-                      "text-lg lg:text-lg font-semibold transition-all duration-300 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg" +
-                      (showWhiteItems
-                        ? " text-white/90 hover:text-white hover:bg-white/10"
-                        : " text-gray-700 hover:text-gray-900 hover:bg-gray-100")
-                    }
-                    onClick={() => handleNavClick(item)}
+                  <div
+                    data-item-name={item.name}
+                    ref={setNavItemRef}
+                    onMouseEnter={() => handleDropdownEnter(item.name)}
+                    onMouseLeave={handleDropdownLeave}
                   >
-                    {item.name}
-                  </Link>
-                  {/* Renderiza el dropdown en posición fija arriba de la página */}
-                  {activeDropdown === item.name && renderDropdown(item.name)}
-                </div>
-              ))}
-            </div>
-          </div>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "text-lg font-semibold transition-all duration-200 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none",
+                        isHome && !isScrolled
+                          ? "text-white"
+                          : isDispositivosMoviles || isElectrodomesticos
+                          ? "text-black"
+                          : "text-gray-800",
+                        "hover:text-blue-700",
+                        isActive && "text-gray-900"
+                      )}
+                      aria-label={item.name}
+                    >
+                      <span className="relative flex flex-col items-center">
+                        {item.name}
+                        {/* Indicador mejorado solo en desktop */}
+                        <span
+                          className={cn(
+                            "hidden md:block w-full mt-1 rounded-full transition-all duration-500",
+                            isActive
+                              ? "h-[4px] bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600 shadow-md scale-x-105 opacity-100"
+                              : "h-[2px] bg-transparent opacity-0"
+                          )}
+                          style={{
+                            boxShadow: isActive
+                              ? "0 2px 8px 0 rgba(30, 64, 175, 0.12)"
+                              : undefined,
+                            transition: "all 0.4s cubic-bezier(.4,0,.2,1)",
+                          }}
+                          aria-hidden="true"
+                        />
+                      </span>
+                    </Link>
+                    {/* Renderiza el dropdown en posición fija arriba de la página */}
+                    {activeDropdown === item.name && renderDropdown(item.name)}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
         </nav>
 
         {/* Menú móvil: no mostrar overlay ni menú lateral, solo navbar superior */}
@@ -504,18 +569,37 @@ export default function Navbar() {
               >
                 &#10005;
               </button>
-              <nav className="flex flex-col py-8 px-6 space-y-2">
-                {navbarRoutes.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className="text-lg font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-black hover:bg-gray-100"
-                    onClick={() => handleNavClick(item)}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </nav>
+              <div
+                className="flex flex-col py-8 px-6 space-y-2"
+                role="menu"
+                aria-label="Menú móvil"
+              >
+                {navbarRoutes.map((item) => {
+                  // Indicador activo: cubre coincidencia exacta, rutas hijas y query params (usando pathname completo)
+                  const isActive =
+                    pathname === item.href ||
+                    pathname.startsWith(item.href + "/") ||
+                    pathname.startsWith(item.href + "?") ||
+                    cleanPath === item.href ||
+                    cleanPath.startsWith(item.href + "/") ||
+                    cleanPath.startsWith(item.href + "?");
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={cn(
+                        "text-lg font-semibold py-3 px-4 rounded-lg transition-all duration-200 text-black",
+                        isActive && "bg-gray-100"
+                      )}
+                      aria-label={item.name}
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={() => handleNavClick(item)}
+                    >
+                      {item.name}
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </>
         )}

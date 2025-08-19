@@ -73,7 +73,7 @@ const refrigeradoresFilters: FilterConfig = {
   ],
 };
 
-const refrigeradorProducts = [
+export const refrigeradorProducts = [
   {
     id: "rf28r7351sr",
     name: "Samsung Refrigerador French Door 27.4 pies RF28R7351SR",
@@ -104,6 +104,7 @@ const refrigeradorProducts = [
   },
 ];
 
+// ...existing code...
 export default function RefrigeradoresSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])

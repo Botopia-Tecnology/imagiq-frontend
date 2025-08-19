@@ -86,8 +86,13 @@ export default function ProductCard({
     // Agrega el producto al carrito usando el contexto
     addProduct({
       id,
+      name,
+      image: typeof image === "string" ? image : image.src || "",
+      price:
+        typeof price === "string"
+          ? parseInt(price.replace(/[^\d]/g, ""))
+          : price || 0,
       quantity: 1,
-      // Puedes agregar más campos si tu CartProduct lo requiere
     });
     setIsLoading(false);
   };

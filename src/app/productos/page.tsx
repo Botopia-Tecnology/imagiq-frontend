@@ -23,7 +23,13 @@ function ProductosContent() {
 
   // Handler para añadir al carrito
   function handleAddToCart() {
-    addProduct({ id: productoEjemplo.id, quantity: 1 });
+    addProduct({
+      id: productoEjemplo.id,
+      name: productoEjemplo.nombre,
+      image: productoEjemplo.imagen,
+      price: productoEjemplo.precio,
+      quantity: productoEjemplo.cantidad,
+    });
     // Animación o feedback
     alert("Producto añadido al carrito");
   }

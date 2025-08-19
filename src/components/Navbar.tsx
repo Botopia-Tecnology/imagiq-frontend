@@ -39,6 +39,11 @@ interface SearchResult {
 }
 
 export default function Navbar() {
+  // Detectar si estamos en cliente para evitar errores de hidratación
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   // 1. Estados y hooks
   const [searchQuery, setSearchQuery] = useState("");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -351,7 +356,7 @@ export default function Navbar() {
               <User className="w-6 h-6" />
             </Link>
 
-            {/* Icono carrito */}
+            {/* Icono carrito con badge SIEMPRE visible si itemCount > 0 */}
             <Link
               href="/carrito"
               className={cn(
@@ -366,8 +371,16 @@ export default function Navbar() {
               onClick={handleCartClick}
             >
               <ShoppingCart className="w-6 h-6" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+              {isClient && (
+                <span
+                  className={cn(
+                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
+                    itemCount > 0
+                      ? "opacity-100 scale-100"
+                      : "opacity-0 scale-0"
+                  )}
+                  aria-label={`Carrito: ${itemCount} productos`}
+                >
                   {itemCount > 99 ? "99+" : itemCount}
                 </span>
               )}
@@ -419,8 +432,16 @@ export default function Navbar() {
                   onClick={handleCartClick}
                 >
                   <ShoppingCart className="w-5 h-5" />
-                  {itemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                  {isClient && (
+                    <span
+                      className={cn(
+                        "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
+                        itemCount > 0
+                          ? "opacity-100 scale-100"
+                          : "opacity-0 scale-0"
+                      )}
+                      aria-label={`Carrito: ${itemCount} productos`}
+                    >
                       {itemCount > 99 ? "99+" : itemCount}
                     </span>
                   )}

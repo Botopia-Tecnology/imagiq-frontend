@@ -123,6 +123,13 @@ export default function Step3({
   const canContinue =
     (deliveryMethod === "domicilio" && address.trim().length > 0) ||
     (deliveryMethod === "tienda" && selectedStore);
+  useEffect(() => {
+    console.log("Step3: canContinue", canContinue, {
+      deliveryMethod,
+      address,
+      selectedStore,
+    });
+  }, [canContinue, deliveryMethod, address, selectedStore]);
 
   return (
     <div className="min-h-screen bg-[#F7F7F7] flex flex-col items-center py-8 px-2 md:px-0">
@@ -134,6 +141,14 @@ export default function Step3({
               <h2 className="text-lg font-bold mb-4">
                 Revisa la forma de entrega
               </h2>
+              {/* Feedback UX si no se puede continuar */}
+              {!canContinue && (
+                <div className="text-xs text-red-500 mb-2">
+                  {deliveryMethod === "domicilio"
+                    ? "Por favor ingresa una dirección válida para continuar."
+                    : "Selecciona una tienda para continuar."}
+                </div>
+              )}
               <div className="flex items-center gap-4 mb-2">
                 <input
                   type="radio"
@@ -319,7 +334,7 @@ export default function Step3({
           </div>
         </div>
         {/* Resumen de compra */}
-        <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px]">
+        <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] sticky top-8">
           <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-base">
@@ -361,24 +376,28 @@ export default function Step3({
               impuestos
             </div>
           </div>
-          <button
-            className={`w-full bg-[#0074E8] text-white font-bold py-3 rounded-lg text-base mt-2 hover:bg-blue-700 transition ${
-              !canContinue ? "opacity-50 cursor-not-allowed" : ""
-            }`}
-            onClick={canContinue ? handleContinue : undefined}
-            disabled={!canContinue}
-          >
-            Continuar pago
-          </button>
-          {/* Botón para volver al paso anterior */}
-          {typeof onBack === "function" && (
+          <div className="flex flex-col gap-1 mt-2">
             <button
-              className="w-full text-[#0074E8] underline text-sm mt-2"
-              onClick={onBack}
+              className={`w-full bg-[#0074E8] text-white font-bold py-3 rounded-lg text-base hover:bg-blue-700 transition ${
+                !canContinue ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={canContinue ? handleContinue : undefined}
+              disabled={!canContinue}
             >
-              ← Volver
+              Continuar pago
             </button>
-          )}
+            {/* Botón para volver al paso anterior */}
+            {typeof onBack === "function" && (
+              <button
+                type="button"
+                className="w-full flex items-center justify-center gap-2 text-[#0074E8] font-semibold text-base py-2 rounded-lg bg-white border border-[#e5e5e5] shadow-sm hover:bg-[#e6f3ff] hover:text-[#005bb5] focus:outline-none focus:ring-2 focus:ring-[#0074E8] transition-all duration-150"
+                onClick={onBack}
+              >
+                <span className="text-lg">←</span>
+                <span>Volver</span>
+              </button>
+            )}
+          </div>
         </aside>
       </div>
     </div>

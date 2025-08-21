@@ -20,7 +20,18 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1);
 
   // Handler para avanzar al siguiente paso
-  const handleNext = () => setStep((prev) => prev + 1);
+  const handleNext = () => {
+    setStep((prev) => {
+      const nextStep = prev + 1;
+      console.log(
+        "CheckoutPage: handleNext called, advancing from step",
+        prev,
+        "to",
+        nextStep
+      );
+      return nextStep;
+    });
+  };
   // Handler para volver al paso anterior
   const handleBack = () => setStep((prev) => prev - 1);
 

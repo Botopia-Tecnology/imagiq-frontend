@@ -12,8 +12,7 @@ import { AnalyticsProvider } from "@/features/analytics/AnalyticsContext";
 import { UserPreferencesProvider } from "@/features/user/UserPreferencesContext";
 import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 
-import Navbar from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import ClientLayout from "./ClientLayout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -101,17 +100,7 @@ export default function RootLayout({
             <AuthProvider>
               <UserPreferencesProvider>
                 <CartProvider>
-                  {/* Detectar si estamos en móvil y hay scroll para agregar pt-16 */}
-                  <div
-                    id="main-layout"
-                    className="min-h-screen flex flex-col md:mr-0"
-                  >
-                    <Navbar />
-                    <main className="flex-1" id="main-content">
-                      {children}
-                    </main>
-                    <Footer />
-                  </div>
+                  <ClientLayout>{children}</ClientLayout>
                 </CartProvider>
               </UserPreferencesProvider>
             </AuthProvider>

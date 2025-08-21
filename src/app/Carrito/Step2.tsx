@@ -4,6 +4,7 @@
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
 import React, { useState } from "react";
+import CountryCodeSelect from "../../components/CountryCodeSelect";
 
 // Utilidad para obtener productos del carrito desde localStorage
 function getCartProducts() {
@@ -60,14 +61,28 @@ export default function Step2({
     apellido: "",
     cedula: "",
     celular: "",
+    indicativo: "+57",
     descuento: "",
   });
+  // Manejar cambio de indicativo
+  const handleIndicativoChange = (code: string) => {
+    setGuestForm((prev) => ({ ...prev, indicativo: code }));
+    setFieldErrors((prev) => ({ ...prev, indicativo: "" }));
+  };
   const [appliedDiscount, setAppliedDiscount] = useState(0);
 
   // Estado para validación y UX
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  // Estado para errores por campo
+  const [fieldErrors, setFieldErrors] = useState({
+    email: "",
+    nombre: "",
+    apellido: "",
+    cedula: "",
+    celular: "",
+  });
 
   // Calcular totales
   const subtotal = cartProducts.reduce((acc, p) => {
@@ -82,6 +97,8 @@ export default function Step2({
   // Manejar cambios en el formulario invitado
   const handleGuestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setGuestForm({ ...guestForm, [e.target.name]: e.target.value });
+    // Limpiar error de campo al escribir
+    setFieldErrors((prev) => ({ ...prev, [e.target.name]: "" }));
   };
 
   // Aplicar descuento si el código es válido
@@ -99,7 +116,26 @@ export default function Step2({
   const handleGuestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!isGuestFormValid) {
+    let hasError = false;
+    const newFieldErrors: typeof fieldErrors = {
+      email: "",
+      nombre: "",
+      apellido: "",
+      cedula: "",
+      celular: "",
+    };
+    // Validar cada campo
+    Object.entries(guestForm).forEach(([key, value]) => {
+      if (["email", "nombre", "apellido", "cedula", "celular"].includes(key)) {
+        if (!value.trim()) {
+          newFieldErrors[key as keyof typeof fieldErrors] =
+            "Este campo es obligatorio";
+          hasError = true;
+        }
+      }
+    });
+    setFieldErrors(newFieldErrors);
+    if (hasError) {
       setError("Por favor completa todos los campos obligatorios.");
       return;
     }
@@ -144,61 +180,135 @@ export default function Step2({
               autoComplete="off"
               onSubmit={handleGuestSubmit}
             >
-              <input
-                type="email"
-                name="email"
-                placeholder="Correo electrónico"
-                className="input-samsung"
-                value={guestForm.email}
-                onChange={handleGuestChange}
-                required
-                disabled={loading || success}
-                autoFocus
-              />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1">
                 <input
-                  type="text"
-                  name="nombre"
-                  placeholder="Nombre"
-                  className="input-samsung"
-                  value={guestForm.nombre}
+                  type="email"
+                  name="email"
+                  placeholder="Correo electrónico"
+                  className={`input-samsung ${
+                    fieldErrors.email ? "border-red-500" : ""
+                  }`}
+                  value={guestForm.email}
                   onChange={handleGuestChange}
                   required
                   disabled={loading || success}
+                  autoFocus
                 />
-                <input
-                  type="text"
-                  name="apellido"
-                  placeholder="Apellido"
-                  className="input-samsung"
-                  value={guestForm.apellido}
-                  onChange={handleGuestChange}
-                  required
-                  disabled={loading || success}
-                />
+                {fieldErrors.email && (
+                  <span
+                    className="text-red-500 text-xs"
+                    style={{ marginTop: 2 }}
+                  >
+                    {fieldErrors.email}
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <input
-                  type="text"
-                  name="cedula"
-                  placeholder="No. de Cédula"
-                  className="input-samsung"
-                  value={guestForm.cedula}
-                  onChange={handleGuestChange}
-                  required
-                  disabled={loading || success}
-                />
-                <input
-                  type="text"
-                  name="celular"
-                  placeholder="Celular"
-                  className="input-samsung"
-                  value={guestForm.celular}
-                  onChange={handleGuestChange}
-                  required
-                  disabled={loading || success}
-                />
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="text"
+                    name="nombre"
+                    placeholder="Nombre"
+                    className={`input-samsung ${
+                      fieldErrors.nombre ? "border-red-500" : ""
+                    }`}
+                    value={guestForm.nombre}
+                    onChange={handleGuestChange}
+                    required
+                    disabled={loading || success}
+                  />
+                  {fieldErrors.nombre && (
+                    <span
+                      className="text-red-500 text-xs"
+                      style={{ marginTop: 2 }}
+                    >
+                      {fieldErrors.nombre}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="text"
+                    name="apellido"
+                    placeholder="Apellido"
+                    className={`input-samsung ${
+                      fieldErrors.apellido ? "border-red-500" : ""
+                    }`}
+                    value={guestForm.apellido}
+                    onChange={handleGuestChange}
+                    required
+                    disabled={loading || success}
+                  />
+                  {fieldErrors.apellido && (
+                    <span
+                      className="text-red-500 text-xs"
+                      style={{ marginTop: 2 }}
+                    >
+                      {fieldErrors.apellido}
+                    </span>
+                  )}
+                </div>
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="text"
+                    name="cedula"
+                    placeholder="No. de Cédula"
+                    className={`input-samsung ${
+                      fieldErrors.cedula ? "border-red-500" : ""
+                    }`}
+                    value={guestForm.cedula}
+                    onChange={handleGuestChange}
+                    required
+                    disabled={loading || success}
+                  />
+                  {fieldErrors.cedula && (
+                    <span
+                      className="text-red-500 text-xs"
+                      style={{ marginTop: 2 }}
+                    >
+                      {fieldErrors.cedula}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-col gap-1">
+                  <div className="flex gap-0 items-center w-full">
+                    <CountryCodeSelect
+                      value={guestForm.indicativo}
+                      onChange={handleIndicativoChange}
+                      disabled={loading || success}
+                    />
+                    <input
+                      type="text"
+                      name="celular"
+                      placeholder="Celular"
+                      className={`input-samsung flex-1 rounded-l-none rounded-r-xl border-l-0 ${
+                        fieldErrors.celular ? "border-red-500" : ""
+                      }`}
+                      value={guestForm.celular}
+                      onChange={handleGuestChange}
+                      required
+                      disabled={loading || success}
+                      style={{ minWidth: 120 }}
+                    />
+                  </div>
+                  {fieldErrors.celular && (
+                    <span
+                      className="text-red-500 text-xs"
+                      style={{ marginTop: 2 }}
+                    >
+                      {fieldErrors.celular}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {/* Mensaje de error general debajo del botón principal */}
+              {error && (
+                <div className="text-red-500 text-sm mt-2 text-center">
+                  {error}
+                </div>
+              )}
               <style jsx>{`
                 .input-samsung {
                   background: #fff;
@@ -215,12 +325,15 @@ export default function Step2({
                 .input-samsung:focus {
                   border-color: #0074e8;
                 }
+                .border-red-500 {
+                  border-color: #ef4444 !important;
+                }
               `}</style>
             </form>
           </div>
         </div>
         {/* Resumen de compra dinámico */}
-        <div className="bg-[#F3F3F3] rounded-xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px]">
+        <div className="bg-[#F3F3F3] rounded-xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] sticky top-8">
           <h2 className="text-xl font-bold mb-2">Resumen de compra</h2>
           <div className="flex flex-col gap-2 flex-1">
             <div className="flex justify-between text-base">
@@ -284,6 +397,30 @@ export default function Step2({
                 const fakeEvent = {
                   preventDefault: () => {},
                 } as React.FormEvent<HTMLFormElement>;
+                // Si no es válido, mostrar error general
+                if (!isGuestFormValid) {
+                  setError("Por favor completa todos los campos obligatorios.");
+                  // Marcar los campos vacíos
+                  const newFieldErrors: typeof fieldErrors = {
+                    email: guestForm.email.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    nombre: guestForm.nombre.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    apellido: guestForm.apellido.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    cedula: guestForm.cedula.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    celular: guestForm.celular.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                  };
+                  setFieldErrors(newFieldErrors);
+                  return;
+                }
                 handleGuestSubmit(fakeEvent);
                 if (
                   isGuestFormValid &&
@@ -294,20 +431,21 @@ export default function Step2({
                   setTimeout(() => onContinue(), 1200);
                 }
               }}
-              disabled={!isGuestFormValid || loading || success}
-              aria-disabled={!isGuestFormValid || loading || success}
+              disabled={loading || success}
+              aria-disabled={loading || success}
             >
               {loading ? "Procesando..." : "Continuar pago"}
             </button>
             {onBack && (
               <button
                 type="button"
-                className="w-full text-[#0074E8] underline text-sm focus:outline-none focus:ring-2 focus:ring-[#0074E8]"
+                className="w-full flex items-center justify-center gap-2 text-[#0074E8] font-semibold text-base py-2 rounded-lg bg-white border border-[#e5e5e5] shadow-sm hover:bg-[#e6f3ff] hover:text-[#005bb5] focus:outline-none focus:ring-2 focus:ring-[#0074E8] transition-all duration-150"
                 onClick={onBack}
                 disabled={loading}
                 aria-disabled={loading}
               >
-                ← Volver al paso anterior
+                <span className="text-lg">←</span>
+                <span>Volver al paso anterior</span>
               </button>
             )}
           </div>

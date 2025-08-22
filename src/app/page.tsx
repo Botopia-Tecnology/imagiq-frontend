@@ -10,6 +10,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import { LocationMap } from "@/components/LocationMap";
 import UltimosProductos from "@/components/sections/UltimosProductos";
+import ProductShowcase from "@/components/sections/ProductShowcase";
 
 export default function HomePage() {
   return (
@@ -25,6 +26,7 @@ export default function HomePage() {
         <CategoriesSection />
         <Ofertas />
         <Beneficios />
+        <ProductShowcase />
         <UltimosProductos />
         {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
         <section id="tiendas" className="py-16 bg-white">

@@ -92,6 +92,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Validar children para evitar NaN, null, undefined o string vacío
+  let safeChildren = children;
+  const isNaNValue =
+    (typeof children === "number" && isNaN(children)) ||
+    (typeof children === "string" &&
+      (children === "NaN" || children.trim() === "")) ||
+    children == null;
+  if (isNaNValue) {
+    safeChildren = <></>;
+  }
   return (
     <html lang="es" className={inter.variable}>
       <body className="font-sans antialiased">
@@ -100,7 +110,7 @@ export default function RootLayout({
             <AuthProvider>
               <UserPreferencesProvider>
                 <CartProvider>
-                  <ClientLayout>{children}</ClientLayout>
+                  <ClientLayout>{safeChildren}</ClientLayout>
                 </CartProvider>
               </UserPreferencesProvider>
             </AuthProvider>

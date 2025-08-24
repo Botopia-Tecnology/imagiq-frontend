@@ -23,14 +23,21 @@ export default function ClientLayout({
   const pathname = usePathname();
   const hideNavbar = shouldHideNavbar(pathname);
 
+  // Validar children para evitar NaN
+  const safeChildren =
+    typeof children === "number" && isNaN(children) ? null : children;
+
+  // Ocultar el Footer solo en /carrito y /ofertas
+  const hideFooter = pathname === "/carrito" || pathname === "/ofertas";
+
   return (
     <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
       {!hideNavbar && <Navbar />}
       <main className="flex-1" id="main-content">
-        {children}
+        {safeChildren}
       </main>
-      {/* Oculta el Footer solo en /carrito */}
-      {pathname === "/carrito" ? null : <Footer />}
+      {/* Oculta el Footer solo en /carrito y /ofertas */}
+      {!hideFooter && <Footer />}
     </div>
   );
 }

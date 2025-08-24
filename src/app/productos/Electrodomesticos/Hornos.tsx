@@ -8,6 +8,7 @@ import { useState } from "react";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar from "../components/FilterSidebar";
 import CategorySlider from "../components/CategorySlider";
+import { productsData } from "../data_product/products";
 
 import hornosImg from "../../../img/Electrodomesticos/Electrodomesticos4.png";
 import refrigeradorImg from "../../../img/Electrodomesticos/Electrodomesticos1.png";
@@ -63,54 +64,6 @@ const hornosFilters = {
     "Más de $500",
   ],
 };
-
-const hornosProducts = [
-  {
-    id: "1",
-    name: "Horno Samsung Digital",
-    price: "$299.99",
-    image: hornosImg,
-    colors: [
-      { name: "negro", hex: "#000000", label: "Negro" },
-      { name: "acero", hex: "#B0B0B0", label: "Acero inoxidable" },
-    ],
-    isNew: true,
-    discount: "-10%",
-    originalPrice: "$349.99",
-    rating: 4.7,
-    reviewCount: 32,
-  },
-  {
-    id: "2",
-    name: "Horno Whirlpool Convencional",
-    price: "$199.99",
-    image: hornosImg,
-    colors: [
-      { name: "blanco", hex: "#FFFFFF", label: "Blanco" },
-      { name: "negro", hex: "#000000", label: "Negro" },
-    ],
-    isNew: false,
-    discount: "-15%",
-    originalPrice: "$229.99",
-    rating: 4.5,
-    reviewCount: 21,
-  },
-  {
-    id: "3",
-    name: "Horno LG Microondas",
-    price: "$149.99",
-    image: hornosImg,
-    colors: [
-      { name: "plateado", hex: "#C0C0C0", label: "Plateado" },
-      { name: "negro", hex: "#000000", label: "Negro" },
-    ],
-    isNew: false,
-    discount: "-8%",
-    originalPrice: "$159.99",
-    rating: 4.2,
-    reviewCount: 12,
-  },
-];
 
 export default function HornosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -174,21 +127,13 @@ export default function HornosSection() {
 
             {/* Productos filtrados */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {hornosProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                />
-              ))}
+              {productsData.electrodomesticos
+                .filter((product) =>
+                  product.name.toLowerCase().includes("horno")
+                )
+                .map((product) => (
+                  <ProductCard key={product.id} {...product} />
+                ))}
             </div>
           </div>
         </div>

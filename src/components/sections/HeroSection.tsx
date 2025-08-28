@@ -71,6 +71,55 @@ export default function HeroSection() {
   const isHome = pathname === "/";
   const currentSlideData = heroSlides[currentSlide];
 
+  // Producto actual mostrado en el Hero
+  const productoActual = {
+    sku: `SKU${currentSlideData.id}`,
+    name: currentSlideData.title,
+    quantity: "1",
+    unitPrice: currentSlideData.price.replace(/[^\d]/g, ""), // Solo números
+  };
+
+  // Handler para el botón
+  const handleAddiPayment = async () => {
+    try {
+      const token = localStorage.getItem("imagiq_token");
+      if (!token) {
+        alert("No se encontró el token");
+        return;
+      }
+      // Body con el producto actual
+      const body = {
+        totalAmount: productoActual.unitPrice,
+        shippingAmount: "0",
+        currency: "COP",
+        item: [productoActual],
+      };
+      const response = await fetch(
+        "https://imagiq-backend-production.up.railway.app/api/payments/addi/apply",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Error en la petición");
+      }
+      const data = await response.json();
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        alert("No se recibió la URL de redirección");
+      }
+    } catch (error) {
+      alert("Hubo un error al procesar el pago");
+      console.error(error);
+    }
+  };
+
   // Navegación de slides
   const goToSlide = (index: number) => setCurrentSlide(index);
   const goToPrevious = () =>
@@ -301,7 +350,10 @@ export default function HeroSection() {
             </p>
           </div>
           <div className="flex items-center space-x-2 w-full max-w-xs">
-            <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full">
+            <button
+              className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full"
+              onClick={handleAddiPayment}
+            >
               {currentSlideData.buttonText}
             </button>
             <button className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 transform hover:scale-105 border-2 border-white/40 hover:border-white/60 shadow-lg flex items-center justify-center">

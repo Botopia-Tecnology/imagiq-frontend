@@ -4,7 +4,7 @@
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
 import React, { useState } from "react";
-import CountryCodeSelect from "../../components/CountryCodeSelect";
+// Eliminado: CountryCodeSelect
 
 // Utilidad para obtener productos del carrito desde localStorage
 function getCartProducts() {
@@ -55,21 +55,18 @@ export default function Step2({
   // onBack ya existe
   // onContinue?: () => void
   // Estado para formulario de invitado
+  // Formulario de invitado: incluye dirección línea uno y ciudad
   const [guestForm, setGuestForm] = useState({
     email: "",
     nombre: "",
     apellido: "",
     cedula: "",
     celular: "",
-    indicativo: "+57",
-    descuento: "",
+    direccion_linea_uno: "",
+    direccion_ciudad: "",
   });
-  // Manejar cambio de indicativo
-  const handleIndicativoChange = (code: string) => {
-    setGuestForm((prev) => ({ ...prev, indicativo: code }));
-    setFieldErrors((prev) => ({ ...prev, indicativo: "" }));
-  };
-  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  // Eliminado: indicativo
+  const appliedDiscount = 0;
 
   // Estado para validación y UX
   const [loading, setLoading] = useState(false);
@@ -82,6 +79,8 @@ export default function Step2({
     apellido: "",
     cedula: "",
     celular: "",
+    direccion_linea_uno: "",
+    direccion_ciudad: "",
   });
 
   // Calcular totales
@@ -94,49 +93,147 @@ export default function Step2({
   const impuestos = isNaN(subtotal) ? 0 : Math.round(subtotal * 0.18);
   const total = isNaN(subtotal) ? 0 : subtotal - appliedDiscount + envio;
 
+  // --- Validación simplificada y centralizada ---
+  // Filtros de seguridad por campo
+  const filters = {
+    cedula: (v: string) => v.replace(/[^0-9]/g, ""),
+    celular: (v: string) => v.replace(/[^0-9]/g, ""),
+    nombre: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+    apellido: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+    email: (v: string) => v.replace(/\s/g, ""),
+    direccion_linea_uno: (v: string) => v.replace(/[^a-zA-Z0-9#\-\.\s]/g, ""),
+    direccion_ciudad: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+  };
+
+  // Validadores por campo
+  const validators = {
+    email: (v: string) => {
+      if (!v) return "Por favor escribe tu correo electrónico.";
+      if (!/^([\w-.]+)@([\w-]+\.)+[\w-]{2,4}$/.test(v))
+        return "El formato del correo electrónico no es válido. Ejemplo: usuario@dominio.com.";
+      return "";
+    },
+    nombre: (v: string) => {
+      if (!v) return "Por favor escribe tu nombre.";
+      if (v.length < 2) return "El nombre debe tener al menos 2 letras.";
+      return "";
+    },
+    apellido: (v: string) => {
+      if (!v) return "Por favor escribe tu apellido.";
+      if (v.length < 2) return "El apellido debe tener al menos 2 letras.";
+      return "";
+    },
+    cedula: (v: string) => {
+      if (!v) return "Por favor escribe tu número de cédula.";
+      if (v.length < 6 || v.length > 10)
+        return "La cédula debe tener entre 6 y 10 números.";
+      if (!/^([1-9][0-9]{5,9})$/.test(v))
+        return "La cédula debe empezar con un número diferente de cero.";
+      return "";
+    },
+    celular: (v: string) => {
+      if (!v) return "Por favor escribe tu número de celular.";
+      if (v.length !== 10)
+        return "El celular debe tener exactamente 10 números.";
+      if (!/^3[0-9]{9}$/.test(v))
+        return "El celular colombiano debe empezar con '3' y tener 10 dígitos.";
+      return "";
+    },
+    direccion_linea_uno: (v: string) => {
+      if (!v)
+        return "Por favor ingresa la dirección (línea uno). Ejemplo: Calle 91c #84-97 int. 301";
+      if (v.length < 8) return "La dirección es demasiado corta.";
+      return "";
+    },
+    direccion_ciudad: (v: string) => {
+      if (!v) return "Por favor ingresa la ciudad.";
+      if (v.length < 3) return "La ciudad es demasiado corta.";
+      return "";
+    },
+  };
+
+  // Validar todos los campos y devolver errores
+  function validateFields(form: typeof guestForm) {
+    const errors: typeof fieldErrors = {
+      email: "",
+      nombre: "",
+      apellido: "",
+      cedula: "",
+      celular: "",
+      direccion_linea_uno: "",
+      direccion_ciudad: "",
+    };
+    Object.keys(errors).forEach((key) => {
+      // @ts-expect-error Type mismatch due to dynamic key access; all keys are validated and safe here
+      errors[key] = validators[key](form[key].trim());
+    });
+    return errors;
+  }
+
   // Manejar cambios en el formulario invitado
   const handleGuestChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGuestForm({ ...guestForm, [e.target.name]: e.target.value });
-    // Limpiar error de campo al escribir
-    setFieldErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    const { name, value } = e.target;
+    const filter = filters[name as keyof typeof filters];
+    const newValue = filter ? filter(value) : value;
+    const newForm = { ...guestForm, [name]: newValue };
+    setGuestForm(newForm);
+    setFieldErrors(validateFields(newForm));
   };
 
   // Aplicar descuento si el código es válido
   // (Eliminado: handleDiscountApply no se usa)
 
   // Validar formulario invitado
-  const isGuestFormValid =
-    guestForm.email.trim() !== "" &&
-    guestForm.nombre.trim() !== "" &&
-    guestForm.apellido.trim() !== "" &&
-    guestForm.cedula.trim() !== "" &&
-    guestForm.celular.trim() !== "";
+  const isGuestFormValid = Object.values(validateFields(guestForm)).every(
+    (err) => !err
+  );
 
-  // Manejar envío del formulario invitado
+  /**
+   * Maneja el envío del formulario de invitado.
+   * Valida los campos, guarda la información en localStorage y muestra feedback UX.
+   */
   const handleGuestSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    let hasError = false;
-    const newFieldErrors: typeof fieldErrors = {
-      email: "",
-      nombre: "",
-      apellido: "",
-      cedula: "",
-      celular: "",
+    const errors = validateFields(guestForm);
+    setFieldErrors(errors);
+    if (Object.values(errors).some((err) => err)) {
+      setError(
+        "Por favor completa todos los campos obligatorios correctamente."
+      );
+      return;
+    }
+    // Estructura de datos para guardar en localStorage (sin fecha, con dirección)
+    const guestPaymentInfo = {
+      email: guestForm.email.trim(),
+      nombre: guestForm.nombre.trim(),
+      apellido: guestForm.apellido.trim(),
+      cedula: guestForm.cedula.trim(),
+      celular: guestForm.celular.trim(),
+      direccion_linea_uno: guestForm.direccion_linea_uno.trim(),
+      direccion_ciudad: guestForm.direccion_ciudad.trim(),
+      carrito: cartProducts.map((p) => ({
+        id: p.id,
+        name: p.name,
+        image: p.image,
+        price: p.price,
+        quantity: p.quantity,
+      })),
+      total,
+      envio,
+      impuestos,
+      appliedDiscount,
     };
-    // Validar cada campo
-    Object.entries(guestForm).forEach(([key, value]) => {
-      if (["email", "nombre", "apellido", "cedula", "celular"].includes(key)) {
-        if (!value.trim()) {
-          newFieldErrors[key as keyof typeof fieldErrors] =
-            "Este campo es obligatorio";
-          hasError = true;
-        }
-      }
-    });
-    setFieldErrors(newFieldErrors);
-    if (hasError) {
-      setError("Por favor completa todos los campos obligatorios.");
+    // Guardar en localStorage bajo la clave 'guest-payment-info'
+    try {
+      localStorage.setItem(
+        "guest-payment-info",
+        JSON.stringify(guestPaymentInfo)
+      );
+    } catch {
+      setError(
+        "No se pudo guardar la información localmente. Intenta de nuevo."
+      );
       return;
     }
     setLoading(true);
@@ -184,7 +281,7 @@ export default function Step2({
                 <input
                   type="email"
                   name="email"
-                  placeholder="Correo electrónico"
+                  placeholder="Correo electrónico (ejemplo: usuario@dominio.com)"
                   className={`input-samsung ${
                     fieldErrors.email ? "border-red-500" : ""
                   }`}
@@ -193,6 +290,9 @@ export default function Step2({
                   required
                   disabled={loading || success}
                   autoFocus
+                  inputMode="email"
+                  autoComplete="email"
+                  pattern="^[\w-.]+@[\w-]+\.[\w-]{2,4}$"
                 />
                 {fieldErrors.email && (
                   <span
@@ -208,7 +308,7 @@ export default function Step2({
                   <input
                     type="text"
                     name="nombre"
-                    placeholder="Nombre"
+                    placeholder="Nombre (solo letras)"
                     className={`input-samsung ${
                       fieldErrors.nombre ? "border-red-500" : ""
                     }`}
@@ -216,6 +316,9 @@ export default function Step2({
                     onChange={handleGuestChange}
                     required
                     disabled={loading || success}
+                    inputMode="text"
+                    autoComplete="given-name"
+                    pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+"
                   />
                   {fieldErrors.nombre && (
                     <span
@@ -230,7 +333,7 @@ export default function Step2({
                   <input
                     type="text"
                     name="apellido"
-                    placeholder="Apellido"
+                    placeholder="Apellido (solo letras)"
                     className={`input-samsung ${
                       fieldErrors.apellido ? "border-red-500" : ""
                     }`}
@@ -238,6 +341,9 @@ export default function Step2({
                     onChange={handleGuestChange}
                     required
                     disabled={loading || success}
+                    inputMode="text"
+                    autoComplete="family-name"
+                    pattern="[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+"
                   />
                   {fieldErrors.apellido && (
                     <span
@@ -249,12 +355,63 @@ export default function Step2({
                   )}
                 </div>
               </div>
+              {/* Dirección y ciudad */}
+              <div className="flex flex-col gap-1">
+                <input
+                  type="text"
+                  name="direccion_linea_uno"
+                  placeholder="Dirección (línea uno, ej: Calle 91c #84-97 int. 301)"
+                  className={`input-samsung ${
+                    fieldErrors.direccion_linea_uno ? "border-red-500" : ""
+                  }`}
+                  value={guestForm.direccion_linea_uno}
+                  onChange={handleGuestChange}
+                  required
+                  disabled={loading || success}
+                  autoComplete="address-line1"
+                  maxLength={60}
+                />
+                {fieldErrors.direccion_linea_uno && (
+                  <span
+                    className="text-red-500 text-xs"
+                    style={{ marginTop: 2 }}
+                  >
+                    {fieldErrors.direccion_linea_uno}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <input
+                  type="text"
+                  name="direccion_ciudad"
+                  placeholder="Ciudad (ej: Medellín)"
+                  className={`input-samsung ${
+                    fieldErrors.direccion_ciudad ? "border-red-500" : ""
+                  }`}
+                  value={guestForm.direccion_ciudad}
+                  onChange={handleGuestChange}
+                  required
+                  disabled={loading || success}
+                  autoComplete="address-level2"
+                  maxLength={30}
+                />
+                {fieldErrors.direccion_ciudad && (
+                  <span
+                    className="text-red-500 text-xs"
+                    style={{ marginTop: 2 }}
+                  >
+                    {fieldErrors.direccion_ciudad}
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]{6,10}"
                     name="cedula"
-                    placeholder="No. de Cédula"
+                    placeholder="No. de Cédula (6 a 10 números, sin puntos ni espacios)"
                     className={`input-samsung ${
                       fieldErrors.cedula ? "border-red-500" : ""
                     }`}
@@ -262,6 +419,8 @@ export default function Step2({
                     onChange={handleGuestChange}
                     required
                     disabled={loading || success}
+                    maxLength={10}
+                    autoComplete="off"
                   />
                   {fieldErrors.cedula && (
                     <span
@@ -273,17 +432,14 @@ export default function Step2({
                   )}
                 </div>
                 <div className="flex flex-col gap-1">
-                  <div className="flex gap-0 items-center w-full">
-                    <CountryCodeSelect
-                      value={guestForm.indicativo}
-                      onChange={handleIndicativoChange}
-                      disabled={loading || success}
-                    />
+                  <div className="flex flex-col w-full">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="3[0-9]{9}"
                       name="celular"
-                      placeholder="Celular"
-                      className={`input-samsung flex-1 rounded-l-none rounded-r-xl border-l-0 ${
+                      placeholder="Celular colombiano (10 números, empieza con 3)"
+                      className={`input-samsung ${
                         fieldErrors.celular ? "border-red-500" : ""
                       }`}
                       value={guestForm.celular}
@@ -291,6 +447,8 @@ export default function Step2({
                       required
                       disabled={loading || success}
                       style={{ minWidth: 120 }}
+                      maxLength={10}
+                      autoComplete="tel"
                     />
                   </div>
                   {fieldErrors.celular && (
@@ -400,7 +558,7 @@ export default function Step2({
                 // Si no es válido, mostrar error general
                 if (!isGuestFormValid) {
                   setError("Por favor completa todos los campos obligatorios.");
-                  // Marcar los campos vacíos
+                  // Marcar los campos vacíos incluyendo dirección y ciudad
                   const newFieldErrors: typeof fieldErrors = {
                     email: guestForm.email.trim()
                       ? ""
@@ -415,6 +573,12 @@ export default function Step2({
                       ? ""
                       : "Este campo es obligatorio",
                     celular: guestForm.celular.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    direccion_linea_uno: guestForm.direccion_linea_uno.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    direccion_ciudad: guestForm.direccion_ciudad.trim()
                       ? ""
                       : "Este campo es obligatorio",
                   };

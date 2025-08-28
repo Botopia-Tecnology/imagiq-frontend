@@ -4,7 +4,7 @@ import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 // Importar los catálogos reales
 import { smartphoneProducts } from "../productos/DispositivosMoviles/Smartphones";
-import { refrigeradorProducts } from "../productos/Electrodomesticos/Refrigeradores";
+import { productsData } from "../productos/data_product/products";
 
 interface CartProduct {
   nombre: string;
@@ -43,7 +43,7 @@ function getProductDetails(id: string) {
     };
   }
   // Buscar en refrigeradores
-  const refrigerador = refrigeradorProducts.find((p) => p.id === id);
+  const refrigerador = productsData.electrodomesticos.find((p) => p.id === id);
   if (refrigerador) {
     let imagen = "/img/logo_imagiq.png";
     if (typeof refrigerador.image === "string") {

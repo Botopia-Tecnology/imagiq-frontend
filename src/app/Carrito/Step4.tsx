@@ -9,6 +9,7 @@ import mastercardLogo from "@/img/Carrito/masterdcard_logo.png";
 import amexLogo from "@/img/Carrito/amex_logo.png";
 import dinersLogo from "@/img/Carrito/logo4.png";
 import addiLogo from "@/img/Carrito/addi_logo.png";
+import LogoReloadAnimation from "./LogoReloadAnimation";
 
 // Utilidad para obtener productos del carrito desde localStorage
 function getCartProducts() {
@@ -105,6 +106,8 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   const [accepted, setAccepted] = useState(false);
   // Estado para guardar info
   const [saveInfo, setSaveInfo] = useState(false);
+  // Estado para animación ola Samsung
+  const [showLogoAnimation, setShowLogoAnimation] = useState(false);
 
   // Sincronizar productos y descuento
   useEffect(() => {
@@ -160,37 +163,132 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     };
     let hasError = false;
     if (paymentMethod === "tarjeta") {
-      // Validación estricta de número de tarjeta (16 dígitos)
-      if (!/^\d{16}$/.test(card.number.trim())) {
-        errors.number = card.number.trim()
-          ? "El número de tarjeta debe tener 16 dígitos"
-          : "Número de tarjeta obligatorio";
+      // Validación robusta de número de tarjeta (Luhn y longitud)
+      const num = card.number.replace(/\s+/g, "");
+      function luhnCheck(val: string) {
+        let sum = 0;
+        let shouldDouble = false;
+        for (let i = val.length - 1; i >= 0; i--) {
+          let digit = parseInt(val.charAt(i), 10);
+          if (shouldDouble) {
+            digit *= 2;
+            if (digit > 9) digit -= 9;
+          }
+          sum += digit;
+          shouldDouble = !shouldDouble;
+        }
+        return sum % 10 === 0;
+      }
+      if (!/^[0-9]{16}$/.test(num)) {
+        if (!num) {
+          errors.number =
+            "Por favor ingresa el número de tu tarjeta (16 dígitos, sin espacios).";
+        } else if (num.length < 16) {
+          errors.number = `El número de tarjeta es demasiado corto (${num.length}/16). Ingresa los 16 dígitos.`;
+        } else if (num.length > 16) {
+          errors.number = `El número de tarjeta es demasiado largo (${num.length}/16). Elimina los dígitos extra.`;
+        } else {
+          errors.number =
+            "El número de tarjeta debe contener solo números (sin espacios ni letras).";
+        }
+        hasError = true;
+      } else if (!luhnCheck(num)) {
+        errors.number =
+          "El número de tarjeta no es válido. Verifica que los dígitos sean correctos o consulta con tu banco.";
         hasError = true;
       }
-      // Fecha de vencimiento MM/AA
+      // Fecha de vencimiento MM/AA y que no esté vencida
       if (!/^\d{2}\/\d{2}$/.test(card.expiry.trim())) {
-        errors.expiry = card.expiry.trim()
-          ? "Formato MM/AA requerido"
-          : "Fecha de vencimiento obligatoria";
+        if (!card.expiry.trim()) {
+          errors.expiry =
+            "Por favor ingresa la fecha de vencimiento en formato MM/AA.";
+        } else {
+          errors.expiry = "Formato inválido. Usa MM/AA, por ejemplo 08/27.";
+        }
         hasError = true;
+      } else {
+        const [mm, aa] = card.expiry.split("/");
+        const month = Number(mm);
+        const year = Number(aa) + 2000;
+        const now = new Date();
+        const expDate = new Date(year, month - 1, 1);
+        if (month < 1 || month > 12) {
+          errors.expiry =
+            "El mes ingresado no es válido. Usa un valor entre 01 y 12.";
+          hasError = true;
+        } else if (expDate < new Date(now.getFullYear(), now.getMonth(), 1)) {
+          errors.expiry =
+            "La tarjeta está vencida. Ingresa una tarjeta vigente.";
+          hasError = true;
+        }
       }
-      // CVC 3 o 4 dígitos
-      if (!/^\d{3,4}$/.test(card.cvc.trim())) {
-        errors.cvc = card.cvc.trim()
-          ? "CVC debe tener 3 o 4 dígitos"
-          : "Código de seguridad obligatorio";
-        hasError = true;
+      // CVC: 3 dígitos para Visa/Mastercard, 4 para Amex
+      const isAmex = num.startsWith("34") || num.startsWith("37");
+      if (isAmex) {
+        if (!/^\d{4}$/.test(card.cvc.trim())) {
+          if (!card.cvc.trim()) {
+            errors.cvc =
+              "Por favor ingresa el código de seguridad (CVC) de 4 dígitos para American Express.";
+          } else if (card.cvc.trim().length < 4) {
+            errors.cvc = `El CVC es demasiado corto (${
+              card.cvc.trim().length
+            }/4). Ingresa los 4 dígitos.`;
+          } else if (card.cvc.trim().length > 4) {
+            errors.cvc = `El CVC es demasiado largo (${
+              card.cvc.trim().length
+            }/4). Elimina los dígitos extra.`;
+          } else {
+            errors.cvc = "El CVC debe contener solo números.";
+          }
+          hasError = true;
+        }
+      } else {
+        if (!/^\d{3}$/.test(card.cvc.trim())) {
+          if (!card.cvc.trim()) {
+            errors.cvc =
+              "Por favor ingresa el código de seguridad (CVC) de 3 dígitos.";
+          } else if (card.cvc.trim().length < 3) {
+            errors.cvc = `El CVC es demasiado corto (${
+              card.cvc.trim().length
+            }/3). Ingresa los 3 dígitos.`;
+          } else if (card.cvc.trim().length > 3) {
+            errors.cvc = `El CVC es demasiado largo (${
+              card.cvc.trim().length
+            }/3). Elimina los dígitos extra.`;
+          } else {
+            errors.cvc = "El CVC debe contener solo números.";
+          }
+          hasError = true;
+        }
       }
-      // Nombre del titular
+      // Nombre del titular: solo letras y espacios, mínimo 2 palabras
       if (!card.name.trim()) {
-        errors.name = "Nombre del titular obligatorio";
+        errors.name =
+          "Por favor ingresa el nombre y apellido del titular de la tarjeta.";
+        hasError = true;
+      } else if (
+        !/^([A-Za-zÁÉÍÓÚáéíóúÑñ]+\s+){1,}[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/.test(
+          card.name.trim()
+        )
+      ) {
+        errors.name =
+          "El nombre debe contener solo letras y al menos un apellido. Ejemplo: Juan Pérez.";
         hasError = true;
       }
-      // Documento (solo números, mínimo 6 dígitos)
+      // Documento: solo números, mínimo 6 dígitos
       if (!/^\d{6,}$/.test(card.docNumber.trim())) {
-        errors.docNumber = card.docNumber.trim()
-          ? "Número de documento inválido"
-          : "Número de documento obligatorio";
+        if (!card.docNumber.trim()) {
+          errors.docNumber =
+            "Por favor ingresa el número de documento (mínimo 6 dígitos).";
+        } else if (!/^[0-9]+$/.test(card.docNumber.trim())) {
+          errors.docNumber = "El documento debe contener solo números.";
+        } else if (card.docNumber.trim().length < 6) {
+          errors.docNumber = `El número de documento es demasiado corto (${
+            card.docNumber.trim().length
+          }/6). Ingresa al menos 6 dígitos.`;
+        } else {
+          errors.docNumber = "Número de documento inválido.";
+        }
         hasError = true;
       }
     }
@@ -229,12 +327,23 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     if (!valid) {
       return;
     }
-    // Si todo está correcto, inicia animación de compra exitosa
-    startPayment();
+    // Si todo está correcto, mostrar animación ola
+    setShowLogoAnimation(true);
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
+      {/* Animación ola Samsung: se superpone pero no bloquea el render */}
+      {showLogoAnimation && (
+        <LogoReloadAnimation
+          open={showLogoAnimation}
+          duration={2500}
+          onFinish={() => {
+            setShowLogoAnimation(false);
+            startPayment();
+          }}
+        />
+      )}
       {/* Overlay de éxito de compra */}
       <CheckoutSuccessOverlay
         open={purchaseSuccess}
@@ -326,16 +435,24 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                   <div className="flex flex-col gap-1">
                     <input
                       type="text"
+                      inputMode="numeric"
+                      maxLength={16}
+                      pattern="[0-9]{16}"
                       className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                         cardErrors.number ? "border-red-500" : ""
                       }`}
-                      placeholder="Número de tarjeta"
-                      value={card.number}
+                      placeholder="Número de tarjeta (16 dígitos)"
+                      value={card.number.replace(/\D/g, "")}
                       onChange={(e) => {
-                        setCard({ ...card, number: e.target.value });
+                        // Solo permitir números y máximo 16 dígitos
+                        const val = e.target.value
+                          .replace(/\D/g, "")
+                          .slice(0, 16);
+                        setCard({ ...card, number: val });
                         setCardErrors((prev) => ({ ...prev, number: "" }));
                       }}
                       required
+                      autoComplete="cc-number"
                     />
                     {cardErrors.number && (
                       <span
@@ -373,16 +490,37 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     <div className="flex flex-col gap-1 w-1/2">
                       <input
                         type="text"
+                        inputMode="numeric"
+                        maxLength={4}
+                        pattern="\d{3,4}"
                         className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                           cardErrors.cvc ? "border-red-500" : ""
                         }`}
-                        placeholder="Codigo de seguridad"
-                        value={card.cvc}
+                        placeholder="Código de seguridad"
+                        value={card.cvc
+                          .replace(/\D/g, "")
+                          .slice(
+                            0,
+                            card.number.startsWith("34") ||
+                              card.number.startsWith("37")
+                              ? 4
+                              : 3
+                          )}
                         onChange={(e) => {
-                          setCard({ ...card, cvc: e.target.value });
+                          // Solo permitir números y máximo 4 dígitos para Amex, 3 para otros
+                          const maxLen =
+                            card.number.startsWith("34") ||
+                            card.number.startsWith("37")
+                              ? 4
+                              : 3;
+                          const val = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, maxLen);
+                          setCard({ ...card, cvc: val });
                           setCardErrors((prev) => ({ ...prev, cvc: "" }));
                         }}
                         required
+                        autoComplete="cc-csc"
                       />
                       {cardErrors.cvc && (
                         <span
@@ -400,13 +538,19 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                       className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                         cardErrors.name ? "border-red-500" : ""
                       }`}
-                      placeholder="Nombre del titular"
-                      value={card.name}
+                      placeholder="Nombre del titular (solo letras y espacios)"
+                      value={card.name.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")}
                       onChange={(e) => {
-                        setCard({ ...card, name: e.target.value });
+                        // Solo permitir letras y espacios
+                        const val = e.target.value.replace(
+                          /[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g,
+                          ""
+                        );
+                        setCard({ ...card, name: val });
                         setCardErrors((prev) => ({ ...prev, name: "" }));
                       }}
                       required
+                      autoComplete="cc-name"
                     />
                     {cardErrors.name && (
                       <span
@@ -441,16 +585,24 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     <div className="flex flex-col gap-1 w-1/2">
                       <input
                         type="text"
+                        inputMode="numeric"
+                        maxLength={12}
+                        pattern="\d{6,12}"
                         className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                           cardErrors.docNumber ? "border-red-500" : ""
                         }`}
-                        placeholder="Número de documento"
-                        value={card.docNumber}
+                        placeholder="Documento (6-12 dígitos, solo números)"
+                        value={card.docNumber.replace(/\D/g, "").slice(0, 12)}
                         onChange={(e) => {
-                          setCard({ ...card, docNumber: e.target.value });
+                          // Solo permitir números y máximo 12 dígitos
+                          const val = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 12);
+                          setCard({ ...card, docNumber: val });
                           setCardErrors((prev) => ({ ...prev, docNumber: "" }));
                         }}
                         required
+                        autoComplete="off"
                       />
                       {cardErrors.docNumber && (
                         <span
@@ -464,12 +616,18 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                   </div>
                   <input
                     type="text"
+                    inputMode="numeric"
+                    maxLength={2}
+                    pattern="\d{1,2}"
                     className="bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700"
-                    placeholder="Cuotas"
-                    value={card.installments}
-                    onChange={(e) =>
-                      setCard({ ...card, installments: e.target.value })
-                    }
+                    placeholder="Cuotas (opcional)"
+                    value={card.installments.replace(/\D/g, "").slice(0, 2)}
+                    onChange={(e) => {
+                      // Solo permitir números y máximo 2 dígitos
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 2);
+                      setCard({ ...card, installments: val });
+                    }}
+                    autoComplete="off"
                   />
                   <div className="text-xs text-gray-500 mt-1 mb-4">
                     Si hay intereses, los aplicará y cobrará tu banco.

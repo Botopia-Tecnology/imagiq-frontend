@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
-  MobileFilterModal,
   type FilterConfig,
   type FilterState,
+  MobileFilterModal,
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -14,6 +14,7 @@ import microondasImg from "../../../img/Electrodomesticos/Electrodomesticos4.png
 import refrigeradorImg from "../../../img/Electrodomesticos/Electrodomesticos1.png";
 import lavadoraImg from "../../../img/Electrodomesticos/Electrodomesticos2.png";
 import aspiradoraImg from "../../../img/Electrodomesticos/Electrodomesticos3.png";
+import { productsData } from "../data_product/products";
 
 const applianceCategories: Category[] = [
   {
@@ -67,38 +68,6 @@ const microondasFilters: FilterConfig = {
   ],
 };
 
-export const microondasProducts = [
-  {
-    id: "ms23k3513aw",
-    name: "Samsung Microondas 23L MS23K3513AW",
-    image: microondasImg,
-    colors: [
-      { name: "white", hex: "#F3F4F6", label: "Blanco" },
-      { name: "gray", hex: "#71717A", label: "Gris" },
-    ] as ProductColor[],
-    rating: 4.7,
-    reviewCount: 120,
-    price: "$ 599.000",
-    originalPrice: "$ 699.000",
-    discount: "-14%",
-    isNew: true,
-  },
-  {
-    id: "mg23t5018ak",
-    name: "Samsung Microondas Grill 23L MG23T5018AK",
-    image: microondasImg,
-    colors: [
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "inox", hex: "#A3A3A3", label: "Inox" },
-    ] as ProductColor[],
-    rating: 4.5,
-    reviewCount: 85,
-    price: "$ 799.000",
-    originalPrice: "$ 899.000",
-    discount: "-11%",
-  },
-];
-
 export default function MicroondasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
@@ -143,63 +112,30 @@ export default function MicroondasSection() {
         categories={applianceCategories}
         trackingPrefix="microondas_category"
       />
-
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            <FilterSidebar
-              filterConfig={microondasFilters}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              resultCount={resultCount}
-              expandedFilters={expandedFilters}
-              onToggleFilter={toggleFilter}
-              trackingPrefix="microondas_filter"
-            />
-          </aside>
-
-          <main className="flex-1">
-            <div
-              className={cn(
-                "grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              )}
-            >
-              {microondasProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  onAddToCart={(productId: string, color: string) => {
-                    posthogUtils.capture("add_to_cart", {
-                      product_id: productId,
-                      product_name: product.name,
-                      product_color: color,
-                      product_price: product.price,
-                      category: "microondas",
-                    });
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    posthogUtils.capture("toggle_favorite", {
-                      product_id: productId,
-                      product_name: product.name,
-                      category: "microondas",
-                    });
-                  }}
-                />
+      <div className="container mx-auto px-6 py-8 flex gap-8">
+        <aside className="hidden lg:block w-80 flex-shrink-0">
+          <FilterSidebar
+            filterConfig={microondasFilters}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            resultCount={resultCount}
+            expandedFilters={expandedFilters}
+            onToggleFilter={toggleFilter}
+            trackingPrefix="microondas_filter"
+          />
+        </aside>
+        <main className="flex-1">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {productsData.electrodomesticos
+              .filter((product) =>
+                product.name.toLowerCase().includes("microondas")
+              )
+              .map((product) => (
+                <ProductCard key={product.id} {...product} />
               ))}
-            </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
-
       <MobileFilterModal
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}

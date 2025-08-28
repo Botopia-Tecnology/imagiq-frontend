@@ -1,0 +1,130 @@
+"use client";
+/**
+ * Página de Ofertas - Imagiq
+ * Muestra cuatro categorías principales con íconos y botón de información
+ * El Navbar debe ser transparente y los items en blanco
+ */
+import Image from "next/image";
+import React from "react";
+import audifonosIcon from "@/img/ofertas/audifonos_icon.png";
+import tvIcon from "@/img/ofertas/tv_icon.png";
+import phoneIcon from "@/img/ofertas/phone_icon.png";
+import lavadoraIcon from "@/img/ofertas/lavadora_icon.png";
+
+// Opcional: Si el Navbar requiere prop para transparencia, se debe pasar desde layout o contexto
+
+import Link from "next/link";
+// Configuración de las categorías y rutas de productos con ofertas
+const ofertas = [
+  {
+    title: "Accesorios",
+    icon: audifonosIcon,
+    info: "Más información",
+    bg: "bg-[#1A407A]",
+    href: "/productos?categoria=accesorios&oferta=descuento",
+  },
+  {
+    title: "TV, Monitores y Audio",
+    icon: tvIcon,
+    info: "Más información",
+    bg: "bg-[#285CA8]",
+    href: "/productos?categoria=tv-monitores-audio&oferta=descuento",
+  },
+  {
+    title: "Smartphones y Tablets",
+    icon: phoneIcon,
+    info: "Más información",
+    bg: "bg-[#4A7DC3]",
+    href: "/productos?categoria=smartphones-tablets&oferta=descuento",
+  },
+  {
+    title: "Electrodomésticos",
+    icon: lavadoraIcon,
+    info: "Más información",
+    bg: "bg-[#7CA6D6]",
+    whiteIcon: true,
+    href: "/productos?categoria=electrodomesticos&oferta=descuento",
+  },
+];
+export default function OfertasPage() {
+  // Oculta el scroll y el fondo blanco extra solo en esta página
+  // Usar useEffect para manipular el DOM solo cuando el componente está montado
+  React.useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    // Guardar estilos originales para restaurar al desmontar
+    const originalHtmlOverflow = html.style.overflow;
+    const originalBodyOverflow = body.style.overflow;
+    const originalHtmlHeight = html.style.height;
+    const originalBodyHeight = body.style.height;
+    const originalBodyBg = body.style.background;
+    html.style.overflow = "hidden";
+    body.style.overflow = "hidden";
+    html.style.height = "100vh";
+    body.style.height = "100vh";
+    body.style.background = "transparent";
+    window.scrollTo(0, 0);
+    body.scrollTop = 0;
+    html.scrollTop = 0;
+    return () => {
+      html.style.overflow = originalHtmlOverflow;
+      body.style.overflow = originalBodyOverflow;
+      html.style.height = originalHtmlHeight;
+      body.style.height = originalBodyHeight;
+      body.style.background = originalBodyBg;
+    };
+  }, []);
+  // Defensive: never return NaN, undefined, or null as children
+  const mainContent = (
+    <main
+      className="w-full h-screen flex flex-col bg-transparent overflow-hidden"
+      style={{ height: "100vh", minHeight: "100vh", margin: 0, padding: 0 }}
+    >
+      {/* Background de columnas de color, cubre toda la pantalla */}
+      <div
+        className="fixed top-0 left-0 w-full h-full flex flex-row z-0"
+        style={{ height: "100vh", minHeight: "100vh", overflow: "hidden" }}
+      >
+        {ofertas.map((item) => (
+          <div
+            key={item.title}
+            className={`flex-1 flex flex-col items-center justify-center ${item.bg} group transition-all duration-300 cursor-pointer h-full pt-20`}
+            style={{ height: "100vh", minHeight: "100vh", overflow: "hidden" }}
+          >
+            <Image
+              src={item.icon}
+              alt={item.title + " icon"}
+              width={100}
+              height={100}
+              className={`mb-10 transition-transform duration-300 group-hover:scale-110${
+                item.whiteIcon ? " filter invert brightness-200" : ""
+              }`}
+              priority
+            />
+            <h2 className="text-white text-2xl md:text-3xl font-bold mb-6 text-center transition-colors duration-300 group-hover:text-white/90">
+              {item.title}
+            </h2>
+            {/* Botón de más información: navega a la categoría de productos con oferta */}
+            <Link
+              href={item.href}
+              className="mt-2 px-6 py-2 border-2 border-white rounded-full text-white text-lg font-medium hover:bg-white hover:text-[#1A407A] transition-colors duration-200 group-hover:bg-white group-hover:text-[#1A407A]"
+              aria-label={item.info + " " + item.title}
+              scroll={false}
+            >
+              {item.info}
+            </Link>
+          </div>
+        ))}
+      </div>
+      {/* El resto del contenido (Navbar y otros) debe tener z-10 o superior para estar sobre el fondo */}
+    </main>
+  );
+  if (
+    mainContent == null ||
+    (typeof mainContent === "number" && isNaN(mainContent))
+  ) {
+    return <></>;
+  } else {
+    return mainContent;
+  }
+}

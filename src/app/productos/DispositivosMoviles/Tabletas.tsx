@@ -12,7 +12,8 @@
 import { useState, useEffect } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import ProductCard from "../components/ProductCard";
+import { productsData } from "../data_product/products";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
@@ -83,52 +84,6 @@ const tabletFilters: FilterConfig = {
   sistemaOperativo: ["Android", "One UI"],
   uso: ["Productividad", "Gaming", "Educación", "Entretenimiento"],
 };
-
-const tabletProducts = [
-  {
-    id: "galaxy-tab-s9-11",
-    name: 'Samsung Galaxy Tab S9 11" WiFi',
-    image: tabletasImg,
-    colors: [
-      { name: "gray", hex: "#808080", label: "Gris" },
-      { name: "beige", hex: "#F5F5DC", label: "Beige" },
-      { name: "mint", hex: "#98FB98", label: "Menta" },
-    ] as ProductColor[],
-    rating: 4.8,
-    reviewCount: 245,
-    price: "$ 2.299.000",
-    originalPrice: "$ 2.699.000",
-    discount: "-15%",
-    isNew: true,
-  },
-  {
-    id: "galaxy-tab-a9-10",
-    name: 'Samsung Galaxy Tab A9+ 10.4" WiFi',
-    image: tabletasImg,
-    colors: [
-      { name: "gray", hex: "#696969", label: "Gris Grafito" },
-      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-    ] as ProductColor[],
-    rating: 4.4,
-    reviewCount: 189,
-    price: "$ 899.000",
-  },
-  {
-    id: "galaxy-tab-s9-fe",
-    name: 'Samsung Galaxy Tab S9 FE 10.9" WiFi',
-    image: tabletasImg,
-    colors: [
-      { name: "mint", hex: "#98FB98", label: "Menta" },
-      { name: "gray", hex: "#708090", label: "Gris" },
-      { name: "lavender", hex: "#E6E6FA", label: "Lavanda" },
-    ] as ProductColor[],
-    rating: 4.6,
-    reviewCount: 156,
-    price: "$ 1.599.000",
-    originalPrice: "$ 1.899.000",
-    discount: "-16%",
-  },
-];
 
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -256,27 +211,20 @@ export default function TabletasSection() {
                   : "grid-cols-1"
               )}
             >
-              {tabletProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  onAddToCart={(productId: string, color: string) => {
-                    console.log(`Añadir al carrito: ${productId} - ${color}`);
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    console.log(`Toggle favorito: ${productId}`);
-                  }}
-                />
-              ))}
+              {productsData["smartphones-tablets"]
+                .filter((product) => product.name.toLowerCase().includes("tab"))
+                .map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    {...product}
+                    onAddToCart={(productId: string, color: string) => {
+                      console.log(`Añadir al carrito: ${productId} - ${color}`);
+                    }}
+                    onToggleFavorite={(productId: string) => {
+                      console.log(`Toggle favorito: ${productId}`);
+                    }}
+                  />
+                ))}
             </div>
           </main>
         </div>

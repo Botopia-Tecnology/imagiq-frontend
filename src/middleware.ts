@@ -25,6 +25,7 @@ const publicRoutes = [
   "/tiendas",
   "/carrito",
   "/dashboard",
+  "/ofertas",
 ];
 
 // Admin routes that require special permissions

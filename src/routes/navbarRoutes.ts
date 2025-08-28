@@ -1,7 +1,7 @@
 export const navbarRoutes = [
   {
     name: "Ofertas",
-    href: "/tienda/outlet",
+    href: "/ofertas",
     category: "promociones",
   },
   {

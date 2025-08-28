@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+// import { cn } from "@/lib/utils";
+import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
@@ -14,6 +14,7 @@ import refrigeradorImg from "../../../img/Electrodomesticos/Electrodomesticos1.p
 import lavadoraImg from "../../../img/Electrodomesticos/Electrodomesticos2.png";
 import microondasImg from "../../../img/Electrodomesticos/Electrodomesticos4.png";
 import aspiradoraImg from "../../../img/Electrodomesticos/Electrodomesticos3.png";
+import { productsData } from "../data_product/products";
 
 const applianceCategories: Category[] = [
   {
@@ -73,43 +74,12 @@ const aireFilters: FilterConfig = {
   ],
 };
 
-const aireProducts = [
-  {
-    id: "ar12t93",
-    name: "Samsung Aire Acondicionado Split Inverter 12000 BTU AR12T93",
-    image: aireImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "gray", hex: "#808080", label: "Gris" },
-    ] as ProductColor[],
-    rating: 4.8,
-    reviewCount: 45,
-    price: "$ 2.199.000",
-    originalPrice: "$ 2.499.000",
-    discount: "-12%",
-    isNew: true,
-  },
-  {
-    id: "ar18t93",
-    name: "Samsung Aire Acondicionado Split Inverter 18000 BTU AR18T93",
-    image: aireImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "gray", hex: "#808080", label: "Gris" },
-    ] as ProductColor[],
-    rating: 4.7,
-    reviewCount: 32,
-    price: "$ 2.799.000",
-    originalPrice: "$ 3.099.000",
-    discount: "-10%",
-  },
-];
-
 export default function AireAcondicionadoSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
   const [filters, setFilters] = useState<FilterState>({});
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(5);
 
   useEffect(() => {
@@ -148,61 +118,29 @@ export default function AireAcondicionadoSection() {
         categories={applianceCategories}
         trackingPrefix="aire_category"
       />
-
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            <FilterSidebar
-              filterConfig={aireFilters}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              resultCount={resultCount}
-              expandedFilters={expandedFilters}
-              onToggleFilter={toggleFilter}
-              trackingPrefix="aire_filter"
-            />
-          </aside>
-
-          <main className="flex-1">
-            <div
-              className={cn(
-                "grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-              )}
-            >
-              {aireProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  onAddToCart={(productId: string, color: string) => {
-                    posthogUtils.capture("add_to_cart", {
-                      product_id: productId,
-                      product_name: product.name,
-                      product_color: color,
-                      product_price: product.price,
-                      category: "aire-acondicionado",
-                    });
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    posthogUtils.capture("toggle_favorite", {
-                      product_id: productId,
-                      product_name: product.name,
-                      category: "aire-acondicionado",
-                    });
-                  }}
-                />
+      <div className="container mx-auto px-6 py-8 flex gap-8">
+        <aside className="hidden lg:block w-80 flex-shrink-0">
+          <FilterSidebar
+            filterConfig={aireFilters}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            resultCount={resultCount}
+            expandedFilters={expandedFilters}
+            onToggleFilter={toggleFilter}
+            trackingPrefix="aire_filter"
+          />
+        </aside>
+        <main className="flex-1">
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {productsData.electrodomesticos
+              .filter((product) =>
+                product.name.toLowerCase().includes("aire acondicionado")
+              )
+              .map((product) => (
+                <ProductCard key={product.id} {...product} />
               ))}
-            </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

@@ -55,12 +55,15 @@ export default function Step2({
   // onBack ya existe
   // onContinue?: () => void
   // Estado para formulario de invitado
+  // Formulario de invitado: incluye dirección línea uno y ciudad
   const [guestForm, setGuestForm] = useState({
     email: "",
     nombre: "",
     apellido: "",
     cedula: "",
     celular: "",
+    direccion_linea_uno: "",
+    direccion_ciudad: "",
   });
   // Eliminado: indicativo
   const appliedDiscount = 0;
@@ -76,6 +79,8 @@ export default function Step2({
     apellido: "",
     cedula: "",
     celular: "",
+    direccion_linea_uno: "",
+    direccion_ciudad: "",
   });
 
   // Calcular totales
@@ -96,6 +101,8 @@ export default function Step2({
     nombre: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
     apellido: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
     email: (v: string) => v.replace(/\s/g, ""),
+    direccion_linea_uno: (v: string) => v.replace(/[^a-zA-Z0-9#\-\.\s]/g, ""),
+    direccion_ciudad: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
   };
 
   // Validadores por campo
@@ -132,6 +139,17 @@ export default function Step2({
         return "El celular colombiano debe empezar con '3' y tener 10 dígitos.";
       return "";
     },
+    direccion_linea_uno: (v: string) => {
+      if (!v)
+        return "Por favor ingresa la dirección (línea uno). Ejemplo: Calle 91c #84-97 int. 301";
+      if (v.length < 8) return "La dirección es demasiado corta.";
+      return "";
+    },
+    direccion_ciudad: (v: string) => {
+      if (!v) return "Por favor ingresa la ciudad.";
+      if (v.length < 3) return "La ciudad es demasiado corta.";
+      return "";
+    },
   };
 
   // Validar todos los campos y devolver errores
@@ -142,6 +160,8 @@ export default function Step2({
       apellido: "",
       cedula: "",
       celular: "",
+      direccion_linea_uno: "",
+      direccion_ciudad: "",
     };
     Object.keys(errors).forEach((key) => {
       // @ts-expect-error Type mismatch due to dynamic key access; all keys are validated and safe here
@@ -183,14 +203,15 @@ export default function Step2({
       );
       return;
     }
-    // Estructura de datos para guardar en localStorage
+    // Estructura de datos para guardar en localStorage (sin fecha, con dirección)
     const guestPaymentInfo = {
       email: guestForm.email.trim(),
       nombre: guestForm.nombre.trim(),
       apellido: guestForm.apellido.trim(),
       cedula: guestForm.cedula.trim(),
       celular: guestForm.celular.trim(),
-      fecha: new Date().toISOString(),
+      direccion_linea_uno: guestForm.direccion_linea_uno.trim(),
+      direccion_ciudad: guestForm.direccion_ciudad.trim(),
       carrito: cartProducts.map((p) => ({
         id: p.id,
         name: p.name,
@@ -333,6 +354,55 @@ export default function Step2({
                     </span>
                   )}
                 </div>
+              </div>
+              {/* Dirección y ciudad */}
+              <div className="flex flex-col gap-1">
+                <input
+                  type="text"
+                  name="direccion_linea_uno"
+                  placeholder="Dirección (línea uno, ej: Calle 91c #84-97 int. 301)"
+                  className={`input-samsung ${
+                    fieldErrors.direccion_linea_uno ? "border-red-500" : ""
+                  }`}
+                  value={guestForm.direccion_linea_uno}
+                  onChange={handleGuestChange}
+                  required
+                  disabled={loading || success}
+                  autoComplete="address-line1"
+                  maxLength={60}
+                />
+                {fieldErrors.direccion_linea_uno && (
+                  <span
+                    className="text-red-500 text-xs"
+                    style={{ marginTop: 2 }}
+                  >
+                    {fieldErrors.direccion_linea_uno}
+                  </span>
+                )}
+              </div>
+              <div className="flex flex-col gap-1">
+                <input
+                  type="text"
+                  name="direccion_ciudad"
+                  placeholder="Ciudad (ej: Medellín)"
+                  className={`input-samsung ${
+                    fieldErrors.direccion_ciudad ? "border-red-500" : ""
+                  }`}
+                  value={guestForm.direccion_ciudad}
+                  onChange={handleGuestChange}
+                  required
+                  disabled={loading || success}
+                  autoComplete="address-level2"
+                  maxLength={30}
+                />
+                {fieldErrors.direccion_ciudad && (
+                  <span
+                    className="text-red-500 text-xs"
+                    style={{ marginTop: 2 }}
+                  >
+                    {fieldErrors.direccion_ciudad}
+                  </span>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1">
@@ -488,7 +558,7 @@ export default function Step2({
                 // Si no es válido, mostrar error general
                 if (!isGuestFormValid) {
                   setError("Por favor completa todos los campos obligatorios.");
-                  // Marcar los campos vacíos
+                  // Marcar los campos vacíos incluyendo dirección y ciudad
                   const newFieldErrors: typeof fieldErrors = {
                     email: guestForm.email.trim()
                       ? ""
@@ -503,6 +573,12 @@ export default function Step2({
                       ? ""
                       : "Este campo es obligatorio",
                     celular: guestForm.celular.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    direccion_linea_uno: guestForm.direccion_linea_uno.trim()
+                      ? ""
+                      : "Este campo es obligatorio",
+                    direccion_ciudad: guestForm.direccion_ciudad.trim()
                       ? ""
                       : "Este campo es obligatorio",
                   };

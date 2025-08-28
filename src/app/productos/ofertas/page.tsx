@@ -47,7 +47,9 @@ function ProductosOfertasContent() {
 
 export default function ProductosOfertasPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Cargando ofertas...</div>}>
+    <Suspense
+      fallback={<div className="p-8 text-center">Cargando ofertas...</div>}
+    >
       <ProductosOfertasContent />
     </Suspense>
   );

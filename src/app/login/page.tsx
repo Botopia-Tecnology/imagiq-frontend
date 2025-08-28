@@ -18,7 +18,7 @@ import { Usuario } from "@/types/user";
 import { notifyLoginSuccess, notifyError } from "./notifications";
 
 // API endpoint for authentication
-const AUTH_API_URL = "http://localhost:3001/api/auth/login";
+const AUTH_API_URL = "https://imagiq-backend-production.up.railway.app/api/auth/login";
 
 // Login success response
 interface LoginSuccessResponse {

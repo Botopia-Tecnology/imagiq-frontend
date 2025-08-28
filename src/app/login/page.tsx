@@ -9,13 +9,13 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
 import { Usuario } from "@/types/user";
-import { notifyLoginSuccess, notifyError } from "./notifications";
+import { AlertCircle, Eye, EyeOff } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { notifyError, notifyLoginSuccess } from "./notifications";
 
 // API endpoint for authentication
 const AUTH_API_URL = "https://imagiq-backend-production.up.railway.app/api/auth/login";

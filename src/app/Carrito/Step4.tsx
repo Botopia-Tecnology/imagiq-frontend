@@ -1,14 +1,14 @@
 "use client";
-import React, { useState, useEffect } from "react";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
-import CheckoutSuccessOverlay from "./CheckoutSuccessOverlay";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import visaLogo from "@/img/carrito/visa_logo.png";
-import mastercardLogo from "@/img/carrito/masterdcard_logo.png";
+import addiLogo from "@/img/carrito/addi_logo.png";
 import amexLogo from "@/img/carrito/amex_logo.png";
 import dinersLogo from "@/img/carrito/logo4.png";
-import addiLogo from "@/img/carrito/addi_logo.png";
+import mastercardLogo from "@/img/carrito/masterdcard_logo.png";
+import visaLogo from "@/img/carrito/visa_logo.png";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import CheckoutSuccessOverlay from "./CheckoutSuccessOverlay";
 import LogoReloadAnimation from "./LogoReloadAnimation";
 
 // Utilidad para obtener productos del carrito desde localStorage

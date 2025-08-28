@@ -5,10 +5,10 @@
  */
 
 import Image from "next/image";
-import SamsungHealth from "@/img/Hero/Samsung_health.png";
-import CambiateGalaxy from "@/img/Hero/Cambiate_Galaxy.png";
-import OneUI from "@/img/Hero/One_UI.png";
-import SamsungVisionAI from "@/img/Hero/Samsung_Vision.png";
+import SamsungHealth from "@/img/hero/Samsung_health.png";
+import CambiateGalaxy from "@/img/hero/Cambiate_Galaxy.png";
+import OneUI from "@/img/hero/One_UI.png";
+import SamsungVisionAI from "@/img/hero/Samsung_Vision.png";
 
 // Datos escalables para las historias
 const historias = [

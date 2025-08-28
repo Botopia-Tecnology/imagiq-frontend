@@ -12,6 +12,23 @@ import CheckoutSuccessOverlay from "./CheckoutSuccessOverlay";
 import LogoReloadAnimation from "./LogoReloadAnimation";
 
 // Utilidad para obtener productos del carrito desde localStorage
+/**
+ * Utilidad para obtener productos del carrito desde localStorage
+ * - Incluye campo SKU genérico para cada producto.
+ * - El SKU se genera como 'SKU-' + id del producto, pero puede adaptarse fácilmente.
+ * - Si el prodto ya tiene un SKU, lo respeta.
+ * - El formato es escalable y fucácil de modificar.
+ *
+ * Ejemplo de producto retornado:
+ * {
+ *   id: '123',
+ *   name: 'Producto',
+ *   image: '/img/logo_imagiq.png',
+ *   price: 1000,
+ *   quantity: 1,
+ *   sku: 'SKU-123'
+ * }
+ */
 function getCartProducts() {
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem("cart-items");
@@ -25,6 +42,9 @@ function getCartProducts() {
           image: p.imagen || p.image || "/img/logo_imagiq.png",
           price: p.precio || p.price || 0,
           quantity: p.cantidad || p.quantity || 1,
+          // SKU genérico: si existe lo respeta, si no lo genera
+          sku:
+            p.sku || `SKU-${p.id || Math.random().toString(36).slice(2, 10)}`,
         }))
       : [];
   } catch {

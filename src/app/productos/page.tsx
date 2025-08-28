@@ -18,7 +18,7 @@ function ProductosContent() {
     nombre: "Samsung Galaxy S25 Ultra 5G 256GB, Azul",
     precio: 6719900,
     cantidad: 1,
-    imagen: "/img/DispositivosMoviles/galaxy_s25.png",
+    imagen: "/img/dispositivosMoviles/galaxy_s25.png",
   };
 
   // Handler para añadir al carrito

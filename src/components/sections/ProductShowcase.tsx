@@ -1,8 +1,8 @@
 import Image from "next/image";
-import zflipImg from "@/img/Hero/zflip_hero.png";
-import watchImg from "@/img/Hero/watch_hero.png";
-import BespokeAiEjemploImg from "@/img/Hero/BespokeAiEjemplo.png";
-import bespokeAiLogo from "@/img/Hero/BespokeAi.png";
+import zflipImg from "@/img/hero/zflip_hero.png";
+import watchImg from "@/img/hero/watch_hero.png";
+import BespokeAiEjemploImg from "@/img/hero/BespokeAiEjemplo.png";
+import bespokeAiLogo from "@/img/hero/BespokeAi.png";
 
 const products = [
   {

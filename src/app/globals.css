@@ -1,4 +1,53 @@
 @import url("sweetalert2/dist/sweetalert2.min.css");
+/* Animaciones exclusivas para LogoReloadAnimation, prefijo .logo-reload- para evitar conflictos */
+@keyframes logo-reload-fadeInLogo {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.logo-reload-animate-fadeInLogo {
+  animation: logo-reload-fadeInLogo 0.7s ease;
+}
+@keyframes logo-reload-logoGrow {
+  from {
+    transform: scale(0.85);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.logo-reload-animate-logoGrow {
+  animation: logo-reload-logoGrow 1.2s cubic-bezier(0.77, 0, 0.175, 1);
+}
+@keyframes logo-reload-fadeInText {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.logo-reload-animate-fadeInText {
+  animation: logo-reload-fadeInText 1.6s cubic-bezier(0.77, 0, 0.175, 1);
+}
+@keyframes logo-reload-bgMove {
+  0% {
+    background-position: 0% 100%;
+  }
+  100% {
+    background-position: 100% 0%;
+  }
+}
+.logo-reload-animate-bgMove {
+  animation: logo-reload-bgMove 16s ease-in-out infinite alternate;
+}
 /* Samsung Sharp Sans font-face for web (variable weight) */
 @font-face {
   font-family: "SamsungSharpSans";

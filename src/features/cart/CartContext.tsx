@@ -1,3 +1,7 @@
+"use client";
+
+// Las funciones deben ir dentro del CartProvider para acceder a setItems
+
 /**
  * Context del Carrito de Compras
  * - Estado global del carrito
@@ -7,38 +11,43 @@
  * - Tracking de abandono de carrito
  */
 
-"use client";
-
 import { createContext, useContext, useState, useEffect } from "react";
 
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+// Tipos para productos en el carrito
+import type { CartProduct } from "./useCart";
 
-interface Product {
-  id: string;
-  name: string;
-  price: number;
-  image: string;
-}
-
-interface CartContextType {
-  items: CartItem[];
-  total: number;
-  itemCount: number;
-  addItem: (product: Product) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+/**
+ * CartContextType
+ * Define la interfaz del contexto global del carrito.
+ */
+type CartContextType = {
+  /** Array de productos en el carrito */
+  cart: CartProduct[];
+  /** Añade un producto al carrito (o suma cantidad si ya existe) */
+  addProduct: (product: CartProduct) => void;
+  /** Elimina un producto por id */
+  removeProduct: (id: string) => void;
+  /** Actualiza la cantidad de un producto */
+  updateQuantity: (id: string, cantidad: number) => void;
+  /** Vacía el carrito */
   clearCart: () => void;
-  loading: boolean;
-}
+  /** Devuelve todos los productos */
+  getProducts: () => CartProduct[];
+  /** Cantidad total de productos (para el badge del navbar) */
+  itemCount: number;
+};
 
+/**
+ * CartContext
+ * Contexto global para el carrito de compras.
+ */
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+/**
+ * useCartContext
+ * Hook para acceder al contexto del carrito.
+ * @throws Error si se usa fuera del CartProvider
+ */
 export const useCartContext = () => {
   const context = useContext(CartContext);
   if (!context) {
@@ -47,58 +56,50 @@ export const useCartContext = () => {
   return context;
 };
 
+/**
+ * CartProvider
+ * Proveedor global del carrito. Maneja estado, persistencia y lógica.
+ */
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [loading] = useState(false); // Removed setLoading since it's not used
+  // Estado principal del carrito
+  const [items, setItems] = useState<CartProduct[]>([]);
 
-  // Load cart from localStorage on mount
-  useEffect(() => {
-    const savedCart = localStorage.getItem("cart-items");
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
-    }
-  }, []);
-
-  // Save cart to localStorage whenever items change
-  useEffect(() => {
-    localStorage.setItem("cart-items", JSON.stringify(items));
-  }, [items]);
-
-  // Calculate totals
-  const total = items.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-
-  const addItem = (product: Product) => {
+  /**
+   * addProduct
+   * Añade un producto al carrito. Si ya existe, suma la cantidad.
+   * Actualiza localStorage automáticamente.
+   */
+  const addProduct = (product: CartProduct) => {
     setItems((currentItems) => {
       const existingItem = currentItems.find((item) => item.id === product.id);
-
       if (existingItem) {
         return currentItems.map((item) =>
           item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+            ? { ...item, quantity: item.quantity + product.quantity }
             : item
         );
       }
-
-      return [...currentItems, { ...product, quantity: 1 }];
+      return [...currentItems, { ...product }];
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((currentItems) =>
-      currentItems.filter((item) => item.id !== productId)
-    );
+  /**
+   * removeProduct
+   * Elimina un producto del carrito por id.
+   */
+  const removeProduct = (id: string) => {
+    setItems((currentItems) => currentItems.filter((item) => item.id !== id));
   };
 
+  /**
+   * updateQuantity
+   * Actualiza la cantidad de un producto. Si la cantidad es 0, lo elimina.
+   */
   const updateQuantity = (productId: string, quantity: number) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeProduct(productId);
       return;
     }
-
     setItems((currentItems) =>
       currentItems.map((item) =>
         item.id === productId ? { ...item, quantity } : item
@@ -106,20 +107,59 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     );
   };
 
+  /**
+   * clearCart
+   * Vacía el carrito completamente.
+   */
   const clearCart = () => {
     setItems([]);
   };
 
+  /**
+   * getProducts
+   * Devuelve todos los productos del carrito.
+   */
+  const getProducts = () => items;
+
+  /**
+   * Persistencia: carga el carrito desde localStorage al montar.
+   */
+  useEffect(() => {
+    const savedCart = localStorage.getItem("cart-items");
+    if (savedCart) {
+      setItems(JSON.parse(savedCart));
+    }
+  }, []);
+
+  /**
+   * Persistencia: guarda el carrito en localStorage cada vez que cambia.
+   */
+  useEffect(() => {
+    localStorage.setItem("cart-items", JSON.stringify(items));
+  }, [items]);
+
+  /**
+   * itemCount
+   * Calcula la cantidad total de productos para el badge del navbar.
+   */
+  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  /**
+   * value
+   * Valor del contexto global del carrito.
+   */
   const value: CartContextType = {
-    items,
-    total,
-    itemCount,
-    addItem,
-    removeItem,
+    cart: items,
+    addProduct,
+    removeProduct,
     updateQuantity,
     clearCart,
-    loading,
+    getProducts,
+    itemCount,
   };
 
+  /**
+   * Renderiza el proveedor global del carrito.
+   */
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 };

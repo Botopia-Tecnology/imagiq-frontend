@@ -12,8 +12,7 @@ import { AnalyticsProvider } from "@/features/analytics/AnalyticsContext";
 import { UserPreferencesProvider } from "@/features/user/UserPreferencesContext";
 import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 
-import Navbar from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
+import ClientLayout from "./ClientLayout";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -93,6 +92,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Validar children para evitar NaN, null, undefined o string vacío
+  let safeChildren = children;
+  const isNaNValue =
+    (typeof children === "number" && isNaN(children)) ||
+    (typeof children === "string" &&
+      (children === "NaN" || children.trim() === "")) ||
+    children == null;
+  if (isNaNValue) {
+    safeChildren = <></>;
+  }
   return (
     <html lang="es" className={inter.variable}>
       <body className="font-sans antialiased">
@@ -101,11 +110,7 @@ export default function RootLayout({
             <AuthProvider>
               <UserPreferencesProvider>
                 <CartProvider>
-                  <div className="min-h-screen flex flex-col">
-                    <Navbar />
-                    <main className="flex-1">{children}</main>
-                    <Footer />
-                  </div>
+                  <ClientLayout>{safeChildren}</ClientLayout>
                 </CartProvider>
               </UserPreferencesProvider>
             </AuthProvider>

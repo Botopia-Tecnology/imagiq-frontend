@@ -10,6 +10,8 @@ import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import { LocationMap } from "@/components/LocationMap";
 import UltimosProductos from "@/components/sections/UltimosProductos";
+import ProductShowcase from "@/components/sections/ProductShowcase";
+import Historias from "@/components/sections/Historias";
 
 export default function HomePage() {
   return (
@@ -19,11 +21,15 @@ export default function HomePage() {
         description="Descubre productos de calidad: Outlet con hasta 70% OFF, Novedades, Recomendados y Ventas Corporativas. Envío gratis +$999"
         keywords="ecommerce, outlet, novedades, recomendados, ventas corporativas, soporte"
       />
-      <div className="min-h-screen">
+      {/* pt-16 en móvil si hay scroll y navbar sticky, pt-0 en desktop */}
+      <div id="main-page" className="min-h-screen md:mr-0 pt-20 md:pt-0">
         <HeroSection />
         <CategoriesSection />
         <Ofertas />
         <Beneficios />
+        <ProductShowcase />
+        {/* Sección de Historias justo debajo de ProductShowcase */}
+        <Historias />
         <UltimosProductos />
         {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
         <section id="tiendas" className="py-16 bg-white">

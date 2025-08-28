@@ -12,6 +12,7 @@
 "use client";
 
 import { useState } from "react";
+import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
 import { Heart } from "lucide-react";
@@ -60,6 +61,9 @@ export default function ProductCard({
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Integración con el contexto del carrito
+  const { addProduct } = useCartContext();
+
   // Tracking de interacciones
   const handleColorSelect = (color: ProductColor) => {
     setSelectedColor(color);
@@ -72,8 +76,6 @@ export default function ProductCard({
   };
 
   const handleAddToCart = async () => {
-    if (!onAddToCart) return;
-
     setIsLoading(true);
     posthogUtils.capture("add_to_cart_click", {
       product_id: id,
@@ -81,12 +83,18 @@ export default function ProductCard({
       selected_color: selectedColor.name,
       source: "product_card",
     });
-
-    try {
-      await onAddToCart(id, selectedColor.name);
-    } finally {
-      setIsLoading(false);
-    }
+    // Agrega el producto al carrito usando el contexto
+    addProduct({
+      id,
+      name,
+      image: typeof image === "string" ? image : image.src || "",
+      price:
+        typeof price === "string"
+          ? parseInt(price.replace(/[^\d]/g, ""))
+          : price || 0,
+      quantity: 1,
+    });
+    setIsLoading(false);
   };
 
   const handleToggleFavorite = () => {

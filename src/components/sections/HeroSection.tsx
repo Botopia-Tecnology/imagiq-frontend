@@ -60,57 +60,78 @@ const heroSlides = [
 ];
 
 export default function HeroSection() {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-
-  // Usar el hook personalizado con transición suave
-  // Duración del GIF: 2950ms, Duración de fade: 400ms
+  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
   const { isGifPlaying, imgRef, staticImageUrl, isTransitioning } = useGifOnce(
     gifAudifonos.src,
     2950,
     400
   );
-
-  // Auto-slide functionality
-  useEffect(() => {
-    if (!isAutoPlaying) return;
-
-    const interval = setInterval(() => {
-      setCurrentSlide((prev: number) => (prev + 1) % heroSlides.length);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isAutoPlaying]);
-
-  const goToSlide = (index: number) => {
-    setCurrentSlide(index);
-    setIsAutoPlaying(false);
-    // Resume auto-play after 10 seconds of manual interaction
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
-  const goToPrevious = () => {
-    setCurrentSlide(
-      (prev: number) => (prev - 1 + heroSlides.length) % heroSlides.length
-    );
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
-  const goToNext = () => {
-    setCurrentSlide((prev: number) => (prev + 1) % heroSlides.length);
-    setIsAutoPlaying(false);
-    setTimeout(() => setIsAutoPlaying(true), 10000);
-  };
-
+  const pathname = usePathname();
+  const isHome = pathname === "/";
   const currentSlideData = heroSlides[currentSlide];
+
+  // Producto actual mostrado en el Hero
+  const productoActual = {
+    sku: `SKU${currentSlideData.id}`,
+    name: currentSlideData.title,
+    quantity: "1",
+    unitPrice: currentSlideData.price.replace(/[^\d]/g, ""), // Solo números
+  };
+
+  // Handler para el botón
+  const handleAddiPayment = async () => {
+    try {
+      const token = localStorage.getItem("imagiq_token");
+      if (!token) {
+        alert("No se encontró el token");
+        return;
+      }
+      // Body con el producto actual
+      const body = {
+        totalAmount: productoActual.unitPrice,
+        shippingAmount: "0",
+        currency: "COP",
+        item: [productoActual],
+      };
+      const response = await fetch(
+        "https://imagiq-backend-production.up.railway.app/api/payments/addi/apply",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Error en la petición");
+      }
+      const data = await response.json();
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        alert("No se recibió la URL de redirección");
+      }
+    } catch (error) {
+      alert("Hubo un error al procesar el pago");
+      console.error(error);
+    }
+  };
+
+  // Navegación de slides
+  const goToSlide = (index: number) => setCurrentSlide(index);
+  const goToPrevious = () =>
+    setCurrentSlide(
+      (prev) => (prev - 1 + heroSlides.length) % heroSlides.length
+    );
+  const goToNext = () =>
+    setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
 
   return (
     <section
-      className="relative w-full min-h-screen flex items-center justify-center mt-[-18%] md:mt-[-9.5%] bg-[#24538F] overflow-hidden"
+      className="relative w-full min-h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 bg-[#24538F] overflow-hidden"
       style={{ zIndex: 1 }}
       data-hero="true"
     >
@@ -123,8 +144,61 @@ export default function HeroSection() {
             "radial-gradient(ellipse at center, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.10) 40%, transparent 80%)",
         }}
       />
-      {/* Layout principal desktop */}
-      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-row items-center justify-center py-8">
+      {/* MOBILE: layout vertical, centrado, sin margen derecho, igual a la imagen */}
+      <div className="md:hidden w-full flex flex-col items-center justify-center py-12 px-4">
+        {/* Título arriba del gif */}
+        <h1 className="text-3xl font-bold text-white mb-4 text-center leading-tight tracking-tight">
+          {currentSlideData.title}
+        </h1>
+        {/* Gif */}
+        <div className="flex items-center justify-center mb-4">
+          {isGifPlaying ? (
+            <Image
+              ref={imgRef}
+              src={currentSlideData.gifSrc}
+              alt="Galaxy Buds Core"
+              width={220}
+              height={220}
+              className="w-[220px] h-[220px] object-contain drop-shadow-2xl"
+              unoptimized={true}
+              priority
+            />
+          ) : (
+            <Image
+              src={staticImageUrl || currentSlideData.gifSrc}
+              alt="Galaxy Buds Core"
+              width={220}
+              height={220}
+              className="w-[220px] h-[220px] object-contain drop-shadow-2xl"
+              unoptimized={false}
+              priority
+            />
+          )}
+        </div>
+        {/* Card de precio SIN borde derecho en móvil (solo border-r en md) */}
+        <div className="w-full max-w-xs bg-white/10 backdrop-blur-xl rounded-xl px-6 py-5 border-l border-t border-b border-white/30 shadow-2xl mb-4 flex flex-col items-center border-r-0 md:border-r md:border-white/30">
+          <p className="text-xs text-white font-medium mb-1 text-center">
+            {currentSlideData.offerText}
+          </p>
+          <div className="flex items-center justify-center space-x-2 mb-2">
+            <span className="text-3xl font-bold text-white drop-shadow-md">
+              {currentSlideData.price}
+            </span>
+          </div>
+          <p className="text-xs text-gray-100 text-center">
+            Precio Normal:{" "}
+            <span className="line-through">
+              {currentSlideData.originalPrice}
+            </span>
+          </p>
+        </div>
+        {/* Botón de compra debajo de la card de precio */}
+        <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full max-w-xs mb-2">
+          {currentSlideData.buttonText}
+        </button>
+      </div>
+      {/* DESKTOP: layout horizontal original restaurado */}
+      <div className="hidden md:flex relative z-10 w-full max-w-6xl mx-auto flex-row items-center justify-center py-8">
         {/* Columna izquierda: Características y descripción */}
         <div className="w-1/3 flex flex-col items-start justify-center px-6">
           <h2 className="text-lg lg:text-xl font-semibold text-white mb-2 text-left tracking-tight">
@@ -135,6 +209,7 @@ export default function HeroSection() {
           </p>
           {/* Características con iconos */}
           <div className="grid grid-cols-4 gap-x-4 gap-y-2 mb-4 w-full max-w-xs">
+            {/* ...iconos y características... */}
             <div className="flex flex-col items-center">
               <svg width="48" height="28" viewBox="0 0 48 28" fill="none">
                 <rect
@@ -219,7 +294,7 @@ export default function HeroSection() {
               >
                 <Image
                   ref={imgRef}
-                  src={heroSlides[currentSlide].gifSrc}
+                  src={currentSlideData.gifSrc}
                   alt="Galaxy Buds Core"
                   width={540}
                   height={540}
@@ -231,7 +306,7 @@ export default function HeroSection() {
             ) : (
               <div className="animate-fade-in">
                 <Image
-                  src={staticImageUrl || heroSlides[currentSlide].gifSrc}
+                  src={staticImageUrl || currentSlideData.gifSrc}
                   alt="Galaxy Buds Core"
                   width={540}
                   height={540}
@@ -275,7 +350,10 @@ export default function HeroSection() {
             </p>
           </div>
           <div className="flex items-center space-x-2 w-full max-w-xs">
-            <button className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full">
+            <button
+              className="bg-[#0F1B3C] hover:bg-[#1a2850] text-white px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full"
+              onClick={handleAddiPayment}
+            >
               {currentSlideData.buttonText}
             </button>
             <button className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-xl transition-all duration-300 transform hover:scale-105 border-2 border-white/40 hover:border-white/60 shadow-lg flex items-center justify-center">
@@ -284,7 +362,7 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-      {/* Navegación y logo Samsung */}
+      {/* Navegación y logo Samsung (unificado, sin duplicados) */}
       <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center">
         {/* Slide indicators */}
         <div className="flex items-center justify-center space-x-3 mb-4">
@@ -328,9 +406,7 @@ export default function HeroSection() {
       </button>
       {/* Indicador de auto-play */}
       {isAutoPlaying && (
-        <div className="absolute top-6 right-6">
-          <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
-        </div>
+        <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
       )}
     </section>
   );

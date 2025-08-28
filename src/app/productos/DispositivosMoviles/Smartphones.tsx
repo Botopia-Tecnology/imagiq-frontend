@@ -86,7 +86,7 @@ const smartphoneFilters: FilterConfig = {
 };
 
 // Productos específicos de smartphones
-const smartphoneProducts = [
+export const smartphoneProducts = [
   {
     id: "galaxy-a16",
     name: "Samsung Galaxy A16",
@@ -169,6 +169,7 @@ const smartphoneProducts = [
   },
 ];
 
+// ...existing code...
 export default function SmartphonesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["almacenamiento"])

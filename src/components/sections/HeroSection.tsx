@@ -93,6 +93,16 @@ export default function HeroSection() {
         shippingAmount: "0",
         currency: "COP",
         item: [productoActual],
+        userInfo: {
+          email: "aristizabalsantiago482@gmail.com",
+          nombre: "Santiago",
+          apellido: "Aristizabal",
+          direccion_linea_uno: "Calle 123 #45-67",
+          direccion_ciudad: "Bogotá",
+          direccion_pais: "CO",
+          numero_documento: "1001812664",
+          tipo_documento: "CC",
+        },
       };
       const response = await fetch(
         "https://imagiq-backend-production.up.railway.app/api/payments/addi/apply",

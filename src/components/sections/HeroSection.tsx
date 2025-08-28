@@ -71,40 +71,31 @@ export default function HeroSection() {
   const isHome = pathname === "/";
   const currentSlideData = heroSlides[currentSlide];
 
-  // Productos de ejemplo para el body
-  const productosAddi = [
-    {
-      sku: "IQ5468578",
-      name: "Samsumg Galaxy A12",
-      quantity: "1",
-      unitPrice: "255000",
-    },
-    {
-      sku: "IQ5468573",
-      name: "Samsumg Galaxy A53",
-      quantity: "1",
-      unitPrice: "2355000",
-    },
-  ];
+  // Producto actual mostrado en el Hero
+  const productoActual = {
+    sku: `SKU${currentSlideData.id}`,
+    name: currentSlideData.title,
+    quantity: "1",
+    unitPrice: currentSlideData.price.replace(/[^\d]/g, ""), // Solo números
+  };
 
   // Handler para el botón
   const handleAddiPayment = async () => {
     try {
-      // Obtener el token (puedes cambiar esto por tu lógica real)
       const token = localStorage.getItem("imagiq_token");
       if (!token) {
         alert("No se encontró el token");
         return;
       }
-      // Body de la petición
+      // Body con el producto actual
       const body = {
-        totalAmount: "2610000",
+        totalAmount: productoActual.unitPrice,
         shippingAmount: "0",
         currency: "COP",
-        item: productosAddi,
+        item: [productoActual],
       };
       const response = await fetch(
-        "http://localhost:3001/api/payments/addi/apply",
+        "https://imagiq-backend-production.up.railway.app/api/payments/addi/apply",
         {
           method: "POST",
           headers: {

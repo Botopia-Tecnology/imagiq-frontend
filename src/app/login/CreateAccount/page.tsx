@@ -1,4 +1,4 @@
-import { CreateAccountForm } from "./CreateAccount";
+import CreateAccountForm from "./CreateAccount";
 
 export default function Page() {
   return (

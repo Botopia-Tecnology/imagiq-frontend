@@ -9,6 +9,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import CheckoutSuccessOverlay from "./CheckoutSuccessOverlay";
+import CheckoutErrorOverlay from "./CheckoutErrorOverlay";
 import LogoReloadAnimation from "./LogoReloadAnimation";
 
 // Utilidad para obtener productos del carrito desde localStorage
@@ -63,8 +64,12 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     startPayment,
     closeSuccess,
   } = usePurchaseFlow();
-  // Estado local para controlar visibilidad del overlay
+  // Estado local para controlar visibilidad del overlay de éxito
   const [successOpen, setSuccessOpen] = useState(false);
+  // Estado local para controlar visibilidad del overlay de error
+  const [errorOpen, setErrorOpen] = useState(false);
+  // Estado para mensaje de error de pago
+  const [paymentErrorMsg, setPaymentErrorMsg] = useState("");
   // Estado para la posición del botón 'Finalizar pago'
   const [triggerPosition, setTriggerPosition] = useState<
     { x: number; y: number } | undefined
@@ -72,6 +77,15 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   useEffect(() => {
     setSuccessOpen(!!purchaseSuccess);
   }, [purchaseSuccess]);
+
+  // Mostrar overlay de error si hay error de pago
+  useEffect(() => {
+    if (errorOpen) {
+      // Opcional: auto-cierre después de unos segundos
+      const timer = setTimeout(() => setErrorOpen(false), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorOpen]);
   // Captura la posición del botón cuando successOpen cambia a true
   useEffect(() => {
     if (successOpen) {
@@ -85,7 +99,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
       }
     }
   }, [successOpen]);
-  // Estado para error general
+  // Estado para error general (form)
   const [error, setError] = useState("");
   const router = useRouter();
   // Estado para productos del carrito
@@ -358,9 +372,17 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
         <LogoReloadAnimation
           open={showLogoAnimation}
           duration={2500}
-          onFinish={() => {
+          onFinish={async () => {
             setShowLogoAnimation(false);
-            startPayment();
+            try {
+              await startPayment();
+            } catch (err) {
+              // Mostrar overlay de error premium
+              setPaymentErrorMsg(
+                "Ocurrió un error al procesar el pago. Por favor intenta nuevamente."
+              );
+              setErrorOpen(true);
+            }
           }}
         />
       )}
@@ -373,6 +395,16 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
         locale="es"
         className=""
         testId="checkout-success-overlay"
+        triggerPosition={triggerPosition}
+      />
+      {/* Overlay de error de compra premium */}
+      <CheckoutErrorOverlay
+        open={errorOpen}
+        onClose={() => setErrorOpen(false)}
+        message={paymentErrorMsg}
+        locale="es"
+        className=""
+        testId="checkout-error-overlay"
         triggerPosition={triggerPosition}
       />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">

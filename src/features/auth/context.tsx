@@ -41,20 +41,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const savedUser = localStorage.getItem("imagiq_user");
     const savedToken = localStorage.getItem("imagiq_token");
 
-    if (savedUser) {
+    // Validar token: debe existir, no estar vacío, y tener formato JWT (3 partes separadas por punto)
+    const isTokenValid =
+      savedToken &&
+      typeof savedToken === "string" &&
+      savedToken.split(".").length === 3;
+
+    if (savedUser && isTokenValid) {
       try {
         const userData = JSON.parse(savedUser);
         setUser(userData);
-
-        // Set token in API client if available
-        if (savedToken) {
-          apiClient.setAuthToken(savedToken);
-        }
+        apiClient.setAuthToken(savedToken!);
       } catch (error) {
         console.error("Error parsing saved user data:", error);
         localStorage.removeItem("imagiq_user");
         localStorage.removeItem("imagiq_token");
+        setUser(null);
       }
+    } else {
+      // Si el token no es válido, limpiar sesión
+      localStorage.removeItem("imagiq_user");
+      localStorage.removeItem("imagiq_token");
+      setUser(null);
     }
     setIsLoading(false);
   }, []);
@@ -94,9 +102,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return hasRole("superadmin");
   };
 
+  /**
+   * Solo se considera autenticado si existe usuario y el token es válido
+   */
+  const savedToken =
+    typeof window !== "undefined" ? localStorage.getItem("imagiq_token") : null;
+  const isTokenValidBool = !!(
+    savedToken &&
+    typeof savedToken === "string" &&
+    savedToken.split(".").length === 3
+  );
   const value: AuthContextType = {
     user,
-    isAuthenticated: !!user,
+    isAuthenticated: !!user && isTokenValidBool,
     isLoading,
     login,
     logout,

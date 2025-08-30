@@ -65,6 +65,11 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // Permitir acceso a /login aunque el usuario esté autenticado
+  if (pathname === "/login") {
+    return NextResponse.next();
+  }
+
   // Protect admin routes
   if (adminRoutes.some((route) => pathname.startsWith(route))) {
     if (!isAdmin) {

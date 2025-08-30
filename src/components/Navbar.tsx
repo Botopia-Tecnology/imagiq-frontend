@@ -335,11 +335,10 @@ export default function Navbar() {
           </div>
 
           {/* Icono login */}
-          <Link
-            href={isAuthenticated ? "/dashboard" : "/login"}
+          <button
+            type="button"
             className={cn(
               "flex items-center justify-center w-10 h-10 text-black",
-              // Forzar negro en DispositivosMoviles y Electrodomesticos
               isDispositivosMoviles || isElectrodomesticos
                 ? "text-black"
                 : showWhiteItems
@@ -347,15 +346,17 @@ export default function Navbar() {
                 : "text-black"
             )}
             title={isAuthenticated ? "Dashboard" : "Ingresar"}
-            onClick={() =>
+            aria-label={isAuthenticated ? "Dashboard" : "Ingresar"}
+            onClick={() => {
               posthogUtils.capture("user_icon_click", {
                 user_authenticated: isAuthenticated,
-                destination: isAuthenticated ? "dashboard" : "login",
-              })
-            }
+                destination: "login",
+              });
+              window.location.replace("/login");
+            }}
           >
             <User className="w-6 h-6" />
-          </Link>
+          </button>
 
           {/* Icono carrito con badge SIEMPRE visible si itemCount > 0 */}
           <Link

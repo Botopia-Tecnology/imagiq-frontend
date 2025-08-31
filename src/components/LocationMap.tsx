@@ -234,17 +234,6 @@ export default function LocationMap() {
     }
   }, []);
 
-  // Handle directions click
-  const handleDirectionsClick = useCallback((store: Store) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${store.position[0]},${store.position[1]}`;
-    window.open(url, "_blank");
-
-    posthogUtils.capture("store_directions_click", {
-      store_name: store.name,
-      store_city: store.city,
-    });
-  }, []);
-
   // If not ready, show loading state
   if (!isClient || !leafletReady) {
     return (
@@ -404,18 +393,7 @@ export default function LocationMap() {
                 setHoverTimeout(timeout);
               }}
             >
-              <StoreCard
-                store={convertStoreToLocation(store)}
-                onDirectionsClick={(locationStore) => {
-                  // Convert Location back to Store for the handler
-                  const originalStore = stores.find(
-                    (s) => s.name === locationStore.name
-                  );
-                  if (originalStore) {
-                    handleDirectionsClick(originalStore);
-                  }
-                }}
-              />
+              <StoreCard store={convertStoreToLocation(store)} />
             </div>
           </Popup>
         )}
@@ -428,24 +406,28 @@ export default function LocationMap() {
   return (
     <div className="w-full relative z-10">
       {/* Header */}
-      <div className="text-center mb-6">
-        <h1 className="text-2xl font-normal text-gray-900">
-          Encuentra tu tienda mas cercana
+      <div className="text-center mb-6 animate-fade-in">
+        <h1 className="text-2xl font-bold text-blue-900 tracking-tight drop-shadow-sm">
+          🗺️ Encuentra tu tienda más cercana
         </h1>
+        <p className="text-sm text-gray-500 mt-2">
+          Filtra por ciudad y explora tiendas Samsung en Colombia
+        </p>
       </div>
 
       {/* City Filter - Elegant and minimal */}
-      <div className="mb-6 flex justify-center">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 max-w-md w-full">
+      <div className="mb-6 flex justify-center animate-fade-in">
+        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-w-md w-full">
           <div className="flex items-center space-x-3">
-            <Filter className="w-5 h-5 text-gray-400" />
+            <Filter className="w-5 h-5 text-blue-600" />
             <select
               value={selectedCity}
               onChange={(e) => handleCityChange(e.target.value)}
-              className="flex-1 bg-transparent border-none focus:outline-none text-sm font-medium text-gray-700 cursor-pointer"
+              className="flex-1 bg-transparent border-none focus:outline-none text-sm font-semibold text-blue-900 cursor-pointer"
+              aria-label="Filtrar por ciudad"
             >
               {cities.map((city) => (
-                <option key={city} value={city}>
+                <option key={city} value={city} className="font-normal">
                   {city}{" "}
                   {city !== "Todas las ciudades" &&
                     `(${stores.filter((s) => s.city === city).length})`}
@@ -456,27 +438,30 @@ export default function LocationMap() {
 
           {/* Results counter */}
           <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500 text-center">
-            {filteredStores.length} tienda
-            {filteredStores.length !== 1 ? "s" : ""} disponible
+            <span className="font-semibold text-blue-700">
+              {filteredStores.length}
+            </span>{" "}
+            tienda{filteredStores.length !== 1 ? "s" : ""} disponible
             {filteredStores.length !== 1 ? "s" : ""}
           </div>
         </div>
       </div>
 
       {/* Interactive Map Container */}
-      <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10">
+      <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10 animate-fade-in">
         <div className="relative h-[600px]">
           <MapContainer
             key={`map-${mapKey}`}
             center={center}
             zoom={6}
             style={{ height: "100%", width: "100%" }}
-            className="rounded-xl"
+            className="rounded-xl focus:outline-none"
             scrollWheelZoom={true}
             zoomControl={true}
             doubleClickZoom={true}
             dragging={true}
             touchZoom={true}
+            aria-label="Mapa interactivo de tiendas Samsung"
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -496,8 +481,8 @@ export default function LocationMap() {
             ))}
           </MapContainer>
 
-          {/* Map Info Overlay */}
-          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-md border border-gray-200 z-[400]">
+          {/* Map Info Overlay - Responsive and animated */}
+          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-md border border-gray-200 z-[400] animate-fade-in">
             <div className="flex items-center space-x-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
@@ -519,14 +504,14 @@ export default function LocationMap() {
             </div>
           </div>
 
-          {/* Instructions */}
-          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md border border-gray-200 z-[400]">
+          {/* Instructions - Responsive and animated */}
+          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md border border-gray-200 z-[400] animate-fade-in">
             <div className="text-xs text-gray-600 text-center">
               <div className="font-medium mb-1">
-                Pasa el cursor sobre los marcadores
+                Pasa el cursor sobre los marcadores para ver detalles
               </div>
               <div className="flex items-center justify-center space-x-2">
-                <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+                <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
                 <span>Tienda Samsung</span>
               </div>
             </div>

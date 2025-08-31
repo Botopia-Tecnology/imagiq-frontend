@@ -3,6 +3,7 @@
  */
 
 import HeroSection from "@/components/sections/HeroSection";
+import Reviews from "@/components/sections/Reviews";
 import { CategoriesSection } from "@/components/sections/CategoriesSection";
 import { Ofertas } from "@/components/sections/Ofertas";
 import Beneficios from "@/components/sections/Beneficios";
@@ -31,6 +32,11 @@ export default function HomePage() {
         {/* Sección de Historias justo debajo de ProductShowcase */}
         <Historias />
         <UltimosProductos />
+        {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
+        {/* Sección de reseñas de clientes - arriba del mapa */}
+        <section id="reviews-slider" className="bg-white">
+          <Reviews />
+        </section>
         {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
         <section id="tiendas" className="py-16 bg-white">
           <div className="container mx-auto px-6">

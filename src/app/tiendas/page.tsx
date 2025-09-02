@@ -8,28 +8,20 @@
  * - Código limpio y documentado
  */
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { stores } from "@/components/LocationsArray";
+import TiendasFilters from "./TiendasFilters";
 
 const MapSection = dynamic(() => import("./MapSection"), { ssr: false });
 
 export default function TiendasPage() {
   // Estado de búsqueda y filtro
   const [search, setSearch] = useState("");
-  const city = "Bogotá";
+  const [filteredStores, setFilteredStores] = useState(stores);
 
-  // Filtrar tiendas por ciudad y búsqueda
-  const filteredStores = useMemo(
-    () =>
-      stores.filter(
-        (store) =>
-          store.city === city &&
-          (store.name.toLowerCase().includes(search.toLowerCase()) ||
-            store.address.toLowerCase().includes(search.toLowerCase()))
-      ),
-    [search, city]
-  );
+  // Mostrar directamente los resultados filtrados por TiendasFilters
+  const visibleStores = filteredStores;
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col">
@@ -53,7 +45,7 @@ export default function TiendasPage() {
         className="relative flex-1 w-full flex justify-center items-start"
         style={{ minHeight: 1400 }}
       >
-        <MapSection city={city} stores={stores} />
+        <MapSection stores={visibleStores} />
         <aside
           className="absolute top-32 left-12 w-[420px] max-w-full bg-white rounded-[18px] border border-black p-0 flex flex-col gap-0 z-20"
           style={{
@@ -95,58 +87,19 @@ export default function TiendasPage() {
                 </svg>
               </span>
             </div>
-            <div className="w-full flex gap-3 mt-3 justify-between">
-              <button
-                className="flex-1 bg-[#E5E5E5] rounded-[16px] px-0 py-2 flex items-center justify-center gap-2 text-gray-900 font-bold text-[15px] border-none shadow-none"
-                style={{
-                  fontFamily: "Samsung Sharp Sans, sans-serif",
-                  height: "28px",
-                  fontWeight: "bold",
-                  fontSize: "15px",
-                }}
-              >
-                Cerca de mí
-              </button>
-              <button
-                className="flex-1 bg-[#E5E5E5] rounded-[16px] px-0 py-2 flex items-center justify-center gap-2 text-gray-900 font-bold text-[15px] border-none shadow-none"
-                style={{
-                  fontFamily: "Samsung Sharp Sans, sans-serif",
-                  height: "28px",
-                  fontWeight: "bold",
-                  fontSize: "15px",
-                }}
-              >
-                Filtros
-                <span className="ml-1">
-                  <svg
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                  >
-                    <line x1="4" y1="7" x2="20" y2="7" />
-                    <line x1="4" y1="12" x2="20" y2="12" />
-                    <line x1="4" y1="17" x2="20" y2="17" />
-                    <circle cx="7" cy="7" r="2" />
-                    <circle cx="17" cy="12" r="2" />
-                    <circle cx="9" cy="17" r="2" />
-                  </svg>
-                </span>
-              </button>
-            </div>
+            {/* Filtros y Cerca de mí */}
+            <TiendasFilters onUpdateStores={setFilteredStores} />
           </div>
           <div
             className="flex flex-col gap-5 overflow-y-auto px-4 pb-4 pt-2"
             style={{ maxHeight: 650, minHeight: 320 }}
           >
-            {filteredStores.length === 0 ? (
+            {visibleStores.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 No se encontraron tiendas.
               </div>
             ) : (
-              filteredStores.map((store) => (
+              visibleStores.map((store) => (
                 <div
                   key={store.id}
                   className="bg-white rounded-[16px] border border-black px-4 py-3 flex flex-col gap-1"

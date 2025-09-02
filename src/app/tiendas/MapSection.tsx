@@ -34,7 +34,7 @@ const samsungIcon = L.divIcon({
   popupAnchor: [0, -40],
 });
 
-export default function MapSection({ city, stores }: MapSectionProps) {
+export default function MapSection({ stores }: Omit<MapSectionProps, "city">) {
   return (
     <div
       className="absolute z-0"
@@ -63,17 +63,15 @@ export default function MapSection({ city, stores }: MapSectionProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {stores
-          .filter((store) => store.city === city)
-          .map((store) => (
-            <Marker key={store.id} position={store.position} icon={samsungIcon}>
-              <Popup>
-                <b>{store.name}</b>
-                <br />
-                {store.address}
-              </Popup>
-            </Marker>
-          ))}
+        {stores.map((store) => (
+          <Marker key={store.id} position={store.position} icon={samsungIcon}>
+            <Popup>
+              <b>{store.name}</b>
+              <br />
+              {store.address}
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );

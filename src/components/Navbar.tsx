@@ -7,7 +7,7 @@ import { useState, useEffect, useRef, RefCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Search, User, ShoppingCart } from "lucide-react";
+import { Search, User, ShoppingCart, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -239,7 +239,6 @@ export default function Navbar() {
     !isLogin &&
     (isProductDetail || (isHome && !isScrolled));
 
-  // ...existing code...
   return (
     <header
       data-navbar="true"
@@ -385,6 +384,27 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+          {/* Icono corazón al lado derecho del carrito */}
+          <button
+            type="button"
+            className={cn(
+              "flex items-center justify-center w-10 h-10",
+              isDispositivosMoviles || isElectrodomesticos
+                ? "text-black"
+                : showWhiteItems
+                ? "text-white"
+                : "text-black"
+            )}
+            title="Favoritos"
+            aria-label="Favoritos"
+            style={{ position: "relative" }}
+          >
+            <Heart
+              className={
+                showWhiteItems ? "w-6 h-6 text-white" : "w-6 h-6 text-black"
+              }
+            />
+          </button>
         </div>
 
         {/* Navbar móvil igual a la imagen: logo, buscador, carrito, hamburguesa */}
@@ -446,6 +466,23 @@ export default function Navbar() {
                   </span>
                 )}
               </Link>
+              {/* Icono corazón al lado derecho del carrito en móvil */}
+              <button
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 text-white",
+                  showWhiteItemsMobile ? "text-white" : "text-black"
+                )}
+                title="Favoritos"
+                aria-label="Favoritos"
+              >
+                <Heart
+                  className={
+                    showWhiteItemsMobile
+                      ? "w-5 h-5 text-white"
+                      : "w-5 h-5 text-black"
+                  }
+                />
+              </button>
               <button
                 className={cn(
                   "flex items-center justify-center w-10 h-10 text-white",

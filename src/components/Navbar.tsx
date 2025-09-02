@@ -57,6 +57,10 @@ export default function Navbar() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
+  // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
+  const isMasInformacionDispositivosMoviles = pathname.startsWith(
+    "/productos/DispositivosMoviles/mas-informacion"
+  );
   // Detectar si estamos en la ruta de ofertas
   const isOfertas = pathname === "/ofertas";
   // Normaliza la ruta para comparar solo el path
@@ -229,15 +233,24 @@ export default function Navbar() {
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  // Forzar logo blanco solo en Ofertas
-  // Forzar logo blanco en Ofertas y en Home sin scroll
-  const showWhiteLogo = isOfertas || (isHome && !isScrolled);
-  // Forzar items blancos en Ofertas y en Home sin scroll
-  const showWhiteItems = isOfertas || (isHome && !isScrolled);
+  // Detectar si estamos en la vista de más información de producto
+  const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+  // Forzar logo blanco SOLO en la vista de más información de producto y sin scroll
+  const showWhiteLogo =
+    isMasInformacionProducto && !isScrolled
+      ? true
+      : isOfertas || (isHome && !isScrolled);
+  // Forzar items blancos SOLO en esa sección (desktop y móvil) y sin scroll
+  const showWhiteItems =
+    isMasInformacionProducto && !isScrolled
+      ? true
+      : isOfertas || (isHome && !isScrolled);
   const showWhiteItemsMobile =
-    !isScrolledNavbar &&
-    !isLogin &&
-    (isProductDetail || (isHome && !isScrolled));
+    isMasInformacionProducto && !isScrolled
+      ? true
+      : !isScrolledNavbar &&
+        !isLogin &&
+        (isProductDetail || (isHome && !isScrolled));
 
   return (
     <header

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { notifyRegisterSuccess, notifyError } from "../notifications";
 import { useRouter } from "next/navigation";
 
-const REGISTER_API_URL = "http://localhost:3001/api/auth/register";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Mejoras visuales y UX para el formulario multi-step
 // - Animaciones de transición entre pasos
@@ -63,6 +63,13 @@ const CreateAccountForm = () => {
           validate: (value: string) =>
             !value ? "El nombre es requerido" : undefined,
         },
+        {
+          name: "apellido",
+          type: "text",
+          label: "Apellido",
+          placeholder: "Ingresa tu apellido",
+          required: true,
+        }
       ],
     },
     {
@@ -131,14 +138,14 @@ const CreateAccountForm = () => {
     setModalContent(null);
     setSubmitting(true);
     try {
-      const response = await fetch(REGISTER_API_URL, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: values.email,
           nombre: values.nombre,
+          apellido: values.apellido,
           contrasena: values.password,
-          rol: "usuario",
         }),
       });
       if (!response || typeof response.status !== "number") {

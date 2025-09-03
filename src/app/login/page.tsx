@@ -18,8 +18,7 @@ import { useEffect, useState } from "react";
 import { notifyError, notifyLoginSuccess } from "./notifications";
 
 // API endpoint for authentication
-const AUTH_API_URL =
-  "https://imagiq-backend-production.up.railway.app/api/auth/login";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Login success response
 interface LoginSuccessResponse {
@@ -162,7 +161,7 @@ export default function LoginPage() {
 
     try {
       // API call to authentication microservice
-      const response = await fetch(AUTH_API_URL, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

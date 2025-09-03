@@ -1,10 +1,10 @@
 /**
- * 🦸 HERO SECTION - IMAGIQ ECOMMERCE
+ * 🦸 hero SECTION - IMAGIQ ECOMMERCE
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import Image from "next/image";
@@ -16,7 +16,7 @@ import samsungLogoGray from "@/img/samsung_gray.png";
 
 import { useGifOnce } from "@/hooks/useGifOnce";
 
-// Hero slides data matching Samsung style
+// hero slides data matching Samsung style
 const heroSlides = [
   {
     id: 1,
@@ -61,7 +61,7 @@ const heroSlides = [
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(false);
+  const [isAutoPlaying] = useState(false);
   const { isGifPlaying, imgRef, staticImageUrl, isTransitioning } = useGifOnce(
     gifAudifonos.src,
     2950,
@@ -71,7 +71,7 @@ export default function HeroSection() {
   const isHome = pathname === "/";
   const currentSlideData = heroSlides[currentSlide];
 
-  // Producto actual mostrado en el Hero
+  // Producto actual mostrado en el hero
   const productoActual = {
     sku: `SKU${currentSlideData.id}`,
     name: currentSlideData.title,

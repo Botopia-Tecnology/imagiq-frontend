@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 // Importar los catálogos reales
-import { smartphoneProducts } from "../productos/DispositivosMoviles/Smartphones";
+import { smartphoneProducts } from "../productos/dispositivos-moviles/Smartphones";
 import { productsData } from "../productos/data_product/products";
 
 interface CartProduct {

@@ -10,11 +10,11 @@ import FilterSidebar from "../components/FilterSidebar";
 import CategorySlider from "../components/CategorySlider";
 import { productsData } from "../data_product/products";
 
-import hornosImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
+import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
 
 const applianceCategories = [
   {

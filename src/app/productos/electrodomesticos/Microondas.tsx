@@ -10,10 +10,10 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
 import { productsData } from "../data_product/products";
 
 const applianceCategories: Category[] = [

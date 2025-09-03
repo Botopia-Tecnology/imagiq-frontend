@@ -8,14 +8,14 @@ import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 
 import tvImg from "../../../img/categorias/Tabletas.png";
 import monitorImg from "../../../img/categorias/Tabletas.png";
-import audioImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import aireImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
-import hornosImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import lavavajillasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
+import audioImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
+import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import lavavajillasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 
 export const productsData = {
   accesorios: [

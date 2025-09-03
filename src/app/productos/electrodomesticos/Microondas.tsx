@@ -1,19 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
+  MobileFilterModal,
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import aireImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
 import { productsData } from "../data_product/products";
 
 const applianceCategories: Category[] = [
@@ -45,46 +45,40 @@ const applianceCategories: Category[] = [
     image: aspiradoraImg,
     href: "/productos/Electrodomesticos?section=aspiradoras",
   },
-  {
-    id: "aire-acondicionado",
-    name: "Aire Acondicionado",
-    subtitle: "",
-    image: aireImg,
-    href: "/productos/Electrodomesticos?section=aire-acondicionado",
-  },
 ];
 
-const aireFilters: FilterConfig = {
-  tipo: ["Split", "Inverter", "Portátil", "Cassette", "Ventana"],
-  capacidad: ["9000 BTU", "12000 BTU", "18000 BTU", "24000 BTU"],
-  color: ["Blanco", "Gris", "Negro"],
-  eficienciaEnergetica: ["A+++", "A++", "A+", "A"],
+const microondasFilters: FilterConfig = {
+  tipo: ["Microondas", "Grill", "Convección", "Combinado", "Industrial"],
+  capacidad: ["<20L", "20-25L", "25-30L", ">30L"],
+  color: ["Blanco", "Negro", "Gris", "Inox"],
+  eficienciaEnergetica: ["A++", "A+", "A", "B"],
   caracteristicas: [
+    "Digital Inverter",
+    "Eco Mode",
+    "Auto Cocción",
     "WiFi",
-    "Filtro antibacteriano",
-    "Deshumidificador",
-    "Auto limpieza",
-    "Silencioso",
-    "Control remoto",
+    "Panel Touch",
+    "Descongelado Rápido",
   ],
   rangoPrecio: [
-    { label: "Menos de $1.500.000", min: 0, max: 1500000 },
-    { label: "$1.500.000 - $2.500.000", min: 1500000, max: 2500000 },
-    { label: "Más de $2.500.000", min: 2500000, max: Infinity },
+    { label: "Menos de $500.000", min: 0, max: 500000 },
+    { label: "$500.000 - $1.000.000", min: 500000, max: 1000000 },
+    { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
+    { label: "Más de $2.000.000", min: 2000000, max: Infinity },
   ],
 };
 
-export default function AireAcondicionadoSection() {
+export default function MicroondasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(5);
+  const [resultCount] = useState(8);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
-      section: "aire-acondicionado",
+      section: "microondas",
       category: "electrodomesticos",
     });
   }, []);
@@ -116,25 +110,25 @@ export default function AireAcondicionadoSection() {
     <div className="min-h-screen bg-white">
       <CategorySlider
         categories={applianceCategories}
-        trackingPrefix="aire_category"
+        trackingPrefix="microondas_category"
       />
       <div className="container mx-auto px-6 py-8 flex gap-8">
         <aside className="hidden lg:block w-80 flex-shrink-0">
           <FilterSidebar
-            filterConfig={aireFilters}
+            filterConfig={microondasFilters}
             filters={filters}
             onFilterChange={handleFilterChange}
             resultCount={resultCount}
             expandedFilters={expandedFilters}
             onToggleFilter={toggleFilter}
-            trackingPrefix="aire_filter"
+            trackingPrefix="microondas_filter"
           />
         </aside>
         <main className="flex-1">
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {productsData.electrodomesticos
               .filter((product) =>
-                product.name.toLowerCase().includes("aire acondicionado")
+                product.name.toLowerCase().includes("microondas")
               )
               .map((product) => (
                 <ProductCard key={product.id} {...product} />
@@ -142,6 +136,17 @@ export default function AireAcondicionadoSection() {
           </div>
         </main>
       </div>
+      <MobileFilterModal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        filterConfig={microondasFilters}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        resultCount={resultCount}
+        expandedFilters={expandedFilters}
+        onToggleFilter={toggleFilter}
+        trackingPrefix="microondas_filter"
+      />
     </div>
   );
 }

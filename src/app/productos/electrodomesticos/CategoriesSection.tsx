@@ -3,11 +3,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import aireImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 
 const categories = [
   {

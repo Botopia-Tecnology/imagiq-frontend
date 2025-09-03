@@ -1,74 +1,69 @@
+/**
+ * 🧭 SECCIÓN DE ASPIRADORAS - IMAGIQ ECOMMERCE
+ */
+
 "use client";
 
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
+  MobileFilterModal,
   type FilterConfig,
   type FilterState,
-  MobileFilterModal,
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
 import { productsData } from "../data_product/products";
+
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 
 const applianceCategories: Category[] = [
   {
-    id: "refrigeradores",
-    name: "Refrigeradores",
-    subtitle: "",
-    image: refrigeradorImg,
-    href: "/productos/Electrodomesticos?section=refrigeradores",
-  },
-  {
-    id: "lavadoras",
-    name: "Lavadoras",
-    subtitle: "",
-    image: lavadoraImg,
-    href: "/productos/Electrodomesticos?section=lavadoras",
-  },
-  {
-    id: "microondas",
-    name: "Microondas",
-    subtitle: "",
-    image: microondasImg,
-    href: "/productos/Electrodomesticos?section=microondas",
-  },
-  {
-    id: "aspiradoras",
+    id: "1",
     name: "Aspiradoras",
-    subtitle: "",
     image: aspiradoraImg,
-    href: "/productos/Electrodomesticos?section=aspiradoras",
+    subtitle: "Aspiradoras de alta potencia",
+    href: "/productos/aspiradoras",
+  },
+  {
+    id: "2",
+    name: "Refrigeradores",
+    image: refrigeradorImg,
+    subtitle: "Refrigeradores de última generación",
+    href: "/productos/refrigeradores",
+  },
+  {
+    id: "3",
+    name: "Lavadoras",
+    image: lavadoraImg,
+    subtitle: "Lavadoras eficientes",
+    href: "/productos/lavadoras",
+  },
+  {
+    id: "4",
+    name: "Microondas",
+    image: microondasImg,
+    subtitle: "Microondas modernos",
+    href: "/productos/microondas",
   },
 ];
 
-const microondasFilters: FilterConfig = {
-  tipo: ["Microondas", "Grill", "Convección", "Combinado", "Industrial"],
-  capacidad: ["<20L", "20-25L", "25-30L", ">30L"],
-  color: ["Blanco", "Negro", "Gris", "Inox"],
-  eficienciaEnergetica: ["A++", "A+", "A", "B"],
-  caracteristicas: [
-    "Digital Inverter",
-    "Eco Mode",
-    "Auto Cocción",
-    "WiFi",
-    "Panel Touch",
-    "Descongelado Rápido",
+const aspiradorasFilters: FilterConfig = {
+  tipo: ["Vertical", "Robot", "De cilindro"],
+  precio: [
+    "Menos de $100",
+    "Entre $100 y $300",
+    "Entre $300 y $500",
+    "Más de $500",
   ],
-  rangoPrecio: [
-    { label: "Menos de $500.000", min: 0, max: 500000 },
-    { label: "$500.000 - $1.000.000", min: 500000, max: 1000000 },
-    { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
-    { label: "Más de $2.000.000", min: 2000000, max: Infinity },
-  ],
+  marca: ["Samsung", "LG", "Whirlpool", "Philips"],
 };
 
-export default function MicroondasSection() {
+export default function AspiradorasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
@@ -78,7 +73,7 @@ export default function MicroondasSection() {
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
-      section: "microondas",
+      section: "aspiradoras",
       category: "electrodomesticos",
     });
   }, []);
@@ -110,25 +105,25 @@ export default function MicroondasSection() {
     <div className="min-h-screen bg-white">
       <CategorySlider
         categories={applianceCategories}
-        trackingPrefix="microondas_category"
+        trackingPrefix="aspiradoras_category"
       />
       <div className="container mx-auto px-6 py-8 flex gap-8">
         <aside className="hidden lg:block w-80 flex-shrink-0">
           <FilterSidebar
-            filterConfig={microondasFilters}
+            filterConfig={aspiradorasFilters}
             filters={filters}
             onFilterChange={handleFilterChange}
             resultCount={resultCount}
             expandedFilters={expandedFilters}
             onToggleFilter={toggleFilter}
-            trackingPrefix="microondas_filter"
+            trackingPrefix="aspiradora_filter"
           />
         </aside>
         <main className="flex-1">
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {productsData.electrodomesticos
               .filter((product) =>
-                product.name.toLowerCase().includes("microondas")
+                product.name.toLowerCase().includes("aspiradora")
               )
               .map((product) => (
                 <ProductCard key={product.id} {...product} />
@@ -139,13 +134,13 @@ export default function MicroondasSection() {
       <MobileFilterModal
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
-        filterConfig={microondasFilters}
+        filterConfig={aspiradorasFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
         resultCount={resultCount}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
-        trackingPrefix="microondas_filter"
+        trackingPrefix="aspiradora_filter"
       />
     </div>
   );

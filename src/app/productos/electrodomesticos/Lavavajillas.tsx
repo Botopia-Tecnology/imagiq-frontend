@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
@@ -10,11 +10,12 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import refrigeradorImg from "../../../img/electrodomesticos/Electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/Electrodomesticos2.png";
-import microondasImg from "../../../img/electrodomesticos/Electrodomesticos4.png";
-import aspiradoraImg from "../../../img/electrodomesticos/Electrodomesticos3.png";
 import { productsData } from "../data_product/products";
+import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
+import refrigeradorImg from "@/img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "@/img/electrodomesticos/electrodomesticos2.png";
+import microondasImg from "@/img/electrodomesticos/electrodomesticos4.png";
+import aspiradoraImg from "@/img/electrodomesticos/electrodomesticos3.png";
 
 const applianceCategories: Category[] = [
   {
@@ -32,6 +33,13 @@ const applianceCategories: Category[] = [
     href: "/productos/Electrodomesticos?section=lavadoras",
   },
   {
+    id: "lavavajillas",
+    name: "Lavavajillas",
+    subtitle: "",
+    image: lavavajillasImg,
+    href: "/productos/Electrodomesticos?section=lavavajillas",
+  },
+  {
     id: "microondas",
     name: "Microondas",
     subtitle: "",
@@ -47,44 +55,43 @@ const applianceCategories: Category[] = [
   },
 ];
 
-const refrigeradoresFilters: FilterConfig = {
-  tipo: [
-    "French Door",
-    "Side by Side",
-    "Top Freezer",
-    "Bottom Freezer",
-    "Multi-Door",
+const lavavajillasFilters: FilterConfig = {
+  tipo: ["Integrable", "Libre Instalación", "Compacto", "Industrial"],
+  capacidad: [
+    "6-8 cubiertos",
+    "9-12 cubiertos",
+    "13-15 cubiertos",
+    ">15 cubiertos",
   ],
-  capacidad: ["<400L", "400-500L", "500-600L", ">600L"],
-  color: ["Inox", "Negro", "Blanco", "Gris", "Beige"],
-  eficienciaEnergetica: ["A+++", "A++", "A+", "A"],
+  color: ["Blanco", "Inox", "Negro", "Gris"],
+  eficienciaEnergetica: ["A++", "A+", "A", "B"],
   caracteristicas: [
-    "Family Hub",
-    "Dispensador de agua/hielo",
-    "No Frost",
-    "Twin Cooling",
+    "Motor Digital Inverter",
+    "Eco Program",
+    "Secado Extra",
     "WiFi",
-    "Compresor Digital Inverter",
+    "Panel Touch",
+    "Inicio Diferido",
   ],
   rangoPrecio: [
     { label: "Menos de $1.000.000", min: 0, max: 1000000 },
     { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
-    { label: "$2.000.000 - $4.000.000", min: 2000000, max: 4000000 },
-    { label: "Más de $4.000.000", min: 4000000, max: Infinity },
+    { label: "$2.000.000 - $3.000.000", min: 2000000, max: 3000000 },
+    { label: "Más de $3.000.000", min: 3000000, max: Infinity },
   ],
 };
 
-export default function RefrigeradoresSection() {
+export default function LavavajillasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(16);
+  const [resultCount] = useState(8);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
-      section: "refrigeradores",
+      section: "lavavajillas",
       category: "electrodomesticos",
     });
   }, []);
@@ -116,25 +123,25 @@ export default function RefrigeradoresSection() {
     <div className="min-h-screen bg-white">
       <CategorySlider
         categories={applianceCategories}
-        trackingPrefix="refrigerador_category"
+        trackingPrefix="lavavajillas_category"
       />
       <div className="container mx-auto px-6 py-8 flex gap-8">
         <aside className="hidden lg:block w-80 flex-shrink-0">
           <FilterSidebar
-            filterConfig={refrigeradoresFilters}
+            filterConfig={lavavajillasFilters}
             filters={filters}
             onFilterChange={handleFilterChange}
             resultCount={resultCount}
             expandedFilters={expandedFilters}
             onToggleFilter={toggleFilter}
-            trackingPrefix="refrigerador_filter"
+            trackingPrefix="lavavajillas_filter"
           />
         </aside>
         <main className="flex-1">
           <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {productsData.electrodomesticos
               .filter((product) =>
-                product.name.toLowerCase().includes("refrigerador")
+                product.name.toLowerCase().includes("lavavajilla")
               )
               .map((product) => (
                 <ProductCard key={product.id} {...product} />
@@ -145,13 +152,13 @@ export default function RefrigeradoresSection() {
       <MobileFilterModal
         isOpen={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}
-        filterConfig={refrigeradoresFilters}
+        filterConfig={lavavajillasFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
         resultCount={resultCount}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
-        trackingPrefix="refrigerador_filter"
+        trackingPrefix="lavavajillas_filter"
       />
     </div>
   );

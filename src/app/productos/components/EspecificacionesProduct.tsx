@@ -1,6 +1,6 @@
 import React from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosMoviles/cel1.png";
+import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 
 /**
  * 📱 EspecificacionesProduct - IMAGIQ ECOMMERCE

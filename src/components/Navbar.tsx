@@ -18,7 +18,6 @@ import { posthogUtils } from "@/lib/posthogClient";
 import DispositivosMovilesDropdown from "./Dropdowns/Dispositivos_Moviles";
 import TelevisionesDropdown from "./Dropdowns/Televisiones";
 import ElectrodomesticosDropdown from "./Dropdowns/Electrodomesticos";
-import ServicioTecnicoDropdown from "./Dropdowns/Servicio_Tecnico";
 import { navbarRoutes } from "../routes/navbarRoutes";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
@@ -59,6 +58,10 @@ export default function Navbar() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
+  // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
+  const isMasInformacionDispositivosMoviles = pathname.startsWith(
+    "/productos/DispositivosMoviles/mas-informacion"
+  );
   // Detectar si estamos en la ruta de ofertas
   const isOfertas = pathname === "/ofertas";
   // Normaliza la ruta para comparar solo el path
@@ -101,9 +104,9 @@ export default function Navbar() {
   }, [debouncedSearch, isAuthenticated]);
 
   // 3. Funciones
-  const hasDropdown = (itemName: string): boolean => {
-    return DROPDOWN_ITEMS.includes(itemName as DropdownItemType);
-  };
+  function hasDropdown(name: string) {
+    return DROPDOWN_ITEMS.includes(name as DropdownItemType);
+  }
 
   const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
     posthogUtils.capture("navbar_click", {

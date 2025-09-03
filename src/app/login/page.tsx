@@ -47,10 +47,10 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get("redirect");
-      if (redirect === "/login/CreateAccount") {
+      if (redirect === "/login/create-account") {
         // Usar setTimeout para asegurar que router esté inicializado
         setTimeout(() => {
-          router.replace("/login/CreateAccount");
+          router.replace("/login/create-account");
         }, 0);
       }
     }

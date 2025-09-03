@@ -16,7 +16,7 @@ const publicRoutes = [
   "/",
   "/productos",
   "/productos/DispositivosMoviles",
-  "/productos/Electrodomesticos", // <-- Añade esta línea
+  "/productos/Electrodomesticos",
   "/productos/view",
   "/login",
   "/login/CreateAccount",
@@ -26,6 +26,9 @@ const publicRoutes = [
   "/carrito",
   "/dashboard",
   "/ofertas",
+  "/carrito/ChargingResult",
+  "/carrito/SuccessCheckout",
+  "/carrito/ErrorCheckout",
 ];
 
 // Admin routes that require special permissions

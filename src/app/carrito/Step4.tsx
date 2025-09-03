@@ -8,9 +8,6 @@ import visaLogo from "@/img/carrito/visa_logo.png";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import CheckoutSuccessOverlay from "./CheckoutSuccessOverlay";
-import CheckoutErrorOverlay from "./CheckoutErrorOverlay";
-import LogoReloadAnimation from "./LogoReloadAnimation";
 
 // Utilidad para obtener productos del carrito desde localStorage
 /**
@@ -57,48 +54,8 @@ const formatPrice = (price: number) =>
   price.toLocaleString("es-CO", { style: "currency", currency: "COP" });
 
 export default function Step4({ onBack }: { onBack?: () => void }) {
-  // Integración animación de éxito
-  const {
-    loading: purchaseLoading,
-    success: purchaseSuccess,
-    startPayment,
-    closeSuccess,
-  } = usePurchaseFlow();
-  // Estado local para controlar visibilidad del overlay de éxito
-  const [successOpen, setSuccessOpen] = useState(false);
-  // Estado local para controlar visibilidad del overlay de error
-  const [errorOpen, setErrorOpen] = useState(false);
-  // Estado para mensaje de error de pago
-  const [paymentErrorMsg, setPaymentErrorMsg] = useState("");
-  // Estado para la posición del botón 'Finalizar pago'
-  const [triggerPosition, setTriggerPosition] = useState<
-    { x: number; y: number } | undefined
-  >();
-  useEffect(() => {
-    setSuccessOpen(!!purchaseSuccess);
-  }, [purchaseSuccess]);
-
-  // Mostrar overlay de error si hay error de pago
-  useEffect(() => {
-    if (errorOpen) {
-      // Opcional: auto-cierre después de unos segundos
-      const timer = setTimeout(() => setErrorOpen(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorOpen]);
-  // Captura la posición del botón cuando successOpen cambia a true
-  useEffect(() => {
-    if (successOpen) {
-      const btn = document.querySelector('[data-testid="checkout-finish-btn"]');
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setTriggerPosition({
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2 + window.scrollY,
-        });
-      }
-    }
-  }, [successOpen]);
+  // Importamos la función de redirección de usePurchaseFlow
+  const { redirectToLoading } = usePurchaseFlow();
   // Estado para error general (form)
   const [error, setError] = useState("");
   const router = useRouter();
@@ -112,6 +69,8 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     }
     return 0;
   });
+  // Estado para procesamiento de pago
+  const [isProcessing, setIsProcessing] = useState(false);
   // Estado para método de pago
   const [paymentMethod, setPaymentMethod] = useState("tarjeta");
   // Estado para datos de tarjeta
@@ -150,8 +109,6 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   const [accepted, setAccepted] = useState(false);
   // Estado para guardar info
   const [saveInfo, setSaveInfo] = useState(false);
-  // Estado para animación ola Samsung
-  const [showLogoAnimation, setShowLogoAnimation] = useState(false);
 
   // Determinar si la tarjeta es Amex para los inputs
   const isAmex = card.number.startsWith("34") || card.number.startsWith("37");
@@ -349,52 +306,46 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     if (!valid) {
       return;
     }
-    // Si todo está correcto, mostrar animación ola
-    setShowLogoAnimation(true);
+
+    // Activar estado de procesamiento
+    setIsProcessing(true);
+
+    // Guardar la información de la orden en localStorage
+    try {
+      const orderData = {
+        paymentMethod,
+        card:
+          paymentMethod === "tarjeta"
+            ? {
+                // Excluir CVC y otros datos sensibles
+                name: card.name,
+                docType: card.docType,
+                docNumber: card.docNumber,
+                // Ocultar número de tarjeta excepto últimos 4 dígitos
+                last4: card.number.slice(-4),
+              }
+            : null,
+        billingType,
+        products: cartProducts,
+        total,
+        subtotal: safeSubtotal,
+        shipping: envio,
+        discount: safeDiscount,
+        taxes: impuestos,
+        timestamp: new Date().toISOString(),
+      };
+
+      localStorage.setItem("current-order", JSON.stringify(orderData));
+    } catch (err) {
+      console.error("Error al guardar datos de orden:", err);
+    }
+
+    // Redirigir a la página de carga
+    redirectToLoading();
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
-      {/* Animación ola Samsung: se superpone pero no bloquea el render */}
-      {showLogoAnimation && (
-        <LogoReloadAnimation
-          open={showLogoAnimation}
-          duration={2500}
-          onFinish={async () => {
-            setShowLogoAnimation(false);
-            try {
-              await startPayment();
-            } catch {
-              // Mostrar overlay de error premium
-              setPaymentErrorMsg(
-                "Ocurrió un error al procesar el pago. Por favor intenta nuevamente."
-              );
-              setErrorOpen(true);
-            }
-          }}
-        />
-      )}
-      {/* Overlay de éxito de compra */}
-      <CheckoutSuccessOverlay
-        open={purchaseSuccess}
-        onClose={closeSuccess}
-        reloadSrc={"/img/logo_imagiq.png"}
-        autoCloseMs={2500}
-        locale="es"
-        className=""
-        testId="checkout-success-overlay"
-        triggerPosition={triggerPosition}
-      />
-      {/* Overlay de error de compra premium */}
-      <CheckoutErrorOverlay
-        open={errorOpen}
-        onClose={() => setErrorOpen(false)}
-        message={paymentErrorMsg}
-        locale="es"
-        className=""
-        testId="checkout-error-overlay"
-        triggerPosition={triggerPosition}
-      />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Formulario de pago */}
         <form
@@ -700,9 +651,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     onChange={() => setPaymentMethod("pse")}
                     className="accent-blue-600 w-5 h-5"
                   />
-                  <span className="font-medium text-black">
-                    PSE
-                  </span>
+                  <span className="font-medium text-black">PSE</span>
                 </label>
                 <label className="flex items-center gap-2 justify-between">
                   <span className="flex items-center gap-2">
@@ -846,11 +795,11 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           <button
             type="button"
             className={`w-full bg-[#2563EB] text-white font-bold py-3 rounded-lg text-base mt-6 hover:bg-blue-700 transition flex items-center justify-center ${
-              purchaseLoading ? "opacity-70 cursor-not-allowed" : ""
+              isProcessing ? "opacity-70 cursor-not-allowed" : ""
             }`}
-            disabled={!accepted || purchaseLoading}
+            disabled={!accepted || isProcessing}
             data-testid="checkout-finish-btn"
-            aria-busy={purchaseLoading}
+            aria-busy={isProcessing}
             onClick={() => {
               const form = document.getElementById(
                 "checkout-form"
@@ -858,7 +807,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
               if (form) form.requestSubmit();
             }}
           >
-            {purchaseLoading ? (
+            {isProcessing ? (
               <span className="flex items-center gap-2" aria-live="polite">
                 <svg
                   className="animate-spin h-5 w-5 mr-2 text-green-500"
@@ -886,16 +835,14 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
             )}
           </button>
           {/* Botón secundario: Regresar al comercio */}
-          {!successOpen && (
-            <button
-              type="button"
-              className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-3 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
-              onClick={() => router.push("/")}
-              data-testid="checkout-back-to-home"
-            >
-              Regresar al comercio
-            </button>
-          )}
+          <button
+            type="button"
+            className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-3 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+            onClick={() => router.push("/")}
+            data-testid="checkout-back-to-home"
+          >
+            Regresar al comercio
+          </button>
           {/* ...no mostrar error aquí, solo en el form... */}
         </aside>
       </div>

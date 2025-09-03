@@ -9,7 +9,12 @@ import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 
 // Rutas donde el Navbar NO debe mostrarse
-const HIDDEN_NAVBAR_ROUTES = ["/carrito"];
+const HIDDEN_NAVBAR_ROUTES = [
+  "/carrito",
+  "/carrito/ChargingResult",
+  "/carrito/SuccessCheckout",
+  "/carrito/ErrorCheckout",
+];
 
 function shouldHideNavbar(pathname: string) {
   return HIDDEN_NAVBAR_ROUTES.includes(pathname);
@@ -27,8 +32,13 @@ export default function ClientLayout({
   const safeChildren =
     typeof children === "number" && isNaN(children) ? null : children;
 
-  // Ocultar el Footer solo en /carrito y /ofertas
-  const hideFooter = pathname === "/carrito" || pathname === "/ofertas";
+  // Ocultar el Footer solo en /carrito, /ofertas y las rutas de animaciones
+  const hideFooter =
+    pathname === "/carrito" ||
+    pathname === "/ofertas" ||
+    pathname === "/carrito/ChargingResult" ||
+    pathname === "/carrito/SuccessCheckout" ||
+    pathname === "/carrito/ErrorCheckout";
 
   return (
     <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">

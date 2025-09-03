@@ -11,13 +11,15 @@
  * - Datos quemados (mock) para desarrollo
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
 import samsungImage from "@/img/dispositivosMoviles/cel1.png";
 import { productsMock } from "./productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
+import EspecificacionesProduct from "./EspecificacionesProduct";
+import { usePathname } from "next/navigation";
 
 // Tipos para producto
 interface ProductColor {
@@ -36,13 +38,24 @@ interface ProductData {
   specs?: { label: string; value: string }[];
 }
 
-// ...existing code...
 export default function ViewProduct({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
   // Estado para especificaciones abiertas
   const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
+  const pathname = usePathname();
+  const [showBar, setShowBar] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBar(window.scrollY > 100);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const isProductDetailView = pathname.startsWith("/productos/view/");
 
   // Especificaciones para mostrar
   const specsList: { title: string; desc: string }[] = [
@@ -105,50 +118,13 @@ export default function ViewProduct({ product }: { product: ProductData }) {
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col mt-[-15%] pt-[15%]"
+      className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
       style={{
         background:
           "radial-gradient(circle at 40% 40%, #35508A 0%, #274A7A 60%, #19345A 100%)",
         fontFamily: "SamsungSharpSans",
       }}
     >
-      {/* Barra superior ocupando todo el ancho */}
-      <header
-        className="w-full bg-white shadow-sm h-[56px] flex items-center px-8"
-        style={{ fontFamily: "SamsungSharpSans" }}
-      >
-        {/* Logo a la izquierda */}
-        <div className="flex items-center" style={{ minWidth: 110 }}>
-          <Image
-            src={samsungLogo}
-            alt="Samsung Logo"
-            width={110}
-            height={32}
-            style={{ objectFit: "contain" }}
-            priority
-          />
-        </div>
-        {/* Nombre centrado */}
-        <div className="flex-1 flex justify-center">
-          <span
-            className="font-bold text-base md:text-lg text-center"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
-            {safeProduct.name}
-          </span>
-        </div>
-        {/* Botón a la derecha */}
-        <div className="flex items-center" style={{ minWidth: 110 }}>
-          <button
-            className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
-            style={{ fontFamily: "SamsungSharpSans" }}
-            onClick={handleBuy}
-          >
-            Comprar
-          </button>
-        </div>
-      </header>
-      <div className="h-[56px] w-full" />
       {/* Hero section */}
       <section className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
@@ -246,6 +222,45 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           </div>
         </div>
       </section>
+      {/* Barra superior solo si está en detalles y ha hecho scroll */}
+      {isProductDetailView && showBar && (
+        <div
+          className="w-full bg-white shadow-sm h-[56px] flex items-center px-8 fixed top-16 pt-2 left-0 z-40"
+          style={{ fontFamily: "SamsungSharpSans" }}
+        >
+          {/* Logo a la izquierda */}
+          <div className="flex items-center" style={{ minWidth: 110 }}>
+            <Image
+              src={samsungLogo}
+              alt="Samsung Logo"
+              width={110}
+              height={32}
+              style={{ objectFit: "contain" }}
+              priority
+            />
+          </div>
+          {/* Nombre centrado */}
+          <div className="flex-1 flex justify-center">
+            <span
+              className="font-bold text-base md:text-lg text-center"
+              style={{ fontFamily: "SamsungSharpSans" }}
+            >
+              {safeProduct.name}
+            </span>
+          </div>
+          {/* Botón a la derecha */}
+          <div className="flex items-center" style={{ minWidth: 110 }}>
+            <button
+              className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
+              style={{ fontFamily: "SamsungSharpSans" }}
+              onClick={handleBuy}
+            >
+              Comprar
+            </button>
+          </div>
+        </div>
+      )}
+      <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <div
         className="relative flex items-center justify-center w-full min-h-[600px] py-16 mt-8"
@@ -253,133 +268,8 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           fontFamily: "SamsungSharpSans",
         }}
       >
-        {/* Imagen y slider */}
-        <div className="flex flex-col items-center justify-center w-[440px]">
-          <div className="relative flex items-center justify-center h-[420px] w-[340px] bg-transparent">
-            <Image
-              src={samsungImage}
-              alt="Samsung S"
-              width={340}
-              height={420}
-              className="object-contain"
-              style={{ background: "none" }}
-            />
-            {/* Flechas laterales */}
-            <span className="absolute left-0 top-1/2 -translate-y-1/2 text-white text-4xl opacity-80 cursor-pointer select-none hover:text-blue-200 transition-all">
-              &#8249;
-            </span>
-            <span className="absolute right-0 top-1/2 -translate-y-1/2 text-white text-4xl opacity-80 cursor-pointer select-none hover:text-blue-200 transition-all">
-              &#8250;
-            </span>
-          </div>
-          {/* Slider dots y preview */}
-          <div className="flex items-center gap-3 mt-8">
-            {[...Array(4)].map((_, i) => (
-              <span
-                key={i}
-                className="w-3 h-3 rounded-full border border-white bg-white/60"
-              />
-            ))}
-          </div>
-          <button className="mt-6 px-7 py-2 border border-white rounded-full text-white hover:bg-white/30 transition-all text-base font-medium">
-            Vista previa
-          </button>
-        </div>
-        {/* Especificaciones con scroll y línea vertical */}
-        <div className="relative flex flex-col items-center justify-center w-[480px] h-[420px] ml-12">
-          {/* Línea vertical y puntos extremos */}
-          <div className="absolute left-0 top-0 h-full flex flex-col items-center justify-between">
-            <span
-              className="w-4 h-4 rounded-full"
-              style={{ marginBottom: "-8px", background: "#14213D" }}
-            ></span>
-            <div
-              className="h-full w-[2.5px] rounded-full"
-              style={{
-                background: "#14213D", // azul mucho más oscuro
-                boxShadow: "0 0 8px 0 #14213D inset",
-              }}
-            />
-            <span
-              className="w-4 h-4 rounded-full"
-              style={{ marginTop: "-8px", background: "#14213D" }}
-            ></span>
-          </div>
-          {/* Scrollable specs */}
-          <div
-            className="relative w-full h-full overflow-y-auto pl-12 pr-4 py-2 hide-scrollbar"
-            style={{
-              scrollbarWidth: "none",
-              msOverflowStyle: "none",
-            }}
-          >
-            <style jsx>{`
-              .hide-scrollbar::-webkit-scrollbar {
-                display: none;
-              }
-              .hide-scrollbar {
-                scrollbar-width: none;
-                -ms-overflow-style: none;
-              }
-              .spec-content {
-                max-height: 0;
-                opacity: 0;
-                overflow: hidden;
-                transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                  opacity 0.3s;
-              }
-              .spec-content.open {
-                max-height: 300px;
-                opacity: 1;
-                transition: max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                  opacity 0.3s;
-              }
-            `}</style>
-            <h2
-              className="text-2xl font-bold text-white mb-8 tracking-wide"
-              style={{ fontFamily: "SamsungSharpSans" }}
-            >
-              Especificaciones
-            </h2>
-            <ul className="flex flex-col gap-8">
-              {/* Especificaciones con toggle y animación */}
-              {specsList.map(
-                (spec: { title: string; desc: string }, idx: number) => (
-                  <li
-                    key={spec.title}
-                    className="text-white font-bold text-xl select-none"
-                  >
-                    <button
-                      className={`w-full text-left font-bold text-xl py-2 px-2 rounded transition-all ${
-                        openSpecs[idx]
-                          ? "bg-white/10 text-blue-200"
-                          : "hover:bg-white/10 hover:text-blue-200"
-                      }`}
-                      style={{ fontFamily: "SamsungSharpSans" }}
-                      onClick={() => handleToggleSpec(idx)}
-                    >
-                      {spec.title}
-                    </button>
-                    <div
-                      className={`spec-content${openSpecs[idx] ? " open" : ""}`}
-                    >
-                      <div
-                        className="text-base text-white mt-2 whitespace-pre-line font-normal bg-white/5 rounded px-4 py-2 border border-white/20"
-                        style={{
-                          fontFamily: "SamsungSharpSans",
-                          display: openSpecs[idx] ? "block" : "none",
-                        }}
-                      >
-                        {spec.desc}
-                      </div>
-                    </div>
-                  </li>
-                )
-              )}
-            </ul>
-            {/* Scroll indicator dots vertical ELIMINADOS */}
-          </div>
-        </div>
+        {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
+        <EspecificacionesProduct specs={safeProduct.specs} />
       </div>
     </div>
   );

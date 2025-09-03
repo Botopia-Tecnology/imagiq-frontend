@@ -15,20 +15,20 @@ import type { NextRequest } from "next/server";
 const publicRoutes = [
   "/",
   "/productos",
-  "/productos/DispositivosMoviles",
-  "/productos/Electrodomesticos",
+  "/productos/dispositivos-moviles",
+  "/productos/electrodomesticos",
   "/productos/view",
   "/login",
-  "/login/CreateAccount",
+  "/login/create-account",
   "/register",
   "/soporte",
   "/tiendas",
   "/carrito",
   "/dashboard",
   "/ofertas",
-  "/carrito/ChargingResult",
-  "/carrito/SuccessCheckout",
-  "/carrito/ErrorCheckout",
+  "/carrito/charging-result",
+  "/carrito/success-checkout",
+  "/carrito/error-checkout",
 ];
 
 // Admin routes that require special permissions

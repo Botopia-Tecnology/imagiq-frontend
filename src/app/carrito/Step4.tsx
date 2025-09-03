@@ -115,14 +115,24 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   // Estado para método de pago
   const [paymentMethod, setPaymentMethod] = useState("tarjeta");
   // Estado para datos de tarjeta
-  const [card, setCard] = useState({
-    number: "",
-    expiry: "",
-    cvc: "",
-    name: "",
-    docType: "C.C.",
-    docNumber: "",
-    installments: "",
+  const [card, setCard] = useState(() => {
+    // Autocompletar número de documento con valor guardado en Step2
+    let cedula = "";
+    if (typeof window !== "undefined") {
+      const savedDoc = localStorage.getItem("checkout-document");
+      if (savedDoc) {
+        cedula = savedDoc;
+      }
+    }
+    return {
+      number: "",
+      expiry: "",
+      cvc: "",
+      name: "",
+      docType: "C.C.",
+      docNumber: cedula,
+      installments: "",
+    };
   });
   // Estado para errores de campos de tarjeta
   const [cardErrors, setCardErrors] = useState({
@@ -422,7 +432,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     className="accent-blue-600 w-5 h-5"
                   />
                   <span className="font-medium text-black">
-                    Envío a domicilio
+                    Pago con tarjeta
                   </span>
                 </label>
                 <span className="flex gap-3">
@@ -691,7 +701,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     className="accent-blue-600 w-5 h-5"
                   />
                   <span className="font-medium text-black">
-                    PSE y billetera Mercado Pago
+                    PSE
                   </span>
                 </label>
                 <label className="flex items-center gap-2 justify-between">

@@ -682,7 +682,21 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 .gif-transition {
   transition: opacity 0.3s ease-out;
 }
-/* Clase para transición suave al finalizar GIF */
-.gif-transition {
-  transition: opacity 0.3s ease-out;
+
+/* Limpieza de contenido entre headers */
+#main-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Ocultar cualquier dropdown activo en páginas específicas */
+.min-h-screen {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Estilos específicos para páginas de soporte - SOLO para contenido principal */
+.support-page #main-content {
+  position: relative;
+  z-index: 1;
 }

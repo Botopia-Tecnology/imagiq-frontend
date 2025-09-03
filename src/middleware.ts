@@ -42,11 +42,12 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
+  // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles, view y soporte
   if (
     pathname.startsWith("/productos/DispositivosMoviles") ||
     pathname.startsWith("/productos/Electrodomesticos") ||
-    pathname.startsWith("/productos/view")
+    pathname.startsWith("/productos/view") ||
+    pathname.startsWith("/soporte")
   ) {
     return NextResponse.next();
   }

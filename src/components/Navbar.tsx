@@ -18,18 +18,20 @@ import { posthogUtils } from "@/lib/posthogClient";
 import DispositivosMovilesDropdown from "./Dropdowns/Dispositivos_Moviles";
 import TelevisionesDropdown from "./Dropdowns/Televisiones";
 import ElectrodomesticosDropdown from "./Dropdowns/Electrodomesticos";
+import ServicioTecnicoDropdown from "./Dropdowns/Servicio_Tecnico";
 import { navbarRoutes } from "../routes/navbarRoutes";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
 
-// Items that have dropdowns
-const DROPDOWN_ITEMS = [
-  "Dispositivos móviles",
-  "Televisores y AV",
-  "Electrodomésticos",
-] as const;
+type DropdownItemType = "Dispositivos móviles" | "Televisores y AV" | "Electrodomésticos" | "Servicio Técnico";
 
-type DropdownItemType = (typeof DROPDOWN_ITEMS)[number];
+// Items that have dropdowns
+const DROPDOWN_ITEMS: DropdownItemType[] = [
+  "Dispositivos móviles",
+  "Televisores y AV", 
+  "Electrodomésticos",
+  "Servicio Técnico"
+];
 
 interface SearchResult {
   id: number;
@@ -57,10 +59,6 @@ export default function Navbar() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
-  // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
-  const isMasInformacionDispositivosMoviles = pathname.startsWith(
-    "/productos/DispositivosMoviles/mas-informacion"
-  );
   // Detectar si estamos en la ruta de ofertas
   const isOfertas = pathname === "/ofertas";
   // Normaliza la ruta para comparar solo el path
@@ -78,7 +76,8 @@ export default function Navbar() {
       const scrollTop = window.scrollY;
       setIsScrolled(scrollTop > 100);
     };
-    window.addEventListener("scroll", handleScroll);
+    
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -102,9 +101,9 @@ export default function Navbar() {
   }, [debouncedSearch, isAuthenticated]);
 
   // 3. Funciones
-  function hasDropdown(name: string) {
-    return DROPDOWN_ITEMS.includes(name as DropdownItemType);
-  }
+  const hasDropdown = (itemName: string): boolean => {
+    return DROPDOWN_ITEMS.includes(itemName as DropdownItemType);
+  };
 
   const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
     posthogUtils.capture("navbar_click", {
@@ -146,11 +145,24 @@ export default function Navbar() {
     const navItem = navItemRefs.current[dropdownName];
     if (navItem) {
       const rect = navItem.getBoundingClientRect();
-      setDropdownCoords({
-        top: rect.bottom,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
+      
+      // Lógica especial para centrar el dropdown de Servicio Técnico
+      if (dropdownName === "Servicio Técnico") {
+        const dropdownWidth = 900; // Ancho del dropdown de Servicio Técnico
+        const centerLeft = rect.left + (rect.width / 2) - (dropdownWidth / 2);
+        
+        setDropdownCoords({
+          top: rect.bottom,
+          left: Math.max(20, centerLeft), // Evitar que se salga del borde izquierdo
+          width: dropdownWidth,
+        });
+      } else {
+        setDropdownCoords({
+          top: rect.bottom,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
     }
   };
 
@@ -187,6 +199,9 @@ export default function Navbar() {
       case "Electrodomésticos":
         DropdownComponent = <ElectrodomesticosDropdown />;
         break;
+      case "Servicio Técnico":
+        DropdownComponent = <ServicioTecnicoDropdown />;
+        break;
       default:
         return null;
     }
@@ -198,7 +213,8 @@ export default function Navbar() {
           position: "fixed",
           top: dropdownCoords.top,
           left: dropdownCoords.left,
-          minWidth: dropdownCoords.width,
+          width: activeDropdown === "Servicio Técnico" ? dropdownCoords.width : undefined,
+          minWidth: activeDropdown === "Servicio Técnico" ? undefined : dropdownCoords.width,
           zIndex: 1000000,
         }}
         className="animate-dropdown-enter"
@@ -543,9 +559,13 @@ export default function Navbar() {
         className={cn(
           "hidden md:block transition-all duration-300 relative",
           isScrolled
-            ? "max-h-0 opacity-0 overflow-hidden"
+            ? "max-h-0 opacity-0"
             : "max-h-20 opacity-100"
         )}
+        style={{
+          overflow: 'visible', // Siempre visible para que los dropdowns no se corten
+          visibility: isScrolled ? 'hidden' : 'visible',
+        }}
       >
         <ul className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
           {navbarRoutes.map((item) => {
@@ -586,8 +606,8 @@ export default function Navbar() {
                 <div
                   data-item-name={item.name}
                   ref={setNavItemRef}
-                  onMouseEnter={() => handleDropdownEnter(item.name)}
-                  onMouseLeave={handleDropdownLeave}
+                  onMouseEnter={() => hasDropdown(item.name) && handleDropdownEnter(item.name)}
+                  onMouseLeave={hasDropdown(item.name) ? handleDropdownLeave : undefined}
                 >
                   <Link
                     href={item.href}

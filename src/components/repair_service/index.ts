@@ -1,0 +1,9 @@
+export { default as HeroSection } from './HeroSection';
+export { default as ProductRegistration } from './ProductRegistration';
+export { default as ProductRegistrationSection } from './ProductRegistrationSection';
+export { default as BenefitsSection } from './BenefitsSection';
+export { default as WhyRegisterSection } from './WhyRegisterSection';
+export { default as RepairTypes } from './RepairTypes';
+export { default as ServiceLocations } from './ServiceLocations';
+export { default as FAQSection } from './FAQSection';
+export { default as ContactSection } from './ContactSection';

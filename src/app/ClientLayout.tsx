@@ -40,10 +40,23 @@ export default function ClientLayout({
     pathname === "/carrito/SuccessCheckout" ||
     pathname === "/carrito/ErrorCheckout";
 
+  // Detectar si estamos en páginas de soporte
+  const isSupportPage = pathname.startsWith("/soporte");
+
   return (
-    <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
-      {!hideNavbar && <Navbar />}
-      <main className="flex-1" id="main-content">
+    <div 
+      id="main-layout" 
+      className={`min-h-screen flex flex-col md:mr-0 ${isSupportPage ? 'support-page' : ''}`}
+    >
+      {!hideNavbar && (
+        <div className="relative z-50">
+          <Navbar />
+        </div>
+      )}
+      <main className="flex-1 relative z-10" id="main-content">
+        {isSupportPage && (
+          <div className="h-0 overflow-hidden clear-both" aria-hidden="true"></div>
+        )}
         {safeChildren}
       </main>
       {/* Oculta el Footer solo en /carrito y /ofertas */}

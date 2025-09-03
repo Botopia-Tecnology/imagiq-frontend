@@ -463,7 +463,7 @@ export default function LoginPage() {
         <button
           type="button"
           className="w-full py-3 rounded-full border-2 border-[#002142] text-[#002142] text-base font-semibold bg-white hover:bg-[#e6eef5] transition-all duration-200 shadow-lg"
-          onClick={() => router.push("/login/CreateAccount")}
+          onClick={() => router.push("/login/create-account")}
         >
           Crear una cuenta
         </button>

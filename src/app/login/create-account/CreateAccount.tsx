@@ -28,7 +28,9 @@ const CreateAccountForm = () => {
   const [values, setValues] = useState<Record<string, string>>({
     email: "",
     nombre: "",
+    apellido: "",
     password: "",
+    fecha_nacimiento: "",
   });
   const [fieldErrors, setFieldErrors] = useState<
     Record<string, string | undefined>
@@ -74,6 +76,13 @@ const CreateAccountForm = () => {
           placeholder: "Ingresa tu apellido",
           required: true,
         },
+        {
+          name: "fecha_nacimiento",
+          type: "date",
+          label: "Fecha de nacimiento",
+          placeholder: "Selecciona tu fecha de nacimiento",
+          required: false,
+        }
       ],
     },
     {
@@ -150,6 +159,7 @@ const CreateAccountForm = () => {
           nombre: values.nombre,
           apellido: values.apellido,
           contrasena: values.password,
+          fecha_nacimiento: values.fecha_nacimiento,
         }),
       });
       if (!response || typeof response.status !== "number") {

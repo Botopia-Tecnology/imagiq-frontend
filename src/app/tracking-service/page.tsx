@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 
 // Importación de iconos
 import PaperIcon from "@/img/tracking-service/Paper-icon.png";
@@ -27,15 +26,6 @@ interface TrackingStep {
 }
 
 /**
- * Props del componente TrackingService
- */
-interface TrackingServiceProps {
-  orderNumber?: string;
-  estimatedDate?: string;
-  currentStatus?: OrderStatus;
-}
-
-/**
  * Componente TrackingService
  *
  * Muestra el estado del pedido con un progreso visual paso a paso.
@@ -48,11 +38,11 @@ interface TrackingServiceProps {
  * - Navegación integrada
  * - Información del pedido centralizada
  */
-export default function TrackingService({
-  orderNumber = "15874945561MJ",
-  estimatedDate = "15-05-2025",
-  currentStatus = "procesada",
-}: TrackingServiceProps) {
+export default function TrackingService() {
+  // Valores por defecto internos
+  const orderNumber = "15874945561MJ";
+  const estimatedDate = "15-05-2025";
+  const currentStatus: OrderStatus = "procesada";
   const [activeStep, setActiveStep] = useState<OrderStatus>(currentStatus);
 
   /**

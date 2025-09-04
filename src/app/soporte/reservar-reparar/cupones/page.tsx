@@ -1,7 +1,7 @@
 "use client";
 
-import MyPageSubHeader from "../../../components/MyPageSubHeader";
-import Footer from "../../../components/Footer";
+import MyPageSubHeader from "../../../../components/MyPageSubHeader";
+import Footer from "../../../../components/Footer";
 
 export default function CuponesPage() {
   return (

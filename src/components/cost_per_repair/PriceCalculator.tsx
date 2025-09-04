@@ -216,7 +216,7 @@ export default function PriceCalculator() {
         {/* Important Information - Diseño mejorado */}
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 mb-8 border border-blue-100 shadow-sm">
           <div className="flex items-center mb-6">
-            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center mr-4">
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center mr-4">
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>

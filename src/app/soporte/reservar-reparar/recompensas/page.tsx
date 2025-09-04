@@ -1,7 +1,7 @@
 "use client";
 
-import MyPageSubHeader from "../../../components/MyPageSubHeader";
-import Footer from "../../../components/Footer";
+import MyPageSubHeader from "../../../../components/MyPageSubHeader";
+import Footer from "../../../../components/Footer";
 
 export default function RecompensasPage() {
   return (
@@ -22,7 +22,7 @@ export default function RecompensasPage() {
           </div>
 
           {/* Balance de puntos */}
-          <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-8 rounded-2xl mb-8">
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-8 rounded-2xl mb-8">
             <div className="text-center">
               <h2 className="text-lg font-semibold mb-2">Puntos disponibles</h2>
               <div className="text-4xl font-bold mb-4">2,450</div>
@@ -44,10 +44,10 @@ export default function RecompensasPage() {
                       <p className="text-gray-600 text-sm">Auriculares inalámbricos premium</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-blue-600">3,200 pts</div>
+                      <div className="text-lg font-bold text-blue-500">3,200 pts</div>
                     </div>
                   </div>
-                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                  <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
                     Canjear
                   </button>
                 </div>
@@ -59,10 +59,10 @@ export default function RecompensasPage() {
                       <p className="text-gray-600 text-sm">En accesorios Samsung</p>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold text-blue-600">800 pts</div>
+                      <div className="text-lg font-bold text-blue-500">800 pts</div>
                     </div>
                   </div>
-                  <button className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                  <button className="w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
                     Canjear
                   </button>
                 </div>

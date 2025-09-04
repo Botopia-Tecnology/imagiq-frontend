@@ -1,7 +1,7 @@
 "use client";
 
-import MyPageSubHeader from "../../../components/MyPageSubHeader";
-import Footer from "../../../components/Footer";
+import MyPageSubHeader from "../../../../components/MyPageSubHeader";
+import Footer from "../../../../components/Footer";
 
 export default function MisPedidosPage() {
   return (
@@ -37,7 +37,7 @@ export default function MisPedidosPage() {
               <p className="text-gray-600 mb-6">
                 Cuando realices tu primera compra, podrás ver el estado de tus pedidos aquí.
               </p>
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-700 transition-colors">
+              <button className="bg-blue-500 text-white px-6 py-2 rounded-md font-medium hover:bg-blue-600 transition-colors">
                 Explorar productos
               </button>
             </div>

@@ -7,7 +7,7 @@ import celularImage from "@/img/costo-reparacion/celular.png";
 
 export default function SamsungMembers() {
   return (
-    <section className="py-16 bg-gradient-to-r from-blue-600 to-blue-800">
+    <section className="py-16 bg-gradient-to-r from-blue-500 to-blue-600">
       <div className="max-w-6xl mx-auto px-4">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Contenido izquierdo */}
@@ -40,7 +40,7 @@ export default function SamsungMembers() {
             <div className="flex gap-4">
               <Link 
                 href="/samsung-members"
-                className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
+                className="bg-white text-blue-500 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors inline-flex items-center gap-2"
               >
                 Descargar App
                 <ChevronRight className="h-4 w-4" />

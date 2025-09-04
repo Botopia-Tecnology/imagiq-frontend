@@ -44,7 +44,7 @@ export default function ServiceRequest() {
                   </p>
                   <Link 
                     href="/soporte/reservar-reparar"
-                    className="inline-flex items-center bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-colors font-medium text-sm shadow-lg"
+                    className="inline-flex items-center bg-blue-500 text-white px-6 py-3 rounded-full hover:bg-blue-600 transition-colors font-medium text-sm shadow-lg"
                   >
                     Reservar cita
                     <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

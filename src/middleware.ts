@@ -44,7 +44,7 @@ export function middleware(request: NextRequest) {
 
   // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
   if (
-    pathname.startsWith("/productos/DispositivosMoviles") ||
+    pathname.startsWith("/productos/dispositivos-moviles") ||
     pathname.startsWith("/productos/Electrodomesticos") ||
     pathname.startsWith("/productos/view")
   ) {

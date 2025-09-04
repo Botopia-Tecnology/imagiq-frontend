@@ -6,23 +6,23 @@ import { posthogUtils } from "@/lib/posthogClient";
 const dispositivosMoviles = [
   {
     name: "Smartphones",
-    href: "/productos/DispositivosMoviles?section=smartphones",
+    href: "/productos/dispositivos-moviles?section=smartphones",
   },
   {
     name: "Tabletas",
-    href: "/productos/DispositivosMoviles?section=tabletas",
+    href: "/productos/dispositivos-moviles?section=tabletas",
   },
   {
     name: "Relojes",
-    href: "/productos/DispositivosMoviles?section=relojes",
+    href: "/productos/dispositivos-moviles?section=relojes",
   },
   {
     name: "Galaxy Buds",
-    href: "/productos/DispositivosMoviles?section=buds",
+    href: "/productos/dispositivos-moviles?section=buds",
   },
   {
     name: "Accesorios",
-    href: "/productos/DispositivosMoviles?section=accesorios",
+    href: "/productos/dispositivos-moviles?section=accesorios",
   },
 ];
 

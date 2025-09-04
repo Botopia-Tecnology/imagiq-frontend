@@ -6,7 +6,7 @@ export const navbarRoutes = [
   },
   {
     name: "Dispositivos móviles",
-    href: "/productos/DispositivosMoviles",
+    href: "/productos/dispositivos-moviles",
     category: "moviles",
   },
   {

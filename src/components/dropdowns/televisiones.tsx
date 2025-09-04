@@ -10,9 +10,9 @@ import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
 const categories = [
-  { name: "Smart TV", href: "/productos/Televisores?section=smart-tv" },
-  { name: "QLED TV", href: "/productos/Televisores?section=qled" },
-  { name: "Crystal UHD", href: "/productos/Televisores?section=crystal-uhd" },
+  { name: "Smart TV", href: "/productos/televisores?section=smart-tv" },
+  { name: "QLED TV", href: "/productos/televisores?section=qled" },
+  { name: "Crystal UHD", href: "/productos/televisores?section=crystal-uhd" },
   { name: "Barras de Sonido", href: "/productos/Audio?section=barras-sonido" },
   { name: "Sistemas de Audio", href: "/productos/Audio?section=sistemas" },
 ];

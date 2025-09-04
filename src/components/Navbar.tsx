@@ -59,7 +59,7 @@ export default function Navbar() {
   const pathname = usePathname();
   // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
   // const isMasInformacionDispositivosMoviles = pathname.startsWith(
-  //   "/productos/DispositivosMoviles/mas-informacion"
+  //   "/productos/dispositivos-moviles/mas-informacion"
   // );
   // Detectar si estamos en la ruta de ofertas
   const isOfertas = pathname === "/ofertas";
@@ -219,10 +219,10 @@ export default function Navbar() {
 
   const isProductDetail =
     pathname.startsWith("/productos/") &&
-    !pathname.includes("/productos/DispositivosMoviles");
+    !pathname.includes("/productos/dispositivos-moviles");
   // Detectar si estamos en DispositivosMoviles o Electrodomesticos (con o sin params)
   const isDispositivosMoviles = pathname.startsWith(
-    "/productos/DispositivosMoviles"
+    "/productos/dispositivos-moviles"
   );
   const isElectrodomesticos = pathname.startsWith(
     "/productos/Electrodomesticos"

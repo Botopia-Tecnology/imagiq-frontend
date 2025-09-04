@@ -42,21 +42,21 @@ const smartphoneCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "/productos/DispositivosMoviles?section=relojes",
+    href: "/productos/dispositivos-moviles?section=relojes",
   },
   {
     id: "galaxy-tab",
     name: "Galaxy",
     subtitle: "Tab",
     image: tabletasImg,
-    href: "/productos/DispositivosMoviles?section=tabletas",
+    href: "/productos/dispositivos-moviles?section=tabletas",
   },
   {
     id: "galaxy-buds",
     name: "Galaxy",
     subtitle: "Buds",
     image: galaxyBudsImg,
-    href: "/productos/DispositivosMoviles?section=buds",
+    href: "/productos/dispositivos-moviles?section=buds",
   },
 ];
 

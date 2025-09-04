@@ -49,7 +49,7 @@ const tabletCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Tab",
     image: tabletasImg,
-    href: "/productos/DispositivosMoviles?section=tabletas", // <-- CAMBIA ESTO
+    href: "/productos/dispositivos-moviles?section=tabletas", // <-- CAMBIA ESTO
   },
   {
     id: "galaxy-buds",

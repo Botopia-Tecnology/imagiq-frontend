@@ -55,16 +55,7 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed top-0 right-0 flex flex-col h-full z-[99999]"
-      style={{
-        width: "370px",
-        maxWidth: "100vw",
-        background: "rgba(255,255,255,0.55)",
-        backdropFilter: "blur(8px)", 
-        WebkitBackdropFilter: "blur(8px)",
-        boxShadow: "-4px 0 24px 0 rgba(0,0,0,0.10)",
-        zIndex: 99999,
-      }}
+      className="fixed top-0 right-0 flex flex-col h-full chatbot-panel"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white bg-opacity-90 border-b border-gray-200 rounded-t-none shadow-none">

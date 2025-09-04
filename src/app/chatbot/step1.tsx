@@ -26,10 +26,7 @@ const opciones = [
 
 export default function Step1({ onContinue }: { onContinue: () => void }) {
   return (
-    <div
-      className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
-      style={{ minHeight: "100vh", minWidth: "100vw" }}
-    >
+    <div className="step1-overlay step1-hide-global">
       <HeaderStep1 />
       <h1 className="text-white text-4xl font-bold mb-12 text-center mt-32">
         Necesidad Primaria

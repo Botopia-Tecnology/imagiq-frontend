@@ -3,10 +3,7 @@ import Image from "next/image";
 
 export default function Step4() {
   return (
-    <div
-      className="fixed inset-0 z-[9999] bg-black flex flex-col items-center justify-center"
-      style={{ minHeight: "100vh", minWidth: "100vw" }}
-    >
+    <div className="step1-overlay">
       <HeaderStep1 />
       <h1 className="text-white text-4xl font-bold mb-12 text-center mt-32">
         Este es el producto para ti

@@ -130,23 +130,21 @@ export default function CategorySlider({
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
                       "relative flex items-center justify-center transition-all duration-300 hover:-translate-y-1",
-                      "rounded-full w-35 h-35", // Tamaño del círculo
-                      "overflow-visible", // Permite que la imagen sobresalga
+                      "rounded-full category-circle", // Usamos la clase personalizada
+                      "overflow-visible",
                       activeCategoryId === category.id
                         ? "bg-green-100 ring-2 ring-green-50"
                         : "bg-white hover:bg-white-100"
                     )}
-                    style={{ minWidth: "8rem", minHeight: "8rem" }}
                   >
                     {/* Imagen más grande que el círculo */}
                     <span
-                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
-                      style={{ width: 165, height: 165 }} // <-- Cambia aquí el tamaño de la imagen
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none category-image-container"
                     >
                       <Image
                         src={category.image}
                         alt={`${category.name} ${category.subtitle}`}
-                        width={165} // <-- Tamaño real de la imagen
+                        width={165}
                         height={165}
                         className="object-contain drop-shadow-lg"
                         priority

@@ -42,14 +42,14 @@ const tabletCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "/productos/DispositivosMoviles?section=relojes",
+    href: "/productos/DispositivosMoviles?section=relojes", // <-- CAMBIA ESTO
   },
   {
     id: "galaxy-tab",
     name: "Galaxy",
     subtitle: "Tab",
     image: tabletasImg,
-    href: "#galaxy-tab",
+    href: "/productos/DispositivosMoviles?section=tabletas", // <-- CAMBIA ESTO
   },
   {
     id: "galaxy-buds",

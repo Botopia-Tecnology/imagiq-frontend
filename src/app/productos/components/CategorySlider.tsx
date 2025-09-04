@@ -16,6 +16,7 @@ import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useSearchParams } from "next/navigation";
 
 interface Category {
   id: string;
@@ -40,6 +41,19 @@ export default function CategorySlider({
 }: CategorySliderProps) {
   const [slideIndex, setSlideIndex] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+
+  // Detecta la sección activa desde la URL
+  const sectionParam = searchParams.get("section");
+  // Obtén el hash solo en cliente
+  const hash = typeof window !== "undefined" ? window.location.hash : "";
+
+  // Busca la categoría activa según el parámetro de la URL o el hash
+  const activeCategoryId =
+    categories.find((cat) =>
+      cat.href.includes(sectionParam || "") ||
+      (cat.href.startsWith("#") && cat.href === hash)
+    )?.id || categories[0].id;
 
   const maxIndex = Math.max(0, categories.length - 4);
 
@@ -67,9 +81,7 @@ export default function CategorySlider({
   };
 
   return (
-    <section
-      className={cn("bg-white border-b border-gray-200 py-8", className)}
-    >
+    <section className={cn("bg-white border-b border-gray-200 py-8", className)}>
       <div className="container mx-auto px-6">
         <div className="relative max-w-6xl mx-auto">
           {/* Botón anterior */}
@@ -112,30 +124,44 @@ export default function CategorySlider({
               {categories.map((category, index) => (
                 <div
                   key={`${category.id}-${index}`}
-                  className="w-1/4 flex-shrink-0 px-3"
+                  className="w-1/4 flex-shrink-0 px-3 flex flex-col items-center"
                 >
                   <button
                     onClick={() => handleCategoryClick(category)}
-                    className="group w-full bg-[#D9D9D9] rounded-2xl p-6 transition-all duration-300 hover:bg-gray-300 hover:shadow-lg hover:-translate-y-1"
+                    className={cn(
+                      "relative flex items-center justify-center transition-all duration-300 hover:-translate-y-1",
+                      "rounded-full w-35 h-35", // Tamaño del círculo
+                      "overflow-visible", // Permite que la imagen sobresalga
+                      activeCategoryId === category.id
+                        ? "bg-green-100 ring-2 ring-green-50"
+                        : "bg-white hover:bg-white-100"
+                    )}
+                    style={{ minWidth: "8rem", minHeight: "8rem" }}
                   >
-                    <div className="aspect-square relative mb-3">
+                    {/* Imagen más grande que el círculo */}
+                    <span
+                      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                      style={{ width: 165, height: 165 }} // <-- Cambia aquí el tamaño de la imagen
+                    >
                       <Image
                         src={category.image}
                         alt={`${category.name} ${category.subtitle}`}
-                        fill
-                        className="object-contain transition-transform duration-300 group-hover:scale-105"
-                        sizes="(max-width: 768px) 50vw, 25vw"
+                        width={165} // <-- Tamaño real de la imagen
+                        height={165}
+                        className="object-contain drop-shadow-lg"
+                        priority
                       />
-                    </div>
-                    <div className="text-center">
-                      <div className="font-bold text-gray-900 text-sm">
-                        {category.name}
-                      </div>
-                      <div className="font-bold text-gray-900 text-sm">
-                        {category.subtitle}
-                      </div>
-                    </div>
+                    </span>
                   </button>
+                  {/* Texto debajo */}
+                  <div className="text-center mt-3">
+                    <div className="font-bold text-gray-900 text-sm">
+                      {category.name}
+                    </div>
+                    <div className="font-bold text-gray-900 text-sm">
+                      {category.subtitle}
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

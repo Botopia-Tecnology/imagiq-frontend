@@ -36,7 +36,7 @@ const publicRoutes = [
   "/chatbot/fotografia.png",
   "/chatbot/trabajo.png",
   "/chatbot/hogar.png",
-  "/chatbot/SamsungIA.png"
+  "/chatbot/SamsungIA.png",
   // Rutas de animaciones correctas
   "/charging-result",
   "/success-checkout",

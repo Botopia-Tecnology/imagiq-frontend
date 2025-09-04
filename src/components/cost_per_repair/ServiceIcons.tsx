@@ -91,38 +91,6 @@ export default function ServiceIcons() {
             );
           })}
         </div>
-
-        {/* Información de contacto adicional */}
-        <div className="mt-16 bg-white rounded-lg p-8">
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Phone className="h-6 w-6 text-green-600" />
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Línea de Soporte</h4>
-              <p className="text-lg font-bold text-blue-600">01-8000-SAMSUNG</p>
-              <p className="text-sm text-gray-500">Lunes a Domingo 8:00 AM - 10:00 PM</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="h-6 w-6 text-blue-600" />
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">WhatsApp</h4>
-              <p className="text-lg font-bold text-green-600">+57 300 123 4567</p>
-              <p className="text-sm text-gray-500">Disponible 24/7</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageSquare className="h-6 w-6 text-orange-600" />
-              </div>
-              <h4 className="font-semibold text-gray-900 mb-2">Chat en Línea</h4>
-              <p className="text-lg font-bold text-orange-600">samsung.com/chat</p>
-              <p className="text-sm text-gray-500">Soporte inmediato</p>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

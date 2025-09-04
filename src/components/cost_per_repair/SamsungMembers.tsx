@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ChevronRight, Star, Gift, Shield, Users } from "lucide-react";
+import celularImage from "@/img/costo-reparacion/celular.png";
 
 export default function SamsungMembers() {
   return (
@@ -52,79 +54,20 @@ export default function SamsungMembers() {
             </div>
           </div>
 
-          {/* Imagen/Mockup derecho */}
+          {/* Imagen real de Samsung Members */}
           <div className="lg:text-right">
             <div className="relative">
-              {/* Phone mockup */}
-              <div className="inline-block bg-white rounded-3xl p-2 shadow-2xl">
-                <div className="w-64 h-96 bg-gradient-to-b from-blue-400 to-blue-600 rounded-2xl relative overflow-hidden">
-                  {/* Screen content */}
-                  <div className="p-6 text-white">
-                    <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-white rounded-full mx-auto mb-4 flex items-center justify-center">
-                        <Users className="h-8 w-8 text-blue-600" />
-                      </div>
-                      <h3 className="text-xl font-bold">Samsung Members</h3>
-                      <p className="text-sm opacity-80">Tu centro de soporte</p>
-                    </div>
-                    
-                    <div className="space-y-3 text-sm">
-                      <div className="bg-white bg-opacity-20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Star className="h-4 w-4" />
-                          <span className="font-medium">Diagnóstico</span>
-                        </div>
-                        <p className="text-xs opacity-80">Verifica el estado de tu dispositivo</p>
-                      </div>
-                      
-                      <div className="bg-white bg-opacity-20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Gift className="h-4 w-4" />
-                          <span className="font-medium">Ofertas</span>
-                        </div>
-                        <p className="text-xs opacity-80">Descuentos exclusivos para miembros</p>
-                      </div>
-                      
-                      <div className="bg-white bg-opacity-20 rounded-lg p-3">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Shield className="h-4 w-4" />
-                          <span className="font-medium">Soporte</span>
-                        </div>
-                        <p className="text-xs opacity-80">Chat directo con expertos</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Floating elements */}
-              <div className="absolute -top-4 -right-4 w-12 h-12 bg-yellow-300 rounded-full flex items-center justify-center">
-                <Star className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="absolute -bottom-4 -left-4 w-10 h-10 bg-green-400 rounded-full flex items-center justify-center">
-                <Shield className="h-5 w-5 text-green-700" />
+              <div className="inline-block transform hover:scale-105 transition-transform duration-300">
+                <Image
+                  src={celularImage}
+                  alt="Samsung Members App en teléfono Galaxy"
+                  width={500}
+                  height={1000}
+                  className="object-contain drop-shadow-2xl"
+                  priority
+                />
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Stats section */}
-        <div className="mt-16 grid md:grid-cols-4 gap-8 text-center text-white">
-          <div>
-            <div className="text-3xl font-bold mb-2">5M+</div>
-            <div className="text-sm opacity-80">Usuarios activos</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold mb-2">24/7</div>
-            <div className="text-sm opacity-80">Soporte disponible</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold mb-2">98%</div>
-            <div className="text-sm opacity-80">Satisfacción del cliente</div>
-          </div>
-          <div>
-            <div className="text-3xl font-bold mb-2">150+</div>
-            <div className="text-sm opacity-80">Centros de servicio</div>
           </div>
         </div>
       </div>

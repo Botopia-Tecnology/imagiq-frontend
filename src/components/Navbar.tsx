@@ -15,9 +15,10 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import DispositivosMovilesDropdown from "./Dropdowns/Dispositivos_Moviles";
-import TelevisionesDropdown from "./Dropdowns/Televisiones";
-import ElectrodomesticosDropdown from "./Dropdowns/Electrodomesticos";
+import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
+import TelevisionesDropdown from "./dropdowns/televisiones";
+import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
+import ServicioTecnicoDropdown from "./dropdowns/servicio_tecnico";
 import { navbarRoutes } from "../routes/navbarRoutes";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
@@ -58,10 +59,6 @@ export default function Navbar() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
-  // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
-  const isMasInformacionDispositivosMoviles = pathname.startsWith(
-    "/productos/DispositivosMoviles/mas-informacion"
-  );
   // Detectar si estamos en la ruta de ofertas
   const isOfertas = pathname === "/ofertas";
   // Normaliza la ruta para comparar solo el path
@@ -78,11 +75,22 @@ export default function Navbar() {
     const handleScroll = () => {
       const scrollTop = window.scrollY;
       setIsScrolled(scrollTop > 100);
+      
+      // Resetear el estado del buscador cuando se hace scroll para evitar problemas de posicionamiento
+      if (searchQuery === "focus") {
+        setSearchQuery("");
+      }
+      
+      // Cerrar dropdowns activos cuando se hace scroll
+      if (activeDropdown) {
+        setActiveDropdown(null);
+        setDropdownCoords(null);
+      }
     };
     
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [searchQuery, activeDropdown]);
 
   useEffect(() => {
     if (debouncedSearch.length > 2) {
@@ -144,6 +152,12 @@ export default function Navbar() {
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
     }
+    
+    // No mostrar dropdowns cuando se está haciendo scroll o el buscador está activo
+    if (isScrolled || searchQuery === "focus") {
+      return;
+    }
+    
     setActiveDropdown(dropdownName);
     const navItem = navItemRefs.current[dropdownName];
     if (navItem) {
@@ -218,7 +232,7 @@ export default function Navbar() {
           left: dropdownCoords.left,
           width: activeDropdown === "Servicio Técnico" ? dropdownCoords.width : undefined,
           minWidth: activeDropdown === "Servicio Técnico" ? undefined : dropdownCoords.width,
-          zIndex: 1000000,
+          zIndex: 998, // Menor que el buscador para evitar conflictos
         }}
         className="animate-dropdown-enter"
       >
@@ -246,6 +260,8 @@ export default function Navbar() {
   const isElectrodomesticos = pathname.startsWith(
     "/productos/Electrodomesticos"
   );
+  // Detectar si estamos en cualquier página de soporte
+  const isSoportePage = pathname.startsWith("/soporte");
   const isNavbarItem = navbarRoutes.some((route) =>
     pathname.startsWith(route.href)
   );
@@ -277,7 +293,10 @@ export default function Navbar() {
       className={cn(
         "w-full z-50 transition-all duration-300",
         "sticky top-0 left-0 md:static",
-        isOfertas && !isScrolled
+        // Forzar fondo blanco para páginas de soporte
+        isSoportePage
+          ? "bg-white shadow"
+          : isOfertas && !isScrolled
           ? "bg-transparent"
           : isOfertas && isScrolled
           ? "bg-white shadow"
@@ -290,7 +309,15 @@ export default function Navbar() {
           : "bg-white shadow"
       )}
       style={
-        isOfertas && !isScrolled
+        isSoportePage
+          ? { 
+              backgroundColor: "white !important", 
+              boxShadow: "0 1px 3px 0 rgb(0 0 0 / 0.1) !important", 
+              position: "sticky", 
+              top: 0, 
+              zIndex: 50 
+            }
+          : isOfertas && !isScrolled
           ? { boxShadow: "none", background: "transparent" }
           : { boxShadow: "none" }
       }
@@ -322,18 +349,18 @@ export default function Navbar() {
           {/* Icono buscador con animación de input mejorada */}
           <div
             className="relative flex items-center group"
-            onMouseEnter={() => setSearchQuery("focus")}
+            onMouseEnter={() => !isScrolled && setSearchQuery("focus")}
             onMouseLeave={() => setSearchQuery("")}
           >
             <form
               onSubmit={handleSearchSubmit}
               className={cn(
                 "flex items-center transition-all duration-500 bg-[#17407A] rounded-full px-4 h-12",
-                searchQuery === "focus"
+                searchQuery === "focus" && !isScrolled
                   ? "w-72 opacity-100"
                   : "w-0 opacity-0 px-0"
               )}
-              style={{ zIndex: 1000, overflow: "hidden" }}
+              style={{ zIndex: 999, overflow: "hidden", position: "relative" }}
             >
               <input
                 type="text"
@@ -355,7 +382,7 @@ export default function Navbar() {
                   source: "navbar",
                 })
               }
-              style={{ zIndex: 1001 }}
+              style={{ zIndex: 1000, position: "relative" }}
             >
               <Search
                 className={

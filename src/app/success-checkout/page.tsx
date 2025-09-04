@@ -33,10 +33,10 @@ export default function SuccessCheckoutPage() {
   });
 
   /**
-   * Maneja el cierre del overlay y la redirección a la página principal
+   * Maneja el cierre del overlay y la redirección al tracking service
    * - Cierra suavemente la animación
    * - Limpia el carrito de compras
-   * - Redirecciona al usuario a la página principal
+   * - Redirecciona al usuario al tracking service
    */
   const handleClose = () => {
     setOpen(false);
@@ -51,8 +51,8 @@ export default function SuccessCheckoutPage() {
         localStorage.removeItem("current-order");
       }
 
-      // Siempre redirigir a la página principal
-      router.push("/");
+      // Redirigir al tracking service
+      router.push("/tracking-service");
     }, 300);
   };
 
@@ -76,7 +76,6 @@ export default function SuccessCheckoutPage() {
         onClose={handleClose}
         message="¡Tu compra ha sido exitosa!"
         triggerPosition={triggerPosition}
-        reloadSrc="/Payment_Success.mp4"
       />
     </div>
   );

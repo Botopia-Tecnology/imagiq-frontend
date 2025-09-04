@@ -30,6 +30,7 @@ const publicRoutes = [
   "/charging-result",
   "/success-checkout",
   "/error-checkout",
+  "/tracking-service",
 ];
 
 // Admin routes that require special permissions

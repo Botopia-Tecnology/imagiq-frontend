@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 /**
  * Overlay de éxito de compra con animaciones premium, accesibilidad y microinteracciones.
@@ -9,8 +9,6 @@ export type CheckoutSuccessOverlayProps = {
   open: boolean;
   onClose?: () => void;
   message?: string;
-  reloadSrc?: string;
-  autoCloseMs?: number;
   className?: string;
   testId?: string;
   locale?: string;
@@ -33,13 +31,12 @@ function CheckoutSuccessOverlay({
   open,
   onClose,
   message,
-  reloadSrc,
-  autoCloseMs,
   className = "",
   testId = "checkout-success-overlay",
   locale = "es",
   triggerPosition,
 }: CheckoutSuccessOverlayProps) {
+  const router = useRouter();
   const overlayRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const headingId = "checkout-success-heading";
@@ -162,7 +159,10 @@ function CheckoutSuccessOverlay({
           <button
             ref={closeBtnRef}
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              if (onClose) onClose();
+              router.push("/tracking-service");
+            }}
             className="mt-8 px-8 py-3 rounded-xl bg-white text-[#009047] text-lg font-bold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#009047] transition-all hover:bg-[#e6ffe6]"
             data-testid="checkout-success-continue"
             style={{ boxShadow: "0 2px 16px #00904733" }}

@@ -78,7 +78,7 @@ export const API_ROUTES = {
 // Navigation structure for UI
 export const NAVIGATION = [
   { name: "Ofertas", href: "/tienda/outlet" },
-  { name: "Dispositivos móviles", href: "/productos/DispositivosMoviles" },
+  { name: "Dispositivos móviles", href: "/productos/dispositivos-moviles" },
   { name: "Televisores y AV", href: "/tienda/televisores" },
   { name: "Electrodomésticos", href: "/tienda/electrodomesticos" },
   { name: "Tiendas", href: "/tiendas" },

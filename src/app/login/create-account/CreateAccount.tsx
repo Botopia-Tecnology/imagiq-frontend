@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { notifyRegisterSuccess, notifyError } from "../notifications";
 import { useRouter } from "next/navigation";
+import { useAuthContext } from "@/features/auth/context";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -14,6 +15,9 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 // - Layout más atractivo y profesional
 const CreateAccountForm = () => {
   const router = useRouter();
+  // Importar el contexto de autenticación
+
+  const { login } = useAuthContext();
   const [showModal, setShowModal] = useState(false);
   const [modalContent, setModalContent] = useState<{
     type: "success" | "error";
@@ -69,7 +73,7 @@ const CreateAccountForm = () => {
           label: "Apellido",
           placeholder: "Ingresa tu apellido",
           required: true,
-        }
+        },
       ],
     },
     {
@@ -157,25 +161,36 @@ const CreateAccountForm = () => {
         setSubmitting(false);
         return;
       }
+      const result = await response.json();
       if (!response.ok) {
         let errorMsg = "Error al registrar";
-        try {
-          const result = await response.json();
-          if (
-            result.message &&
-            result.message.toLowerCase().includes("correo") &&
-            result.message.toLowerCase().includes("existe")
-          ) {
-            errorMsg = "Ya existe un usuario con ese correo electrónico.";
-          } else {
-            errorMsg = result.message || errorMsg;
-          }
-        } catch {}
+        errorMsg = result.message || errorMsg;
         setModalContent({ type: "error", message: errorMsg });
         setShowModal(true);
         await notifyError(errorMsg, "Registro fallido");
         setSubmitting(false);
         return;
+      }
+      // Guardar token y usuario en localStorage
+      if (result.access_token && result.user) {
+        localStorage.setItem("imagiq_token", result.access_token);
+        // Mapear el rol numérico a string
+        localStorage.setItem(
+          "imagiq_user",
+          JSON.stringify({
+            id: result.user.id,
+            email: result.user.email,
+            name: `${result.user.nombre} ${result.user.apellido}`,
+            role: result.user.rol,
+          })
+        );
+        // Actualizar el contexto de sesión
+        await login({
+          id: result.user.id,
+          email: result.user.email,
+          name: `${result.user.nombre} ${result.user.apellido}`,
+          role: result.user.rol,
+        });
       }
       setModalContent({
         type: "success",
@@ -184,7 +199,7 @@ const CreateAccountForm = () => {
       setShowModal(true);
       await notifyRegisterSuccess(values.email);
       setTimeout(() => {
-        router.push("/login");
+        router.back();
       }, 500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error de conexión";

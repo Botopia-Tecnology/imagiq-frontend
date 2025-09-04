@@ -139,6 +139,25 @@ export default function FilterSidebar({
     );
   };
 
+  // Agrega el filtro de color si no está presente
+  const filterConfigWithColor = {
+    ...filterConfig,
+    color: filterConfig.color || [
+      "Negro",
+      "Blanco",
+      "Azul",
+      "Rojo",
+      "Verde",
+      "Gris",
+      "Dorado",
+      "Plateado",
+      "Rosa",
+      "Morado",
+      "Amarillo",
+      "Naranja",
+    ],
+  };
+
   return (
     <div
       className={cn(
@@ -146,11 +165,36 @@ export default function FilterSidebar({
         className
       )}
     >
-      {/* Header simple como en la imagen */}
+      {/* Header igual a la imagen */}
       <div className="p-4 border-b border-gray-300">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-black">Filtros</h2>
-          <span className="text-sm text-gray-600">
+        <div className="flex items-center gap-4">
+          <span className="flex items-center gap-2 font-bold text-black text-lg">
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-black"
+            >
+              <path
+                d="M3.75 6.75H14.25"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M6.75 11.25H11.25"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
+              <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
+            </svg>
+            Filtros
+          </span>
+          <span className="text-base text-black font-medium border-l border-gray-300 pl-4">
             {resultCount} resultados
           </span>
         </div>
@@ -158,11 +202,13 @@ export default function FilterSidebar({
 
       {/* Contenedor principal con scroll oculto */}
       <div className="overflow-hidden">
-        {Object.entries(filterConfig).map(([filterKey, options]) => (
+        {Object.entries(filterConfigWithColor).map(([filterKey, options]) => (
           <div key={filterKey} className="border-b border-gray-300">
             <button
               onClick={() => handleToggleFilter(filterKey)}
-              className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200"
+              className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+              aria-expanded={currentExpandedFilters.has(filterKey)}
+              aria-controls={`filter-panel-${filterKey}`}
             >
               <span className="font-semibold text-black text-sm tracking-wide">
                 {formatFilterKey(filterKey)}
@@ -175,34 +221,31 @@ export default function FilterSidebar({
                 )}
               </div>
             </button>
-
-            {/* Contenedor animado con altura dinámica */}
             <div
+              id={`filter-panel-${filterKey}`}
               className={cn(
                 "overflow-hidden transition-all duration-500 ease-in-out",
                 currentExpandedFilters.has(filterKey)
                   ? "max-h-96 opacity-100"
                   : "max-h-0 opacity-0"
               )}
+              tabIndex={-1}
             >
               <div className="px-4 pb-4">
-                {/* Contenedor con scroll personalizado oculto */}
                 <div
                   className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide"
-                  style={{
-                    scrollbarWidth: "none",
-                    msOverflowStyle: "none",
-                  }}
+                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                   {isRangeFilter(options)
-                    ? // Manejo para filtros de rango (precio, etc.)
-                      options.map((range, index) => (
+                    ? options.map((range, index) => (
                         <label
                           key={`${filterKey}-${index}`}
                           className={cn(
                             "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
-                            "hover:bg-gray-100 hover:translate-x-1 transform",
-                            "opacity-0 animate-fadeInUp"
+                            "hover:bg-blue-50 hover:translate-x-1 transform",
+                            "opacity-0 animate-fadeInUp",
+                            filters[filterKey]?.includes(range.label) &&
+                              "bg-blue-50 font-semibold text-blue-700"
                           )}
                           style={{
                             animationDelay: `${index * 50}ms`,
@@ -223,19 +266,20 @@ export default function FilterSidebar({
                             }
                             className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
                           />
-                          <span className="ml-3 text-sm text-gray-800 transition-colors duration-200">
+                          <span className="ml-3 text-sm transition-colors duration-200">
                             {range.label}
                           </span>
                         </label>
                       ))
-                    : // Manejo para filtros simples de string
-                      (options as string[]).map((option, index) => (
+                    : (options as string[]).map((option, index) => (
                         <label
                           key={`${filterKey}-${option}`}
                           className={cn(
                             "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
-                            "hover:bg-gray-100 hover:translate-x-1 transform",
-                            "opacity-0 animate-fadeInUp"
+                            "hover:bg-blue-50 hover:translate-x-1 transform",
+                            "opacity-0 animate-fadeInUp",
+                            filters[filterKey]?.includes(option) &&
+                              "bg-blue-50 font-semibold text-blue-700"
                           )}
                           style={{
                             animationDelay: `${index * 50}ms`,
@@ -256,7 +300,7 @@ export default function FilterSidebar({
                             }
                             className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
                           />
-                          <span className="ml-3 text-sm text-gray-800 transition-colors duration-200">
+                          <span className="ml-3 text-sm transition-colors duration-200">
                             {option}
                           </span>
                         </label>
@@ -267,8 +311,7 @@ export default function FilterSidebar({
           </div>
         ))}
       </div>
-
-      {/* Estilos CSS personalizados para ocultar scrollbars */}
+      {/* Estilos CSS personalizados para ocultar scrollbars y animaciones */}
       <style jsx>{`
         .scrollbar-hide {
           -webkit-overflow-scrolling: touch;
@@ -276,7 +319,6 @@ export default function FilterSidebar({
         .scrollbar-hide::-webkit-scrollbar {
           display: none;
         }
-
         @keyframes fadeInUp {
           from {
             opacity: 0;
@@ -287,7 +329,6 @@ export default function FilterSidebar({
             transform: translateY(0);
           }
         }
-
         .animate-fadeInUp {
           animation: fadeInUp 0.4s ease-out;
         }

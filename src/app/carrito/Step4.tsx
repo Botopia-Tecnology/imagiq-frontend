@@ -8,9 +8,6 @@ import visaLogo from "@/img/carrito/visa_logo.png";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
-import CheckoutSuccessOverlay from "./CheckoutSuccessOverlay";
-import CheckoutErrorOverlay from "./CheckoutErrorOverlay";
-import LogoReloadAnimation from "./LogoReloadAnimation";
 
 // Utilidad para obtener productos del carrito desde localStorage
 /**
@@ -57,48 +54,8 @@ const formatPrice = (price: number) =>
   price.toLocaleString("es-CO", { style: "currency", currency: "COP" });
 
 export default function Step4({ onBack }: { onBack?: () => void }) {
-  // Integración animación de éxito
-  const {
-    loading: purchaseLoading,
-    success: purchaseSuccess,
-    startPayment,
-    closeSuccess,
-  } = usePurchaseFlow();
-  // Estado local para controlar visibilidad del overlay de éxito
-  const [successOpen, setSuccessOpen] = useState(false);
-  // Estado local para controlar visibilidad del overlay de error
-  const [errorOpen, setErrorOpen] = useState(false);
-  // Estado para mensaje de error de pago
-  const [paymentErrorMsg, setPaymentErrorMsg] = useState("");
-  // Estado para la posición del botón 'Finalizar pago'
-  const [triggerPosition, setTriggerPosition] = useState<
-    { x: number; y: number } | undefined
-  >();
-  useEffect(() => {
-    setSuccessOpen(!!purchaseSuccess);
-  }, [purchaseSuccess]);
-
-  // Mostrar overlay de error si hay error de pago
-  useEffect(() => {
-    if (errorOpen) {
-      // Opcional: auto-cierre después de unos segundos
-      const timer = setTimeout(() => setErrorOpen(false), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [errorOpen]);
-  // Captura la posición del botón cuando successOpen cambia a true
-  useEffect(() => {
-    if (successOpen) {
-      const btn = document.querySelector('[data-testid="checkout-finish-btn"]');
-      if (btn) {
-        const rect = btn.getBoundingClientRect();
-        setTriggerPosition({
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2 + window.scrollY,
-        });
-      }
-    }
-  }, [successOpen]);
+  // Importamos la función de redirección de usePurchaseFlow
+  const { redirectToLoading } = usePurchaseFlow();
   // Estado para error general (form)
   const [error, setError] = useState("");
   const router = useRouter();
@@ -112,17 +69,29 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     }
     return 0;
   });
+  // Estado para procesamiento de pago
+  const [isProcessing, setIsProcessing] = useState(false);
   // Estado para método de pago
   const [paymentMethod, setPaymentMethod] = useState("tarjeta");
   // Estado para datos de tarjeta
-  const [card, setCard] = useState({
-    number: "",
-    expiry: "",
-    cvc: "",
-    name: "",
-    docType: "C.C.",
-    docNumber: "",
-    installments: "",
+  const [card, setCard] = useState(() => {
+    // Autocompletar número de documento con valor guardado en Step2
+    let cedula = "";
+    if (typeof window !== "undefined") {
+      const savedDoc = localStorage.getItem("checkout-document");
+      if (savedDoc) {
+        cedula = savedDoc;
+      }
+    }
+    return {
+      number: "",
+      expiry: "",
+      cvc: "",
+      name: "",
+      docType: "C.C.",
+      docNumber: cedula,
+      installments: "",
+    };
   });
   // Estado para errores de campos de tarjeta
   const [cardErrors, setCardErrors] = useState({
@@ -140,8 +109,9 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   const [accepted, setAccepted] = useState(false);
   // Estado para guardar info
   const [saveInfo, setSaveInfo] = useState(false);
-  // Estado para animación ola Samsung
-  const [showLogoAnimation, setShowLogoAnimation] = useState(false);
+
+  // Determinar si la tarjeta es Amex para los inputs
+  const isAmex = card.number.startsWith("34") || card.number.startsWith("37");
 
   // Sincronizar productos y descuento
   useEffect(() => {
@@ -197,13 +167,26 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     };
     let hasError = false;
     if (paymentMethod === "tarjeta") {
-      // Validación robusta de número de tarjeta (Luhn y longitud)
+      // Validación robusta de número de tarjeta (16 dígitos, formateado con espacios)
       const num = card.number.replace(/\s+/g, "");
-      function luhnCheck(val: string) {
+      if (!/^\d{16}$/.test(num)) {
+        if (!num) {
+          errors.number =
+            "Por favor ingresa el número de tu tarjeta (16 dígitos).";
+        } else if (num.length < 16) {
+          errors.number = `El número de tarjeta es demasiado corto (${num.length}/16). Ingresa los 16 dígitos.`;
+        } else if (num.length > 16) {
+          errors.number = `El número de tarjeta es demasiado largo (${num.length}/16). Elimina los dígitos extra.`;
+        } else {
+          errors.number = "El número de tarjeta debe contener solo números.";
+        }
+        hasError = true;
+      } else {
+        // Luhn check
         let sum = 0;
         let shouldDouble = false;
-        for (let i = val.length - 1; i >= 0; i--) {
-          let digit = parseInt(val.charAt(i), 10);
+        for (let i = num.length - 1; i >= 0; i--) {
+          let digit = parseInt(num.charAt(i), 10);
           if (shouldDouble) {
             digit *= 2;
             if (digit > 9) digit -= 9;
@@ -211,37 +194,25 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           sum += digit;
           shouldDouble = !shouldDouble;
         }
-        return sum % 10 === 0;
-      }
-      if (!/^[0-9]{16}$/.test(num)) {
-        if (!num) {
+        // Permitir finalizar pago aunque el número no pase Luhn, pero mostrar advertencia
+        if (sum % 10 !== 0) {
           errors.number =
-            "Por favor ingresa el número de tu tarjeta (16 dígitos, sin espacios).";
-        } else if (num.length < 16) {
-          errors.number = `El número de tarjeta es demasiado corto (${num.length}/16). Ingresa los 16 dígitos.`;
-        } else if (num.length > 16) {
-          errors.number = `El número de tarjeta es demasiado largo (${num.length}/16). Elimina los dígitos extra.`;
-        } else {
-          errors.number =
-            "El número de tarjeta debe contener solo números (sin espacios ni letras).";
+            "Advertencia: El número de tarjeta no es válido. Verifica que los dígitos sean correctos o consulta con tu banco.";
+          // No bloquea el pago, solo advierte
         }
-        hasError = true;
-      } else if (!luhnCheck(num)) {
-        errors.number =
-          "El número de tarjeta no es válido. Verifica que los dígitos sean correctos o consulta con tu banco.";
-        hasError = true;
       }
       // Fecha de vencimiento MM/AA y que no esté vencida
-      if (!/^\d{2}\/\d{2}$/.test(card.expiry.trim())) {
-        if (!card.expiry.trim()) {
-          errors.expiry =
-            "Por favor ingresa la fecha de vencimiento en formato MM/AA.";
-        } else {
-          errors.expiry = "Formato inválido. Usa MM/AA, por ejemplo 08/27.";
-        }
+      const expiryRaw = card.expiry.replace(/[^\d]/g, "");
+      let expiryFormatted = card.expiry;
+      if (expiryRaw.length === 4) {
+        expiryFormatted = `${expiryRaw.slice(0, 2)}/${expiryRaw.slice(2, 4)}`;
+      }
+      if (!/^\d{2}\/\d{2}$/.test(expiryFormatted)) {
+        errors.expiry =
+          "Por favor ingresa la fecha de vencimiento en formato MM/AA.";
         hasError = true;
       } else {
-        const [mm, aa] = card.expiry.split("/");
+        const [mm, aa] = expiryFormatted.split("/");
         const month = Number(mm);
         const year = Number(aa) + 2000;
         const now = new Date();
@@ -257,41 +228,16 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
         }
       }
       // CVC: 3 dígitos para Visa/Mastercard, 4 para Amex
-      const isAmex = num.startsWith("34") || num.startsWith("37");
       if (isAmex) {
         if (!/^\d{4}$/.test(card.cvc.trim())) {
-          if (!card.cvc.trim()) {
-            errors.cvc =
-              "Por favor ingresa el código de seguridad (CVC) de 4 dígitos para American Express.";
-          } else if (card.cvc.trim().length < 4) {
-            errors.cvc = `El CVC es demasiado corto (${
-              card.cvc.trim().length
-            }/4). Ingresa los 4 dígitos.`;
-          } else if (card.cvc.trim().length > 4) {
-            errors.cvc = `El CVC es demasiado largo (${
-              card.cvc.trim().length
-            }/4). Elimina los dígitos extra.`;
-          } else {
-            errors.cvc = "El CVC debe contener solo números.";
-          }
+          errors.cvc =
+            "Por favor ingresa el código de seguridad (CVC) de 4 dígitos para American Express.";
           hasError = true;
         }
       } else {
         if (!/^\d{3}$/.test(card.cvc.trim())) {
-          if (!card.cvc.trim()) {
-            errors.cvc =
-              "Por favor ingresa el código de seguridad (CVC) de 3 dígitos.";
-          } else if (card.cvc.trim().length < 3) {
-            errors.cvc = `El CVC es demasiado corto (${
-              card.cvc.trim().length
-            }/3). Ingresa los 3 dígitos.`;
-          } else if (card.cvc.trim().length > 3) {
-            errors.cvc = `El CVC es demasiado largo (${
-              card.cvc.trim().length
-            }/3). Elimina los dígitos extra.`;
-          } else {
-            errors.cvc = "El CVC debe contener solo números.";
-          }
+          errors.cvc =
+            "Por favor ingresa el código de seguridad (CVC) de 3 dígitos.";
           hasError = true;
         }
       }
@@ -310,16 +256,15 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
         hasError = true;
       }
       // Documento: solo números, mínimo 6 dígitos
-      if (!/^\d{6,}$/.test(card.docNumber.trim())) {
-        if (!card.docNumber.trim()) {
+      const docRaw = card.docNumber.replace(/\D/g, "");
+      if (!/^\d{6,15}$/.test(docRaw)) {
+        if (!docRaw) {
           errors.docNumber =
             "Por favor ingresa el número de documento (mínimo 6 dígitos).";
-        } else if (!/^[0-9]+$/.test(card.docNumber.trim())) {
-          errors.docNumber = "El documento debe contener solo números.";
-        } else if (card.docNumber.trim().length < 6) {
-          errors.docNumber = `El número de documento es demasiado corto (${
-            card.docNumber.trim().length
-          }/6). Ingresa al menos 6 dígitos.`;
+        } else if (docRaw.length < 6) {
+          errors.docNumber = `El número de documento es demasiado corto (${docRaw.length}/6). Ingresa al menos 6 dígitos.`;
+        } else if (docRaw.length > 15) {
+          errors.docNumber = `El número de documento es demasiado largo (${docRaw.length}/15). Máximo 15 dígitos.`;
         } else {
           errors.docNumber = "Número de documento inválido.";
         }
@@ -361,52 +306,46 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     if (!valid) {
       return;
     }
-    // Si todo está correcto, mostrar animación ola
-    setShowLogoAnimation(true);
+
+    // Activar estado de procesamiento
+    setIsProcessing(true);
+
+    // Guardar la información de la orden en localStorage
+    try {
+      const orderData = {
+        paymentMethod,
+        card:
+          paymentMethod === "tarjeta"
+            ? {
+                // Excluir CVC y otros datos sensibles
+                name: card.name,
+                docType: card.docType,
+                docNumber: card.docNumber,
+                // Ocultar número de tarjeta excepto últimos 4 dígitos
+                last4: card.number.slice(-4),
+              }
+            : null,
+        billingType,
+        products: cartProducts,
+        total,
+        subtotal: safeSubtotal,
+        shipping: envio,
+        discount: safeDiscount,
+        taxes: impuestos,
+        timestamp: new Date().toISOString(),
+      };
+
+      localStorage.setItem("current-order", JSON.stringify(orderData));
+    } catch (err) {
+      console.error("Error al guardar datos de orden:", err);
+    }
+
+    // Redirigir a la página de carga
+    redirectToLoading();
   };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
-      {/* Animación ola Samsung: se superpone pero no bloquea el render */}
-      {showLogoAnimation && (
-        <LogoReloadAnimation
-          open={showLogoAnimation}
-          duration={2500}
-          onFinish={async () => {
-            setShowLogoAnimation(false);
-            try {
-              await startPayment();
-            } catch (err) {
-              // Mostrar overlay de error premium
-              setPaymentErrorMsg(
-                "Ocurrió un error al procesar el pago. Por favor intenta nuevamente."
-              );
-              setErrorOpen(true);
-            }
-          }}
-        />
-      )}
-      {/* Overlay de éxito de compra */}
-      <CheckoutSuccessOverlay
-        open={purchaseSuccess}
-        onClose={closeSuccess}
-        reloadSrc={"/img/logo_imagiq.png"}
-        autoCloseMs={2500}
-        locale="es"
-        className=""
-        testId="checkout-success-overlay"
-        triggerPosition={triggerPosition}
-      />
-      {/* Overlay de error de compra premium */}
-      <CheckoutErrorOverlay
-        open={errorOpen}
-        onClose={() => setErrorOpen(false)}
-        message={paymentErrorMsg}
-        locale="es"
-        className=""
-        testId="checkout-error-overlay"
-        triggerPosition={triggerPosition}
-      />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Formulario de pago */}
         <form
@@ -444,7 +383,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     className="accent-blue-600 w-5 h-5"
                   />
                   <span className="font-medium text-black">
-                    Envío a domicilio
+                    Pago con tarjeta
                   </span>
                 </label>
                 <span className="flex gap-3">
@@ -485,22 +424,25 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                   style={{ background: "#F3F3F3" }}
                 >
                   <div className="flex flex-col gap-1">
+                    {/* Input de número de tarjeta: formatea y actualiza estado correctamente */}
                     <input
                       type="text"
                       inputMode="numeric"
-                      maxLength={16}
-                      pattern="[0-9]{16}"
+                      maxLength={19} // 16 dígitos + 3 espacios
+                      pattern="[0-9 ]{19}"
                       className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                         cardErrors.number ? "border-red-500" : ""
                       }`}
                       placeholder="Número de tarjeta (16 dígitos)"
-                      value={card.number.replace(/\D/g, "")}
+                      value={card.number
+                        .replace(/(\d{4})(?=\d)/g, "$1 ")
+                        .trim()}
                       onChange={(e) => {
                         // Solo permitir números y máximo 16 dígitos
-                        const val = e.target.value
+                        const raw = e.target.value
                           .replace(/\D/g, "")
                           .slice(0, 16);
-                        setCard({ ...card, number: val });
+                        setCard({ ...card, number: raw });
                         setCardErrors((prev) => ({ ...prev, number: "" }));
                       }}
                       required
@@ -517,15 +459,28 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                   </div>
                   <div className="flex gap-2">
                     <div className="flex flex-col gap-1 w-1/2">
+                      {/* Input de fecha de vencimiento: formatea y actualiza estado correctamente */}
                       <input
                         type="text"
                         className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                           cardErrors.expiry ? "border-red-500" : ""
                         }`}
                         placeholder="Fecha de vencimiento (MM/AA)"
-                        value={card.expiry}
+                        value={card.expiry
+                          .replace(/[^\d]/g, "")
+                          .replace(/(\d{2})(\d{0,2})/, (m, p1, p2) =>
+                            p2 ? `${p1}/${p2}` : p1
+                          )}
                         onChange={(e) => {
-                          setCard({ ...card, expiry: e.target.value });
+                          // Solo permitir números y máximo 4 dígitos (MMYY)
+                          const raw = e.target.value
+                            .replace(/\D/g, "")
+                            .slice(0, 4);
+                          let formatted = raw;
+                          if (raw.length >= 3) {
+                            formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
+                          }
+                          setCard({ ...card, expiry: formatted });
                           setCardErrors((prev) => ({ ...prev, expiry: "" }));
                         }}
                         required
@@ -540,35 +495,26 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                       )}
                     </div>
                     <div className="flex flex-col gap-1 w-1/2">
+                      {/* Input de CVC: formatea y actualiza estado correctamente */}
                       <input
                         type="text"
                         inputMode="numeric"
-                        maxLength={4}
-                        pattern="\d{3,4}"
+                        maxLength={isAmex ? 4 : 3}
+                        pattern={isAmex ? "\\d{4}" : "\\d{3}"}
                         className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                           cardErrors.cvc ? "border-red-500" : ""
                         }`}
-                        placeholder="Código de seguridad"
+                        placeholder={
+                          isAmex ? "CVC (4 dígitos)" : "CVC (3 dígitos)"
+                        }
                         value={card.cvc
                           .replace(/\D/g, "")
-                          .slice(
-                            0,
-                            card.number.startsWith("34") ||
-                              card.number.startsWith("37")
-                              ? 4
-                              : 3
-                          )}
+                          .slice(0, isAmex ? 4 : 3)}
                         onChange={(e) => {
-                          // Solo permitir números y máximo 4 dígitos para Amex, 3 para otros
-                          const maxLen =
-                            card.number.startsWith("34") ||
-                            card.number.startsWith("37")
-                              ? 4
-                              : 3;
-                          const val = e.target.value
+                          const raw = e.target.value
                             .replace(/\D/g, "")
-                            .slice(0, maxLen);
-                          setCard({ ...card, cvc: val });
+                            .slice(0, isAmex ? 4 : 3);
+                          setCard({ ...card, cvc: raw });
                           setCardErrors((prev) => ({ ...prev, cvc: "" }));
                         }}
                         required
@@ -635,22 +581,22 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                       </span>
                     </div>
                     <div className="flex flex-col gap-1 w-1/2">
+                      {/* Input de documento: formatea y actualiza estado correctamente */}
                       <input
                         type="text"
                         inputMode="numeric"
-                        maxLength={12}
-                        pattern="\d{6,12}"
+                        maxLength={15}
+                        pattern="\d{6,15}"
                         className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
                           cardErrors.docNumber ? "border-red-500" : ""
                         }`}
-                        placeholder="Documento (6-12 dígitos, solo números)"
-                        value={card.docNumber.replace(/\D/g, "").slice(0, 12)}
+                        placeholder="Número de documento"
+                        value={card.docNumber.replace(/\D/g, "").slice(0, 15)}
                         onChange={(e) => {
-                          // Solo permitir números y máximo 12 dígitos
-                          const val = e.target.value
+                          const raw = e.target.value
                             .replace(/\D/g, "")
-                            .slice(0, 12);
-                          setCard({ ...card, docNumber: val });
+                            .slice(0, 15);
+                          setCard({ ...card, docNumber: raw });
                           setCardErrors((prev) => ({ ...prev, docNumber: "" }));
                         }}
                         required
@@ -705,9 +651,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
                     onChange={() => setPaymentMethod("pse")}
                     className="accent-blue-600 w-5 h-5"
                   />
-                  <span className="font-medium text-black">
-                    PSE y billetera Mercado Pago
-                  </span>
+                  <span className="font-medium text-black">PSE</span>
                 </label>
                 <label className="flex items-center gap-2 justify-between">
                   <span className="flex items-center gap-2">
@@ -851,11 +795,11 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           <button
             type="button"
             className={`w-full bg-[#2563EB] text-white font-bold py-3 rounded-lg text-base mt-6 hover:bg-blue-700 transition flex items-center justify-center ${
-              purchaseLoading ? "opacity-70 cursor-not-allowed" : ""
+              isProcessing ? "opacity-70 cursor-not-allowed" : ""
             }`}
-            disabled={!accepted || purchaseLoading}
+            disabled={!accepted || isProcessing}
             data-testid="checkout-finish-btn"
-            aria-busy={purchaseLoading}
+            aria-busy={isProcessing}
             onClick={() => {
               const form = document.getElementById(
                 "checkout-form"
@@ -863,7 +807,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
               if (form) form.requestSubmit();
             }}
           >
-            {purchaseLoading ? (
+            {isProcessing ? (
               <span className="flex items-center gap-2" aria-live="polite">
                 <svg
                   className="animate-spin h-5 w-5 mr-2 text-green-500"
@@ -891,16 +835,14 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
             )}
           </button>
           {/* Botón secundario: Regresar al comercio */}
-          {!successOpen && (
-            <button
-              type="button"
-              className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-3 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
-              onClick={() => router.push("/")}
-              data-testid="checkout-back-to-home"
-            >
-              Regresar al comercio
-            </button>
-          )}
+          <button
+            type="button"
+            className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-3 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+            onClick={() => router.push("/")}
+            data-testid="checkout-back-to-home"
+          >
+            Regresar al comercio
+          </button>
           {/* ...no mostrar error aquí, solo en el form... */}
         </aside>
       </div>

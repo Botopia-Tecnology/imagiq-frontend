@@ -18,8 +18,7 @@ import { useEffect, useState } from "react";
 import { notifyError, notifyLoginSuccess } from "./notifications";
 
 // API endpoint for authentication
-const AUTH_API_URL =
-  "https://imagiq-backend-production.up.railway.app/api/auth/login";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Login success response
 interface LoginSuccessResponse {
@@ -48,10 +47,10 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get("redirect");
-      if (redirect === "/login/CreateAccount") {
+      if (redirect === "/login/create-account") {
         // Usar setTimeout para asegurar que router esté inicializado
         setTimeout(() => {
-          router.replace("/login/CreateAccount");
+          router.replace("/login/create-account");
         }, 0);
       }
     }
@@ -162,7 +161,7 @@ export default function LoginPage() {
 
     try {
       // API call to authentication microservice
-      const response = await fetch(AUTH_API_URL, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -464,7 +463,7 @@ export default function LoginPage() {
         <button
           type="button"
           className="w-full py-3 rounded-full border-2 border-[#002142] text-[#002142] text-base font-semibold bg-white hover:bg-[#e6eef5] transition-all duration-200 shadow-lg"
-          onClick={() => router.push("/login/CreateAccount")}
+          onClick={() => router.push("/login/create-account")}
         >
           Crear una cuenta
         </button>

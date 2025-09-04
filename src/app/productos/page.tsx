@@ -1,69 +1,144 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { useCartContext } from "../../features/cart/CartContext";
-import Image from "next/image";
+import { Suspense, useState, useMemo } from "react";
+import { productsData } from "./data_product/products";
+import FilterSidebar, {
+  FilterConfig,
+  FilterState,
+} from "./components/FilterSidebar";
+import ProductGrid, { Product } from "./components/ProductGrid";
+
+const allProducts: Product[] = [
+  ...productsData["accesorios"],
+  ...productsData["tv-monitores-audio"],
+  ...productsData["smartphones-tablets"],
+  ...productsData["electrodomesticos"],
+];
+
+// Configuración de filtros (puedes personalizar según la categoría)
+const filterConfig: FilterConfig = {
+  color: [
+    "Negro",
+    "Blanco",
+    "Azul",
+    "Rojo",
+    "Verde",
+    "Gris",
+    "Dorado",
+    "Plateado",
+    "Rosa",
+    "Morado",
+    "Amarillo",
+    "Naranja",
+  ],
+  // Puedes agregar más filtros aquí
+};
+
+function filterProducts(products: Product[], filters: FilterState) {
+  return products.filter((product) => {
+    return Object.entries(filters).every(([filterKey, values]) => {
+      if (!values.length) return true;
+      // Filtrado por color
+      if (filterKey === "color") {
+        return (
+          Array.isArray(product.colors) &&
+          values.some((v) =>
+            product.colors!.some(
+              (c: { label: string }) =>
+                c.label.trim().toLowerCase() === v.trim().toLowerCase()
+            )
+          )
+        );
+      }
+      // Filtrado por nombre
+      if (filterKey === "nombre" || filterKey === "name") {
+        return values.some((v) =>
+          product.name.toLowerCase().includes(v.toLowerCase())
+        );
+      }
+      // Filtrado genérico por cualquier campo string o array de strings
+      if (Object.prototype.hasOwnProperty.call(product, filterKey)) {
+        const value = (product as unknown as Record<string, unknown>)[
+          filterKey
+        ];
+        if (typeof value === "string") {
+          return values.some((v) =>
+            value.toLowerCase().includes(v.toLowerCase())
+          );
+        }
+        if (Array.isArray(value)) {
+          // Array de strings
+          return values.some((v) =>
+            (value as string[]).some(
+              (item) =>
+                typeof item === "string" &&
+                item.toLowerCase() === v.toLowerCase()
+            )
+          );
+        }
+      }
+      return true;
+    });
+  });
+}
 
 function ProductosContent() {
-  const searchParams = useSearchParams();
-  const query = searchParams.get("q") || "";
+  const [filters, setFilters] = useState<FilterState>({});
+  const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
+    new Set(["color"])
+  );
 
-  // Usar el contexto del carrito de forma estándar
-  const { addProduct } = useCartContext();
+  // Filtrado funcional y robusto
+  const filteredProducts = useMemo(
+    () => filterProducts(allProducts, filters),
+    [filters]
+  );
 
-  // Producto de ejemplo
-  const productoEjemplo = {
-    id: "1",
-    nombre: "Samsung Galaxy S25 Ultra 5G 256GB, Azul",
-    precio: 6719900,
-    cantidad: 1,
-    imagen: "/img/dispositivosMoviles/galaxy_s25.png",
-  };
+  // UX: contador de resultados
+  const resultCount = filteredProducts.length;
 
-  // Handler para añadir al carrito
-  function handleAddToCart() {
-    addProduct({
-      id: productoEjemplo.id,
-      name: productoEjemplo.nombre,
-      image: productoEjemplo.imagen,
-      price: productoEjemplo.precio,
-      quantity: productoEjemplo.cantidad,
-    });
-    // Animación o feedback
-    alert("Producto añadido al carrito");
+  // UX: animación de scroll al filtrar
+  function handleFilterChange(
+    filterType: string,
+    value: string,
+    checked: boolean
+  ) {
+    setFilters((prev) => ({
+      ...prev,
+      [filterType]: checked
+        ? [...(prev[filterType] || []), value]
+        : (prev[filterType] || []).filter((item) => item !== value),
+    }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function handleToggleFilter(filterKey: string) {
+    const newExpanded = new Set(expandedFilters);
+    if (newExpanded.has(filterKey)) {
+      newExpanded.delete(filterKey);
+    } else {
+      newExpanded.add(filterKey);
+    }
+    setExpandedFilters(newExpanded);
   }
 
   return (
     <div className="container mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-6">Resultados de búsqueda</h1>
-      {query && (
-        <p className="text-gray-600 mb-4">
-          Mostrando resultados para: <strong>&quot;{query}&quot;</strong>
-        </p>
-      )}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold mb-2">
-            {productoEjemplo.nombre}
-          </h3>
-          <Image
-            src={productoEjemplo.imagen}
-            alt={productoEjemplo.nombre}
-            width={96}
-            height={96}
-            className="mb-2 w-24 h-24 object-contain"
+      <h1 className="text-3xl font-bold mb-6">Productos Samsung</h1>
+      <div className="flex gap-8">
+        <aside className="hidden lg:block w-80 flex-shrink-0">
+          <FilterSidebar
+            filterConfig={filterConfig}
+            filters={filters}
+            onFilterChange={handleFilterChange}
+            resultCount={resultCount}
+            expandedFilters={expandedFilters}
+            onToggleFilter={handleToggleFilter}
           />
-          <p className="text-gray-600 mb-2">
-            $ {productoEjemplo.precio.toLocaleString()}
-          </p>
-          <button
-            className="bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition"
-            onClick={handleAddToCart}
-          >
-            Añadir al carrito
-          </button>
-        </div>
+        </aside>
+        <main className="flex-1">
+          <ProductGrid products={filteredProducts} />
+        </main>
       </div>
     </div>
   );

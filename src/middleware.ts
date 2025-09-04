@@ -15,11 +15,11 @@ import type { NextRequest } from "next/server";
 const publicRoutes = [
   "/",
   "/productos",
-  "/productos/DispositivosMoviles",
-  "/productos/Electrodomesticos",
+  "/productos/dispositivos-moviles",
+  "/productos/electrodomesticos",
   "/productos/view",
   "/login",
-  "/login/CreateAccount",
+  "/login/create-account",
   "/register",
   "/soporte",
   "/tiendas",
@@ -37,6 +37,11 @@ const publicRoutes = [
   "/chatbot/trabajo.png",
   "/chatbot/hogar.png",
   "/chatbot/SamsungIA.png"
+  // Rutas de animaciones correctas
+  "/charging-result",
+  "/success-checkout",
+  "/error-checkout",
+  "/tracking-service",
 ];
 
 // Admin routes that require special permissions
@@ -52,7 +57,7 @@ export function middleware(request: NextRequest) {
 
   // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
   if (
-    pathname.startsWith("/productos/DispositivosMoviles") ||
+    pathname.startsWith("/productos/dispositivos-moviles") ||
     pathname.startsWith("/productos/Electrodomesticos") ||
     pathname.startsWith("/productos/view")
   ) {

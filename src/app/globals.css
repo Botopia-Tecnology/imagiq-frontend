@@ -1,4 +1,69 @@
 @import url("sweetalert2/dist/sweetalert2.min.css");
+
+/* Animaciones de página */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.page-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Animaciones para CheckoutSuccessOverlay y CheckoutErrorOverlay */
+@keyframes bgPop {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInContent {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes riseFade {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-bgPop {
+  animation: bgPop 2s ease-in-out infinite alternate;
+}
+
+.animate-fadeInContent {
+  animation: fadeInContent 0.7s ease-out forwards;
+}
+
+.animate-riseFade {
+  animation: riseFade 0.5s ease-out 0.3s forwards;
+}
+
 /* Animaciones exclusivas para LogoReloadAnimation, prefijo .logo-reload- para evitar conflictos */
 @keyframes logo-reload-fadeInLogo {
   from {

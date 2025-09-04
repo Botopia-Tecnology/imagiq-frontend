@@ -6,17 +6,17 @@ export const navbarRoutes = [
   },
   {
     name: "Dispositivos móviles",
-    href: "/productos/DispositivosMoviles",
+    href: "/productos/dispositivos-moviles",
     category: "moviles",
   },
   {
     name: "Televisores y AV",
-    href: "/tienda/televisores",
+    href: "/productos/televisores",
     category: "televisores",
   },
   {
     name: "Electrodomésticos",
-    href: "/productos/Electrodomesticos?section=refrigeradores",
+    href: "/productos/electrodomesticos",
     category: "hogar",
   },
   {

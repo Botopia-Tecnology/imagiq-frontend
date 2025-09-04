@@ -15,9 +15,9 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import DispositivosMovilesDropdown from "./Dropdowns/Dispositivos_Moviles";
-import TelevisionesDropdown from "./Dropdowns/Televisiones";
-import ElectrodomesticosDropdown from "./Dropdowns/Electrodomesticos";
+import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
+import TelevisionesDropdown from "./dropdowns/televisiones";
+import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import { navbarRoutes } from "../routes/navbarRoutes";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
@@ -57,6 +57,10 @@ export default function Navbar() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const pathname = usePathname();
+  // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
+  // const isMasInformacionDispositivosMoviles = pathname.startsWith(
+  //   "/productos/dispositivos-moviles/mas-informacion"
+  // );
   // Detectar si estamos en la ruta de ofertas
   const isOfertas = pathname === "/ofertas";
   // Normaliza la ruta para comparar solo el path
@@ -98,9 +102,9 @@ export default function Navbar() {
   }, [debouncedSearch, isAuthenticated]);
 
   // 3. Funciones
-  function hasDropdown(name: string) {
-    return DROPDOWN_ITEMS.includes(name as DropdownItemType);
-  }
+  // function hasDropdown(name: string) {
+  //   return DROPDOWN_ITEMS.includes(name as DropdownItemType);
+  // }
 
   const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
     posthogUtils.capture("navbar_click", {
@@ -215,10 +219,10 @@ export default function Navbar() {
 
   const isProductDetail =
     pathname.startsWith("/productos/") &&
-    !pathname.includes("/productos/DispositivosMoviles");
+    !pathname.includes("/productos/dispositivos-moviles");
   // Detectar si estamos en DispositivosMoviles o Electrodomesticos (con o sin params)
   const isDispositivosMoviles = pathname.startsWith(
-    "/productos/DispositivosMoviles"
+    "/productos/dispositivos-moviles"
   );
   const isElectrodomesticos = pathname.startsWith(
     "/productos/Electrodomesticos"
@@ -229,15 +233,24 @@ export default function Navbar() {
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  // Forzar logo blanco solo en Ofertas
-  // Forzar logo blanco en Ofertas y en Home sin scroll
-  const showWhiteLogo = isOfertas || (isHome && !isScrolled);
-  // Forzar items blancos en Ofertas y en Home sin scroll
-  const showWhiteItems = isOfertas || (isHome && !isScrolled);
+  // Detectar si estamos en la vista de más información de producto
+  const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+  // Forzar logo blanco SOLO en la vista de más información de producto y sin scroll
+  const showWhiteLogo =
+    isMasInformacionProducto && !isScrolled
+      ? true
+      : isOfertas || (isHome && !isScrolled);
+  // Forzar items blancos SOLO en esa sección (desktop y móvil) y sin scroll
+  const showWhiteItems =
+    isMasInformacionProducto && !isScrolled
+      ? true
+      : isOfertas || (isHome && !isScrolled);
   const showWhiteItemsMobile =
-    !isScrolledNavbar &&
-    !isLogin &&
-    (isProductDetail || (isHome && !isScrolled));
+    isMasInformacionProducto && !isScrolled
+      ? true
+      : !isScrolledNavbar &&
+        !isLogin &&
+        (isProductDetail || (isHome && !isScrolled));
 
   return (
     <header
@@ -274,12 +287,31 @@ export default function Navbar() {
               posthogUtils.capture("logo_click", { source: "navbar" })
             }
             aria-label="Inicio"
+            className="flex items-center gap-2"
           >
+            <Image
+              src={
+                showWhiteLogo ? "/frame_311_white.png" : "/frame_311_black.png"
+              }
+              alt="Q Logo"
+              height={32}
+              width={32}
+              style={{ minWidth: 32, width: 32 }}
+              priority
+            />
             <Image
               src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
               alt="Samsung Logo"
               height={32}
               style={{ minWidth: 120, width: "auto" }}
+              priority
+            />
+            <Image
+              src={showWhiteLogo ? "/store_white.png" : "/store_black.png"}
+              alt="Store Logo"
+              height={20}
+              width={60}
+              style={{ minWidth: 36, width: 36 }}
               priority
             />
           </Link>

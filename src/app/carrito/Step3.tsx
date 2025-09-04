@@ -1,6 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { stores } from "../../components/LocationsArray";
 
 // Utilidad para obtener productos del carrito desde localStorage
@@ -61,7 +60,6 @@ export default function Step3({
       );
     }
   }, [storeQuery]);
-  const router = useRouter();
 
   // Recibe onBack para regresar al paso anterior
   // onBack?: () => void
@@ -130,6 +128,16 @@ export default function Step3({
       selectedStore,
     });
   }, [canContinue, deliveryMethod, address, selectedStore]);
+
+  useEffect(() => {
+    // Solo autocompletar si el usuario selecciona "domicilio" y hay dirección guardada
+    if (deliveryMethod === "domicilio" && typeof window !== "undefined") {
+      const saved = localStorage.getItem("checkout-address");
+      if (saved && saved.length > 0 && address !== saved) {
+        setAddress(saved);
+      }
+    }
+  }, [deliveryMethod, address]);
 
   return (
     <div className="min-h-screen bg-[#F7F7F7] flex flex-col items-center py-8 px-2 md:px-0">

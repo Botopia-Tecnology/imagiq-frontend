@@ -203,6 +203,16 @@ export default function Step2({
       );
       return;
     }
+
+    // Guardar dirección y cédula en localStorage para autocompletar en Step3 y Step4
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        "checkout-address",
+        guestForm.direccion_linea_uno + ", " + guestForm.direccion_ciudad
+      );
+      localStorage.setItem("checkout-document", guestForm.cedula);
+    }
+
     // Estructura de datos para guardar en localStorage (sin fecha, con dirección)
     const guestPaymentInfo = {
       email: guestForm.email.trim(),
@@ -224,6 +234,7 @@ export default function Step2({
       impuestos,
       appliedDiscount,
     };
+
     // Guardar en localStorage bajo la clave 'guest-payment-info'
     try {
       localStorage.setItem(
@@ -240,6 +251,11 @@ export default function Step2({
     setTimeout(() => {
       setLoading(false);
       setSuccess(true);
+      setTimeout(() => {
+        if (typeof onContinue === "function") {
+          onContinue();
+        }
+      }, 800);
     }, 1200);
   };
 
@@ -586,14 +602,7 @@ export default function Step2({
                   return;
                 }
                 handleGuestSubmit(fakeEvent);
-                if (
-                  isGuestFormValid &&
-                  !loading &&
-                  !success &&
-                  typeof onContinue === "function"
-                ) {
-                  setTimeout(() => onContinue(), 1200);
-                }
+                // No need to call onContinue here as it's already called in handleGuestSubmit
               }}
               disabled={loading || success}
               aria-disabled={loading || success}

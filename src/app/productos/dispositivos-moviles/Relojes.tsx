@@ -41,7 +41,7 @@ const watchCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "#galaxy-watch",
+    href: "/productos/dispositivos-moviles?section=relojes", // <-- CAMBIA ESTO
   },
   {
     id: "galaxy-tab",

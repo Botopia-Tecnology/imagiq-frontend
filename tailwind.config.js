@@ -35,6 +35,24 @@ module.exports = {
         rise: "rise 0.7s cubic-bezier(0.4,0,0.2,1) both",
         sheen: "sheen 1.2s linear both",
       },
+      width: {
+        "chatbot-panel": "370px",
+      },
+      maxWidth: {
+        "chatbot-panel": "100vw",
+      },
+      backgroundColor: {
+        "chatbot-panel": "rgba(255,255,255,0.55)",
+      },
+      boxShadow: {
+        "chatbot-panel": "-4px 0 24px 0 rgba(0,0,0,0.1)",
+      },
+      zIndex: {
+        "chatbot-panel": "99999",
+      },
+      backdropBlur: {
+        "chatbot-panel": "8px",
+      },
     },
   },
   plugins: [],

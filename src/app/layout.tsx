@@ -11,6 +11,7 @@ import { CartProvider } from "@/features/cart/CartContext";
 import { AnalyticsProvider } from "@/features/analytics/AnalyticsContext";
 import { UserPreferencesProvider } from "@/features/user/UserPreferencesContext";
 import { PostHogProvider } from "@/features/analytics/PostHogProvider";
+import ChatbotWidget from "@/components/chatbotWidget";
 
 import ClientLayout from "./ClientLayout";
 
@@ -111,6 +112,8 @@ export default function RootLayout({
               <UserPreferencesProvider>
                 <CartProvider>
                   <ClientLayout>{safeChildren}</ClientLayout>
+                  {/* Widget del chatbot */}
+                  <ChatbotWidget />
                 </CartProvider>
               </UserPreferencesProvider>
             </AuthProvider>

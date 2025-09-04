@@ -26,6 +26,17 @@ const publicRoutes = [
   "/carrito",
   "/dashboard",
   "/ofertas",
+  // Chatbot steps públicos:
+  "/chatbot/step1",
+  "/chatbot/step2",
+  "/chatbot/step3",
+  "/chatbot/step4",
+  "/chatbot",
+  "/chatbot/juegos.png",
+  "/chatbot/fotografia.png",
+  "/chatbot/trabajo.png",
+  "/chatbot/hogar.png",
+  "/chatbot/SamsungIA.png",
   // Rutas de animaciones correctas
   "/charging-result",
   "/success-checkout",

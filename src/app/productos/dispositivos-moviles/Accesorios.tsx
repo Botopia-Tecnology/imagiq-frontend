@@ -172,6 +172,7 @@ export default function AccesoriosSection() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(28);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {

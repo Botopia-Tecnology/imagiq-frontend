@@ -11,8 +11,8 @@ import { Footer } from "@/components/Footer";
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
   "/carrito",
-  "/carrito/ChargingResult",
-  "/carrito/SuccessCheckout",
+  "/charging-result",
+  "/success-checkout",
   "/carrito/ErrorCheckout",
 ];
 
@@ -36,8 +36,8 @@ export default function ClientLayout({
   const hideFooter =
     pathname === "/carrito" ||
     pathname === "/ofertas" ||
-    pathname === "/carrito/ChargingResult" ||
-    pathname === "/carrito/SuccessCheckout" ||
+    pathname === "/charging-result" ||
+    pathname === "/success-checkout" ||
     pathname === "/carrito/ErrorCheckout";
 
   return (

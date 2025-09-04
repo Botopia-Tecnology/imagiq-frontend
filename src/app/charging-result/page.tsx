@@ -19,45 +19,21 @@ import LogoReloadAnimation from "../carrito/LogoReloadAnimation";
 export default function ChargingResultPage() {
   const router = useRouter();
   const [open, setOpen] = useState(true);
+  const [isSuccess] = useState(() => Math.random() > 0.1);
 
-  /**
-   * Simula el proceso de pago y redirecciona según el resultado
-   * - Para fines de demostración: 90% probabilidad de éxito, 10% de error
-   * - En producción se conectaría con un servicio real de procesamiento de pagos
-   */
-  useEffect(() => {
-    const simulatePaymentProcess = () => {
-      const isSuccess = Math.random() > 0.1;
-
-      // Dar tiempo suficiente para que la animación se muestre
-      const timeoutDuration = 3000; // 3 segundos para una buena experiencia
-
-      setTimeout(() => {
-        setOpen(false);
-
-        // Redirigir según el resultado
-        if (isSuccess) {
-          // En caso de éxito, redirigir a la página de éxito
-          router.push(`/SuccessCheckout`);
-        } else {
-          // En caso de error, redirigir a la página de error
-          router.push(`/ErrorCheckout`);
-        }
-      }, timeoutDuration);
-    };
-
-    simulatePaymentProcess();
-  }, [router]);
+  // Elimina el setTimeout y usa el callback de la animación
+  const handleFinish = () => {
+    setOpen(false);
+    if (isSuccess) {
+      router.push("/success-checkout");
+    } else {
+      router.push("/error-checkout");
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white">
-      <LogoReloadAnimation
-        open={open}
-        onFinish={() => {
-          // Este callback se dispara cuando la animación termina
-          // pero la redirección ya está manejada por el useEffect
-        }}
-      />
+      <LogoReloadAnimation open={open} onFinish={handleFinish} />
     </div>
   );
 }

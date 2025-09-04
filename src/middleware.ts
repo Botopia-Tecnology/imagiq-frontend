@@ -26,9 +26,10 @@ const publicRoutes = [
   "/carrito",
   "/dashboard",
   "/ofertas",
-  "/carrito/charging-result",
-  "/carrito/success-checkout",
-  "/carrito/error-checkout",
+  // Rutas de animaciones correctas
+  "/charging-result",
+  "/success-checkout",
+  "/error-checkout",
 ];
 
 // Admin routes that require special permissions

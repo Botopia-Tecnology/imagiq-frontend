@@ -44,7 +44,7 @@ export function usePurchaseFlow() {
    * Redirecciona a la página de carga de compra.
    */
   const redirectToLoading = useCallback(() => {
-    router.push(`/carrito/ChargingResult`);
+    router.push(`/charging-result`);
   }, [router]);
 
   /**
@@ -52,7 +52,7 @@ export function usePurchaseFlow() {
    * Siempre redirige a la página principal (/) después de cerrar el overlay.
    */
   const redirectToSuccess = useCallback(() => {
-    router.push(`/carrito/SuccessCheckout`);
+    router.push(`/success-checkout`);
   }, [router]);
 
   /**
@@ -62,7 +62,7 @@ export function usePurchaseFlow() {
    */
   const redirectToError = useCallback(
     (message?: string) => {
-      const url = new URL(`/carrito/ErrorCheckout`, window.location.origin);
+      const url = new URL(`/error-checkout`, window.location.origin);
       if (message) {
         url.searchParams.set("message", message);
       }

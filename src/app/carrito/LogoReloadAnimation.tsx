@@ -99,7 +99,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             <animate
               ref={animationRef}
               attributeName="d"
-              dur="12s"
+              dur="14s"
               repeatCount="1"
               fill="freeze"
               values="
@@ -150,7 +150,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             attributeName="opacity"
             values="0;0;0.1;0.5;0.85;0.99"
             keyTimes="0;0.18;0.32;0.55;0.75;1"
-            dur="12s"
+            dur="24s"
             fill="freeze"
           />
         </image>

@@ -224,41 +224,46 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       </section>
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
-        <div
-          className="w-full bg-white shadow-sm h-[56px] flex items-center px-8 fixed top-16 pt-2 left-0 z-40"
-          style={{ fontFamily: "SamsungSharpSans" }}
-        >
-          {/* Logo a la izquierda */}
-          <div className="flex items-center" style={{ minWidth: 110 }}>
-            <Image
-              src={samsungLogo}
-              alt="Samsung Logo"
-              width={110}
-              height={32}
-              style={{ objectFit: "contain" }}
-              priority
-            />
+        <>
+          <style>{`
+        header[data-navbar="true"] { display: none !important; }
+      `}</style>
+          <div
+            className="w-full bg-white shadow-sm h-[56px] flex items-center px-8 fixed top-0 pt-2 left-0 z-40"
+            style={{ fontFamily: "SamsungSharpSans" }}
+          >
+            {/* Logo a la izquierda */}
+            <div className="flex items-center" style={{ minWidth: 110 }}>
+              <Image
+                src={samsungLogo}
+                alt="Samsung Logo"
+                width={110}
+                height={32}
+                style={{ objectFit: "contain" }}
+                priority
+              />
+            </div>
+            {/* Nombre centrado */}
+            <div className="flex-1 flex justify-center">
+              <span
+                className="font-bold text-base md:text-lg text-center"
+                style={{ fontFamily: "SamsungSharpSans" }}
+              >
+                {safeProduct.name}
+              </span>
+            </div>
+            {/* Botón a la derecha */}
+            <div className="flex items-center" style={{ minWidth: 110 }}>
+              <button
+                className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleBuy}
+              >
+                Comprar
+              </button>
+            </div>
           </div>
-          {/* Nombre centrado */}
-          <div className="flex-1 flex justify-center">
-            <span
-              className="font-bold text-base md:text-lg text-center"
-              style={{ fontFamily: "SamsungSharpSans" }}
-            >
-              {safeProduct.name}
-            </span>
-          </div>
-          {/* Botón a la derecha */}
-          <div className="flex items-center" style={{ minWidth: 110 }}>
-            <button
-              className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
-              style={{ fontFamily: "SamsungSharpSans" }}
-              onClick={handleBuy}
-            >
-              Comprar
-            </button>
-          </div>
-        </div>
+        </>
       )}
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}

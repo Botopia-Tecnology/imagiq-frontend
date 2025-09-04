@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function ProductRegistrationSection() {
   return (
-    <section className="py-16 bg-gray-50 min-h-[400px]">
+    <section className="pt-32 pb-16 bg-gray-50 min-h-[400px]">
       <div className="max-w-4xl mx-auto px-4 text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Registro de productos

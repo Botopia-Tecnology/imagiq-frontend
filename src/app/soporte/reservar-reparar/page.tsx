@@ -1,6 +1,7 @@
 "use client";
 
 import MyPageSubHeader from "../../../components/MyPageSubHeader";
+import Footer from "../../../components/Footer";
 import { 
   ProductRegistrationSection,
   WhyRegisterSection
@@ -17,6 +18,9 @@ export default function ReservarRepararPage() {
 
       {/* ¿Por qué debo registrar mis productos? */}
       <WhyRegisterSection />
+
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

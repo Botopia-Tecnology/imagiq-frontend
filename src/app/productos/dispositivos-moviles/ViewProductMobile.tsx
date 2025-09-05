@@ -231,22 +231,47 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
         <>
+          {/* Oculta el navbar principal en esta vista */}
           <style>{`
-        header[data-navbar="true"] { display: none !important; }
-      `}</style>
+      header[data-navbar="true"] { display: none !important; }
+    `}</style>
           <div
-            className="w-full bg-white shadow-sm h-[56px] flex items-center px-8 fixed top-0 pt-2 left-0 z-40"
+            className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40"
             style={{ fontFamily: "SamsungSharpSans" }}
           >
-            {/* Logo a la izquierda */}
-            <div className="flex items-center" style={{ minWidth: 110 }}>
-              <Image
-                src={samsungLogo}
-                alt="Samsung Logo"
-                width={110}
+            {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
+            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
+              {/* Imagen frame_311_black */}
+              <img
+                src="/frame_311_black.png"
+                alt="Frame"
+                width={32}
                 height={32}
-                style={{ objectFit: "contain" }}
-                priority
+                className="object-contain"
+              />
+              {/* Logo Samsung clickable */}
+              <button
+                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
+                title="Ir al inicio"
+                aria-label="Ir al inicio"
+                onClick={() => (window.location.href = "/")}
+              >
+                <Image
+                  src={samsungLogo}
+                  alt="Samsung Logo"
+                  width={110}
+                  height={32}
+                  style={{ objectFit: "contain" }}
+                  priority
+                />
+              </button>
+              {/* Imagen store_black */}
+              <img
+                src="/store_black.png"
+                alt="Store"
+                width={32}
+                height={32}
+                className="object-contain"
               />
             </div>
             {/* Nombre centrado */}
@@ -258,8 +283,17 @@ export default function ViewProduct({ product }: { product: ProductData }) {
                 {safeProduct.name}
               </span>
             </div>
-            {/* Botón a la derecha */}
-            <div className="flex items-center" style={{ minWidth: 110 }}>
+            {/* Parte derecha: botón añadir al carrito + botón comprar */}
+            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
+              {/* Botón añadir al carrito */}
+              <button
+                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-black hover:text-white transition-all"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleAddToCart}
+              >
+                Añadir al carrito
+              </button>
+              {/* Botón comprar */}
               <button
                 className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
                 style={{ fontFamily: "SamsungSharpSans" }}

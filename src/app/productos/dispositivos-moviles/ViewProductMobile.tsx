@@ -13,15 +13,16 @@
 
 import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosMoviles/cel1.png";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
-import ComparationProduct from "./ComparationProduct";
+import ComparationProduct from "./VideosSection";
 import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
+import { useCartContext } from "@/features/cart/CartContext";
+import { useRouter } from "next/navigation";
 
 // Tipos para producto
 interface ProductColor {
@@ -43,11 +44,12 @@ interface ProductData {
 export default function ViewProduct({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
-  const [selectedColor] = useState(safeProduct?.colors?.[0]);
-  // Estado para especificaciones abiertas
-  const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
   const [showBar, setShowBar] = useState(false);
+  const { addProduct } = useCartContext();
+  const router = useRouter();
+  // UX feedback state (hook debe ir antes de cualquier return condicional)
+  const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,38 +60,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   }, []);
 
   const isProductDetailView = pathname.startsWith("/productos/view/");
-
-  // Especificaciones para mostrar
-  const specsList: { title: string; desc: string }[] = [
-    {
-      title: "Procesador",
-      desc: "Velocidad de la CPU: 4.47GHz, 3.5GHz\nTipo CPU: Octa-Core",
-    },
-    {
-      title: "Pantalla",
-      desc: "Dynamic AMOLED 2X\n120Hz, HDR10+\nResolución: 3200x1440",
-    },
-    {
-      title: "Compatible con S-pen",
-      desc: "Sí, soporta S-pen con baja latencia",
-    },
-    {
-      title: "Cámara",
-      desc: "Triple cámara: 50MP + 12MP + 10MP\nFrontal: 12MP",
-    },
-    {
-      title: "Almacenamiento memoria",
-      desc: "128GB / 256GB / 512GB\nRAM: 8GB / 12GB",
-    },
-    {
-      title: "Conectividad",
-      desc: "5G, WiFi 6E, Bluetooth 5.3, NFC",
-    },
-    {
-      title: "OS",
-      desc: "Android 13, One UI 5.1",
-    },
-  ];
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -107,15 +77,27 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   }
 
   // Handlers
+  // Mejorado: Añadir al carrito igual que ProductCard
   const handleAddToCart = () => {
-    alert(`Producto añadido: ${safeProduct.name} (${selectedColor.name})`);
+    addProduct({
+      id: safeProduct.id,
+      name: safeProduct.name,
+      image:
+        typeof safeProduct.image === "string"
+          ? safeProduct.image
+          : safeProduct.image.src || "",
+      price:
+        typeof safeProduct.price === "string"
+          ? parseInt(safeProduct.price.replace(/[^\d]/g, ""))
+          : safeProduct.price || 0,
+      quantity: 1,
+    });
+    setCartFeedback("Producto añadido al carrito");
+    setTimeout(() => setCartFeedback(null), 1200);
   };
+  // Mejorado: Comprar, navega a ComprarSection
   const handleBuy = () => {
-    alert("Compra iniciada");
-  };
-  // Handler para abrir/cerrar especificación
-  const handleToggleSpec = (idx: number) => {
-    setOpenSpecs((prev) => ({ ...prev, [idx]: !prev[idx] }));
+    router.push("/productos/ComprarSection");
   };
 
   return (
@@ -131,6 +113,12 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         fontFamily: "SamsungSharpSans",
       }}
     >
+      {/* Feedback UX al añadir al carrito */}
+      {cartFeedback && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
+          {cartFeedback}
+        </div>
+      )}
       {/* Hero section */}
       <section className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
@@ -242,12 +230,13 @@ export default function ViewProduct({ product }: { product: ProductData }) {
             {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
             <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
               {/* Imagen frame_311_black */}
-              <img
+              <Image
                 src="/frame_311_black.png"
                 alt="Frame"
                 width={32}
                 height={32}
                 className="object-contain"
+                priority
               />
               {/* Logo Samsung clickable */}
               <button
@@ -266,12 +255,13 @@ export default function ViewProduct({ product }: { product: ProductData }) {
                 />
               </button>
               {/* Imagen store_black */}
-              <img
+              <Image
                 src="/store_black.png"
                 alt="Store"
                 width={32}
                 height={32}
                 className="object-contain"
+                priority
               />
             </div>
             {/* Nombre centrado */}

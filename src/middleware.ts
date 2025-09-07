@@ -18,6 +18,7 @@ const publicRoutes = [
   "/productos/dispositivos-moviles",
   "/productos/electrodomesticos",
   "/productos/view",
+  "/productos/ComprarSection",
   "/login",
   "/login/create-account",
   "/register",

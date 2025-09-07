@@ -280,38 +280,41 @@ export default function Navbar() {
     >
       <div className="flex items-center justify-between h-16 px-8 max-w-full">
         {/* Logo Samsung-style */}
-        <div className="flex items-center flex-shrink-0">
+        <div className="flex items-center flex-shrink-0 gap-1 md:gap-2">
           <Link
             href="/"
             onClick={() =>
               posthogUtils.capture("logo_click", { source: "navbar" })
             }
             aria-label="Inicio"
-            className="flex items-center gap-2"
+            className="flex items-center gap-1 md:gap-2"
           >
             <Image
               src={
                 showWhiteLogo ? "/frame_311_white.png" : "/frame_311_black.png"
               }
               alt="Q Logo"
-              height={32}
-              width={32}
-              style={{ minWidth: 32, width: 32 }}
+              height={28}
+              width={28}
+              className="h-7 w-7 min-w-7 md:h-8 md:w-8 md:min-w-8"
+              style={{ minWidth: 28, width: 28 }}
               priority
             />
             <Image
               src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
               alt="Samsung Logo"
-              height={32}
-              style={{ minWidth: 120, width: "auto" }}
+              height={28}
+              className="h-7 min-w-[80px] md:h-8 md:min-w-[120px]"
+              style={{ minWidth: 80, width: "auto" }}
               priority
             />
             <Image
               src={showWhiteLogo ? "/store_white.png" : "/store_black.png"}
               alt="Store Logo"
-              height={20}
-              width={60}
-              style={{ minWidth: 36, width: 36 }}
+              height={16}
+              width={40}
+              className="h-4 w-10 min-w-10 md:h-5 md:w-[60px] md:min-w-[36px]"
+              style={{ minWidth: 40, width: 40 }}
               priority
             />
           </Link>
@@ -439,121 +442,94 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Navbar móvil igual a la imagen: logo, buscador, carrito, hamburguesa */}
-        <div className="flex md:hidden items-center justify-end w-full px-4 space-x-4 text-black">
-          {/* Logo */}
-          <div className="flex items-center space-x-4 relative">
-            {/* Icono buscador SIEMPRE visible en móvil */}
-            <div className="relative group w-10 flex flex-col items-center">
-              <button
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 text-white text-2xl font-bold",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
-                aria-label={
-                  searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
-                }
-                onClick={() => {
-                  if (searchQuery === "focus") {
-                    setSearchQuery("");
-                  } else {
-                    setSearchQuery("focus");
-                    posthogUtils.capture("search_icon_click", {
-                      source: "navbar_mobile",
-                    });
-                  }
-                }}
-              >
-                {searchQuery === "focus" ? (
-                  <span className="text-2xl">&#10005;</span>
-                ) : (
-                  <Search className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-            {/* Iconos carrito y hamburguesa siempre visibles en móvil */}
-            <div className="flex items-center space-x-4 transition-all duration-300">
-              <Link
-                href="/carrito"
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 relative text-white",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                title="Carrito"
-                onClick={handleCartClick}
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {isClient && (
-                  <span
-                    className={cn(
-                      "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
-                      itemCount > 0
-                        ? "opacity-100 scale-100"
-                        : "opacity-0 scale-0"
-                    )}
-                    aria-label={`Carrito: ${itemCount} productos`}
-                  >
-                    {itemCount > 99 ? "99+" : itemCount}
-                  </span>
-                )}
-              </Link>
-              {/* Icono corazón al lado derecho del carrito en móvil */}
-              <button
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 text-white",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                title="Favoritos"
-                aria-label="Favoritos"
-              >
-                <Heart
-                  className={
-                    showWhiteItemsMobile
-                      ? "w-5 h-5 text-white"
-                      : "w-5 h-5 text-black"
-                  }
-                />
-              </button>
-              <button
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 text-white",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                aria-label="Abrir menú"
-                onClick={() => setIsMobileMenuOpen((open) => !open)}
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-            </div>
-            {/* Input animado al hacer click, aparece debajo y centrado con botón cerrar */}
-            {searchQuery === "focus" && (
-              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
-                <form
-                  onSubmit={handleSearchSubmit}
-                  className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
-                >
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-                    placeholder="Buscar..."
-                    autoFocus
-                    value={searchQuery !== "focus" ? searchQuery : ""}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  <button type="submit" className="ml-2">
-                    <Search className="w-6 h-6 text-white" />
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-4 text-white text-2xl font-bold focus:outline-none"
-                    aria-label="Cerrar buscador"
-                    onClick={() => setSearchQuery("")}
-                  ></button>
-                </form>
-              </div>
+        {/* Navbar móvil: solo iconos buscar, carrito y hamburguesa a la derecha */}
+        <div className="absolute right-0 top-0 flex md:hidden items-center h-16 space-x-4 pr-2 md:static md:w-auto">
+          {/* Icono buscar */}
+          <button
+            className={cn(
+              "flex items-center justify-center w-10 h-10 text-2xl font-bold",
+              showWhiteItemsMobile ? "text-white" : "text-black"
             )}
-          </div>
+            title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
+            aria-label={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
+            onClick={() => {
+              if (searchQuery === "focus") {
+                setSearchQuery("");
+              } else {
+                setSearchQuery("focus");
+                posthogUtils.capture("search_icon_click", {
+                  source: "navbar_mobile",
+                });
+              }
+            }}
+          >
+            {searchQuery === "focus" ? (
+              <span className="text-2xl">&#10005;</span>
+            ) : (
+              <Search className="w-5 h-5" />
+            )}
+          </button>
+          {/* Icono carrito */}
+          <Link
+            href="/carrito"
+            className={cn(
+              "flex items-center justify-center w-10 h-10 relative",
+              showWhiteItemsMobile ? "text-white" : "text-black"
+            )}
+            title="Carrito"
+            onClick={handleCartClick}
+          >
+            <ShoppingCart className="w-5 h-5" />
+            {isClient && (
+              <span
+                className={cn(
+                  "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
+                  itemCount > 0 ? "opacity-100 scale-100" : "opacity-0 scale-0"
+                )}
+                aria-label={`Carrito: ${itemCount} productos`}
+              >
+                {itemCount > 99 ? "99+" : itemCount}
+              </span>
+            )}
+          </Link>
+          {/* Icono menú hamburguesa */}
+          <button
+            className={cn(
+              "flex items-center justify-center w-10 h-10",
+              showWhiteItemsMobile ? "text-white" : "text-black"
+            )}
+            aria-label="Abrir menú"
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+          {/* Input animado al hacer click, aparece debajo y centrado con botón cerrar */}
+          {searchQuery === "focus" && (
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
+              >
+                <input
+                  type="text"
+                  className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
+                  placeholder="Buscar..."
+                  autoFocus
+                  value={searchQuery !== "focus" ? searchQuery : ""}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button type="submit" className="ml-2">
+                  <Search className="w-6 h-6 text-white" />
+                </button>
+                <button
+                  type="button"
+                  className="ml-4 text-white text-2xl font-bold focus:outline-none"
+                  aria-label="Cerrar buscador"
+                  onClick={() => setSearchQuery("")}
+                ></button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
 

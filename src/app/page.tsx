@@ -9,7 +9,7 @@ import { Ofertas } from "@/components/sections/Ofertas";
 import Beneficios from "@/components/sections/Beneficios";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
-import { LocationMap } from "@/components/LocationMap";
+import LocationMap from "@/components/LocationMap";
 import UltimosProductos from "@/components/sections/UltimosProductos";
 import ProductShowcase from "@/components/sections/ProductShowcase";
 import Historias from "@/components/sections/Historias";
@@ -23,7 +23,10 @@ export default function HomePage() {
         keywords="ecommerce, outlet, novedades, recomendados, ventas corporativas, soporte"
       />
       {/* pt-16 en móvil si hay scroll y navbar sticky, pt-0 en desktop */}
-      <div id="main-page" className="min-h-screen md:mr-0 pt-20 md:pt-0">
+      <div
+        id="main-page"
+        className="min-h-screen md:mr-0 pt-20 md:pt-0 md:overflow-x-clip"
+      >
         <HeroSection />
         <CategoriesSection />
         <Ofertas />

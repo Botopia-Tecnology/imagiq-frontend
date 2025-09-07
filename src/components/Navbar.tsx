@@ -7,7 +7,6 @@ import { useState, useEffect, useRef, RefCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Search, User, ShoppingCart, Heart } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -21,15 +20,20 @@ import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import { navbarRoutes } from "../routes/navbarRoutes";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
+import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
+import carritoIconBlack from "@/img/navbar-icons/carrito-icon-black.png";
+import favoritoIconWhite from "@/img/navbar-icons/favorito-icon-white.png";
+import favoritoIconBlack from "@/img/navbar-icons/favoritos-icon-black.png";
+import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
+import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
+import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
+import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
 
-// Items that have dropdowns
-const DROPDOWN_ITEMS = [
-  "Dispositivos móviles",
-  "Televisores y AV",
-  "Electrodomésticos",
-] as const;
-
-type DropdownItemType = (typeof DROPDOWN_ITEMS)[number];
+// Items that tienen dropdowns
+type DropdownItemType =
+  | "Dispositivos móviles"
+  | "Televisores y AV"
+  | "Electrodomésticos";
 
 interface SearchResult {
   id: number;
@@ -256,19 +260,19 @@ export default function Navbar() {
     <header
       data-navbar="true"
       className={cn(
-        "w-full z-50 transition-all duration-300",
+        "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60", // transparencia y blur
         "sticky top-0 left-0 md:static",
         isOfertas && !isScrolled
           ? "bg-transparent"
           : isOfertas && isScrolled
-          ? "bg-white shadow"
+          ? "bg-white/60 shadow backdrop-blur-md"
           : isDispositivosMoviles || isElectrodomesticos || isScrolledNavbar
-          ? "bg-white shadow"
+          ? "bg-white/60 shadow backdrop-blur-md"
           : isHome && !isScrolled
           ? "bg-transparent"
           : isProductDetail
           ? "bg-transparent"
-          : "bg-white shadow"
+          : "bg-white/60 shadow backdrop-blur-md"
       )}
       style={
         isOfertas && !isScrolled
@@ -283,90 +287,99 @@ export default function Navbar() {
         <div className="flex items-center flex-shrink-0 gap-1 md:gap-2">
           <Link
             href="/"
-            onClick={() =>
-              posthogUtils.capture("logo_click", { source: "navbar" })
-            }
+            onClick={(e) => {
+              e.preventDefault();
+              posthogUtils.capture("logo_click", { source: "navbar" });
+              router.push("/");
+            }}
             aria-label="Inicio"
-            className="flex items-center gap-1 md:gap-2"
+            className="flex items-center gap-0 md:gap-0 cursor-pointer"
+            style={{ padding: 0 }}
           >
+            {/* Q Logo más pequeño y pegado */}
             <Image
               src={
                 showWhiteLogo ? "/frame_311_white.png" : "/frame_311_black.png"
               }
               alt="Q Logo"
-              height={28}
-              width={28}
-              className="h-7 w-7 min-w-7 md:h-8 md:w-8 md:min-w-8"
-              style={{ minWidth: 28, width: 28 }}
+              height={22}
+              width={22}
+              className="h-[22px] w-[22px] min-w-[22px] md:h-[24px] md:w-[24px] md:min-w-[24px]"
+              style={{
+                minWidth: 22,
+                width: 22,
+                marginRight: 4,
+                marginLeft: 0,
+                cursor: "pointer",
+              }}
               priority
             />
+            {/* Logo Samsung */}
             <Image
               src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
               alt="Samsung Logo"
               height={28}
               className="h-7 min-w-[80px] md:h-8 md:min-w-[120px]"
-              style={{ minWidth: 80, width: "auto" }}
+              style={{
+                minWidth: 80,
+                width: "auto",
+                marginRight: 4,
+                marginLeft: 2,
+                cursor: "pointer",
+              }}
               priority
             />
-            <Image
-              src={showWhiteLogo ? "/store_white.png" : "/store_black.png"}
-              alt="Store Logo"
-              height={16}
-              width={40}
-              className="h-4 w-10 min-w-10 md:h-5 md:w-[60px] md:min-w-[36px]"
-              style={{ minWidth: 40, width: 40 }}
-              priority
-            />
+            {/* Texto Store dinámico, pequeño y pegado */}
+            <span
+              className={
+                showWhiteLogo
+                  ? "ml-2 text-base font-bold tracking-wide text-white select-none"
+                  : "ml-2 text-base font-bold tracking-wide text-gray-400 select-none"
+              }
+              style={{
+                marginLeft: 8,
+                marginRight: 0,
+                cursor: "pointer",
+                letterSpacing: "0.08em",
+              }}
+            >
+              Store
+            </span>
           </Link>
         </div>
 
         {/* Iconos desktop: solo visible en md+ */}
         <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
-          {/* Icono buscador con animación de input mejorada */}
-          <div
-            className="relative flex items-center group"
-            onMouseEnter={() => setSearchQuery("focus")}
-            onMouseLeave={() => setSearchQuery("")}
+          {/* Buscador SIEMPRE visible, integrado con el navbar */}
+          <form
+            onSubmit={handleSearchSubmit}
+            className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-72"
+            style={{ zIndex: 1000, overflow: "hidden" }}
           >
-            <form
-              onSubmit={handleSearchSubmit}
-              className={cn(
-                "flex items-center transition-all duration-500 bg-[#17407A] rounded-full px-4 h-12",
-                searchQuery === "focus"
-                  ? "w-72 opacity-100"
-                  : "w-0 opacity-0 px-0"
-              )}
-              style={{ zIndex: 1000, overflow: "hidden" }}
-            >
-              <input
-                type="text"
-                className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-                placeholder="Buscar..."
-                value={searchQuery !== "focus" ? searchQuery : ""}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
-            {/* Icono de búsqueda desktop */}
+            <input
+              type="text"
+              className="w-full bg-transparent text-gray-900 placeholder-gray-500 border-none focus:outline-none text-lg px-2"
+              placeholder="Buscar productos..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Buscar productos"
+              autoComplete="off"
+            />
             <button
-              className={cn(
-                "flex items-center justify-center w-10 h-10 transition-colors absolute right-0",
-                showWhiteItems ? "text-white" : "text-black"
-              )}
+              type="submit"
+              className="flex items-center justify-center w-10 h-10"
               title="Buscar"
-              onClick={() =>
-                posthogUtils.capture("search_icon_click", {
-                  source: "navbar",
-                })
-              }
               style={{ zIndex: 1001 }}
             >
-              <Search
-                className={
-                  showWhiteItems ? "w-6 h-6 text-white" : "w-6 h-6 text-black"
-                }
+              <Image
+                src={showWhiteItems ? searchIconWhite : searchIconBlack}
+                alt="Buscar"
+                width={26}
+                height={26}
+                priority
               />
             </button>
-          </div>
+          </form>
 
           {/* Icono login */}
           <button
@@ -389,7 +402,13 @@ export default function Navbar() {
               window.location.replace("/login");
             }}
           >
-            <User className="w-6 h-6" />
+            <Image
+              src={showWhiteItems ? userIconWhite : userIconBlack}
+              alt="Usuario"
+              width={28}
+              height={28}
+              priority
+            />
           </button>
 
           {/* Icono carrito con badge SIEMPRE visible si itemCount > 0 */}
@@ -406,7 +425,13 @@ export default function Navbar() {
             title="Carrito de compras"
             onClick={handleCartClick}
           >
-            <ShoppingCart className="w-6 h-6" />
+            <Image
+              src={showWhiteItems ? carritoIconWhite : carritoIconBlack}
+              alt="Carrito"
+              width={34}
+              height={34}
+              priority
+            />
             {isClient && (
               <span
                 className={cn(
@@ -434,10 +459,12 @@ export default function Navbar() {
             aria-label="Favoritos"
             style={{ position: "relative" }}
           >
-            <Heart
-              className={
-                showWhiteItems ? "w-6 h-6 text-white" : "w-6 h-6 text-black"
-              }
+            <Image
+              src={showWhiteItems ? favoritoIconWhite : favoritoIconBlack}
+              alt="Favoritos"
+              width={20}
+              height={21}
+              priority
             />
           </button>
         </div>
@@ -466,7 +493,13 @@ export default function Navbar() {
             {searchQuery === "focus" ? (
               <span className="text-2xl">&#10005;</span>
             ) : (
-              <Search className="w-5 h-5" />
+              <Image
+                src={showWhiteItemsMobile ? searchIconWhite : searchIconBlack}
+                alt="Buscar"
+                width={26}
+                height={26}
+                priority
+              />
             )}
           </button>
           {/* Icono carrito */}
@@ -479,7 +512,13 @@ export default function Navbar() {
             title="Carrito"
             onClick={handleCartClick}
           >
-            <ShoppingCart className="w-5 h-5" />
+            <Image
+              src={showWhiteItemsMobile ? carritoIconWhite : carritoIconBlack}
+              alt="Carrito"
+              width={34}
+              height={34}
+              priority
+            />
             {isClient && (
               <span
                 className={cn(
@@ -519,7 +558,13 @@ export default function Navbar() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button type="submit" className="ml-2">
-                  <Search className="w-6 h-6 text-white" />
+                  <Image
+                    src={searchIconWhite}
+                    alt="Buscar"
+                    width={26}
+                    height={26}
+                    priority
+                  />
                 </button>
                 <button
                   type="button"
@@ -587,7 +632,7 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     className={cn(
-                      "text-lg font-semibold transition-all duration-200 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none",
+                      "text-lg font-normal transition-all duration-200 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none", // font-normal en vez de font-semibold
                       itemTextColor,
                       ofertasHoverClass,
                       isActive && showWhiteItems && "text-white",

@@ -249,12 +249,14 @@ export default function Navbar() {
     isMasInformacionProducto && !isScrolled
       ? true
       : isOfertas || (isHome && !isScrolled);
-  const showWhiteItemsMobile =
-    isMasInformacionProducto && !isScrolled
-      ? true
-      : !isScrolledNavbar &&
-        !isLogin &&
-        (isProductDetail || (isHome && !isScrolled));
+  // Forzar iconos blancos solo en móvil y solo en /ofertas
+  const showWhiteItemsMobile = isOfertas
+    ? true
+    : isMasInformacionProducto && !isScrolled
+    ? true
+    : !isScrolledNavbar &&
+      !isLogin &&
+      (isProductDetail || (isHome && !isScrolled));
 
   return (
     <header

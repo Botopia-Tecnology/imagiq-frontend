@@ -15,6 +15,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // Importar iconos para beneficios
 import settingIcon from "@/img/iconos/Setting_line.png";
@@ -25,11 +26,16 @@ import percentIcon from "@/img/iconos/Percent_light.png";
 // Importar imagen del dispositivo por defecto
 import deviceImage from "@/img/dispositivosmoviles/cel1.png";
 
+// Importar imagen de Entrego y Estreno
+import entregoEstrenoLogo from "@/img/entrego-estreno/entrego-estreno-logo.png";
+
 /**
  * Componente principal de especificaciones del producto
  * Replica exactamente el diseño de las imágenes de referencia
  */
 const DetailsProduct: React.FC = () => {
+  const router = useRouter();
+
   // Estados para las selecciones del usuario
   const [selectedDevice, setSelectedDevice] = useState("Galaxy S25");
   const [selectedStorage, setSelectedStorage] = useState("256 GB");
@@ -101,6 +107,11 @@ const DetailsProduct: React.FC = () => {
     },
   ];
 
+  // Función para navegar a Entrego y Estreno
+  const handleEntregoEstreno = () => {
+    router.push("/productos/components/entrego-estreno");
+  };
+
   return (
     <div className="w-full bg-white" style={{ fontFamily: "SamsungSharpSans" }}>
       {/* Vista Desktop */}
@@ -156,6 +167,22 @@ const DetailsProduct: React.FC = () => {
                 style={{ fontFamily: "SamsungSharpSans" }}
               >
                 Vista previa
+              </button>
+
+              {/* Botón Entrego y Estreno */}
+              <button
+                onClick={handleEntregoEstreno}
+                className="hover:opacity-80 transition-opacity"
+                type="button"
+                aria-label="Entrego y Estreno"
+              >
+                <Image
+                  src={entregoEstrenoLogo}
+                  alt="Entrego y Estreno"
+                  width={200}
+                  height={60}
+                  className="object-contain"
+                />
               </button>
             </div>
 
@@ -368,6 +395,22 @@ const DetailsProduct: React.FC = () => {
             </div>
             <button className="border border-gray-300 text-gray-700 px-6 py-2 rounded-full text-sm font-medium">
               Vista previa
+            </button>
+
+            {/* Botón Entrego y Estreno Mobile */}
+            <button
+              onClick={handleEntregoEstreno}
+              className="hover:opacity-80 transition-opacity"
+              type="button"
+              aria-label="Entrego y Estreno"
+            >
+              <Image
+                src={entregoEstrenoLogo}
+                alt="Entrego y Estreno"
+                width={180}
+                height={54}
+                className="object-contain"
+              />
             </button>
           </div>
 

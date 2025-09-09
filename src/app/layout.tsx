@@ -14,6 +14,7 @@ import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 import ChatbotWidget from "@/components/chatbotWidget";
 
 import ClientLayout from "./ClientLayout";
+import React from "react";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -95,13 +96,78 @@ export default function RootLayout({
 }) {
   // Validar children para evitar NaN, null, undefined o string vacío
   let safeChildren = children;
-  const isNaNValue =
-    (typeof children === "number" && isNaN(children)) ||
-    (typeof children === "string" &&
-      (children === "NaN" || children.trim() === "")) ||
-    children == null;
-  if (isNaNValue) {
-    safeChildren = <></>;
+
+  function isValidChild(child: unknown): boolean {
+    if (child == null) return false;
+    if (typeof child === "number") {
+      if (isNaN(child) || !isFinite(child)) {
+        console.warn("[RootLayout] Número inválido detectado:", child);
+        return false;
+      }
+    }
+    if (typeof child === "string") {
+      if (
+        child === "NaN" ||
+        child === "undefined" ||
+        child === "null" ||
+        child.trim() === ""
+      ) {
+        console.warn("[RootLayout] String inválido detectado:", child);
+        return false;
+      }
+    }
+    if (Array.isArray(child)) {
+      return child.every(isValidChild);
+    }
+    if (
+      typeof child === "object" &&
+      child !== null &&
+      "children" in child &&
+      !isValidChild((child as { children?: unknown }).children)
+    ) {
+      return false;
+    }
+    return true;
+  }
+
+  function sanitizeChildren(child: unknown): React.ReactNode {
+    if (child == null) return null;
+    if (typeof child === "number" && (isNaN(child) || !isFinite(child))) {
+      return "";
+    }
+    if (
+      typeof child === "string" &&
+      (child === "NaN" ||
+        child === "undefined" ||
+        child === "null" ||
+        child.trim() === "")
+    ) {
+      return "";
+    }
+    if (Array.isArray(child)) {
+      // Filtra y mapea solo ReactNode válidos
+      return child
+        .map(sanitizeChildren)
+        .filter(
+          (el) =>
+            el !== undefined &&
+            el !== null &&
+            el !== "" &&
+            !(typeof el === "number" && (isNaN(el) || !isFinite(el)))
+        );
+    }
+    // Si es un objeto React válido
+    if (React.isValidElement(child)) return child;
+    return null;
+  }
+
+  if (Array.isArray(children)) {
+    const filtered = children.map(sanitizeChildren).filter(isValidChild);
+    safeChildren = filtered.length > 0 ? (filtered as React.ReactNode) : <></>;
+  } else if (!isValidChild(children)) {
+    safeChildren = sanitizeChildren(children) ?? <></>;
+  } else {
+    safeChildren = sanitizeChildren(children);
   }
   return (
     <html lang="es" className={inter.variable}>

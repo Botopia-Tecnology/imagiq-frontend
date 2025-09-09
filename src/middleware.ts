@@ -43,6 +43,8 @@ const publicRoutes = [
   "/success-checkout",
   "/error-checkout",
   "/tracking-service",
+  // Rutas públicas para Entrego y Estreno
+  "/productos/components/entrego-estreno",
 ];
 
 // Admin routes that require special permissions

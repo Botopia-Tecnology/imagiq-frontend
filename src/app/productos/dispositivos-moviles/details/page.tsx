@@ -9,7 +9,7 @@
 
 "use client";
 
-import DetailsProduct from "../DetailsProduct";
+import DetailsProduct from "./DetailsProduct";
 
 export default function ProductDetailsPage() {
   return <DetailsProduct />;

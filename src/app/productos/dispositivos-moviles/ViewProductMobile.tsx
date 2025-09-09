@@ -23,6 +23,7 @@ import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
+import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 
 // Tipos para producto
 interface ProductColor {
@@ -45,21 +46,39 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const pathname = usePathname();
+  const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
   const { addProduct } = useCartContext();
   const router = useRouter();
+  const { setHideNavbar } = useNavbarVisibility();
   // UX feedback state (hook debe ir antes de cualquier return condicional)
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
-      setShowBar(window.scrollY > 100);
+      // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
+      setShowBar(window.scrollY > 100 && isProductDetailView);
+      setHideNavbar(window.scrollY > 100 && isProductDetailView);
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Inicializa correctamente al montar y tras navegación
+    setTimeout(handleScroll, 0);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      setHideNavbar(false);
+    };
+  }, [isProductDetailView, setHideNavbar]);
 
-  const isProductDetailView = pathname.startsWith("/productos/view/");
+  useEffect(() => {
+    if (showBar) {
+      document.body.classList.add("hide-main-navbar");
+    } else {
+      document.body.classList.remove("hide-main-navbar");
+    }
+    return () => {
+      document.body.classList.remove("hide-main-navbar");
+    };
+  }, [showBar]);
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -218,83 +237,81 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       </section>
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
-        <>
-          {/* Oculta el navbar principal en esta vista */}
-          <style>{`
-      header[data-navbar="true"] { display: none !important; }
-    `}</style>
-          <div
-            className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
-            {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-              {/* Imagen frame_311_black */}
+        <div
+          className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
+          style={{ fontFamily: "SamsungSharpSans" }}
+        >
+          {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
+          <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
+            {/* Imagen frame_311_black */}
+            <Image
+              src="/frame_311_black.png"
+              alt="Frame"
+              width={32}
+              height={32}
+              className="object-contain"
+              priority
+            />
+            {/* Logo Samsung clickable */}
+            <button
+              className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
+              title="Ir al inicio"
+              aria-label="Ir al inicio"
+              onClick={() => (window.location.href = "/")}
+            >
               <Image
-                src="/frame_311_black.png"
-                alt="Frame"
-                width={32}
+                src={samsungLogo}
+                alt="Samsung Logo"
+                width={110}
                 height={32}
-                className="object-contain"
+                style={{ objectFit: "contain" }}
                 priority
               />
-              {/* Logo Samsung clickable */}
-              <button
-                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
-                title="Ir al inicio"
-                aria-label="Ir al inicio"
-                onClick={() => (window.location.href = "/")}
-              >
-                <Image
-                  src={samsungLogo}
-                  alt="Samsung Logo"
-                  width={110}
-                  height={32}
-                  style={{ objectFit: "contain" }}
-                  priority
-                />
-              </button>
-              {/* Imagen store_black */}
-              <Image
-                src="/store_black.png"
-                alt="Store"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
-            </div>
-            {/* Nombre centrado */}
-            <div className="flex-1 flex justify-center">
-              <span
-                className="font-bold text-base md:text-lg text-center"
-                style={{ fontFamily: "SamsungSharpSans" }}
-              >
-                {safeProduct.name}
-              </span>
-            </div>
-            {/* Parte derecha: botón añadir al carrito + botón comprar */}
-            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-              {/* Botón añadir al carrito */}
-              <button
-                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-black hover:text-white transition-all"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleAddToCart}
-              >
-                Añadir al carrito
-              </button>
-              {/* Botón comprar */}
-              <button
-                className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleBuy}
-              >
-                Comprar
-              </button>
-            </div>
+            </button>
+            {/* Imagen store_black */}
+            <Image
+              src="/store_black.png"
+              alt="Store"
+              width={32}
+              height={32}
+              className="object-contain"
+              priority
+            />
           </div>
-        </>
+          {/* Nombre centrado */}
+          <div className="flex-1 flex justify-center">
+            <span
+              className="font-bold text-base md:text-lg text-center"
+              style={{ fontFamily: "SamsungSharpSans" }}
+            >
+              {safeProduct.name}
+            </span>
+          </div>
+          {/* Parte derecha: botón añadir al carrito + botón comprar */}
+          <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
+            {/* Botón añadir al carrito */}
+            <button
+              className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-black hover:text-white transition-all"
+              style={{ fontFamily: "SamsungSharpSans" }}
+              onClick={handleAddToCart}
+            >
+              Añadir al carrito
+            </button>
+            {/* Botón comprar */}
+            <button
+              className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
+              style={{ fontFamily: "SamsungSharpSans" }}
+              onClick={handleBuy}
+            >
+              Comprar
+            </button>
+          </div>
+        </div>
       )}
+      {/* Oculta el navbar principal con una clase global */}
+      <style>{`
+        body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
+      `}</style>
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <div

@@ -28,6 +28,7 @@ import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
 import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
 import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
 import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
+import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 
 // Items that tienen dropdowns
 type DropdownItemType =
@@ -75,16 +76,26 @@ export default function Navbar() {
   const { itemCount } = useCartContext();
   const { isAuthenticated } = useAuthContext();
   const router = useRouter();
+  const { hideNavbar } = useNavbarVisibility();
 
   // 2. Efectos y lógica
   useEffect(() => {
+    // Actualiza el estado de scroll y fuerza re-render en rutas dinámicas
+    let ticking = false;
     const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 100);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 100);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Actualiza el estado al cambiar de ruta
+    setTimeout(handleScroll, 0); // Inicializa correctamente al montar y tras navegación
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     if (debouncedSearch.length > 2) {
@@ -258,6 +269,8 @@ export default function Navbar() {
       !isLogin &&
       (isProductDetail || (isHome && !isScrolled));
 
+  if (hideNavbar) return null;
+
   return (
     <header
       data-navbar="true"
@@ -276,11 +289,17 @@ export default function Navbar() {
           ? "bg-transparent"
           : "bg-white/60 shadow backdrop-blur-md"
       )}
-      style={
-        isOfertas && !isScrolled
-          ? { boxShadow: "none", background: "transparent" }
-          : { boxShadow: "none" }
-      }
+      style={{
+        boxShadow:
+          isOfertas && !isScrolled
+            ? "none"
+            : isScrolled
+            ? "0 2px 8px 0 rgba(30, 64, 175, 0.12)"
+            : "none",
+        background: isOfertas && !isScrolled ? "transparent" : undefined,
+        transition:
+          "background 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s cubic-bezier(.4,0,.2,1)",
+      }}
       role="navigation"
       aria-label="Navegación principal"
     >
@@ -336,7 +355,7 @@ export default function Navbar() {
               className={
                 showWhiteLogo
                   ? "ml-2 text-base font-bold tracking-wide text-white select-none"
-                  : "ml-2 text-base font-bold tracking-wide text-gray-400 select-none"
+                  : "ml-2 text-base font-bold tracking-wide text-black select-none"
               }
               style={{
                 marginLeft: 8,

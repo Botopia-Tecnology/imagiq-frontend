@@ -12,6 +12,7 @@ import { AnalyticsProvider } from "@/features/analytics/AnalyticsContext";
 import { UserPreferencesProvider } from "@/features/user/UserPreferencesContext";
 import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 import ChatbotWidget from "@/components/chatbotWidget";
+import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 
 import ClientLayout from "./ClientLayout";
 import React from "react";
@@ -172,19 +173,21 @@ export default function RootLayout({
   return (
     <html lang="es" className={inter.variable}>
       <body className="font-sans antialiased">
-        <PostHogProvider>
-          <AnalyticsProvider>
-            <AuthProvider>
-              <UserPreferencesProvider>
-                <CartProvider>
-                  <ClientLayout>{safeChildren}</ClientLayout>
-                  {/* Widget del chatbot */}
-                  <ChatbotWidget />
-                </CartProvider>
-              </UserPreferencesProvider>
-            </AuthProvider>
-          </AnalyticsProvider>
-        </PostHogProvider>
+        <NavbarVisibilityProvider>
+          <PostHogProvider>
+            <AnalyticsProvider>
+              <AuthProvider>
+                <UserPreferencesProvider>
+                  <CartProvider>
+                    <ClientLayout>{safeChildren}</ClientLayout>
+                    {/* Widget del chatbot */}
+                    <ChatbotWidget />
+                  </CartProvider>
+                </UserPreferencesProvider>
+              </AuthProvider>
+            </AnalyticsProvider>
+          </PostHogProvider>
+        </NavbarVisibilityProvider>
       </body>
     </html>
   );

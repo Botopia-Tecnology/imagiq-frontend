@@ -93,8 +93,14 @@ const EspecificacionesProduct = ({
           {/* Imagen del producto a la izquierda */}
           <div className="w-full xl:w-auto flex flex-col items-center mb-12 xl:mb-0 relative">
             <div
-              className="relative"
-              style={{ width: "340px", height: "450px" }}
+              className="relative mx-auto sm:mx-0"
+              style={{
+                width: "340px",
+                height: "450px",
+                ...(typeof window !== "undefined" && window.innerWidth < 640
+                  ? { width: "220px", height: "320px" }
+                  : {}),
+              }}
             >
               <Image
                 src={productImage}
@@ -106,14 +112,14 @@ const EspecificacionesProduct = ({
             </div>
             {/* Flechas de navegación */}
             <button
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white text-4xl"
+              className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white text-4xl hidden sm:block"
               aria-label="Anterior"
               style={{ left: "-40px" }}
             >
               ‹
             </button>
             <button
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white text-4xl"
+              className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white text-4xl hidden sm:block"
               aria-label="Siguiente"
               style={{ right: "-40px" }}
             >
@@ -144,14 +150,21 @@ const EspecificacionesProduct = ({
           </div>
           {/* Grid 3x2 de especificaciones */}
           <div className="w-full xl:w-auto flex-1 flex justify-center xl:ml-16">
-            <div className="grid grid-cols-3 grid-rows-2 gap-5">
+            <div
+              className="grid grid-cols-3 grid-rows-2 gap-5 sm:gap-5 max-w-full sm:max-w-none"
+              style={{
+                ...(typeof window !== "undefined" && window.innerWidth < 640
+                  ? { gap: "12px" }
+                  : {}),
+              }}
+            >
               {mergedSpecs.map((spec, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-lg flex flex-col items-center justify-between py-6 px-4"
+                  className="bg-white rounded-lg flex flex-col items-center justify-between py-6 px-4 shadow-sm sm:py-6 sm:px-4"
                   style={{
-                    height: "190px",
-                    width: "190px",
+                    height: window.innerWidth < 640 ? "120px" : "190px",
+                    width: window.innerWidth < 640 ? "120px" : "190px",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                   }}
                   tabIndex={0}
@@ -161,19 +174,26 @@ const EspecificacionesProduct = ({
                     <Image
                       src={spec.icon}
                       alt={spec.label + " icon"}
-                      width={50}
-                      height={50}
+                      width={window.innerWidth < 640 ? 32 : 70}
+                      height={window.innerWidth < 640 ? 32 : 70}
                     />
                   </div>
                   <div
                     className="text-center text-gray-600 text-xs leading-tight mt-auto mb-3"
-                    style={{ fontSize: "12px" }}
+                    style={{
+                      fontSize: window.innerWidth < 640 ? "10px" : "12px",
+                    }}
                   >
                     {spec.desc.split("\n").map((line, i) => (
                       <div key={i}>{line}</div>
                     ))}
                   </div>
-                  <h3 className="font-bold text-base text-black mb-1">
+                  <h3
+                    className="font-bold text-base text-black mb-1"
+                    style={{
+                      fontSize: window.innerWidth < 640 ? "12px" : undefined,
+                    }}
+                  >
                     {spec.label}
                   </h3>
                 </div>

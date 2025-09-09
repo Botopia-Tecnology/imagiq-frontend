@@ -86,7 +86,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cargar productos desde localStorage al montar
   useEffect(() => {
     const stored = localStorage.getItem("cart-items");
-    console.log("useEffect: localStorage cart-items:", stored);
     if (stored) {
       try {
         const parsed: RawCartProduct[] = JSON.parse(stored);
@@ -111,14 +110,11 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 };
               })
           : [];
-        console.log("useEffect: parsed products:", products);
         setCartProducts(products);
-      } catch (err) {
-        console.log("useEffect: error parsing products", err);
+      } catch  {
         setCartProducts([]);
       }
     } else {
-      console.log("useEffect: no products in localStorage");
       setCartProducts([]);
     }
   }, []);

@@ -214,28 +214,6 @@ export default function Step2({
       localStorage.setItem("checkout-document", guestForm.cedula);
     }
 
-    // Estructura de datos para guardar en localStorage (sin fecha, con dirección)
-    const guestPaymentInfo = {
-      email: guestForm.email.trim(),
-      nombre: guestForm.nombre.trim(),
-      apellido: guestForm.apellido.trim(),
-      cedula: guestForm.cedula.trim(),
-      celular: guestForm.celular.trim(),
-      direccion_linea_uno: guestForm.direccion_linea_uno.trim(),
-      direccion_ciudad: guestForm.direccion_ciudad.trim(),
-      carrito: cartProducts.map((p) => ({
-        id: p.id,
-        name: p.name,
-        image: p.image,
-        price: p.price,
-        quantity: p.quantity,
-      })),
-      total,
-      envio,
-      impuestos,
-      appliedDiscount,
-    };
-
     // Guardar en localStorage bajo la clave 'guest-payment-info'
     try {
       const res = await fetch(`${API_BASE_URL}/api/users/guest/new`, {

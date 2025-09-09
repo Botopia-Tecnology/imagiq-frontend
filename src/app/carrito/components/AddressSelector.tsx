@@ -31,7 +31,6 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log(address);
     onAddressChange(address!)
     onEditToggle(false);
     setShowAddForm(false);

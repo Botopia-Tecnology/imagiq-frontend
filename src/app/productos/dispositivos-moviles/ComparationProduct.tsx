@@ -12,9 +12,9 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import samsungS25 from "@/img/dispositivosMoviles/cel1.png"; // Cambia por la imagen real
-import samsungS24 from "@/img/dispositivosMoviles/cel2.png"; // Cambia por la imagen real
-import cameraIcon from "@/img/dispositivosMoviles/camera-icon.png"; // Cambia por la imagen real
+import samsungS25 from "@/img/dispositivosmoviles/cel1.png"; // Cambia por la imagen real
+import samsungS24 from "@/img/dispositivosmoviles/cel2.png"; // Cambia por la imagen real
+import cameraIcon from "@/img/dispositivosmoviles/camera-icon.png"; // Cambia por la imagen real
 
 const products = [
   {

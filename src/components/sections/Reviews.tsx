@@ -76,12 +76,14 @@ const Reviews = () => {
               <button
                 aria-label="Anterior"
                 onClick={handlePrev}
-                className="md:flex hidden items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition"
+                className="md:flex hidden items-center justify-center rounded-full shadow-lg hover:brightness-95 transition"
                 style={{
                   zIndex: 30,
                   boxShadow: "0 4px 16px rgba(37,99,235,0.15)",
                   width: 40,
                   height: 40,
+                  backgroundColor: "#b2e2f2",
+                  color: "#222",
                 }}
               >
                 <svg
@@ -94,7 +96,7 @@ const Reviews = () => {
                 >
                   <path
                     d="M15 19l-7-7 7-7"
-                    stroke="#fff"
+                    stroke="#222"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -234,12 +236,14 @@ const Reviews = () => {
               <button
                 aria-label="Siguiente"
                 onClick={handleNext}
-                className="md:flex hidden items-center justify-center bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition"
+                className="md:flex hidden items-center justify-center rounded-full shadow-lg hover:brightness-95 transition"
                 style={{
                   zIndex: 30,
                   boxShadow: "0 4px 16px rgba(37,99,235,0.15)",
                   width: 40,
                   height: 40,
+                  backgroundColor: "#b2e2f2",
+                  color: "#222",
                 }}
               >
                 <svg
@@ -252,7 +256,7 @@ const Reviews = () => {
                 >
                   <path
                     d="M9 5l7 7-7 7"
-                    stroke="#fff"
+                    stroke="#222"
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -380,13 +384,15 @@ const Reviews = () => {
         {/* CTA Button */}
         <div className="flex justify-center mt-10">
           <button
-            className="bg-blue-600 text-white font-semibold rounded-full px-8 py-3 shadow-lg hover:bg-blue-700 transition text-lg"
+            className="font-semibold rounded-full px-8 py-3 shadow-lg hover:brightness-95 transition text-lg"
             aria-label="Ver más reseñas"
             style={{
               fontFamily: "Samsung Sharp Sans, sans-serif",
               minWidth: 240,
               fontSize: "1.15rem",
               boxShadow: "0 4px 16px rgba(37,99,235,0.15)",
+              backgroundColor: "#b2e2f2",
+              color: "#222",
             }}
             onClick={() =>
               window.open(

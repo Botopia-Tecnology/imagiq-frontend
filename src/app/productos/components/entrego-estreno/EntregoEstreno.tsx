@@ -478,10 +478,14 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
           </button>
           {/* Botón continuar: agrega al carrito y navega */}
           <button
-            className={`h-[56px] rounded-[14px] bg-[#2176E6] text-white text-[16px] font-semibold flex items-center justify-center shadow-sm whitespace-nowrap px-6 transition-all duration-200 active:scale-[0.97] focus:ring-2 focus:ring-[#2176E6] ${
+            className={`h-[56px] rounded-[14px] text-[#222] text-[16px] font-semibold flex items-center justify-center shadow-sm whitespace-nowrap px-6 transition-all duration-200 active:scale-[0.97] focus:ring-2 focus:ring-[#2176E6] ${
               loading ? "opacity-60 cursor-not-allowed" : ""
             }`}
-            style={{ fontFamily: "SamsungSharpSans, sans-serif" }}
+            style={{
+              fontFamily: "SamsungSharpSans, sans-serif",
+              backgroundColor: "#b2e2f2", // Color solicitado
+              color: "#222",
+            }}
             onClick={async () => {
               setLoading(true);
               await addToCart(product);
@@ -491,7 +495,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
             aria-label="Continuar con la compra"
           >
             {loading ? (
-              <span className="animate-spin mr-2 w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
+              <span className="animate-spin mr-2 w-5 h-5 border-2 border-[#222] border-t-transparent rounded-full"></span>
             ) : null}
             Continuar con la compra
           </button>
@@ -510,10 +514,14 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
           </button>
           {/* Botón continuar: agrega al carrito y navega */}
           <button
-            className={`h-[56px] w-full rounded-[14px] bg-[#2176E6] text-white text-[16px] font-semibold flex items-center justify-center shadow-sm whitespace-nowrap px-6 transition-all duration-200 active:scale-[0.97] focus:ring-2 focus:ring-[#2176E6] ${
+            className={`h-[56px] w-full rounded-[14px] text-[#222] text-[16px] font-semibold flex items-center justify-center shadow-sm whitespace-nowrap px-6 transition-all duration-200 active:scale-[0.97] focus:ring-2 focus:ring-[#2176E6] ${
               loading ? "opacity-60 cursor-not-allowed" : ""
             }`}
-            style={{ fontFamily: "SamsungSharpSans, sans-serif" }}
+            style={{
+              fontFamily: "SamsungSharpSans, sans-serif",
+              backgroundColor: "#b2e2f2", // Color solicitado
+              color: "#222",
+            }}
             onClick={async () => {
               setLoading(true);
               await addToCart(product);
@@ -523,7 +531,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
             aria-label="Continuar con la compra"
           >
             {loading ? (
-              <span className="animate-spin mr-2 w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span>
+              <span className="animate-spin mr-2 w-5 h-5 border-2 border-[#222] border-t-transparent rounded-full"></span>
             ) : null}
             Continuar con la compra
           </button>

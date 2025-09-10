@@ -1,32 +1,15 @@
 "use client";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
-import addiLogo from "@/img/carrito/addi_logo.png";
-import amexLogo from "@/img/carrito/amex_logo.png";
-import dinersLogo from "@/img/carrito/logo4.png";
-import mastercardLogo from "@/img/carrito/masterdcard_logo.png";
-import visaLogo from "@/img/carrito/visa_logo.png";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
+import PaymentForm from "./components/PaymentForm";
+import { CardData, CardErrors } from "./components/CreditCardForm";
+import BillingTypeSelector from "./components/BillingTypeSelector";
+import PolicyAcceptance from "./components/PolicyAcceptance";
+import CheckoutActions from "./components/CheckoutActions";
+import { PaymentMethod } from "./types";
+import { payWithAddi } from "./utils";
 
-// Utilidad para obtener productos del carrito desde localStorage
-/**
- * Utilidad para obtener productos del carrito desde localStorage
- * - Incluye campo SKU genérico para cada producto.
- * - El SKU se genera como 'SKU-' + id del producto, pero puede adaptarse fácilmente.
- * - Si el prodto ya tiene un SKU, lo respeta.
- * - El formato es escalable y fucácil de modificar.
- *
- * Ejemplo de producto retornado:
- * {
- *   id: '123',
- *   name: 'Producto',
- *   image: '/img/logo_imagiq.png',
- *   price: 1000,
- *   quantity: 1,
- *   sku: 'SKU-123'
- * }
- */
 function getCartProducts() {
   if (typeof window === "undefined") return [];
   const stored = localStorage.getItem("cart-items");
@@ -55,7 +38,7 @@ const formatPrice = (price: number) =>
 
 export default function Step4({ onBack }: { onBack?: () => void }) {
   // Importamos la función de redirección de usePurchaseFlow
-  const { redirectToLoading } = usePurchaseFlow();
+  const { redirectToLoading, redirectToError } = usePurchaseFlow();
   // Estado para error general (form)
   const [error, setError] = useState("");
   const router = useRouter();
@@ -72,9 +55,9 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   // Estado para procesamiento de pago
   const [isProcessing, setIsProcessing] = useState(false);
   // Estado para método de pago
-  const [paymentMethod, setPaymentMethod] = useState("tarjeta");
-  // Estado para datos de tarjeta
-  const [card, setCard] = useState(() => {
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("tarjeta");
+  // Estado para datos de tarjeta - usando el tipo del componente
+  const [card, setCard] = useState<CardData>(() => {
     // Autocompletar número de documento con valor guardado en Step2
     let cedula = "";
     if (typeof window !== "undefined") {
@@ -93,8 +76,8 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
       installments: "",
     };
   });
-  // Estado para errores de campos de tarjeta
-  const [cardErrors, setCardErrors] = useState({
+  // Estado para errores de campos de tarjeta - usando el tipo del componente
+  const [cardErrors, setCardErrors] = useState<CardErrors>({
     number: "",
     expiry: "",
     cvc: "",
@@ -112,6 +95,24 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
 
   // Determinar si la tarjeta es Amex para los inputs
   const isAmex = card.number.startsWith("34") || card.number.startsWith("37");
+
+  // Helper functions for component callbacks
+  const handleCardChange = (newCard: CardData) => {
+    setCard(newCard);
+  };
+
+  const handleCardErrorChange = (errors: Partial<CardErrors>) => {
+    setCardErrors((prev) => ({ ...prev, ...errors }));
+  };
+
+  const handlePaymentMethodChange = (method: PaymentMethod) => {
+    setPaymentMethod(method);
+  };
+
+  const handleBillingTypeChange = (type: string) => {
+    setBillingType(type);
+    setBillingError("");
+  };
 
   // Sincronizar productos y descuento
   useEffect(() => {
@@ -276,7 +277,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   }
 
   // UX: Navegación al siguiente paso
-  const handleFinish = (e: React.FormEvent) => {
+  const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
     let valid = true;
     setBillingError("");
@@ -312,32 +313,37 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
 
     // Guardar la información de la orden en localStorage
     try {
-      const orderData = {
-        paymentMethod,
-        card:
-          paymentMethod === "tarjeta"
-            ? {
-                // Excluir CVC y otros datos sensibles
-                name: card.name,
-                docType: card.docType,
-                docNumber: card.docNumber,
-                // Ocultar número de tarjeta excepto últimos 4 dígitos
-                last4: card.number.slice(-4),
-              }
-            : null,
-        billingType,
-        products: cartProducts,
-        total,
-        subtotal: safeSubtotal,
-        shipping: envio,
-        discount: safeDiscount,
-        taxes: impuestos,
-        timestamp: new Date().toISOString(),
-      };
-
-      localStorage.setItem("current-order", JSON.stringify(orderData));
+      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const direction = JSON.parse(
+        localStorage.getItem("checkout-address") || "{}"
+      );
+      let res;
+      switch (paymentMethod) {
+        case "addi":
+          res = await payWithAddi({
+            currency: "COP",
+            items: cartProducts.map((p) => ({
+              name: String(p.name),
+              sku: String(p.sku),
+              quantity: String(p.quantity),
+              unitPrice: String(p.price),
+            })),
+            metodo_envio: 2,
+            shippingAmount: String(envio),
+            totalAmount: String(total),
+            userInfo: {
+              userId: userInfo.id,
+              direccionId: direction.id,
+            },
+          });
+          if (!res) {
+            redirectToError();
+          }
+          router.push(String(res?.redirectUrl));
+      }
     } catch (err) {
       console.error("Error al guardar datos de orden:", err);
+      redirectToError();
     }
 
     // Redirigir a la página de carga
@@ -354,410 +360,41 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           onSubmit={handleFinish}
           autoComplete="off"
         >
-          <div>
-            <h2 className="text-[22px] font-bold mb-4">Metodo de pago</h2>
-            {/* Card visual Samsung, igual a la imagen */}
-            <div
-              className="rounded-xl overflow-hidden mb-6"
-              style={{
-                boxShadow: "0 2px 8px #0001",
-                background: "#F3F3F3",
-                border: "1px solid #E5E5E5",
-                padding: 0,
-              }}
-            >
-              {/* Header logos y radio */}
-              <div
-                className="flex items-center justify-between px-6 py-3"
-                style={{
-                  background: "#fff",
-                  borderBottom: "1px solid #E5E5E5",
-                }}
-              >
-                <label className="flex items-center gap-2 m-0">
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === "tarjeta"}
-                    onChange={() => setPaymentMethod("tarjeta")}
-                    className="accent-blue-600 w-5 h-5"
-                  />
-                  <span className="font-medium text-black">
-                    Pago con tarjeta
-                  </span>
-                </label>
-                <span className="flex gap-3">
-                  <Image
-                    src={visaLogo}
-                    alt="Visa"
-                    width={40}
-                    height={24}
-                    style={{ objectFit: "contain" }}
-                  />
-                  <Image
-                    src={mastercardLogo}
-                    alt="Mastercard"
-                    width={40}
-                    height={24}
-                    style={{ objectFit: "contain" }}
-                  />
-                  <Image
-                    src={amexLogo}
-                    alt="Amex"
-                    width={40}
-                    height={24}
-                    style={{ objectFit: "contain" }}
-                  />
-                  <Image
-                    src={dinersLogo}
-                    alt="Diners"
-                    width={40}
-                    height={24}
-                    style={{ objectFit: "contain" }}
-                  />
-                </span>
-              </div>
-              {/* Campos tarjeta */}
-              {paymentMethod === "tarjeta" && (
-                <div
-                  className="px-6 pt-4 pb-2 flex flex-col gap-3"
-                  style={{ background: "#F3F3F3" }}
-                >
-                  <div className="flex flex-col gap-1">
-                    {/* Input de número de tarjeta: formatea y actualiza estado correctamente */}
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={19} // 16 dígitos + 3 espacios
-                      pattern="[0-9 ]{19}"
-                      className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-                        cardErrors.number ? "border-red-500" : ""
-                      }`}
-                      placeholder="Número de tarjeta (16 dígitos)"
-                      value={card.number
-                        .replace(/(\d{4})(?=\d)/g, "$1 ")
-                        .trim()}
-                      onChange={(e) => {
-                        // Solo permitir números y máximo 16 dígitos
-                        const raw = e.target.value
-                          .replace(/\D/g, "")
-                          .slice(0, 16);
-                        setCard({ ...card, number: raw });
-                        setCardErrors((prev) => ({ ...prev, number: "" }));
-                      }}
-                      required
-                      autoComplete="cc-number"
-                    />
-                    {cardErrors.number && (
-                      <span
-                        className="text-red-500 text-xs"
-                        style={{ marginTop: 2 }}
-                      >
-                        {cardErrors.number}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="flex flex-col gap-1 w-1/2">
-                      {/* Input de fecha de vencimiento: formatea y actualiza estado correctamente */}
-                      <input
-                        type="text"
-                        className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-                          cardErrors.expiry ? "border-red-500" : ""
-                        }`}
-                        placeholder="Fecha de vencimiento (MM/AA)"
-                        value={card.expiry
-                          .replace(/[^\d]/g, "")
-                          .replace(/(\d{2})(\d{0,2})/, (m, p1, p2) =>
-                            p2 ? `${p1}/${p2}` : p1
-                          )}
-                        onChange={(e) => {
-                          // Solo permitir números y máximo 4 dígitos (MMYY)
-                          const raw = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 4);
-                          let formatted = raw;
-                          if (raw.length >= 3) {
-                            formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
-                          }
-                          setCard({ ...card, expiry: formatted });
-                          setCardErrors((prev) => ({ ...prev, expiry: "" }));
-                        }}
-                        required
-                      />
-                      {cardErrors.expiry && (
-                        <span
-                          className="text-red-500 text-xs"
-                          style={{ marginTop: 2 }}
-                        >
-                          {cardErrors.expiry}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex flex-col gap-1 w-1/2">
-                      {/* Input de CVC: formatea y actualiza estado correctamente */}
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={isAmex ? 4 : 3}
-                        pattern={isAmex ? "\\d{4}" : "\\d{3}"}
-                        className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-                          cardErrors.cvc ? "border-red-500" : ""
-                        }`}
-                        placeholder={
-                          isAmex ? "CVC (4 dígitos)" : "CVC (3 dígitos)"
-                        }
-                        value={card.cvc
-                          .replace(/\D/g, "")
-                          .slice(0, isAmex ? 4 : 3)}
-                        onChange={(e) => {
-                          const raw = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, isAmex ? 4 : 3);
-                          setCard({ ...card, cvc: raw });
-                          setCardErrors((prev) => ({ ...prev, cvc: "" }));
-                        }}
-                        required
-                        autoComplete="cc-csc"
-                      />
-                      {cardErrors.cvc && (
-                        <span
-                          className="text-red-500 text-xs"
-                          style={{ marginTop: 2 }}
-                        >
-                          {cardErrors.cvc}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <input
-                      type="text"
-                      className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-                        cardErrors.name ? "border-red-500" : ""
-                      }`}
-                      placeholder="Nombre del titular (solo letras y espacios)"
-                      value={card.name.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")}
-                      onChange={(e) => {
-                        // Solo permitir letras y espacios
-                        const val = e.target.value.replace(
-                          /[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g,
-                          ""
-                        );
-                        setCard({ ...card, name: val });
-                        setCardErrors((prev) => ({ ...prev, name: "" }));
-                      }}
-                      required
-                      autoComplete="cc-name"
-                    />
-                    {cardErrors.name && (
-                      <span
-                        className="text-red-500 text-xs"
-                        style={{ marginTop: 2 }}
-                      >
-                        {cardErrors.name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="relative w-1/2">
-                      <select
-                        className="bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full shadow-sm transition-all duration-150 appearance-none cursor-pointer font-medium text-gray-700 pr-8"
-                        value={card.docType}
-                        onChange={(e) =>
-                          setCard({ ...card, docType: e.target.value })
-                        }
-                        required
-                      >
-                        <option value="C.C.">Cédula de ciudadanía</option>
-                        <option value="C.E.">Cédula de extranjería</option>
-                        <option value="NIT">NIT</option>
-                        <option value="T.I.">Tarjeta de identidad</option>
-                        <option value="P.P.">Pasaporte</option>
-                        <option value="Otro">Otro</option>
-                      </select>
-                      <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-[#2563EB] text-lg">
-                        ▼
-                      </span>
-                    </div>
-                    <div className="flex flex-col gap-1 w-1/2">
-                      {/* Input de documento: formatea y actualiza estado correctamente */}
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        maxLength={15}
-                        pattern="\d{6,15}"
-                        className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-                          cardErrors.docNumber ? "border-red-500" : ""
-                        }`}
-                        placeholder="Número de documento"
-                        value={card.docNumber.replace(/\D/g, "").slice(0, 15)}
-                        onChange={(e) => {
-                          const raw = e.target.value
-                            .replace(/\D/g, "")
-                            .slice(0, 15);
-                          setCard({ ...card, docNumber: raw });
-                          setCardErrors((prev) => ({ ...prev, docNumber: "" }));
-                        }}
-                        required
-                        autoComplete="off"
-                      />
-                      {cardErrors.docNumber && (
-                        <span
-                          className="text-red-500 text-xs"
-                          style={{ marginTop: 2 }}
-                        >
-                          {cardErrors.docNumber}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={2}
-                    pattern="\d{1,2}"
-                    className="bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700"
-                    placeholder="Cuotas (opcional)"
-                    value={card.installments.replace(/\D/g, "").slice(0, 2)}
-                    onChange={(e) => {
-                      // Solo permitir números y máximo 2 dígitos
-                      const val = e.target.value.replace(/\D/g, "").slice(0, 2);
-                      setCard({ ...card, installments: val });
-                    }}
-                    autoComplete="off"
-                  />
-                  <div className="text-xs text-gray-500 mt-1 mb-4">
-                    Si hay intereses, los aplicará y cobrará tu banco.
-                  </div>
-                  {/* Mensaje de error general debajo del botón principal */}
-                  {Object.values(cardErrors).some(Boolean) && (
-                    <div className="text-red-500 text-sm mt-2 text-center">
-                      Por favor completa todos los campos obligatorios.
-                    </div>
-                  )}
-                </div>
-              )}
-              {/* Otros métodos */}
-              <div
-                className="px-6 pb-2 flex flex-col gap-2"
-                style={{ background: "#fff" }}
-              >
-                <label className="flex items-center gap-2 mt-4">
-                  <input
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === "pse"}
-                    onChange={() => setPaymentMethod("pse")}
-                    className="accent-blue-600 w-5 h-5"
-                  />
-                  <span className="font-medium text-black">PSE</span>
-                </label>
-                <label className="flex items-center gap-2 justify-between">
-                  <span className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === "add"}
-                      onChange={() => setPaymentMethod("add")}
-                      className="accent-blue-600 w-5 h-5"
-                    />
-                    <span className="font-medium text-black">
-                      Addi - Paga después
-                    </span>
-                  </span>
-                  <span
-                    className="flex items-center justify-center bg-white rounded-full"
-                    style={{
-                      width: 54,
-                      height: 54,
-                      border: "2px solid #111",
-                      boxSizing: "border-box",
-                      padding: 0,
-                      marginRight: 0,
-                      background: "#fff",
-                    }}
-                  >
-                    <Image
-                      src={addiLogo}
-                      alt="Addi"
-                      width={38}
-                      height={38}
-                      style={{
-                        objectFit: "contain",
-                        filter: "invert(0) brightness(0) saturate(100%)",
-                      }}
-                    />
-                  </span>
-                </label>
-              </div>
-            </div>
-            {/* Guardar info */}
-            <div className="flex items-center gap-2 mb-4">
-              <input
-                type="checkbox"
-                checked={saveInfo}
-                onChange={(e) => setSaveInfo(e.target.checked)}
-                className="accent-blue-600 w-4 h-4"
-              />
-              <span className="text-sm">
-                ¿Quieres guardar esta información para tu próxima compra?
-              </span>
-            </div>
-          </div>
-          {/* Datos de facturación */}
-          <div>
-            <h2 className="text-xl font-bold mb-2">Datos de facturación</h2>
-            <select
-              className={`w-full bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] mb-2 transition-all duration-150 font-medium text-gray-700 ${
-                billingError ? "border-red-500" : ""
-              }`}
-              value={billingType}
-              onChange={(e) => {
-                setBillingType(e.target.value);
-                setBillingError("");
-              }}
-              required
-            >
-              <option value="">Selecciona un tipo de facturación</option>
-              <option value="personal">Personal</option>
-              <option value="empresa">Empresa</option>
-            </select>
-            {billingError && (
-              <span className="text-red-500 text-xs">{billingError}</span>
-            )}
-          </div>
-          {/* Políticas */}
-          <div className="flex items-center gap-2 mb-4">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-              className="accent-blue-600 w-4 h-4"
-              required
-            />
-            <span className="text-sm">
-              He leído y acepto las políticas de privacidad
-            </span>
-          </div>
-          {typeof onBack === "function" && (
-            <button
-              type="button"
-              className="w-full flex items-center justify-center gap-2 text-[#2563EB] font-semibold text-base py-2 rounded-lg bg-white border border-[#e5e5e5] shadow-sm hover:bg-[#e6f3ff] hover:text-[#005bb5] focus:outline-none focus:ring-2 focus:ring-[#2563EB] transition-all duration-150 mt-2"
-              onClick={onBack}
-            >
-              <span className="text-lg">←</span>
-              <span>Volver</span>
-            </button>
-          )}
-          {/* Mensaje de error general debajo del botón principal (dentro del form, para submit) */}
-          <div className="w-full flex justify-center">
-            {error && (
-              <div className="text-red-500 text-sm mt-4 text-center w-full max-w-md">
-                {error}
-              </div>
-            )}
-          </div>
+          {/* Payment Form */}
+          <PaymentForm
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={handlePaymentMethodChange}
+            card={card}
+            cardErrors={cardErrors}
+            onCardChange={handleCardChange}
+            onCardErrorChange={handleCardErrorChange}
+            saveInfo={saveInfo}
+            onSaveInfoChange={setSaveInfo}
+          />
+
+          {/* Billing section */}
+          <BillingTypeSelector
+            value={billingType}
+            onChange={handleBillingTypeChange}
+            error={billingError}
+          />
+
+          {/* Privacy policy acceptance */}
+          <PolicyAcceptance checked={accepted} onChange={setAccepted} />
+
+          {/* Action buttons */}
+          <CheckoutActions
+            onBack={onBack}
+            onFinish={() => {
+              const form = document.getElementById(
+                "checkout-form"
+              ) as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }}
+            isProcessing={isProcessing}
+            isAccepted={accepted}
+            error={error}
+          />
         </form>
         {/* Resumen de compra */}
         <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] border border-[#E5E5E5] sticky top-8">
@@ -843,7 +480,6 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           >
             Regresar al comercio
           </button>
-          {/* ...no mostrar error aquí, solo en el form... */}
         </aside>
       </div>
     </div>

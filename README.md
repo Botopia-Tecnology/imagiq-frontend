@@ -138,24 +138,6 @@ bun lint
 bun test
 ```
 
-## 📝 Variables de Entorno
-
-Crear un archivo `.env.local` con las siguientes variables:
-
-```env
-# API Configuration
-NEXT_PUBLIC_API_URL=http://localhost:8000
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# PostHog Analytics
-NEXT_PUBLIC_POSTHOG_KEY=your_posthog_key
-NEXT_PUBLIC_POSTHOG_HOST=https://app.posthog.com
-
-# Feature Flags
-NEXT_PUBLIC_ENABLE_ANALYTICS=true
-NEXT_PUBLIC_ENABLE_SESSION_REPLAY=true
-NEXT_PUBLIC_ENABLE_AB_TESTING=true
-```
 
 ## 🎨 Guía de Desarrollo
 

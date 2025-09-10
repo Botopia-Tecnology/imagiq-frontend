@@ -430,6 +430,7 @@ export default function Navbar() {
             title="Favoritos"
             aria-label="Favoritos"
             style={{ position: "relative" }}
+            onClick={() => router.push("/product-favoritos")} // <-- Redirecciona aquí
           >
             <Heart
               className={

@@ -687,7 +687,7 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
   transition: opacity 0.3s ease-out;
 }
 
-  /* Agrega esto en tu archivo global de estilos, por ejemplo src/app/globals.css */
+/* Agrega esto en tu archivo global de estilos, por ejemplo src/app/globals.css */
 .chatbot-panel {
   width: 370px;
   max-width: 100vw;
@@ -724,16 +724,77 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
   background: #000 !important;
 }
 
-/* Tamaño personalizado para el círculo de categoría */
+/* Tamaño base más grande para el círculo */
 .category-circle {
-  min-width: 8rem;
-  min-height: 8rem;
+  min-width: 110px;
+  min-height: 110px;
+  width: 110px;
+  height: 110px;
+  transition: width 0.3s, height 0.3s;
+  overflow: visible;
 }
 
-/* Tamaño personalizado para la imagen de categoría */
+/* Tamaño base más grande para el contenedor de imagen */
 .category-image-container {
-  width: 165px;
-  height: 165px;
+  width: 135px;
+  height: 135px;
+  transition: width 0.3s, height 0.3s;
+  overflow: visible;
+}
+
+/* Cuando está activa, el círculo y el contenedor crecen */
+
+.category-active {
+  min-width: 155px !important;
+  min-height: 155px !important;
+  width: 155px !important;
+  height: 155px !important;
+  z-index: 2;
+  box-shadow: 0 0 0 4px #e6f9e6;
+  overflow: visible !important;
+}
+
+.category-image-active {
+  width: 200px !important;
+  height: 200px !important;
+  overflow: visible !important;
+}
+
+/* El contenedor debe permitir el crecimiento sin cortar la imagen */
+.category-slider-col {
+  min-width: 180px !important;
+  min-height: 190px !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  overflow: visible;
+}
+
+/* Desktop: cuando está activa, el contenedor crece y permite overflow visible */
+@media (min-width: 481px) {
+  .category-slider-col.category-active {
+    min-width: 220px !important;
+    width: 220px !important;
+    max-width: 220px !important;
+    z-index: 2;
+    overflow: visible !important;
+    box-shadow: 0 0 0 4px #e6f9e6;
+  }
+  .category-image-container.category-image-active {
+    width: 180px !important;
+    height: 180px !important;
+    overflow: visible !important;
+  }
+}
+
+/* Ajuste para que se vean 4 categorías en móvil vertical */
+@media (max-width: 480px) and (orientation: portrait) {
+  .category-slider-col {
+    min-width: 0 !important;
+    width: 25% !important;
+    max-width: 25% !important;
+  }
 }
 
 

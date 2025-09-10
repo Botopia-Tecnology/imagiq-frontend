@@ -26,6 +26,7 @@ const publicRoutes = [
   "/carrito",
   "/dashboard",
   "/ofertas",
+  "/product-favoritos",
   // Chatbot steps públicos:
   "/chatbot/step1",
   "/chatbot/step2",

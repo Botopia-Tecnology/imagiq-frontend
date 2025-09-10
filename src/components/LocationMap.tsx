@@ -407,12 +407,9 @@ export default function LocationMap() {
     <div className="w-full relative z-10 flex flex-col items-center px-2 sm:px-4 md:px-0">
       {/* Header */}
       <div className="text-center mb-4 md:mb-6 animate-fade-in w-full">
-        <h1 className="text-xl md:text-2xl font-bold text-blue-900 tracking-tight drop-shadow-sm leading-tight md:leading-normal">
-          🗺️ Encuentra tu tienda más cercana
+        <h1 className="text-xl md:text-3xl font-bold text-black tracking-tight drop-shadow-sm leading-tight md:leading-normal">
+           Encuentra tu tienda más cercana
         </h1>
-        <p className="text-xs md:text-sm text-gray-500 mt-1 md:mt-2">
-          Filtra por ciudad y explora tiendas Samsung en Colombia
-        </p>
       </div>
 
       {/* City Filter - Responsive: móvil y desktop/tablet */}
@@ -420,14 +417,14 @@ export default function LocationMap() {
       {/* Card seleccionada arriba del mapa solo en móvil */}
       {hoveredStore && (
         <div className="md:hidden w-full flex justify-center mb-2 animate-fade-in px-1">
-          <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-3 w-full max-w-[99vw] mx-auto">
+          <div className=" rounded-xl  p-3 w-full max-w-[99vw] mx-auto">
             <StoreCard store={convertStoreToLocation(hoveredStore)} />
           </div>
         </div>
       )}
 
       {/* Interactive Map Container - Responsive: móvil y desktop/tablet */}
-      <div className="relativerounded-xl shadow-lg border  overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-1 md:mt-4 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
+      <div className="relative rounded-xl overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-1 md:mt-4 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
         <div className="relative h-[220px] xs:h-[260px] sm:h-[280px] md:h-[500px] lg:h-[600px] md:w-[1200px] lg:w-[1400px] w-full flex justify-center items-center">
           <MapContainer
             key={`map-${mapKey}`}

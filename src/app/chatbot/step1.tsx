@@ -31,25 +31,25 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       <h1 className="text-white text-4xl font-bold mb-12 text-center mt-32">
         Necesidad Primaria
       </h1>
-      <div className="flex flex-row gap-12">
+      <div className="flex flex-row gap-12 justify-center items-start">
         {opciones.map((op) => (
           <button
             key={op.label}
-            className="flex flex-col items-center focus:outline-none group"
+            className="flex flex-col justify-between items-center h-64 w-52 focus:outline-none group"
             onClick={onContinue}
             type="button"
           >
-            <Image
-              src={op.img}
-              alt={op.alt}
-              width={130}
-              height={130}
-              className="mb-2 object-contain group-hover:scale-105 transition-transform"
-              draggable={false}
-            />
             <span className="text-white text-lg font-semibold text-center group-hover:text-blue-400">
               {op.label}
             </span>
+            <Image
+              src={op.img}
+              alt={op.alt}
+              width={170}
+              height={170}
+              className="object-contain group-hover:scale-105 transition-transform"
+              draggable={false}
+            />
           </button>
         ))}
       </div>

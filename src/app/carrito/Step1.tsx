@@ -152,8 +152,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     });
   };
 
-  // ...existing code...
-
   // UX: feedback visual al agregar sugerencia
   const [addedName, setAddedName] = useState<string | null>(null);
   const handleAddSugerencia = (nombre: string) => {
@@ -288,7 +286,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             </div>
           </div>
           <button
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg text-base mt-2 hover:bg-blue-700 transition"
+            className="w-full font-bold py-3 rounded-lg text-base mt-2 transition shadow-lg"
+            style={{
+              backgroundColor: "#b2e2f2", // Color solicitado
+              color: "#222",
+              fontFamily: "Samsung Sharp Sans, sans-serif",
+            }}
             onClick={onContinue}
           >
             Continuar pago

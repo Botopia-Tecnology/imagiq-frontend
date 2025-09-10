@@ -385,10 +385,16 @@ export default function Step3({
             </div>
           </div>
           <div className="flex flex-col gap-1 mt-2">
+            {/* Botón principal para continuar el pago */}
             <button
-              className={`w-full bg-[#0074E8] text-white font-bold py-3 rounded-lg text-base hover:bg-blue-700 transition ${
+              className={`w-full font-bold py-3 rounded-lg text-base transition shadow-lg ${
                 !canContinue ? "opacity-50 cursor-not-allowed" : ""
               }`}
+              style={{
+                backgroundColor: "#b2e2f2", // Color solicitado
+                color: "#222", // Texto oscuro para mejor contraste
+                fontFamily: "Samsung Sharp Sans, sans-serif",
+              }}
               onClick={canContinue ? handleContinue : undefined}
               disabled={!canContinue}
             >

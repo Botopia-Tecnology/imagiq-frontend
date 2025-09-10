@@ -565,7 +565,12 @@ export default function Step2({
           <div className="flex flex-col gap-2 mt-6">
             <button
               type="button"
-              className="w-full bg-[#0074E8] text-white font-bold py-3 rounded-lg text-lg hover:bg-[#005bb5] transition"
+              className="w-full font-bold py-3 rounded-lg text-lg transition shadow-lg"
+              style={{
+                backgroundColor: "#b2e2f2", // Color solicitado
+                color: "#222",
+                fontFamily: "Samsung Sharp Sans, sans-serif",
+              }}
               onClick={() => {
                 // Simular un FormEvent real sin usar 'any'
                 const fakeEvent = {

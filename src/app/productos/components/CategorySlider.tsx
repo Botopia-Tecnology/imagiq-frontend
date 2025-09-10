@@ -123,8 +123,24 @@ export default function CategorySlider({
 
   return (
     <section className={cn("bg-white border-b border-gray-200 py-16", className)} style={{ overflow: "visible" }}>
-      <div className="container mx-auto px-6 max-[480px]:px-0" style={{ overflow: "visible" }}>
-        <div className="relative max-w-6xl mx-auto" style={{ overflow: "visible" }}>
+      <div
+        className={cn(
+          // En PC, slider alineado con el header (max-w-[1600px] centrado y px-24 dato que sirve para margen en el ancho )
+          "w-full",
+          "min-[1024px]:max-w-[1600px] min-[1024px]:mx-auto min-[1024px]:px-24",
+          // En móvil mantiene el padding
+          "max-[1023px]:container max-[1023px]:mx-auto max-[1023px]:px-6"
+        )}
+        style={{ overflow: "visible" }}
+      >
+        <div
+          className={cn(
+            "relative w-full", // En PC ocupa todo el ancho del contenedor
+            "min-[1024px]:max-w-[1600px] min-[1024px]:mx-auto",
+            "max-[1023px]:max-w-6xl max-[1023px]:mx-auto"
+          )}
+          style={{ overflow: "visible" }}
+        >
           {/* Botón anterior */}
           <button
             onClick={slideLeft}
@@ -156,10 +172,18 @@ export default function CategorySlider({
           </button>
 
           {/* Contenedor de categorías */}
-          <div className="overflow-visible mx-12 max-[480px]:mx-0">
+          <div className={cn(
+            "overflow-visible w-full", // PC ocupa todo el ancho del contenedor
+            "min-[1024px]:w-full min-[1024px]:px-0 min-[1024px]:mx-0",
+            "max-[1023px]:mx-0 max-[1023px]:px-0"
+          )}>
             <div
               ref={sliderRef}
-              className="flex transition-transform duration-300 ease-in-out gap-x-6 max-[480px]:gap-x-3"
+              className={cn(
+                "flex transition-transform duration-300 ease-in-out justify-between items-end w-full",
+                "min-[1024px]:gap-x-0", // Sin gap en PC para aprovechar ancho
+                "max-[1023px]:gap-x-3"
+              )}
               style={{
                 transform: `translateX(-${slideIndex * 25}%)`,
                 overflow: "visible",
@@ -170,10 +194,11 @@ export default function CategorySlider({
                 <div
                   key={`${category.id}-${index}`}
                   className={cn(
-                    "w-1/4 flex-shrink-0 flex flex-col items-center category-slider-col max-[480px]:w-[25%]",
-                    activeCategoryId === category.id
-                      ? "z-10" // Para que el seleccionado esté por encima
-                      : ""
+                    // PC: flex-1 y sin margen, móvil: ancho fijo y margen
+                    "flex-shrink-0 flex flex-col items-center category-slider-col",
+                    "min-[481px]:flex-1 min-[481px]:mx-0",
+                    "max-[480px]:w-[25%] max-[480px]:mx-2",
+                    activeCategoryId === category.id ? "z-10" : ""
                   )}
                 >
                   <button

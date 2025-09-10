@@ -122,12 +122,12 @@ export default function CategorySlider({
   };
 
   return (
-    <section className={cn("bg-white border-b border-gray-200 py-16", className)} style={{ overflow: "visible" }}>
+  <section className={cn("bg-white border-b border-gray-200 py-8", className)} style={{ overflow: "visible" }}> {/* py distancia entre slider y linea gris */}
       <div
         className={cn(
-          // En PC, slider alineado con el header (max-w-[1600px] centrado y px-24 dato que sirve para margen en el ancho )
+          // En PC, slider alineado con el header (max-w-[1600px] centrado y px-35 dato que sirve para margen en el ancho )
           "w-full",
-          "min-[1024px]:max-w-[1600px] min-[1024px]:mx-auto min-[1024px]:px-24",
+          "min-[1024px]:max-w-[1600px] min-[1024px]:mx-auto min-[1024px]:px-35",
           // En móvil mantiene el padding
           "max-[1023px]:container max-[1023px]:mx-auto max-[1023px]:px-6"
         )}
@@ -194,8 +194,8 @@ export default function CategorySlider({
                 <div
                   key={`${category.id}-${index}`}
                   className={cn(
-                    // PC: flex-1 y sin margen, móvil: ancho fijo y margen
                     "flex-shrink-0 flex flex-col items-center category-slider-col",
+                    "min-[1024px]:min-w-[260px] min-[1024px]:min-h-[260px]", // PC: mucho más grande
                     "min-[481px]:flex-1 min-[481px]:mx-0",
                     "max-[480px]:w-[25%] max-[480px]:mx-2",
                     activeCategoryId === category.id ? "z-10" : ""
@@ -206,47 +206,46 @@ export default function CategorySlider({
                     className={cn(
                       "relative flex items-center justify-center transition-all duration-300 hover:-translate-y-1",
                       "rounded-full category-circle",
+                      "min-[1024px]:min-w-[180px] min-[1024px]:min-h-[180px] min-[1024px]:w-[180px] min-[1024px]:h-[180px]", // PC: círculo mucho más grande
                       "overflow-visible",
                       activeCategoryId === category.id
-                        ? "bg-green-100 ring-2 ring-green-50 scale-110 max-[480px]:scale-105"
+                        ? "bg-green-100 ring-2 ring-green-50 scale-115 max-[480px]:scale-105"
                         : "bg-white hover:bg-white-100 scale-100"
                     )}
                   >
                     <span
                       className={cn(
                         "absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none category-image-container",
+                        "min-[1024px]:w-[220px] min-[1024px]:h-[220px]", // PC: imagen mucho más grande
                         activeCategoryId === category.id
-                          ? "scale-110 max-[480px]:scale-105"
+                          ? "scale-115 max-[480px]:scale-105"
                           : "scale-100"
                       )}
                     >
                       <Image
                         src={category.image}
                         alt={`${category.name} ${category.subtitle}`}
-                        width={165}
-                        height={165}
+                        width={220}
+                        height={220}
                         className="object-contain drop-shadow-lg"
                         priority
                       />
                     </span>
                   </button>
                   {/* Texto debajo */}
-                  <div className="text-center mt-3">
-                    <div className={cn(
-                      "font-bold text-gray-900 text-sm category-text max-[480px]:text-xs",
-                      activeCategoryId === category.id
-                        ? "scale-105"
-                        : ""
-                    )}>
-                      {category.name}
-                    </div>
-                    <div className={cn(
-                      "font-bold text-gray-900 text-sm category-text max-[480px]:text-xs",
-                      activeCategoryId === category.id
-                        ? "scale-105"
-                        : ""
-                    )}>
-                      {category.subtitle}
+                  <div className="text-center mt-6">  {/* mt ajuste distancia del texto a la imagen */}
+                    {/* PC: una sola línea, móvil: dos líneas */}
+                    <div
+                      className={cn(
+                        "font-bold text-gray-900 text-lg category-text inline-block",
+                        "min-[481px]:whitespace-nowrap min-[481px]:max-w-[220px] min-[481px]:overflow-hidden min-[481px]:text-ellipsis",
+                        "max-[480px]:block max-[480px]:text-xs max-[480px]:whitespace-normal",
+                        activeCategoryId === category.id ? "scale-110" : ""
+                      )}
+                      style={{ lineHeight: 1.2 }}
+                    >
+                      <span className="min-[481px]:inline max-[480px]:block">{category.name}</span>
+                      <span className="min-[481px]:inline max-[480px]:block"> {category.subtitle}</span>
                     </div>
                   </div>
                 </div>

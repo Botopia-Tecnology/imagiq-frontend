@@ -1,4 +1,4 @@
-import ViewProduct from "../../components/ViewProductMobile";
+import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { productsMock } from "../../components/productsMock";
 import { notFound } from "next/navigation";
 

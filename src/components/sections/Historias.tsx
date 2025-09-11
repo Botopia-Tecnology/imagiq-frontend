@@ -39,7 +39,7 @@ export default function Historias() {
   return (
     <section
       aria-labelledby="historias-title"
-      className="w-full bg-white py-12 flex flex-col items-center"
+      className="w-full py-12 flex flex-col items-center"
     >
       {/* Título principal */}
       <h2
@@ -50,13 +50,16 @@ export default function Historias() {
       </h2>
       {/* Imágenes y textos alineados exactamente como la referencia */}
       {/* Carrusel automático solo en móvil, animación suave e infinita */}
-      <div className="relative w-full">
-        <div className="md:hidden w-full overflow-x-hidden">
+      <div className="relative w-full ">
+        <div className="md:hidden w-full overflow-x-hidden p-0 m-0">
+          {/* Carrusel infinito mobile: animación fluida y continua */}
           <div
-            className="flex flex-nowrap gap-4 animate-historias-scroll"
-            style={{ animationDuration: "24s" }}
+            className="flex flex-nowrap gap-4 w-[calc(140px_*_24)] animate-historias-infinito-mobile"
+            style={{ animationDuration: "32s" }}
+            role="list"
+            aria-label="Historias Samsung"
           >
-            {/* Repetimos las historias 6 veces para que el loop sea largo y nunca se note el reinicio */}
+            {/* Duplicamos las historias para loop infinito, sin cortes */}
             {[
               ...historias,
               ...historias,
@@ -70,14 +73,15 @@ export default function Historias() {
                 className="flex flex-col items-center min-w-[140px] w-[140px] px-2 flex-shrink-0"
                 tabIndex={0}
                 aria-label={historia.title}
+                role="listitem"
               >
-                <div className="w-full h-full flex items-center justify-center bg-white shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105 rounded-xl">
+                <div className="w-full h-full flex items-center justify-center bg-transparent shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105 rounded-xl">
                   <Image
                     src={historia.image}
                     alt={historia.title}
                     width={120}
                     height={120}
-                    className="object-contain"
+                    className="object-contain rounded-2xl"
                     draggable={false}
                     priority={idx === 0}
                   />
@@ -99,13 +103,13 @@ export default function Historias() {
                 tabIndex={0}
                 aria-label={historia.title}
               >
-                <div className="w-full h-full flex items-center justify-center bg-white shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105 rounded-xl md:rounded-none">
+                <div className="w-full h-full flex items-center justify-center bg-transparent shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105 rounded-xl">
                   <Image
                     src={historia.image}
                     alt={historia.title}
                     width={200}
                     height={200}
-                    className="object-contain"
+                    className="object-contain rounded-3xl"
                     draggable={false}
                     priority={idx === 0}
                   />
@@ -119,6 +123,18 @@ export default function Historias() {
         </div>
         {/* Animación mejorada para carrusel móvil */}
         <style jsx>{`
+          @keyframes historias-infinito-mobile {
+            0% {
+              transform: translateX(0);
+            }
+            100% {
+              transform: translateX(-50%);
+            }
+          }
+          .animate-historias-infinito-mobile {
+            animation: historias-infinito-mobile linear infinite;
+            width: max-content;
+          }
           @keyframes historias-scroll {
             0% {
               transform: translateX(0);

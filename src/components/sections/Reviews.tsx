@@ -266,119 +266,116 @@ const Reviews = () => {
             </div>
           </div>
           {/* Mobile slider: carrusel auto-scroll infinito real, sin repetir manualmente las cards */}
-          <div className="md:hidden w-full overflow-x-hidden p-0 m-0">
-            {/* Carrusel infinito mobile: animación fluida y continua */}
+          <div className="md:hidden w-full overflow-x-hidden">
             <div
               ref={scrollRef}
-              className="flex flex-nowrap gap-20 w-[calc(90vw_*_16)] animate-reviews-infinito-mobile"
-              style={{ animationDuration: `${reviews.length * 12}s` }}
-              role="list"
-              aria-label="Opiniones de clientes"
+              className="flex flex-nowrap gap-4 animate-reviews-scroll"
+              style={{
+                animationDuration: `${reviews.length * 8}s`,
+                width: `calc(${reviews.length * 2} * 90vw + ${
+                  (reviews.length * 2 - 1) * 1
+                }rem)`,
+              }}
+              onAnimationIteration={() => {
+                if (scrollRef.current) scrollRef.current.scrollLeft = 0;
+              }}
             >
-              {/* Duplicamos las reviews para loop infinito, sin cortes */}
-              {[...reviews, ...reviews, ...reviews, ...reviews].map(
-                (review, idx) => (
+              {/* Concatenamos el array una vez para efecto infinito */}
+              {[...reviews, ...reviews].map((review, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "relative rounded-2xl flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 shadow-lg min-w-[90vw] w-[90vw] max-w-[90vw] snap-center"
+                  )}
+                  style={{
+                    minHeight: "340px",
+                    padding: "32px 16px",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                    borderRadius: "24px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "flex-end",
+                    opacity: 1,
+                    zIndex: 10,
+                    transform: "scale(1)",
+                    transition: "box-shadow 0.3s, transform 0.3s, opacity 0.3s",
+                  }}
+                >
+                  {/* Initial circle */}
                   <div
-                    key={idx}
                     className={cn(
-                      "relative rounded-2xl flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 shadow-lg min-w-[90vw] w-[90vw] max-w-[90vw] snap-center"
+                      "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold mb-3",
+                      review.color
                     )}
                     style={{
-                      minHeight: "340px",
-                      padding: "32px 16px",
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
-                      borderRadius: "24px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                      opacity: 1,
-                      zIndex: 10,
-                      transform: "scale(1)",
-                      transition:
-                        "box-shadow 0.3s, transform 0.3s, opacity 0.3s",
+                      fontFamily: "Samsung Sharp Sans, sans-serif",
+                      fontSize: "1.35rem",
                     }}
-                    role="listitem"
-                    tabIndex={0}
-                    aria-label={review.name}
                   >
-                    {/* Initial circle */}
-                    <div
-                      className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold mb-3",
-                        review.color
-                      )}
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.35rem",
-                      }}
-                    >
-                      {review.initial}
-                    </div>
-                    {/* Name */}
-                    <div
-                      className="font-bold text-gray-800 mb-2 text-center text-lg"
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.15rem",
-                      }}
-                    >
-                      {review.name}
-                    </div>
-                    {/* Stars */}
-                    <div className="flex justify-center mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <svg
-                          key={i}
-                          width="24"
-                          height="24"
-                          fill="none"
-                          stroke="#BDBDBD"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          className="mx-0.5"
-                        >
-                          <polygon
-                            points="12,2 15,8.5 22,9.3 17,14.1 18.5,21 12,17.7 5.5,21 7,14.1 2,9.3 9,8.5"
-                            fill="#BDBDBD"
-                          />
-                        </svg>
-                      ))}
-                    </div>
-                    {/* Text */}
-                    <div
-                      className="text-base text-gray-700 text-center leading-relaxed mt-2"
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.08rem",
-                        marginTop: 8,
-                        lineHeight: 1.4,
-                        maxWidth: 260,
-                        minHeight: 110,
-                        display: "flex",
-                        alignItems: "flex-end",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {review.text}
-                    </div>
+                    {review.initial}
                   </div>
-                )
-              )}
+                  {/* Name */}
+                  <div
+                    className="font-bold text-gray-800 mb-2 text-center text-lg"
+                    style={{
+                      fontFamily: "Samsung Sharp Sans, sans-serif",
+                      fontSize: "1.15rem",
+                    }}
+                  >
+                    {review.name}
+                  </div>
+                  {/* Stars */}
+                  <div className="flex justify-center mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <svg
+                        key={i}
+                        width="24"
+                        height="24"
+                        fill="none"
+                        stroke="#BDBDBD"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        className="mx-0.5"
+                      >
+                        <polygon
+                          points="12,2 15,8.5 22,9.3 17,14.1 18.5,21 12,17.7 5.5,21 7,14.1 2,9.3 9,8.5"
+                          fill="#BDBDBD"
+                        />
+                      </svg>
+                    ))}
+                  </div>
+                  {/* Text */}
+                  <div
+                    className="text-base text-gray-700 text-center leading-relaxed mt-2"
+                    style={{
+                      fontFamily: "Samsung Sharp Sans, sans-serif",
+                      fontSize: "1.08rem",
+                      marginTop: 8,
+                      lineHeight: 1.4,
+                      maxWidth: 260,
+                      minHeight: 110,
+                      display: "flex",
+                      alignItems: "flex-end",
+                      justifyContent: "center",
+                    }}
+                  >
+                    {review.text}
+                  </div>
+                </div>
+              ))}
             </div>
-            {/* Animación infinita mobile */}
             <style jsx>{`
-              @keyframes reviews-infinito-mobile {
+              @keyframes reviews-scroll {
                 0% {
                   transform: translateX(0);
                 }
                 100% {
-                  transform: translateX(-50%);
+                  transform: translateX(-${reviews.length * 90}vw);
                 }
               }
-              .animate-reviews-infinito-mobile {
-                animation: reviews-infinito-mobile linear infinite;
-                width: max-content;
+              .animate-reviews-scroll {
+                animation: reviews-scroll linear infinite;
               }
             `}</style>
           </div>

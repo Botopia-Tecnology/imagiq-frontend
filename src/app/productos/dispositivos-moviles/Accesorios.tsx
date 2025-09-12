@@ -20,6 +20,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -105,64 +107,6 @@ const accessoryFilters: FilterConfig = {
   tipoConector: ["USB-C", "Lightning", "Micro USB", "Wireless", "Magnético"],
 };
 
-const accessoryProducts = [
-  {
-    id: "cargador-rapido-25w",
-    name: "Samsung Cargador Rápido 25W USB-C",
-    image: smartphonesImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "black", hex: "#000000", label: "Negro" },
-    ] as ProductColor[],
-    rating: 4.6,
-    reviewCount: 1245,
-    price: "$ 89.000",
-    originalPrice: "$ 119.000",
-    discount: "-25%",
-  },
-  {
-    id: "funda-silicona-s24",
-    name: "Samsung Funda Silicona Galaxy S24 Ultra",
-    image: tabletasImg,
-    colors: [
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "blue", hex: "#1E40AF", label: "Azul" },
-      { name: "green", hex: "#10B981", label: "Verde" },
-      { name: "pink", hex: "#EC4899", label: "Rosa" },
-    ] as ProductColor[],
-    rating: 4.4,
-    reviewCount: 567,
-    price: "$ 129.000",
-  },
-  {
-    id: "correa-cuero-watch",
-    name: "Samsung Correa de Cuero Galaxy Watch",
-    image: galaxyWatchImg,
-    colors: [
-      { name: "brown", hex: "#8B4513", label: "Marrón" },
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "tan", hex: "#D2B48C", label: "Tostado" },
-    ] as ProductColor[],
-    rating: 4.7,
-    reviewCount: 324,
-    price: "$ 199.000",
-    originalPrice: "$ 249.000",
-    discount: "-20%",
-    isNew: true,
-  },
-  {
-    id: "protector-pantalla-tab",
-    name: "Protector de Pantalla Galaxy Tab S9",
-    image: tabletasImg,
-    colors: [
-      { name: "clear", hex: "#F8F8FF", label: "Transparente" },
-    ] as ProductColor[],
-    rating: 4.3,
-    reviewCount: 189,
-    price: "$ 79.000",
-  },
-];
-
 export default function AccesoriosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipoAccesorio"])
@@ -171,8 +115,18 @@ export default function AccesoriosSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(28);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
+
+  // Usar el hook de productos con filtro de subcategoría "Accesorios"
+  const { 
+    products, 
+    loading, 
+    error, 
+    totalItems,
+    refreshProducts 
+  } = useProducts({
+    subcategory: "Accesorios"
+  });
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -204,6 +158,45 @@ export default function AccesoriosSection() {
     setExpandedFilters(newExpanded);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CategorySlider
+          categories={accessoryCategories}
+          trackingPrefix="accessory_category"
+        />
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CategorySlider
+          categories={accessoryCategories}
+          trackingPrefix="accessory_category"
+        />
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar accesorios</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={refreshProducts}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
@@ -218,7 +211,7 @@ export default function AccesoriosSection() {
               filterConfig={accessoryFilters}
               filters={filters}
               onFilterChange={handleFilterChange}
-              resultCount={resultCount}
+              resultCount={totalItems}
               expandedFilters={expandedFilters}
               onToggleFilter={toggleFilter}
               trackingPrefix="accessory_filter"
@@ -230,7 +223,7 @@ export default function AccesoriosSection() {
               <div className="flex items-center gap-4">
                 <h1 className="text-2xl font-bold text-gray-900">Accesorios</h1>
                 <span className="text-sm text-gray-500">
-                  {resultCount} resultados
+                  {totalItems} resultados
                 </span>
               </div>
 
@@ -290,27 +283,33 @@ export default function AccesoriosSection() {
                   : "grid-cols-1"
               )}
             >
-              {accessoryProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  onAddToCart={(productId: string, color: string) => {
-                    console.log(`Añadir al carrito: ${productId} - ${color}`);
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    console.log(`Toggle favorito: ${productId}`);
-                  }}
-                />
-              ))}
+              {products.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  No se encontraron accesorios con los filtros seleccionados.
+                </div>
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    image={product.image}
+                    colors={product.colors}
+                    rating={product.rating}
+                    reviewCount={product.reviewCount}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    discount={product.discount}
+                    isNew={product.isNew}
+                    onAddToCart={(productId: string, color: string) => {
+                      console.log(`Añadir al carrito: ${productId} - ${color}`);
+                    }}
+                    onToggleFavorite={(productId: string) => {
+                      console.log(`Toggle favorito: ${productId}`);
+                    }}
+                  />
+                ))
+              )}
             </div>
           </main>
         </div>
@@ -322,7 +321,7 @@ export default function AccesoriosSection() {
         filterConfig={accessoryFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
-        resultCount={resultCount}
+        resultCount={totalItems}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
         trackingPrefix="accessory_filter"

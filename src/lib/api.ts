@@ -9,7 +9,7 @@
  */
 
 // API Client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 // Generic API response type
 interface ApiResponse<T> {
@@ -97,3 +97,67 @@ export class ApiClient {
 
 // Export singleton instance
 export const apiClient = new ApiClient();
+
+// Product API endpoints
+export const productEndpoints = {
+  getAll: () => apiClient.get<ProductApiResponse>('/products'),
+  getFiltered: (params: ProductFilterParams) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value));
+      }
+    });
+    return apiClient.get<ProductApiResponse>(`/products/filtered?${searchParams.toString()}`);
+  },
+  getById: (id: string) => apiClient.get<ProductApiResponse>(`/products/${id}`),
+  getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/products/filtered?categoria=${category}`),
+  getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/products/filtered?subcategoria=${subcategory}`),
+  search: (query: string) => apiClient.get<ProductApiResponse>(`/products/filtered?nombre=${query}`),
+  getOffers: () => apiClient.get<ProductApiResponse>('/products/filtered?conDescuento=true'),
+};
+
+// Product filter parameters interface
+export interface ProductFilterParams {
+  categoria?: string;
+  subcategoria?: string;
+  precioMin?: number;
+  precioMax?: number;
+  conDescuento?: boolean;
+  stockMinimo?: number;
+  color?: string;
+  capacidad?: string;
+  nombre?: string;
+  page?: number;
+  limit?: number;
+}
+
+// API Response types
+export interface ProductApiResponse {
+  products: ProductApiData[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ProductApiData {
+  codigoMarket: string;
+  nombreMarket: string;
+  categoria: string;
+  subcategoria: string;
+  modelo: string;
+  color: string;
+  capacidad: string;
+  descGeneral: string;
+  sku: string;
+  desDetallada: string;
+  stock: number;
+  urlImagenes: string;
+  urlRender3D: string;
+  precioNormal: number;
+  precioDescto: number;
+  fechaInicioVigencia: string;
+  fechaFinalVigencia: string;
+}

@@ -73,14 +73,7 @@ export default function Navbar() {
   const router = useRouter();
 
   // 2. Efectos y lógica
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+
 
   useEffect(() => {
     if (debouncedSearch.length > 2) {

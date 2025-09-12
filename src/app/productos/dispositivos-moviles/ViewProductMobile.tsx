@@ -238,12 +238,11 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
         <div
-          className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
+          className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
           <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-            {/* Imagen frame_311_black */}
             <Image
               src="/frame_311_black.png"
               alt="Frame"
@@ -291,7 +290,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
             {/* Botón añadir al carrito */}
             <button
-              className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-black hover:text-white transition-all"
+              className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
               style={{ fontFamily: "SamsungSharpSans" }}
               onClick={handleAddToCart}
             >
@@ -299,7 +298,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
             </button>
             {/* Botón comprar */}
             <button
-              className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
+              className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
               style={{ fontFamily: "SamsungSharpSans" }}
               onClick={handleBuy}
             >

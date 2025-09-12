@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
@@ -151,15 +151,17 @@ export default function GalaxyBudsSection() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Usar el hook de productos con filtro por palabra "buds"
+  const apiFilters = useMemo(() => ({
+    name: "buds" // Filtrar productos que contengan "buds" en el nombre
+  }), []);
+
   const { 
     products, 
     loading, 
     error, 
     totalItems,
     refreshProducts 
-  } = useProducts({
-    name: "buds" // Filtrar productos que contengan "buds" en el nombre
-  });
+  } = useProducts(apiFilters);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {

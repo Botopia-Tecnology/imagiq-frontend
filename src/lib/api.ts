@@ -108,7 +108,9 @@ export const productEndpoints = {
         searchParams.append(key, String(value));
       }
     });
-    return apiClient.get<ProductApiResponse>(`/products/filtered?${searchParams.toString()}`);
+    const url = `/products/filtered?${searchParams.toString()}`;
+    console.log(`🌐 URL completa generada: ${url}`);
+    return apiClient.get<ProductApiResponse>(url);
   },
   getById: (id: string) => apiClient.get<ProductApiResponse>(`/products/${id}`),
   getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/products/filtered?categoria=${category}`),
@@ -128,6 +130,7 @@ export interface ProductFilterParams {
   color?: string;
   capacidad?: string;
   nombre?: string;
+  desDetallada?: string; // Nuevo campo para buscar en descripción detallada
   page?: number;
   limit?: number;
 }

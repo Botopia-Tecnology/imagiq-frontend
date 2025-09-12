@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
@@ -120,15 +120,17 @@ export default function RelojesSection() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Usar el hook de productos con filtro por palabra "watch"
+  const apiFilters = useMemo(() => ({
+    name: "watch" // Filtrar productos que contengan "watch" en el nombre
+  }), []);
+
   const { 
     products, 
     loading, 
     error, 
     totalItems,
     refreshProducts 
-  } = useProducts({
-    name: "watch" // Filtrar productos que contengan "watch" en el nombre
-  });
+  } = useProducts(apiFilters);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {

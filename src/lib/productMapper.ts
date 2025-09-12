@@ -60,6 +60,13 @@ const colorMap: Record<string, { hex: string; label: string }> = {
  * Convierte un producto de la API al formato del frontend
  */
 export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCardProps {
+  // Log para productos de accesorios para debug
+  if (apiProduct.subcategoria === 'Accesorios') {
+    console.log(`🔧 Accesorio detectado: ${apiProduct.nombreMarket}`);
+    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
+    console.log(`🏷️ Modelo: ${apiProduct.modelo}`);
+  }
+
   // Determinar imagen basada en categoría/subcategoría
   const image = getProductImage(apiProduct);
   
@@ -102,18 +109,21 @@ function getProductImage(apiProduct: ProductApiData): any {
   // Galaxy Watch - usar imagen específica de relojes
   if (productName.includes('watch') || modelName.includes('watch')) {
     console.log(`🔍 Galaxy Watch detectado: ${apiProduct.nombreMarket} - usando imagen de relojes`);
+    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
     return galaxyWatchImg;
   }
   
   // Galaxy Buds - usar imagen específica de audífonos
   if (productName.includes('buds') || modelName.includes('buds')) {
     console.log(`🔍 Galaxy Buds detectado: ${apiProduct.nombreMarket} - usando imagen de audífonos`);
+    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
     return galaxyBudsImg;
   }
   
   // Galaxy Tab - usar imagen específica de tabletas
   if (productName.includes('tab') || modelName.includes('tab')) {
     console.log(`🔍 Galaxy Tab detectado: ${apiProduct.nombreMarket} - usando imagen de tabletas`);
+    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
     return tabletasImg;
   }
   

@@ -22,6 +22,7 @@ interface ProductFilters {
   name?: string;
   withDiscount?: boolean;
   minStock?: number;
+  descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
 }
 
 interface UseProductsReturn {
@@ -41,7 +42,7 @@ interface UseProductsReturn {
   hasMore: boolean;
 }
 
-export const useProducts = (initialFilters?: ProductFilters): UseProductsReturn => {
+export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilters)): UseProductsReturn => {
   const [products, setProducts] = useState<ProductCardProps[]>([]);
   const [groupedProducts, setGroupedProducts] = useState<Record<string, ProductCardProps[]>>({});
   const [loading, setLoading] = useState(false);
@@ -51,7 +52,9 @@ export const useProducts = (initialFilters?: ProductFilters): UseProductsReturn 
   const [currentPage, setCurrentPage] = useState(1);
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
-  const [currentFilters, setCurrentFilters] = useState<ProductFilters>(initialFilters || {});
+  const [currentFilters, setCurrentFilters] = useState<ProductFilters>(
+    typeof initialFilters === 'function' ? initialFilters() : (initialFilters || {})
+  );
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = (filters: ProductFilters): ProductFilterParams => {
@@ -69,6 +72,10 @@ export const useProducts = (initialFilters?: ProductFilters): UseProductsReturn 
     if (filters.name) params.nombre = filters.name;
     if (filters.withDiscount !== undefined) params.conDescuento = filters.withDiscount;
     if (filters.minStock !== undefined) params.stockMinimo = filters.minStock;
+    if (filters.descriptionKeyword) {
+      // Usar el campo desDetallada para buscar en la descripción detallada
+      params.desDetallada = filters.descriptionKeyword;
+    }
 
     return params;
   };
@@ -80,6 +87,7 @@ export const useProducts = (initialFilters?: ProductFilters): UseProductsReturn 
 
     try {
       const apiParams = convertFiltersToApiParams(filters);
+      console.log(`🌐 Parámetros de API enviados:`, apiParams);
       const response = await productEndpoints.getFiltered(apiParams);
 
       if (response.success && response.data) {
@@ -132,15 +140,17 @@ export const useProducts = (initialFilters?: ProductFilters): UseProductsReturn 
     }
   }, [hasNextPage, loading, currentFilters, fetchProducts]);
 
-  // Función para refrescar productos
+  // Función para refrescar productos con filtros dinámicos
   const refreshProducts = useCallback(async () => {
-    await fetchProducts(currentFilters, false);
-  }, [currentFilters, fetchProducts]);
+    const filtersToUse = typeof initialFilters === 'function' ? initialFilters() : currentFilters;
+    await fetchProducts(filtersToUse, false);
+  }, [initialFilters, currentFilters, fetchProducts]);
 
-  // Cargar productos iniciales
+  // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {
-    fetchProducts(initialFilters || {}, false);
-  }, []);
+    const filtersToUse = typeof initialFilters === 'function' ? initialFilters() : (initialFilters || {});
+    fetchProducts(filtersToUse, false);
+  }, [initialFilters, fetchProducts]);
 
   return {
     products,

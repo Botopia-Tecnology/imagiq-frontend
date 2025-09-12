@@ -1,4 +1,4 @@
-export interface AddiPaymentData {
+export interface BasicPaymentData {
   totalAmount: string;
   shippingAmount: string;
   currency: string;
@@ -7,6 +7,7 @@ export interface AddiPaymentData {
   metodo_envio: number;
 }
 
+export type AddiPaymentData = BasicPaymentData;
 export interface Item {
   sku: string;
   name: string;
@@ -18,5 +19,11 @@ export interface UserInfo {
   userId: string;
   direccionId: string;
 }
-
+export interface CardPaymentData extends BasicPaymentData {
+  cardExpYear: string;
+  cardExpMonth: string;
+  cardNumber: string;
+  cardCvc: string;
+  dues: string;
+}
 export type PaymentMethod = "addi" | "tarjeta" | "pse";

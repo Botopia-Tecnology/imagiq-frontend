@@ -10,7 +10,7 @@
  */
 
 "use client";
-
+import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -42,6 +42,7 @@ export default function CategorySlider({
   const [slideIndex, setSlideIndex] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Detecta la sección activa desde la URL
   const sectionParam = searchParams.get("section");
@@ -76,7 +77,7 @@ export default function CategorySlider({
       onCategoryClick(category);
     } else {
       // Si no hay handler personalizado, navegar al href
-      window.location.href = category.href;
+      router.push(category.href);
     }
   };
 

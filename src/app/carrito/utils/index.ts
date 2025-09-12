@@ -1,5 +1,5 @@
 "use client";
-import { AddiPaymentData } from "../types";
+import { AddiPaymentData, CardPaymentData } from "../types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -21,6 +21,26 @@ export async function payWithAddi(
     return data;
   } catch (error) {
     console.error("Error initiating Addi payment:", error);
+    return null;
+  }
+}
+
+export async function payWithCard(props: CardPaymentData) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/payments/epayco/credit-card`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(props),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to process card payment");
+    }
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Error processing card payment:", error);
     return null;
   }
 }

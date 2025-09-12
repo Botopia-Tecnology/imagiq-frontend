@@ -3,7 +3,8 @@ import React from "react";
 
 interface CardData {
   number: string;
-  expiry: string;
+  expiryMonth: string;
+  expiryYear: string;
   cvc: string;
   name: string;
   docType: string;
@@ -13,7 +14,8 @@ interface CardData {
 
 interface CardErrors {
   number: string;
-  expiry: string;
+  expiryMonth: string;
+  expiryYear: string;
   cvc: string;
   name: string;
   docNumber: string;
@@ -36,6 +38,32 @@ export default function CreditCardForm({
 }: CreditCardFormProps) {
   // Determinar si la tarjeta es Amex para los inputs
   const isAmex = card.number.startsWith("34") || card.number.startsWith("37");
+
+  // Función para validar si la fecha de expiración es mayor a la actual
+  const validateExpiryDate = (month: string, year: string): string => {
+    if (!month || !year) return "";
+
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // getMonth() returns 0-11
+
+    const expiryYear = parseInt(year);
+    const expiryMonth = parseInt(month);
+
+    if (isNaN(expiryYear) || isNaN(expiryMonth)) return "";
+
+    // Validar que el año no sea menor al actual
+    if (expiryYear < currentYear) {
+      return "El año de expiración no puede ser menor al actual";
+    }
+
+    // Si es el año actual, validar que el mes sea mayor al actual
+    if (expiryYear === currentYear && expiryMonth <= currentMonth) {
+      return "La fecha de expiración debe ser mayor a la actual";
+    }
+
+    return "";
+  };
 
   if (!isVisible) return null;
 
@@ -74,37 +102,89 @@ export default function CreditCardForm({
 
       {/* Expiry and CVC */}
       <div className="flex gap-2">
-        <div className="flex flex-col gap-1 w-1/2">
+        <div className="flex flex-col gap-1 w-1/3">
           <input
             type="text"
+            inputMode="numeric"
+            maxLength={2}
+            pattern="\d{1,2}"
             className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-              cardErrors.expiry ? "border-red-500" : ""
+              cardErrors.expiryMonth ? "border-red-500" : ""
             }`}
-            placeholder="Fecha de vencimiento (MM/AA)"
-            value={card.expiry
-              .replace(/[^\d]/g, "")
-              .replace(/(\d{2})(\d{0,2})/, (m, p1, p2) =>
-                p2 ? `${p1}/${p2}` : p1
-              )}
+            placeholder="Mes (MM)"
+            value={card.expiryMonth.replace(/\D/g, "").slice(0, 2)}
             onChange={(e) => {
-              // Solo permitir números y máximo 4 dígitos (MMYY)
-              const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
-              let formatted = raw;
-              if (raw.length >= 3) {
-                formatted = `${raw.slice(0, 2)}/${raw.slice(2, 4)}`;
+              const raw = e.target.value.replace(/\D/g, "").slice(0, 2);
+              // Validar que el mes esté entre 01 y 12
+              let formattedMonth = raw;
+              if (raw.length === 1 && parseInt(raw) > 1) {
+                formattedMonth = "0" + raw;
+              } else if (raw.length === 2) {
+                const monthNum = parseInt(raw);
+                if (monthNum < 1) formattedMonth = "01";
+                else if (monthNum > 12) formattedMonth = "12";
               }
-              onCardChange({ ...card, expiry: formatted });
-              onErrorChange({ expiry: "" });
+              onCardChange({ ...card, expiryMonth: formattedMonth });
+
+              // Validar fecha de expiración si tenemos mes y año
+              const validationError = validateExpiryDate(
+                formattedMonth,
+                card.expiryYear
+              );
+              onErrorChange({
+                expiryMonth:
+                  validationError && formattedMonth.length === 2
+                    ? validationError
+                    : "",
+                expiryYear:
+                  validationError && card.expiryYear.length === 4
+                    ? validationError
+                    : "",
+              });
             }}
             required
           />
-          {cardErrors.expiry && (
+          {cardErrors.expiryMonth && (
             <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
-              {cardErrors.expiry}
+              {cardErrors.expiryMonth}
             </span>
           )}
         </div>
-        <div className="flex flex-col gap-1 w-1/2">
+        <div className="flex flex-col gap-1 w-1/3">
+          <input
+            type="text"
+            inputMode="numeric"
+            maxLength={4}
+            pattern="\d{4}"
+            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
+              cardErrors.expiryYear ? "border-red-500" : ""
+            }`}
+            placeholder="Año (AAAA)"
+            value={card.expiryYear.replace(/\D/g, "").slice(0, 4)}
+            onChange={(e) => {
+              const raw = e.target.value.replace(/\D/g, "").slice(0, 4);
+              onCardChange({ ...card, expiryYear: raw });
+
+              // Validar fecha de expiración si tenemos mes y año
+              const validationError = validateExpiryDate(card.expiryMonth, raw);
+              onErrorChange({
+                expiryMonth:
+                  validationError && card.expiryMonth.length === 2
+                    ? validationError
+                    : "",
+                expiryYear:
+                  validationError && raw.length === 4 ? validationError : "",
+              });
+            }}
+            required
+          />
+          {cardErrors.expiryYear && (
+            <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
+              {cardErrors.expiryYear}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-col gap-1 w-1/3">
           <input
             type="text"
             inputMode="numeric"

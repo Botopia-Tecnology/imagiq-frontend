@@ -8,7 +8,7 @@ import BillingTypeSelector from "./components/BillingTypeSelector";
 import PolicyAcceptance from "./components/PolicyAcceptance";
 import CheckoutActions from "./components/CheckoutActions";
 import { PaymentMethod } from "./types";
-import { payWithAddi } from "./utils";
+import { payWithAddi, payWithCard } from "./utils";
 
 function getCartProducts() {
   if (typeof window === "undefined") return [];
@@ -68,7 +68,8 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     }
     return {
       number: "",
-      expiry: "",
+      expiryMonth: "",
+      expiryYear: "",
       cvc: "",
       name: "",
       docType: "C.C.",
@@ -79,7 +80,8 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   // Estado para errores de campos de tarjeta - usando el tipo del componente
   const [cardErrors, setCardErrors] = useState<CardErrors>({
     number: "",
-    expiry: "",
+    expiryMonth: "",
+    expiryYear: "",
     cvc: "",
     name: "",
     docNumber: "",
@@ -161,7 +163,8 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
   function validateCardFields() {
     const errors: typeof cardErrors = {
       number: "",
-      expiry: "",
+      expiryMonth: "",
+      expiryYear: "",
       cvc: "",
       name: "",
       docNumber: "",
@@ -202,30 +205,49 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           // No bloquea el pago, solo advierte
         }
       }
-      // Fecha de vencimiento MM/AA y que no esté vencida
-      const expiryRaw = card.expiry.replace(/[^\d]/g, "");
-      let expiryFormatted = card.expiry;
-      if (expiryRaw.length === 4) {
-        expiryFormatted = `${expiryRaw.slice(0, 2)}/${expiryRaw.slice(2, 4)}`;
-      }
-      if (!/^\d{2}\/\d{2}$/.test(expiryFormatted)) {
-        errors.expiry =
-          "Por favor ingresa la fecha de vencimiento en formato MM/AA.";
+      // Fecha de vencimiento (mes y año separados)
+      // Validar mes
+      if (!card.expiryMonth || !/^\d{1,2}$/.test(card.expiryMonth)) {
+        errors.expiryMonth = "Por favor ingresa un mes válido (01-12).";
         hasError = true;
       } else {
-        const [mm, aa] = expiryFormatted.split("/");
-        const month = Number(mm);
-        const year = Number(aa) + 2000;
-        const now = new Date();
-        const expDate = new Date(year, month - 1, 1);
+        const month = Number(card.expiryMonth);
         if (month < 1 || month > 12) {
-          errors.expiry =
-            "El mes ingresado no es válido. Usa un valor entre 01 y 12.";
+          errors.expiryMonth = "El mes debe estar entre 01 y 12.";
           hasError = true;
-        } else if (expDate < new Date(now.getFullYear(), now.getMonth(), 1)) {
-          errors.expiry =
-            "La tarjeta está vencida. Ingresa una tarjeta vigente.";
-          hasError = true;
+        }
+      }
+
+      // Validar año
+      if (!card.expiryYear || !/^\d{4}$/.test(card.expiryYear)) {
+        errors.expiryYear = "Por favor ingresa un año válido (4 dígitos).";
+        hasError = true;
+      }
+
+      // Validar que la fecha no esté vencida (solo si ambos campos son válidos)
+      if (
+        card.expiryMonth &&
+        card.expiryYear &&
+        !/^\d{1,2}$/.test(card.expiryMonth) === false &&
+        !/^\d{4}$/.test(card.expiryYear) === false
+      ) {
+        const month = Number(card.expiryMonth);
+        const year = Number(card.expiryYear);
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1;
+
+        if (month >= 1 && month <= 12) {
+          if (
+            year < currentYear ||
+            (year === currentYear && month <= currentMonth)
+          ) {
+            errors.expiryMonth =
+              "La tarjeta está vencida. Ingresa una fecha vigente.";
+            errors.expiryYear =
+              "La tarjeta está vencida. Ingresa una fecha vigente.";
+            hasError = true;
+          }
         }
       }
       // CVC: 3 dígitos para Visa/Mastercard, 4 para Amex
@@ -336,10 +358,35 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
               direccionId: direction.id,
             },
           });
-          if (!res) {
+          if (res === null) {
             redirectToError();
           }
-          router.push(String(res?.redirectUrl));
+          console.log(res);
+        case "tarjeta":
+          res = await payWithCard({
+            cardCvc: card.cvc,
+            cardExpMonth: card.expiryMonth,
+            cardExpYear: card.expiryYear,
+            cardNumber: card.number,
+            dues: card.installments,
+            items: cartProducts.map((p) => ({
+              name: String(p.name),
+              sku: String(p.sku),
+              quantity: String(p.quantity),
+              unitPrice: String(p.price),
+            })),
+            metodo_envio: 2,
+            shippingAmount: String(envio),
+            totalAmount: "20000",
+            currency: "COP",
+            userInfo: {
+              userId: userInfo.id,
+              direccionId: direction.id,
+            },
+          });
+          if (!res) {
+            redirectToError()
+          }
       }
     } catch (err) {
       console.error("Error al guardar datos de orden:", err);

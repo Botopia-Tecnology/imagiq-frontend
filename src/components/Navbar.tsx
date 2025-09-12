@@ -218,7 +218,7 @@ export default function Navbar() {
     "/productos/dispositivos-moviles"
   );
   const isElectrodomesticos = pathname.startsWith(
-    "/productos/Electrodomesticos"
+    "/productos/electrodomesticos"
   );
   const isNavbarItem = navbarRoutes.some((route) =>
     pathname.startsWith(route.href)
@@ -564,7 +564,7 @@ export default function Navbar() {
             // Indicador activo: cubre coincidencia exacta, rutas hijas y query params para Electrodomésticos
             let isActive = false;
             if (item.name === "Electrodomésticos") {
-              isActive = pathname.startsWith("/productos/Electrodomesticos");
+              isActive = pathname.startsWith("/productos/electrodomesticos");
             } else {
               isActive =
                 pathname === item.href ||

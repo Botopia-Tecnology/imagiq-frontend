@@ -22,7 +22,9 @@ import EspecificacionesProduct from "./EspecificacionesProduct";
 import ComparationProduct from "./ComparationProduct";
 import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
-
+import ARViewer from "../components/Product3DViewerModelViewer";
+import QRDesktop from "../components/QRDesktop";
+//import Product3DViewerModelViewer from "../components/Product3DViewerModelViewer";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -49,13 +51,13 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   const pathname = usePathname();
   const [showBar, setShowBar] = useState(false);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBar(window.scrollY > 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  // useEffect(() => {
+  //   const handleScroll = () => {
+  //     setShowBar(window.scrollY > 100);
+  //   };
+  //   window.addEventListener("scroll", handleScroll);
+  //   return () => window.removeEventListener("scroll", handleScroll);
+  // }, []);
 
   const isProductDetailView = pathname.startsWith("/productos/view/");
 
@@ -214,7 +216,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
               </button>
             </div>
           </div>
-          {/* Columna derecha: imagen producto dinámica */}
+          
           <div className="flex-1 flex items-center justify-center">
             <Image
               src={safeProduct.image}
@@ -227,6 +229,10 @@ export default function ViewProduct({ product }: { product: ProductData }) {
             />
           </div>
         </div>
+           <ARViewer modelUrl={'https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Nevera+Samsung.glb'}></ARViewer> 
+           <QRDesktop />   
+          {/*<Product3DViewerModelViewer modelUrl={'https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Nevera+Samsung.glb'} ></Product3DViewerModelViewer>*/}
+          {/* Columna derecha: imagen producto dinámica */}
       </section>
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (

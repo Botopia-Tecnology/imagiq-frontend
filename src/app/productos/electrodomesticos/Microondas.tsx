@@ -22,28 +22,28 @@ const applianceCategories: Category[] = [
     name: "Refrigeradores",
     subtitle: "",
     image: refrigeradorImg,
-    href: "/productos/Electrodomesticos?section=refrigeradores",
+    href: "/productos/electrodomesticos?section=refrigeradores",
   },
   {
     id: "lavadoras",
     name: "Lavadoras",
     subtitle: "",
     image: lavadoraImg,
-    href: "/productos/Electrodomesticos?section=lavadoras",
+    href: "/productos/electrodomesticos?section=lavadoras",
   },
   {
     id: "microondas",
     name: "Microondas",
     subtitle: "",
     image: microondasImg,
-    href: "/productos/Electrodomesticos?section=microondas",
+    href: "/productos/electrodomesticos?section=microondas",
   },
   {
     id: "aspiradoras",
     name: "Aspiradoras",
     subtitle: "",
     image: aspiradoraImg,
-    href: "/productos/Electrodomesticos?section=aspiradoras",
+    href: "/productos/electrodomesticos?section=aspiradoras",
   },
 ];
 

@@ -1,5 +1,7 @@
 // Mock global de productos para desarrollo
 import smartphonesImg from "@/img/categorias/Smartphones.png";
+import { ProductColor } from "./ProductCard";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 
 export const productsMock = [
   {
@@ -112,4 +114,18 @@ export const productsMock = [
       { label: "Almacenamiento", value: "128GB" },
     ],
   },
+      {
+      id: "rf28r7351sr",
+      name: "Samsung Refrigerador French Door 27.4 pies RF28R7351SR",
+      image: refrigeradorImg,
+      colors: [
+        { name: "steel", hex: "#71717A", label: "Acero Inoxidable" },
+      ] as ProductColor[],
+      rating: 4.8,
+      reviewCount: 452,
+      price: "$ 4.499.000",
+      originalPrice: "$ 4.999.000",
+      discount: "-10%",
+      isNew: true,
+    },
 ];

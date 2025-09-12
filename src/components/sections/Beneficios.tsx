@@ -29,21 +29,27 @@ export default function Beneficios() {
 
         {/* Carrusel infinito SOLO en mobile */}
         <div className="md:hidden relative w-full overflow-hidden">
-          {/* Overlays con degradado negro en los lados, elegante y sutil */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-black/60 via-black/30 to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-black/60 via-black/30 to-transparent z-10" />
+          {/* Overlays con degradado blanco en los lados, elegante y sutil */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white via-white/80 to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 bg-gradient-to-l from-white via-white/80 to-transparent z-10" />
 
-          {/* Track que se desplaza de forma continua */}
+          {/* Track que se desplaza de forma continua con máscara de desvanecimiento */}
           <div
             className="flex flex-nowrap gap-6 animate-beneficios-infinito"
-            style={{ animationDuration: "14s" }}
+            style={{
+              animationDuration: "14s",
+              WebkitMaskImage:
+                "linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%)",
+              maskImage:
+                "linear-gradient(to right, transparent 0%, black 14%, black 86%, transparent 100%)",
+            }}
             role="list"
             aria-label="Beneficios Samsung Colombia"
           >
             {beneficiosDuplicados.map((b, i) => (
               <div
                 key={i}
-                className="flex flex-col items-center min-w-[100px] w-[100px] flex-shrink-0 mb-0"
+                className="flex flex-col items-center min-w-[100px] w-[100px] flex-shrink-0 mb-0 transition-opacity duration-500"
                 role="listitem"
               >
                 <div className="mb-3">

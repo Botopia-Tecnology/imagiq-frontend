@@ -54,7 +54,7 @@ const Reviews = () => {
     setActive((prev) => (prev === reviews.length ? 1 : prev + 1));
 
   return (
-    <section className="w-full py-14 bg-white">
+    <section className="w-full py-14 bg-white md:mb-0 pb-10">
       <div className="max-w-6xl mx-auto px-4">
         {/* Títulos */}
         <h2
@@ -270,7 +270,7 @@ const Reviews = () => {
             {/* Carrusel infinito mobile: animación fluida y continua */}
             <div
               ref={scrollRef}
-              className="flex flex-nowrap gap-20 w-[calc(90vw_*_16)] animate-reviews-infinito-mobile"
+              className="flex flex-nowrap gap-20 w-[calc(70vw_*_16)] animate-reviews-infinito-mobile"
               style={{ animationDuration: `${reviews.length * 12}s` }}
               role="list"
               aria-label="Opiniones de clientes"
@@ -281,12 +281,12 @@ const Reviews = () => {
                   <div
                     key={idx}
                     className={cn(
-                      "relative rounded-2xl flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 shadow-lg min-w-[90vw] w-[90vw] max-w-[90vw] snap-center"
+                      "relative rounded-2xl flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg"
                     )}
                     style={{
                       minHeight: "340px",
                       padding: "32px 16px",
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
+                      boxShadow: "0 12px 36px rgba(0,0,0,0.13)", // sombra suave abajo
                       borderRadius: "24px",
                       display: "flex",
                       flexDirection: "column",

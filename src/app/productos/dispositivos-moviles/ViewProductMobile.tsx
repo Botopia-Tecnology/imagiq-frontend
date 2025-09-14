@@ -241,69 +241,90 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
-          {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-          <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-            <Image
-              src="/frame_311_black.png"
-              alt="Frame"
-              width={32}
-              height={32}
-              className="object-contain"
-              priority
-            />
-            {/* Logo Samsung clickable */}
-            <button
-              className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
-              title="Ir al inicio"
-              aria-label="Ir al inicio"
-              onClick={() => (window.location.href = "/")}
-            >
-              <Image
-                src={samsungLogo}
-                alt="Samsung Logo"
-                width={110}
-                height={32}
-                style={{ objectFit: "contain" }}
-                priority
-              />
-            </button>
-            {/* Imagen store_black */}
-            <Image
-              src="/store_black.png"
-              alt="Store"
-              width={32}
-              height={32}
-              className="object-contain"
-              priority
-            />
-          </div>
-          {/* Nombre centrado */}
-          <div className="flex-1 flex justify-center">
+          {/* MOBILE: solo nombre y botón comprar */}
+          <div className="flex w-full items-center justify-between md:hidden">
+            {/* Nombre a la izquierda */}
             <span
-              className="font-bold text-base md:text-lg text-center"
-              style={{ fontFamily: "SamsungSharpSans" }}
+              className="font-bold text-base text-black text-left truncate"
+              style={{ fontFamily: "SamsungSharpSans", maxWidth: "60vw" }}
             >
               {safeProduct.name}
             </span>
-          </div>
-          {/* Parte derecha: botón añadir al carrito + botón comprar */}
-          <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-            {/* Botón añadir al carrito */}
+            {/* Botón comprar a la derecha */}
             <button
-              className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
-              style={{ fontFamily: "SamsungSharpSans" }}
-              onClick={handleAddToCart}
-            >
-              Añadir al carrito
-            </button>
-            {/* Botón comprar */}
-            <button
-              className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
+              className="bg-black text-white rounded-full px-4 py-2 h-10 font-semibold text-sm shadow hover:bg-gray-900 transition-all min-w-[90px]"
               style={{ fontFamily: "SamsungSharpSans" }}
               onClick={handleBuy}
             >
               Comprar
             </button>
+          </div>
+          {/* DESKTOP/TABLET: diseño original */}
+          <div className="hidden md:flex w-full items-center justify-between">
+            {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
+            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
+              <Image
+                src="/frame_311_black.png"
+                alt="Frame"
+                width={32}
+                height={32}
+                className="object-contain"
+                priority
+              />
+              {/* Logo Samsung clickable */}
+              <button
+                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
+                title="Ir al inicio"
+                aria-label="Ir al inicio"
+                onClick={() => (window.location.href = "/")}
+              >
+                <Image
+                  src={samsungLogo}
+                  alt="Samsung Logo"
+                  width={110}
+                  height={32}
+                  style={{ objectFit: "contain" }}
+                  priority
+                />
+              </button>
+              {/* Imagen store_black */}
+              <Image
+                src="/store_black.png"
+                alt="Store"
+                width={32}
+                height={32}
+                className="object-contain"
+                priority
+              />
+            </div>
+            {/* Nombre centrado */}
+            <div className="flex-1 flex justify-center">
+              <span
+                className="font-bold text-base md:text-lg text-center"
+                style={{ fontFamily: "SamsungSharpSans" }}
+              >
+                {safeProduct.name}
+              </span>
+            </div>
+            {/* Parte derecha: botón añadir al carrito + botón comprar */}
+            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
+              {/* Botón añadir al carrito */}
+              <button
+                className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleAddToCart}
+              >
+                Añadir al carrito
+              </button>
+              {/* Botón comprar */}
+              <button
+                className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleBuy}
+              >
+                Comprar
+              </button>
+            </div>
           </div>
         </div>
       )}

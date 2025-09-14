@@ -3,15 +3,11 @@
  * 🧭 NAVBAR PRINCIPAL - IMAGIQ ECOMMERCE
  * Limpio, escalable y con animaciones suaves en hover
  */
-import { useState, useEffect, useRef, RefCallback } from "react";
+import { cn } from "@/lib/utils";
+import { useNavbarLogic } from "@/hooks/navbarLogic";
+import { Menu } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useCartContext } from "@/features/cart/CartContext";
-import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
 import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import TelevisionesDropdown from "./dropdowns/televisiones";
@@ -27,7 +23,6 @@ import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
 import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
 import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
 import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
-import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 
 // Helper para dropdown
 const getDropdownComponent = (name: string) => {
@@ -43,207 +38,15 @@ const getDropdownComponent = (name: string) => {
   }
 };
 
-// Elimina DROPDOWN_ITEMS, tipa searchResults correctamente
-interface SearchResult {
-  id: number;
-  name: string;
-  category: string;
-}
-
 export default function Navbar() {
-  // Estados principales
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [dropdownCoords, setDropdownCoords] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-  const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pathname = usePathname();
-  const cleanPath = pathname.split(/[?#]/)[0];
-  const isHome = pathname === "/";
-  const isLogin = pathname === "/login";
-  const isOfertas = pathname === "/ofertas";
-  const debouncedSearch = useDebounce(searchQuery, 300);
-  const { itemCount } = useCartContext();
-  const { isAuthenticated } = useAuthContext();
-  const router = useRouter();
-  const { hideNavbar } = useNavbarVisibility();
-
-  // Efecto para detectar cliente
-  useEffect(() => setIsClient(true), []);
-
-  // Sentinel para IntersectionObserver (scroll detection)
-  const sentinelRef = useRef<HTMLDivElement | null>(null); // <-- Nuevo ref para el sentinel
-
-  // Efecto scroll usando IntersectionObserver
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
-    const observer = new window.IntersectionObserver(
-      ([entry]) => {
-        setIsScrolled(!entry.isIntersecting);
-      },
-      { threshold: 0 }
-    );
-    observer.observe(sentinel);
-    // Inicializa el estado al montar
-    setIsScrolled(sentinel.getBoundingClientRect().top < 0);
-    return () => observer.disconnect();
-  }, [pathname]);
-
-  // Efecto búsqueda
-  useEffect(() => {
-    if (debouncedSearch.length > 2) {
-      posthogUtils.capture("navbar_search", {
-        query: debouncedSearch,
-        query_length: debouncedSearch.length,
-        user_authenticated: isAuthenticated,
-      });
-      setSearchResults([
-        {
-          id: 1,
-          name: `Resultado para "${debouncedSearch}"`,
-          category: "Productos",
-        },
-      ]);
-    } else setSearchResults([]);
-  }, [debouncedSearch, isAuthenticated]);
-
-  // Helpers de color y estado
-  const isProductDetail =
-    pathname.startsWith("/productos/") &&
-    !pathname.includes("/productos/dispositivos-moviles");
-  const isDispositivosMoviles = pathname.startsWith(
-    "/productos/dispositivos-moviles"
-  );
-  const isElectrodomesticos = pathname.startsWith(
-    "/productos/Electrodomesticos"
-  );
-  const isNavbarItem = navbarRoutes.some((route) =>
-    pathname.startsWith(route.href)
-  );
-  const isHeroScrolled = isHome && isScrolled;
-  const isScrolledNavbar =
-    (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  const isMasInformacionProducto = pathname.startsWith("/productos/view/");
-  const showWhiteLogo =
-    isMasInformacionProducto && !isScrolled
-      ? true
-      : isOfertas || (isHome && !isScrolled);
-  const showWhiteItems = showWhiteLogo;
-  const showWhiteItemsMobile =
-    isOfertas ||
-    (isMasInformacionProducto && !isScrolled) ||
-    (!isScrolledNavbar &&
-      !isLogin &&
-      (isProductDetail || (isHome && !isScrolled)));
-
-  // Dropdown hover handlers
-  const handleDropdownEnter = (dropdownName: string) => {
-    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
-    setActiveDropdown(dropdownName);
-    const navItem = navItemRefs.current[dropdownName];
-    if (navItem) {
-      const rect = navItem.getBoundingClientRect();
-      setDropdownCoords({
-        top: rect.bottom,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  };
-  const handleDropdownLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-      setDropdownCoords(null);
-    }, 350);
-  };
-  const handleDropdownContainerEnter = () => {
-    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
-  };
-  const handleDropdownContainerLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-      setDropdownCoords(null);
-    }, 350);
-  };
-  const setNavItemRef: RefCallback<HTMLDivElement> = (el) => {
-    if (el) {
-      const itemName = el.getAttribute("data-item-name");
-      if (itemName) navItemRefs.current[itemName] = el;
-    }
-  };
-
-  // Handler búsqueda
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      posthogUtils.capture("search_submit", {
-        query: searchQuery.trim(),
-        source: "navbar",
-        results_count: searchResults.length,
-      });
-      window.location.href = `/productos?q=${encodeURIComponent(
-        searchQuery.trim()
-      )}`;
-    }
-  };
-
-  // Handler carrito
-  const handleCartClick = () => {
-    posthogUtils.capture("cart_icon_click", {
-      cart_items: itemCount,
-      user_authenticated: isAuthenticated,
-    });
-    router.push("/carrito");
-  };
-
-  // Handler navegación
-  const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
-    posthogUtils.capture("navbar_click", {
-      nav_item: item.name,
-      nav_category: item.category,
-      nav_href: item.href,
-      user_authenticated: isAuthenticated,
-    });
-    setIsMobileMenuOpen(false);
-  };
-
-  /**
-   * Renderiza el dropdown animado para el item activo
-   * Combina fade + slide para una experiencia suave
-   */
-  const renderDropdown = (itemName: string) =>
-    activeDropdown === itemName && dropdownCoords ? (
-      <div
-        onMouseEnter={handleDropdownContainerEnter}
-        onMouseLeave={handleDropdownContainerLeave}
-        style={{
-          position: "fixed",
-          top: dropdownCoords.top,
-          left: dropdownCoords.left,
-          minWidth: dropdownCoords.width,
-          zIndex: 1000000,
-        }}
-        className="transition-all duration-900 ease-[cubic-bezier(.4,0,.2,1)] opacity-100 translate-y-4 animate-fade-in bg-white rounded-xl shadow-lg will-change-transform will-change-opacity"
-      >
-        {getDropdownComponent(itemName)}
-      </div>
-    ) : null;
+  const navbar = useNavbarLogic();
 
   // --- Render principal ---
   return (
     <>
       {/* Sentinel para IntersectionObserver (scroll detection) */}
       <div
-        ref={sentinelRef}
+        ref={navbar.sentinelRef}
         style={{
           position: "absolute",
           top: 0,
@@ -259,26 +62,29 @@ export default function Navbar() {
         className={cn(
           "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60",
           "sticky top-0 left-0 md:static",
-          isOfertas && !isScrolled
+          navbar.isOfertas && !navbar.isScrolled
             ? "bg-transparent"
-            : isOfertas && isScrolled
+            : navbar.isOfertas && navbar.isScrolled
             ? "bg-white/60 shadow backdrop-blur-md"
-            : isDispositivosMoviles || isElectrodomesticos || isScrolledNavbar
+            : navbar.isDispositivosMoviles ||
+              navbar.isElectrodomesticos ||
+              navbar.isScrolledNavbar
             ? "bg-white/60 shadow backdrop-blur-md"
-            : isHome && !isScrolled
+            : navbar.isHome && !navbar.isScrolled
             ? "bg-transparent"
-            : isProductDetail
+            : navbar.isProductDetail
             ? "bg-transparent"
             : "bg-white/60 shadow backdrop-blur-md"
         )}
         style={{
           boxShadow:
-            isOfertas && !isScrolled
+            navbar.isOfertas && !navbar.isScrolled
               ? "none"
-              : isScrolled
+              : navbar.isScrolled
               ? "0 2px 8px 0 rgba(30, 64, 175, 0.12)"
               : "none",
-          background: isOfertas && !isScrolled ? "transparent" : undefined,
+          background:
+            navbar.isOfertas && !navbar.isScrolled ? "transparent" : undefined,
           transition:
             "background 0.6s cubic-bezier(.4,0,.2,1), box-shadow 0.6s cubic-bezier(.4,0,.2,1)",
         }}
@@ -293,7 +99,7 @@ export default function Navbar() {
               onClick={(e) => {
                 e.preventDefault();
                 posthogUtils.capture("logo_click", { source: "navbar" });
-                router.push("/");
+                navbar.router.push("/");
               }}
               aria-label="Inicio"
               className="flex items-center gap-0 md:gap-0 cursor-pointer"
@@ -301,7 +107,7 @@ export default function Navbar() {
             >
               <Image
                 src={
-                  showWhiteLogo
+                  navbar.showWhiteLogo
                     ? "/frame_311_white.png"
                     : "/frame_311_black.png"
                 }
@@ -312,7 +118,7 @@ export default function Navbar() {
                 priority
               />
               <Image
-                src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
+                src={navbar.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
                 alt="Samsung Logo"
                 height={28}
                 className="h-7 min-w-[80px] md:h-8 md:min-w-[120px]"
@@ -320,7 +126,7 @@ export default function Navbar() {
               />
               <span
                 className={
-                  showWhiteLogo
+                  navbar.showWhiteLogo
                     ? "ml-2 text-base font-bold tracking-wide text-white select-none"
                     : "ml-2 text-base font-bold tracking-wide text-black select-none"
                 }
@@ -339,7 +145,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
             {/* Buscador */}
             <form
-              onSubmit={handleSearchSubmit}
+              onSubmit={navbar.handleSearchSubmit}
               className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-72"
               style={{ zIndex: 1000, overflow: "hidden" }}
             >
@@ -347,8 +153,8 @@ export default function Navbar() {
                 type="text"
                 className="w-full bg-transparent text-gray-900 placeholder-gray-500 border-none focus:outline-none text-lg px-2"
                 placeholder="Buscar productos..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={navbar.searchQuery}
+                onChange={(e) => navbar.setSearchQuery(e.target.value)}
                 aria-label="Buscar productos"
                 autoComplete="off"
               />
@@ -359,7 +165,9 @@ export default function Navbar() {
                 style={{ zIndex: 1001 }}
               >
                 <Image
-                  src={showWhiteItems ? searchIconWhite : searchIconBlack}
+                  src={
+                    navbar.showWhiteItems ? searchIconWhite : searchIconBlack
+                  }
                   alt="Buscar"
                   width={26}
                   height={26}
@@ -372,24 +180,24 @@ export default function Navbar() {
               type="button"
               className={cn(
                 "flex items-center justify-center w-10 h-10 text-black",
-                isDispositivosMoviles || isElectrodomesticos
+                navbar.isDispositivosMoviles || navbar.isElectrodomesticos
                   ? "text-black"
-                  : showWhiteItems
+                  : navbar.showWhiteItems
                   ? "text-white"
                   : "text-black"
               )}
-              title={isAuthenticated ? "Dashboard" : "Ingresar"}
-              aria-label={isAuthenticated ? "Dashboard" : "Ingresar"}
+              title={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
+              aria-label={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
               onClick={() => {
                 posthogUtils.capture("user_icon_click", {
-                  user_authenticated: isAuthenticated,
+                  user_authenticated: navbar.isAuthenticated,
                   destination: "login",
                 });
                 window.location.replace("/login");
               }}
             >
               <Image
-                src={showWhiteItems ? userIconWhite : userIconBlack}
+                src={navbar.showWhiteItems ? userIconWhite : userIconBlack}
                 alt="Usuario"
                 width={28}
                 height={28}
@@ -401,33 +209,35 @@ export default function Navbar() {
               href="/carrito"
               className={cn(
                 "flex items-center justify-center w-10 h-10 relative text-black",
-                isDispositivosMoviles || isElectrodomesticos
+                navbar.isDispositivosMoviles || navbar.isElectrodomesticos
                   ? "text-black"
-                  : showWhiteItems
+                  : navbar.showWhiteItems
                   ? "text-white"
                   : "text-black"
               )}
               title="Carrito de compras"
-              onClick={handleCartClick}
+              onClick={navbar.handleCartClick}
             >
               <Image
-                src={showWhiteItems ? carritoIconWhite : carritoIconBlack}
+                src={
+                  navbar.showWhiteItems ? carritoIconWhite : carritoIconBlack
+                }
                 alt="Carrito"
                 width={34}
                 height={34}
                 priority
               />
-              {isClient && (
+              {navbar.isClient && (
                 <span
                   className={cn(
                     "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
-                    itemCount > 0
+                    navbar.itemCount > 0
                       ? "opacity-100 scale-100"
                       : "opacity-0 scale-0"
                   )}
-                  aria-label={`Carrito: ${itemCount} productos`}
+                  aria-label={`Carrito: ${navbar.itemCount} productos`}
                 >
-                  {itemCount > 99 ? "99+" : itemCount}
+                  {navbar.itemCount > 99 ? "99+" : navbar.itemCount}
                 </span>
               )}
             </Link>
@@ -436,19 +246,21 @@ export default function Navbar() {
               type="button"
               className={cn(
                 "flex items-center justify-center w-10 h-10",
-                isDispositivosMoviles || isElectrodomesticos
+                navbar.isDispositivosMoviles || navbar.isElectrodomesticos
                   ? "text-black"
-                  : showWhiteItems
+                  : navbar.showWhiteItems
                   ? "text-white"
                   : "text-black"
               )}
               title="Favoritos"
               aria-label="Favoritos"
               style={{ position: "relative" }}
-              onClick={() => router.push("/product-favoritos")} // <-- Redirecciona aquí
+              onClick={() => navbar.router.push("/product-favoritos")}
             >
               <Image
-                src={showWhiteItems ? favoritoIconWhite : favoritoIconBlack}
+                src={
+                  navbar.showWhiteItems ? favoritoIconWhite : favoritoIconBlack
+                }
                 alt="Favoritos"
                 width={20}
                 height={21}
@@ -462,27 +274,33 @@ export default function Navbar() {
             <button
               className={cn(
                 "flex items-center justify-center w-10 h-10 text-2xl font-bold",
-                showWhiteItemsMobile ? "text-white" : "text-black"
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )}
-              title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
+              title={
+                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
+              }
               aria-label={
-                searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
+                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
               }
               onClick={() => {
-                if (searchQuery === "focus") setSearchQuery("");
+                if (navbar.searchQuery === "focus") navbar.setSearchQuery("");
                 else {
-                  setSearchQuery("focus");
+                  navbar.setSearchQuery("focus");
                   posthogUtils.capture("search_icon_click", {
                     source: "navbar_mobile",
                   });
                 }
               }}
             >
-              {searchQuery === "focus" ? (
+              {navbar.searchQuery === "focus" ? (
                 <span className="text-2xl">&#10005;</span>
               ) : (
                 <Image
-                  src={showWhiteItemsMobile ? searchIconWhite : searchIconBlack}
+                  src={
+                    navbar.showWhiteItemsMobile
+                      ? searchIconWhite
+                      : searchIconBlack
+                  }
                   alt="Buscar"
                   width={26}
                   height={26}
@@ -495,29 +313,33 @@ export default function Navbar() {
               href="/carrito"
               className={cn(
                 "flex items-center justify-center w-10 h-10 relative",
-                showWhiteItemsMobile ? "text-white" : "text-black"
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )}
               title="Carrito"
-              onClick={handleCartClick}
+              onClick={navbar.handleCartClick}
             >
               <Image
-                src={showWhiteItemsMobile ? carritoIconWhite : carritoIconBlack}
+                src={
+                  navbar.showWhiteItemsMobile
+                    ? carritoIconWhite
+                    : carritoIconBlack
+                }
                 alt="Carrito"
                 width={34}
                 height={34}
                 priority
               />
-              {isClient && (
+              {navbar.isClient && (
                 <span
                   className={cn(
                     "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
-                    itemCount > 0
+                    navbar.itemCount > 0
                       ? "opacity-100 scale-100"
                       : "opacity-0 scale-0"
                   )}
-                  aria-label={`Carrito: ${itemCount} productos`}
+                  aria-label={`Carrito: ${navbar.itemCount} productos`}
                 >
-                  {itemCount > 99 ? "99+" : itemCount}
+                  {navbar.itemCount > 99 ? "99+" : navbar.itemCount}
                 </span>
               )}
             </Link>
@@ -525,18 +347,18 @@ export default function Navbar() {
             <button
               className={cn(
                 "flex items-center justify-center w-10 h-10",
-                showWhiteItemsMobile ? "text-white" : "text-black"
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )}
               aria-label="Abrir menú"
-              onClick={() => setIsMobileMenuOpen((open) => !open)}
+              onClick={() => navbar.setIsMobileMenuOpen((open) => !open)}
             >
               <Menu className="w-6 h-6" />
             </button>
             {/* Input animado */}
-            {searchQuery === "focus" && (
+            {navbar.searchQuery === "focus" && (
               <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
                 <form
-                  onSubmit={handleSearchSubmit}
+                  onSubmit={navbar.handleSearchSubmit}
                   className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
                 >
                   <input
@@ -544,8 +366,10 @@ export default function Navbar() {
                     className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
                     placeholder="Buscar..."
                     autoFocus
-                    value={searchQuery !== "focus" ? searchQuery : ""}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={
+                      navbar.searchQuery !== "focus" ? navbar.searchQuery : ""
+                    }
+                    onChange={(e) => navbar.setSearchQuery(e.target.value)}
                   />
                   <button type="submit" className="ml-2">
                     <Image
@@ -560,7 +384,7 @@ export default function Navbar() {
                     type="button"
                     className="ml-4 text-white text-2xl font-bold focus:outline-none"
                     aria-label="Cerrar buscador"
-                    onClick={() => setSearchQuery("")}
+                    onClick={() => navbar.setSearchQuery("")}
                   ></button>
                 </form>
               </div>
@@ -571,7 +395,7 @@ export default function Navbar() {
         <nav
           className={cn(
             "hidden md:block transition-all duration-500 relative",
-            isScrolled
+            navbar.isScrolled
               ? "max-h-0 opacity-0 overflow-hidden"
               : "max-h-20 opacity-100"
           )}
@@ -581,27 +405,27 @@ export default function Navbar() {
               // Indicador activo
               const isActive =
                 item.name === "Electrodomésticos"
-                  ? pathname.startsWith("/productos/Electrodomesticos")
-                  : pathname === item.href ||
-                    pathname.startsWith(item.href + "/") ||
-                    pathname.startsWith(item.href + "?") ||
-                    pathname.startsWith(item.href + "#") ||
-                    cleanPath === item.href ||
-                    cleanPath.startsWith(item.href + "/") ||
-                    cleanPath.startsWith(item.href + "?") ||
-                    cleanPath.startsWith(item.href + "#");
+                  ? navbar.pathname.startsWith("/productos/Electrodomesticos")
+                  : navbar.pathname === item.href ||
+                    navbar.pathname.startsWith(item.href + "/") ||
+                    navbar.pathname.startsWith(item.href + "?") ||
+                    navbar.pathname.startsWith(item.href + "#") ||
+                    navbar.cleanPath === item.href ||
+                    navbar.cleanPath.startsWith(item.href + "/") ||
+                    navbar.cleanPath.startsWith(item.href + "?") ||
+                    navbar.cleanPath.startsWith(item.href + "#");
               // Clases animación hover suave mejorada SOLO Tailwind
-              const itemTextColor = showWhiteItems
+              const itemTextColor = navbar.showWhiteItems
                 ? "text-white"
                 : "text-gray-800";
               const activeIndicatorColor =
-                showWhiteItems && isActive
+                navbar.showWhiteItems && isActive
                   ? "bg-white"
                   : "bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600";
               // Animación hover: fade + slide + escala, curva personalizada
               const hoverClass = cn(
                 "transition-all duration-900 ease-[cubic-bezier(.4,0,.2,1)] will-change-transform will-change-opacity transform-gpu",
-                showWhiteItems
+                navbar.showWhiteItems
                   ? "hover:scale-110 hover:opacity-90 hover:-translate-y-1"
                   : "hover:text-blue-700 hover:scale-105 hover:opacity-90 hover:-translate-y-1"
               );
@@ -613,9 +437,9 @@ export default function Navbar() {
                 >
                   <div
                     data-item-name={item.name}
-                    ref={setNavItemRef}
-                    onMouseEnter={() => handleDropdownEnter(item.name)}
-                    onMouseLeave={handleDropdownLeave}
+                    ref={navbar.setNavItemRef}
+                    onMouseEnter={() => navbar.handleDropdownEnter(item.name)}
+                    onMouseLeave={navbar.handleDropdownLeave}
                   >
                     <Link
                       href={item.href}
@@ -623,8 +447,8 @@ export default function Navbar() {
                         "text-lg font-normal whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none",
                         itemTextColor,
                         hoverClass,
-                        isActive && showWhiteItems && "text-white",
-                        isActive && !showWhiteItems && "text-gray-900"
+                        isActive && navbar.showWhiteItems && "text-white",
+                        isActive && !navbar.showWhiteItems && "text-gray-900"
                       )}
                       aria-label={item.name}
                     >
@@ -643,7 +467,8 @@ export default function Navbar() {
                       </span>
                     </Link>
                     {/* Dropdown con animación fade + slide */}
-                    {activeDropdown === item.name && renderDropdown(item.name)}
+                    {navbar.activeDropdown === item.name &&
+                      getDropdownComponent(item.name)}
                   </div>
                 </li>
               );
@@ -651,12 +476,12 @@ export default function Navbar() {
           </ul>
         </nav>
         {/* Overlay menú móvil */}
-        {isMobileMenuOpen && (
+        {navbar.isMobileMenuOpen && (
           <>
             {/* Overlay oscuro, clickeable para cerrar */}
             <div
               className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-black/60 z-40 animate-fade-in transition-opacity duration-500"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={() => navbar.setIsMobileMenuOpen(false)}
               aria-label="Cerrar menú móvil"
             />
             {/* Menú hamburguesa animado */}
@@ -670,7 +495,7 @@ export default function Navbar() {
               <button
                 className="absolute top-4 right-6 text-gray-700 hover:text-blue-700 text-3xl font-bold focus:outline-none bg-white/80 rounded-full p-2 shadow-md transition-colors duration-300"
                 aria-label="Cerrar menú"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={() => navbar.setIsMobileMenuOpen(false)}
                 tabIndex={0}
               >
                 &#10005;
@@ -683,12 +508,12 @@ export default function Navbar() {
               >
                 {navbarRoutes.map((item) => {
                   const isActive =
-                    pathname === item.href ||
-                    pathname.startsWith(item.href + "/") ||
-                    pathname.startsWith(item.href + "?") ||
-                    cleanPath === item.href ||
-                    cleanPath.startsWith(item.href + "/") ||
-                    cleanPath.startsWith(item.href + "?");
+                    navbar.pathname === item.href ||
+                    navbar.pathname.startsWith(item.href + "/") ||
+                    navbar.pathname.startsWith(item.href + "?") ||
+                    navbar.cleanPath === item.href ||
+                    navbar.cleanPath.startsWith(item.href + "/") ||
+                    navbar.cleanPath.startsWith(item.href + "?");
                   return (
                     <Link
                       key={item.name}
@@ -699,7 +524,7 @@ export default function Navbar() {
                       )}
                       aria-label={item.name}
                       aria-current={isActive ? "page" : undefined}
-                      onClick={() => handleNavClick(item)}
+                      onClick={() => navbar.handleNavClick(item)}
                       tabIndex={0}
                     >
                       {item.name}

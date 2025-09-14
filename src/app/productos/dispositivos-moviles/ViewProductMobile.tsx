@@ -141,19 +141,101 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       {/* Hero section */}
       <section className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
-          {/* Columna izquierda: info y acciones */}
-          <div
-            className="flex-1 flex flex-col items-start justify-center gap-6"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
-            {/* Nombre producto dinámico */}
+          {/* MOBILE: Imagen arriba, info y acciones abajo */}
+          <div className="w-full flex flex-col md:hidden items-center justify-center">
+            <h1
+              className="text-white text-2xl font-bold mb-4 text-center cursor-pointer hover:text-blue-200 transition-all"
+              style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
+            >
+              {safeProduct.name}
+            </h1>
+            <div className="flex items-center justify-center mb-4">
+              <Image
+                src={safeProduct.image}
+                alt={safeProduct.name}
+                width={320}
+                height={320}
+                className="object-contain drop-shadow-2xl w-[80vw] h-[80vw] max-w-[320px] max-h-[320px]"
+                priority
+                style={{ background: "none" }}
+              />
+            </div>
+            {/* Badges más grandes */}
+            <div className="flex flex-col gap-3 mb-2">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center border border-white bg-white/10"
+                  style={{
+                    minWidth: 64,
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Image
+                    src={addiLogo}
+                    alt="Addi Logo"
+                    width={40}
+                    height={40}
+                  />
+                </div>
+                <span
+                  className="text-white text-sm"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Paga hasta en 24 cuotas
+                  <br />
+                  con Addi
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center border border-white bg-white/10"
+                  style={{
+                    minWidth: 64,
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Image src={packageCar} alt="Envío" width={40} height={40} />
+                </div>
+                <span
+                  className="text-white text-sm"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Envío gratis a todo
+                  <br />
+                  Colombia. *Aplican TYC*
+                </span>
+              </div>
+            </div>
+            {/* Botones más grandes solo en mobile */}
+            <div className="flex gap-2 mt-12">
+              <button
+                className="bg-black text-white px-6 py-2 rounded-full font-bold text-lg shadow hover:bg-gray-900 transition-all border border-black w-full"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleBuy}
+              >
+                ¡Compra aquí!
+              </button>
+              <button
+                className="bg-transparent text-white px-8 py-4 rounded-full font-bold text-lg shadow border border-white hover:bg-white/10 transition-all w-full"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleAddToCart}
+              >
+                Añadir al carrito
+              </button>
+            </div>
+          </div>
+          {/* DESKTOP/TABLET: info y acciones a la izquierda, imagen a la derecha */}
+          <div className="hidden md:flex flex-1 flex-col items-start justify-center gap-6">
             <h1
               className="text-white text-3xl md:text-5xl font-bold mb-2 cursor-pointer hover:text-blue-200 transition-all"
               style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
             >
               {safeProduct.name}
             </h1>
-            {/* Logos y badges debajo del nombre */}
             <div className="flex flex-col gap-3 mb-2">
               <div className="flex items-center gap-3">
                 <div
@@ -203,7 +285,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
                 </span>
               </div>
             </div>
-            {/* Botones de acción */}
             <div className="flex gap-4 mt-4">
               <button
                 className="bg-black text-white px-8 py-3 rounded-full font-bold text-lg shadow hover:bg-gray-900 transition-all border border-black"
@@ -221,8 +302,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
               </button>
             </div>
           </div>
-          {/* Columna derecha: imagen producto dinámica */}
-          <div className="flex-1 flex items-center justify-center">
+          <div className="hidden md:flex flex-1 items-center justify-center">
             <Image
               src={safeProduct.image}
               alt={safeProduct.name}

@@ -1,3 +1,5 @@
+// Hook principal para la lógica del navbar de IMAGIQ ECOMMERCE
+// Incluye búsqueda, menú móvil, dropdowns, scroll, rutas y handlers de navegación
 import { useState, useEffect, useRef, RefCallback } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -7,6 +9,7 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { navbarRoutes } from "@/routes/navbarRoutes";
 
+// Tipo para resultados de búsqueda
 export interface SearchResult {
   id: number;
   name: string;
@@ -14,38 +17,38 @@ export interface SearchResult {
 }
 
 export function useNavbarLogic() {
-  // Estados principales
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  // Estados principales del navbar
+  const [searchQuery, setSearchQuery] = useState(""); // Query de búsqueda
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Menú móvil abierto
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]); // Resultados de búsqueda
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null); // Dropdown activo
   const [dropdownCoords, setDropdownCoords] = useState<{
     top: number;
     left: number;
     width: number;
-  } | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-  const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pathname = usePathname();
-  const cleanPath = pathname.split(/[?#]/)[0];
-  const isHome = pathname === "/";
-  const isLogin = pathname === "/login";
-  const isOfertas = pathname === "/ofertas";
-  const debouncedSearch = useDebounce(searchQuery, 300);
-  const { itemCount } = useCartContext();
-  const { isAuthenticated } = useAuthContext();
-  const router = useRouter();
-  const { hideNavbar } = useNavbarVisibility();
+  } | null>(null); // Coordenadas del dropdown
+  const [isScrolled, setIsScrolled] = useState(false); // Estado de scroll
+  const [isClient, setIsClient] = useState(false); // Detecta si es cliente
+  const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({}); // Referencias a items del navbar
+  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout para ocultar dropdown
+  const pathname = usePathname(); // Ruta actual
+  const cleanPath = pathname.split(/[?#]/)[0]; // Ruta limpia sin query/hash
+  const isHome = pathname === "/"; // ¿Está en home?
+  const isLogin = pathname === "/login"; // ¿Está en login?
+  const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
+  const debouncedSearch = useDebounce(searchQuery, 300); // Query de búsqueda con debounce
+  const { itemCount } = useCartContext(); // Cantidad de productos en carrito
+  const { isAuthenticated } = useAuthContext(); // ¿Usuario autenticado?
+  const router = useRouter(); // Router para navegación
+  const { hideNavbar } = useNavbarVisibility(); // Estado global para ocultar navbar
 
-  // Efecto para detectar cliente
+  // Efecto para detectar si está en cliente (evita SSR issues)
   useEffect(() => setIsClient(true), []);
 
-  // Sentinel para IntersectionObserver (scroll detection)
+  // Sentinel para IntersectionObserver (detecta scroll en navbar)
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  // Efecto scroll usando IntersectionObserver
+  // Efecto: Detecta scroll usando IntersectionObserver y actualiza estado
   useEffect(() => {
     const sentinel = sentinelRef.current;
     if (!sentinel) return;
@@ -60,7 +63,7 @@ export function useNavbarLogic() {
     return () => observer.disconnect();
   }, [pathname]);
 
-  // Efecto búsqueda
+  // Efecto: Ejecuta búsqueda y actualiza resultados (mock) + analytics
   useEffect(() => {
     if (debouncedSearch.length > 2) {
       posthogUtils.capture("navbar_search", {
@@ -78,7 +81,7 @@ export function useNavbarLogic() {
     } else setSearchResults([]);
   }, [debouncedSearch, isAuthenticated]);
 
-  // Helpers de color y estado
+  // Helpers para rutas y estado visual del navbar
   const isProductDetail =
     pathname.startsWith("/productos/") &&
     !pathname.includes("/productos/dispositivos-moviles");
@@ -88,13 +91,14 @@ export function useNavbarLogic() {
   const isElectrodomesticos = pathname.startsWith(
     "/productos/Electrodomesticos"
   );
-  const isNavbarItem = navbarRoutes.some((route: typeof navbarRoutes[0]) =>
+  const isNavbarItem = navbarRoutes.some((route: (typeof navbarRoutes)[0]) =>
     pathname.startsWith(route.href)
   );
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
   const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+  // Determina si mostrar logo blanco y estilos claros
   const showWhiteLogo =
     isMasInformacionProducto && !isScrolled
       ? true
@@ -107,7 +111,7 @@ export function useNavbarLogic() {
       !isLogin &&
       (isProductDetail || (isHome && !isScrolled)));
 
-  // Dropdown hover handlers
+  // Handlers para hover de dropdowns (animación y posición)
   const handleDropdownEnter = (dropdownName: string) => {
     if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
     setActiveDropdown(dropdownName);
@@ -121,21 +125,25 @@ export function useNavbarLogic() {
       });
     }
   };
+  // Handler para salir del dropdown (con timeout para animación)
   const handleDropdownLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
       setDropdownCoords(null);
     }, 350);
   };
+  // Handler para entrar al contenedor del dropdown (cancela timeout)
   const handleDropdownContainerEnter = () => {
     if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
   };
+  // Handler para salir del contenedor del dropdown (inicia timeout)
   const handleDropdownContainerLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
       setDropdownCoords(null);
     }, 350);
   };
+  // Ref callback para asociar refs a items del navbar
   const setNavItemRef: RefCallback<HTMLDivElement> = (el) => {
     if (el) {
       const itemName = el.getAttribute("data-item-name");
@@ -143,7 +151,7 @@ export function useNavbarLogic() {
     }
   };
 
-  // Handler búsqueda
+  // Handler para submit de búsqueda (envía analytics y navega)
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -158,7 +166,7 @@ export function useNavbarLogic() {
     }
   };
 
-  // Handler carrito
+  // Handler para click en carrito (envía analytics y navega)
   const handleCartClick = () => {
     posthogUtils.capture("cart_icon_click", {
       cart_items: itemCount,
@@ -167,7 +175,7 @@ export function useNavbarLogic() {
     router.push("/carrito");
   };
 
-  // Handler navegación
+  // Handler para click en item de navbar (envía analytics y cierra menú móvil)
   const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
     posthogUtils.capture("navbar_click", {
       nav_item: item.name,
@@ -178,6 +186,7 @@ export function useNavbarLogic() {
     setIsMobileMenuOpen(false);
   };
 
+  // Retorna todos los estados y handlers necesarios para el navbar
   return {
     searchQuery,
     setSearchQuery,

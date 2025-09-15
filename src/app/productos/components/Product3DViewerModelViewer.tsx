@@ -17,6 +17,7 @@ export default function ARViewer({ modelUrl }: ARViewerProps) {
       ar-modes="webxr scene-viewer quick-look"
       camera-controls
       tone-mapping="neutral"
+      touch-action="pan-y"
       poster="poster.webp"
       shadow-intensity="1"
       reveal="manual"

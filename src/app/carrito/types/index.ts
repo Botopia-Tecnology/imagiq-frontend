@@ -26,4 +26,9 @@ export interface CardPaymentData extends BasicPaymentData {
   cardCvc: string;
   dues: string;
 }
+
+export interface PsePaymentData extends BasicPaymentData {
+  bank: string;
+  description: string;
+}
 export type PaymentMethod = "addi" | "tarjeta" | "pse";

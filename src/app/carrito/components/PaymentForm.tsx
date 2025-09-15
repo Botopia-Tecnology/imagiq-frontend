@@ -15,6 +15,8 @@ interface PaymentFormProps {
   onCardErrorChange: (errors: Partial<CardErrors>) => void;
   saveInfo: boolean;
   onSaveInfoChange: (save: boolean) => void;
+  selectedBank?: string;
+  onBankChange?: (bank: string) => void;
 }
 
 export default function PaymentForm({
@@ -26,6 +28,8 @@ export default function PaymentForm({
   onCardErrorChange,
   saveInfo,
   onSaveInfoChange,
+  selectedBank,
+  onBankChange,
 }: PaymentFormProps) {
   return (
     <div>
@@ -59,6 +63,8 @@ export default function PaymentForm({
         <AlternativePaymentMethods
           selectedMethod={paymentMethod}
           onMethodChange={onPaymentMethodChange}
+          selectedBank={selectedBank}
+          onBankChange={onBankChange}
         />
       </div>
 

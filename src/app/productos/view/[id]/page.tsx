@@ -69,8 +69,8 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
   
-  if (!loading && !product) {
-    // Mostrar página de producto no encontrado en lugar de notFound() para permitir que el useEffect se ejecute
+  if (!product) {
+    // Solo mostrar "no encontrado" si realmente no hay producto después de cargar
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-center items-center min-h-[400px]">

@@ -174,7 +174,7 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
 
 export const useProduct = (productId: string) => {
   const [product, setProduct] = useState<ProductCardProps | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Cambiar a true inicialmente
   const [error, setError] = useState<string | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ProductCardProps[]>([]);
 
@@ -220,6 +220,9 @@ export const useProduct = (productId: string) => {
 
     if (productId) {
       fetchProduct();
+    } else {
+      setLoading(false);
+      setError('ID de producto no válido');
     }
   }, [productId]);
 

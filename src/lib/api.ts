@@ -151,16 +151,16 @@ export interface ProductApiData {
   categoria: string;
   subcategoria: string;
   modelo: string;
-  color: string;
-  capacidad: string;
-  descGeneral: string;
-  sku: string;
-  desDetallada: string;
-  stock: number;
-  urlImagenes: string;
-  urlRender3D: string;
-  precioNormal: number;
-  precioDescto: number;
-  fechaInicioVigencia: string;
-  fechaFinalVigencia: string;
+  color: string[];
+  capacidad: string[];
+  descGeneral: string | null;
+  sku: string[];
+  desDetallada: string[];
+  stock: number[];
+  urlImagenes: string[];
+  urlRender3D: string[];
+  precioNormal: number[];
+  precioDescto: number[];
+  fechaInicioVigencia: string[];
+  fechaFinalVigencia: string[];
 }

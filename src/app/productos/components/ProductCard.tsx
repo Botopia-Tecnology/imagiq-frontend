@@ -23,6 +23,9 @@ interface ProductColor {
   name: string;
   hex: string;
   label: string;
+  price?: string;
+  originalPrice?: string;
+  discount?: string;
 }
 
 interface ProductCardProps {
@@ -64,6 +67,11 @@ export default function ProductCard({
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
 
+  // Calcular precios dinámicos basados en el color seleccionado
+  const currentPrice = selectedColor.price || price;
+  const currentOriginalPrice = selectedColor.originalPrice || originalPrice;
+  const currentDiscount = selectedColor.discount || discount;
+
   // Tracking de interacciones
   const handleColorSelect = (color: ProductColor) => {
     setSelectedColor(color);
@@ -72,6 +80,7 @@ export default function ProductCard({
       product_name: name,
       color_selected: color.name,
       color_label: color.label,
+      price_change: color.price !== price,
     });
   };
 
@@ -89,9 +98,9 @@ export default function ProductCard({
       name,
       image: typeof image === "string" ? image : image.src || "",
       price:
-        typeof price === "string"
-          ? parseInt(price.replace(/[^\d]/g, ""))
-          : price || 0,
+        typeof currentPrice === "string"
+          ? parseInt(currentPrice.replace(/[^\d]/g, ""))
+          : currentPrice || 0,
       quantity: 1,
     });
     setIsLoading(false);
@@ -206,15 +215,20 @@ export default function ProductCard({
         </div>
 
         {/* Precios */}
-        {price && (
+        {currentPrice && (
           <div className="mb-4">
             <div className="flex items-center gap-2 flex-wrap">
-              {originalPrice && (
+              {currentOriginalPrice && (
                 <span className="text-sm text-gray-600 line-through">
-                  {originalPrice}
+                  {currentOriginalPrice}
                 </span>
               )}
-              <span className="text-xl font-bold text-gray-900">{price}</span>
+              <span className="text-xl font-bold text-gray-900">{currentPrice}</span>
+              {currentDiscount && (
+                <span className="text-sm font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
+                  {currentDiscount}
+                </span>
+              )}
             </div>
           </div>
         )}

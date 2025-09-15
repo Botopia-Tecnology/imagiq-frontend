@@ -1,11 +1,32 @@
+"use client";
+
+import { use } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { StaticImageData } from "next/image";
+import smartphonesImg from "@/img/dispositivosMoviles/cel1.png";
+
+// Función para convertir ProductCardProps a ProductData compatible con ViewProduct
+function convertProductForView(product: any) {
+  // Si la imagen es un string (URL), usar imagen por defecto
+  const image = typeof product.image === 'string' ? smartphonesImg : product.image;
+  
+  return {
+    ...product,
+    image: image as StaticImageData,
+    colors: product.colors?.map((color: any) => ({
+      name: color.name || color.label,
+      hex: color.hex
+    })) || []
+  };
+}
 
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
-export default async function ProductViewPage({ params }) {
-  const { id } = params;
+export default function ProductViewPage({ params }) {
+  const resolvedParams = use(params) as { id: string };
+  const { id } = resolvedParams;
   
   // Usar el hook de productos para obtener el producto específico
   const { product, loading, error } = useProduct(id);
@@ -24,5 +45,8 @@ export default async function ProductViewPage({ params }) {
     return notFound();
   }
   
-  return <ViewProduct product={product} />;
+  // Convertir el producto al formato esperado por ViewProduct
+  const convertedProduct = convertProductForView(product);
+  
+  return <ViewProduct product={convertedProduct} />;
 }

@@ -8,6 +8,8 @@
  * - Tracking de visualizaciones de productos
  */
 
+"use client";
+
 import { useState, useEffect, useCallback } from 'react';
 import { productEndpoints, ProductFilterParams, ProductApiResponse } from '@/lib/api';
 import { mapApiProductsToFrontend, groupProductsByCategory } from '@/lib/productMapper';
@@ -182,14 +184,20 @@ export const useProduct = (productId: string) => {
       setError(null);
 
       try {
+        console.log(`🔍 Buscando producto con ID: ${productId}`);
         // Buscar producto por ID en todos los productos
         const response = await productEndpoints.getAll();
         if (response.success && response.data) {
           const apiData = response.data as ProductApiResponse;
           const mappedProducts = mapApiProductsToFrontend(apiData.products);
+          
+          console.log(`📦 Total de productos mapeados: ${mappedProducts.length}`);
+          console.log(`🔍 IDs de productos disponibles:`, mappedProducts.map(p => p.id).slice(0, 10));
+          
           const foundProduct = mappedProducts.find(p => p.id === productId);
           
           if (foundProduct) {
+            console.log(`✅ Producto encontrado:`, foundProduct);
             setProduct(foundProduct);
             // Obtener productos relacionados (mismo modelo, diferentes colores)
             const related = mappedProducts.filter(p => 
@@ -197,7 +205,23 @@ export const useProduct = (productId: string) => {
             ).slice(0, 4);
             setRelatedProducts(related);
           } else {
-            setError('Producto no encontrado');
+            console.log(`❌ Producto no encontrado con ID: ${productId}`);
+            console.log(`🔍 Buscando productos similares...`);
+            
+            // Buscar por codigoMarket (ahora el ID es el codigoMarket directamente)
+            const similarProducts = mappedProducts.filter(p => 
+              p.id === productId || p.id.includes(productId.split('/')[0]) // Buscar por código base
+            );
+            console.log(`🔍 Productos similares encontrados:`, similarProducts.map(p => p.id));
+            
+            // Si encontramos productos similares, usar el primero como fallback
+            if (similarProducts.length > 0) {
+              console.log(`🔄 Usando producto similar como fallback:`, similarProducts[0].id);
+              setProduct(similarProducts[0]);
+              setRelatedProducts(similarProducts.slice(1, 5));
+            } else {
+              setError('Producto no encontrado');
+            }
           }
         }
       } catch (err) {

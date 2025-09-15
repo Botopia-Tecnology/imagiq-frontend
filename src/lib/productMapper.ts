@@ -6,6 +6,7 @@
 
 import { ProductApiData } from './api';
 import { ProductCardProps, ProductColor } from '@/app/productos/components/ProductCard';
+import { StaticImageData } from 'next/image';
 
 // Importar imágenes mock para usar temporalmente
 import smartphonesImg from '@/img/categorias/Smartphones.png';
@@ -22,9 +23,10 @@ import lavadoraImg from '@/img/electrodomesticos/electrodomesticos2.png';
 import lavavajillasImg from '@/img/electrodomesticos/electrodomesticos4.png';
 import microondasImg from '@/img/electrodomesticos/electrodomesticos1.png';
 import refrigeradorImg from '@/img/electrodomesticos/electrodomesticos1.png';
+import emptyImg from '@/img/empty.jpeg';
 
-// Mapeo de categorías a imágenes
-const categoryImageMap: Record<string, any> = {
+// Mapeo de categorías a imágenes (no usado actualmente)
+const categoryImageMap: Record<string, StaticImageData> = {
   'IM': smartphonesImg, // Dispositivos móviles
   'Celulares': smartphonesImg,
   'Tablets': tabletasImg,
@@ -102,42 +104,18 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
 /**
  * Obtiene la imagen apropiada para el producto
  */
-function getProductImage(apiProduct: ProductApiData): any {
+function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
   // Si hay URL de imagen en la API, usarla (cuando esté disponible)
   const firstImageUrl = apiProduct.urlImagenes.find(url => url && url.trim() !== '');
   if (firstImageUrl) {
+    console.log(`🖼️ Usando imagen de API para ${apiProduct.nombreMarket}: ${firstImageUrl}`);
     return firstImageUrl;
   }
   
-  // Detectar productos específicos por nombre para usar imágenes correctas
-  const productName = apiProduct.nombreMarket.toLowerCase();
-  const modelName = apiProduct.modelo?.toLowerCase() || '';
+  console.log(`⚠️ Sin imagen de API para ${apiProduct.nombreMarket}, usando imagen por defecto`);
   
-  // Galaxy Watch - usar imagen específica de relojes
-  if (productName.includes('watch') || modelName.includes('watch')) {
-    console.log(`🔍 Galaxy Watch detectado: ${apiProduct.nombreMarket} - usando imagen de relojes`);
-    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
-    return galaxyWatchImg;
-  }
-  
-  // Galaxy Buds - usar imagen específica de audífonos
-  if (productName.includes('buds') || modelName.includes('buds')) {
-    console.log(`🔍 Galaxy Buds detectado: ${apiProduct.nombreMarket} - usando imagen de audífonos`);
-    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
-    return galaxyBudsImg;
-  }
-  
-  // Galaxy Tab - usar imagen específica de tabletas
-  if (productName.includes('tab') || modelName.includes('tab')) {
-    console.log(`🔍 Galaxy Tab detectado: ${apiProduct.nombreMarket} - usando imagen de tabletas`);
-    console.log(`📝 Descripción: ${apiProduct.desDetallada}`);
-    return tabletasImg;
-  }
-  
-  // Usar imagen mock basada en subcategoría o categoría
-  return categoryImageMap[apiProduct.subcategoria] || 
-         categoryImageMap[apiProduct.categoria] || 
-         smartphonesImg;
+  // Usar imagen por defecto cuando no hay imagen de la API
+  return emptyImg;
 }
 
 /**
@@ -168,7 +146,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     const colorInfo = colorMap[color] || { hex: '#808080', label: color };
     const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
     
-    let price = formatPrice(precioDescto > 0 ? precioDescto : precioNormal);
+    const price = formatPrice(precioDescto > 0 ? precioDescto : precioNormal);
     let originalPrice: string | undefined;
     let discount: string | undefined;
     
@@ -195,7 +173,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
 /**
  * Crea el array de colores para el producto (función legacy - para compatibilidad)
  */
-function createProductColors(apiProduct: any): ProductColor[] {
+function createProductColors(apiProduct: ProductApiData): ProductColor[] {
   // Si es un string (formato legacy), convertir a array
   const colors = Array.isArray(apiProduct.color) ? apiProduct.color : [apiProduct.color];
   
@@ -212,7 +190,7 @@ function createProductColors(apiProduct: any): ProductColor[] {
 /**
  * Calcula precios, descuentos y si es producto nuevo (función legacy - para compatibilidad)
  */
-function calculatePricing(apiProduct: any) {
+function calculatePricing(apiProduct: ProductApiData) {
   // Manejar tanto arrays como valores únicos
   const precioNormal = Array.isArray(apiProduct.precioNormal) 
     ? Math.min(...apiProduct.precioNormal.filter((p: number) => p > 0))
@@ -224,7 +202,7 @@ function calculatePricing(apiProduct: any) {
   // Formatear precios a formato colombiano
   const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
   
-  let price = formatPrice(precioDescto);
+  const price = formatPrice(precioDescto);
   let originalPrice: string | undefined;
   let discount: string | undefined;
   
@@ -289,7 +267,7 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   // Formatear precios a formato colombiano
   const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
   
-  let price = formatPrice(precioDescto);
+  const price = formatPrice(precioDescto);
   let originalPrice: string | undefined;
   let discount: string | undefined;
   

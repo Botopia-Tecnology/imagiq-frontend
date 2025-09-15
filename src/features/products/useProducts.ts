@@ -11,7 +11,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { productEndpoints, ProductFilterParams, ProductApiResponse } from '@/lib/api';
+import { productEndpoints, ProductFilterParams, ProductApiResponse, decodeCodigoMarketFromUrl } from '@/lib/api';
 import { mapApiProductsToFrontend, groupProductsByCategory } from '@/lib/productMapper';
 import { ProductCardProps } from '@/app/productos/components/ProductCard';
 
@@ -184,45 +184,31 @@ export const useProduct = (productId: string) => {
       setError(null);
 
       try {
-        console.log(`🔍 Buscando producto con ID: ${productId}`);
-        // Buscar producto por ID en todos los productos
-        const response = await productEndpoints.getAll();
+        // Decodificar el ID de la URL para obtener el codigoMarket real
+        const codigoMarket = decodeCodigoMarketFromUrl(productId);
+        
+        // Usar el endpoint específico para buscar por codigoMarket
+        const response = await productEndpoints.getByCodigoMarket(codigoMarket);
+        
         if (response.success && response.data) {
           const apiData = response.data as ProductApiResponse;
           const mappedProducts = mapApiProductsToFrontend(apiData.products);
-          
-          console.log(`📦 Total de productos mapeados: ${mappedProducts.length}`);
-          console.log(`🔍 IDs de productos disponibles:`, mappedProducts.map(p => p.id).slice(0, 10));
-          
-          const foundProduct = mappedProducts.find(p => p.id === productId);
-          
-          if (foundProduct) {
-            console.log(`✅ Producto encontrado:`, foundProduct);
+                  
+          if (mappedProducts.length > 0) {
+            const foundProduct = mappedProducts[0]; // Tomar el primer producto encontrado
             setProduct(foundProduct);
-            // Obtener productos relacionados (mismo modelo, diferentes colores)
+            
+            // Obtener productos relacionados (otros productos con el mismo modelo base)
+            const modelBase = foundProduct.name.split(' ')[1] || foundProduct.name.split(' ')[0];
             const related = mappedProducts.filter(p => 
-              p.name.includes(foundProduct.name.split(' ')[1]) && p.id !== productId
+              p.name.includes(modelBase) && p.id !== foundProduct.id
             ).slice(0, 4);
             setRelatedProducts(related);
           } else {
-            console.log(`❌ Producto no encontrado con ID: ${productId}`);
-            console.log(`🔍 Buscando productos similares...`);
-            
-            // Buscar por codigoMarket (ahora el ID es el codigoMarket directamente)
-            const similarProducts = mappedProducts.filter(p => 
-              p.id === productId || p.id.includes(productId.split('/')[0]) // Buscar por código base
-            );
-            console.log(`🔍 Productos similares encontrados:`, similarProducts.map(p => p.id));
-            
-            // Si encontramos productos similares, usar el primero como fallback
-            if (similarProducts.length > 0) {
-              console.log(`🔄 Usando producto similar como fallback:`, similarProducts[0].id);
-              setProduct(similarProducts[0]);
-              setRelatedProducts(similarProducts.slice(1, 5));
-            } else {
-              setError('Producto no encontrado');
-            }
+            setError('Producto no encontrado');
           }
+        } else {
+          setError('Error al obtener datos del producto');
         }
       } catch (err) {
         console.error('Error fetching product:', err);

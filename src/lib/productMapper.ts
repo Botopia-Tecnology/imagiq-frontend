@@ -7,6 +7,7 @@
 import { ProductApiData } from './api';
 import { ProductCardProps, ProductColor } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
+import { encodeCodigoMarketForUrl } from './api';
 
 // Importar imágenes mock para usar temporalmente
 import smartphonesImg from '@/img/categorias/Smartphones.png';
@@ -82,10 +83,9 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   // Calcular precios y descuentos (usar el primer precio disponible)
   const { price, originalPrice, discount, isNew } = calculatePricingFromArray(apiProduct);
   
-  // Usar codigoMarket como ID único
-  const id = apiProduct.codigoMarket;
-  
-  console.log(`🆔 ID generado: ${id}`);
+  // Usar codigoMarket como ID único (codificado para URL)
+  const id = encodeCodigoMarketForUrl(apiProduct.codigoMarket);
+
   
   return {
     id,
@@ -98,6 +98,16 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     isNew,
     rating: 4.5, // Valor por defecto, se puede obtener de reviews en el futuro
     reviewCount: Math.floor(Math.random() * 500) + 50, // Valor temporal
+    // Datos adicionales para la página de detalle
+    description: apiProduct.descGeneral || null,
+    brand: "Samsung", // Por defecto, se puede obtener de la API en el futuro
+    model: apiProduct.modelo,
+    category: apiProduct.categoria,
+    subcategory: apiProduct.subcategoria,
+    capacity: apiProduct.capacidad?.join(', ') || null,
+    stock: apiProduct.stock?.reduce((sum, s) => sum + s, 0) || 0,
+    sku: apiProduct.sku?.join(', ') || null,
+    detailedDescription: apiProduct.desDetallada?.join(' ') || null,
   };
 }
 

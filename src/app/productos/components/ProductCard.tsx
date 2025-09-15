@@ -19,7 +19,7 @@ import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
-interface ProductColor {
+export interface ProductColor {
   name: string;
   hex: string;
   label: string;
@@ -28,7 +28,7 @@ interface ProductColor {
   discount?: string;
 }
 
-interface ProductCardProps {
+export interface ProductCardProps {
   id: string;
   name: string;
   image: string | StaticImageData;
@@ -43,6 +43,16 @@ interface ProductCardProps {
   onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
   className?: string;
+  // Datos adicionales para la página de detalle
+  description?: string | null;
+  brand?: string;
+  model?: string;
+  category?: string;
+  subcategory?: string;
+  capacity?: string | null;
+  stock?: number;
+  sku?: string | null;
+  detailedDescription?: string | null;
 }
 
 export default function ProductCard({
@@ -118,6 +128,8 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
+    console.log(`🔗 Navegando a producto con ID: ${id}`);
+    console.log(`📝 Nombre del producto: ${name}`);
     // Navega usando el id del mock, no el nombre ni slug
     router.push(`/productos/view/${id}`);
     posthogUtils.capture("product_more_info_click", {
@@ -259,6 +271,3 @@ export default function ProductCard({
     </div>
   );
 }
-
-// Tipos para export
-export type { ProductCardProps, ProductColor };

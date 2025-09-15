@@ -73,6 +73,7 @@ export class ApiClient {
 
   // HTTP methods
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+    console.log("ENDPOINT", endpoint)
     return this.request<T>(endpoint, { method: "GET" });
   }
 
@@ -98,6 +99,15 @@ export class ApiClient {
 // Export singleton instance
 export const apiClient = new ApiClient();
 
+// Helper functions for URL encoding/decoding
+export const encodeCodigoMarketForUrl = (codigoMarket: string): string => {
+  return codigoMarket.replace(/\//g, '_');
+};
+
+export const decodeCodigoMarketFromUrl = (urlId: string): string => {
+  return urlId.replace(/_/g, '/');
+};
+
 // Product API endpoints
 export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>('/products'),
@@ -115,6 +125,7 @@ export const productEndpoints = {
   getById: (id: string) => apiClient.get<ProductApiResponse>(`/products/${id}`),
   getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/products/filtered?categoria=${category}`),
   getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/products/filtered?subcategoria=${subcategory}`),
+  getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/products/filtered?codigoMarket=${codigoMarket}`),
   search: (query: string) => apiClient.get<ProductApiResponse>(`/products/filtered?nombre=${query}`),
   getOffers: () => apiClient.get<ProductApiResponse>('/products/filtered?conDescuento=true'),
 };
@@ -130,7 +141,8 @@ export interface ProductFilterParams {
   color?: string;
   capacidad?: string;
   nombre?: string;
-  desDetallada?: string; // Nuevo campo para buscar en descripción detallada
+  desDetallada?: string; 
+  codigoMarket?: string;
   page?: number;
   limit?: number;
 }

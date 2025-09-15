@@ -1,72 +1,41 @@
 "use client";
 
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Environment, Html, useProgress, useGLTF } from "@react-three/drei";
-import { Suspense } from "react";
-
 import "@google/model-viewer";
-
+import { useState } from "react";
+import { GoScreenFull } from "react-icons/go";
+import { IoClose } from "react-icons/io5";
 type ARViewerProps = {
   modelUrl: string;
-};{/*ios-src="https://mi-bucket.s3.amazonaws.com/models/product.usdz"*/}
-
+};
+{/*ios-src="https://mi-bucket.s3.amazonaws.com/models/product.usdz"*/}
 export default function ARViewer({ modelUrl }: ARViewerProps) {
+  const [showLabel, setShowLabel] = useState(true);
   return (
     <model-viewer
       src={modelUrl}
-      
       ar
       ar-modes="webxr scene-viewer quick-look"
       camera-controls
-      autoplay
-      style={{ width: "100%", height: "500px" }}
-    />
+      tone-mapping="neutral"
+      poster="poster.webp"
+      shadow-intensity="1"
+      reveal="manual"
+      ar-placement="floor"
+    >
+      <div className="progress-bar hide" slot="progress-bar">
+        <div className="update-bar"></div>
+      </div>
+      {/* <button slot="ar-button" id="ar-button">
+        View in your space
+      </button> */}
+      <button
+        slot="ar-button"
+        id="ar-button"
+        className="inline-flex items-center justify-center bg-black text-white p-4 rounded-full shadow hover:bg-gray-900 transition-all border border-black cursor-pointer"
+      >
+        <GoScreenFull size={20} />
+      </button>
+    
+    </model-viewer>
   );
 }
-
-// type Product3DViewerProps = {
-//   modelUrl: string;
-//   autoRotate?: boolean;
-// };
-
-// function Loader() {
-//   const { progress } = useProgress();
-//   return (
-//     <Html center>
-//       <span style={{ color: "#444", fontSize: "14px" }}>
-//         Cargando... {progress.toFixed(0)}%
-//       </span>
-//     </Html>
-//   );
-// }
-
-// function Model({ modelUrl }: { modelUrl: string }) {
-//   const { scene } = useGLTF(modelUrl);
-//   return <primitive object={scene} scale={1} />;
-// }
-
-// export default function Product3DViewerR3F({
-//   modelUrl,
-//   autoRotate = true,
-// }: Product3DViewerProps) {
-//   return (
-//     <div style={{ width: "100%", height: "500px" }}>
-//       <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
-//         <ambientLight intensity={0.5} />
-//         <directionalLight position={[10, 10, 5]} intensity={1} />
-//         <Suspense fallback={<Loader />}>
-//           <Model modelUrl={modelUrl} />
-//           <Environment preset="sunset" />
-//         </Suspense>
-//         <OrbitControls
-//           enablePan={true}
-//           enableZoom={true}
-//           autoRotate={autoRotate}
-//           autoRotateSpeed={1}
-//           minDistance={1}
-//           maxDistance={10}
-//         />
-//       </Canvas>
-//     </div>
-//   );
-// }

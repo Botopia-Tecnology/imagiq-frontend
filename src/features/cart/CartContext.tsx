@@ -122,13 +122,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const getProducts = () => items;
 
   /**
-   * Persistencia: carga el carrito desde localStorage al montar.
+   * Persistencia: carga el carrito desde localStorage al montar y al cambiar localStorage (multi-tab).
+   * Valida que el array de productos sea correcto y actualiza el estado solo si realmente cambió.
    */
   useEffect(() => {
-    const savedCart = localStorage.getItem("cart-items");
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
-    }
+    const loadCart = () => {
+      try {
+        const savedCart = localStorage.getItem("cart-items");
+        let arr: CartProduct[] = [];
+        if (savedCart) {
+          const parsed = JSON.parse(savedCart);
+          if (Array.isArray(parsed)) {
+            arr = parsed.filter(
+              (p) =>
+                p &&
+                typeof p.id === "string" &&
+                typeof p.quantity === "number" &&
+                p.quantity > 0
+            );
+          }
+        }
+        setItems(arr);
+      } catch {
+        setItems([]);
+      }
+    };
+    loadCart();
+    window.addEventListener("storage", loadCart);
+    return () => window.removeEventListener("storage", loadCart);
   }, []);
 
   /**

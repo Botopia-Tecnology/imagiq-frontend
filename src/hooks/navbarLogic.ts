@@ -1,6 +1,13 @@
 // Hook principal para la lógica del navbar de IMAGIQ ECOMMERCE
 // Incluye búsqueda, menú móvil, dropdowns, scroll, rutas y handlers de navegación
-import { useState, useEffect, useRef, RefCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  RefCallback,
+  useMemo,
+  useCallback,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCartContext } from "@/features/cart/CartContext";
@@ -37,7 +44,39 @@ export function useNavbarLogic() {
   const isLogin = pathname === "/login"; // ¿Está en login?
   const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
   const debouncedSearch = useDebounce(searchQuery, 300); // Query de búsqueda con debounce
-  const { itemCount } = useCartContext(); // Cantidad de productos en carrito
+  const { cart: cartItems, itemCount } = useCartContext();
+  // Derivar cartCount con useMemo para evitar stale closures
+  const cartCount = useMemo(() => {
+    return Array.isArray(cartItems)
+      ? cartItems.reduce((sum, item) => sum + item.quantity, 0)
+      : 0;
+  }, [cartItems]);
+  // Estado para animación del badge
+  const [bump, setBump] = useState(false);
+  // Efecto: activa animación cuando cambia cartCount
+  useEffect(() => {
+    if (cartCount > 0) {
+      setBump(true);
+      const timer = setTimeout(() => setBump(false), 200);
+      return () => clearTimeout(timer);
+    } else {
+      setBump(false);
+    }
+  }, [cartCount]);
+  // Sincronización multi-tab: escucha storage
+  useEffect(() => {
+    const syncCart = () => {
+      try {
+        const stored = localStorage.getItem("cart-items");
+        if (stored) {
+          setBump(true);
+          setTimeout(() => setBump(false), 200);
+        }
+      } catch {}
+    };
+    window.addEventListener("storage", syncCart);
+    return () => window.removeEventListener("storage", syncCart);
+  }, []);
   const { isAuthenticated } = useAuthContext(); // ¿Usuario autenticado?
   const router = useRouter(); // Router para navegación
   const { hideNavbar } = useNavbarVisibility(); // Estado global para ocultar navbar
@@ -167,13 +206,13 @@ export function useNavbarLogic() {
   };
 
   // Handler para click en carrito (envía analytics y navega)
-  const handleCartClick = () => {
+  const handleCartClick = useCallback(() => {
     posthogUtils.capture("cart_icon_click", {
-      cart_items: itemCount,
+      cart_items: cartCount,
       user_authenticated: isAuthenticated,
     });
     router.push("/carrito");
-  };
+  }, [cartCount, isAuthenticated, router]);
 
   // Handler para click en item de navbar (envía analytics y cierra menú móvil)
   const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
@@ -233,5 +272,7 @@ export function useNavbarLogic() {
     handleSearchSubmit,
     handleCartClick,
     handleNavClick,
+    cartCount, // Nuevo: fuente de verdad del contador
+    bump, // Estado para animación del badge
   };
 }

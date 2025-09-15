@@ -227,17 +227,16 @@ export default function Navbar() {
                 height={34}
                 priority
               />
-              {navbar.isClient && (
+              {navbar.isClient && navbar.cartCount > 0 && (
                 <span
                   className={cn(
-                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
-                    navbar.itemCount > 0
-                      ? "opacity-100 scale-100"
-                      : "opacity-0 scale-0"
+                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-transform duration-150 ease-out",
+                    navbar.bump ? "scale-110" : "scale-100"
                   )}
-                  aria-label={`Carrito: ${navbar.itemCount} productos`}
+                  aria-label={`Carrito: ${navbar.cartCount} productos`}
+                  aria-live="polite"
                 >
-                  {navbar.itemCount > 99 ? "99+" : navbar.itemCount}
+                  {navbar.cartCount > 99 ? "99+" : navbar.cartCount}
                 </span>
               )}
             </Link>

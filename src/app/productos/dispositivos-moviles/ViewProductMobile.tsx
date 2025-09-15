@@ -263,9 +263,16 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           )}
 
           {/* Botón o visor de AR */}
-          <ARViewer modelUrl="https://pruebas.s3.us-east-1.amazonaws.com/Astronaut.glb" />
+          <ARViewer modelUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" />
         </div>
       </div>
+      <a
+        href="https://arvr.google.com/scene-viewer/1.0?file=https://pruebas.s3.us-east-1.amazonaws.com/Astronaut.glb"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <button>Ver en 3D</button>
+      </a>
       {modalOpen && (
         <ModalWithoutBackground
           onClose={() => setModalOpen(false)}

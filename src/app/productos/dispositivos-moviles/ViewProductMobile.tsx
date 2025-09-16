@@ -50,6 +50,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   const [showBar, setShowBar] = useState(false);
 
   useEffect(() => {
+    /* Navbar que se bugea al hacer scroll */
     const handleScroll = () => {
       setShowBar(window.scrollY > 100);
     };

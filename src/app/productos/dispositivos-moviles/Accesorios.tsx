@@ -198,15 +198,18 @@ export default function AccesoriosSection() {
     }));
   };
 
-  const toggleFilter = useCallback((filterKey: string) => {
-    const newExpanded = new Set(expandedFilters);
-    if (newExpanded.has(filterKey)) {
-      newExpanded.delete(filterKey);
-    } else {
-      newExpanded.add(filterKey);
-    }
-    setExpandedFilters(newExpanded);
-  }, [expandedFilters]);
+  const toggleFilter = useCallback(
+    (filterKey: string) => {
+      const newExpanded = new Set(expandedFilters);
+      if (newExpanded.has(filterKey)) {
+        newExpanded.delete(filterKey);
+      } else {
+        newExpanded.add(filterKey);
+      }
+      setExpandedFilters(newExpanded);
+    },
+    [expandedFilters]
+  );
 
   // Componente separado para la sección de productos que solo se actualiza cuando cambian los datos relevantes
   const ProductsSection = useMemo(() => {

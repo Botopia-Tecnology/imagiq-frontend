@@ -84,13 +84,8 @@ function ProductosContent() {
   );
 
   // Usar el hook de productos con API real
-  const { 
-    products, 
-    loading, 
-    error, 
-    totalItems,
-    refreshProducts 
-  } = useProducts();
+  const { products, loading, error, totalItems, refreshProducts } =
+    useProducts();
 
   // Filtrado funcional y robusto (combinando API filters con UI filters)
   const filteredProducts = useMemo(
@@ -140,7 +135,9 @@ function ProductosContent() {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar productos</h2>
+          <h2 className="text-2xl font-bold text-red-600 mb-4">
+            Error al cargar productos
+          </h2>
           <p className="text-gray-600 mb-4">{error}</p>
           <button
             onClick={refreshProducts}
@@ -165,7 +162,7 @@ function ProductosContent() {
           )}
         </div>
       </div>
-      
+
       <div className="flex gap-8">
         <aside className="hidden lg:block w-80 flex-shrink-0">
           <FilterSidebar

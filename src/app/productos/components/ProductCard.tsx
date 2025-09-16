@@ -19,13 +19,17 @@ import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
-interface ProductColor {
-  name: string;
-  hex: string;
-  label: string;
+export interface ProductColor {
+  name: string; // Nombre técnico del color (ej: "black", "white")
+  hex: string; // Código hexadecimal del color (ej: "#000000")
+  label: string; // Nombre mostrado al usuario (ej: "Negro Medianoche")
+  sku: string; // SKU específico para esta variante de color
+  price?: string; // Precio específico para este color (opcional)
+  originalPrice?: string; // Precio original antes de descuento (opcional)
+  discount?: string; // Descuento específico para este color (opcional)
 }
 
-interface ProductCardProps {
+export interface ProductCardProps {
   id: string;
   name: string;
   image: string | StaticImageData;
@@ -40,6 +44,16 @@ interface ProductCardProps {
   onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
   className?: string;
+  // Datos adicionales para la página de detalle
+  description?: string | null;
+  brand?: string;
+  model?: string;
+  category?: string;
+  subcategory?: string;
+  capacity?: string | null;
+  stock?: number;
+  sku?: string | null;
+  detailedDescription?: string | null;
 }
 
 export default function ProductCard({
@@ -52,7 +66,6 @@ export default function ProductCard({
   discount,
   isNew = false,
   isFavorite = false,
-  onAddToCart,
   onToggleFavorite,
   className,
 }: ProductCardProps) {
@@ -64,6 +77,11 @@ export default function ProductCard({
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
 
+  // Calcular precios dinámicos basados en el color seleccionado
+  const currentPrice = selectedColor.price || price;
+  const currentOriginalPrice = selectedColor.originalPrice || originalPrice;
+  const currentDiscount = selectedColor.discount || discount;
+
   // Tracking de interacciones
   const handleColorSelect = (color: ProductColor) => {
     setSelectedColor(color);
@@ -72,6 +90,8 @@ export default function ProductCard({
       product_name: name,
       color_selected: color.name,
       color_label: color.label,
+      color_sku: color.sku, // Incluir SKU del color
+      price_change: color.price !== price,
     });
   };
 
@@ -81,6 +101,7 @@ export default function ProductCard({
       product_id: id,
       product_name: name,
       selected_color: selectedColor.name,
+      selected_color_sku: selectedColor.sku, // Incluir SKU del color seleccionado
       source: "product_card",
     });
     // Agrega el producto al carrito usando el contexto
@@ -89,10 +110,11 @@ export default function ProductCard({
       name,
       image: typeof image === "string" ? image : image.src || "",
       price:
-        typeof price === "string"
-          ? parseInt(price.replace(/[^\d]/g, ""))
-          : price || 0,
+        typeof currentPrice === "string"
+          ? parseInt(currentPrice.replace(/[^\d]/g, ""))
+          : currentPrice || 0,
       quantity: 1,
+      sku: selectedColor.sku, // Usar el SKU del color seleccionado
     });
     setIsLoading(false);
   };
@@ -109,6 +131,8 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
+    console.log(`🔗 Navegando a producto con ID: ${id}`);
+    console.log(`📝 Nombre del producto: ${name}`);
     // Navega usando el id del mock, no el nombre ni slug
     router.push(`/productos/view/${id}`);
     posthogUtils.capture("product_more_info_click", {
@@ -183,6 +207,9 @@ export default function ProductCard({
           <span className="text-sm text-gray-700">
             Color: {selectedColor.label}
           </span>
+          <span className="text-xs text-gray-500 ml-2">
+            SKU: {selectedColor.sku}
+          </span>
         </div>
 
         {/* Selector de colores */}
@@ -199,22 +226,29 @@ export default function ProductCard({
                     : "border-gray-400 hover:border-gray-600"
                 )}
                 style={{ backgroundColor: color.hex }}
-                title={color.label}
+                title={`${color.label} (SKU: ${color.sku})`}
               />
             ))}
           </div>
         </div>
 
         {/* Precios */}
-        {price && (
+        {currentPrice && (
           <div className="mb-4">
             <div className="flex items-center gap-2 flex-wrap">
-              {originalPrice && (
+              {currentOriginalPrice && (
                 <span className="text-sm text-gray-600 line-through">
-                  {originalPrice}
+                  {currentOriginalPrice}
                 </span>
               )}
-              <span className="text-xl font-bold text-gray-900">{price}</span>
+              <span className="text-xl font-bold text-gray-900">
+                {currentPrice}
+              </span>
+              {currentDiscount && (
+                <span className="text-sm font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
+                  {currentDiscount}
+                </span>
+              )}
             </div>
           </div>
         )}
@@ -245,6 +279,3 @@ export default function ProductCard({
     </div>
   );
 }
-
-// Tipos para export
-export type { ProductCardProps, ProductColor };

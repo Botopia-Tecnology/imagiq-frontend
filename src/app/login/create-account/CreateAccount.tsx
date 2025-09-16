@@ -82,7 +82,7 @@ const CreateAccountForm = () => {
           label: "Fecha de nacimiento",
           placeholder: "Selecciona tu fecha de nacimiento",
           required: false,
-        }
+        },
       ],
     },
     {
@@ -185,21 +185,13 @@ const CreateAccountForm = () => {
       if (result.access_token && result.user) {
         localStorage.setItem("imagiq_token", result.access_token);
         // Mapear el rol numérico a string
-        localStorage.setItem(
-          "imagiq_user",
-          JSON.stringify({
-            id: result.user.id,
-            email: result.user.email,
-            name: `${result.user.nombre} ${result.user.apellido}`,
-            role: result.user.rol,
-          })
-        );
+        localStorage.setItem("imagiq_user", JSON.stringify(result.user));
         // Actualizar el contexto de sesión
         await login({
           id: result.user.id,
           email: result.user.email,
-          name: `${result.user.nombre} ${result.user.apellido}`,
-          role: result.user.rol,
+          name: result.user.nombre,
+          last_name: result.user.apellido,
         });
       }
       setModalContent({

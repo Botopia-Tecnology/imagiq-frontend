@@ -9,7 +9,7 @@
  */
 
 // API Client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Generic API response type
 interface ApiResponse<T> {
@@ -73,6 +73,7 @@ export class ApiClient {
 
   // HTTP methods
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
+    console.log("ENDPOINT", endpoint)
     return this.request<T>(endpoint, { method: "GET" });
   }
 
@@ -97,3 +98,81 @@ export class ApiClient {
 
 // Export singleton instance
 export const apiClient = new ApiClient();
+
+// Helper functions for URL encoding/decoding
+export const encodeCodigoMarketForUrl = (codigoMarket: string): string => {
+  return codigoMarket.replace(/\//g, '_');
+};
+
+export const decodeCodigoMarketFromUrl = (urlId: string): string => {
+  return urlId.replace(/_/g, '/');
+};
+
+// Product API endpoints
+export const productEndpoints = {
+  getAll: () => apiClient.get<ProductApiResponse>('/api/products'),
+  getFiltered: (params: ProductFilterParams) => {
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value));
+      }
+    });
+    const url = `/api/products/filtered?${searchParams.toString()}`;
+    console.log(`🌐 URL completa generada: ${url}`);
+    return apiClient.get<ProductApiResponse>(url);
+  },
+  getById: (id: string) => apiClient.get<ProductApiResponse>(`/api/products/${id}`),
+  getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?categoria=${category}`),
+  getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?subcategoria=${subcategory}`),
+  getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?codigoMarket=${codigoMarket}`),
+  search: (query: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
+  getOffers: () => apiClient.get<ProductApiResponse>('/api/products/filtered?conDescuento=true'),
+};
+
+// Product filter parameters interface
+export interface ProductFilterParams {
+  categoria?: string;
+  subcategoria?: string;
+  precioMin?: number;
+  precioMax?: number;
+  conDescuento?: boolean;
+  stockMinimo?: number;
+  color?: string;
+  capacidad?: string;
+  nombre?: string;
+  desDetallada?: string; 
+  codigoMarket?: string;
+  page?: number;
+  limit?: number;
+}
+
+// API Response types
+export interface ProductApiResponse {
+  products: ProductApiData[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface ProductApiData {
+  codigoMarket: string;
+  nombreMarket: string;
+  categoria: string;
+  subcategoria: string;
+  modelo: string;
+  color: string[];
+  capacidad: string[];
+  descGeneral: string | null;
+  sku: string[];
+  desDetallada: string[];
+  stock: number[];
+  urlImagenes: string[];
+  urlRender3D: string[];
+  precioNormal: number[];
+  precioDescto: number[];
+  fechaInicioVigencia: string[];
+  fechaFinalVigencia: string[];
+}

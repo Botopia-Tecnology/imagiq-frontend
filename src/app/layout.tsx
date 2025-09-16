@@ -12,6 +12,7 @@ import { AnalyticsProvider } from "@/features/analytics/AnalyticsContext";
 import { UserPreferencesProvider } from "@/features/user/UserPreferencesContext";
 import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 import ChatbotWidget from "@/components/chatbotWidget";
+import { Toaster } from "@/components/ui/sonner";
 
 import ClientLayout from "./ClientLayout";
 
@@ -114,6 +115,22 @@ export default function RootLayout({
                   <ClientLayout>{safeChildren}</ClientLayout>
                   {/* Widget del chatbot */}
                   <ChatbotWidget />
+                  {/* Toast notifications */}
+                  <Toaster
+                    position="top-right"
+                    expand={true}
+                    richColors
+                    closeButton
+                    toastOptions={{
+                      duration: 4000,
+                      style: {
+                        background: "white",
+                        border: "1px solid #e2e8f0",
+                        color: "#1e293b",
+                        fontFamily: "var(--font-inter)",
+                      },
+                    }}
+                  />
                 </CartProvider>
               </UserPreferencesProvider>
             </AuthProvider>

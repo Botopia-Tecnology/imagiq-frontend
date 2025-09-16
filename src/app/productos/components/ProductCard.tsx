@@ -241,7 +241,9 @@ export default function ProductCard({
                   {currentOriginalPrice}
                 </span>
               )}
-              <span className="text-xl font-bold text-gray-900">{currentPrice}</span>
+              <span className="text-xl font-bold text-gray-900">
+                {currentPrice}
+              </span>
               {currentDiscount && (
                 <span className="text-sm font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
                   {currentDiscount}

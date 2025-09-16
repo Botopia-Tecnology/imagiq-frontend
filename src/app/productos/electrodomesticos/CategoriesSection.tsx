@@ -14,31 +14,31 @@ const categories = [
     id: "refrigeradores",
     title: "Refrigeradores",
     image: refrigeradorImg,
-    href: "/productos/Electrodomesticos?section=refrigeradores",
+    href: "/productos/electrodomesticos?section=refrigeradores",
   },
   {
     id: "lavadoras",
     title: "Lavadoras",
     image: lavadoraImg,
-    href: "/productos/Electrodomesticos?section=lavadoras",
+    href: "/productos/electrodomesticos?section=lavadoras",
   },
   {
     id: "microondas",
     title: "Microondas",
     image: microondasImg,
-    href: "/productos/Electrodomesticos?section=microondas",
+    href: "/productos/electrodomesticos?section=microondas",
   },
   {
     id: "aspiradoras",
     title: "Aspiradoras",
     image: aspiradoraImg,
-    href: "/productos/Electrodomesticos?section=aspiradoras",
+    href: "/productos/electrodomesticos?section=aspiradoras",
   },
   {
     id: "aire-acondicionado",
     title: "Aire Acondicionado",
     image: aireImg,
-    href: "/productos/Electrodomesticos?section=aire-acondicionado",
+    href: "/productos/electrodomesticos?section=aire-acondicionado",
   },
 ];
 

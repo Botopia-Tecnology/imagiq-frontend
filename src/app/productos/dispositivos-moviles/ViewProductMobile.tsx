@@ -13,6 +13,12 @@
 
 import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
+import { useRouter, usePathname } from "next/navigation";
+import { useCartContext } from "@/features/cart/CartContext";
+
+import samsungImage from "@/img/dispositivosMoviles/cel1.png";
+import { IoClose } from "react-icons/io5";
+
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
@@ -20,10 +26,13 @@ import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import ComparationProduct from "./VideosSection";
 import VideosSection from "./VideosSection";
-import { usePathname } from "next/navigation";
-import { useCartContext } from "@/features/cart/CartContext";
-import { useRouter } from "next/navigation";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
+
+import QRDesktop from "../components/QRDesktop";
+import FloatingButton from "../components/Button";
+import HouseButton from "../components/Button";
+import Modal from "@/components/Modal";
+import ModalWithoutBackground from "@/components/ModalWithoutBackground";
 
 // Tipos para producto
 interface ProductColor {
@@ -45,30 +54,33 @@ interface ProductData {
 export default function ViewProduct({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
+
+  const [selectedColor] = useState(safeProduct?.colors?.[0]);
+  const router = useRouter();
+  const [modalOpen, setModalOpen] = useState(false);
+  // Estado para especificaciones abiertas
+  const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
+  const [showLabel, setShowLabel] = useState(true);
   const { addProduct } = useCartContext();
-  const router = useRouter();
-  const { setHideNavbar } = useNavbarVisibility();
-  // UX feedback state (hook debe ir antes de cualquier return condicional)
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
       // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
       setShowBar(window.scrollY > 100 && isProductDetailView);
-      setHideNavbar(window.scrollY > 100 && isProductDetailView);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     // Inicializa correctamente al montar y tras navegación
     setTimeout(handleScroll, 0);
     return () => {
       window.removeEventListener("scroll", handleScroll);
-      setHideNavbar(false);
     };
-  }, [isProductDetailView, setHideNavbar]);
+  }, [isProductDetailView]);
 
+  // useEffect para ocultar el navbar principal (solo con showBar)
   useEffect(() => {
     if (showBar) {
       document.body.classList.add("hide-main-navbar");
@@ -303,19 +315,63 @@ export default function ViewProduct({ product }: { product: ProductData }) {
             </div>
           </div>
           <div className="hidden md:flex flex-1 items-center justify-center">
-            <Image
-              src={safeProduct.image}
-              alt={safeProduct.name}
-              width={420}
-              height={420}
-              className="object-contain drop-shadow-2xl"
-              priority
-              style={{ background: "none" }}
-            />
+            <div className="flex-1 flex items-center justify-center">
+              <Image
+                src={safeProduct.image}
+                alt={safeProduct.name}
+                width={420}
+                height={420}
+                className="object-contain drop-shadow-2xl"
+                priority
+                style={{ background: "none" }}
+              />
+            </div>
           </div>
         </div>
       </section>
-      {/* Barra superior solo si está en detalles y ha hecho scroll */}
+
+      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
+        <HouseButton onClick={() => setModalOpen(true)} />
+      </div>
+      <div className="block md:hidden ml-auto">
+        <div className="flex items-center">
+          {/* Cartel lateral izquierdo */}
+          {showLabel && (
+            <div
+              className="flex items-center bg-white text-black border border-gray-300 rounded-md shadow px-4 py-2 mr-3"
+              style={{ fontFamily: "SamsungSharpSans", whiteSpace: "nowrap" }}
+            >
+              <span className="mr-2 text-sm">Mira el objeto en tu espacio</span>
+              <button
+                onClick={() => setShowLabel(false)}
+                className="text-gray-500 hover:text-red-500"
+              >
+                <IoClose size={18} />
+              </button>
+            </div>
+          )}
+
+          {/* Botón o visor de AR */}
+          {/* <ARViewer modelUrl="https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" /> */}
+        </div>
+      </div>
+      <a
+        href="https://arvr.google.com/scene-viewer/1.0?file=https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <button>Ver en 3D</button>
+      </a>
+      {modalOpen && (
+        <ModalWithoutBackground
+          onClose={() => setModalOpen(false)}
+          isOpen={modalOpen}
+          title="Visualiza tu producto en realidad aumentada"
+        >
+          <QRDesktop />
+        </ModalWithoutBackground>
+      )}
+
       {isProductDetailView && showBar && (
         <div
           className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"

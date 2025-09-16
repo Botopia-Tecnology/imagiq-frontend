@@ -390,6 +390,7 @@ export default function Navbar() {
             )}
           </div>
         </div>
+
         {/* Menú de navegación principal - animación hover suave */}
         <nav
           className={cn(

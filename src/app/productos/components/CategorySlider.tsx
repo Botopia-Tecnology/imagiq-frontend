@@ -10,8 +10,8 @@
  */
 
 "use client";
-
-import React, { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import React, { useEffect, useState, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,7 +40,7 @@ export default function CategorySlider({
   className,
 }: CategorySliderProps) {
   // Estilos responsivos para móvil vertical
-  React.useEffect(() => {
+  useEffect(() => {
     const style = document.createElement("style");
     style.innerHTML = `
       @media (max-width: 480px) and (orientation: portrait) {
@@ -83,6 +83,7 @@ export default function CategorySlider({
   const [slideIndex, setSlideIndex] = useState(0);
   const sliderRef = useRef<HTMLDivElement>(null);
   const searchParams = useSearchParams();
+  const router = useRouter();
 
   // Detecta la sección activa desde la URL
   const sectionParam = searchParams.get("section");
@@ -91,9 +92,10 @@ export default function CategorySlider({
 
   // Busca la categoría activa según el parámetro de la URL o el hash
   const activeCategoryId =
-    categories.find((cat) =>
-      cat.href.includes(sectionParam || "") ||
-      (cat.href.startsWith("#") && cat.href === hash)
+    categories.find(
+      (cat) =>
+        cat.href.includes(sectionParam || "") ||
+        (cat.href.startsWith("#") && cat.href === hash)
     )?.id || categories[0].id;
 
   const maxIndex = Math.max(0, categories.length - 4);
@@ -117,12 +119,17 @@ export default function CategorySlider({
       onCategoryClick(category);
     } else {
       // Si no hay handler personalizado, navegar al href
-      window.location.href = category.href;
+      router.push(category.href);
     }
   };
 
   return (
-  <section className={cn("bg-white border-b border-gray-200 py-8", className)} style={{ overflow: "visible" }}> {/* py distancia entre slider y linea gris */}
+    <section
+      className={cn("bg-white border-b border-gray-200 py-8", className)}
+      style={{ overflow: "visible" }}
+    >
+      {" "}
+      {/* py distancia entre slider y linea gris */}
       <div
         className={cn(
           // En PC, slider alineado con el header (max-w-[1600px] centrado y px-35 dato que sirve para margen en el ancho )
@@ -172,11 +179,13 @@ export default function CategorySlider({
           </button>
 
           {/* Contenedor de categorías */}
-          <div className={cn(
-            "overflow-visible w-full", // PC ocupa todo el ancho del contenedor
-            "min-[1024px]:w-full min-[1024px]:px-0 min-[1024px]:mx-0",
-            "max-[1023px]:mx-0 max-[1023px]:px-0"
-          )}>
+          <div
+            className={cn(
+              "overflow-visible w-full", // PC ocupa todo el ancho del contenedor
+              "min-[1024px]:w-full min-[1024px]:px-0 min-[1024px]:mx-0",
+              "max-[1023px]:mx-0 max-[1023px]:px-0"
+            )}
+          >
             <div
               ref={sliderRef}
               className={cn(
@@ -187,7 +196,7 @@ export default function CategorySlider({
               style={{
                 transform: `translateX(-${slideIndex * 25}%)`,
                 overflow: "visible",
-                minHeight: "240px"
+                minHeight: "240px",
               }}
             >
               {categories.map((category, index) => (
@@ -233,7 +242,9 @@ export default function CategorySlider({
                     </span>
                   </button>
                   {/* Texto debajo */}
-                  <div className="text-center mt-6">  {/* mt ajuste distancia del texto a la imagen */}
+                  <div className="text-center mt-6">
+                    {" "}
+                    {/* mt ajuste distancia del texto a la imagen */}
                     {/* PC: una sola línea, móvil: dos líneas */}
                     <div
                       className={cn(
@@ -244,8 +255,13 @@ export default function CategorySlider({
                       )}
                       style={{ lineHeight: 1.2 }}
                     >
-                      <span className="min-[481px]:inline max-[480px]:block">{category.name}</span>
-                      <span className="min-[481px]:inline max-[480px]:block"> {category.subtitle}</span>
+                      <span className="min-[481px]:inline max-[480px]:block">
+                        {category.name}
+                      </span>
+                      <span className="min-[481px]:inline max-[480px]:block">
+                        {" "}
+                        {category.subtitle}
+                      </span>
                     </div>
                   </div>
                 </div>

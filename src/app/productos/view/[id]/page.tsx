@@ -6,7 +6,7 @@ import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { StaticImageData } from "next/image";
-import smartphonesImg from "@/img/dispositivosMoviles/cel1.png";
+import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
 import {
   ProductCardProps,
   ProductColor,

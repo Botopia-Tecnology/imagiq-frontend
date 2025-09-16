@@ -68,6 +68,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
   useEffect(() => {
+    /* Navbar que se bugea al hacer scroll */
     const handleScroll = () => {
       // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
       setShowBar(window.scrollY > 100 && isProductDetailView);

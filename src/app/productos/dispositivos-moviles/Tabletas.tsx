@@ -21,6 +21,7 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { tabletsProducts } from "../data_product/products";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -211,20 +212,18 @@ export default function TabletasSection() {
                   : "grid-cols-1"
               )}
             >
-              {productsData["smartphones-tablets"]
-                .filter((product) => product.name.toLowerCase().includes("tab"))
-                .map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    {...product}
-                    onAddToCart={(productId: string, color: string) => {
-                      console.log(`Añadir al carrito: ${productId} - ${color}`);
-                    }}
-                    onToggleFavorite={(productId: string) => {
-                      console.log(`Toggle favorito: ${productId}`);
-                    }}
-                  />
-                ))}
+              {tabletsProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  {...product}
+                  onAddToCart={(productId: string, color: string) => {
+                    console.log(`Añadir al carrito: ${productId} - ${color}`);
+                  }}
+                  onToggleFavorite={(productId: string) => {
+                    console.log(`Toggle favorito: ${productId}`);
+                  }}
+                />
+              ))}
             </div>
           </main>
         </div>

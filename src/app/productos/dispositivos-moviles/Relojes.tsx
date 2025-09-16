@@ -20,6 +20,7 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { watchProducts } from "../data_product/products";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -88,25 +89,6 @@ const watchFilters: FilterConfig = {
   duracionBateria: ["1 día", "2 días", "3+ días"],
   resistenciaAgua: ["5ATM", "10ATM", "IP68"],
 };
-
-const watchProducts = [
-  {
-    id: "galaxy-watch6-44mm",
-    name: "Samsung Galaxy Watch 6 44mm",
-    image: galaxyWatchImg,
-    colors: [
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-      { name: "gold", hex: "#D4AF37", label: "Dorado" },
-    ] as ProductColor[],
-    rating: 4.6,
-    reviewCount: 342,
-    price: "$ 899.000",
-    originalPrice: "$ 1.099.000",
-    discount: "-18%",
-  },
-  // ...más productos de relojes
-];
 
 export default function RelojesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(

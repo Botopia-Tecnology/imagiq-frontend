@@ -33,7 +33,7 @@ interface ProductColor {
 interface ProductData {
   id: string;
   name: string;
-  image: StaticImageData;
+  image: string | StaticImageData; // Permite string o StaticImageData
   price: string;
   originalPrice?: string;
   discount?: string;

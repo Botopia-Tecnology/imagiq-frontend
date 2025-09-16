@@ -20,6 +20,7 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { budsProducts } from "../data_product/products";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -93,51 +94,8 @@ const budsFilters: FilterConfig = {
   controlVoz: ["Bixby", "Google Assistant", "Alexa", "Múltiples"],
 };
 
-const budsProducts = [
-  {
-    id: "galaxy-buds2-pro",
-    name: "Samsung Galaxy Buds2 Pro",
-    image: galaxyBudsImg,
-    colors: [
-      { name: "purple", hex: "#800080", label: "Púrpura" },
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "graphite", hex: "#2F4F4F", label: "Grafito" },
-    ] as ProductColor[],
-    rating: 4.7,
-    reviewCount: 892,
-    price: "$ 549.000",
-    originalPrice: "$ 649.000",
-    discount: "-15%",
-    isNew: true,
-  },
-  {
-    id: "galaxy-buds-pro",
-    name: "Samsung Galaxy Buds Pro",
-    image: galaxyBudsImg,
-    colors: [
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-      { name: "violet", hex: "#8A2BE2", label: "Violeta" },
-    ] as ProductColor[],
-    rating: 4.5,
-    reviewCount: 634,
-    price: "$ 399.000",
-    originalPrice: "$ 499.000",
-    discount: "-20%",
-  },
-  {
-    id: "galaxy-buds-fe",
-    name: "Samsung Galaxy Buds FE",
-    image: galaxyBudsImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "graphite", hex: "#2F4F4F", label: "Grafito" },
-    ] as ProductColor[],
-    rating: 4.3,
-    reviewCount: 421,
-    price: "$ 249.000",
-  },
-];
+// El array budsProducts ya tiene productos reales y bien tipados.
+// No se requiere cambio, solo documentación para otros desarrolladores.
 
 export default function GalaxyBudsSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -279,7 +237,6 @@ export default function GalaxyBudsSection() {
                   price={product.price}
                   originalPrice={product.originalPrice}
                   discount={product.discount}
-                  isNew={product.isNew}
                   onAddToCart={(productId: string, color: string) => {
                     console.log(`Añadir al carrito: ${productId} - ${color}`);
                   }}

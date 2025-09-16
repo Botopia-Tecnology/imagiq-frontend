@@ -1,13 +1,24 @@
-// src/app/productos/data_product/products.ts
-// Centraliza todos los datos de productos por categoría
-import { ProductColor } from "../components/ProductCard";
+/**
+ * 📊 PRODUCTS DATA - IMAGIQ ECOMMERCE
+ *
+ * Archivo centralizado con todos los productos del ecommerce.
+ * - Evita duplicación de datos
+ * - Facilita mantenimiento
+ * - Permite reutilización en diferentes contextos
+ * - Tipado estricto para mejor developer experience
+ */
+
+import type { ProductColor } from "../components/ProductCard";
+
+// Imágenes de categorías
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 
-import tvImg from "../../../img/categorias/Tabletas.png";
-import monitorImg from "../../../img/categorias/Tabletas.png";
+// Imágenes de electrodomésticos (usar las correctas según disponibilidad)
+import tvImg from "../../../img/categorias/Tabletas.png"; // Temporal, cambiar cuando esté disponible
+import monitorImg from "../../../img/categorias/Tabletas.png"; // Temporal, cambiar cuando esté disponible
 import audioImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
@@ -18,6 +29,7 @@ import microondasImg from "../../../img/electrodomesticos/electrodomesticos1.png
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 
 export const productsData = {
+  // 📱 DISPOSITIVOS MÓVILES - ACCESORIOS
   accesorios: [
     // Accesorios generales
     {
@@ -294,6 +306,21 @@ export const productsData = {
       price: "$ 850.000",
     },
     // Tablets
+    {
+      id: "galaxy-tab-s9",
+      sku: "galaxy-tab-s9",
+      name: "Samsung Galaxy Tab S9",
+      image: tabletasImg,
+      colors: [
+        { name: "gray", hex: "#A9A9A9", label: "Gris" },
+        { name: "black", hex: "#000000", label: "Negro" },
+      ] as ProductColor[],
+      rating: 4.8,
+      reviewCount: 210,
+      price: "$ 2.199.000",
+      originalPrice: "$ 2.499.000",
+      discount: "-12%",
+    },
     {
       id: "galaxy-tab-s9-11",
       sku: "galaxy-tab-s9-11",
@@ -615,3 +642,65 @@ export const productsData = {
     },
   ],
 };
+
+// 🔧 UTILIDADES Y EXPORTS TIPADOS
+
+// Tipo base para productos
+export interface BaseProduct {
+  id: string;
+  sku: string;
+  name: string;
+  image: string | import("next/image").StaticImageData;
+  colors: ProductColor[];
+  rating: number;
+  reviewCount: number;
+  price: string;
+  originalPrice?: string;
+  discount?: string;
+  isNew?: boolean;
+}
+
+// Exports específicos por categoría para compatibilidad con componentes existentes
+export const accessoryProducts = productsData.accesorios;
+export const smartphonesAndTabletsProducts = productsData["smartphones-tablets"];
+export const tvMonitorsAudioProducts = productsData["tv-monitores-audio"];
+export const electrodomesticosProducts = productsData.electrodomesticos;
+
+// Separar productos específicos para los componentes de dispositivos móviles
+export const watchProducts = productsData.accesorios.filter(product => 
+  product.name.toLowerCase().includes("watch") || product.name.toLowerCase().includes("reloj")
+);
+
+export const budsProducts = productsData.accesorios.filter(product => 
+  product.name.toLowerCase().includes("buds") || product.name.toLowerCase().includes("auricular")
+);
+
+export const tabletsProducts = productsData["smartphones-tablets"].filter(product => 
+  product.name.toLowerCase().includes("tab") || product.name.toLowerCase().includes("tablet")
+);
+
+export const smartphonesProducts = productsData["smartphones-tablets"].filter(product => 
+  !product.name.toLowerCase().includes("tab") && !product.name.toLowerCase().includes("tablet")
+);
+
+// Función para obtener todos los productos de una categoría
+export const getProductsByCategory = (category: keyof typeof productsData) => {
+  return productsData[category] || [];
+};
+
+// Función para buscar un producto por ID en todas las categorías
+export const findProductById = (id: string): BaseProduct | undefined => {
+  for (const category of Object.values(productsData)) {
+    const product = category.find(p => p.id === id);
+    if (product) return product;
+  }
+  return undefined;
+};
+
+// Función para obtener todos los productos (útil para búsquedas globales)
+export const getAllProducts = (): BaseProduct[] => {
+  return Object.values(productsData).flat();
+};
+
+// Export por defecto del objeto completo
+export default productsData;

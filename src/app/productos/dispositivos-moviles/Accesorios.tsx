@@ -9,19 +9,34 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { useProducts } from "@/features/products/useProducts";
+import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
-import { useProducts } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
+
+// Interfaces de tipos necesarias
+interface ApiFilters {
+  category?: string;
+  subcategory?: string;
+  priceRange?: { min: number; max: number };
+  color?: string;
+  capacity?: string;
+  name?: string;
+  withDiscount?: boolean;
+  minStock?: number;
+  descriptionKeyword?: string;
+}
+
+import ProductCard from "../components/ProductCard";
+import { ProductCardProps } from "../components/ProductCard";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -115,24 +130,30 @@ export default function AccesoriosSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | undefined>(undefined);
 
   // Función memoizada para convertir filtros de tipo de accesorio a filtros de API
   const getApiFilters = useMemo(() => {
     return () => {
-      const apiFilters: any = {
-        subcategory: "Accesorios"
+      const apiFilters: ApiFilters = {
+        subcategory: "Accesorios",
       };
 
       // Si hay filtros de tipo de accesorio seleccionados, buscar por descripción
       if (filters.tipoAccesorio && filters.tipoAccesorio.length > 0) {
         // Mapear tipos de accesorio a palabras clave más flexibles
         const keywordMap: Record<string, string[]> = {
-          "Cargadores": ["charger", "cargador", "carga", "power", "adaptador"],
-          "Cables": ["cable", "usb", "c-type", "lightning", "conector"], 
-          "Fundas": ["case", "funda", "cover", "protector", "silicone"],
-          "Protectores de pantalla": ["protector", "screen", "pantalla", "vidrio", "tempered", "glass"],
-          "Correas": ["strap", "correa", "band", "banda", "pulsera", "bracelet"]
+          Cargadores: ["charger", "cargador", "carga", "power", "adaptador"],
+          Cables: ["cable", "usb", "c-type", "lightning", "conector"],
+          Fundas: ["case", "funda", "cover", "protector", "silicone"],
+          "Protectores de pantalla": [
+            "protector",
+            "screen",
+            "pantalla",
+            "vidrio",
+            "tempered",
+            "glass",
+          ],
+          Correas: ["strap", "correa", "band", "banda", "pulsera", "bracelet"],
         };
 
         // Usar el primer filtro seleccionado para buscar
@@ -141,7 +162,9 @@ export default function AccesoriosSection() {
         if (keywords && keywords.length > 0) {
           // Usar la primera palabra clave como filtro principal
           apiFilters.descriptionKeyword = keywords[0];
-          console.log(`🔍 Buscando accesorios tipo "${selectedType}" con palabra clave: "${keywords[0]}"`);
+          console.log(
+            `🔍 Buscando accesorios tipo "${selectedType}" con palabra clave: "${keywords[0]}"`
+          );
           console.log(`📋 Palabras clave disponibles: ${keywords.join(", ")}`);
           console.log(`🔧 Filtros API generados:`, apiFilters);
         }
@@ -152,13 +175,8 @@ export default function AccesoriosSection() {
   }, [filters.tipoAccesorio]);
 
   // Usar el hook de productos con filtros dinámicos
-  const { 
-    products, 
-    loading, 
-    error, 
-    totalItems,
-    refreshProducts 
-  } = useProducts(getApiFilters);
+  const { products, loading, error, totalItems, refreshProducts } =
+    useProducts(getApiFilters);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -180,7 +198,7 @@ export default function AccesoriosSection() {
     }));
   };
 
-  const toggleFilter = (filterKey: string) => {
+  const toggleFilter = useCallback((filterKey: string) => {
     const newExpanded = new Set(expandedFilters);
     if (newExpanded.has(filterKey)) {
       newExpanded.delete(filterKey);
@@ -188,12 +206,12 @@ export default function AccesoriosSection() {
       newExpanded.add(filterKey);
     }
     setExpandedFilters(newExpanded);
-  };
+  }, [expandedFilters]);
 
   // Componente separado para la sección de productos que solo se actualiza cuando cambian los datos relevantes
   const ProductsSection = useMemo(() => {
     return (
-      <ProductsGrid 
+      <ProductsGrid
         products={products}
         loading={loading}
         error={error}
@@ -212,35 +230,53 @@ export default function AccesoriosSection() {
         refreshProducts={refreshProducts}
       />
     );
-  }, [products, loading, error, totalItems, viewMode, sortBy, filters.tipoAccesorio]); // Solo dependencias que realmente afectan la visualización
+  }, [
+    products,
+    loading,
+    error,
+    totalItems,
+    viewMode,
+    sortBy,
+    filters,
+    expandedFilters,
+    refreshProducts,
+    showMobileFilters,
+    toggleFilter,
+  ]); // Solo dependencias que realmente afectan la visualización
 
   // Memoizar el sidebar de filtros para evitar re-renders innecesarios
-  const FilterSidebarMemo = useMemo(() => (
-    <FilterSidebar
-      filterConfig={accessoryFilters}
-      filters={filters}
-      onFilterChange={handleFilterChange}
-      resultCount={totalItems}
-      expandedFilters={expandedFilters}
-      onToggleFilter={toggleFilter}
-      trackingPrefix="accessory_filter"
-    />
-  ), [filters, totalItems, expandedFilters]);
+  const FilterSidebarMemo = useMemo(
+    () => (
+      <FilterSidebar
+        filterConfig={accessoryFilters}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        resultCount={totalItems}
+        expandedFilters={expandedFilters}
+        onToggleFilter={toggleFilter}
+        trackingPrefix="accessory_filter"
+      />
+    ),
+    [filters, totalItems, expandedFilters, toggleFilter]
+  );
 
   // Memoizar el modal de filtros móviles
-  const MobileFilterModalMemo = useMemo(() => (
-    <MobileFilterModal
-      isOpen={showMobileFilters}
-      onClose={() => setShowMobileFilters(false)}
-      filterConfig={accessoryFilters}
-      filters={filters}
-      onFilterChange={handleFilterChange}
-      resultCount={totalItems}
-      expandedFilters={expandedFilters}
-      onToggleFilter={toggleFilter}
-      trackingPrefix="accessory_filter"
-    />
-  ), [showMobileFilters, filters, totalItems, expandedFilters]);
+  const MobileFilterModalMemo = useMemo(
+    () => (
+      <MobileFilterModal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        filterConfig={accessoryFilters}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        resultCount={totalItems}
+        expandedFilters={expandedFilters}
+        onToggleFilter={toggleFilter}
+        trackingPrefix="accessory_filter"
+      />
+    ),
+    [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
+  );
 
   return (
     <div className="min-h-screen bg-white">
@@ -255,9 +291,7 @@ export default function AccesoriosSection() {
             {FilterSidebarMemo}
           </aside>
 
-          <main className="flex-1">
-            {ProductsSection}
-          </main>
+          <main className="flex-1">{ProductsSection}</main>
         </div>
       </div>
 
@@ -267,25 +301,21 @@ export default function AccesoriosSection() {
 }
 
 // Componente separado para la grilla de productos
-function ProductsGrid({ 
-  products, 
-  loading, 
-  error, 
-  totalItems, 
-  viewMode, 
-  setViewMode, 
-  sortBy, 
-  setSortBy, 
-  showMobileFilters, 
-  setShowMobileFilters, 
-  filters, 
-  setFilters, 
-  expandedFilters, 
-  toggleFilter, 
-  accessoryFilters, 
-  refreshProducts 
+function ProductsGrid({
+  products,
+  loading,
+  error,
+  totalItems,
+  viewMode,
+  setViewMode,
+  sortBy,
+  setSortBy,
+  setShowMobileFilters,
+  filters,
+  setFilters,
+  refreshProducts,
 }: {
-  products: any[];
+  products: ProductCardProps[];
   loading: boolean;
   error: string | null;
   totalItems: number;
@@ -295,11 +325,11 @@ function ProductsGrid({
   setSortBy: (sort: string) => void;
   showMobileFilters: boolean;
   setShowMobileFilters: (show: boolean) => void;
-  filters: any;
-  setFilters: (filters: any) => void;
+  filters: FilterState;
+  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   expandedFilters: Set<string>;
   toggleFilter: (key: string) => void;
-  accessoryFilters: any;
+  accessoryFilters: FilterConfig;
   refreshProducts: () => void;
 }) {
   if (loading) {
@@ -313,7 +343,9 @@ function ProductsGrid({
   if (error) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar accesorios</h2>
+        <h2 className="text-2xl font-bold text-red-600 mb-4">
+          Error al cargar accesorios
+        </h2>
         <p className="text-gray-600 mb-4">{error}</p>
         <button
           onClick={refreshProducts}
@@ -330,9 +362,7 @@ function ProductsGrid({
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold text-gray-900">Accesorios</h1>
-          <span className="text-sm text-gray-500">
-            {totalItems} resultados
-          </span>
+          <span className="text-sm text-gray-500">{totalItems} resultados</span>
           {filters.tipoAccesorio && filters.tipoAccesorio.length > 0 && (
             <button
               onClick={() => setFilters({ ...filters, tipoAccesorio: [] })}

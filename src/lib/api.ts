@@ -9,7 +9,7 @@
  */
 
 // API Client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 // Generic API response type
 interface ApiResponse<T> {
@@ -110,7 +110,7 @@ export const decodeCodigoMarketFromUrl = (urlId: string): string => {
 
 // Product API endpoints
 export const productEndpoints = {
-  getAll: () => apiClient.get<ProductApiResponse>('/products'),
+  getAll: () => apiClient.get<ProductApiResponse>('/api/products'),
   getFiltered: (params: ProductFilterParams) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -118,16 +118,16 @@ export const productEndpoints = {
         searchParams.append(key, String(value));
       }
     });
-    const url = `/products/filtered?${searchParams.toString()}`;
+    const url = `/api/products/filtered?${searchParams.toString()}`;
     console.log(`🌐 URL completa generada: ${url}`);
     return apiClient.get<ProductApiResponse>(url);
   },
-  getById: (id: string) => apiClient.get<ProductApiResponse>(`/products/${id}`),
-  getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/products/filtered?categoria=${category}`),
-  getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/products/filtered?subcategoria=${subcategory}`),
-  getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/products/filtered?codigoMarket=${codigoMarket}`),
-  search: (query: string) => apiClient.get<ProductApiResponse>(`/products/filtered?nombre=${query}`),
-  getOffers: () => apiClient.get<ProductApiResponse>('/products/filtered?conDescuento=true'),
+  getById: (id: string) => apiClient.get<ProductApiResponse>(`/api/products/${id}`),
+  getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?categoria=${category}`),
+  getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?subcategoria=${subcategory}`),
+  getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?codigoMarket=${codigoMarket}`),
+  search: (query: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
+  getOffers: () => apiClient.get<ProductApiResponse>('/api/products/filtered?conDescuento=true'),
 };
 
 // Product filter parameters interface

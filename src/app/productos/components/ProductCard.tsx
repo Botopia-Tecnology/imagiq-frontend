@@ -20,12 +20,13 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
 export interface ProductColor {
-  name: string;
-  hex: string;
-  label: string;
-  price?: string;
-  originalPrice?: string;
-  discount?: string;
+  name: string; // Nombre técnico del color (ej: "black", "white")
+  hex: string; // Código hexadecimal del color (ej: "#000000")
+  label: string; // Nombre mostrado al usuario (ej: "Negro Medianoche")
+  sku: string; // SKU específico para esta variante de color
+  price?: string; // Precio específico para este color (opcional)
+  originalPrice?: string; // Precio original antes de descuento (opcional)
+  discount?: string; // Descuento específico para este color (opcional)
 }
 
 export interface ProductCardProps {
@@ -65,7 +66,6 @@ export default function ProductCard({
   discount,
   isNew = false,
   isFavorite = false,
-  onAddToCart,
   onToggleFavorite,
   className,
 }: ProductCardProps) {
@@ -90,6 +90,7 @@ export default function ProductCard({
       product_name: name,
       color_selected: color.name,
       color_label: color.label,
+      color_sku: color.sku, // Incluir SKU del color
       price_change: color.price !== price,
     });
   };
@@ -100,6 +101,7 @@ export default function ProductCard({
       product_id: id,
       product_name: name,
       selected_color: selectedColor.name,
+      selected_color_sku: selectedColor.sku, // Incluir SKU del color seleccionado
       source: "product_card",
     });
     // Agrega el producto al carrito usando el contexto
@@ -112,6 +114,7 @@ export default function ProductCard({
           ? parseInt(currentPrice.replace(/[^\d]/g, ""))
           : currentPrice || 0,
       quantity: 1,
+      sku: selectedColor.sku, // Usar el SKU del color seleccionado
     });
     setIsLoading(false);
   };
@@ -204,6 +207,9 @@ export default function ProductCard({
           <span className="text-sm text-gray-700">
             Color: {selectedColor.label}
           </span>
+          <span className="text-xs text-gray-500 ml-2">
+            SKU: {selectedColor.sku}
+          </span>
         </div>
 
         {/* Selector de colores */}
@@ -220,7 +226,7 @@ export default function ProductCard({
                     : "border-gray-400 hover:border-gray-600"
                 )}
                 style={{ backgroundColor: color.hex }}
-                title={color.label}
+                title={`${color.label} (SKU: ${color.sku})`}
               />
             ))}
           </div>

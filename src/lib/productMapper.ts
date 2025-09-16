@@ -152,7 +152,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
   });
   
   // Convertir el mapa a array de ProductColor
-  colorPriceMap.forEach(({ color, precioNormal, precioDescto }) => {
+  colorPriceMap.forEach(({ color, precioNormal, precioDescto, index }) => {
     const colorInfo = colorMap[color] || { hex: '#808080', label: color };
     const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
     
@@ -174,69 +174,11 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       price,
       originalPrice,
       discount,
+      sku: apiProduct.sku[index]
     });
   });
   
   return colorsWithPrices;
-}
-
-/**
- * Crea el array de colores para el producto (función legacy - para compatibilidad)
- */
-function createProductColors(apiProduct: ProductApiData): ProductColor[] {
-  // Si es un string (formato legacy), convertir a array
-  const colors = Array.isArray(apiProduct.color) ? apiProduct.color : [apiProduct.color];
-  
-  return colors.map((color: string) => {
-    const colorInfo = colorMap[color] || { hex: '#808080', label: color };
-    return {
-      name: color.toLowerCase().replace(/\s+/g, '-'),
-      hex: colorInfo.hex,
-      label: colorInfo.label,
-    };
-  });
-}
-
-/**
- * Calcula precios, descuentos y si es producto nuevo (función legacy - para compatibilidad)
- */
-function calculatePricing(apiProduct: ProductApiData) {
-  // Manejar tanto arrays como valores únicos
-  const precioNormal = Array.isArray(apiProduct.precioNormal) 
-    ? Math.min(...apiProduct.precioNormal.filter((p: number) => p > 0))
-    : apiProduct.precioNormal;
-  const precioDescto = Array.isArray(apiProduct.precioDescto)
-    ? Math.min(...apiProduct.precioDescto.filter((p: number) => p > 0))
-    : apiProduct.precioDescto;
-  
-  // Formatear precios a formato colombiano
-  const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
-  
-  const price = formatPrice(precioDescto);
-  let originalPrice: string | undefined;
-  let discount: string | undefined;
-  
-  // Si hay descuento real
-  if (precioDescto < precioNormal) {
-    originalPrice = formatPrice(precioNormal);
-    const discountPercent = Math.round(((precioNormal - precioDescto) / precioNormal) * 100);
-    discount = `-${discountPercent}%`;
-  }
-  
-  // Determinar si es producto nuevo (basado en fechas de vigencia)
-  const fechaInicio = Array.isArray(apiProduct.fechaInicioVigencia) 
-    ? new Date(apiProduct.fechaInicioVigencia[0])
-    : new Date(apiProduct.fechaInicioVigencia);
-  const fechaActual = new Date();
-  const diasDesdeInicio = (fechaActual.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24);
-  const isNew = diasDesdeInicio < 90; // Producto nuevo si tiene menos de 90 días
-  
-  return {
-    price,
-    originalPrice,
-    discount,
-    isNew,
-  };
 }
 
 /**

@@ -6,7 +6,8 @@ import FilterSidebar, {
   FilterConfig,
   FilterState,
 } from "./components/FilterSidebar";
-import ProductGrid, { Product } from "./components/ProductGrid";
+import ProductGrid from "./components/ProductGrid";
+import { ProductCardProps } from "./components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Configuración de filtros (puedes personalizar según la categoría)
@@ -28,7 +29,7 @@ const filterConfig: FilterConfig = {
   // Puedes agregar más filtros aquí
 };
 
-function filterProducts(products: Product[], filters: FilterState) {
+function filterProducts(products: ProductCardProps[], filters: FilterState) {
   return products.filter((product) => {
     return Object.entries(filters).every(([filterKey, values]) => {
       if (!values.length) return true;
@@ -88,8 +89,6 @@ function ProductosContent() {
     loading, 
     error, 
     totalItems,
-    searchProducts,
-    filterProducts: apiFilterProducts,
     refreshProducts 
   } = useProducts();
 
@@ -126,15 +125,6 @@ function ProductosContent() {
     }
     setExpandedFilters(newExpanded);
   }
-
-  // Manejar búsqueda
-  const handleSearch = async (query: string) => {
-    if (query.trim()) {
-      await searchProducts(query);
-    } else {
-      await refreshProducts();
-    }
-  };
 
   if (loading && products.length === 0) {
     return (
@@ -185,7 +175,6 @@ function ProductosContent() {
             resultCount={resultCount}
             expandedFilters={expandedFilters}
             onToggleFilter={handleToggleFilter}
-            onSearch={handleSearch}
           />
         </aside>
         <main className="flex-1">

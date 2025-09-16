@@ -59,7 +59,7 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
   );
 
   // Función para convertir filtros del frontend a parámetros de API
-  const convertFiltersToApiParams = (filters: ProductFilters): ProductFilterParams => {
+  const convertFiltersToApiParams = useCallback((filters: ProductFilters): ProductFilterParams => {
     const params: ProductFilterParams = {
       page: currentPage,
       limit: 50,
@@ -80,7 +80,7 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     }
 
     return params;
-  };
+  }, [currentPage]);
 
   // Función principal para obtener productos
   const fetchProducts = useCallback(async (filters: ProductFilters = {}, append = false) => {
@@ -117,7 +117,7 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     } finally {
       setLoading(false);
     }
-  }, [currentPage]);
+  }, [convertFiltersToApiParams]);
 
   // Función para buscar productos
   const searchProducts = useCallback(async (query: string) => {

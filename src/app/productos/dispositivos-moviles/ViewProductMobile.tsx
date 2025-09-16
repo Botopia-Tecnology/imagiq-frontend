@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosMoviles/cel1.png";
+import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";

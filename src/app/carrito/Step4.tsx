@@ -794,9 +794,14 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
           </div>
           <button
             type="button"
-            className={`w-full bg-[#2563EB] text-white font-bold py-3 rounded-lg text-base mt-6 hover:bg-blue-700 transition flex items-center justify-center ${
+            className={`w-full font-bold py-3 rounded-lg text-base mt-6 transition flex items-center justify-center shadow-lg ${
               isProcessing ? "opacity-70 cursor-not-allowed" : ""
             }`}
+            style={{
+              backgroundColor: "#b2e2f2", // Color solicitado
+              color: "#222", // Texto oscuro para mejor contraste
+              fontFamily: "Samsung Sharp Sans, sans-serif",
+            }}
             disabled={!accepted || isProcessing}
             data-testid="checkout-finish-btn"
             aria-busy={isProcessing}

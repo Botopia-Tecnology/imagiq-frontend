@@ -18,6 +18,7 @@ const publicRoutes = [
   "/productos/dispositivos-moviles",
   "/productos/electrodomesticos",
   "/productos/view",
+  "/productos/ComprarSection",
   "/login",
   "/login/create-account",
   "/register",
@@ -26,6 +27,7 @@ const publicRoutes = [
   "/carrito",
   "/dashboard",
   "/ofertas",
+  "/product-favoritos",
   // Chatbot steps públicos:
   "/chatbot/step1",
   "/chatbot/step2",
@@ -42,6 +44,8 @@ const publicRoutes = [
   "/success-checkout",
   "/error-checkout",
   "/tracking-service",
+  // Rutas públicas para Entrego y Estreno
+  "/productos/components/entrego-estreno",
 ];
 
 // Admin routes that require special permissions

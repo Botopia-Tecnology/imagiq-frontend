@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import cpuIcon from "@/img/dispositivosmoviles/cpu-icon.png";
@@ -53,6 +53,11 @@ const especificacionesData = [
   },
 ];
 
+const deviceImages: (StaticImageData | string)[] = [
+  samsungImage,
+  // Puedes agregar más imágenes aquí si lo deseas
+];
+
 /**
  * Componente principal de especificaciones
  * @param specs - Especificaciones personalizadas
@@ -65,6 +70,8 @@ const EspecificacionesProduct = ({
   specs?: { label: string; value: string; icon?: StaticImageData }[];
   productImage?: StaticImageData | string;
 }) => {
+  const [currentImg, setCurrentImg] = useState(0);
+  const images = deviceImages.length > 0 ? deviceImages : [productImage];
   // Mezclar datos del padre con los originales, priorizando los del padre
   const mergedSpecs = especificacionesData.map((defaultSpec) => {
     const custom = specs?.find((s) => s.label === defaultSpec.label);
@@ -74,6 +81,13 @@ const EspecificacionesProduct = ({
       icon: defaultSpec.icon,
     };
   });
+
+  const handlePrev = () => {
+    setCurrentImg((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  };
+  const handleNext = () => {
+    setCurrentImg((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+  };
 
   return (
     <section
@@ -92,41 +106,43 @@ const EspecificacionesProduct = ({
         <div className="flex flex-col xl:flex-row w-full items-center justify-between px-4 md:px-10 lg:px-16">
           {/* Imagen del producto a la izquierda */}
           <div className="w-full xl:w-auto flex flex-col items-center mb-12 xl:mb-0 relative">
-            <div
-              className="relative"
-              style={{ width: "340px", height: "450px" }}
-            >
-              <Image
-                src={productImage}
-                alt="Smartphone"
-                fill
-                style={{ objectFit: "contain" }}
-                priority
-              />
+            <div className="relative mx-auto sm:mx-0 flex justify-center items-center w-full">
+              <div className="w-[98vw] h-[80vw] max-w-[370px] max-h-[370px] sm:w-[340px] sm:h-[450px] rounded-2xl flex items-center justify-center">
+                {/* Flecha izquierda */}
+                <button
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white bg-white/30 hover:bg-white/60 rounded-full shadow-lg p-2 text-3xl sm:left-0 sm:text-white sm:bg-transparent sm:shadow-none sm:text-4xl"
+                  aria-label="Anterior"
+                  onClick={handlePrev}
+                  style={{ transition: "background 0.2s" }}
+                >
+                  ‹
+                </button>
+                <Image
+                  src={images[currentImg]}
+                  alt="Smartphone"
+                  fill
+                  style={{ objectFit: "contain" }}
+                  priority
+                  className="z-0"
+                />
+                {/* Flecha derecha */}
+                <button
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white bg-white/30 hover:bg-white/60 rounded-full shadow-lg p-2 text-3xl sm:right-0 sm:text-white sm:bg-transparent sm:shadow-none sm:text-4xl"
+                  aria-label="Siguiente"
+                  onClick={handleNext}
+                  style={{ transition: "background 0.2s" }}
+                >
+                  ›
+                </button>
+              </div>
             </div>
-            {/* Flechas de navegación */}
-            <button
-              className="absolute left-0 top-1/2 transform -translate-y-1/2 text-white text-4xl"
-              aria-label="Anterior"
-              style={{ left: "-40px" }}
-            >
-              ‹
-            </button>
-            <button
-              className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white text-4xl"
-              aria-label="Siguiente"
-              style={{ right: "-40px" }}
-            >
-              ›
-            </button>
-
             {/* Indicadores de navegación (puntos) */}
             <div className="flex justify-center mt-10 space-x-3">
-              {[...Array(4)].map((_, i) => (
+              {images.map((_, i) => (
                 <span
                   key={i}
                   className={`block w-2.5 h-2.5 rounded-full ${
-                    i === 0 ? "bg-white" : "bg-white/30"
+                    i === currentImg ? "bg-white" : "bg-white/30"
                   }`}
                 />
               ))}
@@ -144,16 +160,11 @@ const EspecificacionesProduct = ({
           </div>
           {/* Grid 3x2 de especificaciones */}
           <div className="w-full xl:w-auto flex-1 flex justify-center xl:ml-16">
-            <div className="grid grid-cols-3 grid-rows-2 gap-5">
+            <div className="grid grid-cols-3 grid-rows-2 gap-2 sm:gap-5 max-w-full sm:max-w-none">
               {mergedSpecs.map((spec, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-lg flex flex-col items-center justify-between py-6 px-4"
-                  style={{
-                    height: "190px",
-                    width: "190px",
-                    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-                  }}
+                  className="bg-white rounded-lg flex flex-col items-center justify-between py-3 px-1 shadow-sm sm:py-6 sm:px-4"
                   tabIndex={0}
                   aria-label={spec.label}
                 >
@@ -161,19 +172,17 @@ const EspecificacionesProduct = ({
                     <Image
                       src={spec.icon}
                       alt={spec.label + " icon"}
-                      width={50}
-                      height={50}
+                      width={70}
+                      height={70}
+                      className="w-10 h-10 sm:w-[70px] sm:h-[70px]"
                     />
                   </div>
-                  <div
-                    className="text-center text-gray-600 text-xs leading-tight mt-auto mb-3"
-                    style={{ fontSize: "12px" }}
-                  >
+                  <div className="text-center text-gray-600 text-[11px] sm:text-xs leading-tight mt-auto mb-3">
                     {spec.desc.split("\n").map((line, i) => (
                       <div key={i}>{line}</div>
                     ))}
                   </div>
-                  <h3 className="font-bold text-base text-black mb-1">
+                  <h3 className="font-bold text-[13px] sm:text-base text-black mb-1">
                     {spec.label}
                   </h3>
                 </div>

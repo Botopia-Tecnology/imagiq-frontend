@@ -6,7 +6,7 @@ import { QRCodeCanvas } from "qrcode.react";
 export default function QRDesktop() {
   // URL directa al modelo AR
   //const iosUrl = "https://mi-bucket.s3.amazonaws.com/models/product.usdz";
-  const androidUrl = "https://arvr.google.com/scene-viewer/1.0?file=https://pruebas.s3.us-east-1.amazonaws.com/Astronaut.glb";
+  const androidUrl = "https://arvr.google.com/scene-viewer/1.0?file=https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb";
 
   // Para pruebas puedes usar uno de los dos:
   const url = androidUrl; // o androidUrl

@@ -24,7 +24,7 @@ import EspecificacionesProduct from "./EspecificacionesProduct";
 import ComparationProduct from "./ComparationProduct";
 import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
-import ARViewer from "../components/Product3DViewerModelViewer";
+//import ARViewer from "../components/Product3DViewerModelViewer";
 import QRDesktop from "../components/QRDesktop";
 import FloatingButton from "../components/Button";
 import HouseButton from "../components/Button";
@@ -263,11 +263,11 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           )}
 
           {/* Botón o visor de AR */}
-          <ARViewer modelUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" />
+          {/* <ARViewer modelUrl="https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" /> */}
         </div>
       </div>
       <a
-        href="https://arvr.google.com/scene-viewer/1.0?file=https://pruebas.s3.us-east-1.amazonaws.com/Astronaut.glb"
+        href="https://arvr.google.com/scene-viewer/1.0?file=https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
         target="_blank"
         rel="noopener noreferrer"
       >

@@ -6,9 +6,9 @@ interface CardData {
   expiryMonth: string;
   expiryYear: string;
   cvc: string;
-  name: string;
-  docType: string;
-  docNumber: string;
+  // name: string;
+  // docType: string;
+  // docNumber: string;
   installments: string;
 }
 
@@ -17,8 +17,8 @@ interface CardErrors {
   expiryMonth: string;
   expiryYear: string;
   cvc: string;
-  name: string;
-  docNumber: string;
+  // name: string;
+  // docNumber: string;
 }
 
 interface CreditCardFormProps {
@@ -208,78 +208,6 @@ export default function CreditCardForm({
           {cardErrors.cvc && (
             <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
               {cardErrors.cvc}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Cardholder Name */}
-      <div className="flex flex-col gap-1">
-        <input
-          type="text"
-          className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-            cardErrors.name ? "border-red-500" : ""
-          }`}
-          placeholder="Nombre del titular (solo letras y espacios)"
-          value={card.name.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "")}
-          onChange={(e) => {
-            // Solo permitir letras y espacios
-            const val = e.target.value.replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñ\s]/g, "");
-            onCardChange({ ...card, name: val });
-            onErrorChange({ name: "" });
-          }}
-          required
-          autoComplete="cc-name"
-        />
-        {cardErrors.name && (
-          <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
-            {cardErrors.name}
-          </span>
-        )}
-      </div>
-
-      {/* Document Type and Number */}
-      <div className="flex gap-2">
-        <div className="relative w-1/2">
-          <select
-            className="bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full shadow-sm transition-all duration-150 appearance-none cursor-pointer font-medium text-gray-700 pr-8"
-            value={card.docType}
-            onChange={(e) => onCardChange({ ...card, docType: e.target.value })}
-            required
-          >
-            <option value="C.C.">Cédula de ciudadanía</option>
-            <option value="C.E.">Cédula de extranjería</option>
-            <option value="NIT">NIT</option>
-            <option value="T.I.">Tarjeta de identidad</option>
-            <option value="P.P.">Pasaporte</option>
-            <option value="Otro">Otro</option>
-          </select>
-          <span className="pointer-events-none absolute right-3 top-1/2 transform -translate-y-1/2 text-[#2563EB] text-lg">
-            ▼
-          </span>
-        </div>
-        <div className="flex flex-col gap-1 w-1/2">
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={15}
-            pattern="\d{6,15}"
-            className={`bg-white rounded-xl px-4 py-2 text-sm border border-[#E5E5E5] focus:border-[#2563EB] hover:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB] w-full transition-all duration-150 font-medium text-gray-700 ${
-              cardErrors.docNumber ? "border-red-500" : ""
-            }`}
-            placeholder="Número de documento"
-            value={card.docNumber.replace(/\D/g, "").slice(0, 15)}
-            onChange={(e) => {
-              const raw = e.target.value.replace(/\D/g, "").slice(0, 15);
-              onCardChange({ ...card, docNumber: raw });
-              onErrorChange({ docNumber: "" });
-            }}
-            required
-            autoComplete="off"
-          />
-          {cardErrors.docNumber && (
-            <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
-              {cardErrors.docNumber}
             </span>
           )}
         </div>

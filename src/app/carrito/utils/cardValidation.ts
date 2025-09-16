@@ -9,8 +9,6 @@ export function validateCardFields(
     expiryMonth: "",
     expiryYear: "",
     cvc: "",
-    name: "",
-    docNumber: "",
   };
   let hasError = false;
 
@@ -106,37 +104,6 @@ export function validateCardFields(
         "Por favor ingresa el código de seguridad (CVC) de 3 dígitos.";
       hasError = true;
     }
-  }
-
-  // Nombre del titular: solo letras y espacios, mínimo 2 palabras
-  if (!card.name.trim()) {
-    errors.name =
-      "Por favor ingresa el nombre y apellido del titular de la tarjeta.";
-    hasError = true;
-  } else if (
-    !/^([A-Za-zÁÉÍÓÚáéíóúÑñ]+\s+){1,}[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/.test(
-      card.name.trim()
-    )
-  ) {
-    errors.name =
-      "El nombre debe contener solo letras y al menos un apellido. Ejemplo: Juan Pérez.";
-    hasError = true;
-  }
-
-  // Documento: solo números, mínimo 6 dígitos
-  const docRaw = card.docNumber.replace(/\D/g, "");
-  if (!/^\d{6,15}$/.test(docRaw)) {
-    if (!docRaw) {
-      errors.docNumber =
-        "Por favor ingresa el número de documento (mínimo 6 dígitos).";
-    } else if (docRaw.length < 6) {
-      errors.docNumber = `El número de documento es demasiado corto (${docRaw.length}/6). Ingresa al menos 6 dígitos.`;
-    } else if (docRaw.length > 15) {
-      errors.docNumber = `El número de documento es demasiado largo (${docRaw.length}/15). Máximo 15 dígitos.`;
-    } else {
-      errors.docNumber = "Número de documento inválido.";
-    }
-    hasError = true;
   }
 
   return { errors, hasError };

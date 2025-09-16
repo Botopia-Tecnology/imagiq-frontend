@@ -1,67 +1,39 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-
-interface Product {
-  id: string;
-  name: string;
-  image: string;
-  price: number;
-  quantity: number;
-  sku: string;
-}
+import { useCart } from "@/hooks/useCart";
 
 interface Step4OrderSummaryProps {
-  cartProducts: Product[];
-  appliedDiscount: number;
   isProcessing: boolean;
   accepted: boolean;
   onFinishPayment: () => void;
 }
 
-const formatPrice = (price: number) =>
-  price.toLocaleString("es-CO", { style: "currency", currency: "COP" });
-
-// Formatea un valor numérico como moneda COP, siempre seguro y nunca NaN
-function safeCurrency(val: unknown): string {
-  const num = typeof val === "string" ? Number(val) : (val as number);
-  if (!isFinite(num) || isNaN(num)) return "0";
-  return String(formatPrice(num));
-}
-
 export default function Step4OrderSummary({
-  cartProducts,
-  appliedDiscount,
   isProcessing,
   accepted,
   onFinishPayment,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
+  const { calculations, formatPrice: cartFormatPrice, isEmpty } = useCart();
 
-  // Calcular totales y cantidad de productos, siempre como string para evitar NaN en React children
-  const productCount = (() => {
-    const val = cartProducts.reduce((acc, p) => {
-      const qty = Number(p.quantity);
-      return acc + (isNaN(qty) ? 1 : qty);
-    }, 0);
-    return !isFinite(val) || isNaN(val) ? "0" : String(val);
-  })();
-
-  const subtotal = cartProducts.reduce((acc, p) => {
-    const price = Number(p.price);
-    const quantity = Number(p.quantity);
-    const safePrice = isNaN(price) ? 0 : price;
-    const safeQuantity = isNaN(quantity) ? 1 : quantity;
-    return acc + safePrice * safeQuantity;
-  }, 0);
-
-  const envio = 20000;
-  const safeSubtotal = isNaN(subtotal) ? 0 : subtotal;
-  const safeDiscount = isNaN(appliedDiscount) ? 0 : appliedDiscount;
-  const impuestos = isNaN(safeSubtotal) ? 0 : Math.round(safeSubtotal * 0.09);
-  const total = isNaN(safeSubtotal - safeDiscount + envio)
-    ? 0
-    : safeSubtotal - safeDiscount + envio;
+  if (isEmpty) {
+    return (
+      <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] border border-[#E5E5E5] sticky top-8">
+        <h2 className="font-bold text-xl mb-4">Resumen de compra</h2>
+        <div className="flex flex-col items-center justify-center py-8">
+          <p className="text-gray-500 text-center">Tu carrito está vacío</p>
+          <button
+            type="button"
+            className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-4 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+            onClick={() => router.push("/")}
+          >
+            Volver a comprar
+          </button>
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] border border-[#E5E5E5] sticky top-8">
@@ -69,31 +41,31 @@ export default function Step4OrderSummary({
       <div className="flex flex-col gap-2">
         {/* Productos: siempre string */}
         <div className="flex justify-between text-base">
-          <span>Productos ({String(productCount)})</span>
+          <span>Productos ({calculations.productCount})</span>
           <span className="font-bold">
-            {String(safeCurrency(safeSubtotal))}
+            {cartFormatPrice(calculations.subtotal)}
           </span>
         </div>
         {/* Descuento: siempre string */}
         <div className="flex justify-between text-base">
           <span>Descuento</span>
           <span className="text-red-600">
-            -{String(safeCurrency(safeDiscount))}
+            -{cartFormatPrice(calculations.discount)}
           </span>
         </div>
         {/* Envío: siempre string */}
         <div className="flex justify-between text-base">
           <span>Envío</span>
-          <span>{String(safeCurrency(envio))}</span>
+          <span>{cartFormatPrice(calculations.shipping)}</span>
         </div>
         {/* Total: siempre string */}
         <div className="flex justify-between text-lg font-bold mt-2">
           <span>Total</span>
-          <span>{String(safeCurrency(total))}</span>
+          <span>{cartFormatPrice(calculations.total)}</span>
         </div>
         {/* Impuestos: siempre string */}
         <div className="text-xs text-gray-500 mt-1">
-          Incluye {String(safeCurrency(impuestos))} de impuestos
+          Incluye {cartFormatPrice(calculations.taxes)} de impuestos
         </div>
       </div>
       <button

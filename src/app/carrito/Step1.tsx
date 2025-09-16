@@ -1,73 +1,8 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
-// Importar los catálogos reales
-import { smartphoneProducts } from "../productos/dispositivos-moviles/Smartphones";
-import { productsData } from "../productos/data_product/products";
-
-interface CartProduct {
-  nombre: string;
-  precio: number;
-  cantidad: number;
-  imagen: string;
-  id: string;
-}
-
-// Tipo para productos en localStorage/cart-context
-type RawCartProduct = {
-  id: string;
-  cantidad?: number;
-  quantity?: number;
-};
-
-// Función para buscar producto por id en todos los catálogos
-function getProductDetails(id: string) {
-  // Buscar en smartphones
-  const smartphone = smartphoneProducts.find((p) => p.id === id);
-  if (smartphone) {
-    let imagen = "/img/logo_imagiq.png";
-    if (typeof smartphone.image === "string") {
-      imagen = smartphone.image;
-    } else if (
-      smartphone.image &&
-      typeof smartphone.image === "object" &&
-      "src" in smartphone.image
-    ) {
-      imagen = smartphone.image.src;
-    }
-    return {
-      nombre: smartphone.name,
-      precio: parseInt(String(smartphone.price).replace(/[^\d]/g, "")),
-      imagen,
-    };
-  }
-  // Buscar en refrigeradores
-  const refrigerador = productsData.electrodomesticos.find((p) => p.id === id);
-  if (refrigerador) {
-    let imagen = "/img/logo_imagiq.png";
-    if (typeof refrigerador.image === "string") {
-      imagen = refrigerador.image;
-    } else if (
-      refrigerador.image &&
-      typeof refrigerador.image === "object" &&
-      "src" in refrigerador.image
-    ) {
-      imagen = refrigerador.image.src;
-    }
-    return {
-      nombre: refrigerador.name,
-      precio: parseInt(String(refrigerador.price).replace(/[^\d]/g, "")),
-      imagen,
-    };
-  }
-  // Si no se encuentra, datos por defecto
-  return {
-    nombre: "Producto",
-    precio: 0,
-    imagen: "/img/logo_imagiq.png",
-  };
-}
+import { useCart } from "@/hooks/useCart";
 
 /**
  * Paso 1 del carrito de compras
@@ -80,78 +15,60 @@ function getProductDetails(id: string) {
  * Recibe onContinue para avanzar al paso 2
  */
 export default function Step1({ onContinue }: { onContinue: () => void }) {
-  const [cartProducts, setCartProducts] = useState<CartProduct[]>([]);
+  const [addedName, setAddedName] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string>("");
+
+  // Usar el hook centralizado useCart
+  const {
+    products: cartProducts,
+    updateQuantity,
+    removeProduct,
+    calculations,
+    addProduct,
+  } = useCart();
+
   console.log("Render Step1, cartProducts:", cartProducts);
 
-  // Cargar productos desde localStorage al montar
-  useEffect(() => {
-    const stored = localStorage.getItem("cart-items");
-    if (stored) {
-      try {
-        const parsed: RawCartProduct[] = JSON.parse(stored);
-        // Buscar detalles en el catálogo dinámico (puedes obtenerlo de contexto, API, etc)
-        // Aquí solo se muestran los productos que realmente están en el carrito
-        const products: CartProduct[] = Array.isArray(parsed)
-          ? parsed
-              .filter((p) => p.id)
-              .map((p) => {
-                const details = getProductDetails(p.id);
-                return {
-                  id: p.id,
-                  nombre: details.nombre,
-                  precio: details.precio,
-                  cantidad:
-                    typeof p.cantidad === "number"
-                      ? p.cantidad
-                      : typeof p.quantity === "number"
-                      ? p.quantity
-                      : 1,
-                  imagen: details.imagen,
-                };
-              })
-          : [];
-        setCartProducts(products);
-      } catch  {
-        setCartProducts([]);
-      }
-    } else {
-      setCartProducts([]);
-    }
-  }, []);
+  // Cargar productos desde el hook centralizado
+  // Los productos ya están disponibles a través del hook useCart
 
-  // Calcular totales
-  const subtotal: number = cartProducts.reduce(
-    (acc: number, p: CartProduct) => acc + p.precio * p.cantidad,
-    0
-  );
-  const envio: number = 0;
-  const impuestos: number = Math.round(subtotal * 0.09); // ejemplo 9%
-  const total: number = subtotal + envio;
+  // Usar cálculos del hook centralizado
+  const subtotal = calculations.subtotal;
+  const envio = 0;
+  const impuestos = Math.round(subtotal * 0.09); // ejemplo 9%
+  const total = subtotal + envio;
 
-  // Cambiar cantidad de producto
+  // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
-    setCartProducts((prev) => {
-      const updated = prev.map((p, i) => (i === idx ? { ...p, cantidad } : p));
-      console.log("handleQuantityChange: updated products", updated);
-      localStorage.setItem("cart-items", JSON.stringify(updated));
-      return updated;
-    });
+    const product = cartProducts[idx];
+    if (product) {
+      updateQuantity(product.id, cantidad);
+    }
   };
 
-  // Eliminar producto del carrito
+  // Eliminar producto usando el hook
   const handleRemove = (idx: number) => {
-    setCartProducts((prev) => {
-      const updated = prev.filter((_, i) => i !== idx);
-      console.log("handleRemove: updated products", updated);
-      localStorage.setItem("cart-items", JSON.stringify(updated));
-      return updated;
-    });
+    const product = cartProducts[idx];
+    if (product) {
+      removeProduct(product.id);
+    }
   };
 
   // ...existing code...
 
-  // UX: feedback visual al agregar sugerencia
-  const [addedName, setAddedName] = useState<string | null>(null);
+  // Función para manejar el click en continuar pago
+  const handleContinue = () => {
+    if (cartProducts.length === 0) {
+      setValidationError(
+        "Agrega al menos un producto al carrito para continuar"
+      );
+      return;
+    }
+    setValidationError("");
+    onContinue();
+  };
+
+  // UX: feedback visual al agregar sugerencia usando el hook centralizado
   const handleAddSugerencia = (nombre: string) => {
     // Buscar sugerencia por nombre
     const sugerencias = [
@@ -176,29 +93,19 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     ];
     const prod = sugerencias.find((s) => s.nombre === nombre);
     if (!prod) return;
-    setCartProducts((prev) => {
-      // Si ya está, suma cantidad
-      const idx = prev.findIndex((p) => p.id === prod.id);
-      let updated;
-      if (idx >= 0) {
-        updated = prev.map((p, i) =>
-          i === idx ? { ...p, cantidad: p.cantidad + 1 } : p
-        );
-      } else {
-        updated = [
-          ...prev,
-          {
-            id: prod.id,
-            nombre: prod.nombre,
-            precio: prod.precio,
-            cantidad: 1,
-            imagen: prod.imagen,
-          },
-        ];
-      }
-      localStorage.setItem("cart-items", JSON.stringify(updated));
-      return updated;
-    });
+
+    // Usar el hook centralizado para añadir productos
+    addProduct(
+      {
+        id: prod.id,
+        name: prod.nombre,
+        price: prod.precio,
+        image: prod.imagen,
+        sku: prod.id,
+      },
+      1
+    );
+
     setAddedName(nombre);
     setTimeout(() => setAddedName(null), 1200);
     // UX: scroll al carrito
@@ -228,11 +135,14 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               <div
                 key={idx}
                 className={`mb-6 transition-all duration-300 ${
-                  addedName === product.nombre ? "ring-2 ring-blue-500" : ""
+                  addedName === product.name ? "ring-2 ring-blue-500" : ""
                 }`}
               >
                 <ProductCard
-                  {...product}
+                  nombre={product.name}
+                  imagen={product.image}
+                  precio={product.price}
+                  cantidad={product.quantity}
                   onQuantityChange={(cantidad) =>
                     handleQuantityChange(idx, cantidad)
                   }
@@ -249,7 +159,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             <div className="flex justify-between text-sm">
               <span>
                 Productos (
-                {cartProducts.reduce((acc, p) => acc + p.cantidad, 0)})
+                {cartProducts.reduce((acc, p) => acc + p.quantity, 0)})
               </span>
               <span className="font-bold">
                 $ {Number(subtotal).toLocaleString()}
@@ -283,11 +193,24 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               Incluye $ {Number(impuestos).toLocaleString()} de impuestos
             </div>
           </div>
+          {/* Mostrar error de validación si existe */}
+          {validationError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {validationError}
+            </div>
+          )}
           <button
-            className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg text-base mt-2 hover:bg-blue-700 transition"
-            onClick={onContinue}
+            className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
+              cartProducts.length === 0
+                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
+                : "bg-blue-600 text-white hover:bg-blue-700"
+            }`}
+            onClick={handleContinue}
+            disabled={cartProducts.length === 0}
           >
-            Continuar pago
+            {cartProducts.length === 0
+              ? "Agrega productos para continuar"
+              : "Continuar pago"}
           </button>
         </aside>
       </div>

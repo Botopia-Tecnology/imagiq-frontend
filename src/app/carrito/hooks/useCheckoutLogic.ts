@@ -1,47 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
+import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
 import { payWithAddi, payWithCard, payWithPse } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
 
-function getCartProducts() {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("cart-items");
-  if (!stored) return [];
-  try {
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed)
-      ? parsed.map((p) => ({
-          id: p.id,
-          name: p.nombre || p.name || "Producto",
-          image: p.imagen || p.image || "/img/logo_imagiq.png",
-          price: p.precio || p.price || 0,
-          quantity: p.cantidad || p.quantity || 1,
-          sku:
-            p.sku || `SKU-${p.id || Math.random().toString(36).slice(2, 10)}`,
-        }))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 export function useCheckoutLogic() {
-  const { redirectToLoading, redirectToError } = usePurchaseFlow();
+  const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
+  const { products: cartProducts, appliedDiscount, calculations } = useCart();
 
   // Estados principales
   const [error, setError] = useState("");
-  const [cartProducts, setCartProducts] = useState(getCartProducts());
-  const [appliedDiscount, setAppliedDiscount] = useState(() => {
-    if (typeof window !== "undefined") {
-      const d = localStorage.getItem("applied-discount");
-      return d ? Number(d) : 0;
-    }
-    return 0;
-  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("tarjeta");
   const [selectedBank, setSelectedBank] = useState<string>("");
@@ -69,8 +41,6 @@ export function useCheckoutLogic() {
     expiryMonth: "",
     expiryYear: "",
     cvc: "",
-    name: "",
-    docNumber: "",
   });
   const [billingError, setBillingError] = useState("");
   const [billingType, setBillingType] = useState("");
@@ -105,20 +75,20 @@ export function useCheckoutLogic() {
     setBillingError("");
   };
 
-  // Effects para sincronizar carrito y descuento
-  useEffect(() => {
-    const syncCart = () => setCartProducts(getCartProducts());
-    window.addEventListener("storage", syncCart);
-    syncCart();
-    return () => window.removeEventListener("storage", syncCart);
-  }, []);
+  // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
+  // useEffect(() => {
+  //   const syncCart = () => setCartProducts(getCartProducts());
+  //   window.addEventListener("storage", syncCart);
+  //   syncCart();
+  //   return () => window.removeEventListener("storage", syncCart);
+  // }, []);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const d = localStorage.getItem("applied-discount");
-      setAppliedDiscount(d ? Number(d) : 0);
-    }
-  }, []);
+  // useEffect(() => {
+  //   if (typeof window !== "undefined") {
+  //     const d = localStorage.getItem("applied-discount");
+  //     setAppliedDiscount(d ? Number(d) : 0);
+  //   }
+  // }, []);
 
   // Función principal de finalización de compra
   const handleFinish = async (e: React.FormEvent) => {
@@ -168,21 +138,8 @@ export function useCheckoutLogic() {
     // Activar estado de procesamiento
     setIsProcessing(true);
 
-    // Calcular totales
-    const subtotal = cartProducts.reduce((acc, p) => {
-      const price = Number(p.price);
-      const quantity = Number(p.quantity);
-      const safePrice = isNaN(price) ? 0 : price;
-      const safeQuantity = isNaN(quantity) ? 1 : quantity;
-      return acc + safePrice * safeQuantity;
-    }, 0);
-
-    const envio = 20000;
-    const safeSubtotal = isNaN(subtotal) ? 0 : subtotal;
-    const safeDiscount = isNaN(appliedDiscount) ? 0 : appliedDiscount;
-    const total = isNaN(safeSubtotal - safeDiscount + envio)
-      ? 0
-      : safeSubtotal - safeDiscount + envio;
+    // Usar cálculos del hook useCart
+    const { total, shipping: envio } = calculations;
 
     // Procesar pago
     try {

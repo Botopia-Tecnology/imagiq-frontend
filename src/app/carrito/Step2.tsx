@@ -4,31 +4,9 @@
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
 import React, { useState } from "react";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-// Utilidad para obtener productos del carrito desde localStorage
-function getCartProducts() {
-  if (typeof window === "undefined") return [];
-  const stored = localStorage.getItem("cart-items");
-  if (!stored) return [];
-  try {
-    const parsed = JSON.parse(stored);
-    return Array.isArray(parsed)
-      ? parsed.map((p) => ({
-          id: p.id,
-          name: p.nombre || p.name || "Producto",
-          image: p.imagen || p.image || "/img/logo_imagiq.png",
-          price: p.precio || p.price || 0,
-          quantity: p.cantidad || p.quantity || 1,
-        }))
-      : [];
-  } catch {
-    return [];
-  }
-}
+import { useCart } from "@/hooks/useCart";
 
-// Utilidad para formatear precios
-const formatPrice = (price: number) =>
-  price.toLocaleString("es-CO", { style: "currency", currency: "COP" });
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 /**
  * Paso 2 del carrito: recibe onBack para volver al paso anterior
@@ -40,16 +18,8 @@ export default function Step2({
   onBack?: () => void;
   onContinue?: () => void;
 }) {
-  // Estado para productos del carrito
-  const [cartProducts, setCartProducts] = useState(getCartProducts());
-
-  // Sincronizar productos del carrito al montar y cuando cambie el storage
-  React.useEffect(() => {
-    const syncCart = () => setCartProducts(getCartProducts());
-    window.addEventListener("storage", syncCart);
-    syncCart();
-    return () => window.removeEventListener("storage", syncCart);
-  }, []);
+  // Usar el hook centralizado useCart
+  const { products: cartProducts, calculations, formatPrice } = useCart();
   // Recibe onContinue para avanzar al siguiente paso
   // onBack ya existe
   // onContinue?: () => void
@@ -82,15 +52,11 @@ export default function Step2({
     direccion_ciudad: "",
   });
 
-  // Calcular totales
-  const subtotal = cartProducts.reduce((acc, p) => {
-    const price = Number(p.price);
-    const quantity = Number(p.quantity);
-    return acc + (isNaN(price) ? 0 : price) * (isNaN(quantity) ? 1 : quantity);
-  }, 0);
+  // Usar cálculos del hook centralizado
+  const subtotal = calculations.subtotal;
   const envio = 20000;
-  const impuestos = isNaN(subtotal) ? 0 : Math.round(subtotal * 0.18);
-  const total = isNaN(subtotal) ? 0 : subtotal - appliedDiscount + envio;
+  const impuestos = Math.round(subtotal * 0.18);
+  const total = subtotal - appliedDiscount + envio;
 
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo

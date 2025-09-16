@@ -10,8 +10,6 @@ import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 export default function Step4({ onBack }: { onBack?: () => void }) {
   const {
     error,
-    cartProducts,
-    appliedDiscount,
     isProcessing,
     paymentMethod,
     selectedBank,
@@ -82,8 +80,6 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
 
         {/* Resumen de compra */}
         <Step4OrderSummary
-          cartProducts={cartProducts}
-          appliedDiscount={appliedDiscount}
           isProcessing={isProcessing}
           accepted={accepted}
           onFinishPayment={() => {

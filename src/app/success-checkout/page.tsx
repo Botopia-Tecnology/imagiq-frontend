@@ -16,10 +16,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import CheckoutSuccessOverlay from "../carrito/CheckoutSuccessOverlay";
+import { useCart } from "@/hooks/useCart";
 
 export default function SuccessCheckoutPage() {
   const router = useRouter();
   const [open, setOpen] = useState(true);
+  const { clearCart } = useCart();
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {
@@ -43,10 +45,11 @@ export default function SuccessCheckoutPage() {
 
     // Pequeño retraso antes de redirigir para permitir que la animación de cierre termine
     setTimeout(() => {
-      // Limpiar carrito al finalizar exitosamente
+      // Limpiar carrito al finalizar exitosamente usando el hook centralizado
+      clearCart();
+
+      // También limpiar otros datos relacionados con la compra
       if (typeof window !== "undefined") {
-        localStorage.removeItem("cart-items");
-        // También limpiar otros datos relacionados con la compra
         localStorage.removeItem("applied-discount");
         localStorage.removeItem("current-order");
       }

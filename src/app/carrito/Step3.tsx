@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useCart } from "./hooks/useCart";
+import { useCart } from "@/hooks/useCart";
 import { useDelivery } from "./hooks/useDelivery";
 import {
   DeliveryMethodSelector,
@@ -18,7 +18,7 @@ export default function Step3({
   onBack?: () => void;
   onContinue?: () => void;
 }) {
-  const { cartProducts, appliedDiscount } = useCart();
+  const { products, appliedDiscount } = useCart();
   const {
     address,
     setAddress,
@@ -101,7 +101,7 @@ export default function Step3({
 
         {/* Resumen de compra */}
         <OrderSummary
-          cartProducts={cartProducts}
+          cartProducts={products}
           appliedDiscount={appliedDiscount}
           canContinue={canContinue}
           onContinue={handleContinue}

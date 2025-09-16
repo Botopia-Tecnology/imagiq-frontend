@@ -16,7 +16,7 @@ import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface Category {
   id: string;
@@ -39,6 +39,7 @@ export default function CategorySlider({
   trackingPrefix = "category",
   className,
 }: CategorySliderProps) {
+  const router = useRouter();
   // Estilos responsivos para móvil vertical
   React.useEffect(() => {
     const style = document.createElement("style");
@@ -116,8 +117,7 @@ export default function CategorySlider({
     if (onCategoryClick) {
       onCategoryClick(category);
     } else {
-      // Si no hay handler personalizado, navegar al href
-      window.location.href = category.href;
+      router.push(category.href); // navegación interna con Next.js
     }
   };
 
@@ -228,7 +228,7 @@ export default function CategorySlider({
                         width={220}
                         height={220}
                         className="object-contain drop-shadow-lg"
-                        priority
+                        priority={activeCategoryId === category.id}
                       />
                     </span>
                   </button>

@@ -5,6 +5,7 @@
  * - Filtros específicos para wearables
  * - Productos Galaxy Watch
  * - Características específicas de relojes
+ * - Responsive global implementado
  */
 
 "use client";
@@ -12,7 +13,7 @@
 import { useState, useEffect } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
@@ -20,6 +21,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { productsData } from "../data_product/products";
+import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -27,7 +30,7 @@ import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
 
-// Categorías del slider (idénticas a la imagen)
+// Categorías del slider
 const watchCategories: Category[] = [
   {
     id: "galaxy-smartphone",
@@ -41,7 +44,7 @@ const watchCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "/productos/dispositivos-moviles?section=relojes", // <-- CAMBIA ESTO
+    href: "/productos/dispositivos-moviles?section=relojes",
   },
   {
     id: "galaxy-tab",
@@ -59,7 +62,7 @@ const watchCategories: Category[] = [
   },
 ];
 
-// Configuración de filtros específica para relojes
+// Filtros específicos para relojes
 const watchFilters: FilterConfig = {
   serie: [
     "Galaxy Watch 6",
@@ -89,24 +92,9 @@ const watchFilters: FilterConfig = {
   resistenciaAgua: ["5ATM", "10ATM", "IP68"],
 };
 
-const watchProducts = [
-  {
-    id: "galaxy-watch6-44mm",
-    name: "Samsung Galaxy Watch 6 44mm",
-    image: galaxyWatchImg,
-    colors: [
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-      { name: "gold", hex: "#D4AF37", label: "Dorado" },
-    ] as ProductColor[],
-    rating: 4.6,
-    reviewCount: 342,
-    price: "$ 899.000",
-    originalPrice: "$ 1.099.000",
-    discount: "-18%",
-  },
-  // ...más productos de relojes
-];
+const watchProducts = productsData["accesorios"].filter(
+  (product) => product.category === "watch"
+);
 
 export default function RelojesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -117,13 +105,15 @@ export default function RelojesSection() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(12);
+  const device = useDeviceType(); // Responsive global
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
       section: "relojes",
       category: "dispositivos_moviles",
+      device,
     });
-  }, []);
+  }, [device]);
 
   const handleFilterChange = (
     filterType: string,
@@ -150,49 +140,83 @@ export default function RelojesSection() {
 
   return (
     <div className="min-h-screen bg-white">
-      <CategorySlider
-        categories={watchCategories}
-        trackingPrefix="watch_category"
-      />
+      
+      <CategorySlider categories={watchCategories} trackingPrefix="watch_category" />
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            <FilterSidebar
-              filterConfig={watchFilters}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              resultCount={resultCount}
-              expandedFilters={expandedFilters}
-              onToggleFilter={toggleFilter}
-              trackingPrefix="watch_filter"
-            />
-          </aside>
+      <div
+        className={cn(
+          "container mx-auto px-6 py-8",
+          device === "mobile" && "px-2 py-4",
+          device === "tablet" && "px-4 py-6"
+        )}
+      >
+        <div
+          className={cn(
+            "flex gap-8",
+            device === "mobile" && "flex-col gap-4",
+            device === "tablet" && "gap-6"
+          )}
+        >
+          {(device === "desktop" || device === "large") && (
+            <aside className="hidden lg:block w-80 flex-shrink-0">
+              <FilterSidebar
+                filterConfig={watchFilters}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                resultCount={resultCount}
+                expandedFilters={expandedFilters}
+                onToggleFilter={toggleFilter}
+                trackingPrefix="watch_filter"
+              />
+            </aside>
+          )}
 
           <main className="flex-1">
-            <div className="flex items-center justify-between mb-6">
+            <div
+              className={cn(
+                "flex items-center justify-between mb-6",
+                device === "mobile" && "flex-col items-start gap-2 mb-4"
+              )}
+            >
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1
+                  className={cn(
+                    "text-2xl font-bold text-gray-900",
+                    device === "mobile" && "text-lg"
+                  )}
+                >
                   Galaxy Watch
                 </h1>
-                <span className="text-sm text-gray-500">
+                <span
+                  className={cn(
+                    "text-sm text-gray-500",
+                    device === "mobile" && "text-xs"
+                  )}
+                >
                   {resultCount} resultados
                 </span>
               </div>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filtros
-                </button>
+              <div
+                className={cn("flex items-center gap-4", device === "mobile" && "gap-2")}
+              >
+                {(device === "mobile" || device === "tablet") && (
+                  <button
+                    onClick={() => setShowMobileFilters(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Filtros
+                  </button>
+                )}
 
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={cn(
+                    "bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    device === "mobile" && "px-2 py-1 text-xs"
+                  )}
                 >
                   <option value="relevancia">Relevancia</option>
                   <option value="precio-menor">Precio: menor a mayor</option>
@@ -201,30 +225,32 @@ export default function RelojesSection() {
                   <option value="calificacion">Mejor calificados</option>
                 </select>
 
-                <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "grid"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "list"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+                {(device === "desktop" || device === "large") && (
+                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "grid"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "list"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -233,45 +259,31 @@ export default function RelojesSection() {
                 "grid gap-6",
                 viewMode === "grid"
                   ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
+                  : "grid-cols-1",
+                device === "mobile" && "gap-3"
               )}
             >
               {watchProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  onAddToCart={(productId: string, color: string) => {
-                    console.log(`Añadir al carrito: ${productId} - ${color}`);
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    console.log(`Toggle favorito: ${productId}`);
-                  }}
-                />
+                <ProductCard key={product.id} {...product} />
               ))}
             </div>
           </main>
         </div>
       </div>
 
-      <MobileFilterModal
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filterConfig={watchFilters}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={resultCount}
-        expandedFilters={expandedFilters}
-        onToggleFilter={toggleFilter}
-        trackingPrefix="watch_filter"
-      />
+      {(device === "mobile" || device === "tablet") && (
+        <MobileFilterModal
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          filterConfig={watchFilters}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          resultCount={resultCount}
+          expandedFilters={expandedFilters}
+          onToggleFilter={toggleFilter}
+          trackingPrefix="watch_filter"
+        />
+      )}
     </div>
   );
 }

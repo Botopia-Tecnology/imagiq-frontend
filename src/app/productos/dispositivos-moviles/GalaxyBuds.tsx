@@ -5,6 +5,7 @@
  * - Filtros específicos para audio
  * - Productos Galaxy Buds
  * - Características específicas de audífonos
+ * - Responsive global implementado
  */
 
 "use client";
@@ -20,6 +21,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { productsData } from "../data_product/products";
+import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -93,51 +96,9 @@ const budsFilters: FilterConfig = {
   controlVoz: ["Bixby", "Google Assistant", "Alexa", "Múltiples"],
 };
 
-const budsProducts = [
-  {
-    id: "galaxy-buds2-pro",
-    name: "Samsung Galaxy Buds2 Pro",
-    image: galaxyBudsImg,
-    colors: [
-      { name: "purple", hex: "#800080", label: "Púrpura" },
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "graphite", hex: "#2F4F4F", label: "Grafito" },
-    ] as ProductColor[],
-    rating: 4.7,
-    reviewCount: 892,
-    price: "$ 549.000",
-    originalPrice: "$ 649.000",
-    discount: "-15%",
-    isNew: true,
-  },
-  {
-    id: "galaxy-buds-pro",
-    name: "Samsung Galaxy Buds Pro",
-    image: galaxyBudsImg,
-    colors: [
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-      { name: "violet", hex: "#8A2BE2", label: "Violeta" },
-    ] as ProductColor[],
-    rating: 4.5,
-    reviewCount: 634,
-    price: "$ 399.000",
-    originalPrice: "$ 499.000",
-    discount: "-20%",
-  },
-  {
-    id: "galaxy-buds-fe",
-    name: "Samsung Galaxy Buds FE",
-    image: galaxyBudsImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "graphite", hex: "#2F4F4F", label: "Grafito" },
-    ] as ProductColor[],
-    rating: 4.3,
-    reviewCount: 421,
-    price: "$ 249.000",
-  },
-];
+const budsProducts = productsData["accesorios"].filter(
+  (product) => product.category === "buds"
+);
 
 export default function GalaxyBudsSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -148,13 +109,15 @@ export default function GalaxyBudsSection() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(9);
+  const device = useDeviceType(); // Obtén el tipo de dispositivo
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
       section: "galaxy_buds",
       category: "dispositivos_moviles",
+      device, // Analytics con tipo de dispositivo
     });
-  }, []);
+  }, [device]);
 
   const handleFilterChange = (
     filterType: string,
@@ -179,51 +142,89 @@ export default function GalaxyBudsSection() {
     setExpandedFilters(newExpanded);
   };
 
+  // Ejemplo de renderizado responsive
   return (
     <div className="min-h-screen bg-white">
+  
       <CategorySlider
         categories={budsCategories}
         trackingPrefix="buds_category"
       />
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            <FilterSidebar
-              filterConfig={budsFilters}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              resultCount={resultCount}
-              expandedFilters={expandedFilters}
-              onToggleFilter={toggleFilter}
-              trackingPrefix="buds_filter"
-            />
-          </aside>
+      <div
+        className={cn(
+          "container mx-auto px-6 py-8",
+          device === "mobile" && "px-2 py-4",
+          device === "tablet" && "px-4 py-6"
+        )}
+      >
+        <div
+          className={cn(
+            "flex gap-8",
+            device === "mobile" && "flex-col gap-4",
+            device === "tablet" && "gap-6"
+          )}
+        >
+          {/* Sidebar solo en desktop y large */}
+          {(device === "desktop" || device === "large") && (
+            <aside className="hidden lg:block w-80 flex-shrink-0">
+              <FilterSidebar
+                filterConfig={budsFilters}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                resultCount={resultCount}
+                expandedFilters={expandedFilters}
+                onToggleFilter={toggleFilter}
+                trackingPrefix="buds_filter"
+              />
+            </aside>
+          )}
 
           <main className="flex-1">
-            <div className="flex items-center justify-between mb-6">
+            <div
+              className={cn(
+                "flex items-center justify-between mb-6",
+                device === "mobile" && "flex-col items-start gap-2 mb-4"
+              )}
+            >
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1
+                  className={cn(
+                    "text-2xl font-bold text-gray-900",
+                    device === "mobile" && "text-lg"
+                  )}
+                >
                   Galaxy Buds
                 </h1>
-                <span className="text-sm text-gray-500">
+                <span
+                  className={cn(
+                    "text-sm text-gray-500",
+                    device === "mobile" && "text-xs"
+                  )}
+                >
                   {resultCount} resultados
                 </span>
               </div>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filtros
-                </button>
+              <div className={cn("flex items-center gap-4", device === "mobile" && "gap-2")}>
+                {/* Botón de filtros solo en mobile/tablet */}
+                {(device === "mobile" || device === "tablet") && (
+                  <button
+                    onClick={() => setShowMobileFilters(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Filtros
+                  </button>
+                )}
 
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={cn(
+                    "bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    device === "mobile" && "px-2 py-1 text-xs"
+                  )}
                 >
                   <option value="relevancia">Relevancia</option>
                   <option value="precio-menor">Precio: menor a mayor</option>
@@ -232,30 +233,33 @@ export default function GalaxyBudsSection() {
                   <option value="calificacion">Mejor calificados</option>
                 </select>
 
-                <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "grid"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "list"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+                {/* Selector de vista solo en desktop/large */}
+                {(device === "desktop" || device === "large") && (
+                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "grid"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "list"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -264,46 +268,32 @@ export default function GalaxyBudsSection() {
                 "grid gap-6",
                 viewMode === "grid"
                   ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
+                  : "grid-cols-1",
+                device === "mobile" && "gap-3"
               )}
             >
               {budsProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  onAddToCart={(productId: string, color: string) => {
-                    console.log(`Añadir al carrito: ${productId} - ${color}`);
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    console.log(`Toggle favorito: ${productId}`);
-                  }}
-                />
+                <ProductCard key={product.id} {...product} />
               ))}
             </div>
           </main>
         </div>
       </div>
 
-      <MobileFilterModal
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filterConfig={budsFilters}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={resultCount}
-        expandedFilters={expandedFilters}
-        onToggleFilter={toggleFilter}
-        trackingPrefix="buds_filter"
-      />
+      {/* Modal de filtros solo en mobile/tablet */}
+      {(device === "mobile" || device === "tablet") && (
+        <MobileFilterModal
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          filterConfig={budsFilters}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          resultCount={resultCount}
+          expandedFilters={expandedFilters}
+          onToggleFilter={toggleFilter}
+          trackingPrefix="buds_filter"
+        />
+      )}
     </div>
   );
 }

@@ -21,6 +21,7 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -85,6 +86,10 @@ const tabletFilters: FilterConfig = {
   uso: ["Productividad", "Gaming", "Educación", "Entretenimiento"],
 };
 
+const tabletProducts = productsData["smartphones-tablets"].filter(
+  (product) => product.category === "tablet"
+);
+
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["serie"])
@@ -94,13 +99,15 @@ export default function TabletasSection() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(15);
+  const device = useDeviceType(); // Responsive global
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
       section: "tabletas",
       category: "dispositivos_moviles",
+      device,
     });
-  }, []);
+  }, [device]);
 
   const handleFilterChange = (
     filterType: string,
@@ -127,47 +134,71 @@ export default function TabletasSection() {
 
   return (
     <div className="min-h-screen bg-white">
-      <CategorySlider
-        categories={tabletCategories}
-        trackingPrefix="tablet_category"
-      />
+      
+      <CategorySlider categories={tabletCategories} trackingPrefix="tablet_category" />
 
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            <FilterSidebar
-              filterConfig={tabletFilters}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              resultCount={resultCount}
-              expandedFilters={expandedFilters}
-              onToggleFilter={toggleFilter}
-              trackingPrefix="tablet_filter"
-            />
-          </aside>
+      <div className={cn(
+        "container mx-auto px-6 py-8",
+        device === "mobile" && "px-2 py-4",
+        device === "tablet" && "px-4 py-6"
+      )}>
+        <div className={cn(
+          "flex gap-8",
+          device === "mobile" && "flex-col gap-4",
+          device === "tablet" && "gap-6"
+        )}>
+          {(device === "desktop" || device === "large") && (
+            <aside className="hidden lg:block w-80 flex-shrink-0">
+              <FilterSidebar
+                filterConfig={tabletFilters}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                resultCount={resultCount}
+                expandedFilters={expandedFilters}
+                onToggleFilter={toggleFilter}
+                trackingPrefix="tablet_filter"
+              />
+            </aside>
+          )}
 
           <main className="flex-1">
-            <div className="flex items-center justify-between mb-6">
+            <div className={cn(
+              "flex items-center justify-between mb-6",
+              device === "mobile" && "flex-col items-start gap-2 mb-4"
+            )}>
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">Galaxy Tab</h1>
-                <span className="text-sm text-gray-500">
+                <h1 className={cn(
+                  "text-2xl font-bold text-gray-900",
+                  device === "mobile" && "text-lg"
+                )}>
+                  Galaxy Tab
+                </h1>
+                <span className={cn(
+                  "text-sm text-gray-500",
+                  device === "mobile" && "text-xs"
+                )}>
                   {resultCount} resultados
                 </span>
               </div>
 
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filtros
-                </button>
+              <div className={cn("flex items-center gap-4", device === "mobile" && "gap-2")}>
+                {(device === "mobile" || device === "tablet") && (
+                  <button
+                    onClick={() => setShowMobileFilters(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Filtros
+                  </button>
+                )}
 
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={cn(
+                    "bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    device === "mobile" && "px-2 py-1 text-xs"
+                  )}
                 >
                   <option value="relevancia">Relevancia</option>
                   <option value="precio-menor">Precio: menor a mayor</option>
@@ -176,71 +207,63 @@ export default function TabletasSection() {
                   <option value="calificacion">Mejor calificados</option>
                 </select>
 
-                <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "grid"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "list"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+                {(device === "desktop" || device === "large") && (
+                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "grid"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "list"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            <div
-              className={cn(
-                "grid gap-6",
-                viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
-              )}
-            >
-              {productsData["smartphones-tablets"]
-                .filter((product) => product.name.toLowerCase().includes("tab"))
-                .map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    {...product}
-                    onAddToCart={(productId: string, color: string) => {
-                      console.log(`Añadir al carrito: ${productId} - ${color}`);
-                    }}
-                    onToggleFavorite={(productId: string) => {
-                      console.log(`Toggle favorito: ${productId}`);
-                    }}
-                  />
-                ))}
+            <div className={cn(
+              "grid gap-6",
+              viewMode === "grid"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1",
+              device === "mobile" && "gap-3"
+            )}>
+              {tabletProducts.map((product) => (
+                <ProductCard key={product.id} {...product} />
+              ))}
             </div>
           </main>
         </div>
       </div>
 
-      <MobileFilterModal
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filterConfig={tabletFilters}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={resultCount}
-        expandedFilters={expandedFilters}
-        onToggleFilter={toggleFilter}
-        trackingPrefix="tablet_filter"
-      />
+      {(device === "mobile" || device === "tablet") && (
+        <MobileFilterModal
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          filterConfig={tabletFilters}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          resultCount={resultCount}
+          expandedFilters={expandedFilters}
+          onToggleFilter={toggleFilter}
+          trackingPrefix="tablet_filter"
+        />
+      )}
     </div>
   );
 }

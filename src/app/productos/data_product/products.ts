@@ -96,6 +96,7 @@ export const productsData = {
       originalPrice: "$ 649.000",
       discount: "-15%",
       isNew: true,
+      category: "buds",
     },
     {
       id: "galaxy-buds-pro",
@@ -112,6 +113,7 @@ export const productsData = {
       price: "$ 399.000",
       originalPrice: "$ 499.000",
       discount: "-20%",
+      category: "buds",
     },
     {
       id: "galaxy-buds-fe",
@@ -125,6 +127,7 @@ export const productsData = {
       rating: 4.3,
       reviewCount: 421,
       price: "$ 249.000",
+      category: "buds",
     },
     // Galaxy Watch
     {
@@ -142,6 +145,7 @@ export const productsData = {
       price: "$ 899.000",
       originalPrice: "$ 1.099.000",
       discount: "-18%",
+      category: "watch",
     },
     // ...más productos de relojes
   ],
@@ -212,6 +216,7 @@ export const productsData = {
       sku: "galaxy-a16",
       name: "Samsung Galaxy A16",
       image: smartphonesImg,
+      category: "smartphone",
       colors: [
         { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
         { name: "black", hex: "#000000", label: "Negro" },
@@ -228,6 +233,7 @@ export const productsData = {
       sku: "galaxy-a25",
       name: "Samsung Galaxy A25",
       image: smartphonesImg,
+      category: "smartphone",
       colors: [
         { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
         { name: "black", hex: "#000000", label: "Negro" },
@@ -242,6 +248,7 @@ export const productsData = {
       sku: "galaxy-a26",
       name: "Samsung Galaxy A26",
       image: smartphonesImg,
+      category: "smartphone",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
         { name: "black", hex: "#000000", label: "Negro" },
@@ -258,6 +265,7 @@ export const productsData = {
       sku: "galaxy-a15-256gb",
       name: "Samsung Galaxy A15 256 GB",
       image: smartphonesImg,
+      category: "smartphone",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
         { name: "black", hex: "#000000", label: "Negro" },
@@ -271,6 +279,7 @@ export const productsData = {
       sku: "galaxy-a15-4gb",
       name: "Samsung Galaxy A15 4GB 128GB",
       image: smartphonesImg,
+      category: "smartphone",
       colors: [
         { name: "yellow", hex: "#FCD34D", label: "Amarillo" },
         { name: "black", hex: "#000000", label: "Negro" },
@@ -285,6 +294,7 @@ export const productsData = {
       sku: "galaxy-a15-128gb",
       name: "Samsung Galaxy A15 4GB 128GB",
       image: smartphonesImg,
+      category: "smartphone",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
         { name: "blue", hex: "#1E40AF", label: "Azul" },
@@ -299,6 +309,7 @@ export const productsData = {
       sku: "galaxy-tab-s9-11",
       name: 'Samsung Galaxy Tab S9 11" WiFi',
       image: tabletasImg,
+      category: "tablet",
       colors: [
         { name: "gray", hex: "#808080", label: "Gris" },
         { name: "beige", hex: "#F5F5DC", label: "Beige" },
@@ -316,6 +327,7 @@ export const productsData = {
       sku: "galaxy-tab-a9-10",
       name: 'Samsung Galaxy Tab A9+ 10.4" WiFi',
       image: tabletasImg,
+      category: "tablet",
       colors: [
         { name: "gray", hex: "#696969", label: "Gris Grafito" },
         { name: "silver", hex: "#C0C0C0", label: "Plateado" },
@@ -329,6 +341,7 @@ export const productsData = {
       sku: "galaxy-tab-s9-fe",
       name: 'Samsung Galaxy Tab S9 FE 10.9" WiFi',
       image: tabletasImg,
+      category: "tablet",
       colors: [
         { name: "mint", hex: "#98FB98", label: "Menta" },
         { name: "gray", hex: "#708090", label: "Gris" },
@@ -615,3 +628,4 @@ export const productsData = {
     },
   ],
 };
+

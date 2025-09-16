@@ -5,82 +5,87 @@
  * - Smartphones, Relojes, Tabletas, Galaxy Buds, Accesorios
  * - Navegación entre secciones
  * - Layout limpio y escalable
+ * - Responsive global implementado
  */
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { Suspense, lazy, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { posthogUtils } from "@/lib/posthogClient";
-import SmartphonesSection from "./Smartphones";
-import RelojesSection from "./Relojes";
-import TabletasSection from "./Tabletas";
-import GalaxyBudsSection from "./GalaxyBuds";
-import AccesoriosSection from "./Accesorios";
+import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
-type SectionType =
-  | "smartphones"
-  | "relojes"
-  | "tabletas"
-  | "buds"
-  | "accesorios";
+const SmartphonesSection = lazy(() => import("./Smartphones"));
+const RelojesSection = lazy(() => import("./Relojes"));
+const TabletasSection = lazy(() => import("./Tabletas"));
+const GalaxyBudsSection = lazy(() => import("./GalaxyBuds"));
+const AccesoriosSection = lazy(() => import("./Accesorios"));
 
+type SectionType = "smartphones" | "relojes" | "tabletas" | "buds" | "accesorios";
+
+// Este componente usa useSearchParams y debe estar dentro de <Suspense>
 function DispositivosMovilesContent() {
   const searchParams = useSearchParams();
-  const [activeSection, setActiveSection] =
-    useState<SectionType>("smartphones");
+  const [activeSection, setActiveSection] = useState<SectionType>("smartphones");
+  const device = useDeviceType();
 
   useEffect(() => {
-    // Determinar sección activa basada en URL params
     const section = searchParams.get("section") as SectionType;
     if (
       section &&
-      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(
-        section
-      )
+      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(section)
     ) {
       setActiveSection(section);
     }
-
     posthogUtils.capture("page_view", {
       page: "dispositivos_moviles",
-      section: activeSection,
+      section: section || activeSection,
       category: "productos",
+      device,
     });
-  }, [searchParams, activeSection]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, device]);
 
-  const renderActiveSection = () => {
-    switch (activeSection) {
-      case "smartphones":
-        return <SmartphonesSection />;
-      case "relojes":
-        return <RelojesSection />;
-      case "tabletas":
-        return <TabletasSection />;
-      case "buds":
-        return <GalaxyBudsSection />;
-      case "accesorios":
-        return <AccesoriosSection />;
-      default:
-        return <SmartphonesSection />;
-    }
-  };
+  let SectionComponent;
+  switch (activeSection) {
+    case "smartphones":
+      SectionComponent = SmartphonesSection;
+      break;
+    case "relojes":
+      SectionComponent = RelojesSection;
+      break;
+    case "tabletas":
+      SectionComponent = TabletasSection;
+      break;
+    case "buds":
+      SectionComponent = GalaxyBudsSection;
+      break;
+    case "accesorios":
+      SectionComponent = AccesoriosSection;
+      break;
+    default:
+      SectionComponent = SmartphonesSection;
+  }
 
-  return <div className="min-h-screen bg-white">{renderActiveSection()}</div>;
-}
-
-export default function DispositivosMovilesPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Cargando productos...</p>
-          </div>
-        </div>
+    <div
+      className={
+        device === "mobile"
+          ? "bg-white min-h-screen px-2 py-2"
+          : device === "tablet"
+          ? "bg-white min-h-screen px-4 py-4"
+          : "bg-white min-h-screen px-0 py-0"
       }
     >
+      <SectionComponent />
+    </div>
+  );
+}
+
+// El componente principal de la página debe envolver DispositivosMovilesContent en <Suspense>
+export default function DispositivosMovilesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white" />}>
       <DispositivosMovilesContent />
     </Suspense>
   );

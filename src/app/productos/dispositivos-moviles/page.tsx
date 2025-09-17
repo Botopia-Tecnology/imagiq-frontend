@@ -10,9 +10,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import { posthogUtils } from "@/lib/posthogClient";
+import {  Suspense } from "react";
 import { useDeviceType } from "@/components/responsive";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSearchParams } from "next/navigation";

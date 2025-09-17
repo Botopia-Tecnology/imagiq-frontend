@@ -29,8 +29,8 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: "user" | "admin" | "superadmin";
-  avatar?: string;
+  last_name: string;
+  role?: 1 | 2 | 3 | 4;
 }
 
 // Legacy interface - keeping for compatibility
@@ -175,11 +175,12 @@ export interface LoginCredentials {
   rememberMe?: boolean;
 }
 
-export interface RegisterData {
+export interface Direccion {
+  id: string;
+  usuario_id: string;
   email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  acceptTerms: boolean;
-  marketingConsent?: boolean;
+  linea_uno: string;
+  codigo_dane: string;
+  ciudad: string;
+  pais: string;
 }

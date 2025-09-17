@@ -1,9 +1,8 @@
 "use client";
 
-// Las funciones deben ir dentro del CartProvider para acceder a setItems
-
 /**
  * Context del Carrito de Compras
+ * Ahora usa el hook centralizado useCart para toda la lógica
  * - Estado global del carrito
  * - Provider para toda la aplicación
  * - Sincronización entre tabs del navegador
@@ -11,10 +10,8 @@
  * - Tracking de abandono de carrito
  */
 
-import { createContext, useContext, useState, useEffect } from "react";
-
-// Tipos para productos en el carrito
-import type { CartProduct } from "./useCart";
+import { createContext, useContext } from "react";
+import { useCart, CartProduct } from "@/hooks/useCart";
 
 /**
  * CartContextType
@@ -35,6 +32,10 @@ type CartContextType = {
   getProducts: () => CartProduct[];
   /** Cantidad total de productos (para el badge del navbar) */
   itemCount: number;
+  /** Si el carrito está vacío */
+  isEmpty: boolean;
+  /** Formatear precios */
+  formatPrice: (price: number) => string;
 };
 
 /**
@@ -58,104 +59,46 @@ export const useCartContext = () => {
 
 /**
  * CartProvider
- * Proveedor global del carrito. Maneja estado, persistencia y lógica.
+ * Proveedor global del carrito. Ahora usa el hook centralizado useCart.
  */
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
-  // Estado principal del carrito
-  const [items, setItems] = useState<CartProduct[]>([]);
+  // Usar el hook centralizado useCart
+  const {
+    products,
+    calculations,
+    addProduct: addToCart,
+    removeProduct,
+    updateQuantity: updateQty,
+    clearCart,
+    isEmpty,
+    formatPrice,
+  } = useCart();
 
-  /**
-   * addProduct
-   * Añade un producto al carrito. Si ya existe, suma la cantidad.
-   * Actualiza localStorage automáticamente.
-   */
+  // Adaptar la interfaz para mantener compatibilidad
   const addProduct = (product: CartProduct) => {
-    setItems((currentItems) => {
-      const existingItem = currentItems.find((item) => item.id === product.id);
-      if (existingItem) {
-        return currentItems.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + product.quantity }
-            : item
-        );
-      }
-      return [...currentItems, { ...product }];
-    });
+    addToCart(product);
   };
 
-  /**
-   * removeProduct
-   * Elimina un producto del carrito por id.
-   */
-  const removeProduct = (id: string) => {
-    setItems((currentItems) => currentItems.filter((item) => item.id !== id));
-  };
-
-  /**
-   * updateQuantity
-   * Actualiza la cantidad de un producto. Si la cantidad es 0, lo elimina.
-   */
   const updateQuantity = (productId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeProduct(productId);
-      return;
-    }
-    setItems((currentItems) =>
-      currentItems.map((item) =>
-        item.id === productId ? { ...item, quantity } : item
-      )
-    );
+    updateQty(productId, quantity);
   };
 
-  /**
-   * clearCart
-   * Vacía el carrito completamente.
-   */
-  const clearCart = () => {
-    setItems([]);
-  };
-
-  /**
-   * getProducts
-   * Devuelve todos los productos del carrito.
-   */
-  const getProducts = () => items;
-
-  /**
-   * Persistencia: carga el carrito desde localStorage al montar.
-   */
-  useEffect(() => {
-    const savedCart = localStorage.getItem("cart-items");
-    if (savedCart) {
-      setItems(JSON.parse(savedCart));
-    }
-  }, []);
-
-  /**
-   * Persistencia: guarda el carrito en localStorage cada vez que cambia.
-   */
-  useEffect(() => {
-    localStorage.setItem("cart-items", JSON.stringify(items));
-  }, [items]);
-
-  /**
-   * itemCount
-   * Calcula la cantidad total de productos para el badge del navbar.
-   */
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const getProducts = () => products;
 
   /**
    * value
-   * Valor del contexto global del carrito.
+   * Valor del contexto global del carrito usando el hook centralizado.
    */
   const value: CartContextType = {
-    cart: items,
+    cart: products,
     addProduct,
     removeProduct,
     updateQuantity,
     clearCart,
     getProducts,
-    itemCount,
+    itemCount: calculations.productCount,
+    isEmpty,
+    formatPrice,
   };
 
   /**

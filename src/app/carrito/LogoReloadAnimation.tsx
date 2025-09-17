@@ -1,3 +1,4 @@
+"use client"
 import React, { useEffect, useRef } from "react";
 import logoSamsung from "@/img/logo_Samsung.png";
 
@@ -13,7 +14,6 @@ import logoSamsung from "@/img/logo_Samsung.png";
 type LogoReloadAnimationProps = {
   open: boolean;
   onFinish?: () => void;
-  duration?: number;
 };
 
 // Importa el logo desde el inicio para optimización y visibilidad
@@ -22,10 +22,10 @@ const LOGO_SRC = logoSamsung;
 /**
  * LogoReloadAnimation
  * Animación de carga tipo ola Samsung para el proceso de compra.
- * - Pantalla azul con gradiente animado, logo crece con efecto ola.
- * - Sin recuadro blanco detrás del logo.
+ * - Pantalla azul, logo crece con efecto ola.
  * - Texto elegante y legible.
  * - Transición suave y profesional.
+ * - Sin dependencias externas, solo React + Tailwind + CSS.
  */
 const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
   open,
@@ -53,7 +53,6 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
   /**
    * Subcomponente: Logo Samsung con máscara de ola SVG animada
    * Inspirado en el efecto CodePen, la ola sube y "llena" el logo.
-   * El fondo es solo el gradiente azul animado, sin recuadro blanco.
    */
   const AnimatedLogoWithWaveMask = () => (
     <div className="relative flex flex-col items-center justify-center z-10 w-[1000px] h-[420px]">
@@ -162,6 +161,14 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       </span>
     </div>
   );
+
+  /**
+   * Subcomponente: Logo Samsung animado
+   * - Crece con efecto de entrada y sombra.
+   */
+  /**
+   * Subcomponente: Logo Samsung animado con ola subiendo
+   */
 
   // Render principal
   return (

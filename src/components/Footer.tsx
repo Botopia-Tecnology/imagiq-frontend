@@ -90,73 +90,25 @@ function Footer() {
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
       }`}
     >
-      <div className="container mx-auto px-0 py-0 md:px-6 md:py-12">
+      <div className="container mx-auto px-6 py-12">
         {/* Main footer content */}
-        {/* Mobile: dropdown tipo acordeón */}
-        <div className="flex flex-col md:hidden">
-          {footerSections.map((section) => (
-            <div key={section.title} className="border-b border-gray-200">
-              <button
-                type="button"
-                className="w-full flex justify-between items-center py-4 px-4 text-left text-base font-semibold text-gray-900 focus:outline-none"
-                onClick={() =>
-                  setHoveredSection(
-                    hoveredSection === section.title ? null : section.title
-                  )
-                }
-              >
-                <span>{section.title}</span>
-                <span
-                  className={`transition-transform duration-200 ${
-                    hoveredSection === section.title ? "rotate-180" : "rotate-0"
-                  }`}
-                >
-                  ▾
-                </span>
-              </button>
-              <ul
-                className={`overflow-hidden transition-all duration-300 ${
-                  hoveredSection === section.title
-                    ? "max-h-96 py-2"
-                    : "max-h-0 py-0"
-                } pl-2`}
-              >
-                {section.links.map((link) => (
-                  <li
-                    key={link.name}
-                    className="border-b border-gray-100 last:border-b-0"
-                  >
-                    <Link
-                      href={link.href}
-                      className="block text-sm text-gray-600 hover:text-blue-600 font-normal leading-relaxed py-3 px-2 text-left transition-all duration-300"
-                      onClick={() =>
-                        handleFooterClick(section.title, link.name, link.href)
-                      }
-                    >
-                      {link.name}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-        {/* Desktop/tablet: columnas clásicas */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-8 lg:gap-12 md:divide-y-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {footerSections.map((section, index) => (
             <div
               key={section.title}
-              className={`w-full p-4 rounded-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+              className={`space-y-4 p-4 rounded-lg transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
                 isVisible
                   ? "opacity-100 translate-y-0"
                   : "opacity-0 translate-y-4"
               }`}
-              style={{ transitionDelay: `${index * 150}ms` }}
+              style={{
+                transitionDelay: `${index * 150}ms`,
+              }}
               onMouseEnter={() => setHoveredSection(section.title)}
               onMouseLeave={() => setHoveredSection(null)}
             >
               <h3
-                className={`font-semibold text-gray-900 text-base pb-2 border-b border-gray-200 transition-all duration-300 ${
+                className={`font-semibold text-gray-900 text-base border-b border-gray-200 pb-2 transition-all duration-300 ${
                   hoveredSection === section.title
                     ? "text-blue-600 border-blue-200"
                     : ""
@@ -164,7 +116,7 @@ function Footer() {
               >
                 {section.title}
               </h3>
-              <ul className="pt-2">
+              <ul className="space-y-3">
                 {section.links.map((link, linkIndex) => (
                   <li
                     key={link.name}
@@ -172,14 +124,14 @@ function Footer() {
                       isVisible
                         ? "opacity-100 translate-y-0"
                         : "opacity-0 translate-y-2"
-                    } border-b border-gray-100 last:border-b-0`}
+                    }`}
                     style={{
                       transitionDelay: `${index * 150 + linkIndex * 50}ms`,
                     }}
                   >
                     <Link
                       href={link.href}
-                      className="block text-sm text-gray-600 hover:text-blue-600 font-normal leading-relaxed py-3 px-2 text-left transition-all duration-300 relative group rounded-md hover:bg-blue-50"
+                      className="text-sm text-gray-600 hover:text-blue-600 transition-all duration-300 font-normal leading-relaxed block py-1 relative group overflow-hidden rounded-md hover:bg-blue-50 px-2 -mx-2"
                       onClick={() =>
                         handleFooterClick(section.title, link.name, link.href)
                       }
@@ -199,7 +151,7 @@ function Footer() {
 
         {/* Bottom section */}
         <div
-          className={`mt-12 pt-8 border-t border-gray-200 transition-all duration-500 md:block hidden ${
+          className={`mt-12 pt-8 border-t border-gray-200 transition-all duration-500 ${
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
           style={{ transitionDelay: "600ms" }}
@@ -270,11 +222,32 @@ function Footer() {
           </div>
         </div>
       </div>
+
+      {/* Floating contact button for mobile with Tailwind animations */}
+      <div className="lg:hidden fixed bottom-4 right-4 z-50">
+        <Link
+          href="/contactanos"
+          className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium flex items-center space-x-2 hover:shadow-xl hover:scale-105 active:scale-95 group relative animate-bounce hover:animate-none"
+          onClick={() => {
+            handleFooterClick("floating", "Contacto", "/contactanos");
+          }}
+        >
+          <span className="transition-transform duration-200 group-hover:scale-110">
+            💬
+          </span>
+          <span className="transition-all duration-200 group-hover:translate-x-0.5">
+            Contacto
+          </span>
+          {/* Pulse ring effect with Tailwind */}
+          <div className="absolute inset-0 rounded-full bg-blue-600 animate-ping opacity-20 group-hover:opacity-30"></div>
+        </Link>
+      </div>
     </footer>
   );
 }
 
-
+// Ensure proper default export
+export default Footer;
 
 // Also provide named export for flexibility
 export { Footer };

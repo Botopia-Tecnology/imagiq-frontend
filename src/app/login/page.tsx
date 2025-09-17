@@ -1,3 +1,4 @@
+"use client";
 /**
  * Página de Login de Usuario
  * - Formulario de autenticación con email/password
@@ -7,11 +8,10 @@
  * - Tracking de eventos de login con PostHog
  */
 
-"use client";
 
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import { Usuario } from "@/types/user";
+import { User, Usuario } from "@/types/user";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -233,9 +233,8 @@ export default function LoginPage() {
       login({
         id: user.id,
         email: user.email,
-        name: `${user.nombre} ${user.apellido}`,
-        role: user.rol === "admin" ? "admin" : "user",
-        avatar: undefined,
+        name: user.nombre,
+        last_name: user.apellido,
       });
       posthogUtils.capture("login_success", {
         user_id: user.id,
@@ -279,8 +278,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e6eef5] via-white to-[#b3c7db] relative mb-10 animate-fade-in">
-      
-
       {/* Card container con efecto glass y sombra */}
       <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur border border-[#002142]/10 rounded-2xl shadow-2xl p-10 flex flex-col items-center animate-fade-in">
         {/* Title */}

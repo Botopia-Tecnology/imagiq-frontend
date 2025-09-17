@@ -77,7 +77,7 @@ export const Ofertas = () => {
 
   return (
     <section className="py-8 w-full max-w-full overflow-hidden">
-      <div className="container mx-auto px-4 py-12 max-w-full overflow-hidden pt-16 md:pt-0">
+      <div className="container mx-auto px-4 py-12 max-w-full overflow-hidden">
         <h2 className="text-4xl font-bold text-center mb-10 text-gray-800 lg:text-3xl md:text-2xl sm:text-xl">
           Ofertas para ti
         </h2>
@@ -178,33 +178,44 @@ export const Ofertas = () => {
               ))}
             </div>
 
-            {/* Mobile: Grid layout igual que desktop, pero con cards más pequeñas */}
-            <div className="md:hidden w-full flex flex-row gap-2 items-center justify-center ">
-              {ofertasData.map((oferta) => (
-                <div
-                  key={oferta.id}
-                  className="relative flex flex-col items-center w-1/3 min-w-0 overflow-hidden"
-                >
-                  {oferta.discount && (
-                    <div className="absolute top-2 right-2 bg-blue-500 text-white font-bold py-1 px-3 rounded-full text-xs z-10">
-                      {oferta.discount}
+            {/* Mobile: Slider layout */}
+            <div className="md:hidden w-full overflow-hidden">
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{
+                  transform: `translateX(-${currentIndex * 100}%)`,
+                  width: `${ofertasData.length * 100}%`,
+                }}
+              >
+                {ofertasData.map((oferta) => (
+                  <div
+                    key={oferta.id}
+                    className="relative flex flex-col items-center px-4 min-w-0 overflow-hidden"
+                    style={{ width: `${100 / ofertasData.length}%` }}
+                  >
+                    {oferta.discount && (
+                      <div className="absolute top-2 right-2 bg-blue-500 text-white font-bold py-1 px-3 rounded-full text-xs z-10">
+                        {oferta.discount}
+                      </div>
+                    )}
+
+                    <div className="w-full flex justify-center py-4 h-48">
+                      <Image
+                        src={oferta.image}
+                        alt={oferta.title}
+                        width={200}
+                        height={200}
+                        className="object-contain max-h-full transition-transform duration-300"
+                        unoptimized={true}
+                      />
                     </div>
-                  )}
-                  <div className="w-full flex justify-center py-2 h-32">
-                    <Image
-                      src={oferta.image}
-                      alt={oferta.title}
-                      width={100}
-                      height={100}
-                      className="object-contain max-h-full transition-transform duration-300"
-                      unoptimized={true}
-                    />
+
+                    <h3 className="text-xs font-medium text-center mt-2 text-gray-800 px-2 break-words overflow-hidden">
+                      {oferta.title}
+                    </h3>
                   </div>
-                  <h3 className="text-[10px] font-medium text-center mt-1 text-gray-800 px-1 break-words overflow-hidden">
-                    {oferta.title}
-                  </h3>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           </div>
 

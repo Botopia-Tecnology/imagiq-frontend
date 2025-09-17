@@ -12,7 +12,7 @@
 
 import { useProducts } from "@/features/products/useProducts";
 import { posthogUtils } from "@/lib/posthogClient";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import CategorySlider, { Category } from "../components/CategorySlider";
 import FilterSidebar, {
   FilterConfig,
@@ -21,6 +21,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import { productsData } from "../data_product/products";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import Pagination from "./components/Pagination";
+import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -111,7 +113,10 @@ export default function GalaxyBudsSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(9);
+  
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Usar el hook de productos con filtro por palabra "buds"
   const apiFilters = useMemo(
@@ -121,9 +126,44 @@ export default function GalaxyBudsSection() {
     []
   );
 
-  const { products, loading, error, totalItems, refreshProducts } =
-    useProducts(apiFilters);
+  // Crear filtros iniciales con paginación
+  const initialFilters = useMemo(() => {
+    const filters = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    return filters;
+  }, [apiFilters, currentPage, itemsPerPage]);
+
+  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } =
+    useProducts(initialFilters);
+
+  // Ref para evitar bucles infinitos
+  const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Obtén el tipo de dispositivo
+
+  // Resetear a la página 1 cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // Actualizar filtros cuando cambien los parámetros de paginación
+  useEffect(() => {
+    const filtersWithPagination = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    
+    // Crear una clave única para evitar bucles infinitos
+    const filtersKey = JSON.stringify(filtersWithPagination);
+    
+    if (lastFiltersRef.current !== filtersKey) {
+      lastFiltersRef.current = filtersKey;
+      filterProducts(filtersWithPagination);
+    }
+  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -146,15 +186,32 @@ export default function GalaxyBudsSection() {
     }));
   };
 
-  const toggleFilter = (filterKey: string) => {
-    const newExpanded = new Set(expandedFilters);
-    if (newExpanded.has(filterKey)) {
-      newExpanded.delete(filterKey);
-    } else {
-      newExpanded.add(filterKey);
-    }
-    setExpandedFilters(newExpanded);
-  };
+  const toggleFilter = useCallback(
+    (filterKey: string) => {
+      const newExpanded = new Set(expandedFilters);
+      if (newExpanded.has(filterKey)) {
+        newExpanded.delete(filterKey);
+      } else {
+        newExpanded.add(filterKey);
+      }
+      setExpandedFilters(newExpanded);
+    },
+    [expandedFilters]
+  );
+
+  // Funciones para manejar la paginación
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+    // Scroll suave hacia arriba cuando cambie de página
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, [itemsPerPage]);
+
+  const handleItemsPerPageChange = useCallback(async (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+    // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, []);
   if (loading) {
     return (
       <LoadingState
@@ -257,6 +314,26 @@ export default function GalaxyBudsSection() {
               onAddToCart={handleAddToCart}
               onToggleFavorite={handleToggleFavorite}
             />
+            
+            {/* Paginación */}
+            {!loading && !error && totalItems > 0 && (
+              <div className="mt-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                  <ItemsPerPageSelector
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                    totalItems={totalItems}
+                  />
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                />
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -269,7 +346,7 @@ export default function GalaxyBudsSection() {
           filterConfig={budsFilters}
           filters={filters}
           onFilterChange={handleFilterChange}
-          resultCount={resultCount}
+          resultCount={totalItems}
           expandedFilters={expandedFilters}
           onToggleFilter={toggleFilter}
           trackingPrefix="buds_filter"

@@ -21,11 +21,17 @@ import TabletasSection from "./Tabletas";
 import GalaxyBudsSection from "./GalaxyBuds";
 import AccesoriosSection from "./Accesorios";
 
-type SectionType = "smartphones" | "relojes" | "tabletas" | "buds" | "accesorios";
+type SectionType =
+  | "smartphones"
+  | "relojes"
+  | "tabletas"
+  | "buds"
+  | "accesorios";
 
 function DispositivosMovilesContent() {
   const searchParams = useSearchParams();
-  const [activeSection, setActiveSection] = useState<SectionType>("smartphones");
+  const [activeSection, setActiveSection] =
+    useState<SectionType>("smartphones");
   const device = useDeviceType();
 
   useEffect(() => {
@@ -39,7 +45,9 @@ function DispositivosMovilesContent() {
     const section = searchParams.get("section") as SectionType;
     if (
       section &&
-      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(section)
+      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(
+        section
+      )
     ) {
       setActiveSection(section);
     }

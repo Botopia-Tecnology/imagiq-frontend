@@ -1,3 +1,4 @@
+"use client"
 import { useState, useEffect } from "react";
 import { stores, Store } from "../../../components/LocationsArray";
 import { Direccion } from "@/types/user";

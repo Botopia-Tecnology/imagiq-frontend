@@ -1,3 +1,4 @@
+"use client";
 /**
  * Página de Login de Usuario
  * - Formulario de autenticación con email/password
@@ -7,7 +8,6 @@
  * - Tracking de eventos de login con PostHog
  */
 
-"use client";
 
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";

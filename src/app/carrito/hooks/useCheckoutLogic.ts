@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
@@ -195,9 +196,11 @@ export function useCheckoutLogic() {
               direccionId: direction.id,
             },
           });
-          if (!res) {
+          if (res === null) {
             redirectToError();
+            break;
           }
+          router.push(res.redirectionUrl);
           break;
 
         case "pse":

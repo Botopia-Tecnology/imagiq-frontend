@@ -1,8 +1,8 @@
+"use client";
 /**
  * 🗺️ MAPA INTERACTIVO DE TIENDAS SAMSUNG - IMAGIQ
  */
 
-"use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Filter } from "lucide-react";

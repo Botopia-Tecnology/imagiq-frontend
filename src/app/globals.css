@@ -846,3 +846,55 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 [data-sonner-toast] {
   animation: toast-slide-in 0.3s ease-out;
 }
+/* Desktop: cuando está activa, el contenedor crece y permite overflow visible */
+@media (min-width: 481px) {
+  .category-slider-col.category-active {
+    min-width: 220px !important;
+    width: 220px !important;
+    max-width: 220px !important;
+    z-index: 2;
+    overflow: visible !important;
+    box-shadow: 0 0 0 4px #e6f9e6;
+  }
+  .category-image-container.category-image-active {
+    width: 180px !important;
+    height: 180px !important;
+    overflow: visible !important;
+  }
+}
+
+/* Ajuste para que se vean 4 categorías en móvil vertical */
+@media (max-width: 480px) and (orientation: portrait) {
+  .category-slider-col {
+    min-width: 0 !important;
+    width: 25% !important;
+    max-width: 25% !important;
+  }
+}
+
+body.hide-main-navbar header[data-navbar="true"] {
+  opacity: 0 !important;
+  transform: translateY(-100%) !important;
+  pointer-events: none !important;
+  transition: opacity 0.35s cubic-bezier(.4,0,.2,1), transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+
+/* Animación suave para barra superior personalizada */
+@keyframes fadeBarIn {
+  from { opacity: 0; transform: translateY(-24px);}
+  to   { opacity: 1; transform: translateY(0);}
+}
+@keyframes fadeBarOut {
+  from { opacity: 1; transform: translateY(0);}
+  to   { opacity: 0; transform: translateY(-24px);}
+}
+.bar-animate-in {
+  animation: fadeBarIn 0.35s cubic-bezier(.4,0,.2,1) forwards;
+  /* Para que la animación no se repita si el componente se desmonta */
+  will-change: opacity, transform;
+}
+.bar-animate-out {
+  animation: fadeBarOut 0.35s cubic-bezier(.4,0,.2,1) forwards;
+}
+
+

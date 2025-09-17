@@ -1,3 +1,4 @@
+"use client";
 /**
  * 📊 ANALYTICS CONTEXT - IMAGIQ ECOMMERCE
  *
@@ -9,7 +10,6 @@
  * - Métricas de performance y SEO
  */
 
-"use client";
 
 import { createContext, useContext, useEffect } from "react";
 import { usePostHog } from "@/features/analytics/PostHogProvider";

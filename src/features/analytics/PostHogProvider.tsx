@@ -1,3 +1,4 @@
+"use client";
 /**
  * 📊 POSTHOG PROVIDER - IMAGIQ ECOMMERCE
  *
@@ -8,7 +9,6 @@
  * - Feature flags
  */
 
-"use client";
 
 import { createContext, useContext, useEffect } from "react";
 import { posthogUtils } from "@/lib/posthogClient";

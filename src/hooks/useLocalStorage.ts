@@ -1,3 +1,4 @@
+"use client"
 /**
  * Hook useLocalStorage
  * - Persistencia de datos en localStorage

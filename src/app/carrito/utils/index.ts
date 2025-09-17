@@ -25,7 +25,9 @@ export async function payWithAddi(
   }
 }
 
-export async function payWithCard(props: CardPaymentData) {
+export async function payWithCard(
+  props: CardPaymentData
+): Promise<{ redirectionUrl: string } | null> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/payments/epayco/credit-card`, {
       method: "POST",
@@ -37,7 +39,7 @@ export async function payWithCard(props: CardPaymentData) {
     if (!res.ok) {
       throw new Error("Failed to process card payment");
     }
-    const data = await res.json();
+    const data = (await res.json()) as { redirectionUrl: string };
     return data;
   } catch (error) {
     console.error("Error processing card payment:", error);

@@ -1,3 +1,4 @@
+"use client"
 /**
  * Componente SEO
  * - Meta tags dinámicos

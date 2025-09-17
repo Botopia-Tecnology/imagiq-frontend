@@ -1,3 +1,4 @@
+"use client";
 /**
  * 👤 USER PREFERENCES CONTEXT - IMAGIQ ECOMMERCE
  *
@@ -9,7 +10,6 @@
  * - Integración con PostHog para análisis avanzado
  */
 
-"use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
 

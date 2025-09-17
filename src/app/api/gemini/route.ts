@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Prompt de contexto
-    const contexto = "Eres un asistente virtual de la empresa Samsung experto en productos de tecnología y ayudas a los usuarios a elegir el mejor producto según sus necesidades. Responde de manera breve, clara, amigable y profesional.";
+    const contexto = "Eres un asistente virtual de la empresa Samsung experto en productos de tecnología y ayudas a los usuarios a elegir el mejor producto según sus necesidades. Ademas de ayudarle como asesor para rastrear sus pedidos o consultar informacion sobre su orden. Responde de manera breve, clara, amigable y profesional.";
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
     const body = {

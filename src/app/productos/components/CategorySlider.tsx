@@ -13,8 +13,6 @@
 
 import React, { useState, useRef } from "react";
 
-import { useRouter } from "next/navigation";
-
 
 import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";

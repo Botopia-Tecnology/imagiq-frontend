@@ -11,6 +11,7 @@ import {
   ProductCardProps,
   ProductColor,
 } from "@/app/productos/components/ProductCard";
+import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 
 // Función para convertir ProductCardProps a ProductData compatible con ViewProduct
 function convertProductForView(product: ProductCardProps) {
@@ -103,6 +104,11 @@ export default function ProductViewPage({ params }) {
 
   // Convertir el producto al formato esperado por ViewProduct
   const convertedProduct = convertProductForView(product);
+  const isRefrigerador = convertedProduct.name?.toLowerCase().includes('refrigerador');
 
-  return <ViewProduct product={convertedProduct} />;
+  return isRefrigerador ? (
+    <ViewProductAppliance product={convertedProduct} />
+  ) : (
+    <ViewProduct product={convertedProduct} />
+  );
 }

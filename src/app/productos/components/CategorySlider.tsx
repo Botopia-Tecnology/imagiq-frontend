@@ -10,8 +10,12 @@
  */
 
 "use client";
+
+import React, { useState, useRef } from "react";
+
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+
+
 import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";

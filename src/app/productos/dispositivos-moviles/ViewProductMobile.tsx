@@ -13,18 +13,17 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
+import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
-import ComparationProduct from "./VideosSection";
+import ComparationProduct from "./ComparationProduct";
 import VideosSection from "./VideosSection";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCartContext } from "@/features/cart/CartContext";
-import { useRouter } from "next/navigation";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
-
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -45,6 +44,9 @@ interface ProductData {
 export default function ViewProduct({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
+  const [selectedColor] = useState(safeProduct?.colors?.[0]);
+  // Estado para especificaciones abiertas
+  const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
@@ -82,28 +84,16 @@ export default function ViewProduct({ product }: { product: ProductData }) {
 
   // Handlers
   const { addProduct } = useCartContext();
-  // Mejorado: Añadir al carrito igual que ProductCard
   const handleAddToCart = () => {
-    addProduct({
-      id: safeProduct.id,
-      name: safeProduct.name,
-      image:
-        typeof safeProduct.image === "string"
-          ? safeProduct.image
-          : safeProduct.image.src || "",
-      price:
-        typeof safeProduct.price === "string"
-          ? parseInt(safeProduct.price.replace(/[^\d]/g, ""))
-          : safeProduct.price || 0,
-      quantity: 1,
-    });
-    setCartFeedback("Producto añadido al carrito");
-    setTimeout(() => setCartFeedback(null), 1200);
+    alert(`Producto añadido: ${safeProduct.name} (${selectedColor.name})`);
   };
-  // Mejorado: Comprar, navega a DetailsProduct
   const router = useRouter();
   const handleBuy = () => {
-    router.push("/productos/dispositivos-moviles/details");
+    alert("Compra iniciada");
+  };
+  // Handler para abrir/cerrar especificación
+  const handleToggleSpec = (idx: number) => {
+    setOpenSpecs((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   return (
@@ -119,12 +109,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         fontFamily: "SamsungSharpSans",
       }}
     >
-      {/* Feedback UX al añadir al carrito */}
-      {cartFeedback && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
-          {cartFeedback}
-        </div>
-      )}
       {/* Hero section con ref */}
       <section ref={heroRef} className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
@@ -295,7 +279,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           </div>
         </div>
       )}
-      {/* Oculta el navbar principal con una clase global */}
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <div

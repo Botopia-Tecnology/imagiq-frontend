@@ -9,11 +9,10 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
-import { productsData } from "../data_product/products";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
@@ -21,6 +20,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
 // Importar imágenes del slider
@@ -28,6 +29,7 @@ import smartphonesImg from "../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
+import { productsData } from "../data_product/products";
 
 // Categorías del slider (idénticas a la imagen)
 const tabletCategories: Category[] = [
@@ -86,10 +88,6 @@ const tabletFilters: FilterConfig = {
   uso: ["Productividad", "Gaming", "Educación", "Entretenimiento"],
 };
 
-const tabletProducts = productsData["smartphones-tablets"].filter(
-  (product) => product.category === "tablet"
-);
-
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["serie"])
@@ -98,8 +96,18 @@ export default function TabletasSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(15);
+
+  // Usar el hook de productos con filtro de subcategoría "Tablets"
+  const apiFilters = useMemo(
+    () => ({
+      subcategory: "Tablets",
+    }),
+    []
+  );
+
+  const { products, totalItems } = useProducts(apiFilters);
   const device = useDeviceType(); // Responsive global
+  const [resultCount] = useState(15);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -134,26 +142,32 @@ export default function TabletasSection() {
 
   return (
     <div className="min-h-screen bg-white">
-      
-      <CategorySlider categories={tabletCategories} trackingPrefix="tablet_category" />
+      <CategorySlider
+        categories={tabletCategories}
+        trackingPrefix="tablet_category"
+      />
 
-      <div className={cn(
-        "container mx-auto px-6 py-8",
-        device === "mobile" && "px-2 py-4",
-        device === "tablet" && "px-4 py-6"
-      )}>
-        <div className={cn(
-          "flex gap-8",
-          device === "mobile" && "flex-col gap-4",
-          device === "tablet" && "gap-6"
-        )}>
+      <div
+        className={cn(
+          "container mx-auto px-6 py-8",
+          device === "mobile" && "px-2 py-4",
+          device === "tablet" && "px-4 py-6"
+        )}
+      >
+        <div
+          className={cn(
+            "flex gap-8",
+            device === "mobile" && "flex-col gap-4",
+            device === "tablet" && "gap-6"
+          )}
+        >
           {(device === "desktop" || device === "large") && (
             <aside className="hidden lg:block w-80 flex-shrink-0">
               <FilterSidebar
                 filterConfig={tabletFilters}
                 filters={filters}
                 onFilterChange={handleFilterChange}
-                resultCount={resultCount}
+                resultCount={totalItems}
                 expandedFilters={expandedFilters}
                 onToggleFilter={toggleFilter}
                 trackingPrefix="tablet_filter"
@@ -162,26 +176,37 @@ export default function TabletasSection() {
           )}
 
           <main className="flex-1">
-            <div className={cn(
-              "flex items-center justify-between mb-6",
-              device === "mobile" && "flex-col items-start gap-2 mb-4"
-            )}>
+            <div
+              className={cn(
+                "flex items-center justify-between mb-6",
+                device === "mobile" && "flex-col items-start gap-2 mb-4"
+              )}
+            >
               <div className="flex items-center gap-4">
-                <h1 className={cn(
-                  "text-2xl font-bold text-gray-900",
-                  device === "mobile" && "text-lg"
-                )}>
+                <h1
+                  className={cn(
+                    "text-2xl font-bold text-gray-900",
+                    device === "mobile" && "text-lg"
+                  )}
+                >
                   Galaxy Tab
                 </h1>
-                <span className={cn(
-                  "text-sm text-gray-500",
-                  device === "mobile" && "text-xs"
-                )}>
+                <span
+                  className={cn(
+                    "text-sm text-gray-500",
+                    device === "mobile" && "text-xs"
+                  )}
+                >
                   {resultCount} resultados
                 </span>
               </div>
 
-              <div className={cn("flex items-center gap-4", device === "mobile" && "gap-2")}>
+              <div
+                className={cn(
+                  "flex items-center gap-4",
+                  device === "mobile" && "gap-2"
+                )}
+              >
                 {(device === "mobile" || device === "tablet") && (
                   <button
                     onClick={() => setShowMobileFilters(true)}
@@ -236,16 +261,32 @@ export default function TabletasSection() {
               </div>
             </div>
 
-            <div className={cn(
-              "grid gap-6",
-              viewMode === "grid"
-                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                : "grid-cols-1",
-              device === "mobile" && "gap-3"
-            )}>
-              {tabletProducts.map((product) => (
-                <ProductCard key={product.id} {...product} />
-              ))}
+            <div
+              className={cn(
+                "grid gap-6",
+                viewMode === "grid"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                  : "grid-cols-1"
+              )}
+            >
+              {products.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  No se encontraron tabletas con los filtros seleccionados.
+                </div>
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    {...product}
+                    onAddToCart={(productId: string, color: string) => {
+                      console.log(`Añadir al carrito: ${productId} - ${color}`);
+                    }}
+                    onToggleFavorite={(productId: string) => {
+                      console.log(`Toggle favorito: ${productId}`);
+                    }}
+                  />
+                ))
+              )}
             </div>
           </main>
         </div>
@@ -258,7 +299,7 @@ export default function TabletasSection() {
           filterConfig={tabletFilters}
           filters={filters}
           onFilterChange={handleFilterChange}
-          resultCount={resultCount}
+          resultCount={totalItems}
           expandedFilters={expandedFilters}
           onToggleFilter={toggleFilter}
           trackingPrefix="tablet_filter"

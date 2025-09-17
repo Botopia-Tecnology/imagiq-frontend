@@ -1,3 +1,4 @@
+"use client";
 /**
  * Context de Autenticación
  * - Provider para el estado global de auth
@@ -7,7 +8,6 @@
  * - Integración con PostHog para user identification
  */
 
-"use client";
 
 import {
   createContext,
@@ -25,7 +25,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (userData: User) => Promise<void>;
   logout: () => void;
-  hasRole: (role: string | string[]) => boolean;
+  hasRole: (role: number | number[]) => boolean;
   isAdmin: () => boolean;
   isSuperAdmin: () => boolean;
 }
@@ -54,13 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         apiClient.setAuthToken(savedToken!);
       } catch (error) {
         console.error("Error parsing saved user data:", error);
-        localStorage.removeItem("imagiq_user");
         localStorage.removeItem("imagiq_token");
         setUser(null);
       }
     } else {
       // Si el token no es válido, limpiar sesión
-      localStorage.removeItem("imagiq_user");
       localStorage.removeItem("imagiq_token");
       setUser(null);
     }
@@ -88,18 +86,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // Role checking utilities
-  const hasRole = (roles: string | string[]) => {
+  const hasRole = (roles: number | number[]) => {
     if (!user) return false;
     const roleArray = Array.isArray(roles) ? roles : [roles];
-    return roleArray.includes(user.role);
+    return roleArray.includes(Number(user.role));
   };
 
   const isAdmin = () => {
-    return hasRole(["admin", "superadmin"]);
+    return hasRole([1, 4]);
   };
 
   const isSuperAdmin = () => {
-    return hasRole("superadmin");
+    return hasRole(4);
   };
 
   /**

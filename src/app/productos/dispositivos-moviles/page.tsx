@@ -10,6 +10,9 @@
 
 "use client";
 
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import { posthogUtils } from "@/lib/posthogClient";
 import { useDeviceType } from "@/components/responsive";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSearchParams } from "next/navigation";
@@ -21,11 +24,17 @@ import RelojesSection from "./Relojes";
 import SmartphonesSection from "./Smartphones";
 import TabletasSection from "./Tabletas";
 
-type SectionType = "smartphones" | "relojes" | "tabletas" | "buds" | "accesorios";
+type SectionType =
+  | "smartphones"
+  | "relojes"
+  | "tabletas"
+  | "buds"
+  | "accesorios";
 
 function DispositivosMovilesContent() {
   const searchParams = useSearchParams();
-  const [activeSection, setActiveSection] = useState<SectionType>("smartphones");
+  const [activeSection, setActiveSection] =
+    useState<SectionType>("smartphones");
   const device = useDeviceType();
 
   useEffect(() => {
@@ -39,7 +48,9 @@ function DispositivosMovilesContent() {
     const section = searchParams.get("section") as SectionType;
     if (
       section &&
-      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(section)
+      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(
+        section
+      )
     ) {
       setActiveSection(section);
     }
@@ -88,6 +99,19 @@ function DispositivosMovilesContent() {
   );
 }
 
+// Componente de loading para el Suspense boundary
+function DispositivosMovilesLoading() {
+  return (
+    <div className="bg-white min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+    </div>
+  );
+}
+
 export default function DispositivosMovilesPage() {
-  return <DispositivosMovilesContent />;
+  return (
+    <Suspense fallback={<DispositivosMovilesLoading />}>
+      <DispositivosMovilesContent />
+    </Suspense>
+  );
 }

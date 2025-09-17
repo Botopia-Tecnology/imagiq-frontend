@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
@@ -21,6 +21,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { productsData } from "../data_product/products";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
@@ -104,7 +106,19 @@ export default function RelojesSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(12);
+
+  // Usar el hook de productos con filtro por palabra "watch"
+  const apiFilters = useMemo(() => ({
+    name: "watch" // Filtrar productos que contengan "watch" en el nombre
+  }), []);
+
+  const { 
+    products, 
+    loading, 
+    error, 
+    totalItems,
+    refreshProducts 
+  } = useProducts(apiFilters);
   const device = useDeviceType(); // Responsive global
 
   useEffect(() => {
@@ -140,8 +154,10 @@ export default function RelojesSection() {
 
   return (
     <div className="min-h-screen bg-white">
-      
-      <CategorySlider categories={watchCategories} trackingPrefix="watch_category" />
+      <CategorySlider
+        categories={watchCategories}
+        trackingPrefix="watch_category"
+      />
 
       <div
         className={cn(
@@ -163,7 +179,7 @@ export default function RelojesSection() {
                 filterConfig={watchFilters}
                 filters={filters}
                 onFilterChange={handleFilterChange}
-                resultCount={resultCount}
+                resultCount={totalItems}
                 expandedFilters={expandedFilters}
                 onToggleFilter={toggleFilter}
                 trackingPrefix="watch_filter"
@@ -193,7 +209,7 @@ export default function RelojesSection() {
                     device === "mobile" && "text-xs"
                   )}
                 >
-                  {resultCount} resultados
+                  {totalItems} resultados
                 </span>
               </div>
 
@@ -263,6 +279,32 @@ export default function RelojesSection() {
                 device === "mobile" && "gap-3"
               )}
             >
+              {products.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  No se encontraron Galaxy Watch con los filtros seleccionados.
+                </div>
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    image={product.image}
+                    colors={product.colors}
+                    rating={product.rating}
+                    reviewCount={product.reviewCount}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    discount={product.discount}
+                    onAddToCart={(productId: string, color: string) => {
+                      console.log(`Añadir al carrito: ${productId} - ${color}`);
+                    }}
+                    onToggleFavorite={(productId: string) => {
+                      console.log(`Toggle favorito: ${productId}`);
+                    }}
+                  />
+                ))
+              )}
               {watchProducts.map((product) => (
                 <ProductCard key={product.id} {...product} />
               ))}
@@ -278,7 +320,7 @@ export default function RelojesSection() {
           filterConfig={watchFilters}
           filters={filters}
           onFilterChange={handleFilterChange}
-          resultCount={resultCount}
+          resultCount={totalItems}
           expandedFilters={expandedFilters}
           onToggleFilter={toggleFilter}
           trackingPrefix="watch_filter"

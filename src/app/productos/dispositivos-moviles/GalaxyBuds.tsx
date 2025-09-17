@@ -10,6 +10,8 @@
 
 "use client";
 
+import { useProducts } from "@/features/products/useProducts";
+import {  useMemo } from "react";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
@@ -17,8 +19,8 @@ import { Filter, Grid3X3, List } from "lucide-react";
 import { useEffect, useState } from "react";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
+  FilterConfig,
   MobileFilterModal,
-  type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
 import ProductCard from "../components/ProductCard";
@@ -29,6 +31,10 @@ import smartphonesImg from "../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
+import LoadingState from "./components/LoadingState";
+import ErrorState from "./components/ErrorState";
+import HeaderSection from "./components/HeaderSection";
+import ProductGrid from "./components/ProductGrid";
 
 // Categorías del slider (idénticas a la imagen)
 const budsCategories: Category[] = [
@@ -109,6 +115,17 @@ export default function GalaxyBudsSection() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(9);
+
+  // Usar el hook de productos con filtro por palabra "buds"
+  const apiFilters = useMemo(
+    () => ({
+      name: "buds", // Filtrar productos que contengan "buds" en el nombre
+    }),
+    []
+  );
+
+  const { products, loading, error, totalItems, refreshProducts } =
+    useProducts(apiFilters);
   const device = useDeviceType(); // Obtén el tipo de dispositivo
 
   useEffect(() => {
@@ -141,11 +158,57 @@ export default function GalaxyBudsSection() {
     }
     setExpandedFilters(newExpanded);
   };
+  if (loading) {
+    return (
+      <LoadingState
+        categories={budsCategories}
+        trackingPrefix="buds_category"
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        categories={budsCategories}
+        trackingPrefix="buds_category"
+        error={error}
+        onRetry={refreshProducts}
+      />
+    );
+  }
+
+  const handleAddToCart = (productId: string, color: string) => {
+    console.log(`Añadir al carrito: ${productId} - ${color}`);
+  };
+
+  const handleToggleFavorite = (productId: string) => {
+    console.log(`Toggle favorito: ${productId}`);
+  };
+
+  if (loading) {
+    return (
+      <LoadingState
+        categories={budsCategories}
+        trackingPrefix="buds_category"
+      />
+    );
+  }
+
+  if (error) {
+    return (
+      <ErrorState
+        categories={budsCategories}
+        trackingPrefix="buds_category"
+        error={error}
+        onRetry={refreshProducts}
+      />
+    );
+  }
 
   // Ejemplo de renderizado responsive
   return (
     <div className="min-h-screen bg-white">
-  
       <CategorySlider
         categories={budsCategories}
         trackingPrefix="buds_category"
@@ -172,7 +235,7 @@ export default function GalaxyBudsSection() {
                 filterConfig={budsFilters}
                 filters={filters}
                 onFilterChange={handleFilterChange}
-                resultCount={resultCount}
+                resultCount={totalItems}
                 expandedFilters={expandedFilters}
                 onToggleFilter={toggleFilter}
                 trackingPrefix="buds_filter"
@@ -181,101 +244,22 @@ export default function GalaxyBudsSection() {
           )}
 
           <main className="flex-1">
-            <div
-              className={cn(
-                "flex items-center justify-between mb-6",
-                device === "mobile" && "flex-col items-start gap-2 mb-4"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <h1
-                  className={cn(
-                    "text-2xl font-bold text-gray-900",
-                    device === "mobile" && "text-lg"
-                  )}
-                >
-                  Galaxy Buds
-                </h1>
-                <span
-                  className={cn(
-                    "text-sm text-gray-500",
-                    device === "mobile" && "text-xs"
-                  )}
-                >
-                  {resultCount} resultados
-                </span>
-              </div>
+            <HeaderSection
+              title="Galaxy Buds"
+              totalItems={totalItems}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              onShowMobileFilters={() => setShowMobileFilters(true)}
+            />
 
-              <div className={cn("flex items-center gap-4", device === "mobile" && "gap-2")}>
-                {/* Botón de filtros solo en mobile/tablet */}
-                {(device === "mobile" || device === "tablet") && (
-                  <button
-                    onClick={() => setShowMobileFilters(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <Filter className="w-4 h-4" />
-                    Filtros
-                  </button>
-                )}
-
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className={cn(
-                    "bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                    device === "mobile" && "px-2 py-1 text-xs"
-                  )}
-                >
-                  <option value="relevancia">Relevancia</option>
-                  <option value="precio-menor">Precio: menor a mayor</option>
-                  <option value="precio-mayor">Precio: mayor a menor</option>
-                  <option value="nombre">Nombre A-Z</option>
-                  <option value="calificacion">Mejor calificados</option>
-                </select>
-
-                {/* Selector de vista solo en desktop/large */}
-                {(device === "desktop" || device === "large") && (
-                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={cn(
-                        "p-2",
-                        viewMode === "grid"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={cn(
-                        "p-2",
-                        viewMode === "list"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div
-              className={cn(
-                "grid gap-6",
-                viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1",
-                device === "mobile" && "gap-3"
-              )}
-            >
-              {budsProducts.map((product) => (
-                <ProductCard key={product.id} {...product} />
-              ))}
-            </div>
+            <ProductGrid
+              products={products}
+              viewMode={viewMode}
+              onAddToCart={handleAddToCart}
+              onToggleFavorite={handleToggleFavorite}
+            />
           </main>
         </div>
       </div>

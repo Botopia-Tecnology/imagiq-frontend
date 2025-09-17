@@ -64,15 +64,6 @@ const colorMap: Record<string, { hex: string; label: string }> = {
  * Ahora agrupa por codigoMarket y maneja múltiples variantes de color
  */
 export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCardProps {
-  // Log para productos de accesorios para debug
-  if (apiProduct.subcategoria === 'Accesorios') {
-    console.log(`🔧 Accesorio detectado: ${apiProduct.nombreMarket}`);
-    console.log(`📝 Descripción: ${apiProduct.desDetallada[0]}`);
-    console.log(`🏷️ Modelo: ${apiProduct.modelo}`);
-  }
-
-  // Log para debug de IDs
-  console.log(`🏷️ CodigoMarket: ${apiProduct.codigoMarket}, Colores: ${apiProduct.color.join(', ')}`);
 
   // Determinar imagen basada en categoría/subcategoría
   const image = getProductImage(apiProduct);
@@ -118,12 +109,9 @@ function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
   // Si hay URL de imagen en la API, usarla (cuando esté disponible)
   const firstImageUrl = apiProduct.urlImagenes.find(url => url && url.trim() !== '');
   if (firstImageUrl) {
-    console.log(`🖼️ Usando imagen de API para ${apiProduct.nombreMarket}: ${firstImageUrl}`);
     return firstImageUrl;
   }
-  
-  console.log(`⚠️ Sin imagen de API para ${apiProduct.nombreMarket}, usando imagen por defecto`);
-  
+    
   // Usar imagen por defecto cuando no hay imagen de la API
   return emptyImg;
 }
@@ -190,16 +178,8 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   const preciosNormalesValidos = apiProduct.precioNormal.filter(p => p > 0);
   const preciosDescuentoValidos = apiProduct.precioDescto.filter(p => p > 0);
   
-  console.log(`💰 Precios para ${apiProduct.nombreMarket}:`, {
-    precioNormal: apiProduct.precioNormal,
-    precioDescto: apiProduct.precioDescto,
-    validosNormal: preciosNormalesValidos,
-    validosDescuento: preciosDescuentoValidos
-  });
-  
   // Si no hay precios válidos, usar valores por defecto
   if (preciosNormalesValidos.length === 0 && preciosDescuentoValidos.length === 0) {
-    console.log(`⚠️ Sin precios válidos para ${apiProduct.nombreMarket}`);
     return {
       price: "Precio no disponible",
       originalPrice: undefined,

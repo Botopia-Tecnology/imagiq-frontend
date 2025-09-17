@@ -119,12 +119,14 @@ export default function AccesoriosSection() {
   const handlePageChange = useCallback(async (page: number) => {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, [itemsPerPage]);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
     setCurrentPage(1);
+    // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
+    window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
   // Memoizar el sidebar de filtros para evitar re-renders innecesarios

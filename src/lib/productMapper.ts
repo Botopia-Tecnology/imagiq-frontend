@@ -55,6 +55,8 @@ const colorMap: Record<string, { hex: string; label: string }> = {
   'rosado': { hex: '#EC4899', label: 'Rosa' },
   'rosa': { hex: '#EC4899', label: 'Rosa' },
   'gris': { hex: '#808080', label: 'Gris' },
+  'gris titanio': { hex: '#4B5563', label: 'Gris Titanio' },
+  'negro titanio': { hex: '#1F2937', label: 'Negro Titanio' },
   'plateado': { hex: '#C0C0C0', label: 'Plateado' },
   'dorado': { hex: '#D4AF37', label: 'Dorado' },
   'rojo': { hex: '#DC2626', label: 'Rojo' },

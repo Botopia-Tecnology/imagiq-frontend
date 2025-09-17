@@ -250,19 +250,7 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
  */
 export function mapApiProductsToFrontend(apiProducts: ProductApiData[]): ProductCardProps[] {
   return apiProducts
-    .map(mapApiProductToFrontend)
-    .filter(product => {
-      // Filtrar productos sin precios válidos
-      const hasValidPrice = product.colors.some(color => 
-        color.price && color.price !== "Precio no disponible"
-      );
-      
-      if (!hasValidPrice) {
-        console.log(`🚫 Filtrando producto sin precios válidos: ${product.name}`);
-      }
-      
-      return hasValidPrice;
-    });
+    .map(mapApiProductToFrontend);
 }
 
 /**

@@ -68,9 +68,12 @@ export default function ProductCard({
   isFavorite = false,
   onToggleFavorite,
   className,
+  sku,
 }: ProductCardProps) {
   const router = useRouter();
-  const [selectedColor, setSelectedColor] = useState<ProductColor>(colors[0]);
+  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(
+    colors && colors.length > 0 ? colors[0] : null
+  );
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -78,9 +81,9 @@ export default function ProductCard({
   const { addProduct } = useCartContext();
 
   // Calcular precios dinámicos basados en el color seleccionado
-  const currentPrice = selectedColor.price || price;
-  const currentOriginalPrice = selectedColor.originalPrice || originalPrice;
-  const currentDiscount = selectedColor.discount || discount;
+  const currentPrice = selectedColor?.price || price;
+  const currentOriginalPrice = selectedColor?.originalPrice || originalPrice;
+  const currentDiscount = selectedColor?.discount || discount;
 
   // Tracking de interacciones
   const handleColorSelect = (color: ProductColor) => {
@@ -100,8 +103,8 @@ export default function ProductCard({
     posthogUtils.capture("add_to_cart_click", {
       product_id: id,
       product_name: name,
-      selected_color: selectedColor.name,
-      selected_color_sku: selectedColor.sku, // Incluir SKU del color seleccionado
+      selected_color: selectedColor?.name || "Sin color",
+      selected_color_sku: selectedColor?.sku || sku || id, // Incluir SKU del color seleccionado
       source: "product_card",
     });
     // Agrega el producto al carrito usando el contexto
@@ -114,7 +117,7 @@ export default function ProductCard({
           ? parseInt(currentPrice.replace(/[^\d]/g, ""))
           : currentPrice || 0,
       quantity: 1,
-      sku: selectedColor.sku, // Usar el SKU del color seleccionado
+      sku: selectedColor?.sku || sku || id, // Usar el SKU del color seleccionado
     });
     setIsLoading(false);
   };
@@ -203,34 +206,38 @@ export default function ProductCard({
         </h3>
 
         {/* Color selection text */}
-        <div className="mb-3">
-          <span className="text-sm text-gray-700">
-            Color: {selectedColor.label}
-          </span>
-          <span className="text-xs text-gray-500 ml-2">
-            SKU: {selectedColor.sku}
-          </span>
-        </div>
+        {colors && colors.length > 0 && (
+          <div className="mb-3">
+            <span className="text-sm text-gray-700">
+              Color: {selectedColor?.label || "Sin color"}
+            </span>
+            <span className="text-xs text-gray-500 ml-2">
+              SKU: {selectedColor?.sku || sku || id}
+            </span>
+          </div>
+        )}
 
         {/* Selector de colores */}
-        <div className="mb-4">
-          <div className="flex gap-2">
-            {colors.map((color) => (
-              <button
-                key={color.name}
-                onClick={() => handleColorSelect(color)}
-                className={cn(
-                  "w-6 h-6 rounded-full border-2 transition-all duration-200",
-                  selectedColor.name === color.name
-                    ? "border-blue-600 ring-2 ring-blue-200"
-                    : "border-gray-400 hover:border-gray-600"
-                )}
-                style={{ backgroundColor: color.hex }}
-                title={`${color.label} (SKU: ${color.sku})`}
-              />
-            ))}
+        {colors && colors.length > 0 && (
+          <div className="mb-4">
+            <div className="flex gap-2">
+              {colors.map((color) => (
+                <button
+                  key={color.name}
+                  onClick={() => handleColorSelect(color)}
+                  className={cn(
+                    "w-6 h-6 rounded-full border-2 transition-all duration-200",
+                    selectedColor?.name === color.name
+                      ? "border-blue-600 ring-2 ring-blue-200"
+                      : "border-gray-400 hover:border-gray-600"
+                  )}
+                  style={{ backgroundColor: color.hex }}
+                  title={`${color.label} (SKU: ${color.sku})`}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Precios */}
         {currentPrice && (

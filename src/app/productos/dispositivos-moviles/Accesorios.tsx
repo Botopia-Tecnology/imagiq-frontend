@@ -11,7 +11,7 @@
 
 import { useProducts } from "@/features/products/useProducts";
 import { posthogUtils } from "@/lib/posthogClient";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
   MobileFilterModal,
@@ -43,21 +43,44 @@ export default function AccesoriosSection() {
   // Función memoizada para convertir filtros de tipo de accesorio a filtros de API
   const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
-  // Crear filtros completos con paginación
-  const completeFilters = useMemo(() => ({
-    ...apiFilters,
-    page: currentPage,
-    limit: itemsPerPage,
-  }), [apiFilters, currentPage, itemsPerPage]);
+  // Crear filtros iniciales con paginación
+  const initialFilters = useMemo(() => {
+    const filters = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    return filters;
+  }, [apiFilters, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con filtros dinámicos y paginación
-  const { products, loading, error, totalItems, totalPages, goToPage, refreshProducts } =
-    useProducts(completeFilters);
+  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } =
+    useProducts(initialFilters);
+
+  // Ref para evitar bucles infinitos
+  const lastFiltersRef = useRef<string>("");
 
   // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
+
+  // Actualizar filtros cuando cambien los parámetros de paginación
+  useEffect(() => {
+    const filtersWithPagination = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    
+    // Crear una clave única para evitar bucles infinitos
+    const filtersKey = JSON.stringify(filtersWithPagination);
+    
+    if (lastFiltersRef.current !== filtersKey) {
+      lastFiltersRef.current = filtersKey;
+      filterProducts(filtersWithPagination);
+    }
+  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {

@@ -66,11 +66,13 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     const params: ProductFilterParams = {
       page: filters.page || currentPage,
       limit: filters.limit || 50,
+      precioMin: 1, // Siempre filtrar productos con precio mayor a 0 por defecto
     };
 
+    // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
     if (filters.category) params.categoria = filters.category;
     if (filters.subcategory) params.subcategoria = filters.subcategory;
-    if (filters.priceRange?.min) params.precioMin = filters.priceRange.min;
+    if (filters.priceRange?.min) params.precioMin = filters.priceRange.min; // Sobrescribe el valor por defecto
     if (filters.priceRange?.max) params.precioMax = filters.priceRange.max;
     if (filters.color) params.color = filters.color;
     if (filters.capacity) params.capacidad = filters.capacity;
@@ -133,7 +135,10 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
   // Función para filtrar productos
   const filterProducts = useCallback(async (filters: ProductFilters) => {
     setCurrentFilters(filters);
-    setCurrentPage(1);
+    // Solo resetear a página 1 si no se especifica una página en los filtros
+    if (!filters.page) {
+      setCurrentPage(1);
+    }
     await fetchProducts(filters, false);
   }, [fetchProducts]);
 

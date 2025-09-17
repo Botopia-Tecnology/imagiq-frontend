@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
@@ -21,6 +21,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -188,7 +190,19 @@ export default function SmartphonesSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(24);
+
+  // Usar el hook de productos con filtro de subcategoría "Celulares"
+  const apiFilters = useMemo(() => ({
+    subcategory: "Celulares"
+  }), []);
+
+  const { 
+    products, 
+    loading, 
+    error, 
+    totalItems,
+    refreshProducts 
+  } = useProducts(apiFilters);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -220,6 +234,45 @@ export default function SmartphonesSection() {
     setExpandedFilters(newExpanded);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CategorySlider
+          categories={smartphoneCategories}
+          trackingPrefix="smartphone_category"
+        />
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CategorySlider
+          categories={smartphoneCategories}
+          trackingPrefix="smartphone_category"
+        />
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar smartphones</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={refreshProducts}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Categorías de smartphones */}
@@ -237,7 +290,7 @@ export default function SmartphonesSection() {
               filterConfig={smartphoneFilters}
               filters={filters}
               onFilterChange={handleFilterChange}
-              resultCount={resultCount}
+              resultCount={totalItems}
               expandedFilters={expandedFilters}
               onToggleFilter={toggleFilter}
               trackingPrefix="smartphone_filter"
@@ -253,7 +306,7 @@ export default function SmartphonesSection() {
                   Smartphones
                 </h1>
                 <span className="text-sm text-gray-500">
-                  {resultCount} resultados
+                  {totalItems} resultados
                 </span>
               </div>
 
@@ -317,28 +370,34 @@ export default function SmartphonesSection() {
                   : "grid-cols-1"
               )}
             >
-              {smartphoneProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  onAddToCart={(productId: string, color: string) => {
-                    console.log(`Añadir al carrito: ${productId} - ${color}`);
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    console.log(`Toggle favorito: ${productId}`);
-                  }}
-                  className={viewMode === "list" ? "flex-row" : ""}
-                />
-              ))}
+              {products.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  No se encontraron smartphones con los filtros seleccionados.
+                </div>
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    image={product.image}
+                    colors={product.colors}
+                    rating={product.rating}
+                    reviewCount={product.reviewCount}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    discount={product.discount}
+                    isNew={product.isNew}
+                    onAddToCart={(productId: string, color: string) => {
+                      console.log(`Añadir al carrito: ${productId} - ${color}`);
+                    }}
+                    onToggleFavorite={(productId: string) => {
+                      console.log(`Toggle favorito: ${productId}`);
+                    }}
+                    className={viewMode === "list" ? "flex-row" : ""}
+                  />
+                ))
+              )}
             </div>
           </main>
         </div>
@@ -351,7 +410,7 @@ export default function SmartphonesSection() {
         filterConfig={smartphoneFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
-        resultCount={resultCount}
+        resultCount={totalItems}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
         trackingPrefix="smartphone_filter"

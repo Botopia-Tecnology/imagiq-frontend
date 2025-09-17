@@ -49,15 +49,22 @@ const products = [
 
 export default function ProductShowcase() {
   return (
-    <section className="w-full flex flex-col items-center bg-transparent py-10 md:mr-20 md:ml-5">
+    <section className="w-full flex flex-col items-center bg-transparent py-10">
       <div
-        className="flex flex-col md:flex-row gap-6 md:gap-8 w-full mx-auto px-2 md:px-0"
-        style={{ maxWidth: "1800px" }}
+        className="flex flex-col md:flex-row gap-8 w-full mx-auto"
+        style={{ paddingLeft: 40, paddingRight: 40, maxWidth: "1800px" }}
       >
-        {products.map((product, idx) => (
+        {products.map((product) => (
           <div
             key={product.title || "watch"}
-            className="relative w-full mx-auto aspect-[4/3] h-auto rounded-2xl shadow-lg p-3 mb-6 md:mb-0 md:aspect-auto md:h-[340px] md:min-h-[340px] md:rounded-3xl md:shadow-xl md:p-0 md:flex-1 flex flex-col justify-between md:mr-10"
+            className="relative flex-1 rounded-3xl shadow-xl flex flex-col justify-between"
+            style={{
+              minWidth: 520,
+              maxWidth: 700,
+              height: 420,
+              minHeight: 420,
+              maxHeight: 480,
+            }}
           >
             <Image
               src={product.bgImage}
@@ -66,25 +73,21 @@ export default function ProductShowcase() {
               }
               fill
               sizes="(max-width: 768px) 100vw, 700px"
-              className="absolute inset-0 w-full h-full object-cover rounded-2xl md:rounded-3xl z-0"
+              className="absolute inset-0 w-full h-full object-cover rounded-3xl z-0"
               priority
             />
             <div
               className={`relative z-10 ${product.contentClass} h-full`}
-              style={{ minHeight: 0 }}
+              style={{ minHeight: 420 }}
             >
               {/* Título y descripción en la esquina superior derecha */}
               {product.showTitle && (
-                <h2
-                  className={`${product.text} ${product.titleClass} hidden md:block`}
-                >
+                <h2 className={`${product.text} ${product.titleClass}`}>
                   {product.title}
                 </h2>
               )}
               {product.showDesc && (
-                <p
-                  className={`${product.text} ${product.descClass} hidden md:block`}
-                >
+                <p className={`${product.text} ${product.descClass}`}>
                   {product.description}
                 </p>
               )}
@@ -141,10 +144,15 @@ export default function ProductShowcase() {
       </div>
 
       {/* Card grande debajo de las otras */}
-      <div className="w-full flex flex-col md:flex-row justify-center items-center bg-transparent py-0 px-2 md:px-0">
+      <div
+        className="w-full flex justify-center items-center bg-transparent py-0"
+        style={{ marginLeft: 40, marginRight: 40 }}
+      >
         <div
-          className="relative w-full rounded-2xl shadow-lg p-3 flex flex-col md:flex-row items-center min-h-[340px] md:min-h-[500px] mt-8 md:rounded-[32px] md:shadow-[0_4px_24px_0_rgba(0,0,0,0.08)] md:p-0"
+          className="relative w-full rounded-[32px] shadow-[0_4px_24px_0_rgba(0,0,0,0.08)] flex flex-row items-center min-h-[500px] mt-8 px-0"
           style={{
+            marginLeft: 40,
+            marginRight: 40,
             display: "flex",
             alignItems: "center",
             background: "#C4C2C2",
@@ -152,7 +160,7 @@ export default function ProductShowcase() {
           }}
         >
           {/* Imágenes alineadas */}
-          <div className="flex flex-row items-end gap-0 flex-1 justify-center w-full md:w-auto">
+          <div className="flex flex-row items-end gap-0 flex-1 justify-center">
             <div className="flex flex-row items-center justify-center w-full">
               <Image
                 src={BespokeAiEjemploImg}
@@ -165,25 +173,25 @@ export default function ProductShowcase() {
             </div>
           </div>
           {/* Texto y botones a la derecha */}
-          <div className="flex flex-col items-center md:items-end justify-center h-full pr-0 md:pr-24 min-w-0 md:min-w-[370px] w-full md:w-auto">
-            <div className="mb-8 w-full md:w-auto">
-              <p className="hidden md:block text-center md:text-right text-[1.3rem] md:text-[2.3rem] font-bold text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
+          <div className="flex flex-col items-end justify-center h-full pr-24 min-w-[370px]">
+            <div className="mb-8">
+              <p className="text-right text-[2.3rem] font-bold text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
                 Simplifica tu vida,
                 <br />
                 disfruta tu hogar
               </p>
             </div>
-            <div className="mb-6 flex flex-col items-center md:items-end w-full md:w-auto">
+            <div className="mb-6 flex flex-col items-end">
               <Image
                 src={bespokeAiLogo}
                 alt="Bespoke AI Logo"
-                width={120}
+                width={180}
                 height={40}
                 className="mb-2 object-contain"
                 priority
               />
             </div>
-            <div className="flex flex-row md:flex-col gap-3 w-full max-w-[220px] mx-auto justify-center items-center md:items-end md:justify-end">
+            <div className="flex flex-col gap-3 w-full max-w-[220px] items-end">
               <a
                 href="#"
                 className="px-7 py-2 w-full text-center text-[1.12rem] rounded-full font-semibold transition-all duration-200 bg-gradient-to-r from-[#e2e2e2] to-white text-[#183a5a] border-2 border-[#183a5a] shadow-[0_2px_8px_0_rgba(0,0,0,0.08)] hover:scale-105"

@@ -1,3 +1,4 @@
+// filepath: src/app/chatbot/ChatbotPanel.tsx
 import React, { useState } from "react";
 import Step1 from "./step1";
 import Step2 from "./step2";
@@ -7,7 +8,6 @@ import Image from "next/image";
 
 // Importa la función para enviar mensajes a Gemini
 import { sendMessageToGemini } from "./apikey";
-// Ya no se usa el wrapper de animación
 
 export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
@@ -21,7 +21,6 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
     },
   ]);
   const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(true);
 
   const handleStart = () => setStep(1);
   const handleNext = () => setStep((prev) => prev + 1);
@@ -54,30 +53,9 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const handleClose = () => {
-    setVisible(false);
-    setTimeout(() => {
-      onClose();
-    }, 400); // Debe coincidir con la duración de la animación
-  };
-
-  // Animación CSS para el panel
-  const panelAnimationStyle: React.CSSProperties = {
-    transition:
-      'opacity 400ms cubic-bezier(.34,1.56,.64,1), ' +
-      'transform 400ms cubic-bezier(.34,1.56,.64,1), ' +
-      'filter 400ms cubic-bezier(.34,1.56,.64,1)',
-    opacity: visible ? 1 : 0,
-    transform: visible ? 'translateY(0) scale(1.04)' : 'translateY(40px) scale(0.98)',
-    boxShadow: visible ? '0 8px 32px rgba(0,0,0,0.12)' : '0 2px 8px rgba(0,0,0,0.06)',
-    filter: visible ? 'blur(0px)' : 'blur(12px)',
-    pointerEvents: visible ? 'auto' : 'none',
-  };
-
   return (
     <div
       className="fixed top-0 right-0 flex flex-col h-full chatbot-panel"
-      style={panelAnimationStyle}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 bg-white bg-opacity-90 border-b border-gray-200 rounded-t-none shadow-none">
@@ -97,7 +75,7 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
           </span>
         </div>
         <button
-          onClick={handleClose}
+          onClick={onClose}
           className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
           aria-label="Cerrar chat"
         >

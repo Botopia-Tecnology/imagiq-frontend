@@ -1,19 +1,14 @@
 "use client";
 
 import { Suspense, useState, useMemo } from "react";
-import { productsData } from "./data_product/products";
+import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
   FilterConfig,
   FilterState,
 } from "./components/FilterSidebar";
-import ProductGrid, { Product } from "./components/ProductGrid";
-
-const allProducts: Product[] = [
-  ...productsData["accesorios"],
-  ...productsData["tv-monitores-audio"],
-  ...productsData["smartphones-tablets"],
-  ...productsData["electrodomesticos"],
-];
+import ProductGrid from "./components/ProductGrid";
+import { ProductCardProps } from "./components/ProductCard";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Configuración de filtros (puedes personalizar según la categoría)
 const filterConfig: FilterConfig = {
@@ -34,7 +29,7 @@ const filterConfig: FilterConfig = {
   // Puedes agregar más filtros aquí
 };
 
-function filterProducts(products: Product[], filters: FilterState) {
+function filterProducts(products: ProductCardProps[], filters: FilterState) {
   return products.filter((product) => {
     return Object.entries(filters).every(([filterKey, values]) => {
       if (!values.length) return true;
@@ -88,10 +83,14 @@ function ProductosContent() {
     new Set(["color"])
   );
 
-  // Filtrado funcional y robusto
+  // Usar el hook de productos con API real
+  const { products, loading, error, totalItems, refreshProducts } =
+    useProducts();
+
+  // Filtrado funcional y robusto (combinando API filters con UI filters)
   const filteredProducts = useMemo(
-    () => filterProducts(allProducts, filters),
-    [filters]
+    () => filterProducts(products, filters),
+    [products, filters]
   );
 
   // UX: contador de resultados
@@ -122,9 +121,48 @@ function ProductosContent() {
     setExpandedFilters(newExpanded);
   }
 
+  if (loading && products.length === 0) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="text-center py-12">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">
+            Error al cargar productos
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={refreshProducts}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-6">Productos Samsung</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">Productos Samsung</h1>
+        <div className="text-sm text-gray-600">
+          {totalItems > 0 && (
+            <span>
+              Mostrando {resultCount} de {totalItems} productos
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="flex gap-8">
         <aside className="hidden lg:block w-80 flex-shrink-0">
           <FilterSidebar
@@ -137,6 +175,11 @@ function ProductosContent() {
           />
         </aside>
         <main className="flex-1">
+          {loading && products.length > 0 && (
+            <div className="mb-4 flex justify-center">
+              <LoadingSpinner />
+            </div>
+          )}
           <ProductGrid products={filteredProducts} />
         </main>
       </div>

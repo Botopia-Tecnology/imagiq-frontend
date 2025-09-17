@@ -1,6 +1,6 @@
 // src/app/productos/components/ProductGrid.tsx
 import Image, { StaticImageData } from "next/image";
-import { ProductColor } from "./ProductCard";
+import { ProductColor, ProductCardProps } from "./ProductCard";
 
 export interface Product {
   id: string;
@@ -16,12 +16,12 @@ export interface Product {
 }
 
 interface ProductGridProps {
-  products: Product[];
+  products: ProductCardProps[];
 }
 
 export default function ProductGrid({ products }: ProductGridProps) {
   // Simulación de añadir al carrito
-  function handleAddToCart(product: Product) {
+  function handleAddToCart(product: ProductCardProps) {
     alert(`Producto añadido: ${product.name}`);
   }
 

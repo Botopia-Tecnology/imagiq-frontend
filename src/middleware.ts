@@ -18,16 +18,18 @@ const publicRoutes = [
   "/productos/dispositivos-moviles",
   "/productos/electrodomesticos",
   "/productos/view",
-  "/productos/ComprarSection",
   "/login",
   "/login/create-account",
   "/register",
   "/soporte",
   "/tiendas",
   "/carrito",
+  "/carrito/step1",
+  "/carrito/step2",
+  "/carrito/step3",
+  "/carrito/step4",
   "/dashboard",
   "/ofertas",
-  "/product-favoritos",
   // Chatbot steps públicos:
   "/chatbot/step1",
   "/chatbot/step2",
@@ -44,8 +46,6 @@ const publicRoutes = [
   "/success-checkout",
   "/error-checkout",
   "/tracking-service",
-  // Rutas públicas para Entrego y Estreno
-  "/productos/components/entrego-estreno",
 ];
 
 // Admin routes that require special permissions
@@ -62,7 +62,7 @@ export function middleware(request: NextRequest) {
   // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
   if (
     pathname.startsWith("/productos/dispositivos-moviles") ||
-    pathname.startsWith("/productos/electrodomesticos") ||
+    pathname.startsWith("/productos/Electrodomesticos") ||
     pathname.startsWith("/productos/view")
   ) {
     return NextResponse.next();

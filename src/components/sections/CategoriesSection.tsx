@@ -66,12 +66,12 @@ export const CategoriesSection = () => {
   };
 
   return (
-    <section className="py-16 bg-transparent md:bg-white mt-[-75%] md:mt-0 relative z-[100] md:z-auto">
-      <div className="container mx-auto px-0 md:px-8 max-w-7xl">
+    <section className="py-16 bg-white">
+      <div className="container mx-auto px-8 max-w-7xl">
         {/* Grid/Carrusel de categorías */}
         <div className="block md:hidden">
           <div
-            className="flex flex-row gap-3 overflow-x-auto pb-2 scrollbar-hide items-end w-full max-w-[375px] mx-auto"
+            className="flex flex-row gap-6 overflow-x-auto pb-2 scrollbar-hide"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             {categories.map((category) => (
@@ -79,28 +79,28 @@ export const CategoriesSection = () => {
                 key={category.id}
                 href={category.href}
                 onClick={() => handleCategoryClick(category)}
-                className="group min-w-[31%] max-w-[31%] flex-shrink-0 mx-0"
+                className="group min-w-[48%] max-w-[52%] flex-shrink-0"
                 onMouseEnter={() => setHoveredCategory(category.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
                 <div
                   className={cn(
-                    "relative rounded-xl p-2 pt-3 pb-2 transition-all duration-300 shadow-sm hover:shadow-lg",
+                    "relative rounded-2xl p-6 transition-all duration-300 shadow-sm hover:shadow-lg",
                     "transform hover:scale-105 cursor-pointer"
                   )}
                   style={{ backgroundColor: "#D6E3F3" }}
                 >
                   {/* Título de la categoría */}
-                  <div className="text-center mb-1">
+                  <div className="text-center mb-4">
                     <h3
-                      className="text-xs font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700"
+                      className="text-lg font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700"
                       style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
                     >
                       {category.title}
                     </h3>
                   </div>
                   {/* Imagen del producto real */}
-                  <div className="flex justify-center items-center h-14 mb-1">
+                  <div className="flex justify-center items-center h-32 mb-2">
                     <div className="relative w-full h-full">
                       <Image
                         src={category.image}
@@ -110,7 +110,7 @@ export const CategoriesSection = () => {
                           "object-contain transition-transform duration-300",
                           hoveredCategory === category.id && "scale-110"
                         )}
-                        sizes="(max-width: 768px) 31vw"
+                        sizes="(max-width: 768px) 48vw"
                         priority={category.id <= 2}
                       />
                     </div>
@@ -118,7 +118,7 @@ export const CategoriesSection = () => {
                   {/* Overlay con efecto hover */}
                   <div
                     className={cn(
-                      "absolute inset-0 rounded-xl bg-blue-600/10 opacity-0 transition-opacity duration-300",
+                      "absolute inset-0 rounded-2xl bg-blue-600/10 opacity-0 transition-opacity duration-300",
                       hoveredCategory === category.id && "opacity-100"
                     )}
                   />

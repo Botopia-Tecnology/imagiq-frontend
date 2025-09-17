@@ -797,4 +797,29 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
   }
 }
 
+body.hide-main-navbar header[data-navbar="true"] {
+  opacity: 0 !important;
+  transform: translateY(-100%) !important;
+  pointer-events: none !important;
+  transition: opacity 0.35s cubic-bezier(.4,0,.2,1), transform 0.35s cubic-bezier(.4,0,.2,1);
+}
+
+/* Animación suave para barra superior personalizada */
+@keyframes fadeBarIn {
+  from { opacity: 0; transform: translateY(-24px);}
+  to   { opacity: 1; transform: translateY(0);}
+}
+@keyframes fadeBarOut {
+  from { opacity: 1; transform: translateY(0);}
+  to   { opacity: 0; transform: translateY(-24px);}
+}
+.bar-animate-in {
+  animation: fadeBarIn 0.35s cubic-bezier(.4,0,.2,1) forwards;
+  /* Para que la animación no se repita si el componente se desmonta */
+  will-change: opacity, transform;
+}
+.bar-animate-out {
+  animation: fadeBarOut 0.35s cubic-bezier(.4,0,.2,1) forwards;
+}
+
 

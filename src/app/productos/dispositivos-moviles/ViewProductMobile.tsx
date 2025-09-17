@@ -11,7 +11,7 @@
  * - Datos quemados (mock) para desarrollo
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
@@ -48,54 +48,40 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
-  const { addProduct } = useCartContext();
-  const router = useRouter();
   const { setHideNavbar } = useNavbarVisibility();
+  const heroRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new window.IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          setHideNavbar(true);
+          setShowBar(true);
+        } else {
+          setShowBar(false);
+          setHideNavbar(false);
+        }
+      },
+      {
+        root: null,
+        threshold: 0, // Cuando el elemento sale completamente de la vistaf 
+      }
+    );
+    if (heroRef.current) {
+      observer.observe(heroRef.current);
+    }
+    return () => {
+      if (heroRef.current) observer.unobserve(heroRef.current);
+      setHideNavbar(false);
+      setShowBar(false);
+    };
+  }, [setHideNavbar]);
+
   // UX feedback state (hook debe ir antes de cualquier return condicional)
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
-      setShowBar(window.scrollY > 100 && isProductDetailView);
-      setHideNavbar(window.scrollY > 100 && isProductDetailView);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Inicializa correctamente al montar y tras navegación
-    setTimeout(handleScroll, 0);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      setHideNavbar(false);
-    };
-  }, [isProductDetailView, setHideNavbar]);
-
-  useEffect(() => {
-    if (showBar) {
-      document.body.classList.add("hide-main-navbar");
-    } else {
-      document.body.classList.remove("hide-main-navbar");
-    }
-    return () => {
-      document.body.classList.remove("hide-main-navbar");
-    };
-  }, [showBar]);
-
-  if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#17407A]">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">
-            Producto no encontrado
-          </h2>
-          <p className="text-white/80">
-            No se pudo cargar la información del producto.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   // Handlers
+  const { addProduct } = useCartContext();
   // Mejorado: Añadir al carrito igual que ProductCard
   const handleAddToCart = () => {
     addProduct({
@@ -115,6 +101,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
     setTimeout(() => setCartFeedback(null), 1200);
   };
   // Mejorado: Comprar, navega a DetailsProduct
+  const router = useRouter();
   const handleBuy = () => {
     router.push("/productos/dispositivos-moviles/details");
   };
@@ -138,8 +125,8 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           {cartFeedback}
         </div>
       )}
-      {/* Hero section */}
-      <section className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
+      {/* Hero section con ref */}
+      <section ref={heroRef} className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
           {/* Columna izquierda: info y acciones */}
           <div
@@ -235,10 +222,10 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           </div>
         </div>
       </section>
-      {/* Barra superior solo si está en detalles y ha hecho scroll */}
+      {/* Header blanco solo si showBar */}
       {isProductDetailView && showBar && (
         <div
-          className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
+          className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 bar-animate-in"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
@@ -309,9 +296,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         </div>
       )}
       {/* Oculta el navbar principal con una clase global */}
-      <style>{`
-        body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
-      `}</style>
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <div

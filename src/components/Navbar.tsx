@@ -1,9 +1,9 @@
 "use client";
 /**
  * 🧭 NAVBAR PRINCIPAL - IMAGIQ ECOMMERCE
- * Limpio, escalable y con animaciones suaves en hover
+ * Limpio, escalable y con animaciones suaves en hover - SIN PARPADEO
  */
-import { useState, useEffect, useRef, RefCallback } from "react";
+import { useState, useEffect, useRef, RefCallback, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -63,8 +63,11 @@ export default function Navbar() {
   } | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Nuevo ref para debounce
+  
   const pathname = usePathname();
   const cleanPath = pathname.split(/[?#]/)[0];
   const isHome = pathname === "/";
@@ -79,21 +82,57 @@ export default function Navbar() {
   // Efecto para detectar cliente
   useEffect(() => setIsClient(true), []);
 
-  // Efecto scroll
+  // EFECTO SCROLL OPTIMIZADO - Sin parpadeo
   useEffect(() => {
     let ticking = false;
+    
     const handleScroll = () => {
       if (!ticking) {
-        window.requestAnimationFrame(() => {
-          setIsScrolled(window.scrollY > 100);
+        ticking = true;
+        
+        // Cancelar timeout anterior si existe
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        
+        // Usar requestAnimationFrame para sincronizar con el render
+        requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const shouldBeScrolled = scrollY > 100;
+          
+          // Solo actualizar si el estado realmente cambió
+          setIsScrolled(prev => {
+            if (prev !== shouldBeScrolled) {
+              return shouldBeScrolled;
+            }
+            return prev;
+          });
+          
           ticking = false;
         });
-        ticking = true;
       }
     };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    setTimeout(handleScroll, 0);
-    return () => window.removeEventListener("scroll", handleScroll);
+
+    // Throttle adicional para evitar demasiadas actualizaciones
+    const throttledScroll = () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+      
+      scrollTimeoutRef.current = setTimeout(handleScroll, 16); // ~60fps
+    };
+
+    window.addEventListener("scroll", throttledScroll, { passive: true });
+    
+    // Ejecutar una vez al montar
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener("scroll", throttledScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
   }, [pathname]);
 
   // Efecto búsqueda
@@ -114,34 +153,65 @@ export default function Navbar() {
     } else setSearchResults([]);
   }, [debouncedSearch, isAuthenticated]);
 
-  // Helpers de color y estado
-  const isProductDetail =
-    pathname.startsWith("/productos/") &&
-    !pathname.includes("/productos/dispositivos-moviles");
-  const isDispositivosMoviles = pathname.startsWith(
-    "/productos/dispositivos-moviles"
-  );
-  const isElectrodomesticos = pathname.startsWith(
-    "/productos/Electrodomesticos"
-  );
-  const isNavbarItem = navbarRoutes.some((route) =>
-    pathname.startsWith(route.href)
-  );
-  const isHeroScrolled = isHome && isScrolled;
-  const isScrolledNavbar =
-    (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  const isMasInformacionProducto = pathname.startsWith("/productos/view/");
-  const showWhiteLogo =
-    isMasInformacionProducto && !isScrolled
-      ? true
+  // Lógica de colores y estado (optimizada con useMemo)
+  const navbarConfig = useMemo(() => {
+    const isProductDetail = pathname.startsWith("/productos/") && 
+      !pathname.includes("/productos/dispositivos-moviles");
+    const isDispositivosMoviles = pathname.startsWith("/productos/dispositivos-moviles");
+    const isElectrodomesticos = pathname.startsWith("/productos/Electrodomesticos");
+    const isNavbarItem = navbarRoutes.some((route) => pathname.startsWith(route.href));
+    const isHeroScrolled = isHome && isScrolled;
+    const isScrolledNavbar = (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
+    const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+    
+    const showWhiteLogo = isMasInformacionProducto && !isScrolled 
+      ? true 
       : isOfertas || (isHome && !isScrolled);
-  const showWhiteItems = showWhiteLogo;
-  const showWhiteItemsMobile =
-    isOfertas ||
-    (isMasInformacionProducto && !isScrolled) ||
-    (!isScrolledNavbar &&
-      !isLogin &&
-      (isProductDetail || (isHome && !isScrolled)));
+      
+    const showWhiteItems = showWhiteLogo;
+    const showWhiteItemsMobile = isOfertas ||
+      (isMasInformacionProducto && !isScrolled) ||
+      (!isScrolledNavbar && !isLogin && (isProductDetail || (isHome && !isScrolled)));
+
+    // Determinar estilos de manera consistente
+    let backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+    let boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    let background: string | undefined = undefined;
+    
+    if (isOfertas && !isScrolled) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    } else if (isOfertas && isScrolled) {
+      backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+      boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    } else if (isDispositivosMoviles || isElectrodomesticos || isScrolledNavbar) {
+      backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+      boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    } else if (isHome && !isScrolled) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    } else if (isProductDetail) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    } else {
+      backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+      boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    }
+
+    return {
+      showWhiteLogo,
+      showWhiteItems,
+      showWhiteItemsMobile,
+      backgroundStyle,
+      boxShadow,
+      background,
+      isDispositivosMoviles,
+      isElectrodomesticos
+    };
+  }, [isScrolled, isOfertas, isHome, isLogin, pathname]);
 
   // Dropdown hover handlers
   const handleDropdownEnter = (dropdownName: string) => {
@@ -157,21 +227,25 @@ export default function Navbar() {
       });
     }
   };
+
   const handleDropdownLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
       setDropdownCoords(null);
     }, 350);
   };
+
   const handleDropdownContainerEnter = () => {
     if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
   };
+
   const handleDropdownContainerLeave = () => {
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
       setDropdownCoords(null);
     }, 350);
   };
+
   const setNavItemRef: RefCallback<HTMLDivElement> = (el) => {
     if (el) {
       const itemName = el.getAttribute("data-item-name");
@@ -241,30 +315,22 @@ export default function Navbar() {
     <header
       data-navbar="true"
       className={cn(
-        "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60",
-        "sticky top-0 left-0 md:static",
-        isOfertas && !isScrolled
-          ? "bg-transparent"
-          : isOfertas && isScrolled
-          ? "bg-white/60 shadow backdrop-blur-md"
-          : isDispositivosMoviles || isElectrodomesticos || isScrolledNavbar
-          ? "bg-white/60 shadow backdrop-blur-md"
-          : isHome && !isScrolled
-          ? "bg-transparent"
-          : isProductDetail
-          ? "bg-transparent"
-          : "bg-white/60 shadow backdrop-blur-md"
+        "w-full z-50 backdrop-blur-md sticky top-0 left-0 md:static",
+        // Transición suave optimizada
+        "transition-all duration-300 ease-in-out",
+        navbarConfig.backgroundStyle,
+        // Aplicar hideNavbar con transform en lugar de display
+        hideNavbar ? "transform -translate-y-full opacity-0" : "transform translate-y-0 opacity-100"
       )}
       style={{
-        boxShadow:
-          isOfertas && !isScrolled
-            ? "none"
-            : isScrolled
-            ? "0 2px 8px 0 rgba(30, 64, 175, 0.12)"
-            : "none",
-        background: isOfertas && !isScrolled ? "transparent" : undefined,
-        transition:
-          "background 0.6s cubic-bezier(.4,0,.2,1), box-shadow 0.6s cubic-bezier(.4,0,.2,1)",
+        boxShadow: navbarConfig.boxShadow,
+        background: navbarConfig.background,
+        // Transición más suave y consistente
+        transition: hideNavbar 
+          ? "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)"
+          : "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+        // Optimización de rendimiento
+        willChange: hideNavbar ? "transform, opacity" : "background, box-shadow",
       }}
       role="navigation"
       aria-label="Navegación principal"
@@ -285,7 +351,7 @@ export default function Navbar() {
           >
             <Image
               src={
-                showWhiteLogo ? "/frame_311_white.png" : "/frame_311_black.png"
+                navbarConfig.showWhiteLogo ? "/frame_311_white.png" : "/frame_311_black.png"
               }
               alt="Q Logo"
               height={22}
@@ -294,7 +360,7 @@ export default function Navbar() {
               priority
             />
             <Image
-              src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
+              src={navbarConfig.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
               alt="Samsung Logo"
               height={28}
               className="h-7 min-w-[80px] md:h-8 md:min-w-[120px]"
@@ -302,7 +368,7 @@ export default function Navbar() {
             />
             <span
               className={
-                showWhiteLogo
+                navbarConfig.showWhiteLogo
                   ? "ml-2 text-base font-bold tracking-wide text-white select-none"
                   : "ml-2 text-base font-bold tracking-wide text-black select-none"
               }
@@ -317,6 +383,7 @@ export default function Navbar() {
             </span>
           </Link>
         </div>
+
         {/* Iconos desktop */}
         <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
           {/* Buscador */}
@@ -341,7 +408,7 @@ export default function Navbar() {
               style={{ zIndex: 1001 }}
             >
               <Image
-                src={showWhiteItems ? searchIconWhite : searchIconBlack}
+                src={navbarConfig.showWhiteItems ? searchIconWhite : searchIconBlack}
                 alt="Buscar"
                 width={26}
                 height={26}
@@ -349,14 +416,15 @@ export default function Navbar() {
               />
             </button>
           </form>
+
           {/* Icono login */}
           <button
             type="button"
             className={cn(
               "flex items-center justify-center w-10 h-10 text-black",
-              isDispositivosMoviles || isElectrodomesticos
+              navbarConfig.isDispositivosMoviles || navbarConfig.isElectrodomesticos
                 ? "text-black"
-                : showWhiteItems
+                : navbarConfig.showWhiteItems
                 ? "text-white"
                 : "text-black"
             )}
@@ -371,21 +439,22 @@ export default function Navbar() {
             }}
           >
             <Image
-              src={showWhiteItems ? userIconWhite : userIconBlack}
+              src={navbarConfig.showWhiteItems ? userIconWhite : userIconBlack}
               alt="Usuario"
               width={28}
               height={28}
               priority
             />
           </button>
+
           {/* Icono carrito */}
           <Link
             href="/carrito"
             className={cn(
               "flex items-center justify-center w-10 h-10 relative text-black",
-              isDispositivosMoviles || isElectrodomesticos
+              navbarConfig.isDispositivosMoviles || navbarConfig.isElectrodomesticos
                 ? "text-black"
-                : showWhiteItems
+                : navbarConfig.showWhiteItems
                 ? "text-white"
                 : "text-black"
             )}
@@ -393,7 +462,7 @@ export default function Navbar() {
             onClick={handleCartClick}
           >
             <Image
-              src={showWhiteItems ? carritoIconWhite : carritoIconBlack}
+              src={navbarConfig.showWhiteItems ? carritoIconWhite : carritoIconBlack}
               alt="Carrito"
               width={34}
               height={34}
@@ -411,24 +480,25 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
           {/* Icono favoritos */}
           <button
             type="button"
             className={cn(
               "flex items-center justify-center w-10 h-10",
-              isDispositivosMoviles || isElectrodomesticos
+              navbarConfig.isDispositivosMoviles || navbarConfig.isElectrodomesticos
                 ? "text-black"
-                : showWhiteItems
+                : navbarConfig.showWhiteItems
                 ? "text-white"
                 : "text-black"
             )}
             title="Favoritos"
             aria-label="Favoritos"
             style={{ position: "relative" }}
-            onClick={() => router.push("/product-favoritos")} // <-- Redirecciona aquí
+            onClick={() => router.push("/product-favoritos")}
           >
             <Image
-              src={showWhiteItems ? favoritoIconWhite : favoritoIconBlack}
+              src={navbarConfig.showWhiteItems ? favoritoIconWhite : favoritoIconBlack}
               alt="Favoritos"
               width={20}
               height={21}
@@ -436,13 +506,14 @@ export default function Navbar() {
             />
           </button>
         </div>
+
         {/* Navbar móvil */}
         <div className="absolute right-0 top-0 flex md:hidden items-center h-16 space-x-4 pr-2 md:static md:w-auto">
           {/* Icono buscar */}
           <button
             className={cn(
               "flex items-center justify-center w-10 h-10 text-2xl font-bold",
-              showWhiteItemsMobile ? "text-white" : "text-black"
+              navbarConfig.showWhiteItemsMobile ? "text-white" : "text-black"
             )}
             title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
             aria-label={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
@@ -460,7 +531,7 @@ export default function Navbar() {
               <span className="text-2xl">&#10005;</span>
             ) : (
               <Image
-                src={showWhiteItemsMobile ? searchIconWhite : searchIconBlack}
+                src={navbarConfig.showWhiteItemsMobile ? searchIconWhite : searchIconBlack}
                 alt="Buscar"
                 width={26}
                 height={26}
@@ -468,18 +539,19 @@ export default function Navbar() {
               />
             )}
           </button>
+
           {/* Icono carrito */}
           <Link
             href="/carrito"
             className={cn(
               "flex items-center justify-center w-10 h-10 relative",
-              showWhiteItemsMobile ? "text-white" : "text-black"
+              navbarConfig.showWhiteItemsMobile ? "text-white" : "text-black"
             )}
             title="Carrito"
             onClick={handleCartClick}
           >
             <Image
-              src={showWhiteItemsMobile ? carritoIconWhite : carritoIconBlack}
+              src={navbarConfig.showWhiteItemsMobile ? carritoIconWhite : carritoIconBlack}
               alt="Carrito"
               width={34}
               height={34}
@@ -497,17 +569,19 @@ export default function Navbar() {
               </span>
             )}
           </Link>
+
           {/* Icono menú hamburguesa */}
           <button
             className={cn(
               "flex items-center justify-center w-10 h-10",
-              showWhiteItemsMobile ? "text-white" : "text-black"
+              navbarConfig.showWhiteItemsMobile ? "text-white" : "text-black"
             )}
             aria-label="Abrir menú"
             onClick={() => setIsMobileMenuOpen((open) => !open)}
           >
             <Menu className="w-6 h-6" />
           </button>
+
           {/* Input animado */}
           {searchQuery === "focus" && (
             <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
@@ -543,14 +617,19 @@ export default function Navbar() {
           )}
         </div>
       </div>
+
       {/* Menú de navegación principal - animación hover suave */}
       <nav
         className={cn(
-          "hidden md:block transition-all duration-500 relative",
+          "hidden md:block relative overflow-hidden",
+          "transition-all duration-500 ease-in-out",
           isScrolled
-            ? "max-h-0 opacity-0 overflow-hidden"
+            ? "max-h-0 opacity-0"
             : "max-h-20 opacity-100"
         )}
+        style={{
+          willChange: "max-height, opacity"
+        }}
       >
         <ul className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
           {navbarRoutes.map((item) => {
@@ -566,21 +645,24 @@ export default function Navbar() {
                   cleanPath.startsWith(item.href + "/") ||
                   cleanPath.startsWith(item.href + "?") ||
                   cleanPath.startsWith(item.href + "#");
+
             // Clases animación hover suave mejorada SOLO Tailwind
-            const itemTextColor = showWhiteItems
+            const itemTextColor = navbarConfig.showWhiteItems
               ? "text-white"
               : "text-gray-800";
             const activeIndicatorColor =
-              showWhiteItems && isActive
+              navbarConfig.showWhiteItems && isActive
                 ? "bg-white"
                 : "bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600";
+
             // Animación hover: fade + slide + escala, curva personalizada
             const hoverClass = cn(
               "transition-all duration-900 ease-[cubic-bezier(.4,0,.2,1)] will-change-transform will-change-opacity transform-gpu",
-              showWhiteItems
+              navbarConfig.showWhiteItems
                 ? "hover:scale-110 hover:opacity-90 hover:-translate-y-1"
                 : "hover:text-blue-700 hover:scale-105 hover:opacity-90 hover:-translate-y-1"
             );
+
             return (
               <li
                 key={item.name}
@@ -599,8 +681,8 @@ export default function Navbar() {
                       "text-lg font-normal whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none",
                       itemTextColor,
                       hoverClass,
-                      isActive && showWhiteItems && "text-white",
-                      isActive && !showWhiteItems && "text-gray-900"
+                      isActive && navbarConfig.showWhiteItems && "text-white",
+                      isActive && !navbarConfig.showWhiteItems && "text-gray-900"
                     )}
                     aria-label={item.name}
                   >
@@ -626,6 +708,7 @@ export default function Navbar() {
           })}
         </ul>
       </nav>
+
       {/* Overlay menú móvil */}
       {isMobileMenuOpen && (
         <>

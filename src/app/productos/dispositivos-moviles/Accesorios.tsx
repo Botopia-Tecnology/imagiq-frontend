@@ -23,6 +23,7 @@ import {
 } from "./constants/accesoriosConstants";
 import { getApiFilters } from "./utils/accesoriosUtils";
 import AccesoriosProductsGrid from "./components/AccesoriosProductsGrid";
+import HeaderSection from "./components/HeaderSection";
 
 export default function AccesoriosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -107,6 +108,24 @@ export default function AccesoriosSection() {
     [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
   );
 
+  // Memoizar el HeaderSection para evitar re-renders innecesarios
+  const HeaderSectionMemo = useMemo(
+    () => (
+      <HeaderSection
+        title="Accesorios"
+        totalItems={totalItems}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onShowMobileFilters={() => setShowMobileFilters(true)}
+        filters={filters}
+        setFilters={setFilters}
+      />
+    ),
+    [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
+  );
+
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
@@ -121,17 +140,11 @@ export default function AccesoriosSection() {
           </aside>
 
           <main className="flex-1">
+            {HeaderSectionMemo}
             <AccesoriosProductsGrid
               products={products}
               loading={loading}
               error={error}
-              totalItems={totalItems}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              showMobileFilters={showMobileFilters}
-              setShowMobileFilters={setShowMobileFilters}
               filters={filters}
               setFilters={setFilters}
               refreshProducts={refreshProducts}

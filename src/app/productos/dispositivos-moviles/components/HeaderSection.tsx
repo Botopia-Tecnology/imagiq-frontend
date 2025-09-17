@@ -15,6 +15,8 @@ interface HeaderSectionProps {
   viewMode: "grid" | "list";
   setViewMode: (mode: "grid" | "list") => void;
   onShowMobileFilters: () => void;
+  filters?: any;
+  setFilters?: React.Dispatch<React.SetStateAction<any>>;
 }
 
 export default function HeaderSection({
@@ -25,12 +27,22 @@ export default function HeaderSection({
   viewMode,
   setViewMode,
   onShowMobileFilters,
+  filters,
+  setFilters,
 }: HeaderSectionProps) {
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         <span className="text-sm text-gray-500">{totalItems} resultados</span>
+        {filters?.tipoAccesorio && filters.tipoAccesorio.length > 0 && setFilters && (
+          <button
+            onClick={() => setFilters({ ...filters, tipoAccesorio: [] })}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Ver todos los accesorios
+          </button>
+        )}
       </div>
 
       <div className="flex items-center gap-4">

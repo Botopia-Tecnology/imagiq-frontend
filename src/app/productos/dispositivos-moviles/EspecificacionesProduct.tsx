@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import cpuIcon from "@/img/dispositivosmoviles/cpu-icon.png";
@@ -65,6 +65,20 @@ const EspecificacionesProduct = ({
   specs?: { label: string; value: string; icon?: StaticImageData }[];
   productImage?: StaticImageData | string;
 }) => {
+  // Estado para el ancho de la ventana
+  const [windowWidth, setWindowWidth] = useState<number>(0);
+
+  useEffect(() => {
+    // Solo en cliente
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // Usa windowWidth en vez de window.innerWidth
+  const isMobile = windowWidth > 0 && windowWidth < 640;
+
   // Mezclar datos del padre con los originales, priorizando los del padre
   const mergedSpecs = especificacionesData.map((defaultSpec) => {
     const custom = specs?.find((s) => s.label === defaultSpec.label);
@@ -150,8 +164,8 @@ const EspecificacionesProduct = ({
                   key={index}
                   className="bg-white rounded-lg flex flex-col items-center justify-between py-6 px-4"
                   style={{
-                    height: "190px",
-                    width: "190px",
+                    height: isMobile ? "120px" : "190px",
+                    width: isMobile ? "120px" : "190px",
                     boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
                   }}
                   tabIndex={0}
@@ -161,19 +175,26 @@ const EspecificacionesProduct = ({
                     <Image
                       src={spec.icon}
                       alt={spec.label + " icon"}
-                      width={50}
-                      height={50}
+                      width={isMobile ? 32 : 70}
+                      height={isMobile ? 32 : 70}
                     />
                   </div>
                   <div
                     className="text-center text-gray-600 text-xs leading-tight mt-auto mb-3"
-                    style={{ fontSize: "12px" }}
+                    style={{
+                      fontSize: isMobile ? "10px" : "12px",
+                    }}
                   >
                     {spec.desc.split("\n").map((line, i) => (
                       <div key={i}>{line}</div>
                     ))}
                   </div>
-                  <h3 className="font-bold text-base text-black mb-1">
+                  <h3
+                    className="font-bold text-base text-black mb-1"
+                    style={{
+                      fontSize: isMobile ? "12px" : undefined,
+                    }}
+                  >
                     {spec.label}
                   </h3>
                 </div>

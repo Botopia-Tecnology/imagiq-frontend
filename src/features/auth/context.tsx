@@ -1,3 +1,4 @@
+"use client";
 /**
  * Context de Autenticación
  * - Provider para el estado global de auth
@@ -7,7 +8,6 @@
  * - Integración con PostHog para user identification
  */
 
-"use client";
 
 import {
   createContext,

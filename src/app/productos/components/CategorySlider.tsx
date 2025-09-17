@@ -1,3 +1,4 @@
+"use client";
 /**
  * 🎯 CATEGORY SLIDER COMPONENT - IMAGIQ ECOMMERCE
  *
@@ -9,18 +10,15 @@
  * - Tracking de clicks
  */
 
-"use client";
 
 import React, { useState, useRef } from "react";
-
-import { useRouter } from "next/navigation";
 
 
 import Image, { StaticImageData } from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 interface Category {
   id: string;
@@ -152,7 +150,7 @@ export default function CategorySlider({
                         width={165}
                         height={165}
                         className="object-contain drop-shadow-lg"
-                        priority
+                        priority={activeCategoryId === category.id}
                       />
                     </span>
                   </button>

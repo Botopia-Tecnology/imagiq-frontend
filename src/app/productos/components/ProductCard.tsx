@@ -198,7 +198,7 @@ export default function ProductCard({
       {/* Contenido */}
       <div className="p-4 bg-[#D9D9D9]">
         {/* Título del producto */}
-        <h3 className="font-semibold text-gray-900 text-base mb-3 line-clamp-2 leading-5">
+        <h3 className="font-semibold text-gray-900 text-base mb-3 line-clamp-2 leading-5 truncate">
           {name}
         </h3>
 

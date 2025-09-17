@@ -13,14 +13,13 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import LogoReloadAnimation from "../carrito/LogoReloadAnimation";
 
 export default function ChargingResultPage() {
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const [isSuccess] = useState(() => Math.random() > 0.1);
-
   // Elimina el setTimeout y usa el callback de la animación
   const handleFinish = () => {
     setOpen(false);

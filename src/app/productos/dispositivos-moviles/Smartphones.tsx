@@ -1,3 +1,5 @@
+///Smartphones section carpeta dispositivos-moviles
+
 /**
  * 📱 SMARTPHONES SECTION - IMAGIQ ECOMMERCE
  *
@@ -6,6 +8,7 @@
  * - Filtros especializados para celulares
  * - Categorías de acceso rápido
  * - Tracking específico para smartphones
+ * - Responsive global implementado
  */
 
 "use client";
@@ -13,7 +16,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
@@ -23,6 +26,8 @@ import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { productsData } from "../data_product/products";
+import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -30,7 +35,7 @@ import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
 
-// Categorías específicas para smartphones (coincidiendo con la imagen del slider)
+// Categorías específicas para smartphones
 const smartphoneCategories: Category[] = [
   {
     id: "galaxy-smartphone",
@@ -44,25 +49,25 @@ const smartphoneCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "/productos/dispositivos-moviles?section=relojes",
+    href: "?section=relojes",
   },
   {
     id: "galaxy-tab",
     name: "Galaxy",
     subtitle: "Tab",
     image: tabletasImg,
-    href: "/productos/dispositivos-moviles?section=tabletas",
+    href: "?section=tabletas",
   },
   {
     id: "galaxy-buds",
     name: "Galaxy",
     subtitle: "Buds",
     image: galaxyBudsImg,
-    href: "/productos/dispositivos-moviles?section=buds",
+    href: "?section=buds",
   },
 ];
 
-// Configuración de filtros específica para smartphones
+// Filtros específicos para smartphones
 const smartphoneFilters: FilterConfig = {
   almacenamiento: ["64GB", "128GB", "256GB", "512GB", "1TB"],
   caracteristicas: [
@@ -88,90 +93,14 @@ const smartphoneFilters: FilterConfig = {
 };
 
 // Productos específicos de smartphones
-export const smartphoneProducts = [
-  {
-    id: "galaxy-a16",
-    name: "Samsung Galaxy A16",
-    image: smartphonesImg,
-    colors: [
-      { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-    ] as ProductColor[],
-    rating: 4.5,
-    reviewCount: 128,
-    price: "$ 812.900",
-    originalPrice: "$ 999.000",
-    discount: "-19%",
-  },
-  {
-    id: "galaxy-a25",
-    name: "Samsung Galaxy A25",
-    image: smartphonesImg,
-    colors: [
-      { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-    ] as ProductColor[],
-    rating: 4.3,
-    reviewCount: 89,
-    price: "$ 1.250.000",
-  },
-  {
-    id: "galaxy-a26",
-    name: "Samsung Galaxy A26",
-    image: smartphonesImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "black", hex: "#000000", label: "Negro" },
-      { name: "mint", hex: "#10B981", label: "Menta" },
-    ] as ProductColor[],
-    rating: 4.4,
-    reviewCount: 156,
-    price: "$ 1.450.000",
-    originalPrice: "$ 1.600.000",
-    discount: "-9%",
-  },
-  {
-    id: "galaxy-a15-256gb",
-    name: "Samsung Galaxy A15 256 GB",
-    image: smartphonesImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "black", hex: "#000000", label: "Negro" },
-    ] as ProductColor[],
-    rating: 4.2,
-    reviewCount: 203,
-    price: "$ 999.000",
-  },
-  {
-    id: "galaxy-a15-4gb",
-    name: "Samsung Galaxy A15 4GB 128GB",
-    image: smartphonesImg,
-    colors: [
-      { name: "yellow", hex: "#FCD34D", label: "Amarillo" },
-      { name: "black", hex: "#000000", label: "Negro" },
-    ] as ProductColor[],
-    rating: 4.1,
-    reviewCount: 94,
-    price: "$ 750.000",
-    isNew: true,
-  },
-  {
-    id: "galaxy-a15-128gb",
-    name: "Samsung Galaxy A15 4GB 128GB",
-    image: smartphonesImg,
-    colors: [
-      { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      { name: "blue", hex: "#1E40AF", label: "Azul" },
-    ] as ProductColor[],
-    rating: 4.0,
-    reviewCount: 67,
-    price: "$ 850.000",
-  },
-];
+export const smartphoneProducts = productsData["smartphones-tablets"].filter(
+  (product) =>
+    product.name.toLowerCase().includes("galaxy a") ||
+    product.name.toLowerCase().includes("galaxy s") ||
+    product.name.toLowerCase().includes("galaxy note") ||
+    product.name.toLowerCase().includes("galaxy z")
+);
 
-// ...existing code...
 export default function SmartphonesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["almacenamiento"])
@@ -190,6 +119,7 @@ export default function SmartphonesSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [resultCount] = useState(24)
 
   // Usar el hook de productos con filtro de subcategoría "Celulares"
   const apiFilters = useMemo(() => ({
@@ -203,13 +133,15 @@ export default function SmartphonesSection() {
     totalItems,
     refreshProducts 
   } = useProducts(apiFilters);
+  const device = useDeviceType(); // Responsive global
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
       section: "smartphones",
       category: "dispositivos_moviles",
+      device,
     });
-  }, []);
+  }, [device]);
 
   const handleFilterChange = (
     filterType: string,
@@ -275,56 +207,86 @@ export default function SmartphonesSection() {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Categorías de smartphones */}
+      
       <CategorySlider
         categories={smartphoneCategories}
         trackingPrefix="smartphone_category"
       />
 
-      {/* Contenido principal */}
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex gap-8">
-          {/* Sidebar de filtros - Desktop */}
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            <FilterSidebar
-              filterConfig={smartphoneFilters}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              resultCount={totalItems}
-              expandedFilters={expandedFilters}
-              onToggleFilter={toggleFilter}
-              trackingPrefix="smartphone_filter"
-            />
-          </aside>
+      <div
+        className={cn(
+          "container mx-auto px-6 py-8",
+          device === "mobile" && "px-5 py-4",
+          device === "tablet" && "px-4 py-6"
+        )}
+      >
+        <div
+          className={cn(
+            "flex gap-8",
+            device === "mobile" && "flex-col gap-4",
+            device === "tablet" && "gap-6"
+          )}
+        >
+          {(device === "desktop" || device === "large") && (
+            <aside className="hidden lg:block w-80 flex-shrink-0">
+              <FilterSidebar
+                filterConfig={smartphoneFilters}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                resultCount={resultCount}
+                expandedFilters={expandedFilters}
+                onToggleFilter={toggleFilter}
+                trackingPrefix="smartphone_filter"
+              />
+            </aside>
+          )}
 
-          {/* Contenido principal */}
           <main className="flex-1">
-            {/* Header con controles */}
-            <div className="flex items-center justify-between mb-6">
+            <div
+              className={cn(
+                "flex items-center justify-between mb-6",
+                device === "mobile" && "flex-col items-start gap-2 mb-4"
+              )}
+            >
               <div className="flex items-center gap-4">
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1
+                  className={cn(
+                    "text-2xl font-bold text-gray-900",
+                    device === "mobile" && "text-lg"
+                  )}
+                >
                   Smartphones
                 </h1>
-                <span className="text-sm text-gray-500">
-                  {totalItems} resultados
+                <span
+                  className={cn(
+                    "text-sm text-gray-500",
+                    device === "mobile" && "text-xs"
+                  )}
+                >
+                  {resultCount} resultados
                 </span>
               </div>
 
-              <div className="flex items-center gap-4">
-                {/* Botón filtros móvil */}
-                <button
-                  onClick={() => setShowMobileFilters(true)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  <Filter className="w-4 h-4" />
-                  Filtros
-                </button>
+              <div
+                className={cn("flex items-center gap-4", device === "mobile" && "gap-2")}
+              >
+                {(device === "mobile" || device === "tablet") && (
+                  <button
+                    onClick={() => setShowMobileFilters(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Filtros
+                  </button>
+                )}
 
-                {/* Selector de ordenamiento */}
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className={cn(
+                    "bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
+                    device === "mobile" && "px-2 py-1 text-xs"
+                  )}
                 >
                   <option value="relevancia">Relevancia</option>
                   <option value="precio-menor">Precio: menor a mayor</option>
@@ -333,41 +295,42 @@ export default function SmartphonesSection() {
                   <option value="calificacion">Mejor calificados</option>
                 </select>
 
-                {/* Toggle vista */}
-                <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "grid"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <Grid3X3 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("list")}
-                    className={cn(
-                      "p-2",
-                      viewMode === "list"
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-gray-50"
-                    )}
-                  >
-                    <List className="w-4 h-4" />
-                  </button>
-                </div>
+                {(device === "desktop" || device === "large") && (
+                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "grid"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <Grid3X3 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("list")}
+                      className={cn(
+                        "p-2",
+                        viewMode === "list"
+                          ? "bg-blue-600 text-white"
+                          : "bg-white text-gray-600 hover:bg-gray-50"
+                      )}
+                    >
+                      <List className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Grid de productos */}
             <div
               className={cn(
                 "grid gap-6",
                 viewMode === "grid"
                   ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-                  : "grid-cols-1"
+                  : "grid-cols-1",
+                device === "mobile" && "gap-3"
               )}
             >
               {products.length === 0 ? (
@@ -403,18 +366,19 @@ export default function SmartphonesSection() {
         </div>
       </div>
 
-      {/* Modal de filtros móvil */}
-      <MobileFilterModal
-        isOpen={showMobileFilters}
-        onClose={() => setShowMobileFilters(false)}
-        filterConfig={smartphoneFilters}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={totalItems}
-        expandedFilters={expandedFilters}
-        onToggleFilter={toggleFilter}
-        trackingPrefix="smartphone_filter"
-      />
+      {(device === "mobile" || device === "tablet") && (
+        <MobileFilterModal
+          isOpen={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
+          filterConfig={smartphoneFilters}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          resultCount={resultCount}
+          expandedFilters={expandedFilters}
+          onToggleFilter={toggleFilter}
+          trackingPrefix="smartphone_filter"
+        />
+      )}
     </div>
   );
 }

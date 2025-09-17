@@ -1,3 +1,4 @@
+"use client"
 import React, { useEffect, useRef } from "react";
 import logoSamsung from "@/img/logo_Samsung.png";
 
@@ -13,7 +14,6 @@ import logoSamsung from "@/img/logo_Samsung.png";
 type LogoReloadAnimationProps = {
   open: boolean;
   onFinish?: () => void;
-  duration?: number;
 };
 
 // Importa el logo desde el inicio para optimización y visibilidad

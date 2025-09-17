@@ -3,33 +3,37 @@
  * 🧭 NAVBAR PRINCIPAL - IMAGIQ ECOMMERCE
  */
 
-import { useState, useEffect, useRef, RefCallback } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { usePathname } from "next/navigation";
-import { Search, User, ShoppingCart, Heart } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { Menu } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useCartContext } from "@/features/cart/CartContext";
 import { useAuthContext } from "@/features/auth/context";
-import { posthogUtils } from "@/lib/posthogClient";
-import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
-import TelevisionesDropdown from "./dropdowns/televisiones";
-import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
-import { navbarRoutes } from "../routes/navbarRoutes";
+import { useCartContext } from "@/features/cart/CartContext";
+import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
+import { useDebounce } from "@/hooks/useDebounce";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
+import carritoIconBlack from "@/img/navbar-icons/carrito-icon-black.png";
+import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
+import favoritoIconWhite from "@/img/navbar-icons/favorito-icon-white.png";
+import favoritoIconBlack from "@/img/navbar-icons/favoritos-icon-black.png";
+import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
+import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
+import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
+import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
+import { posthogUtils } from "@/lib/posthogClient";
+import { cn } from "@/lib/utils";
+import { Heart, Menu, Search, ShoppingCart } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { RefCallback, useEffect, useMemo, useRef, useState } from "react";
+import { navbarRoutes } from "../routes/navbarRoutes";
+import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
+import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
+import TelevisionesDropdown from "./dropdowns/televisiones";
 
-// Items that have dropdowns
-const DROPDOWN_ITEMS = [
-  "Dispositivos móviles",
-  "Televisores y AV",
-  "Electrodomésticos",
-] as const;
-
-type DropdownItemType = (typeof DROPDOWN_ITEMS)[number];
+// Dropdown item type literals (no runtime value needed)
+type DropdownItemType =
+  | "Dispositivos móviles"
+  | "Televisores y AV"
+  | "Electrodomésticos";
 
 interface SearchResult {
   id: number;
@@ -56,6 +60,8 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Nuevo ref para debounce
+
   const pathname = usePathname();
   // Detectar si estamos en la sección "más información" de dispositivos móviles (incluye subrutas)
   // const isMasInformacionDispositivosMoviles = pathname.startsWith(
@@ -74,7 +80,65 @@ export default function Navbar() {
 
   // 2. Efectos y lógica
 
+  const { hideNavbar } = useNavbarVisibility();
 
+  // Efecto para detectar cliente
+  useEffect(() => setIsClient(true), []);
+
+  // EFECTO SCROLL OPTIMIZADO - Sin parpadeo
+  useEffect(() => {
+    let ticking = false;
+
+    const handleScroll = () => {
+      if (!ticking) {
+        ticking = true;
+
+        // Cancelar timeout anterior si existe
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+
+        // Usar requestAnimationFrame para sincronizar con el render
+        requestAnimationFrame(() => {
+          const scrollY = window.scrollY;
+          const shouldBeScrolled = scrollY > 100;
+
+          // Solo actualizar si el estado realmente cambió
+          setIsScrolled((prev) => {
+            if (prev !== shouldBeScrolled) {
+              return shouldBeScrolled;
+            }
+            return prev;
+          });
+
+          ticking = false;
+        });
+      }
+    };
+
+    // Throttle adicional para evitar demasiadas actualizaciones
+    const throttledScroll = () => {
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+
+      scrollTimeoutRef.current = setTimeout(handleScroll, 16); // ~60fps
+    };
+
+    window.addEventListener("scroll", throttledScroll, { passive: true });
+
+    // Ejecutar una vez al montar
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", throttledScroll);
+      if (scrollTimeoutRef.current) {
+        clearTimeout(scrollTimeoutRef.current);
+      }
+    };
+  }, [pathname]);
+
+  // Efecto búsqueda
   useEffect(() => {
     if (debouncedSearch.length > 2) {
       posthogUtils.capture("navbar_search", {
@@ -131,6 +195,83 @@ export default function Navbar() {
     }
   };
 
+  // Lógica de colores y estado (optimizada con useMemo)
+  const navbarConfig = useMemo(() => {
+    const isProductDetail =
+      pathname.startsWith("/productos/") &&
+      !pathname.includes("/productos/dispositivos-moviles");
+    const isDispositivosMoviles = pathname.startsWith(
+      "/productos/dispositivos-moviles"
+    );
+    const isElectrodomesticos = pathname.startsWith(
+      "/productos/Electrodomesticos"
+    );
+    const isNavbarItem = navbarRoutes.some((route) =>
+      pathname.startsWith(route.href)
+    );
+    const isHeroScrolled = isHome && isScrolled;
+    const isScrolledNavbar =
+      (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
+    const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+
+    const showWhiteLogo =
+      isMasInformacionProducto && !isScrolled
+        ? true
+        : isOfertas || (isHome && !isScrolled);
+
+    const showWhiteItems = showWhiteLogo;
+    const showWhiteItemsMobile =
+      isOfertas ||
+      (isMasInformacionProducto && !isScrolled) ||
+      (!isScrolledNavbar &&
+        !isLogin &&
+        (isProductDetail || (isHome && !isScrolled)));
+
+    // Determinar estilos de manera consistente
+    let backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+    let boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    let background: string | undefined = undefined;
+
+    if (isOfertas && !isScrolled) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    } else if (isOfertas && isScrolled) {
+      backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+      boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    } else if (
+      isDispositivosMoviles ||
+      isElectrodomesticos ||
+      isScrolledNavbar
+    ) {
+      backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+      boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    } else if (isHome && !isScrolled) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    } else if (isProductDetail) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    } else {
+      backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
+      boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
+    }
+
+    return {
+      showWhiteLogo,
+      showWhiteItems,
+      showWhiteItemsMobile,
+      backgroundStyle,
+      boxShadow,
+      background,
+      isDispositivosMoviles,
+      isElectrodomesticos,
+    };
+  }, [isScrolled, isOfertas, isHome, isLogin, pathname]);
+
+  // Dropdown hover handlers
   const handleDropdownEnter = (dropdownName: string) => {
     if (dropdownTimeoutRef.current) {
       clearTimeout(dropdownTimeoutRef.current);
@@ -213,13 +354,6 @@ export default function Navbar() {
   const isProductDetail =
     pathname.startsWith("/productos/") &&
     !pathname.includes("/productos/dispositivos-moviles");
-  // Detectar si estamos en DispositivosMoviles o Electrodomesticos (con o sin params)
-  const isDispositivosMoviles = pathname.startsWith(
-    "/productos/dispositivos-moviles"
-  );
-  const isElectrodomesticos = pathname.startsWith(
-    "/productos/electrodomesticos"
-  );
   const isNavbarItem = navbarRoutes.some((route) =>
     pathname.startsWith(route.href)
   );
@@ -246,157 +380,430 @@ export default function Navbar() {
         (isProductDetail || (isHome && !isScrolled));
 
   return (
-    <header
-      data-navbar="true"
-      className={cn(
-        "w-full z-50 transition-all duration-300",
-        "sticky top-0 left-0 md:static",
-        isOfertas && !isScrolled
-          ? "bg-transparent"
-          : isOfertas && isScrolled
-          ? "bg-white shadow"
-          : isDispositivosMoviles || isElectrodomesticos || isScrolledNavbar
-          ? "bg-white shadow"
-          : isHome && !isScrolled
-          ? "bg-transparent"
-          : isProductDetail
-          ? "bg-transparent"
-          : "bg-white shadow"
-      )}
-      style={
-        isOfertas && !isScrolled
-          ? { boxShadow: "none", background: "transparent" }
-          : { boxShadow: "none" }
-      }
-      role="navigation"
-      aria-label="Navegación principal"
-    >
-      <div className="flex items-center justify-between h-16 px-8 max-w-full">
-        {/* Logo Samsung-style */}
-        <div className="flex items-center flex-shrink-0">
-          <Link
-            href="/"
-            onClick={() =>
-              posthogUtils.capture("logo_click", { source: "navbar" })
-            }
-            aria-label="Inicio"
-            className="flex items-center gap-2"
-          >
-            <Image
-              src={
-                showWhiteLogo ? "/frame_311_white.png" : "/frame_311_black.png"
-              }
-              alt="Q Logo"
-              height={32}
-              width={32}
-              style={{ minWidth: 32, width: 32 }}
-              priority
-            />
-            <Image
-              src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
-              alt="Samsung Logo"
-              height={32}
-              style={{ minWidth: 120, width: "auto" }}
-              priority
-            />
-            <Image
-              src={showWhiteLogo ? "/store_white.png" : "/store_black.png"}
-              alt="Store Logo"
-              height={20}
-              width={60}
-              style={{ minWidth: 36, width: 36 }}
-              priority
-            />
-          </Link>
-        </div>
-
-        {/* Iconos desktop: solo visible en md+ */}
-        <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
-          {/* Icono buscador con animación de input mejorada */}
-          <div
-            className="relative flex items-center group"
-            onMouseEnter={() => setSearchQuery("focus")}
-            onMouseLeave={() => setSearchQuery("")}
-          >
-            <form
-              onSubmit={handleSearchSubmit}
-              className={cn(
-                "flex items-center transition-all duration-500 bg-[#17407A] rounded-full px-4 h-12",
-                searchQuery === "focus"
-                  ? "w-72 opacity-100"
-                  : "w-0 opacity-0 px-0"
-              )}
-              style={{ zIndex: 1000, overflow: "hidden" }}
-            >
-              <input
-                type="text"
-                className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-                placeholder="Buscar..."
-                value={searchQuery !== "focus" ? searchQuery : ""}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
-            {/* Icono de búsqueda desktop */}
-            <button
-              className={cn(
-                "flex items-center justify-center w-10 h-10 transition-colors absolute right-0",
-                showWhiteItems ? "text-white" : "text-black"
-              )}
-              title="Buscar"
+    <>
+      <header
+        data-navbar="true"
+        className={cn(
+          "w-full z-50 backdrop-blur-md sticky top-0 left-0 md:static",
+          // Transición suave optimizada
+          "transition-all duration-300 ease-in-out",
+          navbarConfig.backgroundStyle,
+          // Aplicar hideNavbar con transform en lugar de display
+          hideNavbar
+            ? "transform -translate-y-full opacity-0"
+            : "transform translate-y-0 opacity-100"
+        )}
+        style={{
+          boxShadow: navbarConfig.boxShadow,
+          background: navbarConfig.background,
+          // Transición más suave y consistente
+          transition: hideNavbar
+            ? "transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1)"
+            : "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
+          // Optimización de rendimiento
+          willChange: hideNavbar
+            ? "transform, opacity"
+            : "background, box-shadow",
+        }}
+        role="navigation"
+        aria-label="Navegación principal"
+      >
+        <div className="flex items-center justify-between h-16 px-8 max-w-full">
+          {/* Logo Samsung-style */}
+          <div className="flex items-center flex-shrink-0">
+            <Link
+              href="/"
               onClick={() =>
-                posthogUtils.capture("search_icon_click", {
-                  source: "navbar",
-                })
+                posthogUtils.capture("logo_click", { source: "navbar" })
               }
-              style={{ zIndex: 1001 }}
+              aria-label="Inicio"
+              className="flex items-center gap-2"
             >
-              <Search
+              <Image
+                src={
+                  navbarConfig.showWhiteLogo
+                    ? "/frame_311_white.png"
+                    : "/frame_311_black.png"
+                }
+                alt="Q Logo"
+                height={32}
+                width={32}
+                style={{ minWidth: 32, width: 32 }}
+                priority
+              />
+              <Image
+                src={
+                  navbarConfig.showWhiteLogo
+                    ? logoSamsungWhite
+                    : logoSamsungBlack
+                }
+                alt="Samsung Logo"
+                height={32}
+                style={{ minWidth: 120, width: "auto" }}
+                priority
+              />
+              <Image
+                src={showWhiteLogo ? "/store_white.png" : "/store_black.png"}
+                alt="Store Logo"
+                height={20}
+                width={60}
+                style={{ minWidth: 36, width: 36 }}
+                priority
+              />
+              <span
+                className={
+                  showWhiteLogo
+                    ? "ml-2 text-base font-bold tracking-wide text-white select-none"
+                    : "ml-2 text-base font-bold tracking-wide text-black select-none"
+                }
+                style={{
+                  marginLeft: 8,
+                  marginRight: 0,
+                  cursor: "pointer",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Store
+              </span>
+            </Link>
+          </div>
+
+          {/* Iconos desktop: solo visible en md+ */}
+          <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
+            {/* Icono buscador con animación de input mejorada */}
+            <div
+              className="relative flex items-center group"
+              onMouseEnter={() => setSearchQuery("focus")}
+              onMouseLeave={() => setSearchQuery("")}
+            >
+              <form
+                onSubmit={handleSearchSubmit}
+                className={cn(
+                  "flex items-center transition-all duration-500 bg-[#17407A] rounded-full px-4 h-12",
+                  searchQuery === "focus"
+                    ? "w-72 opacity-100"
+                    : "w-0 opacity-0 px-0"
+                )}
+                style={{ zIndex: 1000, overflow: "hidden" }}
+              >
+                <input
+                  type="text"
+                  className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
+                  placeholder="Buscar..."
+                  value={searchQuery !== "focus" ? searchQuery : ""}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </form>
+              {/* Icono de búsqueda desktop */}
+              <button
+                className={cn(
+                  "flex items-center justify-center w-10 h-10 transition-colors absolute right-0",
+                  showWhiteItems ? "text-white" : "text-black"
+                )}
+                title="Buscar"
+                onClick={() =>
+                  posthogUtils.capture("search_icon_click", {
+                    source: "navbar",
+                  })
+                }
+                style={{ zIndex: 1001 }}
+              >
+                <Search
+                  className={
+                    showWhiteItems ? "w-6 h-6 text-white" : "w-6 h-6 text-black"
+                  }
+                />
+              </button>
+            </div>
+
+            {/* Icono login */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center justify-center w-10 h-10 text-black",
+                navbarConfig.isDispositivosMoviles ||
+                  navbarConfig.isElectrodomesticos
+                  ? "text-black"
+                  : navbarConfig.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title={isAuthenticated ? "Dashboard" : "Ingresar"}
+              aria-label={isAuthenticated ? "Dashboard" : "Ingresar"}
+              onClick={() => {
+                posthogUtils.capture("user_icon_click", {
+                  user_authenticated: isAuthenticated,
+                  destination: "login",
+                });
+                window.location.replace("/login");
+              }}
+            >
+              <Image
+                src={
+                  navbarConfig.showWhiteItems ? userIconWhite : userIconBlack
+                }
+                alt="Usuario"
+                width={28}
+                height={28}
+                priority
+              />
+            </button>
+
+            {/* Icono carrito con badge SIEMPRE visible si itemCount > 0 */}
+            <Link
+              href="/carrito"
+              className={cn(
+                "flex items-center justify-center w-10 h-10 relative text-black",
+                navbarConfig.isDispositivosMoviles ||
+                  navbarConfig.isElectrodomesticos
+                  ? "text-black"
+                  : navbarConfig.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title="Carrito de compras"
+              onClick={handleCartClick}
+            >
+              <Image
+                src={
+                  navbarConfig.showWhiteItems
+                    ? carritoIconWhite
+                    : carritoIconBlack
+                }
+                alt="Carrito"
+                width={34}
+                height={34}
+                priority
+              />
+              {isClient && (
+                <span
+                  className={cn(
+                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
+                    itemCount > 0
+                      ? "opacity-100 scale-100"
+                      : "opacity-0 scale-0"
+                  )}
+                  aria-label={`Carrito: ${itemCount} productos`}
+                >
+                  {itemCount > 99 ? "99+" : itemCount}
+                </span>
+              )}
+            </Link>
+
+            {/* Icono corazón al lado derecho del carrito */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center justify-center w-10 h-10",
+                navbarConfig.isDispositivosMoviles ||
+                  navbarConfig.isElectrodomesticos
+                  ? "text-black"
+                  : navbarConfig.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title="Favoritos"
+              aria-label="Favoritos"
+              style={{ position: "relative" }}
+              onClick={() => router.push("/product-favoritos")}
+            >
+              <Heart
                 className={
                   showWhiteItems ? "w-6 h-6 text-white" : "w-6 h-6 text-black"
                 }
               />
+              <Image
+                src={
+                  navbarConfig.showWhiteItems
+                    ? favoritoIconWhite
+                    : favoritoIconBlack
+                }
+                alt="Favoritos"
+                width={20}
+                height={21}
+                priority
+              />
             </button>
           </div>
 
-          {/* Icono login */}
+          {/* Navbar móvil igual a la imagen: logo, buscador, carrito, hamburguesa */}
+          <div className="flex md:hidden items-center justify-end w-full px-4 space-x-4 text-black">
+            {/* Logo */}
+            <div className="flex items-center space-x-4 relative">
+              {/* Icono buscador SIEMPRE visible en móvil */}
+              <div className="relative group w-10 flex flex-col items-center">
+                <button
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 text-white text-2xl font-bold",
+                    showWhiteItemsMobile ? "text-white" : "text-black"
+                  )}
+                  title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
+                  aria-label={
+                    searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
+                  }
+                  onClick={() => {
+                    if (searchQuery === "focus") {
+                      setSearchQuery("");
+                    } else {
+                      setSearchQuery("focus");
+                      posthogUtils.capture("search_icon_click", {
+                        source: "navbar_mobile",
+                      });
+                    }
+                  }}
+                >
+                  {searchQuery === "focus" ? (
+                    <span className="text-2xl">&#10005;</span>
+                  ) : (
+                    <Search className="w-5 h-5" />
+                  )}
+                </button>
+              </div>
+              {/* Iconos carrito y hamburguesa siempre visibles en móvil */}
+              <div className="flex items-center space-x-4 transition-all duration-300">
+                <Link
+                  href="/carrito"
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 relative text-white",
+                    showWhiteItemsMobile ? "text-white" : "text-black"
+                  )}
+                  title="Carrito"
+                  onClick={handleCartClick}
+                >
+                  <ShoppingCart className="w-5 h-5" />
+                  {isClient && (
+                    <span
+                      className={cn(
+                        "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
+                        itemCount > 0
+                          ? "opacity-100 scale-100"
+                          : "opacity-0 scale-0"
+                      )}
+                      aria-label={`Carrito: ${itemCount} productos`}
+                    >
+                      {itemCount > 99 ? "99+" : itemCount}
+                    </span>
+                  )}
+                </Link>
+                {/* Icono corazón al lado derecho del carrito en móvil */}
+                <button
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 text-white",
+                    showWhiteItemsMobile ? "text-white" : "text-black"
+                  )}
+                  title="Favoritos"
+                  aria-label="Favoritos"
+                >
+                  <Heart
+                    className={
+                      showWhiteItemsMobile
+                        ? "w-5 h-5 text-white"
+                        : "w-5 h-5 text-black"
+                    }
+                  />
+                </button>
+                <button
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10 text-white",
+                    showWhiteItemsMobile ? "text-white" : "text-black"
+                  )}
+                  aria-label="Abrir menú"
+                  onClick={() => setIsMobileMenuOpen((open) => !open)}
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+              </div>
+              {/* Input animado al hacer click, aparece debajo y centrado con botón cerrar */}
+              {searchQuery === "focus" && (
+                <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
+                  <form
+                    onSubmit={handleSearchSubmit}
+                    className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
+                  >
+                    <input
+                      type="text"
+                      className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
+                      placeholder="Buscar..."
+                      autoFocus
+                      value={searchQuery !== "focus" ? searchQuery : ""}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    <button type="submit" className="ml-2">
+                      <Search className="w-6 h-6 text-white" />
+                    </button>
+                    <button
+                      type="button"
+                      className="ml-4 text-white text-2xl font-bold focus:outline-none"
+                      aria-label="Cerrar buscador"
+                      onClick={() => setSearchQuery("")}
+                    ></button>
+                  </form>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Menú de navegación principal - se oculta al hacer scroll */}
+
+        {/* Navbar móvil */}
+        <div className="absolute right-0 top-0 flex md:hidden items-center h-16 space-x-4 pr-2 md:static md:w-auto">
+          {/* Icono buscar */}
           <button
-            type="button"
             className={cn(
-              "flex items-center justify-center w-10 h-10 text-black",
-              isDispositivosMoviles || isElectrodomesticos
-                ? "text-black"
-                : showWhiteItems
-                ? "text-white"
-                : "text-black"
+              "flex items-center justify-center w-10 h-10 text-2xl font-bold",
+              navbarConfig.showWhiteItemsMobile ? "text-white" : "text-black"
             )}
-            title={isAuthenticated ? "Dashboard" : "Ingresar"}
-            aria-label={isAuthenticated ? "Dashboard" : "Ingresar"}
+            title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
+            aria-label={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
             onClick={() => {
-              posthogUtils.capture("user_icon_click", {
-                user_authenticated: isAuthenticated,
-                destination: "login",
-              });
-              window.location.replace("/login");
+              if (searchQuery === "focus") setSearchQuery("");
+              else {
+                setSearchQuery("focus");
+                posthogUtils.capture("search_icon_click", {
+                  source: "navbar_mobile",
+                });
+              }
             }}
           >
-            <User className="w-6 h-6" />
+            {searchQuery === "focus" ? (
+              <span className="text-2xl">&#10005;</span>
+            ) : (
+              <Image
+                src={
+                  navbarConfig.showWhiteItemsMobile
+                    ? searchIconWhite
+                    : searchIconBlack
+                }
+                alt="Buscar"
+                width={26}
+                height={26}
+                priority
+              />
+            )}
           </button>
 
-          {/* Icono carrito con badge SIEMPRE visible si itemCount > 0 */}
+          {/* Icono carrito */}
           <Link
             href="/carrito"
             className={cn(
-              "flex items-center justify-center w-10 h-10 relative text-black",
-              isDispositivosMoviles || isElectrodomesticos
-                ? "text-black"
-                : showWhiteItems
-                ? "text-white"
-                : "text-black"
+              "flex items-center justify-center w-10 h-10 relative",
+              navbarConfig.showWhiteItemsMobile ? "text-white" : "text-black"
             )}
-            title="Carrito de compras"
+            title="Carrito"
             onClick={handleCartClick}
           >
-            <ShoppingCart className="w-6 h-6" />
+            <Image
+              src={
+                navbarConfig.showWhiteItemsMobile
+                  ? carritoIconWhite
+                  : carritoIconBlack
+              }
+              alt="Carrito"
+              width={34}
+              height={34}
+              priority
+            />
             {isClient && (
               <span
                 className={cn(
@@ -409,155 +816,63 @@ export default function Navbar() {
               </span>
             )}
           </Link>
-          {/* Icono corazón al lado derecho del carrito */}
+
+          {/* Icono menú hamburguesa */}
           <button
-            type="button"
             className={cn(
               "flex items-center justify-center w-10 h-10",
-              isDispositivosMoviles || isElectrodomesticos
-                ? "text-black"
-                : showWhiteItems
-                ? "text-white"
-                : "text-black"
+              navbarConfig.showWhiteItemsMobile ? "text-white" : "text-black"
             )}
-            title="Favoritos"
-            aria-label="Favoritos"
-            style={{ position: "relative" }}
+            aria-label="Abrir menú"
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
           >
-            <Heart
-              className={
-                showWhiteItems ? "w-6 h-6 text-white" : "w-6 h-6 text-black"
-              }
-            />
+            <Menu className="w-6 h-6" />
           </button>
-        </div>
 
-        {/* Navbar móvil igual a la imagen: logo, buscador, carrito, hamburguesa */}
-        <div className="flex md:hidden items-center justify-end w-full px-4 space-x-4 text-black">
-          {/* Logo */}
-          <div className="flex items-center space-x-4 relative">
-            {/* Icono buscador SIEMPRE visible en móvil */}
-            <div className="relative group w-10 flex flex-col items-center">
-              <button
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 text-white text-2xl font-bold",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                title={searchQuery === "focus" ? "Cerrar buscador" : "Buscar"}
-                aria-label={
-                  searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
-                }
-                onClick={() => {
-                  if (searchQuery === "focus") {
-                    setSearchQuery("");
-                  } else {
-                    setSearchQuery("focus");
-                    posthogUtils.capture("search_icon_click", {
-                      source: "navbar_mobile",
-                    });
-                  }
-                }}
+          {/* Input animado */}
+          {searchQuery === "focus" && (
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
               >
-                {searchQuery === "focus" ? (
-                  <span className="text-2xl">&#10005;</span>
-                ) : (
-                  <Search className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-            {/* Iconos carrito y hamburguesa siempre visibles en móvil */}
-            <div className="flex items-center space-x-4 transition-all duration-300">
-              <Link
-                href="/carrito"
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 relative text-white",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                title="Carrito"
-                onClick={handleCartClick}
-              >
-                <ShoppingCart className="w-5 h-5" />
-                {isClient && (
-                  <span
-                    className={cn(
-                      "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
-                      itemCount > 0
-                        ? "opacity-100 scale-100"
-                        : "opacity-0 scale-0"
-                    )}
-                    aria-label={`Carrito: ${itemCount} productos`}
-                  >
-                    {itemCount > 99 ? "99+" : itemCount}
-                  </span>
-                )}
-              </Link>
-              {/* Icono corazón al lado derecho del carrito en móvil */}
-              <button
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 text-white",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                title="Favoritos"
-                aria-label="Favoritos"
-              >
-                <Heart
-                  className={
-                    showWhiteItemsMobile
-                      ? "w-5 h-5 text-white"
-                      : "w-5 h-5 text-black"
-                  }
+                <input
+                  type="text"
+                  className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
+                  placeholder="Buscar..."
+                  autoFocus
+                  value={searchQuery !== "focus" ? searchQuery : ""}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                 />
-              </button>
-              <button
-                className={cn(
-                  "flex items-center justify-center w-10 h-10 text-white",
-                  showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-                aria-label="Abrir menú"
-                onClick={() => setIsMobileMenuOpen((open) => !open)}
-              >
-                <Menu className="w-6 h-6" />
-              </button>
-            </div>
-            {/* Input animado al hacer click, aparece debajo y centrado con botón cerrar */}
-            {searchQuery === "focus" && (
-              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
-                <form
-                  onSubmit={handleSearchSubmit}
-                  className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
-                >
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-                    placeholder="Buscar..."
-                    autoFocus
-                    value={searchQuery !== "focus" ? searchQuery : ""}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                <button type="submit" className="ml-2">
+                  <Image
+                    src={searchIconWhite}
+                    alt="Buscar"
+                    width={26}
+                    height={26}
+                    priority
                   />
-                  <button type="submit" className="ml-2">
-                    <Search className="w-6 h-6 text-white" />
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-4 text-white text-2xl font-bold focus:outline-none"
-                    aria-label="Cerrar buscador"
-                    onClick={() => setSearchQuery("")}
-                  ></button>
-                </form>
-              </div>
-            )}
-          </div>
+                </button>
+                <button
+                  type="button"
+                  className="ml-4 text-white text-2xl font-bold focus:outline-none"
+                  aria-label="Cerrar buscador"
+                  onClick={() => setSearchQuery("")}
+                ></button>
+              </form>
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Menú de navegación principal - se oculta al hacer scroll */}
+      </header>
       <nav
         className={cn(
-          "hidden md:block transition-all duration-300 relative",
-          isScrolled
-            ? "max-h-0 opacity-0 overflow-hidden"
-            : "max-h-20 opacity-100"
+          "hidden md:block relative overflow-hidden",
+          "transition-all duration-300 ease-in-out",
+          isScrolled ? "max-h-0 opacity-0" : "max-h-20 opacity-100"
         )}
+        style={{
+          willChange: "max-height, opacity",
+        }}
       >
         <ul className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
           {navbarRoutes.map((item) => {
@@ -577,18 +892,19 @@ export default function Navbar() {
                 cleanPath.startsWith(item.href + "#");
             }
             // Forzar color blanco en todos los items y el indicador activo en /ofertas
-            const itemTextColor = showWhiteItems
+            const itemTextColor = navbarConfig.showWhiteItems
               ? "text-white"
               : "text-gray-800";
             const activeIndicatorColor =
-              showWhiteItems && isActive
+              navbarConfig.showWhiteItems && isActive
                 ? "bg-white"
                 : "bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600";
-            // Hover: solo escala en /ofertas, no cambia color
-            // Hover: solo escala en Ofertas y Home sin scroll, no cambia color
+
+            // Animación hover: fade + slide + escala, curva personalizada
             const ofertasHoverClass = showWhiteItems
               ? "hover:scale-110"
               : "hover:text-blue-700";
+
             return (
               <li
                 key={item.name}
@@ -607,8 +923,10 @@ export default function Navbar() {
                       "text-lg font-semibold transition-all duration-200 whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none",
                       itemTextColor,
                       ofertasHoverClass,
-                      isActive && showWhiteItems && "text-white",
-                      isActive && !showWhiteItems && "text-gray-900"
+                      isActive && navbarConfig.showWhiteItems && "text-white",
+                      isActive &&
+                        !navbarConfig.showWhiteItems &&
+                        "text-gray-900"
                     )}
                     style={
                       showWhiteItems
@@ -701,6 +1019,6 @@ export default function Navbar() {
           </div>
         </>
       )}
-    </header>
+    </>
   );
 }

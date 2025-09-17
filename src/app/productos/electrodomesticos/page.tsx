@@ -5,6 +5,7 @@
  * - Refrigeradores, Lavadoras, Lavavajillas, Hornos, Aspiradoras
  * - Navegación entre secciones mediante parámetros de URL
  * - Suspense para mejor UX durante cargas
+ * - Responsive global implementado
  */
 
 "use client";
@@ -12,6 +13,7 @@
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useDeviceType } from "@/components/responsive"; // <-- Importa el hook responsive
 import RefrigeradoresSection from "./Refrigeradores";
 import LavadorasSection from "./Lavadoras";
 import LavavajillasSection from "./Lavavajillas";
@@ -34,6 +36,7 @@ type SectionType =
 function ElectrodomesticosContent() {
   const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState<SectionType>("categorias");
+  const device = useDeviceType(); // <-- Usa el responsive global
 
   useEffect(() => {
     // Determinar sección activa basada en URL params
@@ -57,8 +60,9 @@ function ElectrodomesticosContent() {
       page: "electrodomesticos",
       section: activeSection,
       category: "productos",
+      device, // <-- Tracking con tipo de dispositivo
     });
-  }, [searchParams, activeSection]);
+  }, [searchParams, activeSection, device]);
 
   const renderActiveSection = () => {
     switch (activeSection) {
@@ -81,7 +85,20 @@ function ElectrodomesticosContent() {
     }
   };
 
-  return <div className="min-h-screen bg-white">{renderActiveSection()}</div>;
+  // Aplica clases responsivas al contenedor principal
+  return (
+    <div
+      className={
+        device === "mobile"
+          ? "min-h-screen bg-white px-2 py-4"
+          : device === "tablet"
+          ? "min-h-screen bg-white px-4 py-6"
+          : "min-h-screen bg-white px-6 py-8"
+      }
+    >
+      {renderActiveSection()}
+    </div>
+  );
 }
 
 export default function ElectrodomesticosPage() {

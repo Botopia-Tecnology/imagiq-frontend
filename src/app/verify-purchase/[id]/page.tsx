@@ -22,6 +22,7 @@ export function VerifyPurchase({
         `${API_BASE_URL}/api/orders/verify/${orderId}`
       );
       const data: { message: string; status: number } = await response.json();
+      console.log(data)
 
       if (data.status === 200) {
         router.push("/success-checkout");

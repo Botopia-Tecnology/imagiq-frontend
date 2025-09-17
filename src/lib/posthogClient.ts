@@ -1,3 +1,4 @@
+"use client";
 /**
  * Cliente y configuración de PostHog
  * - Inicialización del SDK de PostHog

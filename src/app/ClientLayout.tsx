@@ -1,9 +1,9 @@
+"use client";
 /**
  * ClientLayout: Componente cliente para renderizar el layout principal con Navbar y Footer.
  * Permite ocultar el Navbar dinámicamente según la ruta (ej: /carrito).
  * Se usa dentro del layout.tsx (servidor) para separar lógica cliente y exportar metadata correctamente.
  */
-"use client";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -38,7 +38,7 @@ export default function ClientLayout({
     pathname === "/ofertas" ||
     pathname === "/charging-result" ||
     pathname === "/success-checkout" ||
-    pathname === "/carrito/ErrorCheckout";
+    pathname === "/carrito/error-checkout";
 
   return (
     <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">

@@ -1,3 +1,4 @@
+"use client";
 /**
  * 🎯 CATEGORY SLIDER COMPONENT - IMAGIQ ECOMMERCE
  *
@@ -9,7 +10,6 @@
  * - Tracking de clicks
  */
 
-"use client";
 
 import React, { useState, useRef } from "react";
 

@@ -24,6 +24,8 @@ import {
 import { getApiFilters } from "./utils/accesoriosUtils";
 import AccesoriosProductsGrid from "./components/AccesoriosProductsGrid";
 import HeaderSection from "./components/HeaderSection";
+import Pagination from "./components/Pagination";
+import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 
 export default function AccesoriosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -33,13 +35,29 @@ export default function AccesoriosSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Función memoizada para convertir filtros de tipo de accesorio a filtros de API
   const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
-  // Usar el hook de productos con filtros dinámicos
-  const { products, loading, error, totalItems, refreshProducts } =
-    useProducts(apiFilters);
+  // Crear filtros completos con paginación
+  const completeFilters = useMemo(() => ({
+    ...apiFilters,
+    page: currentPage,
+    limit: itemsPerPage,
+  }), [apiFilters, currentPage, itemsPerPage]);
+
+  // Usar el hook de productos con filtros dinámicos y paginación
+  const { products, loading, error, totalItems, totalPages, goToPage, refreshProducts } =
+    useProducts(completeFilters);
+
+  // Resetear a la página 1 cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -73,6 +91,18 @@ export default function AccesoriosSection() {
     },
     [expandedFilters]
   );
+
+  // Funciones para manejar la paginación
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+    // Scroll suave hacia arriba cuando cambie de página
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleItemsPerPageChange = useCallback(async (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+  }, []);
 
   // Memoizar el sidebar de filtros para evitar re-renders innecesarios
   const FilterSidebarMemo = useMemo(
@@ -149,6 +179,26 @@ export default function AccesoriosSection() {
               setFilters={setFilters}
               refreshProducts={refreshProducts}
             />
+            
+            {/* Paginación */}
+            {!loading && !error && totalItems > 0 && (
+              <div className="mt-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                  <ItemsPerPageSelector
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                    totalItems={totalItems}
+                  />
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                />
+              </div>
+            )}
           </main>
         </div>
       </div>

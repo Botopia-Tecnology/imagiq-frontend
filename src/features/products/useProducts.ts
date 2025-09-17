@@ -25,6 +25,8 @@ interface ProductFilters {
   withDiscount?: boolean;
   minStock?: number;
   descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
+  page?: number; // Página actual para paginación
+  limit?: number; // Límite de productos por página
 }
 
 interface UseProductsReturn {
@@ -40,6 +42,7 @@ interface UseProductsReturn {
   searchProducts: (query: string) => Promise<void>;
   filterProducts: (filters: ProductFilters) => Promise<void>;
   loadMore: () => Promise<void>;
+  goToPage: (page: number) => Promise<void>;
   refreshProducts: () => Promise<void>;
   hasMore: boolean;
 }
@@ -61,8 +64,8 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback((filters: ProductFilters): ProductFilterParams => {
     const params: ProductFilterParams = {
-      page: currentPage,
-      limit: 50,
+      page: filters.page || currentPage,
+      limit: filters.limit || 50,
     };
 
     if (filters.category) params.categoria = filters.category;
@@ -142,6 +145,15 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     }
   }, [hasNextPage, loading, currentFilters, fetchProducts]);
 
+  // Función para ir a una página específica
+  const goToPage = useCallback(async (page: number) => {
+    if (page >= 1 && page <= totalPages && !loading) {
+      const filtersWithPage = { ...currentFilters, page };
+      setCurrentFilters(filtersWithPage);
+      await fetchProducts(filtersWithPage, false);
+    }
+  }, [totalPages, loading, currentFilters, fetchProducts]);
+
   // Función para refrescar productos con filtros dinámicos
   const refreshProducts = useCallback(async () => {
     const filtersToUse = typeof initialFilters === 'function' ? initialFilters() : currentFilters;
@@ -167,6 +179,7 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     searchProducts,
     filterProducts,
     loadMore,
+    goToPage,
     refreshProducts,
     hasMore: hasNextPage,
   };

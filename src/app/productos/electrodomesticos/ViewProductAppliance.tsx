@@ -16,6 +16,7 @@ import Image, { StaticImageData } from "next/image";
 import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
+import setingLogo from "@/img/iconos/Setting_line.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
@@ -102,12 +103,12 @@ export default function ViewProductAppliance({
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#17407A]">
+      <div className="min-h-screen w-full flex items-center justify-center bg-[#D9D9D9]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4 text-white">
+          <h2 className="text-2xl font-bold mb-4 text-gray">
             Producto no encontrado
           </h2>
-          <p className="text-white/80">
+          <p className="text-gray/80">
             No se pudo cargar la información del producto.
           </p>
         </div>
@@ -131,12 +132,7 @@ export default function ViewProductAppliance({
     <div
       className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
       style={{
-        background: `
-          radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), transparent 50%),
-          radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.25), transparent 60%),
-          radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.2), transparent 70%),
-          linear-gradient(135deg, #082B4D 0%, #0A3A66 100%)
-        `,
+        background: "#D9D9D9",
         fontFamily: "SamsungSharpSans",
       }}
     >
@@ -150,7 +146,7 @@ export default function ViewProductAppliance({
           >
             {/* Nombre producto dinámico */}
             <h1
-              className="text-white text-3xl md:text-5xl font-bold mb-2 cursor-pointer hover:text-blue-200 transition-all"
+              className="text-gray text-3xl md:text-5xl font-bold mb-2 cursor-pointer hover:text-blue-200 transition-all"
               style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
             >
               {safeProduct.name}
@@ -159,7 +155,7 @@ export default function ViewProductAppliance({
             <div className="flex flex-col gap-3 mb-2">
               <div className="flex items-center gap-3">
                 <div
-                  className="flex items-center justify-center border border-white bg-white/10"
+                  className="flex items-center justify-center border border-black bg-white/10"
                   style={{
                     minWidth: 80,
                     width: 80,
@@ -175,7 +171,7 @@ export default function ViewProductAppliance({
                   />
                 </div>
                 <span
-                  className="text-white text-lg"
+                  className="text-gray text-lg"
                   style={{ fontFamily: "SamsungSharpSans" }}
                 >
                   Paga hasta en 24 cuotas
@@ -185,7 +181,7 @@ export default function ViewProductAppliance({
               </div>
               <div className="flex items-center gap-3">
                 <div
-                  className="flex items-center justify-center border border-white bg-white/10"
+                  className="flex items-center justify-center border border-black bg-white/10"
                   style={{
                     minWidth: 80,
                     width: 80,
@@ -196,12 +192,36 @@ export default function ViewProductAppliance({
                   <Image src={packageCar} alt="Envío" width={58} height={58} />
                 </div>
                 <span
-                  className="text-white text-lg"
+                  className="text-gray text-lg"
                   style={{ fontFamily: "SamsungSharpSans" }}
                 >
                   Envío gratis a todo
                   <br />
                   Colombia. *Aplican TYC*
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center border border-black bg-white/10"
+                  style={{
+                    minWidth: 80,
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Image
+                    src={setingLogo}
+                    alt="Setting Logo"
+                    width={58}
+                    height={58}
+                  />
+                </div>
+                <span
+                  className="text-gray text-lg"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Instalación gratis
                 </span>
               </div>
             </div>
@@ -215,7 +235,7 @@ export default function ViewProductAppliance({
                 ¡Compra aquí!
               </button>
               <button
-                className="bg-transparent text-white px-8 py-3 rounded-full font-bold text-lg shadow border border-white hover:bg-white/10 transition-all"
+                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-white/30  transition-all"
                 style={{ fontFamily: "SamsungSharpSans" }}
                 onClick={handleAddToCart}
               >
@@ -223,27 +243,7 @@ export default function ViewProductAppliance({
               </button>
             </div>
           </div>
-          <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
-            <HouseButton onClick={() => setModalOpen(true)} />
-          </div>
-          <div className="block md:hidden ml-auto">
-            <ARMobile
-              glbUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
-              usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
-            ></ARMobile>
-          </div>
-          {modalOpen && (
-            <ModalWithoutBackground
-              onClose={() => setModalOpen(false)}
-              isOpen={modalOpen}
-              title="Visualiza tu producto en realidad aumentada"
-            >
-              <QRDesktop
-                glbUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
-                usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
-              />
-            </ModalWithoutBackground>
-          )}
+
           {/* Columna derecha: imagen producto dinámica */}
           <div className="flex-1 flex items-center justify-center">
             <Image
@@ -258,6 +258,27 @@ export default function ViewProductAppliance({
           </div>
         </div>
       </section>
+      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
+        <HouseButton onClick={() => setModalOpen(true)} />
+      </div>
+      <div className="block md:hidden ml-auto">
+        <ARMobile
+          glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Microwave_2.glb"
+          usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
+        ></ARMobile>
+      </div>
+      {modalOpen && (
+        <ModalWithoutBackground
+          onClose={() => setModalOpen(false)}
+          isOpen={modalOpen}
+          title="Visualiza tu producto en realidad aumentada"
+        >
+          <QRDesktop
+            glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Microwave_2.glb"
+            usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
+          />
+        </ModalWithoutBackground>
+      )}
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
         <>
@@ -347,8 +368,7 @@ export default function ViewProductAppliance({
         <EspecificacionesProduct specs={safeProduct.specs} />
       </div>
 
-      {/* Sección de Videos justo debajo de EspecificacionesProduct */}
-      <VideosSection />
+
 
       {/* Componente de comparación justo debajo de VideosSection */}
       <ComparationProduct />

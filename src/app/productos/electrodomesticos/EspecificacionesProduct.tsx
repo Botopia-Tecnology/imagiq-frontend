@@ -22,33 +22,33 @@ import wifiIcon from "@/img/dispositivosmoviles/wifi-icon.png";
 // Especificaciones con iconos reales
 const especificacionesData = [
   {
-    label: "Procesador",
-    desc: "Velocidad de la CPU:\n4.47GHz, 3.5GHz\nTipo CPU: Octa-Core",
+    label: "Parte inferior izquierda",
+    desc: "",
     icon: cpuIcon,
   },
   {
     label: "Pantalla",
-    desc: "156.4mm (6.2'' rectángulo completo) / 152.3mm (6.0'' bordes redondeados)",
+    desc: "",
     icon: fullAltIcon,
   },
   {
     label: "Cámara",
-    desc: "Velocidad de la CPU:\n4.47GHz, 3.5GHz\nTipo CPU: Octa-Core",
+    desc: "",
     icon: cameraIcon,
   },
   {
     label: "Memoria",
-    desc: "Almacenamiento (GB) 256",
+    desc: "",
     icon: boxOpenIcon,
   },
   {
     label: "Red",
-    desc: "Almacenamiento (GB) 256",
+    desc: "",
     icon: webIcon,
   },
   {
     label: "Conectividad",
-    desc: "USB Interfaz USB Tipo-C",
+    desc: "",
     icon: wifiIcon,
   },
 ];
@@ -110,7 +110,7 @@ const EspecificacionesProduct = ({
               <div className="w-[98vw] h-[80vw] max-w-[370px] max-h-[370px] sm:w-[340px] sm:h-[450px] rounded-2xl flex items-center justify-center">
                 {/* Flecha izquierda */}
                 <button
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white bg-white/30 hover:bg-white/60 rounded-full shadow-lg p-2 text-3xl sm:left-0 sm:text-white sm:bg-transparent sm:shadow-none sm:text-4xl"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-black bg-black/30  rounded-full shadow-lg p-2 text-3xl sm:left-0 sm:text-black sm:bg-transparent sm:shadow-none sm:text-4xl"
                   aria-label="Anterior"
                   onClick={handlePrev}
                   style={{ transition: "background 0.2s" }}
@@ -127,7 +127,7 @@ const EspecificacionesProduct = ({
                 />
                 {/* Flecha derecha */}
                 <button
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white bg-white/30 hover:bg-white/60 rounded-full shadow-lg p-2 text-3xl sm:right-0 sm:text-white sm:bg-transparent sm:shadow-none sm:text-4xl"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-black bg-black/30  rounded-full shadow-lg p-2 text-3xl sm:right-0 sm:text-black sm:bg-transparent sm:shadow-none sm:text-4xl"
                   aria-label="Siguiente"
                   onClick={handleNext}
                   style={{ transition: "background 0.2s" }}
@@ -142,7 +142,7 @@ const EspecificacionesProduct = ({
                 <span
                   key={i}
                   className={`block w-2.5 h-2.5 rounded-full ${
-                    i === currentImg ? "bg-white" : "bg-white/30"
+                    i === currentImg ? "bg-black" : "bg-white/30"
                   }`}
                 />
               ))}
@@ -150,7 +150,7 @@ const EspecificacionesProduct = ({
             {/* Botón Vista previa */}
             <div className="flex justify-center mt-5">
               <button
-                className="px-10 py-2 border border-white text-white rounded-full text-sm font-medium hover:bg-white/10"
+                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-black hover:text-gray transition-all"
                 aria-label="Vista previa"
                 style={{ background: "transparent" }}
               >

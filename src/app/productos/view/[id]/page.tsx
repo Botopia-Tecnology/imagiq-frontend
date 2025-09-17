@@ -104,7 +104,10 @@ export default function ProductViewPage({ params }) {
 
   // Convertir el producto al formato esperado por ViewProduct
   const convertedProduct = convertProductForView(product);
-  const isRefrigerador = convertedProduct.name?.toLowerCase().includes('refrigerador');
+  const subcategoria = convertedProduct.specs
+    .find((spec) => spec.label === "Subcategoría")
+    ?.value?.toLowerCase();
+  const isRefrigerador = subcategoria?.includes("neveras");
 
   return isRefrigerador ? (
     <ViewProductAppliance product={convertedProduct} />

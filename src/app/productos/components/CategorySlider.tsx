@@ -17,6 +17,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 interface Category {
   id: string;

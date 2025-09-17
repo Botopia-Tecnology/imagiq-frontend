@@ -24,6 +24,9 @@ import { usePathname } from "next/navigation";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
+import QRDesktop from "../components/QRDesktop";
+import HouseButton from "../components/Button";
+import ARMobile from "../components/ARMobile";
 import ModalWithoutBackground from "@/components/ModalWithoutBackground";
 
 // Tipos para producto
@@ -43,7 +46,7 @@ interface ProductData {
   specs?: { label: string; value: string }[];
 }
 
-export default function ViewProduct({ product }: { product: ProductData }) {
+export default function ViewProductAppliance({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const pathname = usePathname();
@@ -54,6 +57,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   const { setHideNavbar } = useNavbarVisibility();
   // UX feedback state (hook debe ir antes de cualquier return condicional)
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -319,6 +323,27 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         {/* Columna derecha: imagen producto dinámica */}
       </section>
 
+      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
+        <HouseButton onClick={() => setModalOpen(true)} />
+      </div>
+      <div className="block md:hidden ml-auto">
+        <ARMobile
+          glbUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
+          usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
+        ></ARMobile>
+      </div>
+      {modalOpen && (
+        <ModalWithoutBackground
+          onClose={() => setModalOpen(false)}
+          isOpen={modalOpen}
+          title="Visualiza tu producto en realidad aumentada"
+        >
+          <QRDesktop
+            glbUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
+            usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
+          />
+        </ModalWithoutBackground>
+      )}
 
       {isProductDetailView && showBar && (
         <div

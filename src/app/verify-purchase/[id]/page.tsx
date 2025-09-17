@@ -1,28 +1,34 @@
 "use client";
 import LogoReloadAnimation from "@/app/carrito/LogoReloadAnimation";
 import { useRouter } from "next/navigation";
-import { use, useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export function VerifyPurchase({
+export default function VerifyPurchase({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const pathParams = use(params);
-  const orderId = pathParams.id;
+  const [orderId, setOrderId] = useState<string | null>(null);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 
+  useEffect(() => {
+    params.then(({ id }) => {
+      setOrderId(id);
+    });
+  }, [params]);
+
   const verifyOrder = useCallback(async () => {
+    if (!orderId) return;
+
     try {
       setIsLoading(true);
       const response = await fetch(
         `${API_BASE_URL}/api/orders/verify/${orderId}`
       );
       const data: { message: string; status: number } = await response.json();
-      console.log(data)
 
       if (data.status === 200) {
         router.push("/success-checkout");
@@ -37,7 +43,10 @@ export function VerifyPurchase({
     }
   }, [orderId, router]);
 
-  return <LogoReloadAnimation open={isLoading} onFinish={verifyOrder} />;
+  return (
+    <LogoReloadAnimation
+      open={isLoading}
+      onFinish={orderId ? verifyOrder : undefined}
+    />
+  );
 }
-
-export default VerifyPurchase;

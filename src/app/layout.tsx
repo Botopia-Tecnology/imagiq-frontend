@@ -15,6 +15,7 @@ import ChatbotWidget from "@/components/chatbotWidget";
 import { Toaster } from "@/components/ui/sonner";
 import ClientLayout from "./ClientLayout";
 import { ResponsiveProvider } from "@/components/responsive"; // Importa el provider
+import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -108,36 +109,38 @@ export default function RootLayout({
     <html lang="es" className={inter.variable}>
       <body className="font-sans antialiased">
         <ResponsiveProvider>
+          <NavbarVisibilityProvider>
             <PostHogProvider>
-            <AnalyticsProvider>
-              <AuthProvider>
-                <UserPreferencesProvider>
-                  <CartProvider>
-                    <ClientLayout>{safeChildren}</ClientLayout>
-                    {/* Widget del chatbot */}
-                    <ChatbotWidget />
-                    {/* Toast notifications */}
-                  <Toaster
-                    position="top-right"
-                    expand={true}
-                    richColors
-                    closeButton
-                    toastOptions={{
-                      duration: 4000,
-                      style: {
-                        background: "white",
-                        border: "1px solid #e2e8f0",
-                        color: "#1e293b",
-                        fontFamily: "var(--font-inter)",
-                      },
-                    }}
-                  />
-                </CartProvider>
-                </UserPreferencesProvider>
-              </AuthProvider>
-            </AnalyticsProvider>
-          </PostHogProvider>
-          </ResponsiveProvider>
+              <AnalyticsProvider>
+                <AuthProvider>
+                  <UserPreferencesProvider>
+                    <CartProvider>
+                      <ClientLayout>{safeChildren}</ClientLayout>
+                      {/* Widget del chatbot */}
+                      <ChatbotWidget />
+                      {/* Toast notifications */}
+                      <Toaster
+                        position="top-right"
+                        expand={true}
+                        richColors
+                        closeButton
+                        toastOptions={{
+                          duration: 4000,
+                          style: {
+                            background: "white",
+                            border: "1px solid #e2e8f0",
+                            color: "#1e293b",
+                            fontFamily: "var(--font-inter)",
+                          },
+                        }}
+                      />
+                    </CartProvider>
+                  </UserPreferencesProvider>
+                </AuthProvider>
+              </AnalyticsProvider>
+            </PostHogProvider>
+          </NavbarVisibilityProvider>
+        </ResponsiveProvider>
       </body>
     </html>
   );

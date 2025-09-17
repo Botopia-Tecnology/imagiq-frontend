@@ -29,6 +29,7 @@ import smartphonesImg from "../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
+import { productsData } from "../data_product/products";
 
 // Categorías del slider (idénticas a la imagen)
 const tabletCategories: Category[] = [
@@ -87,10 +88,6 @@ const tabletFilters: FilterConfig = {
   uso: ["Productividad", "Gaming", "Educación", "Entretenimiento"],
 };
 
-const tabletProducts = productsData["smartphones-tablets"].filter(
-  (product) => product.category === "tablet"
-);
-
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["serie"])
@@ -108,8 +105,7 @@ export default function TabletasSection() {
     []
   );
 
-  const { products, loading, error, totalItems, refreshProducts } =
-    useProducts(apiFilters);
+  const { products, totalItems } = useProducts(apiFilters);
   const device = useDeviceType(); // Responsive global
   const [resultCount] = useState(15);
 
@@ -151,16 +147,20 @@ export default function TabletasSection() {
         trackingPrefix="tablet_category"
       />
 
-      <div className={cn(
-        "container mx-auto px-6 py-8",
-        device === "mobile" && "px-2 py-4",
-        device === "tablet" && "px-4 py-6"
-      )}>
-        <div className={cn(
-          "flex gap-8",
-          device === "mobile" && "flex-col gap-4",
-          device === "tablet" && "gap-6"
-        )}>
+      <div
+        className={cn(
+          "container mx-auto px-6 py-8",
+          device === "mobile" && "px-2 py-4",
+          device === "tablet" && "px-4 py-6"
+        )}
+      >
+        <div
+          className={cn(
+            "flex gap-8",
+            device === "mobile" && "flex-col gap-4",
+            device === "tablet" && "gap-6"
+          )}
+        >
           {(device === "desktop" || device === "large") && (
             <aside className="hidden lg:block w-80 flex-shrink-0">
               <FilterSidebar
@@ -183,16 +183,20 @@ export default function TabletasSection() {
               )}
             >
               <div className="flex items-center gap-4">
-                <h1 className={cn(
-                  "text-2xl font-bold text-gray-900",
-                  device === "mobile" && "text-lg"
-                )}>
+                <h1
+                  className={cn(
+                    "text-2xl font-bold text-gray-900",
+                    device === "mobile" && "text-lg"
+                  )}
+                >
                   Galaxy Tab
                 </h1>
-                <span className={cn(
-                  "text-sm text-gray-500",
-                  device === "mobile" && "text-xs"
-                )}>
+                <span
+                  className={cn(
+                    "text-sm text-gray-500",
+                    device === "mobile" && "text-xs"
+                  )}
+                >
                   {resultCount} resultados
                 </span>
               </div>

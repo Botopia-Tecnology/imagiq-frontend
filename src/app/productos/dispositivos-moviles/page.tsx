@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useDeviceType } from "@/components/responsive";
@@ -88,6 +88,19 @@ function DispositivosMovilesContent() {
   );
 }
 
+// Componente de loading para el Suspense boundary
+function DispositivosMovilesLoading() {
+  return (
+    <div className="bg-white min-h-screen flex items-center justify-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+    </div>
+  );
+}
+
 export default function DispositivosMovilesPage() {
-  return <DispositivosMovilesContent />;
+  return (
+    <Suspense fallback={<DispositivosMovilesLoading />}>
+      <DispositivosMovilesContent />
+    </Suspense>
+  );
 }

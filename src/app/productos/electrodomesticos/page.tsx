@@ -33,7 +33,7 @@ type SectionType =
 
 function ElectrodomesticosContent() {
   const searchParams = useSearchParams();
-  const [activeSection, setActiveSection] = useState<SectionType>("categorias");
+  const [activeSection, setActiveSection] = useState<SectionType>("refrigeradores");
 
   useEffect(() => {
     // Determinar sección activa basada en URL params
@@ -77,7 +77,7 @@ function ElectrodomesticosContent() {
       case "aire-acondicionado":
         return <AireAcondicionadoSection />;
       default:
-        return <CategoriesSection />;
+        return <RefrigeradoresSection />;
     }
   };
 

@@ -10,26 +10,32 @@
 
 "use client";
 
-import { Suspense, lazy, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { posthogUtils } from "@/lib/posthogClient";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 
-const SmartphonesSection = lazy(() => import("./Smartphones"));
-const RelojesSection = lazy(() => import("./Relojes"));
-const TabletasSection = lazy(() => import("./Tabletas"));
-const GalaxyBudsSection = lazy(() => import("./GalaxyBuds"));
-const AccesoriosSection = lazy(() => import("./Accesorios"));
+import SmartphonesSection from "./Smartphones";
+import RelojesSection from "./Relojes";
+import TabletasSection from "./Tabletas";
+import GalaxyBudsSection from "./GalaxyBuds";
+import AccesoriosSection from "./Accesorios";
 
 type SectionType = "smartphones" | "relojes" | "tabletas" | "buds" | "accesorios";
 
-// Este componente usa useSearchParams y debe estar dentro de <Suspense>
 function DispositivosMovilesContent() {
   const searchParams = useSearchParams();
   const [activeSection, setActiveSection] = useState<SectionType>("smartphones");
   const device = useDeviceType();
 
   useEffect(() => {
+    // Prefetch manual de los bundles de las secciones
+    import("./Smartphones");
+    import("./Relojes");
+    import("./Tabletas");
+    import("./GalaxyBuds");
+    import("./Accesorios");
+
     const section = searchParams.get("section") as SectionType;
     if (
       section &&
@@ -82,11 +88,6 @@ function DispositivosMovilesContent() {
   );
 }
 
-// El componente principal de la página debe envolver DispositivosMovilesContent en <Suspense>
 export default function DispositivosMovilesPage() {
-  return (
-    <Suspense fallback={<div className="min-h-screen bg-white" />}>
-      <DispositivosMovilesContent />
-    </Suspense>
-  );
+  return <DispositivosMovilesContent />;
 }

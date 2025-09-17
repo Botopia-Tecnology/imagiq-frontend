@@ -37,28 +37,28 @@ const watchCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Smartphone",
     image: smartphonesImg,
-    href: "/productos/dispositivos-moviles?section=smartphones",
+    href: "?section=smartphones",
   },
   {
     id: "galaxy-watch",
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "/productos/dispositivos-moviles?section=relojes",
+    href: "?section=relojes",
   },
   {
     id: "galaxy-tab",
     name: "Galaxy",
     subtitle: "Tab",
     image: tabletasImg,
-    href: "/productos/dispositivos-moviles?section=tabletas",
+    href: "?section=tabletas",
   },
   {
     id: "galaxy-buds",
     name: "Galaxy",
     subtitle: "Buds",
     image: galaxyBudsImg,
-    href: "/productos/dispositivos-moviles?section=buds",
+    href: "?section=buds",
   },
 ];
 

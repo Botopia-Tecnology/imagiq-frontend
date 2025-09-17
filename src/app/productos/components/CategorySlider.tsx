@@ -117,7 +117,7 @@ export default function CategorySlider({
     if (onCategoryClick) {
       onCategoryClick(category);
     } else {
-      router.push(category.href); // navegación interna con Next.js
+      router.replace(category.href); // Solo cambia el query param, navegación interna
     }
   };
 

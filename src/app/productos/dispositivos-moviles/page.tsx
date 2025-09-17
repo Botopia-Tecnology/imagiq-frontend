@@ -10,16 +10,16 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { posthogUtils } from "@/lib/posthogClient";
 import { useDeviceType } from "@/components/responsive";
+import { posthogUtils } from "@/lib/posthogClient";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 
-import SmartphonesSection from "./Smartphones";
-import RelojesSection from "./Relojes";
-import TabletasSection from "./Tabletas";
-import GalaxyBudsSection from "./GalaxyBuds";
 import AccesoriosSection from "./Accesorios";
+import GalaxyBudsSection from "./GalaxyBuds";
+import RelojesSection from "./Relojes";
+import SmartphonesSection from "./Smartphones";
+import TabletasSection from "./Tabletas";
 
 type SectionType = "smartphones" | "relojes" | "tabletas" | "buds" | "accesorios";
 

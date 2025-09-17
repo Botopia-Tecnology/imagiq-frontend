@@ -10,19 +10,19 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
+import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useState } from "react";
+import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
+import ProductCard from "../components/ProductCard";
 import { productsData } from "../data_product/products";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";

@@ -12,27 +12,27 @@ import { posthogUtils } from "@/lib/posthogClient";
 const categories = [
   {
     name: "Refrigeradores",
-    href: "/productos/Electrodomesticos?section=refrigeradores",
+    href: "/productos/electrodomesticos?section=refrigeradores",
   },
   {
     name: "Lavadoras",
-    href: "/productos/Electrodomesticos?section=lavadoras",
+    href: "/productos/electrodomesticos?section=lavadoras",
   },
   {
     name: "Lavavajillas",
-    href: "/productos/Electrodomesticos?section=lavavajillas",
+    href: "/productos/electrodomesticos?section=lavavajillas",
   },
   {
     name: "Aire Acondicionado",
-    href: "/productos/Electrodomesticos?section=aire-acondicionado",
+    href: "/productos/electrodomesticos?section=aire-acondicionado",
   },
   {
     name: "Microondas",
-    href: "/productos/Electrodomesticos?section=microondas",
+    href: "/productos/electrodomesticos?section=microondas",
   },
   {
     name: "Aspiradoras",
-    href: "/productos/Electrodomesticos?section=aspiradoras",
+    href: "/productos/electrodomesticos?section=aspiradoras",
   },
 ];
 

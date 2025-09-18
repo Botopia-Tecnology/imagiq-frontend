@@ -18,6 +18,8 @@ import Image, { StaticImageData } from "next/image";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 interface ProductColor {
   name: string;
@@ -118,8 +120,16 @@ export default function ProductCard({
     });
   };
 
+  const cardReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+
   return (
-    <div
+    <motion.div
+      ref={cardReveal.ref}
+      {...cardReveal.motionProps}
       className={cn(
         "bg-[#D9D9D9] rounded-2xl shadow-sm border border-gray-300 overflow-hidden transition-all duration-300",
         "hover:shadow-lg hover:-translate-y-1",
@@ -242,7 +252,7 @@ export default function ProductCard({
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

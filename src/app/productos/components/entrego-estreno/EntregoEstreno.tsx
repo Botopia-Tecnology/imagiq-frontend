@@ -7,6 +7,8 @@ import phoneIcon from "@/img/entrego-estreno/phone-icon.png";
 import tabletIcon from "@/img/entrego-estreno/tablet-icon.png";
 import contenidoCajaProducto from "@/img/entrego-estreno/contenido-caja-producto.png";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 /**
  * Tipo de producto para el carrito
@@ -45,6 +47,12 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
   const [selectedDiscount, setSelectedDiscount] =
     useState<string>("Galaxy Z Fold 5");
 
+  const mainReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+
   /**
    * Botón regresar: navega al componente de detalles del producto
    * - Redirige a /productos/dispositivos-moviles/details (sin productId)
@@ -54,7 +62,11 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
   };
 
   return (
-    <main className="w-full min-h-screen bg-white flex flex-col items-center">
+    <motion.main
+      ref={mainReveal.ref}
+      {...mainReveal.motionProps}
+      className="w-full min-h-screen bg-white flex flex-col items-center"
+    >
       {/* Logo superior */}
       <div className="w-full flex justify-center -mb-18">
         <Image
@@ -601,7 +613,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
           </div>
         </div>
       </section>
-    </main>
+    </motion.main>
   );
 };
 

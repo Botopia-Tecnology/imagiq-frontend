@@ -15,10 +15,7 @@ import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { useCartContext } from "@/features/cart/CartContext";
-
-import samsungImage from "@/img/dispositivosMoviles/cel1.png";
 import { IoClose } from "react-icons/io5";
-
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
@@ -26,13 +23,11 @@ import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import ComparationProduct from "./VideosSection";
 import VideosSection from "./VideosSection";
-import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
-
 import QRDesktop from "../components/QRDesktop";
-import FloatingButton from "../components/Button";
 import HouseButton from "../components/Button";
-import Modal from "@/components/Modal";
 import ModalWithoutBackground from "@/components/ModalWithoutBackground";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 // Tipos para producto
 interface ProductColor {
@@ -52,14 +47,35 @@ interface ProductData {
 }
 
 export default function ViewProduct({ product }: { product: ProductData }) {
+  // Animación scroll reveal para hero principal
+  const heroReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+  // Animación scroll reveal para especificaciones
+  const specsReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+  // Animación scroll reveal para videos
+  const videosReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+  // Animación scroll reveal para comparación
+  const comparationReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
-
-  const [selectedColor] = useState(safeProduct?.colors?.[0]);
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  // Estado para especificaciones abiertas
-  const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
@@ -152,7 +168,11 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         </div>
       )}
       {/* Hero section */}
-      <section className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
+      <motion.section
+        ref={heroReveal.ref}
+        {...heroReveal.motionProps}
+        className="flex flex-1 items-center justify-center px-4 py-8 md:py-0"
+      >
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
           {/* MOBILE: Imagen arriba, info y acciones abajo */}
           <div className="w-full flex flex-col md:hidden items-center justify-center">
@@ -329,7 +349,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
         <HouseButton onClick={() => setModalOpen(true)} />
@@ -471,21 +491,23 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       `}</style>
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
-      <div
+      <motion.div
+        ref={specsReveal.ref}
+        {...specsReveal.motionProps}
         className="relative flex items-center justify-center w-full min-h-[600px] py-16 mt-8"
-        style={{
-          fontFamily: "SamsungSharpSans",
-        }}
       >
         {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
         <EspecificacionesProduct specs={safeProduct.specs} />
-      </div>
+      </motion.div>
 
-      {/* Sección de Videos justo debajo de EspecificacionesProduct */}
-      <VideosSection />
-
+     
       {/* Componente de comparación justo debajo de VideosSection */}
-      <ComparationProduct />
+      <motion.div
+        ref={comparationReveal.ref}
+        {...comparationReveal.motionProps}
+      >
+        <ComparationProduct />
+      </motion.div>
     </div>
   );
 }

@@ -16,6 +16,8 @@
 import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 // Importar iconos para beneficios
 import settingIcon from "@/img/iconos/Setting_line.png";
@@ -116,6 +118,25 @@ const DetailsProduct: React.FC = () => {
     router.push("/productos/components/entrego-estreno");
   };
 
+  // Animación scroll reveal para desktop
+  const desktopReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+  // Animación scroll reveal para mobile
+  const mobileReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+  // Animación scroll reveal para beneficios
+  const beneficiosReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+
   return (
     <>
       {/* Botón flotante Entrego y Estreno - esquina inferior izquierda, experiencia mejorada */}
@@ -167,7 +188,11 @@ const DetailsProduct: React.FC = () => {
         style={{ fontFamily: "SamsungSharpSans" }}
       >
         {/* Vista Desktop */}
-        <div className="hidden lg:block">
+        <motion.div
+          ref={desktopReveal.ref}
+          {...desktopReveal.motionProps}
+          className="hidden lg:block"
+        >
           <div className="max-w-7xl mx-auto px-6 py-16">
             <div className="grid grid-cols-2 gap-16 items-start">
               {/* Columna Izquierda - Dispositivo */}
@@ -400,10 +425,14 @@ const DetailsProduct: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Vista Mobile */}
-        <div className="lg:hidden">
+        <motion.div
+          ref={mobileReveal.ref}
+          {...mobileReveal.motionProps}
+          className="lg:hidden"
+        >
           <div className="px-4 py-8 space-y-8">
             {/* Dispositivo en mobile */}
             <div className="flex flex-col items-center space-y-6">
@@ -432,8 +461,6 @@ const DetailsProduct: React.FC = () => {
               <button className="border border-gray-300 text-gray-700 px-6 py-2 rounded-full text-sm font-medium">
                 Vista previa
               </button>
-
-              
             </div>
 
             {/* Especificaciones en mobile */}
@@ -613,10 +640,14 @@ const DetailsProduct: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Sección Beneficios Imagiq */}
-        <div className="bg-gray-100 py-12">
+        <motion.div
+          ref={beneficiosReveal.ref}
+          {...beneficiosReveal.motionProps}
+          className="bg-gray-100 py-12"
+        >
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-8">
               <h2
@@ -671,7 +702,7 @@ const DetailsProduct: React.FC = () => {
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
     </>
   );

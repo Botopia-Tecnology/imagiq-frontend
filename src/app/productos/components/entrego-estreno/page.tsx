@@ -2,6 +2,8 @@
  * Página de Entrego y Estreno
  * Importa el componente desde la ruta correcta
  */
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import EntregoEstreno from "./EntregoEstreno";
 
 // Producto de prueba para compilar correctamente
@@ -13,5 +15,14 @@ const mockProduct = {
 };
 
 export default function EntregoEstrenoPage() {
-  return <EntregoEstreno product={mockProduct} />;
+  const entregoReveal = useScrollReveal<HTMLDivElement>({
+    offset: 100,
+    duration: 700,
+    direction: "up",
+  });
+  return (
+    <motion.div ref={entregoReveal.ref} {...entregoReveal.motionProps}>
+      <EntregoEstreno product={mockProduct} />
+    </motion.div>
+  );
 }

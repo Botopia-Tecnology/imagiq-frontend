@@ -1,6 +1,8 @@
 // src/app/productos/components/ProductGrid.tsx
 import Image, { StaticImageData } from "next/image";
-import { ProductColor, ProductCardProps } from "./ProductCard";
+import { ProductColor } from "./ProductCard";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 export interface Product {
   id: string;
@@ -25,6 +27,12 @@ export default function ProductGrid({ products }: ProductGridProps) {
     alert(`Producto añadido: ${product.name}`);
   }
 
+  const gridReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+
   if (!products.length) {
     return (
       <div className="col-span-full text-center py-12 text-gray-500">
@@ -34,7 +42,11 @@ export default function ProductGrid({ products }: ProductGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <motion.div
+      ref={gridReveal.ref}
+      {...gridReveal.motionProps}
+      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+    >
       {products.map((product) => (
         <div
           key={product.id}
@@ -92,6 +104,6 @@ export default function ProductGrid({ products }: ProductGridProps) {
           </button>
         </div>
       ))}
-    </div>
+    </motion.div>
   );
 }

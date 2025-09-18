@@ -13,7 +13,9 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosmoviles/cel1.png";
+import { useRouter, usePathname } from "next/navigation";
+import { useCartContext } from "@/features/cart/CartContext";
+import { IoClose } from "react-icons/io5";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
@@ -21,9 +23,12 @@ import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import ComparationProduct from "./ComparationProduct";
 import VideosSection from "./VideosSection";
-import { usePathname, useRouter } from "next/navigation";
-import { useCartContext } from "@/features/cart/CartContext";
-import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
+import QRDesktop from "../components/QRDesktop";
+import HouseButton from "../components/Button";
+import ModalWithoutBackground from "@/components/ModalWithoutBackground";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
+
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -42,6 +47,31 @@ interface ProductData {
 }
 
 export default function ViewProduct({ product }: { product: ProductData }) {
+  // Animación scroll reveal para hero principal
+  const heroReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+  // Animación scroll reveal para especificaciones
+  const specsReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+  // Animación scroll reveal para videos
+  const videosReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+  // Animación scroll reveal para comparación
+  const comparationReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
@@ -109,8 +139,18 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         fontFamily: "SamsungSharpSans",
       }}
     >
-      {/* Hero section con ref */}
-      <section ref={heroRef} className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
+      {/* Feedback UX al añadir al carrito */}
+      {cartFeedback && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
+          {cartFeedback}
+        </div>
+      )}
+      {/* Hero section */}
+      <motion.section
+        ref={heroReveal.ref}
+        {...heroReveal.motionProps}
+        className="flex flex-1 items-center justify-center px-4 py-8 md:py-0"
+      >
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
           {/* Columna izquierda: info y acciones */}
           <div
@@ -205,8 +245,50 @@ export default function ViewProduct({ product }: { product: ProductData }) {
             />
           </div>
         </div>
-      </section>
-      {/* Header blanco solo si showBar */}
+      </motion.section>
+
+      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
+        <HouseButton onClick={() => setModalOpen(true)} />
+      </div>
+      <div className="block md:hidden ml-auto">
+        <div className="flex items-center">
+          {/* Cartel lateral izquierdo */}
+          {showLabel && (
+            <div
+              className="flex items-center bg-white text-black border border-gray-300 rounded-md shadow px-4 py-2 mr-3"
+              style={{ fontFamily: "SamsungSharpSans", whiteSpace: "nowrap" }}
+            >
+              <span className="mr-2 text-sm">Mira el objeto en tu espacio</span>
+              <button
+                onClick={() => setShowLabel(false)}
+                className="text-gray-500 hover:text-red-500"
+              >
+                <IoClose size={18} />
+              </button>
+            </div>
+          )}
+
+          {/* Botón o visor de AR */}
+          {/* <ARViewer modelUrl="https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" /> */}
+        </div>
+      </div>
+      <a
+        href="https://arvr.google.com/scene-viewer/1.0?file=https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <button>Ver en 3D</button>
+      </a>
+      {modalOpen && (
+        <ModalWithoutBackground
+          onClose={() => setModalOpen(false)}
+          isOpen={modalOpen}
+          title="Visualiza tu producto en realidad aumentada"
+        >
+          <QRDesktop />
+        </ModalWithoutBackground>
+      )}
+
       {isProductDetailView && showBar && (
         <div
           className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 bar-animate-in"
@@ -281,21 +363,23 @@ export default function ViewProduct({ product }: { product: ProductData }) {
       )}
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
-      <div
+      <motion.div
+        ref={specsReveal.ref}
+        {...specsReveal.motionProps}
         className="relative flex items-center justify-center w-full min-h-[600px] py-16 mt-8"
-        style={{
-          fontFamily: "SamsungSharpSans",
-        }}
       >
         {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
         <EspecificacionesProduct specs={safeProduct.specs} />
-      </div>
+      </motion.div>
 
-      {/* Sección de Videos justo debajo de EspecificacionesProduct */}
-      <VideosSection />
-
+     
       {/* Componente de comparación justo debajo de VideosSection */}
-      <ComparationProduct />
+      <motion.div
+        ref={comparationReveal.ref}
+        {...comparationReveal.motionProps}
+      >
+        <ComparationProduct />
+      </motion.div>
     </div>
   );
 }

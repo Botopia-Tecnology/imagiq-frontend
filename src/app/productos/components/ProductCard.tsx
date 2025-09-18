@@ -230,12 +230,12 @@ export default function ProductCard({
         )}
 
         {/* Botones de acción */}
-        <div className="space-y-2">
+        <div className="flex gap-3">
           <button
             onClick={handleAddToCart}
             disabled={isLoading}
             className={cn(
-              "w-full bg-blue-900 text-white py-3 px-4 rounded-lg text-sm font-semibold",
+              "w-full bg-blue-900 text-white py-2 px-4 rounded-lg text-sm font-semibold",
               "transition-all duration-200 flex items-center justify-center gap-2",
               "hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed",
               isLoading && "animate-pulse"
@@ -248,7 +248,7 @@ export default function ProductCard({
             onClick={handleMoreInfo}
             className="w-full bg-white border border-gray-400 text-gray-700 py-3 px-4 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors duration-200"
           >
-            Más Información
+            Información
           </button>
         </div>
       </div>

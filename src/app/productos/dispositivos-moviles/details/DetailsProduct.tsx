@@ -146,40 +146,42 @@ const DetailsProduct: React.FC = () => {
         onClick={handleEntregoEstreno}
         onMouseEnter={() => setIsFloatingHovered(true)}
         onMouseLeave={() => setIsFloatingHovered(false)}
-        className="fixed left-4 bottom-6 z-50 flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full shadow-xl border border-gray-200 transition-all duration-300 ease-in-out focus:outline-none bg-white hover:scale-110 active:scale-95"
-        style={{ boxShadow: "0 4px 24px 0 rgba(30,64,175,0.16)" }}
+        className="fixed left-4 bottom-6 z-50 flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full border border-gray-200 focus:outline-none bg-white shadow-xl transition-all duration-300 ease-in-out group"
+        style={{
+          boxShadow: "0 4px 24px 0 rgba(30,64,175,0.16)",
+          position: "fixed",
+          left: "1rem",
+          bottom: "1.5rem",
+        }}
       >
-        {/* Imagen GIF por defecto, cambia a logo en hover con transición suave */}
-        <span
-          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${
-            isFloatingHovered ? "opacity-0" : "opacity-100"
-          }`}
-        >
+        {/* Imagen GIF por defecto, cambia a logo en hover con fondo blanco animado, escala y opacidad premium */}
+        <span className="absolute inset-0 flex items-center justify-center">
           <Image
             src={gifEntregoEstreno}
             alt="Entrego y Estreno GIF"
             width={56}
             height={56}
-            className="object-contain"
+            className={`object-contain transition-all duration-500 ease-[cubic-bezier(.4,0,.2,1)] ${
+              isFloatingHovered ? "opacity-0 scale-90" : "opacity-100 scale-100"
+            }`}
             priority
           />
         </span>
         <span
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
-            isFloatingHovered
-              ? "opacity-100 scale-150 translate-x-8 z-50"
-              : "opacity-0 scale-100 translate-x-0"
+          className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(.4,0,.2,1)] ${
+            isFloatingHovered ? "opacity-100 scale-100" : "opacity-0 scale-110"
           }`}
-          style={{ willChange: "transform, opacity" }}
         >
-          <Image
-            src={entregoEstrenoLogo}
-            alt="Entrego y Estreno Logo"
-            width={80}
-            height={80}
-            className="object-contain drop-shadow-lg"
-            priority
-          />
+          <span className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white shadow-2xl flex items-center justify-center">
+            <Image
+              src={entregoEstrenoLogo}
+              alt="Entrego y Estreno Logo"
+              width={80}
+              height={80}
+              className="object-contain drop-shadow-2xl transition-all duration-500 ease-[cubic-bezier(.4,0,.2,1)]"
+              priority
+            />
+          </span>
         </span>
       </button>
 

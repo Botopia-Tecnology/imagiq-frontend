@@ -217,7 +217,7 @@ export default function GalaxyBudsSection() {
       <div
         className={cn(
           "container mx-auto px-6 py-8",
-          device === "mobile" && "px-2 py-4",
+          device === "mobile" && "px-5 py-4",
           device === "tablet" && "px-4 py-6"
         )}
       >

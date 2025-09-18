@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
-import { Heart } from "lucide-react";
+import { Heart, Loader, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
@@ -148,8 +148,7 @@ export default function ProductCard({
   return (
     <div
       className={cn(
-        "bg-[#D9D9D9] rounded-2xl shadow-sm border border-gray-300 overflow-hidden transition-all duration-300",
-        "hover:shadow-lg hover:-translate-y-1",
+        "bg-[#D9D9D9] rounded-2xl max-w-72 shadow-sm border border-gray-300 overflow-hidden transition-all duration-300",
         className
       )}
       onMouseEnter={() => setIsHovered(true)}
@@ -190,8 +189,7 @@ export default function ProductCard({
             alt={name}
             fill
             className={cn(
-              "object-contain transition-transform duration-300 p-6",
-              isHovered && "scale-105"
+              "object-cover p-4"
             )}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
@@ -205,17 +203,6 @@ export default function ProductCard({
           {name}
         </h3>
 
-        {/* Color selection text */}
-        {colors && colors.length > 0 && (
-          <div className="mb-3">
-            <span className="text-sm text-gray-700">
-              Color: {selectedColor?.label || "Sin color"}
-            </span>
-            <span className="text-xs text-gray-500 ml-2">
-              SKU: {selectedColor?.sku || sku || id}
-            </span>
-          </div>
-        )}
 
         {/* Selector de colores */}
         {colors && colors.length > 0 && (
@@ -261,7 +248,7 @@ export default function ProductCard({
         )}
 
         {/* Botones de acción */}
-        <div className="space-y-2">
+        <div className="flex gap-3">
           <button
             onClick={handleAddToCart}
             disabled={isLoading}
@@ -272,14 +259,14 @@ export default function ProductCard({
               isLoading && "animate-pulse"
             )}
           >
-            {isLoading ? "Añadiendo..." : "Añadir al carrito"}
+            {isLoading ? (<Loader/>) : (<ShoppingCart />)}
           </button>
 
           <button
             onClick={handleMoreInfo}
             className="w-full bg-white border border-gray-400 text-gray-700 py-3 px-4 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors duration-200"
           >
-            Más Información
+            Información
           </button>
         </div>
       </div>

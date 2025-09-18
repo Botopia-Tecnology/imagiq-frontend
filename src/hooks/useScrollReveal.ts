@@ -1,5 +1,4 @@
 "use client";
-
 /**
  * useScrollReveal - Hook personalizado para animar la aparición de componentes al hacer scroll (lazy load + reveal).
  *
@@ -39,7 +38,7 @@
  * }
  */
 
-import { useRef, useEffect, useState, RefObject } from "react";
+import { useRef, useEffect, useState } from "react";
 import { TargetAndTransition } from "framer-motion";
 
 export type ScrollRevealOptions = {

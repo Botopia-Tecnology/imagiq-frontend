@@ -1,3 +1,4 @@
+"use client";
 /**
  * Página de Entrego y Estreno
  * Importa el componente desde la ruta correcta

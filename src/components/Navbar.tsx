@@ -21,6 +21,7 @@ import NavbarNavigation from "./navbar/NavbarNavigation";
 import NavbarMobileMenu from "./navbar/NavbarMobileMenu";
 import { useNavbarConfig } from "./navbar/useNavbarConfig";
 
+
 // Dropdown item type literals
 type DropdownItemType =
   | "Dispositivos móviles"

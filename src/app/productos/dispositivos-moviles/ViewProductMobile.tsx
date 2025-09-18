@@ -28,6 +28,7 @@ import HouseButton from "../components/Button";
 import ModalWithoutBackground from "@/components/ModalWithoutBackground";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 
 // Tipos para producto
 interface ProductColor {
@@ -246,48 +247,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           </div>
         </div>
       </motion.section>
-
-      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
-        <HouseButton onClick={() => setModalOpen(true)} />
-      </div>
-      <div className="block md:hidden ml-auto">
-        <div className="flex items-center">
-          {/* Cartel lateral izquierdo */}
-          {showLabel && (
-            <div
-              className="flex items-center bg-white text-black border border-gray-300 rounded-md shadow px-4 py-2 mr-3"
-              style={{ fontFamily: "SamsungSharpSans", whiteSpace: "nowrap" }}
-            >
-              <span className="mr-2 text-sm">Mira el objeto en tu espacio</span>
-              <button
-                onClick={() => setShowLabel(false)}
-                className="text-gray-500 hover:text-red-500"
-              >
-                <IoClose size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* Botón o visor de AR */}
-          {/* <ARViewer modelUrl="https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" /> */}
-        </div>
-      </div>
-      <a
-        href="https://arvr.google.com/scene-viewer/1.0?file=https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <button>Ver en 3D</button>
-      </a>
-      {modalOpen && (
-        <ModalWithoutBackground
-          onClose={() => setModalOpen(false)}
-          isOpen={modalOpen}
-          title="Visualiza tu producto en realidad aumentada"
-        >
-          <QRDesktop />
-        </ModalWithoutBackground>
-      )}
 
       {isProductDetailView && showBar && (
         <div

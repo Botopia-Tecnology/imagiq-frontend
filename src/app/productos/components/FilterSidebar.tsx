@@ -40,6 +40,10 @@ interface FilterSidebarProps {
   onToggleFilter?: (filterKey: string) => void;
   className?: string;
   trackingPrefix?: string;
+  // Props para sticky behavior
+  stickyContainerClasses?: string;
+  stickyWrapperClasses?: string;
+  stickyStyle?: React.CSSProperties;
 }
 
 export default function FilterSidebar({
@@ -51,6 +55,9 @@ export default function FilterSidebar({
   onToggleFilter,
   className,
   trackingPrefix = "filter",
+  stickyContainerClasses = "",
+  stickyWrapperClasses = "",
+  stickyStyle = {},
 }: FilterSidebarProps) {
   const [internalExpandedFilters, setInternalExpandedFilters] =
     useState<Set<string>>(expandedFilters);
@@ -162,9 +169,12 @@ export default function FilterSidebar({
     <div
       className={cn(
         "bg-[#F5F5F5] rounded-none border-0 shadow-none",
+        stickyContainerClasses,
         className
       )}
+      style={stickyStyle}
     >
+      <div className={cn(stickyWrapperClasses)}>
       {/* Header igual a la imagen */}
       <div className="p-4 border-b border-gray-300">
         <div className="flex items-center gap-4">
@@ -333,6 +343,7 @@ export default function FilterSidebar({
           animation: fadeInUp 0.4s ease-out;
         }
       `}</style>
+      </div>
     </div>
   );
 }

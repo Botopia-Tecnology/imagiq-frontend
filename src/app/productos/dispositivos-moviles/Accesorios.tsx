@@ -26,6 +26,8 @@ import AccesoriosProductsGrid from "./components/AccesoriosProductsGrid";
 import HeaderSection from "./components/HeaderSection";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
+import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+import { useDeviceType } from "@/components/responsive";
 
 export default function AccesoriosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -39,6 +41,13 @@ export default function AccesoriosSection() {
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
+
+  // Refs para sticky behavior
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const productsRef = useRef<HTMLDivElement>(null);
+
+  // Device type para responsive
+  const device = useDeviceType();
 
   // Función memoizada para convertir filtros de tipo de accesorio a filtros de API
   const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
@@ -59,6 +68,17 @@ export default function AccesoriosSection() {
 
   // Ref para evitar bucles infinitos
   const lastFiltersRef = useRef<string>("");
+
+  // Sticky behavior (solo en desktop/large)
+  const stickyEnabled = device === "desktop" || device === "large";
+  const stickyState = useSticky({
+    sidebarRef,
+    productsRef,
+    topOffset: 120,
+    enabled: stickyEnabled,
+  });
+
+  const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
 
   // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
@@ -190,13 +210,25 @@ export default function AccesoriosSection() {
 
       <div className="container mx-auto px-6 py-8">
         <div className="flex gap-8">
-          <aside className="hidden lg:block w-80 flex-shrink-0">
-            {FilterSidebarMemo}
+          <aside ref={sidebarRef} className="hidden lg:block w-80 flex-shrink-0">
+            <FilterSidebar
+              filterConfig={accessoryFilters}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              resultCount={totalItems}
+              expandedFilters={expandedFilters}
+              onToggleFilter={toggleFilter}
+              trackingPrefix="accessory_filter"
+              stickyContainerClasses={containerClasses}
+              stickyWrapperClasses={wrapperClasses}
+              stickyStyle={style}
+            />
           </aside>
 
           <main className="flex-1">
             {HeaderSectionMemo}
             <AccesoriosProductsGrid
+              ref={productsRef}
               products={products}
               loading={loading}
               error={error}

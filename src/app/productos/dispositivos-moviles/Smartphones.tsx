@@ -30,6 +30,7 @@ import { productsData } from "../data_product/products";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
+import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -126,6 +127,10 @@ export default function SmartphonesSection() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
+  // Refs para sticky behavior
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const productsRef = useRef<HTMLDivElement>(null);
+
   // Usar el hook de productos con filtro de subcategoría "Celulares"
   const apiFilters = useMemo(() => ({
     subcategory: "Celulares"
@@ -154,6 +159,17 @@ export default function SmartphonesSection() {
   // Ref para evitar bucles infinitos
   const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Responsive global
+
+  // Sticky behavior (solo en desktop/large)
+  const stickyEnabled = device === "desktop" || device === "large";
+  const stickyState = useSticky({
+    sidebarRef,
+    productsRef,
+    topOffset: 120,
+    enabled: stickyEnabled,
+  });
+
+  const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
 
   // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
@@ -287,7 +303,7 @@ export default function SmartphonesSection() {
           )}
         >
           {(device === "desktop" || device === "large") && (
-            <aside className="hidden lg:block w-80 flex-shrink-0">
+            <aside ref={sidebarRef} className="hidden lg:block w-80 flex-shrink-0">
               <FilterSidebar
                 filterConfig={smartphoneFilters}
                 filters={filters}
@@ -296,6 +312,9 @@ export default function SmartphonesSection() {
                 expandedFilters={expandedFilters}
                 onToggleFilter={toggleFilter}
                 trackingPrefix="smartphone_filter"
+                stickyContainerClasses={containerClasses}
+                stickyWrapperClasses={wrapperClasses}
+                stickyStyle={style}
               />
             </aside>
           )}
@@ -384,6 +403,7 @@ export default function SmartphonesSection() {
             </div>
 
             <div
+              ref={productsRef}
               className={cn(
                 "grid gap-6",
                 viewMode === "grid"

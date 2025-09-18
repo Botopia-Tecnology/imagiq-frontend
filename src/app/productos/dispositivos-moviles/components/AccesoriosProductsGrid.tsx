@@ -4,6 +4,7 @@
  * Grid de productos específico para accesorios con funcionalidades avanzadas
  */
 
+import { forwardRef } from "react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductCard, {
   type ProductCardProps,
@@ -19,14 +20,8 @@ interface ProductsGridProps {
   refreshProducts: () => void;
 }
 
-export default function AccesoriosProductsGrid({
-  products,
-  loading,
-  error,
-  filters,
-  setFilters,
-  refreshProducts,
-}: ProductsGridProps) {
+const AccesoriosProductsGrid = forwardRef<HTMLDivElement, ProductsGridProps>(
+  ({ products, loading, error, filters, setFilters, refreshProducts }, ref) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -52,26 +47,31 @@ export default function AccesoriosProductsGrid({
     );
   }
 
-  return (
-    <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-      {products.length === 0 ? (
-        <div className="col-span-full text-center py-12 text-gray-500">
-          No se encontraron accesorios con los filtros seleccionados.
-        </div>
-      ) : (
-        products.map((product) => (
-          <ProductCard
-            key={product.id}
-            {...product}
-            onAddToCart={(productId: string, color: string) => {
-              console.log(`Añadir al carrito: ${productId} - ${color}`);
-            }}
-            onToggleFavorite={(productId: string) => {
-              console.log(`Toggle favorito: ${productId}`);
-            }}
-          />
-        ))
-      )}
-    </div>
-  );
-}
+    return (
+      <div ref={ref} className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        {products.length === 0 ? (
+          <div className="col-span-full text-center py-12 text-gray-500">
+            No se encontraron accesorios con los filtros seleccionados.
+          </div>
+        ) : (
+          products.map((product) => (
+            <ProductCard
+              key={product.id}
+              {...product}
+              onAddToCart={(productId: string, color: string) => {
+                console.log(`Añadir al carrito: ${productId} - ${color}`);
+              }}
+              onToggleFavorite={(productId: string) => {
+                console.log(`Toggle favorito: ${productId}`);
+              }}
+            />
+          ))
+        )}
+      </div>
+    );
+  }
+);
+
+AccesoriosProductsGrid.displayName = "AccesoriosProductsGrid";
+
+export default AccesoriosProductsGrid;

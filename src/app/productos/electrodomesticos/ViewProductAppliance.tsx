@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import Image, { StaticImageData } from "next/image";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_negro.png";
@@ -24,7 +25,8 @@ import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
 import ARExperienceHandler from "./components/ARExperienceHandler";
 import SizeProduct from "./components/SizeProduct";
-
+import smartphonesImg from "@/img/categorias/Smartphones.png";
+import ProductCard from "../components/ProductCard";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -50,6 +52,7 @@ export default function ViewProductAppliance({
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // Estado para especificaciones abiertas
   const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
@@ -96,6 +99,84 @@ export default function ViewProductAppliance({
     {
       title: "OS",
       desc: "Android 13, One UI 5.1",
+    },
+  ];
+
+  const products = [
+    {
+      id: "galaxy-a16",
+      name: "Samsung Galaxy A16",
+      image: smartphonesImg,
+      colors: [
+        { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
+        { name: "black", hex: "#000000", label: "Negro" },
+        { name: "white", hex: "#FFFFFF", label: "Blanco" },
+      ],
+      price: "$ 812.900",
+      originalPrice: "$ 999.000",
+      discount: "-19%",
+      description: "Smartphone gama media con gran batería y cámara avanzada.",
+      specs: [
+        { label: "Pantalla", value: '6.5" FHD+' },
+        { label: "Procesador", value: "Exynos" },
+        { label: "RAM", value: "4GB" },
+        { label: "Almacenamiento", value: "128GB" },
+      ],
+    },
+    {
+      id: "galaxy-a25",
+      name: "Samsung Galaxy A25",
+      image: smartphonesImg,
+      colors: [
+        { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
+        { name: "black", hex: "#000000", label: "Negro" },
+        { name: "silver", hex: "#C0C0C0", label: "Plateado" },
+      ],
+      price: "$ 1.250.000",
+      description: "Smartphone con pantalla AMOLED y cámara triple.",
+      specs: [
+        { label: "Pantalla", value: '6.6" AMOLED' },
+        { label: "Procesador", value: "Snapdragon" },
+        { label: "RAM", value: "6GB" },
+        { label: "Almacenamiento", value: "128GB" },
+      ],
+    },
+    {
+      id: "galaxy-a26",
+      name: "Samsung Galaxy A26",
+      image: smartphonesImg,
+      colors: [
+        { name: "white", hex: "#FFFFFF", label: "Blanco" },
+        { name: "black", hex: "#000000", label: "Negro" },
+        { name: "mint", hex: "#10B981", label: "Menta" },
+      ],
+      price: "$ 1.450.000",
+      originalPrice: "$ 1.600.000",
+      discount: "-9%",
+      description: "Smartphone con diseño moderno y batería de larga duración.",
+      specs: [
+        { label: "Pantalla", value: '6.7" FHD+' },
+        { label: "Procesador", value: "MediaTek" },
+        { label: "RAM", value: "8GB" },
+        { label: "Almacenamiento", value: "256GB" },
+      ],
+    },
+    {
+      id: "galaxy-a15-256gb",
+      name: "Samsung Galaxy A15 256 GB",
+      image: smartphonesImg,
+      colors: [
+        { name: "white", hex: "#FFFFFF", label: "Blanco" },
+        { name: "black", hex: "#000000", label: "Negro" },
+      ],
+      price: "$ 999.000",
+      description: "Smartphone con gran almacenamiento y rendimiento.",
+      specs: [
+        { label: "Pantalla", value: '6.5" FHD+' },
+        { label: "Procesador", value: "Exynos" },
+        { label: "RAM", value: "4GB" },
+        { label: "Almacenamiento", value: "256GB" },
+      ],
     },
   ];
 
@@ -258,7 +339,7 @@ export default function ViewProductAppliance({
       </section>
       <ARExperienceHandler
         glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
-        usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/3dpea.com_Nevera1_5.usdz"
+        usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"
       ></ARExperienceHandler>
 
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
@@ -352,7 +433,38 @@ export default function ViewProductAppliance({
       <SizeProduct img={medidas}></SizeProduct>
 
       {/* Componente de comparación justo debajo de VideosSection */}
-      <VideosSection/>
+      <VideosSection />
+{/* 
+      <div className={cn("flex flex-wrap gap-6")}>
+        {products.length === 0 ? (
+          <div className="col-span-full text-center py-12 text-gray-500">
+            No se encontraron refrigeradores con los filtros seleccionados.
+          </div>
+        ) : (
+          products.map((product) => (
+            <ProductCard
+              key={product.id}
+              id={product.id}
+              name={product.name}
+              image={product.image}
+              colors={product.colors}
+              rating={product.rating}
+              reviewCount={product.reviewCount}
+              price={product.price}
+              originalPrice={product.originalPrice}
+              discount={product.discount}
+              isNew={product.isNew}
+              onAddToCart={(productId: string, color: string) => {
+                console.log(`Añadir al carrito: ${productId} - ${color}`);
+              }}
+              onToggleFavorite={(productId: string) => {
+                console.log(`Toggle favorito: ${productId}`);
+              }}
+              className={viewMode === "list" ? "flex-row" : ""}
+            />
+          ))
+        )}
+      </div> */}
     </div>
   );
 }

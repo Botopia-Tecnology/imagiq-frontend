@@ -1,3 +1,4 @@
+import { useProductContext } from "@/features/products/ProductContext";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
@@ -8,7 +9,8 @@ export function useNavbarConfig(
 ) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const isAppliance = searchParams.get("appliance") === "true";
+  const { isAppliance } = useProductContext();
+  //const isAppliance = searchParams.get("appliance") === "true";
   return useMemo(() => {
     const isProductDetail =
       pathname.startsWith("/productos/") &&
@@ -91,5 +93,5 @@ export function useNavbarConfig(
       isElectrodomesticos,
       isOfertas,
     };
-  }, [isScrolled, isHome, isLogin, pathname, searchParams]);
+  }, [isScrolled, isHome, isLogin, pathname,isAppliance]);
 }

@@ -134,21 +134,13 @@ export default function ProductCard({
     console.log(`🔗 Navegando a producto con ID: ${id}`);
     console.log(`📝 Nombre del producto: ${name}`);
     // Navega usando el id del mock, no el nombre ni slug
-    if (name == "RT42DG6220B1CO") {
-      router.push(`/productos/view/${id}?appliance=true`);
-      posthogUtils.capture("product_more_info_click", {
-        product_id: id,
-        product_name: name,
-        source: "product_card",
-      });
-    } else {
       router.push(`/productos/view/${id}`);
       posthogUtils.capture("product_more_info_click", {
         product_id: id,
         product_name: name,
         source: "product_card",
       });
-    }
+    
   };
 
   return (

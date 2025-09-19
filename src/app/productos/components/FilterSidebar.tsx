@@ -165,6 +165,11 @@ export default function FilterSidebar({
     ],
   };
 
+  // Debug: Log de configuración de color
+  if (filterConfig.color) {
+    console.log("🎨 Configuración de color desde filterConfig:", filterConfig.color);
+  }
+
   return (
     <div
       className={cn(
@@ -236,14 +241,14 @@ export default function FilterSidebar({
               className={cn(
                 "overflow-hidden transition-all duration-500 ease-in-out",
                 currentExpandedFilters.has(filterKey)
-                  ? "max-h-96 opacity-100"
+                  ? "max-h-[600px] opacity-100"
                   : "max-h-0 opacity-0"
               )}
               tabIndex={-1}
             >
               <div className="px-4 pb-4">
                 <div
-                  className="space-y-2 max-h-64 overflow-y-auto scrollbar-hide"
+                  className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
                   style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                 >
                   {isRangeFilter(options)

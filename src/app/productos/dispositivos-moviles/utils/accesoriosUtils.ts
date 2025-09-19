@@ -11,7 +11,7 @@ import { keywordMap } from "../constants/accesoriosConstants";
 export interface ApiFilters {
   category?: string;
   subcategory?: string;
-  priceRange?: { min: number; max?: number };
+  priceRange?: { min: number; max: number };
   color?: string;
   capacity?: string;
   name?: string;
@@ -22,6 +22,7 @@ export interface ApiFilters {
 
 /**
  * Convierte filtros de tipo de accesorio a filtros de API
+ * Implementa lógica OR dentro del mismo tipo de filtro y AND entre diferentes tipos
  */
 export function getApiFilters(filters: FilterState): ApiFilters {
   const apiFilters: ApiFilters = {
@@ -30,17 +31,21 @@ export function getApiFilters(filters: FilterState): ApiFilters {
 
   // Si hay filtros de tipo de accesorio seleccionados, buscar por descripción
   if (filters.tipoAccesorio && filters.tipoAccesorio.length > 0) {
-    // Usar el primer filtro seleccionado para buscar
-    const selectedType = filters.tipoAccesorio[0];
-    const keywords = keywordMap[selectedType];
-    if (keywords && keywords.length > 0) {
-      // Usar la primera palabra clave como filtro principal
-      apiFilters.descriptionKeyword = keywords[0];
-      console.log(
-        `🔍 Buscando accesorios tipo "${selectedType}" con palabra clave: "${keywords[0]}"`
-      );
-      console.log(`📋 Palabras clave disponibles: ${keywords.join(", ")}`);
-      console.log(`🔧 Filtros API generados:`, apiFilters);
+    // Para tipo de accesorio, usar OR (unión) - múltiples tipos separados por coma
+    const selectedTypes = filters.tipoAccesorio;
+    const allKeywords: string[] = [];
+    
+    selectedTypes.forEach(type => {
+      const keywords = keywordMap[type];
+      if (keywords && keywords.length > 0) {
+        allKeywords.push(...keywords);
+      }
+    });
+    
+    if (allKeywords.length > 0) {
+      // Usar todas las palabras clave separadas por coma para OR
+      apiFilters.descriptionKeyword = allKeywords.join(',');
+      console.log(`🔍 Buscando accesorios tipos "${selectedTypes.join(', ')}" con palabras clave: "${allKeywords.join(',')}"`);
     }
   }
 
@@ -55,19 +60,29 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       "TPU": "Plastic" // TPU es un tipo de plástico
     };
     
-    const selectedMaterial = filters.material[0];
-    const materialKeyword = materialMap[selectedMaterial];
-    if (materialKeyword) {
-      apiFilters.descriptionKeyword = materialKeyword;
-      console.log(`🔍 Buscando material "${selectedMaterial}" con palabra clave: "${materialKeyword}"`);
+    // Para material, usar OR (unión) - múltiples materiales separados por coma
+    const selectedMaterials = filters.material;
+    const materialKeywords = selectedMaterials
+      .map(material => materialMap[material])
+      .filter(Boolean);
+    
+    if (materialKeywords.length > 0) {
+      // Si ya hay un descriptionKeyword, combinarlo con AND
+      if (apiFilters.descriptionKeyword) {
+        apiFilters.descriptionKeyword += `&${materialKeywords.join(',')}`;
+      } else {
+        apiFilters.descriptionKeyword = materialKeywords.join(',');
+      }
+      console.log(`🔍 Buscando materiales "${selectedMaterials.join(', ')}" con palabras clave: "${materialKeywords.join(',')}"`);
     }
   }
 
   // Filtro de color usando query param color
   if (filters.color && filters.color.length > 0) {
-    const selectedColor = filters.color[0];
-    apiFilters.color = selectedColor;
-    console.log(`🎨 Filtrando por color: "${selectedColor}"`);
+    // Para color, usar OR (unión) - múltiples colores separados por coma
+    const selectedColors = filters.color;
+    apiFilters.color = selectedColors.join(',');
+    console.log(`🎨 Filtrando por colores: "${selectedColors.join(', ')}"`);
   }
 
   // Filtro de características usando desDetallada
@@ -78,17 +93,26 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       "Magnético": "Magnet"
     };
     
-    const selectedCharacteristic = filters.caracteristicas[0];
-    const characteristicKeyword = characteristicsMap[selectedCharacteristic];
-    if (characteristicKeyword) {
-      apiFilters.descriptionKeyword = characteristicKeyword;
+    // Para características, usar OR (unión) - múltiples características separadas por coma
+    const selectedCharacteristics = filters.caracteristicas;
+    const characteristicKeywords = selectedCharacteristics
+      .map(char => characteristicsMap[char])
+      .filter(Boolean);
+    
+    if (characteristicKeywords.length > 0) {
+      // Si ya hay un descriptionKeyword, combinarlo con AND
+      if (apiFilters.descriptionKeyword) {
+        apiFilters.descriptionKeyword += `&${characteristicKeywords.join(',')}`;
+      } else {
+        apiFilters.descriptionKeyword = characteristicKeywords.join(',');
+      }
+      console.log(`⚡ Buscando características "${selectedCharacteristics.join(', ')}" con palabras clave: "${characteristicKeywords.join(',')}"`);
     }
   }
 
   // Filtro de rango de precios usando precioMin y precioMax
   if (filters.rangoPrecio && filters.rangoPrecio.length > 0) {
-    // Para rangoPrecio, necesitamos buscar el objeto correspondiente en la configuración
-    // ya que FilterState solo almacena strings, pero necesitamos los valores min/max
+    // Para rango de precios, usar OR (unión) - tomar el rango más amplio que cubra todos los rangos seleccionados
     const priceRanges = [
       { label: "Menos de $50.000", min: 0, max: 50000 },
       { label: "$50.000 - $100.000", min: 50000, max: 100000 },
@@ -96,15 +120,21 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       { label: "Más de $200.000", min: 200000, max: Infinity },
     ];
     
-    const selectedLabel = filters.rangoPrecio[0];
-    const selectedPriceRange = priceRanges.find(range => range.label === selectedLabel);
+    const selectedLabels = filters.rangoPrecio;
+    const selectedRanges = selectedLabels
+      .map(label => priceRanges.find(range => range.label === label))
+      .filter(Boolean);
     
-    if (selectedPriceRange) {
+    if (selectedRanges.length > 0) {
+      // Calcular el rango más amplio que cubra todos los rangos seleccionados
+      const minPrice = Math.min(...selectedRanges.map(range => range!.min));
+      const maxPrice = Math.max(...selectedRanges.map(range => range!.max === Infinity ? Number.MAX_SAFE_INTEGER : range!.max));
+      
       apiFilters.priceRange = {
-        min: selectedPriceRange.min,
-        max: selectedPriceRange.max === Infinity ? undefined : selectedPriceRange.max
+        min: minPrice,
+        max: maxPrice === Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : maxPrice
       };
-      console.log(`💰 Filtrando por rango de precio: ${selectedPriceRange.min} - ${selectedPriceRange.max}`);
+      console.log(`💰 Filtrando por rangos de precio "${selectedLabels.join(', ')}" con rango combinado: ${minPrice} - ${maxPrice === Number.MAX_SAFE_INTEGER ? '∞' : maxPrice}`);
     }
   }
 

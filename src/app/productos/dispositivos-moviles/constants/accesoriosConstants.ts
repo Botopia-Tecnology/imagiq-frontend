@@ -70,7 +70,7 @@ export const accessoryFilters: FilterConfig = {
     "Cristal templado",
     "TPU",
   ],
-  color: ["Negro", "Blanco", "Transparente", "Azul", "Rojo", "Rosa", "Morado"],
+  color: ["Negro", "Blanco", "Transparente", "Azul", "Rojo", "Rosa", "Morado", "Gris"],
   caracteristicas: [
     "Carga rápida",
     "Inalámbrico",

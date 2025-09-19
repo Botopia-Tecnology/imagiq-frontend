@@ -27,18 +27,10 @@ interface VideoData {
 const videosData: VideoData[] = [
   {
     id: "video-1",
-    src: "/video-mobile1.mp4",
+    src: "/nevera_beespoke.mp4",
     title: "¡Explora su potencial!",
     subtitle: "",
     description: "",
-  },
-  {
-    id: "video-2",
-    src: "/video-mobile2.mp4",
-    title: "Galaxy AI ✨",
-    subtitle: "",
-    description:
-      "Recibe la próxima era de la IA móvil con un compañero de IA que está un paso adelante de tus necesidades. Solo deja que la conversación natural que el camino para verificar las tareas diarias con facilidad.",
   },
 ];
 
@@ -143,7 +135,7 @@ export default function VideosSection() {
       className="w-full py-16 px-4"
       style={{
         fontFamily: "SamsungSharpSans",
-        background: "#000000", // Fondo negro sólido
+        background: "#ffffffff", // Fondo negro sólido
         minHeight: "80vh",
       }}
       aria-label="Sección de videos promocionales"
@@ -153,14 +145,6 @@ export default function VideosSection() {
         <div className="space-y-24 relative">
           {videosData.map((video, index) => (
             <div key={video.id} className="relative">
-              {/* Título centrado arriba del primer video */}
-              {index === 0 && (
-                <div className="pb-4 text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold text-white">
-                    ¡Explora su potencial!
-                  </h2>
-                </div>
-              )}
 
               {/* Container del video */}
               <div
@@ -172,25 +156,6 @@ export default function VideosSection() {
               >
                 <VideoPlayer video={video} index={index} />
               </div>
-
-              {/* Título Galaxy AI centrado entre los dos videos */}
-              {index === 0 && (
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: "0",
-                    right: "0",
-                    height: "192px", // Altura del espacio space-y-24
-                    zIndex: 10,
-                  }}
-                >
-                  <h3 className="text-4xl md:text-5xl -mt-20 font-bold text-white text-center">
-                    Galaxy AI ✨
-                  </h3>
-                </div>
-              )}
 
               {/* Descripción fuera de la card del segundo video */}
               {index === 1 && (

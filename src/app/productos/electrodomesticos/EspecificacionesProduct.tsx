@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosmoviles/cel1.png";
+import samsungImage from "@/img/electrodomesticos/especificaciones_nevera.png";
 import cpuIcon from "@/img/dispositivosmoviles/cpu-icon.png";
 import fullAltIcon from "@/img/dispositivosmoviles/full_alt_light-icon.png";
 import cameraIcon from "@/img/dispositivosmoviles/camera-icon.png";
@@ -23,33 +23,48 @@ import wifiIcon from "@/img/dispositivosmoviles/wifi-icon.png";
 const especificacionesData = [
   {
     label: "Parte inferior izquierda",
-    desc: "",
+    desc: "...",
     icon: cpuIcon,
   },
   {
-    label: "Pantalla",
-    desc: "",
+    label: "Parte inferior derecha",
+    desc: "...",
     icon: fullAltIcon,
   },
   {
-    label: "Cámara",
-    desc: "",
+    label: "Capacidad",
+    desc: "...",
     icon: cameraIcon,
   },
   {
-    label: "Memoria",
-    desc: "",
+    label: "Rendimiento",
+    desc: "...",
     icon: boxOpenIcon,
   },
   {
-    label: "Red",
-    desc: "",
-    icon: webIcon,
+    label: "Conectividad",
+    desc: "...",
+    icon: wifiIcon,
   },
   {
-    label: "Conectividad",
-    desc: "",
+    label: "Categoría",
+    desc: "...",
     icon: wifiIcon,
+  },
+  {
+    label: "Funicón de enfriamiento",
+    desc: "...",
+    icon: wifiIcon,
+  },
+  {
+    label: "Características exteriores",
+    desc: "...",
+    icon: boxOpenIcon,
+  },
+  {
+    label: "Especificaciones fisicas",
+    desc: "...",
+    icon: boxOpenIcon,
   },
 ];
 
@@ -105,8 +120,8 @@ const EspecificacionesProduct = ({
       <div className="max-w-7xl w-full mx-auto">
         <div className="flex flex-col xl:flex-row w-full items-center justify-between px-4 md:px-10 lg:px-16">
           {/* Imagen del producto a la izquierda */}
-          <div className="w-full xl:w-auto flex flex-col items-center mb-12 xl:mb-0 relative">
-            <div className="relative mx-auto sm:mx-0 flex justify-center items-center w-full">
+          <div className="w-full xl:flex-1 flex flex-col items-center mb-12 xl:mb-0 relative h-full ">
+            <div className="relative mx-auto sm:mx-0 flex justify-center items-center w-full h-full">
               <div className="w-[98vw] h-[80vw] max-w-[370px] max-h-[370px] sm:w-[340px] sm:h-[450px] rounded-2xl flex items-center justify-center">
                 {/* Flecha izquierda */}
                 <button
@@ -159,12 +174,12 @@ const EspecificacionesProduct = ({
             </div>
           </div>
           {/* Grid 3x2 de especificaciones */}
-          <div className="w-full xl:w-auto flex-1 flex justify-center xl:ml-16">
+          <div className="w-full xl:flex-1 flex justify-center xl:ml-16">
             <div className="grid grid-cols-3 grid-rows-2 gap-2 sm:gap-5 max-w-full sm:max-w-none">
               {mergedSpecs.map((spec, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-lg flex flex-col items-center justify-between py-3 px-1 shadow-sm sm:py-6 sm:px-4"
+                  className="bg-white rounded-lg flex flex-col items-center justify-center py-3 px-1 shadow-sm sm:py-6 sm:px-4 text-center"
                   tabIndex={0}
                   aria-label={spec.label}
                 >

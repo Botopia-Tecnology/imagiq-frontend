@@ -13,20 +13,17 @@
 
 import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import { productsMock } from "../components/productsMock";
-import addiLogo from "@/img/iconos/addi_logo.png";
-import setingLogo from "@/img/iconos/Setting_line.png";
-import packageCar from "@/img/iconos/package_car.png";
+import addiLogo from "@/img/iconos/addi_negro.png";
+import setingLogo from "@/img/iconos/Setting_line_negro.png";
+import packageCar from "@/img/iconos/package_car_negro.png";
 import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
-import ComparationProduct from "./ComparationProduct";
+import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
-import HouseButton from "../components/Button";
-import ARMobile from "../components/ARMobile";
-import ModalWithoutBackground from "@/components/ModalWithoutBackground";
-import QRDesktop from "../components/QRDesktop";
+import ARExperienceHandler from "./components/ARExperienceHandler";
+import SizeProduct from "./components/SizeProduct";
 
 // Tipos para producto
 interface ProductColor {
@@ -53,6 +50,7 @@ export default function ViewProductAppliance({
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
+
   // Estado para especificaciones abiertas
   const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
@@ -245,7 +243,7 @@ export default function ViewProductAppliance({
           </div>
 
           {/* Columna derecha: imagen producto dinámica */}
-          <div className="flex-1 flex items-center justify-center">
+          <div className="flex-1 flex items-center justify-center p-8">
             <Image
               src={safeProduct.image}
               alt={safeProduct.name}
@@ -258,27 +256,11 @@ export default function ViewProductAppliance({
           </div>
         </div>
       </section>
-      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
-        <HouseButton onClick={() => setModalOpen(true)} />
-      </div>
-      <div className="block md:hidden ml-auto">
-        <ARMobile
-          glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Microwave_2.glb"
-          usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
-        ></ARMobile>
-      </div>
-      {modalOpen && (
-        <ModalWithoutBackground
-          onClose={() => setModalOpen(false)}
-          isOpen={modalOpen}
-          title="Visualiza tu producto en realidad aumentada"
-        >
-          <QRDesktop
-            glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Microwave_2.glb"
-            usdzUrl="https://pruebasinteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.usdz"
-          />
-        </ModalWithoutBackground>
-      )}
+      <ARExperienceHandler
+        glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
+        usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/3dpea.com_Nevera1_5.usdz"
+      ></ARExperienceHandler>
+
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
         <>
@@ -367,11 +349,10 @@ export default function ViewProductAppliance({
         {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
         <EspecificacionesProduct specs={safeProduct.specs} />
       </div>
-
-
+      <SizeProduct img={medidas}></SizeProduct>
 
       {/* Componente de comparación justo debajo de VideosSection */}
-      <ComparationProduct />
+      <VideosSection/>
     </div>
   );
 }

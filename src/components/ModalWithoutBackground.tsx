@@ -8,7 +8,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   children: React.ReactNode;
 }
 
@@ -23,20 +23,23 @@ export default function ModalWithoutBackground({
     sm: "max-w-md",
     md: "max-w-lg",
     lg: "max-w-2xl",
+    xl: "max-w-4xl",
   };
 
   if (!isOpen) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 backdrop-blur-sm bg-white/10" onClick={onClose} />
+      <div
+        className="fixed inset-0 backdrop-blur-sm bg-white/10"
+        onClick={onClose}
+      />
       <div
         className={cn(
-          "relative bg-white rounded-lg shadow-xl w-full mx-4",
+          "relative bg-white rounded-lg shadow-xl w-full mx-4", // w-full + mx-4 para móviles
           sizes[size]
         )}
       >
-        <div className="flex items-center justify-between p-4 border-b">
+        <div className="flex items-center justify-between p-4">
           {title && <h3 className="text-lg font-semibold">{title}</h3>}
           <button
             onClick={onClose}

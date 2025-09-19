@@ -1,4 +1,4 @@
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 export function useNavbarConfig(
@@ -7,7 +7,8 @@ export function useNavbarConfig(
   isLogin: boolean
 ) {
   const pathname = usePathname();
-
+  const searchParams = useSearchParams();
+  const isAppliance = searchParams.get("appliance") === "true";
   return useMemo(() => {
     const isProductDetail =
       pathname.startsWith("/productos/") &&
@@ -29,15 +30,14 @@ export function useNavbarConfig(
     const isHeroScrolled = isHome && isScrolled;
     const isScrolledNavbar =
       (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-
     const showWhiteLogo =
-      isMasInformacionProducto && !isScrolled
+      isMasInformacionProducto && !isScrolled && !isAppliance
         ? true
         : isOfertas || (isHome && !isScrolled);
 
     const showWhiteItems = showWhiteLogo;
     const showWhiteItemsMobile =
-      isMasInformacionProducto && !isScrolled
+      isMasInformacionProducto && !isScrolled && !isAppliance
         ? true
         : isOfertas ||
           (!isScrolledNavbar &&
@@ -48,7 +48,11 @@ export function useNavbarConfig(
     let backgroundStyle = "bg-white/60 shadow backdrop-blur-md";
     let boxShadow = "0 2px 8px 0 rgba(30, 64, 175, 0.12)";
     let background: string | undefined = undefined;
-
+    if (isMasInformacionProducto && !isScrolled && !isAppliance) {
+      backgroundStyle = "bg-transparent";
+      boxShadow = "none";
+      background = "transparent";
+    }
     if (isOfertas && !isScrolled) {
       backgroundStyle = "bg-transparent";
       boxShadow = "none";
@@ -87,5 +91,5 @@ export function useNavbarConfig(
       isElectrodomesticos,
       isOfertas,
     };
-  }, [isScrolled, isHome, isLogin, pathname]);
+  }, [isScrolled, isHome, isLogin, pathname, searchParams]);
 }

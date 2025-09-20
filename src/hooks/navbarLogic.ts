@@ -1,20 +1,20 @@
 // Hook principal para la lógica del navbar de IMAGIQ ECOMMERCE
 // Incluye búsqueda, menú móvil, dropdowns, scroll, rutas y handlers de navegación
-import {
-  useState,
-  useEffect,
-  useRef,
-  RefCallback,
-  useMemo,
-  useCallback,
-} from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useCartContext } from "@/features/cart/CartContext";
 import { useAuthContext } from "@/features/auth/context";
-import { posthogUtils } from "@/lib/posthogClient";
+import { useCartContext } from "@/features/cart/CartContext";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
+import { useDebounce } from "@/hooks/useDebounce";
+import { posthogUtils } from "@/lib/posthogClient";
 import { navbarRoutes } from "@/routes/navbarRoutes";
+import { usePathname, useRouter } from "next/navigation";
+import {
+  RefCallback,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // Tipo para resultados de búsqueda
 export interface SearchResult {

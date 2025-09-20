@@ -3,26 +3,26 @@
  * 🧭 NAVBAR PRINCIPAL - IMAGIQ ECOMMERCE
  * Limpio, escalable y con animaciones suaves en hover
  */
-import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
-import { Menu } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
-import { posthogUtils } from "@/lib/posthogClient";
-import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
-import TelevisionesDropdown from "./dropdowns/televisiones";
-import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
-import { navbarRoutes } from "../routes/navbarRoutes";
 import logoSamsungWhite from "@/img/logo_Samsung.png";
-import logoSamsungBlack from "@/img/Samsung_black.png";
-import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
 import carritoIconBlack from "@/img/navbar-icons/carrito-icon-black.png";
+import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
 import favoritoIconWhite from "@/img/navbar-icons/favorito-icon-white.png";
 import favoritoIconBlack from "@/img/navbar-icons/favoritos-icon-black.png";
-import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
 import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
-import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
+import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
 import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
+import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
+import logoSamsungBlack from "@/img/Samsung_black.png";
+import { posthogUtils } from "@/lib/posthogClient";
+import { cn } from "@/lib/utils";
+import { Menu } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { navbarRoutes } from "../routes/navbarRoutes";
+import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
+import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
+import TelevisionesDropdown from "./dropdowns/televisiones";
 
 // Helper para dropdown
 const getDropdownComponent = (name: string) => {

@@ -56,22 +56,6 @@ function CheckoutErrorOverlay({
     }
   }, [open, showContent]);
 
-  useEffect(() => {
-    // Oculta el navbar cuando el overlay está abierto
-    const navbar = document.querySelector(
-      '[data-navbar="true"]'
-    ) as HTMLElement | null;
-    if (open && navbar) {
-      navbar.style.display = "none";
-    }
-    // Restaura el navbar al cerrar el overlay
-    return () => {
-      if (navbar) {
-        navbar.style.display = "";
-      }
-    };
-  }, [open]);
-
   if (!open) return null;
 
   return (

@@ -9,7 +9,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
@@ -20,7 +20,8 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import { watchProducts } from "../data_product/products";
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -90,6 +91,25 @@ const watchFilters: FilterConfig = {
   resistenciaAgua: ["5ATM", "10ATM", "IP68"],
 };
 
+const watchProducts = [
+  {
+    id: "galaxy-watch6-44mm",
+    name: "Samsung Galaxy Watch 6 44mm",
+    image: galaxyWatchImg,
+    colors: [
+      { name: "black", hex: "#000000", label: "Negro" },
+      { name: "silver", hex: "#C0C0C0", label: "Plateado" },
+      { name: "gold", hex: "#D4AF37", label: "Dorado" },
+    ] as ProductColor[],
+    rating: 4.6,
+    reviewCount: 342,
+    price: "$ 899.000",
+    originalPrice: "$ 1.099.000",
+    discount: "-18%",
+  },
+  // ...más productos de relojes
+];
+
 export default function RelojesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["serie"])
@@ -98,7 +118,19 @@ export default function RelojesSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(12);
+
+  // Usar el hook de productos con filtro por palabra "watch"
+  const apiFilters = useMemo(() => ({
+    name: "watch" // Filtrar productos que contengan "watch" en el nombre
+  }), []);
+
+  const { 
+    products, 
+    loading, 
+    error, 
+    totalItems,
+    refreshProducts 
+  } = useProducts(apiFilters);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -130,6 +162,45 @@ export default function RelojesSection() {
     setExpandedFilters(newExpanded);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CategorySlider
+          categories={watchCategories}
+          trackingPrefix="watch_category"
+        />
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white">
+        <CategorySlider
+          categories={watchCategories}
+          trackingPrefix="watch_category"
+        />
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">Error al cargar Galaxy Watch</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={refreshProducts}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
@@ -144,7 +215,7 @@ export default function RelojesSection() {
               filterConfig={watchFilters}
               filters={filters}
               onFilterChange={handleFilterChange}
-              resultCount={resultCount}
+              resultCount={totalItems}
               expandedFilters={expandedFilters}
               onToggleFilter={toggleFilter}
               trackingPrefix="watch_filter"
@@ -158,7 +229,7 @@ export default function RelojesSection() {
                   Galaxy Watch
                 </h1>
                 <span className="text-sm text-gray-500">
-                  {resultCount} resultados
+                  {totalItems} resultados
                 </span>
               </div>
 
@@ -218,26 +289,32 @@ export default function RelojesSection() {
                   : "grid-cols-1"
               )}
             >
-              {watchProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  rating={product.rating}
-                  reviewCount={product.reviewCount}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  onAddToCart={(productId: string, color: string) => {
-                    console.log(`Añadir al carrito: ${productId} - ${color}`);
-                  }}
-                  onToggleFavorite={(productId: string) => {
-                    console.log(`Toggle favorito: ${productId}`);
-                  }}
-                />
-              ))}
+              {products.length === 0 ? (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  No se encontraron Galaxy Watch con los filtros seleccionados.
+                </div>
+              ) : (
+                products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    image={product.image}
+                    colors={product.colors}
+                    rating={product.rating}
+                    reviewCount={product.reviewCount}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    discount={product.discount}
+                    onAddToCart={(productId: string, color: string) => {
+                      console.log(`Añadir al carrito: ${productId} - ${color}`);
+                    }}
+                    onToggleFavorite={(productId: string) => {
+                      console.log(`Toggle favorito: ${productId}`);
+                    }}
+                  />
+                ))
+              )}
             </div>
           </main>
         </div>
@@ -249,7 +326,7 @@ export default function RelojesSection() {
         filterConfig={watchFilters}
         filters={filters}
         onFilterChange={handleFilterChange}
-        resultCount={resultCount}
+        resultCount={totalItems}
         expandedFilters={expandedFilters}
         onToggleFilter={toggleFilter}
         trackingPrefix="watch_filter"

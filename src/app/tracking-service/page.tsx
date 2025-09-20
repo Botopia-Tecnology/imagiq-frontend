@@ -114,7 +114,7 @@ export default function TrackingService() {
   }, [activeStep]);
 
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center py-12">
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center py-12">
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-4">
         {/* Tracking Card */}

@@ -1,85 +1,114 @@
+"use client";
+
+import { use } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
-import { productsMock } from "../../components/productsMock";
-import { findProductById } from "../../data_product/products";
+import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
-import type { ProductColor } from "../../components/ProductCard";
-import type { StaticImageData } from "next/image";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { StaticImageData } from "next/image";
+import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
+import {
+  ProductCardProps,
+  ProductColor,
+} from "@/app/productos/components/ProductCard";
+import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 
-// Tipo base para productos, preparado para futura integración con API
-interface BaseProduct {
-  id: string;
-  name: string;
-  image: string | StaticImageData;
-  colors: ProductColor[];
-  price: string;
-  originalPrice?: string;
-  discount?: string;
-  rating?: number;
-  reviewCount?: number;
-  description?: string;
-  specs?: { label: string; value: string }[];
-}
+// Función para convertir ProductCardProps a ProductData compatible con ViewProduct
+function convertProductForView(product: ProductCardProps) {
+  // Si la imagen es un string (URL), usar imagen por defecto
+  const image =
+    typeof product.image === "string" ? smartphonesImg : product.image;
 
-function normalizeProduct(product: BaseProduct): BaseProduct {
+  // Función helper para reemplazar datos faltantes con "None"
+  const safeValue = (
+    value: string | number | null | undefined,
+    fallback: string = "None"
+  ) => {
+    if (
+      value === null ||
+      value === undefined ||
+      value === "" ||
+      (Array.isArray(value) && value.length === 0)
+    ) {
+      return fallback;
+    }
+    return String(value);
+  };
+
   return {
-    id: product.id,
-    name: product.name,
-    image: product.image,
-    colors: Array.isArray(product.colors) ? product.colors : [],
-    price: product.price ?? "",
-    originalPrice: product.originalPrice ?? "",
-    discount: product.discount ?? "",
-    rating: product.rating,
-    reviewCount: product.reviewCount,
-    description: product.description ?? "",
-    specs: product.specs ?? [],
+    id: safeValue(product.id, "None"),
+    name: safeValue(product.name, "None"),
+    image: image as StaticImageData,
+    price: safeValue(product.price, "None"),
+    originalPrice: product.originalPrice
+      ? safeValue(product.originalPrice)
+      : undefined,
+    discount: product.discount ? safeValue(product.discount) : undefined,
+    colors:
+      product.colors?.map((color: ProductColor) => ({
+        name: safeValue(color.name || color.label, "None"),
+        hex: safeValue(color.hex, "#808080"),
+      })) || [],
+    description: safeValue(product.description, "None"),
+    specs: [
+      { label: "Marca", value: safeValue(product.brand, "None") },
+      { label: "Modelo", value: safeValue(product.model, "None") },
+      { label: "Categoría", value: safeValue(product.category, "None") },
+      { label: "Subcategoría", value: safeValue(product.subcategory, "None") },
+      { label: "Capacidad", value: safeValue(product.capacity, "None") },
+      { label: "Stock", value: safeValue(product.stock, "None") },
+      { label: "SKU", value: safeValue(product.sku, "None") },
+    ],
   };
 }
 
-export default async function ProductViewPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
+// @ts-expect-error Next.js infiere el tipo de params automáticamente
+export default function ProductViewPage({ params }) {
+  const resolvedParams = use(params) as { id: string };
+  const { id } = resolvedParams;
 
-  console.log("🔍 [DEBUG] Product ID requested:", id);
+  // Usar el hook de productos para obtener el producto específico
+  const { product, loading, error } = useProduct(id);
 
-  // Usar la función optimizada para buscar el producto
-  let product = findProductById(id);
-
-  // Si no se encuentra en los datos centralizados, buscar en productsMock (compatibilidad)
-  if (!product && Array.isArray(productsMock)) {
-    const mockProduct = productsMock.find((p) => p.id === id);
-    if (mockProduct) {
-      // Mapear el producto de productsMock al formato BaseProduct
-      product = {
-        id: mockProduct.id,
-        sku: mockProduct.id, // Usar id como sku por compatibilidad
-        name: mockProduct.name,
-        image: mockProduct.image,
-        colors: mockProduct.colors,
-        rating: 4.5, // Valor por defecto
-        reviewCount: 100, // Valor por defecto
-        price: mockProduct.price,
-        originalPrice: mockProduct.originalPrice,
-        discount: mockProduct.discount,
-        isNew: false,
-      };
-    }
-    console.log("🔍 [DEBUG] Found in productsMock:", !!product);
+  if (loading) {
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <LoadingSpinner />
+        </div>
+      </div>
+    );
   }
 
-  console.log("🔍 [DEBUG] Final product found:", !!product);
-
-  if (!product) {
-    console.error("❌ [ERROR] Product not found for ID:", id);
+  if (error) {
     return notFound();
   }
 
-  const normalizedProduct = normalizeProduct(product);
-  console.log("✅ [SUCCESS] Normalized product:", normalizedProduct);
+  if (!product) {
+    // Solo mostrar "no encontrado" si realmente no hay producto después de cargar
+    return (
+      <div className="container mx-auto px-6 py-8">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold mb-2">
+              Producto no encontrado
+            </h2>
+            <p className="text-gray-600">
+              El producto que buscas no está disponible.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  // Renderiza la vista de detalle con los datos dinámicos
-  return <ViewProduct product={normalizedProduct} />;
+  // Convertir el producto al formato esperado por ViewProduct
+  const convertedProduct = convertProductForView(product);
+  const isRefrigerador = convertedProduct.name?.toLowerCase().includes('refrigerador');
+
+  return isRefrigerador ? (
+    <ViewProductAppliance product={convertedProduct} />
+  ) : (
+    <ViewProduct product={convertedProduct} />
+  );
 }

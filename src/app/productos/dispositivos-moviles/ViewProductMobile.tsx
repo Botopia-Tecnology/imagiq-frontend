@@ -21,7 +21,7 @@ import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
-import ComparationProduct from "./VideosSection";
+import ComparationProduct from "./ComparationProduct";
 import VideosSection from "./VideosSection";
 import QRDesktop from "../components/QRDesktop";
 import HouseButton from "../components/Button";
@@ -500,7 +500,10 @@ export default function ViewProduct({ product }: { product: ProductData }) {
         <EspecificacionesProduct specs={safeProduct.specs} />
       </motion.div>
 
-     
+      {/* Componente de videos */}
+      <motion.div ref={videosReveal.ref} {...videosReveal.motionProps}>
+        <VideosSection />
+      </motion.div>
       {/* Componente de comparación justo debajo de VideosSection */}
       <motion.div
         ref={comparationReveal.ref}

@@ -59,10 +59,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles y view
+  // Permitir acceso público a todas las subrutas de Electrodomesticos, DispositivosMoviles, Televisores y view
   if (
     pathname.startsWith("/productos/dispositivos-moviles") ||
     pathname.startsWith("/productos/electrodomesticos") ||
+    pathname.startsWith("/productos/televisores") ||
     pathname.startsWith("/productos/view")
   ) {
     return NextResponse.next();

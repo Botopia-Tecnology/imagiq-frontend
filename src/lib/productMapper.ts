@@ -10,41 +10,8 @@ import { StaticImageData } from 'next/image';
 import { encodeCodigoMarketForUrl } from './api';
 
 // Importar imágenes mock para usar temporalmente
-import smartphonesImg from '@/img/categorias/Smartphones.png';
-import tabletasImg from '@/img/categorias/Tabletas.png';
-import galaxyWatchImg from '@/img/categorias/galaxy_watch.png';
-import galaxyBudsImg from '@/img/categorias/galaxy_buds.png';
-import tvImg from '@/img/categorias/Tabletas.png';
-import monitorImg from '@/img/categorias/Tabletas.png';
-import audioImg from '@/img/electrodomesticos/electrodomesticos2.png';
-import aireImg from '@/img/electrodomesticos/electrodomesticos4.png';
-import aspiradoraImg from '@/img/electrodomesticos/electrodomesticos3.png';
-import hornosImg from '@/img/electrodomesticos/electrodomesticos4.png';
-import lavadoraImg from '@/img/electrodomesticos/electrodomesticos2.png';
-import lavavajillasImg from '@/img/electrodomesticos/electrodomesticos4.png';
-import microondasImg from '@/img/electrodomesticos/electrodomesticos1.png';
-import refrigeradorImg from '@/img/electrodomesticos/electrodomesticos1.png';
 import emptyImg from '@/img/empty.jpeg';
 
-// Mapeo de categorías a imágenes (no usado actualmente)
-const categoryImageMap: Record<string, StaticImageData> = {
-  'IM': smartphonesImg, // Dispositivos móviles
-  'Celulares': smartphonesImg,
-  'Tablets': tabletasImg,
-  'Relojes': galaxyWatchImg,
-  'Audífonos': galaxyBudsImg,
-  'Accesorios': smartphonesImg, // Accesorios usan imagen de smartphones por defecto
-  'TV': tvImg,
-  'Monitores': monitorImg,
-  'Audio': audioImg,
-  'Aire Acondicionado': aireImg,
-  'Aspiradoras': aspiradoraImg,
-  'Hornos': hornosImg,
-  'Lavadoras': lavadoraImg,
-  'Lavavajillas': lavavajillasImg,
-  'Microondas': microondasImg,
-  'Refrigeradores': refrigeradorImg,
-};
 
 // Mapeo de colores de la API a colores del frontend
 const colorMap: Record<string, { hex: string; label: string }> = {

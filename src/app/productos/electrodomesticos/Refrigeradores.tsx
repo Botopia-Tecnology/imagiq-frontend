@@ -14,7 +14,6 @@ import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.p
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
-import { productsData } from "../data_product/products";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { Filter, Grid3X3, List } from "lucide-react";

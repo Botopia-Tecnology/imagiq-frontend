@@ -7,7 +7,6 @@
 interface ItemsPerPageSelectorProps {
   itemsPerPage: number;
   onItemsPerPageChange: (items: number) => void;
-  totalItems: number;
   className?: string;
 }
 
@@ -16,7 +15,6 @@ const ITEMS_PER_PAGE_OPTIONS = [10, 15, 20, 25, 50];
 export default function ItemsPerPageSelector({
   itemsPerPage,
   onItemsPerPageChange,
-  totalItems,
   className,
 }: ItemsPerPageSelectorProps) {
   return (

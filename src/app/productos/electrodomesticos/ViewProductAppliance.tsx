@@ -12,7 +12,6 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { cn } from "@/lib/utils";
 import Image, { StaticImageData } from "next/image";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_negro.png";
@@ -25,8 +24,6 @@ import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
 import ARExperienceHandler from "./components/ARExperienceHandler";
 import SizeProduct from "./components/SizeProduct";
-import smartphonesImg from "@/img/categorias/Smartphones.png";
-import ProductCard from "../components/ProductCard";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -52,13 +49,9 @@ export default function ViewProductAppliance({
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
-  // Estado para especificaciones abiertas
-  const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
   const [showBar, setShowBar] = useState(false);
-  const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -70,115 +63,7 @@ export default function ViewProductAppliance({
 
   const isProductDetailView = pathname.startsWith("/productos/view/");
 
-  // Especificaciones para mostrar
-  const specsList: { title: string; desc: string }[] = [
-    {
-      title: "Procesador",
-      desc: "Velocidad de la CPU: 4.47GHz, 3.5GHz\nTipo CPU: Octa-Core",
-    },
-    {
-      title: "Pantalla",
-      desc: "Dynamic AMOLED 2X\n120Hz, HDR10+\nResolución: 3200x1440",
-    },
-    {
-      title: "Compatible con S-pen",
-      desc: "Sí, soporta S-pen con baja latencia",
-    },
-    {
-      title: "Cámara",
-      desc: "Triple cámara: 50MP + 12MP + 10MP\nFrontal: 12MP",
-    },
-    {
-      title: "Almacenamiento memoria",
-      desc: "128GB / 256GB / 512GB\nRAM: 8GB / 12GB",
-    },
-    {
-      title: "Conectividad",
-      desc: "5G, WiFi 6E, Bluetooth 5.3, NFC",
-    },
-    {
-      title: "OS",
-      desc: "Android 13, One UI 5.1",
-    },
-  ];
 
-  const products = [
-    {
-      id: "galaxy-a16",
-      name: "Samsung Galaxy A16",
-      image: smartphonesImg,
-      colors: [
-        { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
-        { name: "black", hex: "#000000", label: "Negro" },
-        { name: "white", hex: "#FFFFFF", label: "Blanco" },
-      ],
-      price: "$ 812.900",
-      originalPrice: "$ 999.000",
-      discount: "-19%",
-      description: "Smartphone gama media con gran batería y cámara avanzada.",
-      specs: [
-        { label: "Pantalla", value: '6.5" FHD+' },
-        { label: "Procesador", value: "Exynos" },
-        { label: "RAM", value: "4GB" },
-        { label: "Almacenamiento", value: "128GB" },
-      ],
-    },
-    {
-      id: "galaxy-a25",
-      name: "Samsung Galaxy A25",
-      image: smartphonesImg,
-      colors: [
-        { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
-        { name: "black", hex: "#000000", label: "Negro" },
-        { name: "silver", hex: "#C0C0C0", label: "Plateado" },
-      ],
-      price: "$ 1.250.000",
-      description: "Smartphone con pantalla AMOLED y cámara triple.",
-      specs: [
-        { label: "Pantalla", value: '6.6" AMOLED' },
-        { label: "Procesador", value: "Snapdragon" },
-        { label: "RAM", value: "6GB" },
-        { label: "Almacenamiento", value: "128GB" },
-      ],
-    },
-    {
-      id: "galaxy-a26",
-      name: "Samsung Galaxy A26",
-      image: smartphonesImg,
-      colors: [
-        { name: "white", hex: "#FFFFFF", label: "Blanco" },
-        { name: "black", hex: "#000000", label: "Negro" },
-        { name: "mint", hex: "#10B981", label: "Menta" },
-      ],
-      price: "$ 1.450.000",
-      originalPrice: "$ 1.600.000",
-      discount: "-9%",
-      description: "Smartphone con diseño moderno y batería de larga duración.",
-      specs: [
-        { label: "Pantalla", value: '6.7" FHD+' },
-        { label: "Procesador", value: "MediaTek" },
-        { label: "RAM", value: "8GB" },
-        { label: "Almacenamiento", value: "256GB" },
-      ],
-    },
-    {
-      id: "galaxy-a15-256gb",
-      name: "Samsung Galaxy A15 256 GB",
-      image: smartphonesImg,
-      colors: [
-        { name: "white", hex: "#FFFFFF", label: "Blanco" },
-        { name: "black", hex: "#000000", label: "Negro" },
-      ],
-      price: "$ 999.000",
-      description: "Smartphone con gran almacenamiento y rendimiento.",
-      specs: [
-        { label: "Pantalla", value: '6.5" FHD+' },
-        { label: "Procesador", value: "Exynos" },
-        { label: "RAM", value: "4GB" },
-        { label: "Almacenamiento", value: "256GB" },
-      ],
-    },
-  ];
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -201,10 +86,6 @@ export default function ViewProductAppliance({
   };
   const handleBuy = () => {
     alert("Compra iniciada");
-  };
-  // Handler para abrir/cerrar especificación
-  const handleToggleSpec = (idx: number) => {
-    setOpenSpecs((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   return (

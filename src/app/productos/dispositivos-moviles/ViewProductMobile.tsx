@@ -13,7 +13,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/dispositivosmoviles/cel1.png";
 import { productsMock } from "../components/productsMock";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
@@ -21,8 +20,7 @@ import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import ComparationProduct from "./ComparationProduct";
 import VideosSection from "./VideosSection";
-import { usePathname, useRouter } from "next/navigation";
-import { useCartContext } from "@/features/cart/CartContext";
+import { usePathname } from "next/navigation";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 // Tipos para producto
 interface ProductColor {
@@ -45,8 +43,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
-  // Estado para especificaciones abiertas
-  const [openSpecs, setOpenSpecs] = useState<{ [key: number]: boolean }>({});
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
@@ -79,21 +75,13 @@ export default function ViewProduct({ product }: { product: ProductData }) {
     };
   }, [setHideNavbar]);
 
-  // UX feedback state (hook debe ir antes de cualquier return condicional)
-  const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
   // Handlers
-  const { addProduct } = useCartContext();
   const handleAddToCart = () => {
     alert(`Producto añadido: ${safeProduct.name} (${selectedColor.name})`);
   };
-  const router = useRouter();
   const handleBuy = () => {
     alert("Compra iniciada");
-  };
-  // Handler para abrir/cerrar especificación
-  const handleToggleSpec = (idx: number) => {
-    setOpenSpecs((prev) => ({ ...prev, [idx]: !prev[idx] }));
   };
 
   return (

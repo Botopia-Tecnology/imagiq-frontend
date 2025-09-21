@@ -5,7 +5,6 @@ import cpuIcon from "@/img/dispositivosmoviles/cpu-icon.png";
 import fullAltIcon from "@/img/dispositivosmoviles/full_alt_light-icon.png";
 import cameraIcon from "@/img/dispositivosmoviles/camera-icon.png";
 import boxOpenIcon from "@/img/dispositivosmoviles/box_open_light-icon.png";
-import webIcon from "@/img/dispositivosmoviles/web-icon.png";
 import wifiIcon from "@/img/dispositivosmoviles/wifi-icon.png";
 
 /**

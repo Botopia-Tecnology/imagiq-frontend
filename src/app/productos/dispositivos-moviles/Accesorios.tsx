@@ -140,7 +140,7 @@ export default function AccesoriosSection() {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
-  }, [itemsPerPage]);
+  }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
@@ -149,21 +149,6 @@ export default function AccesoriosSection() {
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
-  // Memoizar el sidebar de filtros para evitar re-renders innecesarios
-  const FilterSidebarMemo = useMemo(
-    () => (
-      <FilterSidebar
-        filterConfig={accessoryFilters}
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        resultCount={totalItems}
-        expandedFilters={expandedFilters}
-        onToggleFilter={toggleFilter}
-        trackingPrefix="accessory_filter"
-      />
-    ),
-    [filters, totalItems, expandedFilters, toggleFilter]
-  );
 
   // Memoizar el modal de filtros móviles
   const MobileFilterModalMemo = useMemo(
@@ -232,8 +217,6 @@ export default function AccesoriosSection() {
               products={products}
               loading={loading}
               error={error}
-              filters={filters}
-              setFilters={setFilters}
               refreshProducts={refreshProducts}
             />
             
@@ -244,7 +227,6 @@ export default function AccesoriosSection() {
                   <ItemsPerPageSelector
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
-                    totalItems={totalItems}
                   />
                 </div>
                 <Pagination

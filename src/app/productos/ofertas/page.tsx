@@ -8,7 +8,6 @@
 import React, { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import ProductCard from "../components/ProductCard";
-import type { ProductCardProps } from "../components/ProductCard";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 

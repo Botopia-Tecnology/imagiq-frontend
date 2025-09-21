@@ -13,12 +13,12 @@ interface UseStickyOptions {
   /**
    * Referencia al contenedor del sidebar
    */
-  sidebarRef: RefObject<HTMLElement>;
+  sidebarRef: RefObject<HTMLElement | HTMLDivElement | null>;
 
   /**
    * Referencia al contenedor de productos
    */
-  productsRef: RefObject<HTMLElement>;
+  productsRef: RefObject<HTMLElement | HTMLDivElement | null>;
 
   /**
    * Offset desde el top de la página para iniciar el sticky (por defecto 120px para navbar)

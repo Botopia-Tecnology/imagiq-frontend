@@ -9,7 +9,6 @@ export default function ChatbotStepsPage() {
   const [step, setStep] = useState(1);
 
   const handleNext = () => setStep((prev) => prev + 1);
-  const handleBack = () => setStep((prev) => (prev > 1 ? prev - 1 : 1));
 
   return (
     <>

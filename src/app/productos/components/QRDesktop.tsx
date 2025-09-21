@@ -1,7 +1,6 @@
 "use client";
 import { QRCodeCanvas } from "qrcode.react";
 import { FaAndroid, FaApple } from "react-icons/fa";
-import { useEffect, useState } from "react";
 type QRDesktopProps = {
   glbUrl: string;
   usdzUrl: string;

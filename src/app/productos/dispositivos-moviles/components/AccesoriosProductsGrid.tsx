@@ -9,19 +9,16 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import ProductCard, {
   type ProductCardProps,
 } from "../../components/ProductCard";
-import type { FilterState } from "../../components/FilterSidebar";
 
 interface ProductsGridProps {
   products: ProductCardProps[];
   loading: boolean;
   error: string | null;
-  filters: FilterState;
-  setFilters: React.Dispatch<React.SetStateAction<FilterState>>;
   refreshProducts: () => void;
 }
 
 const AccesoriosProductsGrid = forwardRef<HTMLDivElement, ProductsGridProps>(
-  ({ products, loading, error, filters, setFilters, refreshProducts }, ref) => {
+  ({ products, loading, error, refreshProducts }, ref) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect , useMemo} from "react";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
@@ -10,7 +10,6 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import { productsData } from "../data_product/products";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";

@@ -11,7 +11,7 @@
 
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import { User, Usuario } from "@/types/user";
+import { Usuario } from "@/types/user";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

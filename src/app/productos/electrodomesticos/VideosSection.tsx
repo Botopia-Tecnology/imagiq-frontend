@@ -39,7 +39,6 @@ const videosData: VideoData[] = [
  */
 const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
   const [isPlaying, setIsPlaying] = useState(true); // Inicia reproduciendo automáticamente
-  const [isHovered, setIsHovered] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
 
   // Efecto para reproducir automáticamente cuando se monta el componente
@@ -72,8 +71,6 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
   return (
     <div
       className="relative w-full h-full rounded-2xl overflow-hidden cursor-pointer transform transition-all duration-300"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
       onClick={togglePlayPause}
     >
       {/* Video de fondo */}

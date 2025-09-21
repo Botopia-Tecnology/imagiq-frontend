@@ -1,5 +1,5 @@
 import { useProductContext } from "@/features/products/ProductContext";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useMemo } from "react";
 
 export function useNavbarConfig(
@@ -8,7 +8,6 @@ export function useNavbarConfig(
   isLogin: boolean
 ) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { isAppliance } = useProductContext();
   //const isAppliance = searchParams.get("appliance") === "true";
   return useMemo(() => {

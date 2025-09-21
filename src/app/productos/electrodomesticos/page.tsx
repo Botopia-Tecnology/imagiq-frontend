@@ -21,7 +21,6 @@ import HornosSection from "./Hornos";
 import AspiradorasSection from "./Aspiradoras";
 import MicroondasSection from "./Microondas";
 import AireAcondicionadoSection from "./AireAcondicionado";
-import CategoriesSection from "./CategoriesSection";
 
 type SectionType =
   | "refrigeradores"

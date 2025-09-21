@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect , useMemo} from "react";
 import { cn } from "@/lib/utils";
 import ProductCard, { type ProductColor } from "../components/ProductCard";
 import FilterSidebar, {
@@ -15,6 +15,10 @@ import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { Filter, Grid3X3, List } from "lucide-react";
+
 
 const applianceCategories: Category[] = [
   {
@@ -81,6 +85,19 @@ export default function LavadorasSection() {
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(8);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("relevancia");
+
+    const apiFilters = useMemo(
+      () => ({
+        subcategory: "Lavadora,Secadora",
+      }),
+      []
+    );
+  
+    const { products, loading, error, totalItems, refreshProducts } =
+      useProducts(apiFilters);
+
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -112,6 +129,49 @@ export default function LavadorasSection() {
     setExpandedFilters(newExpanded);
   };
 
+    if (loading) {
+      return (
+        <div className="min-h-screen bg-white">
+          <CategorySlider
+            categories={applianceCategories}
+            trackingPrefix="smartphone_category"
+          />
+          <div className="container mx-auto px-6 py-8">
+            <div className="flex justify-center items-center min-h-[400px]">
+              <LoadingSpinner />
+            </div>
+          </div>
+        </div>
+      );
+    }
+  
+
+    
+      if (error) {
+        return (
+          <div className="min-h-screen bg-white">
+            <CategorySlider
+              categories={applianceCategories}
+              trackingPrefix="smartphone_category"
+            />
+            <div className="container mx-auto px-6 py-8">
+              <div className="text-center py-12">
+                <h2 className="text-2xl font-bold text-red-600 mb-4">
+                  Error al cargar lavadoras
+                </h2>
+                <p className="text-gray-600 mb-4">{error}</p>
+                <button
+                  onClick={refreshProducts}
+                  className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
@@ -130,15 +190,106 @@ export default function LavadorasSection() {
             trackingPrefix="lavadora_filter"
           />
         </aside>
+         {/* Contenido principal */}
         <main className="flex-1">
-          <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {productsData.electrodomesticos
-              .filter((product) =>
-                product.name.toLowerCase().includes("lavadora")
-              )
-              .map((product) => (
-                <ProductCard key={product.id} {...product} />
-              ))}
+          {/* Header con controles */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <h1 className="text-2xl font-bold text-gray-900">
+                Lavadoras
+              </h1>
+              <span className="text-sm text-gray-500">
+                {totalItems} resultados
+              </span>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Botón filtros móvil */}
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                <Filter className="w-4 h-4" />
+                Filtros
+              </button>
+
+              {/* Selector de ordenamiento */}
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="relevancia">Relevancia</option>
+                <option value="precio-menor">Precio: menor a mayor</option>
+                <option value="precio-mayor">Precio: mayor a menor</option>
+                <option value="nombre">Nombre A-Z</option>
+                <option value="calificacion">Mejor calificados</option>
+              </select>
+
+              {/* Toggle vista */}
+              <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setViewMode("grid")}
+                  className={cn(
+                    "p-2",
+                    viewMode === "grid"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <Grid3X3 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode("list")}
+                  className={cn(
+                    "p-2",
+                    viewMode === "list"
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-gray-600 hover:bg-gray-50"
+                  )}
+                >
+                  <List className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+          {/* Grid de productos */}
+          <div
+            className={cn(
+              "grid gap-6",
+              viewMode === "grid"
+                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                : "grid-cols-1"
+            )}
+          >
+            {products.length === 0 ? (
+              <div className="col-span-full text-center py-12 text-gray-500">
+                No se encontraron lavadoras con los filtros seleccionados.
+              </div>
+            ) : (
+              products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  image={product.image}
+                  colors={product.colors}
+                  rating={product.rating}
+                  reviewCount={product.reviewCount}
+                  price={product.price}
+                  originalPrice={product.originalPrice}
+                  discount={product.discount}
+                  isNew={product.isNew}
+                  onAddToCart={(productId: string, color: string) => {
+                    console.log(`Añadir al carrito: ${productId} - ${color}`);
+                  }}
+                  onToggleFavorite={(productId: string) => {
+                    console.log(`Toggle favorito: ${productId}`);
+                  }}
+                  className={viewMode === "list" ? "flex-row" : ""}
+                />
+              ))
+            )}
           </div>
         </main>
       </div>

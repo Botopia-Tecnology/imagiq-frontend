@@ -137,12 +137,13 @@ export default function ProductCard({
     console.log(`🔗 Navegando a producto con ID: ${id}`);
     console.log(`📝 Nombre del producto: ${name}`);
     // Navega usando el id del mock, no el nombre ni slug
-    router.push(`/productos/view/${id}`);
-    posthogUtils.capture("product_more_info_click", {
-      product_id: id,
-      product_name: name,
-      source: "product_card",
-    });
+      router.push(`/productos/view/${id}`);
+      posthogUtils.capture("product_more_info_click", {
+        product_id: id,
+        product_name: name,
+        source: "product_card",
+      });
+    
   };
 
   return (

@@ -11,6 +11,7 @@ import {
   ProductCardProps,
   ProductColor,
 } from "@/app/productos/components/ProductCard";
+
 import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 
 // Función para convertir ProductCardProps a ProductData compatible con ViewProduct
@@ -104,11 +105,32 @@ export default function ProductViewPage({ params }) {
 
   // Convertir el producto al formato esperado por ViewProduct
   const convertedProduct = convertProductForView(product);
-  const isRefrigerador = convertedProduct.name?.toLowerCase().includes('refrigerador');
+  const subcategoria = convertedProduct.specs
+    .find((spec) => spec.label === "Subcategoría")
+    ?.value?.toLowerCase();
+  const isRefrigerador = subcategoria?.includes("neveras");
 
-  return isRefrigerador ? (
-    <ViewProductAppliance product={convertedProduct} />
-  ) : (
-    <ViewProduct product={convertedProduct} />
+  return (
+    <>
+      <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
+      {isRefrigerador ? (
+        <ViewProductAppliance product={convertedProduct} />
+      ) : (
+        <ViewProduct product={convertedProduct} />
+      )}
+    </>
   );
+}
+
+import { useEffect } from "react";
+import { useProductContext } from "@/features/products/ProductContext";
+
+function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
+  const { setIsAppliance } = useProductContext();
+
+  useEffect(() => {
+    setIsAppliance(isRefrigerador);
+  }, [isRefrigerador, setIsAppliance]);
+
+  return null;
 }

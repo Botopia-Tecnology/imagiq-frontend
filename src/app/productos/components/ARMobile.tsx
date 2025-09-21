@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { GoScreenFull } from "react-icons/go";
+
 import { IoClose } from "react-icons/io5";
+import { BsFillHouseDoorFill } from "react-icons/bs";
 type ARButtonProps = {
   glbUrl: string;
   usdzUrl: string;
@@ -17,12 +18,10 @@ export default function ARMobile({
   const [showLabel, setShowLabel] = useState(true);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  console.log(isAndroid);
   useEffect(() => {
     const userAgent = navigator.userAgent.toLowerCase();
     setIsAndroid(/android/.test(userAgent));
     setIsIOS(/iphone|ipad|ipod/.test(userAgent));
-    console.log("UserAgent:", userAgent); // <- Debug
   }, []);
   // Links
   const sceneViewerUrl = `https://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(
@@ -52,7 +51,7 @@ export default function ARMobile({
       )}
       <a href={finalUrl} rel="ar" target="_blank">
         <button className="inline-flex items-center justify-center bg-black text-white p-4 rounded-full shadow hover:bg-gray-900 transition-all border border-black">
-          <GoScreenFull size={20} />
+          <BsFillHouseDoorFill size={20} />
         </button>
       </a>
     </div>

@@ -47,7 +47,7 @@ export default function ElectrodomesticosDropdown() {
 
   return (
     <div
-      data-dropdown="electrodomesticos"
+      data-dropdown="refrigeradores"
       className="absolute top-full left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[240px] transition-all duration-200"
     >
       <div className="space-y-1.5">

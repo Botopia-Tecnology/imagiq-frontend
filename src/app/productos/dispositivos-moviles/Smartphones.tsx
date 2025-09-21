@@ -13,7 +13,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
@@ -28,6 +28,9 @@ import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { productsData } from "../data_product/products";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import Pagination from "./components/Pagination";
+import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
+import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 
 // Importar imágenes del slider
 import smartphonesImg from "../../../img/categorias/Smartphones.png";
@@ -119,21 +122,76 @@ export default function SmartphonesSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [resultCount] = useState(24)
+  
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+
+  // Refs para sticky behavior
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con filtro de subcategoría "Celulares"
   const apiFilters = useMemo(() => ({
     subcategory: "Celulares"
   }), []);
 
+  // Crear filtros iniciales con paginación
+  const initialFilters = useMemo(() => {
+    const filters = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    return filters;
+  }, [apiFilters, currentPage, itemsPerPage]);
+
   const { 
     products, 
     loading, 
     error, 
     totalItems,
+    totalPages,
+    filterProducts,
     refreshProducts 
-  } = useProducts(apiFilters);
+  } = useProducts(initialFilters);
+
+  // Ref para evitar bucles infinitos
+  const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Responsive global
+
+  // Sticky behavior (solo en desktop/large)
+  const stickyEnabled = device === "desktop" || device === "large";
+  const stickyState = useSticky({
+    sidebarRef,
+    productsRef,
+    topOffset: 120,
+    enabled: stickyEnabled,
+  });
+
+  const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
+
+  // Resetear a la página 1 cuando cambien los filtros
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  // Actualizar filtros cuando cambien los parámetros de paginación
+  useEffect(() => {
+    const filtersWithPagination = {
+      ...apiFilters,
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    
+    // Crear una clave única para evitar bucles infinitos
+    const filtersKey = JSON.stringify(filtersWithPagination);
+    
+    if (lastFiltersRef.current !== filtersKey) {
+      lastFiltersRef.current = filtersKey;
+      filterProducts(filtersWithPagination);
+    }
+  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -156,15 +214,32 @@ export default function SmartphonesSection() {
     }));
   };
 
-  const toggleFilter = (filterKey: string) => {
-    const newExpanded = new Set(expandedFilters);
-    if (newExpanded.has(filterKey)) {
-      newExpanded.delete(filterKey);
-    } else {
-      newExpanded.add(filterKey);
-    }
-    setExpandedFilters(newExpanded);
-  };
+  const toggleFilter = useCallback(
+    (filterKey: string) => {
+      const newExpanded = new Set(expandedFilters);
+      if (newExpanded.has(filterKey)) {
+        newExpanded.delete(filterKey);
+      } else {
+        newExpanded.add(filterKey);
+      }
+      setExpandedFilters(newExpanded);
+    },
+    [expandedFilters]
+  );
+
+  // Funciones para manejar la paginación
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+    // Scroll suave hacia arriba cuando cambie de página
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, [itemsPerPage]);
+
+  const handleItemsPerPageChange = useCallback(async (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+    // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, []);
 
   if (loading) {
     return (
@@ -228,15 +303,18 @@ export default function SmartphonesSection() {
           )}
         >
           {(device === "desktop" || device === "large") && (
-            <aside className="hidden lg:block w-80 flex-shrink-0">
+            <aside ref={sidebarRef} className="hidden lg:block w-80 flex-shrink-0">
               <FilterSidebar
                 filterConfig={smartphoneFilters}
                 filters={filters}
                 onFilterChange={handleFilterChange}
-                resultCount={resultCount}
+                resultCount={totalItems}
                 expandedFilters={expandedFilters}
                 onToggleFilter={toggleFilter}
                 trackingPrefix="smartphone_filter"
+                stickyContainerClasses={containerClasses}
+                stickyWrapperClasses={wrapperClasses}
+                stickyStyle={style}
               />
             </aside>
           )}
@@ -263,7 +341,7 @@ export default function SmartphonesSection() {
                     device === "mobile" && "text-xs"
                   )}
                 >
-                  {resultCount} resultados
+                  {totalItems} resultados
                 </span>
               </div>
 
@@ -325,10 +403,11 @@ export default function SmartphonesSection() {
             </div>
 
             <div
+              ref={productsRef}
               className={cn(
                 "grid gap-6",
                 viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
                   : "grid-cols-1",
                 device === "mobile" && "gap-3"
               )}
@@ -362,6 +441,26 @@ export default function SmartphonesSection() {
                 ))
               )}
             </div>
+            
+            {/* Paginación */}
+            {!loading && !error && totalItems > 0 && (
+              <div className="mt-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                  <ItemsPerPageSelector
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                    totalItems={totalItems}
+                  />
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                />
+              </div>
+            )}
           </main>
         </div>
       </div>
@@ -373,7 +472,7 @@ export default function SmartphonesSection() {
           filterConfig={smartphoneFilters}
           filters={filters}
           onFilterChange={handleFilterChange}
-          resultCount={resultCount}
+          resultCount={totalItems}
           expandedFilters={expandedFilters}
           onToggleFilter={toggleFilter}
           trackingPrefix="smartphone_filter"

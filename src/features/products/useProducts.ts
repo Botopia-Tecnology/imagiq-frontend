@@ -25,6 +25,8 @@ interface ProductFilters {
   withDiscount?: boolean;
   minStock?: number;
   descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
+  page?: number; // Página actual para paginación
+  limit?: number; // Límite de productos por página
 }
 
 interface UseProductsReturn {
@@ -40,6 +42,7 @@ interface UseProductsReturn {
   searchProducts: (query: string) => Promise<void>;
   filterProducts: (filters: ProductFilters) => Promise<void>;
   loadMore: () => Promise<void>;
+  goToPage: (page: number) => Promise<void>;
   refreshProducts: () => Promise<void>;
   hasMore: boolean;
 }
@@ -61,13 +64,15 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback((filters: ProductFilters): ProductFilterParams => {
     const params: ProductFilterParams = {
-      page: currentPage,
-      limit: 50,
+      page: filters.page || currentPage,
+      limit: filters.limit || 50,
+      precioMin: 1, // Siempre filtrar productos con precio mayor a 0 por defecto
     };
 
+    // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
     if (filters.category) params.categoria = filters.category;
     if (filters.subcategory) params.subcategoria = filters.subcategory;
-    if (filters.priceRange?.min) params.precioMin = filters.priceRange.min;
+    if (filters.priceRange?.min) params.precioMin = filters.priceRange.min; // Sobrescribe el valor por defecto
     if (filters.priceRange?.max) params.precioMax = filters.priceRange.max;
     if (filters.color) params.color = filters.color;
     if (filters.capacity) params.capacidad = filters.capacity;
@@ -130,7 +135,10 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
   // Función para filtrar productos
   const filterProducts = useCallback(async (filters: ProductFilters) => {
     setCurrentFilters(filters);
-    setCurrentPage(1);
+    // Solo resetear a página 1 si no se especifica una página en los filtros
+    if (!filters.page) {
+      setCurrentPage(1);
+    }
     await fetchProducts(filters, false);
   }, [fetchProducts]);
 
@@ -141,6 +149,15 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
       await fetchProducts(currentFilters, true);
     }
   }, [hasNextPage, loading, currentFilters, fetchProducts]);
+
+  // Función para ir a una página específica
+  const goToPage = useCallback(async (page: number) => {
+    if (page >= 1 && page <= totalPages && !loading) {
+      const filtersWithPage = { ...currentFilters, page };
+      setCurrentFilters(filtersWithPage);
+      await fetchProducts(filtersWithPage, false);
+    }
+  }, [totalPages, loading, currentFilters, fetchProducts]);
 
   // Función para refrescar productos con filtros dinámicos
   const refreshProducts = useCallback(async () => {
@@ -167,6 +184,7 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     searchProducts,
     filterProducts,
     loadMore,
+    goToPage,
     refreshProducts,
     hasMore: hasNextPage,
   };

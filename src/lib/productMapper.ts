@@ -48,15 +48,30 @@ const categoryImageMap: Record<string, StaticImageData> = {
 
 // Mapeo de colores de la API a colores del frontend
 const colorMap: Record<string, { hex: string; label: string }> = {
-  'Azul': { hex: '#1E40AF', label: 'Azul' },
-  'Negro': { hex: '#000000', label: 'Negro' },
-  'Blanco': { hex: '#FFFFFF', label: 'Blanco' },
-  'Verde': { hex: '#10B981', label: 'Verde' },
-  'Rosado': { hex: '#EC4899', label: 'Rosa' },
-  'Gris': { hex: '#808080', label: 'Gris' },
-  'Plateado': { hex: '#C0C0C0', label: 'Plateado' },
-  'Dorado': { hex: '#D4AF37', label: 'Dorado' },
-  'NO APLICA': { hex: '#F3F4F6', label: 'Estándar' },
+  'azul': { hex: '#1E40AF', label: 'Azul' },
+  'negro': { hex: '#000000', label: 'Negro' },
+  'blanco': { hex: '#FFFFFF', label: 'Blanco' },
+  'verde': { hex: '#10B981', label: 'Verde' },
+  'rosado': { hex: '#EC4899', label: 'Rosa' },
+  'rosa': { hex: '#EC4899', label: 'Rosa' },
+  'gris': { hex: '#808080', label: 'Gris' },
+  'gris titanio': { hex: '#4B5563', label: 'Gris Titanio' },
+  'negro titanio': { hex: '#1F2937', label: 'Negro Titanio' },
+  'plateado': { hex: '#C0C0C0', label: 'Plateado' },
+  'dorado': { hex: '#D4AF37', label: 'Dorado' },
+  'rojo': { hex: '#DC2626', label: 'Rojo' },
+  'amarillo': { hex: '#F59E0B', label: 'Amarillo' },
+  'morado': { hex: '#7C3AED', label: 'Morado' },
+  'purpura': { hex: '#7C3AED', label: 'Morado' },
+  'beige': { hex: '#F5F5DC', label: 'Beige' },
+  'marron': { hex: '#8B4513', label: 'Marrón' },
+  'no aplica': { hex: '#F3F4F6', label: 'Estándar' },
+  // Variaciones comunes
+  'azul medianoche': { hex: '#1E40AF', label: 'Azul Medianoche' },
+  'negro medianoche': { hex: '#000000', label: 'Negro Medianoche' },
+  'blanco perla': { hex: '#FFFFFF', label: 'Blanco Perla' },
+  'gris grafito': { hex: '#4B5563', label: 'Gris Grafito' },
+  'rosa oro': { hex: '#F59E0B', label: 'Rosa Oro' },
 };
 
 /**
@@ -64,15 +79,6 @@ const colorMap: Record<string, { hex: string; label: string }> = {
  * Ahora agrupa por codigoMarket y maneja múltiples variantes de color
  */
 export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCardProps {
-  // Log para productos de accesorios para debug
-  if (apiProduct.subcategoria === 'Accesorios') {
-    console.log(`🔧 Accesorio detectado: ${apiProduct.nombreMarket}`);
-    console.log(`📝 Descripción: ${apiProduct.desDetallada[0]}`);
-    console.log(`🏷️ Modelo: ${apiProduct.modelo}`);
-  }
-
-  // Log para debug de IDs
-  console.log(`🏷️ CodigoMarket: ${apiProduct.codigoMarket}, Colores: ${apiProduct.color.join(', ')}`);
 
   // Determinar imagen basada en categoría/subcategoría
   const image = getProductImage(apiProduct);
@@ -118,12 +124,9 @@ function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
   // Si hay URL de imagen en la API, usarla (cuando esté disponible)
   const firstImageUrl = apiProduct.urlImagenes.find(url => url && url.trim() !== '');
   if (firstImageUrl) {
-    console.log(`🖼️ Usando imagen de API para ${apiProduct.nombreMarket}: ${firstImageUrl}`);
     return firstImageUrl;
   }
-  
-  console.log(`⚠️ Sin imagen de API para ${apiProduct.nombreMarket}, usando imagen por defecto`);
-  
+    
   // Usar imagen por defecto cuando no hay imagen de la API
   return emptyImg;
 }
@@ -153,7 +156,9 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
   
   // Convertir el mapa a array de ProductColor
   colorPriceMap.forEach(({ color, precioNormal, precioDescto, index }) => {
-    const colorInfo = colorMap[color] || { hex: '#808080', label: color };
+    // Normalizar el color para búsqueda consistente
+    const normalizedColor = color.toLowerCase().trim();
+    const colorInfo = colorMap[normalizedColor] || { hex: '#808080', label: color };
     const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
     
     const price = formatPrice(precioDescto > 0 ? precioDescto : precioNormal);
@@ -167,8 +172,13 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       discount = `-${discountPercent}%`;
     }
     
+    // Debug: Log para verificar consistencia de colores
+    if (color !== colorInfo.label) {
+      console.log(`🎨 Color mapping: "${color}" -> "${colorInfo.label}" (hex: ${colorInfo.hex})`);
+    }
+    
     colorsWithPrices.push({
-      name: color.toLowerCase().replace(/\s+/g, '-'),
+      name: normalizedColor.replace(/\s+/g, '-'),
       hex: colorInfo.hex,
       label: colorInfo.label,
       price,
@@ -190,16 +200,8 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   const preciosNormalesValidos = apiProduct.precioNormal.filter(p => p > 0);
   const preciosDescuentoValidos = apiProduct.precioDescto.filter(p => p > 0);
   
-  console.log(`💰 Precios para ${apiProduct.nombreMarket}:`, {
-    precioNormal: apiProduct.precioNormal,
-    precioDescto: apiProduct.precioDescto,
-    validosNormal: preciosNormalesValidos,
-    validosDescuento: preciosDescuentoValidos
-  });
-  
   // Si no hay precios válidos, usar valores por defecto
   if (preciosNormalesValidos.length === 0 && preciosDescuentoValidos.length === 0) {
-    console.log(`⚠️ Sin precios válidos para ${apiProduct.nombreMarket}`);
     return {
       price: "Precio no disponible",
       originalPrice: undefined,
@@ -250,19 +252,22 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
  */
 export function mapApiProductsToFrontend(apiProducts: ProductApiData[]): ProductCardProps[] {
   return apiProducts
-    .map(mapApiProductToFrontend)
-    .filter(product => {
-      // Filtrar productos sin precios válidos
-      const hasValidPrice = product.colors.some(color => 
-        color.price && color.price !== "Precio no disponible"
-      );
-      
-      if (!hasValidPrice) {
-        console.log(`🚫 Filtrando producto sin precios válidos: ${product.name}`);
-      }
-      
-      return hasValidPrice;
-    });
+    .map(mapApiProductToFrontend);
+}
+
+/**
+ * Función de utilidad para debuggear colores
+ * Útil para identificar inconsistencias en el mapeo de colores
+ */
+export function debugColorMapping(color: string): { hex: string; label: string; normalized: string } {
+  const normalizedColor = color.toLowerCase().trim();
+  const colorInfo = colorMap[normalizedColor] || { hex: '#808080', label: color };
+  
+  return {
+    hex: colorInfo.hex,
+    label: colorInfo.label,
+    normalized: normalizedColor
+  };
 }
 
 /**

@@ -4,6 +4,7 @@
  * Grid de productos con estado vacío para Galaxy Buds
  */
 
+import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 import ProductCard, {
   type ProductCardProps,
@@ -16,21 +17,18 @@ interface ProductGridProps {
   onToggleFavorite: (productId: string) => void;
 }
 
-export default function ProductGrid({
-  products,
-  viewMode,
-  onAddToCart,
-  onToggleFavorite,
-}: ProductGridProps) {
-  return (
-    <div
-      className={cn(
-        "grid gap-6",
-        viewMode === "grid"
-          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
-          : "grid-cols-1"
-      )}
-    >
+const ProductGrid = forwardRef<HTMLDivElement, ProductGridProps>(
+  ({ products, viewMode, onAddToCart, onToggleFavorite }, ref) => {
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "grid gap-6",
+          viewMode === "grid"
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+            : "grid-cols-1"
+        )}
+      >
       {products.length === 0 ? (
         <div className="col-span-full text-center py-12 text-gray-500">
           No se encontraron Galaxy Buds con los filtros seleccionados.
@@ -45,6 +43,11 @@ export default function ProductGrid({
           />
         ))
       )}
-    </div>
-  );
-}
+      </div>
+    );
+  }
+);
+
+ProductGrid.displayName = "ProductGrid";
+
+export default ProductGrid;

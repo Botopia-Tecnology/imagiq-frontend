@@ -13,9 +13,8 @@
 import { useProducts } from "@/features/products/useProducts";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import CategorySlider, { Category } from "../components/CategorySlider";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
-  FilterConfig,
   MobileFilterModal,
   type FilterState,
 } from "../components/FilterSidebar";

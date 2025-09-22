@@ -19,10 +19,9 @@ import { cn } from "@/lib/utils";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   MobileFilterModal,
-  type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
+import CategorySlider from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";

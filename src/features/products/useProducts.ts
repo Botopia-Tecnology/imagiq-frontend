@@ -254,7 +254,6 @@ export const useProduct = (productId: string) => {
 
 export const useFavorites = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [loading] = useState(false);
 
   // Cargar favoritos desde localStorage
   useEffect(() => {
@@ -289,7 +288,6 @@ export const useFavorites = () => {
     addToFavorites,
     removeFromFavorites,
     isFavorite,
-    loading,
   };
 };
 

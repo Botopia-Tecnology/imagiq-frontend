@@ -31,7 +31,7 @@ import { useDeviceType } from "@/components/responsive";
 
 export default function AccesoriosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
-    new Set(["tipoAccesorio", "color"])
+    new Set(["tipoAccesorio"])
   );
   const [filters, setFilters] = useState<FilterState>({});
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");

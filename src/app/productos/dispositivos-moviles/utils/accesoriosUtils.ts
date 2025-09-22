@@ -26,7 +26,7 @@ export interface ApiFilters {
  */
 export function getApiFilters(filters: FilterState): ApiFilters {
   const apiFilters: ApiFilters = {
-    subcategory: "Accesorios,Wearables",
+    subcategory: "Accesorios",
   };
 
   // Si hay filtros de tipo de accesorio seleccionados, buscar por descripción

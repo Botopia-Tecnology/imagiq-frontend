@@ -15,19 +15,8 @@ export function getApiFilters(filters: FilterState): ApiFilters {
 
   // Aplicar filtros específicos si existen
   if (filters.almacenamiento && filters.almacenamiento.length > 0) {
-    // Mapear almacenamiento a capacidad
-    const capacityMap: Record<string, string> = {
-      "64GB": "64",
-      "128GB": "128", 
-      "256GB": "256",
-      "512GB": "512",
-      "1TB": "1024"
-    };
-    
-    const capacities = filters.almacenamiento.map(size => capacityMap[size]).filter(Boolean);
-    if (capacities.length > 0) {
-      apiFilters.capacity = capacities.join(',');
-    }
+    // Usar directamente los valores de almacenamiento con GB/TB
+    apiFilters.capacity = filters.almacenamiento.join(',');
   }
 
   if (filters.serie && filters.serie.length > 0) {
@@ -42,6 +31,29 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     apiFilters.descriptionKeyword = existingKeywords 
       ? `${existingKeywords},${newKeywords}` 
       : newKeywords;
+  }
+
+  // Filtro de RAM usando desDetallada con espacios alrededor
+  if (filters.ram && filters.ram.length > 0) {
+    // Para RAM, buscar en desDetallada con espacios alrededor del texto
+    const selectedRAM = filters.ram;
+    const ramKeywords = selectedRAM.map(ram => ` ${ram} `);
+    
+    // Si ya hay un descriptionKeyword, combinarlo con AND
+    if (apiFilters.descriptionKeyword) {
+      apiFilters.descriptionKeyword += `&${ramKeywords.join(',')}`;
+    } else {
+      apiFilters.descriptionKeyword = ramKeywords.join(',');
+    }
+    console.log(`🧠 Buscando RAM "${selectedRAM.join(', ')}" con palabras clave: "${ramKeywords.join(',')}"`);
+  }
+
+  // Filtro de color usando query param color
+  if (filters.color && filters.color.length > 0) {
+    // Para color, usar OR (unión) - múltiples colores separados por coma
+    const selectedColors = filters.color;
+    apiFilters.color = selectedColors.join(',');
+    console.log(`🎨 Filtrando smartphones por colores: "${selectedColors.join(', ')}"`);
   }
 
   return apiFilters;

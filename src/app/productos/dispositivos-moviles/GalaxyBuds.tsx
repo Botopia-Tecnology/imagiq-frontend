@@ -24,7 +24,7 @@ import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import { cn } from "@/lib/utils";
 import HeaderSection from "./components/HeaderSection";
-import GalaxyBudsProductsGrid from "./components/GalaxyBudsProductsGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
 import { budsCategories, budsFilters } from "./constants/galaxyBudsConstants";
 import { getApiFilters } from "./utils/budsUtils";
 
@@ -210,13 +210,14 @@ export default function GalaxyBudsSection() {
 
           <main className="flex-1">
             {HeaderSectionMemo}
-            <GalaxyBudsProductsGrid
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
               viewMode={viewMode}
+              categoryName="Galaxy Buds"
             />
             
             {/* Paginación */}

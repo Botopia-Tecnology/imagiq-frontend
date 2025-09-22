@@ -23,7 +23,7 @@ import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import HeaderSection from "./components/HeaderSection";
-import TabletasProductsGrid from "./components/TabletasProductsGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
 import { tabletCategories, tabletFilters } from "./constants/tabletsConstants";
 import { getApiFilters } from "./utils/tabletsUtils";
 
@@ -203,13 +203,14 @@ export default function TabletasSection() {
 
           <main className="flex-1">
             {HeaderSectionMemo}
-            <TabletasProductsGrid
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
               viewMode={viewMode}
+              categoryName="tabletas"
             />
             
             {/* Paginación */}

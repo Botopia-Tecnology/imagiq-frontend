@@ -22,7 +22,7 @@ import {
   accessoryFilters,
 } from "./constants/accesoriosConstants";
 import { getApiFilters } from "./utils/accesoriosUtils";
-import AccesoriosProductsGrid from "./components/AccesoriosProductsGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
 import HeaderSection from "./components/HeaderSection";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
@@ -194,13 +194,14 @@ export default function AccesoriosSection() {
 
           <main className="flex-1">
             {HeaderSectionMemo}
-            <AccesoriosProductsGrid
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
               viewMode={viewMode}
+              categoryName="accesorios"
             />
             
             {/* Paginación */}

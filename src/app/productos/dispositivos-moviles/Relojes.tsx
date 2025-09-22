@@ -24,7 +24,7 @@ import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import HeaderSection from "./components/HeaderSection";
-import RelojesProductsGrid from "./components/RelojesProductsGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
 import { watchCategories, watchFilters } from "./constants/watchesConstants";
 import { getApiFilters } from "./utils/watchesUtils";
 
@@ -212,13 +212,14 @@ export default function RelojesSection() {
 
           <main className="flex-1">
             {HeaderSectionMemo}
-            <RelojesProductsGrid
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
               viewMode={viewMode}
+              categoryName="relojes"
             />
             
             {/* Paginación */}

@@ -29,7 +29,7 @@ import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import { smartphoneCategories, smartphoneFilters } from "./constants/smartphonesConstants";
 import { getApiFilters } from "./utils/smartphonesUtils";
 import HeaderSection from "./components/HeaderSection";
-import SmartphonesProductsGrid from "./components/SmartphonesProductsGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
 
 
 export default function SmartphonesSection() {
@@ -226,13 +226,14 @@ export default function SmartphonesSection() {
 
           <main className="flex-1">
             {HeaderSectionMemo}
-            <SmartphonesProductsGrid
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
               viewMode={viewMode}
+              categoryName="smartphones"
             />
             
             {/* Paginación */}

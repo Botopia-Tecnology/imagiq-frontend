@@ -108,6 +108,12 @@ const EspecificacionesProduct = ({
   };
 
   return (
+    <div
+        className="relative flex items-center justify-center w-full min-h-[600px] "
+        style={{
+          fontFamily: "SamsungSharpSans",
+        }}
+      >
     <section
       className="w-full flex flex-col items-center"
       style={{
@@ -208,6 +214,7 @@ const EspecificacionesProduct = ({
         </div>
       </div>
     </section>
+    </div>
   );
 };
 

@@ -5,6 +5,7 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useProductContext } from "@/features/products/ProductContext";
 import { navbarRoutes } from "@/routes/navbarRoutes";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -45,6 +46,7 @@ export function useNavbarLogic() {
   const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
   const debouncedSearch = useDebounce(searchQuery, 300); // Query de búsqueda con debounce
   const { cart: cartItems, itemCount } = useCartContext();
+  const { isAppliance } = useProductContext();
   // Derivar cartCount con useMemo para evitar stale closures
   const cartCount = useMemo(() => {
     return Array.isArray(cartItems)
@@ -139,13 +141,13 @@ export function useNavbarLogic() {
   const isMasInformacionProducto = pathname.startsWith("/productos/view/");
   // Determina si mostrar logo blanco y estilos claros
   const showWhiteLogo =
-    isMasInformacionProducto && !isScrolled
+    isMasInformacionProducto && !isScrolled && !isAppliance
       ? true
       : isOfertas || (isHome && !isScrolled);
   const showWhiteItems = showWhiteLogo;
   const showWhiteItemsMobile =
     isOfertas ||
-    (isMasInformacionProducto && !isScrolled) ||
+    (isMasInformacionProducto && !isScrolled && !isAppliance) ||
     (!isScrolledNavbar &&
       !isLogin &&
       (isProductDetail || (isHome && !isScrolled)));

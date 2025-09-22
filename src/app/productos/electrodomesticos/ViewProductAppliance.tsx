@@ -12,8 +12,9 @@
  */
 
 import React, { useState, useEffect } from "react";
+import { useCartContext } from "@/features/cart/CartContext";
 import Image, { StaticImageData } from "next/image";
-import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import setingLogo from "@/img/iconos/Setting_line_negro.png";
 import packageCar from "@/img/iconos/package_car_negro.png";
@@ -21,16 +22,17 @@ import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ARExperienceHandler from "./components/ARExperienceHandler";
 import SizeProduct from "./components/SizeProduct";
-import ExploreProduct from "./ExploreProduct";
-import smartphonesImg from "@/img/categorias/Smartphones.png";
+
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import nevera from "@/img/electrodomesticos/nevera.png";
 import lavadora from "@/img/electrodomesticos/lavadora.png";
 import aspiradora from "@/img/electrodomesticos/aspiradora.png";
 import aire from "@/img/electrodomesticos/aire.png";
 import CaracteristicasProduct from "./CaracteristicasProduct";
+import ExploreProducts from "./ExploreProducts";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -39,7 +41,7 @@ interface ProductColor {
 interface ProductData {
   id: string;
   name: string;
-  image: StaticImageData;
+  image: string | StaticImageData;
   price: string;
   originalPrice?: string;
   discount?: string;
@@ -51,9 +53,8 @@ interface ProductData {
 export default function ViewProductAppliance({
   product,
 }: {
-  product: ProductData;
+  product: Readonly<ProductData>;
 }) {
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const productsMock = [
     {
       id: "RT42DG6220B1CO",
@@ -76,22 +77,66 @@ export default function ViewProductAppliance({
       image: aire,
     },
   ];
+
+  // Animación scroll reveal para hero principal
+  const heroReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+  // Animación scroll reveal para especificaciones
+  const specsReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+  // Animación scroll reveal para videos
+  const videosReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+  // Animación scroll reveal para comparación
+  const exploreReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
-
+  const router = useRouter();
   const pathname = usePathname();
   const [showBar, setShowBar] = useState(false);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setShowBar(window.scrollY > 100);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
+  const { addProduct } = useCartContext();
+  const [cartFeedback, setCartFeedback] = useState<string | null>(null);
   const isProductDetailView = pathname.startsWith("/productos/view/");
+  useEffect(() => {
+    /* Navbar que se bugea al hacer scroll */
+    const handleScroll = () => {
+      // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
+      setShowBar(window.scrollY > 100 && isProductDetailView);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Inicializa correctamente al montar y tras navegación
+    setTimeout(handleScroll, 0);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isProductDetailView]);
+
+  // useEffect para ocultar el navbar principal (solo con showBar)
+  useEffect(() => {
+    if (showBar) {
+      document.body.classList.add("hide-main-navbar");
+    } else {
+      document.body.classList.remove("hide-main-navbar");
+    }
+    return () => {
+      document.body.classList.remove("hide-main-navbar");
+    };
+  }, [showBar]);
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -109,11 +154,28 @@ export default function ViewProductAppliance({
   }
 
   // Handlers
+  // Mejorado: Añadir al carrito igual que ProductCard
   const handleAddToCart = () => {
-    alert(`Producto añadido: ${safeProduct.name} (${selectedColor.name})`);
+    addProduct({
+      id: safeProduct.id,
+      name: safeProduct.name,
+      image:
+        typeof safeProduct.image === "string"
+          ? safeProduct.image
+          : safeProduct.image.src || "",
+      price:
+        typeof safeProduct.price === "string"
+          ? parseInt(safeProduct.price.replace(/[^\d]/g, ""))
+          : safeProduct.price || 0,
+      quantity: 1,
+      sku: safeProduct.id, // Add required sku property
+    });
+    setCartFeedback("Producto añadido al carrito");
+    setTimeout(() => setCartFeedback(null), 1200);
   };
+  // Mejorado: Comprar, navega a DetailsProduct
   const handleBuy = () => {
-    alert("Compra iniciada");
+    router.push("/productos/electrodomesticos/details");
   };
 
   return (
@@ -124,8 +186,18 @@ export default function ViewProductAppliance({
         fontFamily: "SamsungSharpSans",
       }}
     >
+      {/* Feedback UX al añadir al carrito */}
+      {cartFeedback && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
+          {cartFeedback}
+        </div>
+      )}
       {/* Hero section */}
-      <section className="flex flex-1 items-center justify-center px-4 py-8 md:py-0">
+      <motion.section
+        ref={heroReveal.ref}
+        {...heroReveal.motionProps}
+        className="flex flex-1 items-center justify-center px-4 py-8 md:py-0"
+      >
         <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
           {/* Columna izquierda: info y acciones */}
           <div
@@ -245,7 +317,7 @@ export default function ViewProductAppliance({
             />
           </div>
         </div>
-      </section>
+      </motion.section>
       <ARExperienceHandler
         glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
         usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"
@@ -253,24 +325,39 @@ export default function ViewProductAppliance({
 
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
       {isProductDetailView && showBar && (
-        <>
-          {/* Oculta el navbar principal en esta vista */}
-          <style>{`
-      header[data-navbar="true"] { display: none !important; }
-    `}</style>
-          <div
-            className="w-full bg-white shadow-sm h-[56px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
+        <div
+          className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
+          style={{ fontFamily: "SamsungSharpSans" }}
+        >
+          {/* MOBILE: solo nombre y botón comprar */}
+          <div className="flex w-full items-center justify-between md:hidden">
+            {/* Nombre a la izquierda */}
+            <span
+              className="font-bold text-base text-black text-left truncate"
+              style={{ fontFamily: "SamsungSharpSans", maxWidth: "60vw" }}
+            >
+              {safeProduct.name}
+            </span>
+            {/* Botón comprar a la derecha */}
+            <button
+              className="bg-black text-white rounded-full px-4 py-2 h-10 font-semibold text-sm shadow hover:bg-gray-900 transition-all min-w-[90px]"
+              style={{ fontFamily: "SamsungSharpSans" }}
+              onClick={handleBuy}
+            >
+              Comprar
+            </button>
+          </div>
+          {/* DESKTOP/TABLET: diseño original */}
+          <div className="hidden md:flex w-full items-center justify-between">
             {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
             <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-              {/* Imagen frame_311_black */}
-              <img
+              <Image
                 src="/frame_311_black.png"
                 alt="Frame"
                 width={32}
                 height={32}
                 className="object-contain"
+                priority
               />
               {/* Logo Samsung clickable */}
               <button
@@ -289,12 +376,13 @@ export default function ViewProductAppliance({
                 />
               </button>
               {/* Imagen store_black */}
-              <img
+              <Image
                 src="/store_black.png"
                 alt="Store"
                 width={32}
                 height={32}
                 className="object-contain"
+                priority
               />
             </div>
             {/* Nombre centrado */}
@@ -310,7 +398,7 @@ export default function ViewProductAppliance({
             <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
               {/* Botón añadir al carrito */}
               <button
-                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-black hover:text-white transition-all"
+                className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
                 style={{ fontFamily: "SamsungSharpSans" }}
                 onClick={handleAddToCart}
               >
@@ -318,7 +406,7 @@ export default function ViewProductAppliance({
               </button>
               {/* Botón comprar */}
               <button
-                className="bg-black text-white rounded-full px-6 py-2 font-semibold text-base shadow hover:bg-gray-900 transition-all"
+                className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
                 style={{ fontFamily: "SamsungSharpSans" }}
                 onClick={handleBuy}
               >
@@ -326,59 +414,28 @@ export default function ViewProductAppliance({
               </button>
             </div>
           </div>
-        </>
+        </div>
       )}
+      {/* Oculta el navbar principal con una clase global */}
+      <style>{`
+              body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
+            `}</style>
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
-      <div
-        className="relative flex items-center justify-center w-full min-h-[600px] "
-        style={{
-          fontFamily: "SamsungSharpSans",
-        }}
-      >
-        {/* SOLO especificaciones */}
+      <motion.div ref={specsReveal.ref} {...specsReveal.motionProps}>
         <EspecificacionesProduct specs={safeProduct.specs} />
-      </div>
-      <SizeProduct img={medidas}></SizeProduct>
-      <CaracteristicasProduct></CaracteristicasProduct>
-      {/* Componente de comparación justo debajo de VideosSection */}
-      <VideosSection />
-
-      {/* Componente de explorar productos */}
-      <div className="pb-8 bg-white">
-        <h3
-          className="text-gray pb-8 text-3xl text-center md:text-5xl font-bold mb-2 hover:text-gray-900 transition-all"
-          style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
-        >
-          Explora la linea BeSpoke
-        </h3>
-        <div
-          className={cn("grid gap-6 bg-white max-w-7xl mx-auto pl-4 pr-4", {
-            "grid-cols-2": true, // Móviles (default)
-            "md:grid-cols-4": true, // Desde 'md' (>= 768px)
-            "lg:grid-cols-4": true, // Desde 'lg' (>= 1024px)
-          })}
-        >
-          {productsMock.length === 0 ? (
-            <div className="col-span-full text-center py-12 text-gray-500">
-              No se encontraron sugerencias.
-            </div>
-          ) : (
-            productsMock.map((product) => (
-              <ExploreProduct
-                key={product.id}
-                id={product.id}
-                name={product.name}
-                image={product.image}
-                onAddToCart={(productId: string, color: string) => {
-                  console.log(`Añadir al carrito: ${productId} - ${color}`);
-                }}
-                className={viewMode === "list" ? "flex-row" : ""}
-              />
-            ))
-          )}
-        </div>
-      </div>
+        <SizeProduct img={medidas}></SizeProduct>
+      </motion.div>
+      <motion.div ref={videosReveal.ref} {...videosReveal.motionProps}>
+        <CaracteristicasProduct></CaracteristicasProduct>
+        <VideosSection />
+      </motion.div>
+      <motion.div ref={exploreReveal.ref} {...exploreReveal.motionProps}>
+        <ExploreProducts
+          products={productsMock}
+          title="Explora la linea BeSpoke"
+        ></ExploreProducts>
+      </motion.div>
     </div>
   );
 }

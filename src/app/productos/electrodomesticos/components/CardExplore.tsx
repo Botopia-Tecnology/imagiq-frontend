@@ -1,5 +1,5 @@
 /**
- * 🎴 ExploreProduct - IMAGIQ ECOMMERCE
+ * 🎴 CardExplore - IMAGIQ ECOMMERCE
  *
  * Componente reutilizable para mostrar productos a explorar:
  * - Botones de acción (Compra aquí, Conoce mas)
@@ -35,7 +35,7 @@ export interface ExploreProductProps {
   className?: string;
 }
 
-export default function ExploreProduct({
+export default function CardExplore({
   id,
   name,
   image,

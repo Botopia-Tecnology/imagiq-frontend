@@ -54,8 +54,183 @@ export default function ComparationProduct() {
         minHeight: "100vh",
       }}
     >
-      {/* Selectores y celulares */}
-      <div className="flex items-end justify-center gap-20 w-full max-w-5xl">
+      {/* Título móvil */}
+      <div className="block md:hidden">
+        <h2 className="text-white text-2xl font-bold text-center mb-8">
+          Comparálos
+        </h2>
+      </div>
+
+      {/* Selectores móvil */}
+      <div className="flex md:hidden justify-center gap-4 w-full max-w-sm mb-8">
+        {/* Selector izquierdo móvil */}
+        <div className="relative flex-1">
+          <select
+            className="bg-transparent text-white px-4 py-2 rounded-full font-bold text-sm border-2 border-white/50 shadow-lg focus:outline-none focus:border-white transition-all duration-300 hover:border-white cursor-pointer appearance-none pr-8 w-full"
+            value={selectedLeft.name}
+            onChange={(e) => {
+              const prod = products.find((p) => p.name === e.target.value);
+              if (prod) setSelectedLeft(prod);
+            }}
+          >
+            {products.map((p) => (
+              <option
+                key={p.name}
+                value={p.name}
+                className="bg-[#17407A] text-white"
+              >
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg
+              width="10"
+              height="6"
+              viewBox="0 0 12 8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M1 1L6 6L11 1"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Selector derecho móvil */}
+        <div className="relative flex-1">
+          <select
+            className="bg-transparent text-white px-4 py-2 rounded-full font-bold text-sm border-2 border-white/50 shadow-lg focus:outline-none focus:border-white transition-all duration-300 hover:border-white cursor-pointer appearance-none pr-8 w-full"
+            value={selectedRight.name}
+            onChange={(e) => {
+              const prod = products.find((p) => p.name === e.target.value);
+              if (prod) setSelectedRight(prod);
+            }}
+          >
+            {products.map((p) => (
+              <option
+                key={p.name}
+                value={p.name}
+                className="bg-[#17407A] text-white"
+              >
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg
+              width="10"
+              height="6"
+              viewBox="0 0 12 8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M1 1L6 6L11 1"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Comparación móvil */}
+      <div className="flex md:hidden justify-center gap-6 w-full max-w-md px-4">
+        {/* Producto izquierdo móvil */}
+        <div className="flex flex-col items-center text-center flex-1">
+          {/* Imagen del producto */}
+          <div className="mb-4">
+            <Image
+              src={selectedLeft.image}
+              alt={selectedLeft.name}
+              width={120}
+              height={140}
+              className="object-contain"
+            />
+          </div>
+
+          {/* Ícono de cámara */}
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4">
+            <Image src={cameraIcon} alt="Cámara" width={24} height={24} />
+          </div>
+
+          {/* Especificaciones verticales */}
+          <div className="space-y-3 text-white">
+            <p className="text-sm font-bold leading-tight">
+              Cámara
+              <br />
+              ultraancha
+              <br />
+              50 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Cámara de
+              <br />
+              ángulo amplio
+              <br />
+              200 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Teleobjetivo
+              <br />
+              50/10 MP
+            </p>
+          </div>
+        </div>
+
+        {/* Producto derecho móvil */}
+        <div className="flex flex-col items-center text-center flex-1">
+          {/* Imagen del producto */}
+          <div className="mb-4">
+            <Image
+              src={selectedRight.image}
+              alt={selectedRight.name}
+              width={120}
+              height={140}
+              className="object-contain"
+            />
+          </div>
+
+          {/* Ícono de cámara */}
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4">
+            <Image src={cameraIcon} alt="Cámara" width={24} height={24} />
+          </div>
+
+          {/* Especificaciones verticales */}
+          <div className="space-y-3 text-white">
+            <p className="text-sm font-bold leading-tight">
+              Cámara
+              <br />
+              ultraancha
+              <br />
+              12 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Cámara de
+              <br />
+              ángulo amplio
+              <br />
+              200 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Teleobjetivo
+              <br />
+              50/10 MP
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Selectores y celulares - Desktop */}
+      <div className="hidden md:flex items-end justify-center gap-20 w-full max-w-5xl">
         {/* Producto izquierdo */}
         <div className="flex flex-col items-center gap-6">
           {/* Selector elegante */}
@@ -169,8 +344,8 @@ export default function ComparationProduct() {
         </div>
       </div>
 
-      {/* Tarjeta comparativa */}
-      <div className="w-full max-w-4xl bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8">
+      {/* Tarjeta comparativa - Desktop */}
+      <div className="hidden md:block w-full max-w-4xl bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8">
         <div className="flex items-stretch justify-between gap-8">
           {/* Icono y título */}
           <div className="flex flex-col items-center justify-center gap-3 min-w-[120px]">

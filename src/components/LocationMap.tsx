@@ -1,8 +1,8 @@
-"use client";
 /**
  * 🗺️ MAPA INTERACTIVO DE TIENDAS SAMSUNG - IMAGIQ
  */
 
+"use client";
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Filter } from "lucide-react";
@@ -404,58 +404,34 @@ export default function LocationMap() {
   const center: [number, number] = [4.5709, -74.2973];
 
   return (
-    <div className="w-full relative z-10">
+    <div className="w-full relative z-10 flex flex-col items-center px-2 sm:px-4 md:px-0">
       {/* Header */}
-      <div className="text-center mb-6 animate-fade-in">
-        <h1 className="text-2xl font-bold text-blue-900 tracking-tight drop-shadow-sm">
-          🗺️ Encuentra tu tienda más cercana
+      <div className="text-center mb-4 md:mb-6 animate-fade-in w-full">
+        <h1 className="text-xl md:text-3xl font-bold text-black tracking-tight drop-shadow-sm leading-tight md:leading-normal">
+           Encuentra tu tienda más cercana
         </h1>
-        <p className="text-sm text-gray-500 mt-2">
-          Filtra por ciudad y explora tiendas Samsung en Colombia
-        </p>
       </div>
 
-      {/* City Filter - Elegant and minimal */}
-      <div className="mb-6 flex justify-center animate-fade-in">
-        <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-4 max-w-md w-full">
-          <div className="flex items-center space-x-3">
-            <Filter className="w-5 h-5 text-blue-600" />
-            <select
-              value={selectedCity}
-              onChange={(e) => handleCityChange(e.target.value)}
-              className="flex-1 bg-transparent border-none focus:outline-none text-sm font-semibold text-blue-900 cursor-pointer"
-              aria-label="Filtrar por ciudad"
-            >
-              {cities.map((city) => (
-                <option key={city} value={city} className="font-normal">
-                  {city}{" "}
-                  {city !== "Todas las ciudades" &&
-                    `(${stores.filter((s) => s.city === city).length})`}
-                </option>
-              ))}
-            </select>
-          </div>
+      {/* City Filter - Responsive: móvil y desktop/tablet */}
 
-          {/* Results counter */}
-          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500 text-center">
-            <span className="font-semibold text-blue-700">
-              {filteredStores.length}
-            </span>{" "}
-            tienda{filteredStores.length !== 1 ? "s" : ""} disponible
-            {filteredStores.length !== 1 ? "s" : ""}
+      {/* Card seleccionada arriba del mapa solo en móvil */}
+      {hoveredStore && (
+        <div className="md:hidden w-full flex justify-center mb-2 animate-fade-in px-1">
+          <div className=" rounded-xl  p-3 w-full max-w-[99vw] mx-auto">
+            <StoreCard store={convertStoreToLocation(hoveredStore)} />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Interactive Map Container */}
-      <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-10 animate-fade-in">
-        <div className="relative h-[600px]">
+      {/* Interactive Map Container - Responsive: móvil y desktop/tablet */}
+      <div className="relative rounded-xl overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-1 md:mt-4 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
+        <div className="relative h-[220px] xs:h-[260px] sm:h-[280px] md:h-[500px] lg:h-[600px] md:w-[1200px] lg:w-[1400px] w-full flex justify-center items-center">
           <MapContainer
             key={`map-${mapKey}`}
             center={center}
             zoom={6}
             style={{ height: "100%", width: "100%" }}
-            className="rounded-xl focus:outline-none"
+            className="rounded-xl focus:outline-none md:rounded-2xl"
             scrollWheelZoom={true}
             zoomControl={true}
             doubleClickZoom={true}
@@ -474,52 +450,40 @@ export default function LocationMap() {
             />
 
             {filteredStores.map((store, index) => (
-              <StoreMarkerComponent
+              <Marker
                 key={`store-${store.name}-${index}-${mapKey}`}
-                store={store}
-              />
+                position={[store.position[0], store.position[1]]}
+                icon={
+                  typeof window !== "undefined" && window.L && window.L.divIcon
+                    ? window.L.divIcon({
+                        className: "custom-samsung-pin",
+                        html: `<div style='width:32px;height:40px;display:flex;align-items:center;justify-content:center;'>
+                    <svg width='32' height='40' viewBox='0 0 32 40' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                      <path d='M16 0C7.27 0 0 7.56 0 16.9C0 27.1 16 40 16 40C16 40 32 27.1 32 16.9C32 7.56 24.73 0 16 0Z' fill='#1D8AFF'/>
+                      <text x='50%' y='56%' text-anchor='middle' dominant-baseline='middle' font-family='Samsung Sharp Sans, Arial, sans-serif' font-size='18' font-weight='bold' fill='white'>S</text>
+                    </svg>
+                  </div>`,
+                        iconSize: [32, 40],
+                        iconAnchor: [16, 40],
+                        popupAnchor: [0, -40],
+                      })
+                    : undefined
+                }
+                eventHandlers={{
+                  mouseover: () => handleStoreHover(store),
+                  mouseout: () => handleStoreHover(null),
+                  click: () => handleStoreHover(store),
+                }}
+              >
+                {/* Popup solo en desktop/tablet */}
+                <Popup className="hidden md:block">
+                  <StoreCard store={convertStoreToLocation(store)} />
+                </Popup>
+              </Marker>
             ))}
           </MapContainer>
-
-          {/* Map Info Overlay - Responsive and animated */}
-          <div className="absolute top-4 left-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-3 shadow-md border border-gray-200 z-[400] animate-fade-in">
-            <div className="flex items-center space-x-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {filteredStores.length}
-                </div>
-                <div className="text-xs text-gray-600">Tiendas</div>
-              </div>
-              {selectedCity !== "Todas las ciudades" && (
-                <div className="text-center">
-                  <div className="text-lg font-bold text-green-600">1</div>
-                  <div className="text-xs text-gray-600">Ciudad</div>
-                </div>
-              )}
-            </div>
-            <div className="mt-2 text-xs text-gray-500">
-              {selectedCity === "Todas las ciudades"
-                ? "🇨🇴 Colombia"
-                : `📍 ${selectedCity}`}
-            </div>
-          </div>
-
-          {/* Instructions - Responsive and animated */}
-          <div className="absolute bottom-4 right-4 bg-white/95 backdrop-blur-sm rounded-lg px-4 py-2 shadow-md border border-gray-200 z-[400] animate-fade-in">
-            <div className="text-xs text-gray-600 text-center">
-              <div className="font-medium mb-1">
-                Pasa el cursor sobre los marcadores para ver detalles
-              </div>
-              <div className="flex items-center justify-center space-x-2">
-                <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
-                <span>Tienda Samsung</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>
   );
 }
-
-export { LocationMap };

@@ -13,7 +13,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image, { StaticImageData } from "next/image";
-import { productsMock } from "../components/productsMock";
+import { cn } from "@/lib/utils";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import setingLogo from "@/img/iconos/Setting_line_negro.png";
 import packageCar from "@/img/iconos/package_car_negro.png";
@@ -24,6 +24,13 @@ import VideosSection from "./VideosSection";
 import { usePathname } from "next/navigation";
 import ARExperienceHandler from "./components/ARExperienceHandler";
 import SizeProduct from "./components/SizeProduct";
+import ExploreProduct from "./ExploreProduct";
+import smartphonesImg from "@/img/categorias/Smartphones.png";
+import nevera from "@/img/electrodomesticos/nevera.png";
+import lavadora from "@/img/electrodomesticos/lavadora.png";
+import aspiradora from "@/img/electrodomesticos/aspiradora.png";
+import aire from "@/img/electrodomesticos/aire.png";
+import CaracteristicasProduct from "./CaracteristicasProduct";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -46,6 +53,29 @@ export default function ViewProductAppliance({
 }: {
   product: ProductData;
 }) {
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const productsMock = [
+    {
+      id: "RT42DG6220B1CO",
+      name: "Neveras Bespoke AI",
+      image: nevera,
+    },
+    {
+      id: "DVG24A8870V_CO",
+      name: "Bespoke AI Laundry™",
+      image: lavadora,
+    },
+    {
+      id: "VR05R5050WK_AP",
+      name: "Aspiradoras Bespoke AI",
+      image: aspiradora,
+    },
+    {
+      id: "AX40T3030WM_AZ",
+      name: "WindFree™- AI Digital Inverteeeeeeeee eeeeeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeeee",
+      image: aire,
+    },
+  ];
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const [selectedColor] = useState(safeProduct?.colors?.[0]);
@@ -62,8 +92,6 @@ export default function ViewProductAppliance({
   }, []);
 
   const isProductDetailView = pathname.startsWith("/productos/view/");
-
-
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -106,7 +134,7 @@ export default function ViewProductAppliance({
           >
             {/* Nombre producto dinámico */}
             <h1
-              className="text-gray text-3xl md:text-5xl font-bold mb-2 cursor-pointer hover:text-blue-200 transition-all"
+              className="text-gray text-3xl md:text-5xl font-bold mb-2 hover:text-gray-900 transition-all"
               style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
             >
               {safeProduct.name}
@@ -303,49 +331,54 @@ export default function ViewProductAppliance({
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <div
-        className="relative flex items-center justify-center w-full min-h-[600px] py-16 mt-8"
+        className="relative flex items-center justify-center w-full min-h-[600px] "
         style={{
           fontFamily: "SamsungSharpSans",
         }}
       >
-        {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
+        {/* SOLO especificaciones */}
         <EspecificacionesProduct specs={safeProduct.specs} />
       </div>
       <SizeProduct img={medidas}></SizeProduct>
-
+      <CaracteristicasProduct></CaracteristicasProduct>
       {/* Componente de comparación justo debajo de VideosSection */}
       <VideosSection />
-{/* 
-      <div className={cn("flex flex-wrap gap-6")}>
-        {products.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            No se encontraron refrigeradores con los filtros seleccionados.
-          </div>
-        ) : (
-          products.map((product) => (
-            <ProductCard
-              key={product.id}
-              id={product.id}
-              name={product.name}
-              image={product.image}
-              colors={product.colors}
-              rating={product.rating}
-              reviewCount={product.reviewCount}
-              price={product.price}
-              originalPrice={product.originalPrice}
-              discount={product.discount}
-              isNew={product.isNew}
-              onAddToCart={(productId: string, color: string) => {
-                console.log(`Añadir al carrito: ${productId} - ${color}`);
-              }}
-              onToggleFavorite={(productId: string) => {
-                console.log(`Toggle favorito: ${productId}`);
-              }}
-              className={viewMode === "list" ? "flex-row" : ""}
-            />
-          ))
-        )}
-      </div> */}
+
+      {/* Componente de explorar productos */}
+      <div className="pb-8 bg-white">
+        <h3
+          className="text-gray pb-8 text-3xl text-center md:text-5xl font-bold mb-2 hover:text-gray-900 transition-all"
+          style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
+        >
+          Explora la linea BeSpoke
+        </h3>
+        <div
+          className={cn("grid gap-6 bg-white max-w-7xl mx-auto pl-4 pr-4", {
+            "grid-cols-2": true, // Móviles (default)
+            "md:grid-cols-4": true, // Desde 'md' (>= 768px)
+            "lg:grid-cols-4": true, // Desde 'lg' (>= 1024px)
+          })}
+        >
+          {productsMock.length === 0 ? (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              No se encontraron sugerencias.
+            </div>
+          ) : (
+            productsMock.map((product) => (
+              <ExploreProduct
+                key={product.id}
+                id={product.id}
+                name={product.name}
+                image={product.image}
+                onAddToCart={(productId: string, color: string) => {
+                  console.log(`Añadir al carrito: ${productId} - ${color}`);
+                }}
+                className={viewMode === "list" ? "flex-row" : ""}
+              />
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }

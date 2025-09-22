@@ -6,19 +6,7 @@
 
 import type { FilterState } from "../../components/FilterSidebar";
 import { keywordMap } from "../constants/accesoriosConstants";
-
-// Interfaces de tipos necesarias
-export interface ApiFilters {
-  category?: string;
-  subcategory?: string;
-  priceRange?: { min: number; max: number };
-  color?: string;
-  capacity?: string;
-  name?: string;
-  withDiscount?: boolean;
-  minStock?: number;
-  descriptionKeyword?: string;
-}
+import type { ApiFilters } from "./sharedInterfaces";
 
 /**
  * Convierte filtros de tipo de accesorio a filtros de API

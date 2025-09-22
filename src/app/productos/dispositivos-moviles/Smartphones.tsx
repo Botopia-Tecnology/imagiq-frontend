@@ -26,83 +26,13 @@ import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import { productsData } from "../data_product/products";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+import { smartphoneCategories, smartphoneFilters } from "./constants/smartphonesConstants";
+import { getApiFilters } from "./utils/smartphonesUtils";
 
-// Importar imágenes del slider
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
-
-// Categorías específicas para smartphones
-const smartphoneCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "#galaxy-smartphone",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "?section=buds",
-  },
-];
-
-// Filtros específicos para smartphones
-const smartphoneFilters: FilterConfig = {
-  almacenamiento: ["64GB", "128GB", "256GB", "512GB", "1TB"],
-  caracteristicas: [
-    "5G",
-    "Carga rápida",
-    "Resistente al agua",
-    "Carga inalámbrica",
-    "NFC",
-    "Dual SIM",
-  ],
-  camara: ["12MP", "50MP", "64MP", "108MP", "200MP"],
-  rangoPrecio: [
-    { label: "Menos de $500.000", min: 0, max: 500000 },
-    { label: "$500.000 - $1.000.000", min: 500000, max: 1000000 },
-    { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
-    { label: "Más de $2.000.000", min: 2000000, max: Infinity },
-  ],
-  serie: ["Galaxy A", "Galaxy S", "Galaxy Note", "Galaxy Z"],
-  pantalla: ['5.5"', '6.1"', '6.5"', '6.7"', '6.8"'],
-  procesador: ["Exynos", "Snapdragon", "MediaTek"],
-  ram: ["4GB", "6GB", "8GB", "12GB", "16GB"],
-  conectividad: ["4G", "5G"],
-};
-
-// Productos específicos de smartphones
-export const smartphoneProducts = productsData["smartphones-tablets"].filter(
-  (product) =>
-    product.name.toLowerCase().includes("galaxy a") ||
-    product.name.toLowerCase().includes("galaxy s") ||
-    product.name.toLowerCase().includes("galaxy note") ||
-    product.name.toLowerCase().includes("galaxy z")
-);
 
 export default function SmartphonesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -132,9 +62,7 @@ export default function SmartphonesSection() {
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con filtro de subcategoría "Celulares"
-  const apiFilters = useMemo(() => ({
-    subcategory: "Celulares"
-  }), []);
+  const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
   // Crear filtros iniciales con paginación
   const initialFilters = useMemo(() => {

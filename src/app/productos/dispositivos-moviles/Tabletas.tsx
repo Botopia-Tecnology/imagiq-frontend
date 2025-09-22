@@ -21,73 +21,13 @@ import FilterSidebar, {
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+import { tabletCategories, tabletFilters } from "./constants/tabletsConstants";
+import { getApiFilters } from "./utils/tabletsUtils";
 
-// Importar imágenes del slider
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
-
-// Categorías del slider (idénticas a la imagen)
-const tabletCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "?section=smartphones",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "?section=buds",
-  },
-];
-
-// Configuración de filtros específica para tabletas
-const tabletFilters: FilterConfig = {
-  serie: ["Galaxy Tab S", "Galaxy Tab A", "Galaxy Tab FE", "Galaxy Tab Active"],
-  tamanoPantalla: ['8"', '10.4"', '11"', '12.4"', '14.6"'],
-  almacenamiento: ["64GB", "128GB", "256GB", "512GB", "1TB"],
-  ram: ["4GB", "6GB", "8GB", "12GB", "16GB"],
-  conectividad: ["WiFi", "WiFi + 5G", "WiFi + LTE"],
-  caracteristicas: [
-    "S Pen incluido",
-    "Teclado compatible",
-    "DeX",
-    "Resistente al agua",
-    "Carga rápida",
-  ],
-  rangoPrecio: [
-    { label: "Menos de $800.000", min: 0, max: 800000 },
-    { label: "$800.000 - $1.500.000", min: 800000, max: 1500000 },
-    { label: "$1.500.000 - $2.500.000", min: 1500000, max: 2500000 },
-    { label: "Más de $2.500.000", min: 2500000, max: Infinity },
-  ],
-  procesador: ["Snapdragon", "Exynos", "MediaTek"],
-  sistemaOperativo: ["Android", "One UI"],
-  uso: ["Productividad", "Gaming", "Educación", "Entretenimiento"],
-};
 
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -107,12 +47,7 @@ export default function TabletasSection() {
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con filtro de subcategoría "Tablets"
-  const apiFilters = useMemo(
-    () => ({
-      subcategory: "Tablets",
-    }),
-    []
-  );
+  const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
   // Crear filtros iniciales con paginación
   const initialFilters = useMemo(() => {

@@ -19,87 +19,18 @@ import FilterSidebar, {
   MobileFilterModal,
   type FilterState,
 } from "../components/FilterSidebar";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-
-// Importar imágenes del slider
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
 import LoadingState from "./components/LoadingState";
 import ErrorState from "./components/ErrorState";
 import { cn } from "@/lib/utils";
 import HeaderSection from "./components/HeaderSection";
 import ProductGrid from "./components/ProductGrid";
+import { budsCategories, budsFilters } from "./constants/galaxyBudsConstants";
+import { getApiFilters } from "./utils/budsUtils";
 
-// Categorías del slider (idénticas a la imagen)
-const budsCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "?section=smartphones",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "#galaxy-buds",
-  },
-];
-
-// Configuración de filtros específica para Galaxy Buds
-const budsFilters: FilterConfig = {
-  serie: [
-    "Galaxy Buds Pro",
-    "Galaxy Buds2 Pro",
-    "Galaxy Buds FE",
-    "Galaxy Buds Live",
-  ],
-  tipoAjuste: ["In-ear", "Semi abierto", "Abierto"],
-  cancelacionRuido: ["ANC Activa", "ANC Pasiva", "Sin ANC"],
-  resistenciaAgua: ["IPX4", "IPX5", "IPX7", "Sin resistencia"],
-  conectividad: [
-    "Bluetooth 5.0",
-    "Bluetooth 5.1",
-    "Bluetooth 5.2",
-    "Bluetooth 5.3",
-  ],
-  caracteristicas: [
-    "Carga inalámbrica",
-    "Detección de uso",
-    "Ecualización adaptable",
-    "Audio 360",
-    "Control táctil",
-  ],
-  rangoPrecio: [
-    { label: "Menos de $200.000", min: 0, max: 200000 },
-    { label: "$200.000 - $400.000", min: 200000, max: 400000 },
-    { label: "$400.000 - $600.000", min: 400000, max: 600000 },
-    { label: "Más de $600.000", min: 600000, max: Infinity },
-  ],
-  autonomiaBateria: ["4-6 horas", "6-8 horas", "8+ horas"],
-  controlVoz: ["Bixby", "Google Assistant", "Alexa", "Múltiples"],
-};
 
 
 export default function GalaxyBudsSection() {
@@ -120,12 +51,7 @@ export default function GalaxyBudsSection() {
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con filtro por palabra "buds"
-  const apiFilters = useMemo(
-    () => ({
-      name: "buds", // Filtrar productos que contengan "buds" en el nombre
-    }),
-    []
-  );
+  const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
   // Crear filtros iniciales con paginación
   const initialFilters = useMemo(() => {

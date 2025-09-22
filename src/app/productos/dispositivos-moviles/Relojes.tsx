@@ -22,78 +22,13 @@ import FilterSidebar, {
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+import { watchCategories, watchFilters } from "./constants/watchesConstants";
+import { getApiFilters } from "./utils/watchesUtils";
 
-// Importar imágenes del slider
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
-
-// Categorías del slider
-const watchCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "?section=smartphones",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "?section=buds",
-  },
-];
-
-// Filtros específicos para relojes
-const watchFilters: FilterConfig = {
-  serie: [
-    "Galaxy Watch 6",
-    "Galaxy Watch Classic",
-    "Galaxy Watch Active",
-    "Galaxy Watch FE",
-  ],
-  tamanoCaja: ["40mm", "44mm", "46mm", "47mm"],
-  material: ["Aluminio", "Acero Inoxidable", "Titanio"],
-  correa: ["Deportiva", "Piel", "Eslabones", "Nylon"],
-  conectividad: ["Bluetooth", "WiFi", "LTE"],
-  caracteristicas: [
-    "GPS",
-    "Monitor Cardíaco",
-    "SpO2",
-    "Resistente al Agua",
-    "ECG",
-    "Detección de Caídas",
-  ],
-  rangoPrecio: [
-    { label: "Menos de $300.000", min: 0, max: 300000 },
-    { label: "$300.000 - $600.000", min: 300000, max: 600000 },
-    { label: "$600.000 - $900.000", min: 600000, max: 900000 },
-    { label: "Más de $900.000", min: 900000, max: Infinity },
-  ],
-  duracionBateria: ["1 día", "2 días", "3+ días"],
-  resistenciaAgua: ["5ATM", "10ATM", "IP68"],
-};
 
 
 export default function RelojesSection() {
@@ -113,10 +48,8 @@ export default function RelojesSection() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const productsRef = useRef<HTMLDivElement>(null);
 
-  // Usar el hook de productos con filtro por palabra "watch"
-  const apiFilters = useMemo(() => ({
-    name: "watch" // Filtrar productos que contengan "watch" en el nombre
-  }), []);
+  // Usar el hook de productos con filtro de subcategoría "Wearables"
+  const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
   // Crear filtros iniciales con paginación
   const initialFilters = useMemo(() => {

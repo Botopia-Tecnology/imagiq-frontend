@@ -11,7 +11,7 @@ import { Ofertas } from "@/components/sections/Ofertas";
 import Beneficios from "@/components/sections/Beneficios";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
-import { LocationMap } from "@/components/LocationMap";
+import LocationMap from "@/components/LocationMap";
 import UltimosProductos from "@/components/sections/UltimosProductos";
 import ProductShowcase from "@/components/sections/ProductShowcase";
 import Historias from "@/components/sections/Historias";

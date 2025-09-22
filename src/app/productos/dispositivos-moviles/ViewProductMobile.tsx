@@ -11,23 +11,24 @@
  * - Datos quemados (mock) para desarrollo
  */
 
-import React, { useState, useEffect } from "react";
-import Image, { StaticImageData } from "next/image";
-import { useRouter, usePathname } from "next/navigation";
 import { useCartContext } from "@/features/cart/CartContext";
-import { IoClose } from "react-icons/io5";
-import { productsMock } from "../components/productsMock";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
-import EspecificacionesProduct from "./EspecificacionesProduct";
-import ComparationProduct from "./ComparationProduct";
-import VideosSection from "./VideosSection";
-import QRDesktop from "../components/QRDesktop";
-import HouseButton from "../components/Button";
-import ModalWithoutBackground from "@/components/ModalWithoutBackground";
 import { motion } from "framer-motion";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+import Image, { StaticImageData } from "next/image";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { FiEye } from "react-icons/fi";
+import { IoClose } from "react-icons/io5";
+import HouseButton from "../components/Button";
+import { productsMock } from "../components/productsMock";
+import ComparationProduct from "./ComparationProduct";
+import EspecificacionesProduct from "./EspecificacionesProduct";
+import VideosSection from "./VideosSection";
+import ModalWithoutBackground from "@/components/ModalWithoutBackground";
+import QRDesktop from "../components/QRDesktop";
 
 // Tipos para producto
 interface ProductColor {
@@ -46,7 +47,11 @@ interface ProductData {
   specs?: { label: string; value: string }[];
 }
 
-export default function ViewProduct({ product }: { product: ProductData }) {
+export default function ViewProduct({
+  product,
+}: {
+  product: Readonly<ProductData>;
+}) {
   // Animación scroll reveal para hero principal
   const heroReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
@@ -139,6 +144,7 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           ? parseInt(safeProduct.price.replace(/[^\d]/g, ""))
           : safeProduct.price || 0,
       quantity: 1,
+      sku: safeProduct.id, // Add required sku property
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
@@ -350,49 +356,6 @@ export default function ViewProduct({ product }: { product: ProductData }) {
           </div>
         </div>
       </motion.section>
-
-      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
-        <HouseButton onClick={() => setModalOpen(true)} />
-      </div>
-      <div className="block md:hidden ml-auto">
-        <div className="flex items-center">
-          {/* Cartel lateral izquierdo */}
-          {showLabel && (
-            <div
-              className="flex items-center bg-white text-black border border-gray-300 rounded-md shadow px-4 py-2 mr-3"
-              style={{ fontFamily: "SamsungSharpSans", whiteSpace: "nowrap" }}
-            >
-              <span className="mr-2 text-sm">Mira el objeto en tu espacio</span>
-              <button
-                onClick={() => setShowLabel(false)}
-                className="text-gray-500 hover:text-red-500"
-              >
-                <IoClose size={18} />
-              </button>
-            </div>
-          )}
-
-          {/* Botón o visor de AR */}
-          {/* <ARViewer modelUrl="https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb" /> */}
-        </div>
-      </div>
-      <a
-        href="https://arvr.google.com/scene-viewer/1.0?file=https://inteligenciaartificial.s3.us-east-1.amazonaws.com/Astronaut.glb"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <button>Ver en 3D</button>
-      </a>
-      {modalOpen && (
-        <ModalWithoutBackground
-          onClose={() => setModalOpen(false)}
-          isOpen={modalOpen}
-          title="Visualiza tu producto en realidad aumentada"
-        >
-          <QRDesktop />
-        </ModalWithoutBackground>
-      )}
-
       {isProductDetailView && showBar && (
         <div
           className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"

@@ -80,15 +80,60 @@ export default function OfertasPage() {
       className="w-full h-screen flex flex-col bg-transparent overflow-hidden"
       style={{ height: "100vh", minHeight: "100vh", margin: 0, padding: 0 }}
     >
-      {/* Background de columnas de color, cubre toda la pantalla */}
+      {/* Fondo especial solo en móvil: gradiente radial azul con centro blanco muy suave y difuso, igual a la imagen */}
       <div
-        className="fixed top-0 left-0 w-full h-full flex flex-row z-0"
+        className="fixed top-0 left-0 w-full h-full md:hidden z-0"
+        style={{
+          height: "100vh",
+          minHeight: "100vh",
+          background:
+            "radial-gradient(ellipse 80% 60% at 50% 40%, #759dd1 0%, #2b62ac 100%)",
+          overflow: "hidden",
+        }}
+      />
+      <div
+        className="fixed top-0 left-0 w-full h-full flex flex-col md:flex-row z-0"
         style={{ height: "100vh", minHeight: "100vh", overflow: "hidden" }}
       >
+        <div className="flex flex-col justify-center h-full md:hidden">
+          <div className="grid grid-cols-1 overflow-y-scroll gap-4 px-2 pt-38">
+            {ofertas.map((item) => (
+              <div
+                key={item.title}
+                className="flex-1 flex flex-col items-center justify-center bg-white/10 border border-white/40 rounded-xl shadow-md backdrop-blur-md group transition-all duration-300 cursor-pointer h-full mx-1 px-2 py-2"
+                style={{ height: "calc(30vh - 10px)", overflow: "hidden" }}
+              >
+                <Image
+                  src={item.icon}
+                  alt={item.title + " icon"}
+                  width={88}
+                  height={88}
+                  className={`mb-2 transition-transform duration-300 group-hover:scale-110${
+                    item.whiteIcon ? " filter invert brightness-200" : ""
+                  }`}
+                  priority
+                />
+                <h2 className="text-white text-xl font-bold mb-2 text-center transition-colors duration-300 group-hover:text-white/90 px-1">
+                  {item.title}
+                </h2>
+                <Link
+                  href={item.href}
+                  className="mt-1 px-3 py-0.5 border border-white/80 rounded-full text-white text-xl font-medium text-center hover:bg-white hover:text-[#1A407A] transition-colors duration-200 group-hover:bg-white group-hover:text-[#1A407A]"
+                  aria-label={item.info + " " + item.title}
+                  scroll={false}
+                >
+                  {item.info}
+                </Link>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Layout desktop/tablet: mantiene el diseño original en fila */}
         {ofertas.map((item) => (
           <div
             key={item.title}
-            className={`flex-1 flex flex-col items-center justify-center ${item.bg} group transition-all duration-300 cursor-pointer h-full pt-20`}
+            className={`hidden md:flex flex-1 flex-col items-center justify-center ${item.bg} group transition-all duration-300 cursor-pointer h-full pt-20`}
             style={{ height: "100vh", minHeight: "100vh", overflow: "hidden" }}
           >
             <Image

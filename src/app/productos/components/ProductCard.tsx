@@ -18,6 +18,8 @@ import Image, { StaticImageData } from "next/image";
 import { Heart, Loader, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
+import { motion } from "framer-motion";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -146,8 +148,16 @@ export default function ProductCard({
     
   };
 
+  const cardReveal = useScrollReveal<HTMLDivElement>({
+    offset: 60,
+    duration: 500,
+    direction: "up",
+  });
+
   return (
-    <div
+    <motion.div
+      ref={cardReveal.ref}
+      {...cardReveal.motionProps}
       className={cn(
         "bg-[#D9D9D9] rounded-2xl max-w-72 shadow-sm border border-gray-300 overflow-hidden transition-all duration-300",
         className
@@ -254,7 +264,7 @@ export default function ProductCard({
             onClick={handleAddToCart}
             disabled={isLoading}
             className={cn(
-              "w-full bg-blue-900 text-white py-3 px-4 rounded-lg text-sm font-semibold",
+              "w-full bg-blue-900 text-white py-2 px-4 rounded-lg text-sm font-semibold",
               "transition-all duration-200 flex items-center justify-center gap-2",
               "hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed",
               isLoading && "animate-pulse"
@@ -271,6 +281,6 @@ export default function ProductCard({
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }

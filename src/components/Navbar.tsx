@@ -1,207 +1,50 @@
 "use client";
 /**
  * 🧭 NAVBAR PRINCIPAL - IMAGIQ ECOMMERCE
+ * Limpio, escalable y con animaciones suaves en hover
  */
-
-import { useAuthContext } from "@/features/auth/context";
-import { useCartContext } from "@/features/cart/CartContext";
-import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
-import { useDebounce } from "@/hooks/useDebounce";
+import { useNavbarLogic } from "@/hooks/navbarLogic";
+import logoSamsungWhite from "@/img/logo_Samsung.png";
+import carritoIconBlack from "@/img/navbar-icons/carrito-icon-black.png";
+import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
+import favoritoIconWhite from "@/img/navbar-icons/favorito-icon-white.png";
+import favoritoIconBlack from "@/img/navbar-icons/favoritos-icon-black.png";
+import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
+import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
+import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
+import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
+import logoSamsungBlack from "@/img/Samsung_black.png";
 import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
-import { usePathname, useRouter } from "next/navigation";
-import { RefCallback, useEffect, useRef, useState } from "react";
+import { Menu } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { navbarRoutes } from "../routes/navbarRoutes";
 import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import TelevisionesDropdown from "./dropdowns/televisiones";
-import NavbarLogo from "./navbar/NavbarLogo";
-import NavbarDesktopActions from "./navbar/NavbarDesktopActions";
-import NavbarMobileActions from "./navbar/NavbarMobileActions";
-import NavbarNavigation from "./navbar/NavbarNavigation";
-import NavbarMobileMenu from "./navbar/NavbarMobileMenu";
-import { useNavbarConfig } from "./navbar/useNavbarConfig";
 
-// Dropdown item type literals
-type DropdownItemType =
-  | "Dispositivos móviles"
-  | "Televisores y AV"
-  | "Electrodomésticos";
-
-interface SearchResult {
-  id: number;
-  name: string;
-  category: string;
-}
+// Helper para dropdown
+const getDropdownComponent = (name: string) => {
+  switch (name) {
+    case "Dispositivos móviles":
+      return <DispositivosMovilesDropdown />;
+    case "Televisores y AV":
+      return <TelevisionesDropdown />;
+    case "Electrodomésticos":
+      return <ElectrodomesticosDropdown />;
+    default:
+      return null;
+  }
+};
 
 export default function Navbar() {
-  // Estados
-  const [isClient, setIsClient] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [dropdownCoords, setDropdownCoords] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const navbar = useNavbarLogic();
 
-  // Refs
-  const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
-  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Hooks
-  const pathname = usePathname();
-  const debouncedSearch = useDebounce(searchQuery, 300);
-  const { itemCount } = useCartContext();
-  const { isAuthenticated } = useAuthContext();
-  const router = useRouter();
-  const { hideNavbar } = useNavbarVisibility();
-
-  // Configuración del navbar
-  const isHome = pathname === "/";
-  const isLogin = pathname === "/login";
-  const navbarConfig = useNavbarConfig(isScrolled, isHome, isLogin);
-
-  // Efectos
-  useEffect(() => setIsClient(true), []);
-
-  // Efecto de scroll optimizado
-  useEffect(() => {
-    let ticking = false;
-
-    const handleScroll = () => {
-      if (!ticking) {
-        ticking = true;
-        requestAnimationFrame(() => {
-          const scrollY = window.scrollY;
-          const shouldBeScrolled = scrollY > 100;
-          setIsScrolled((prev) =>
-            prev !== shouldBeScrolled ? shouldBeScrolled : prev
-          );
-          ticking = false;
-        });
-      }
-    };
-
-    const throttledScroll = () => {
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-      scrollTimeoutRef.current = setTimeout(handleScroll, 16);
-    };
-
-    window.addEventListener("scroll", throttledScroll, { passive: true });
-    handleScroll();
-
-    return () => {
-      window.removeEventListener("scroll", throttledScroll);
-      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-    };
-  }, [pathname]);
-
-  // Efecto de búsqueda
-  useEffect(() => {
-    if (debouncedSearch.length > 2) {
-      posthogUtils.capture("navbar_search", {
-        query: debouncedSearch,
-        query_length: debouncedSearch.length,
-        user_authenticated: isAuthenticated,
-      });
-      setSearchResults([
-        {
-          id: 1,
-          name: `Resultado para "${debouncedSearch}"`,
-          category: "Productos",
-        },
-      ]);
-    } else {
-      setSearchResults([]);
-    }
-  }, [debouncedSearch, isAuthenticated]);
-
-  // Funciones
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      posthogUtils.capture("search_submit", {
-        query: searchQuery.trim(),
-        source: "navbar",
-        results_count: searchResults.length,
-      });
-      window.location.href = `/productos?q=${encodeURIComponent(
-        searchQuery.trim()
-      )}`;
-    }
-  };
-
-  const handleCartClick = () => {
-    posthogUtils.capture("cart_icon_click", {
-      cart_items: itemCount,
-      user_authenticated: isAuthenticated,
-    });
-    router.push("/carrito");
-  };
-
-  // Funciones de dropdown
-  const handleDropdownEnter = (dropdownName: string) => {
-    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
-    setActiveDropdown(dropdownName);
-    const navItem = navItemRefs.current[dropdownName];
-    if (navItem) {
-      const rect = navItem.getBoundingClientRect();
-      setDropdownCoords({
-        top: rect.bottom,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
-  };
-
-  const handleDropdownLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-      setDropdownCoords(null);
-    }, 350);
-  };
-
-  const handleDropdownContainerEnter = () => {
-    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
-  };
-
-  const handleDropdownContainerLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setActiveDropdown(null);
-      setDropdownCoords(null);
-    }, 350);
-  };
-
-  const setNavItemRef: RefCallback<HTMLDivElement> = (el) => {
-    if (el) {
-      const itemName = el.getAttribute("data-item-name");
-      if (itemName && navItemRefs.current) {
-        navItemRefs.current[itemName] = el;
-      }
-    }
-  };
-
-  const renderDropdown = (itemName: string) => {
-    if (activeDropdown !== itemName || !dropdownCoords) return null;
-    let DropdownComponent = null;
-    switch (itemName as DropdownItemType) {
-      case "Dispositivos móviles":
-        DropdownComponent = <DispositivosMovilesDropdown />;
-        break;
-      case "Televisores y AV":
-        DropdownComponent = <TelevisionesDropdown />;
-        break;
-      case "Electrodomésticos":
-        DropdownComponent = <ElectrodomesticosDropdown />;
-        break;
-      default:
-        return null;
-    }
-    return (
+  // --- Render principal ---
+  return (
+    <>
+      {/* Sentinel para IntersectionObserver (scroll detection) */}
       <div
         onMouseEnter={handleDropdownContainerEnter}
         onMouseLeave={handleDropdownContainerLeave}

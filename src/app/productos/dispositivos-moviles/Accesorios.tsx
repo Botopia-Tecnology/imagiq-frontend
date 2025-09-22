@@ -218,6 +218,7 @@ export default function AccesoriosSection() {
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
+              viewMode={viewMode}
             />
             
             {/* Paginación */}

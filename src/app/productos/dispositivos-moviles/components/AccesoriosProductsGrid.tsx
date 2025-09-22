@@ -15,10 +15,11 @@ interface ProductsGridProps {
   loading: boolean;
   error: string | null;
   refreshProducts: () => void;
+  viewMode?: "grid" | "list";
 }
 
 const AccesoriosProductsGrid = forwardRef<HTMLDivElement, ProductsGridProps>(
-  ({ products, loading, error, refreshProducts }, ref) => {
+  ({ products, loading, error, refreshProducts, viewMode = "grid" }, ref) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
@@ -45,7 +46,14 @@ const AccesoriosProductsGrid = forwardRef<HTMLDivElement, ProductsGridProps>(
   }
 
     return (
-      <div ref={ref} className="grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div 
+        ref={ref} 
+        className={`grid gap-6 ${
+          viewMode === "grid" 
+            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" 
+            : "grid-cols-1"
+        }`}
+      >
         {products.length === 0 ? (
           <div className="col-span-full text-center py-12 text-gray-500">
             No se encontraron accesorios con los filtros seleccionados.
@@ -61,6 +69,7 @@ const AccesoriosProductsGrid = forwardRef<HTMLDivElement, ProductsGridProps>(
               onToggleFavorite={(productId: string) => {
                 console.log(`Toggle favorito: ${productId}`);
               }}
+              className={viewMode === "list" ? "flex-row" : ""}
             />
           ))
         )}

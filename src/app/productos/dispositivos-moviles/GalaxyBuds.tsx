@@ -22,11 +22,9 @@ import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-import LoadingState from "./components/LoadingState";
-import ErrorState from "./components/ErrorState";
 import { cn } from "@/lib/utils";
 import HeaderSection from "./components/HeaderSection";
-import ProductGrid from "./components/ProductGrid";
+import GalaxyBudsProductsGrid from "./components/GalaxyBudsProductsGrid";
 import { budsCategories, budsFilters } from "./constants/galaxyBudsConstants";
 import { getApiFilters } from "./utils/budsUtils";
 
@@ -62,11 +60,9 @@ export default function GalaxyBudsSection() {
     return filters;
   }, [apiFilters, currentPage, itemsPerPage]);
 
-  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } =
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
     useProducts(initialFilters);
 
-  // Ref para evitar bucles infinitos
-  const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Obtén el tipo de dispositivo
 
   // Sticky behavior (solo en desktop/large)
@@ -80,27 +76,12 @@ export default function GalaxyBudsSection() {
 
   const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
 
+
   // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // Actualizar filtros cuando cambien los parámetros de paginación
-  useEffect(() => {
-    const filtersWithPagination = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    
-    // Crear una clave única para evitar bucles infinitos
-    const filtersKey = JSON.stringify(filtersWithPagination);
-    
-    if (lastFiltersRef.current !== filtersKey) {
-      lastFiltersRef.current = filtersKey;
-      filterProducts(filtersWithPagination);
-    }
-  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -149,53 +130,43 @@ export default function GalaxyBudsSection() {
     // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
-  if (loading) {
-    return (
-      <LoadingState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
+
+  // Memoizar el modal de filtros móviles
+  const MobileFilterModalMemo = useMemo(
+    () => (
+      <MobileFilterModal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        filterConfig={budsFilters}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        resultCount={totalItems}
+        expandedFilters={expandedFilters}
+        onToggleFilter={toggleFilter}
+        trackingPrefix="buds_filter"
       />
-    );
-  }
+    ),
+    [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
+  );
 
-  if (error) {
-    return (
-      <ErrorState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
-        error={error}
-        onRetry={refreshProducts}
+  // Memoizar el HeaderSection para evitar re-renders innecesarios
+  const HeaderSectionMemo = useMemo(
+    () => (
+      <HeaderSection
+        title="Galaxy Buds"
+        totalItems={totalItems}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onShowMobileFilters={() => setShowMobileFilters(true)}
+        filters={filters}
+        setFilters={setFilters}
       />
-    );
-  }
+    ),
+    [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
+  );
 
-  const handleAddToCart = (productId: string, color: string) => {
-    console.log(`Añadir al carrito: ${productId} - ${color}`);
-  };
-
-  const handleToggleFavorite = (productId: string) => {
-    console.log(`Toggle favorito: ${productId}`);
-  };
-
-  if (loading) {
-    return (
-      <LoadingState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <ErrorState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
-        error={error}
-        onRetry={refreshProducts}
-      />
-    );
-  }
 
   // Ejemplo de renderizado responsive
   return (
@@ -238,22 +209,14 @@ export default function GalaxyBudsSection() {
           )}
 
           <main className="flex-1">
-            <HeaderSection
-              title="Galaxy Buds"
-              totalItems={totalItems}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              onShowMobileFilters={() => setShowMobileFilters(true)}
-            />
-
-            <ProductGrid
+            {HeaderSectionMemo}
+            <GalaxyBudsProductsGrid
               ref={productsRef}
               products={products}
+              loading={loading}
+              error={error}
+              refreshProducts={refreshProducts}
               viewMode={viewMode}
-              onAddToCart={handleAddToCart}
-              onToggleFavorite={handleToggleFavorite}
             />
             
             {/* Paginación */}
@@ -278,20 +241,7 @@ export default function GalaxyBudsSection() {
         </div>
       </div>
 
-      {/* Modal de filtros solo en mobile/tablet */}
-      {(device === "mobile" || device === "tablet") && (
-        <MobileFilterModal
-          isOpen={showMobileFilters}
-          onClose={() => setShowMobileFilters(false)}
-          filterConfig={budsFilters}
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          resultCount={totalItems}
-          expandedFilters={expandedFilters}
-          onToggleFilter={toggleFilter}
-          trackingPrefix="buds_filter"
-        />
-      )}
+      {MobileFilterModalMemo}
     </div>
   );
 }

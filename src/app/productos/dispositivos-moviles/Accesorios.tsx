@@ -63,11 +63,9 @@ export default function AccesoriosSection() {
   }, [apiFilters, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con filtros dinámicos y paginación
-  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } =
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
     useProducts(initialFilters);
 
-  // Ref para evitar bucles infinitos
-  const lastFiltersRef = useRef<string>("");
 
   // Sticky behavior (solo en desktop/large)
   const stickyEnabled = device === "desktop" || device === "large";
@@ -85,22 +83,6 @@ export default function AccesoriosSection() {
     setCurrentPage(1);
   }, [filters]);
 
-  // Actualizar filtros cuando cambien los parámetros de paginación
-  useEffect(() => {
-    const filtersWithPagination = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    
-    // Crear una clave única para evitar bucles infinitos
-    const filtersKey = JSON.stringify(filtersWithPagination);
-    
-    if (lastFiltersRef.current !== filtersKey) {
-      lastFiltersRef.current = filtersKey;
-      filterProducts(filtersWithPagination);
-    }
-  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {

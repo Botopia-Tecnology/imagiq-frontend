@@ -76,7 +76,6 @@ export default function ProductCard({
   const [selectedColor, setSelectedColor] = useState<ProductColor | null>(
     colors && colors.length > 0 ? colors[0] : null
   );
-  const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // Integración con el contexto del carrito
@@ -162,8 +161,6 @@ export default function ProductCard({
         "bg-[#D9D9D9] rounded-2xl max-w-72 shadow-sm border border-gray-300 overflow-hidden transition-all duration-300",
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
     >
       {/* Header con badges */}
       <div className="relative">

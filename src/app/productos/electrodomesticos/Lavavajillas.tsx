@@ -10,7 +10,6 @@ import FilterSidebar, {
 } from "../components/FilterSidebar";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import { productsData } from "../data_product/products";
 import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
 import refrigeradorImg from "@/img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "@/img/electrodomesticos/electrodomesticos2.png";

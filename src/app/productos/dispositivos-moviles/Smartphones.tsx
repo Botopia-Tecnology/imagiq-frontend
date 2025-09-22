@@ -232,7 +232,7 @@ export default function SmartphonesSection() {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
-  }, [itemsPerPage]);
+  }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
@@ -449,7 +449,6 @@ export default function SmartphonesSection() {
                   <ItemsPerPageSelector
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
-                    totalItems={totalItems}
                   />
                 </div>
                 <Pagination

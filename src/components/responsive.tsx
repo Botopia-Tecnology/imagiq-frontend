@@ -19,7 +19,6 @@ export const ResponsiveProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   useEffect(() => {
     const checkDevice = () => {
       const width = window.innerWidth;
-      const height = window.innerHeight;
       const mobileUA = isMobileDevice();
 
       // Si es móvil por userAgent, lo tratamos como móvil aunque el ancho sea mayor

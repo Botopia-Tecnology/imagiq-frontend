@@ -19,7 +19,6 @@ import FilterSidebar, {
   MobileFilterModal,
   type FilterState,
 } from "../components/FilterSidebar";
-import { productsData } from "../data_product/products";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
@@ -102,9 +101,6 @@ const budsFilters: FilterConfig = {
   controlVoz: ["Bixby", "Google Assistant", "Alexa", "Múltiples"],
 };
 
-const budsProducts = productsData["accesorios"].filter(
-  (product) => product.category === "buds"
-);
 
 export default function GalaxyBudsSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -220,7 +216,7 @@ export default function GalaxyBudsSection() {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
-  }, [itemsPerPage]);
+  }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
@@ -342,7 +338,6 @@ export default function GalaxyBudsSection() {
                   <ItemsPerPageSelector
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
-                    totalItems={totalItems}
                   />
                 </div>
                 <Pagination

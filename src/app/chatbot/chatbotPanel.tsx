@@ -22,9 +22,7 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
   ]);
   const [loading, setLoading] = useState(false);
 
-  const handleStart = () => setStep(1);
   const handleNext = () => setStep((prev) => prev + 1);
-  const handleBack = () => setStep((prev) => (prev > 1 ? prev - 1 : 1));
   const handleReset = () => setStep(0);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,7 +41,7 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
     try {
       const botReply = await sendMessageToGemini(userMessage);
       setMessages((prev) => [...prev, { from: "bot", text: botReply }]);
-    } catch (err) {
+    } catch {
       setMessages((prev) => [
         ...prev,
         { from: "bot", text: "Ocurrió un error al contactar a Gemini." },

@@ -14,7 +14,6 @@ import FilterSidebar, {
 import { cn } from "@/lib/utils";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
-import { productsData } from "../data_product/products";
 
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";

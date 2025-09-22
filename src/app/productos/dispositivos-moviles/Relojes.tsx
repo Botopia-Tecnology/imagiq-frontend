@@ -22,8 +22,6 @@ import FilterSidebar, {
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { productsData } from "../data_product/products";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
@@ -97,9 +95,6 @@ const watchFilters: FilterConfig = {
   resistenciaAgua: ["5ATM", "10ATM", "IP68"],
 };
 
-const watchProducts = productsData["accesorios"].filter(
-  (product) => product.category === "watch"
-);
 
 export default function RelojesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -133,14 +128,13 @@ export default function RelojesSection() {
     return filters;
   }, [apiFilters, currentPage, itemsPerPage]);
 
-  const { 
-    products, 
-    loading, 
-    error, 
+  const {
+    products,
+    loading,
+    error,
     totalItems,
     totalPages,
-    filterProducts,
-    refreshProducts 
+    filterProducts
   } = useProducts(initialFilters);
 
   // Ref para evitar bucles infinitos
@@ -219,7 +213,7 @@ export default function RelojesSection() {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
-  }, [itemsPerPage]);
+  }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
@@ -394,7 +388,6 @@ export default function RelojesSection() {
                   <ItemsPerPageSelector
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
-                    totalItems={totalItems}
                   />
                 </div>
                 <Pagination

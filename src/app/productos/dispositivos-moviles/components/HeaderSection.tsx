@@ -7,6 +7,10 @@
 import { cn } from "@/lib/utils";
 import { Filter, Grid3X3, List } from "lucide-react";
 
+interface FilterState {
+  [key: string]: string[];
+}
+
 interface HeaderSectionProps {
   title: string;
   totalItems: number;
@@ -15,8 +19,8 @@ interface HeaderSectionProps {
   viewMode: "grid" | "list";
   setViewMode: (mode: "grid" | "list") => void;
   onShowMobileFilters: () => void;
-  filters?: any;
-  setFilters?: React.Dispatch<React.SetStateAction<any>>;
+  filters?: FilterState;
+  setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
 }
 
 export default function HeaderSection({

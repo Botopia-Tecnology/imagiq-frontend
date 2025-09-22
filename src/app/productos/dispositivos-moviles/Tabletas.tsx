@@ -21,7 +21,6 @@ import FilterSidebar, {
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
@@ -32,7 +31,6 @@ import smartphonesImg from "../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
-import { productsData } from "../data_product/products";
 
 // Categorías del slider (idénticas a la imagen)
 const tabletCategories: Category[] = [
@@ -126,7 +124,7 @@ export default function TabletasSection() {
     return filters;
   }, [apiFilters, currentPage, itemsPerPage]);
 
-  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } = useProducts(initialFilters);
+  const { products, loading, error, totalItems, totalPages, filterProducts } = useProducts(initialFilters);
 
   // Ref para evitar bucles infinitos
   const lastFiltersRef = useRef<string>("");
@@ -204,7 +202,7 @@ export default function TabletasSection() {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
-  }, [itemsPerPage]);
+  }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
@@ -374,7 +372,6 @@ export default function TabletasSection() {
                   <ItemsPerPageSelector
                     itemsPerPage={itemsPerPage}
                     onItemsPerPageChange={handleItemsPerPageChange}
-                    totalItems={totalItems}
                   />
                 </div>
                 <Pagination

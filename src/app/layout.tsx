@@ -16,7 +16,7 @@ import { Toaster } from "@/components/ui/sonner";
 import ClientLayout from "./ClientLayout";
 import { ResponsiveProvider } from "@/components/responsive"; // Importa el provider
 import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
-import {ProductProvider} from "@/features/products/ProductContext";
+import { ProductProvider } from "@/features/products/ProductContext";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -107,7 +107,7 @@ export default function RootLayout({
   }
   return (
     <html lang="es" className={inter.variable}>
-      <body className="font-sans antialiased">
+      <body className="font-samsung antialiased">
         <ResponsiveProvider>
           <ProductProvider>
             <NavbarVisibilityProvider>
@@ -141,7 +141,7 @@ export default function RootLayout({
                 </AnalyticsProvider>
               </PostHogProvider>
             </NavbarVisibilityProvider>
-            </ProductProvider>
+          </ProductProvider>
         </ResponsiveProvider>
       </body>
     </html>

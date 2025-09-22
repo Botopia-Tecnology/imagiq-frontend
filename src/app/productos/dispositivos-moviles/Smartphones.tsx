@@ -179,6 +179,7 @@ export default function SmartphonesSection() {
         onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
+        clearAllFiltersText="Ver todos los Smartphones"
       />
     ),
     [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]

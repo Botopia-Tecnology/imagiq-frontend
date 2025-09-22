@@ -163,6 +163,7 @@ export default function AccesoriosSection() {
         onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
+        clearAllFiltersText="Ver todos los accesorios"
       />
     ),
     [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]

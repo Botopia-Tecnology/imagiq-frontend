@@ -162,6 +162,7 @@ export default function GalaxyBudsSection() {
         onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
+        clearAllFiltersText="Ver todos los Galaxy Buds"
       />
     ),
     [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]

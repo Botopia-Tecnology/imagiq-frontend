@@ -158,6 +158,7 @@ export default function TabletasSection() {
         onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
+        clearAllFiltersText="Ver todas las tabletas"
       />
     ),
     [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]

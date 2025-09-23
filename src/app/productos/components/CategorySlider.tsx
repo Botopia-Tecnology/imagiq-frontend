@@ -173,7 +173,7 @@ export default function CategorySlider({
                       // Tamaños reducidos en móvil para que se muestren todos
                       "size-20 sm:size-24 md:size-32 lg:size-36",
                       activeCategoryId === category.id
-                        ? "bg-blue-500/50 ring-2 ring-green-50 scale-[115%]"
+                        ? "bg-blue-500/30 ring-2 ring-green-50 scale-[115%]"
                         : "bg-white hover:bg-white-100 scale-90"
                     )}
                   >

@@ -24,6 +24,7 @@ import { Filter, Grid3X3, List } from "lucide-react";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
+import { useFavorites } from "@/features/products/useProducts";
 
 const applianceCategories: Category[] = [
   {
@@ -106,6 +107,8 @@ const refrigeradoresFilters: FilterConfig = {
 };
 
 export default function RefrigeradoresSection() {
+  const { favorites, addToFavorites, removeFromFavorites, isFavorite } =
+    useFavorites();
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
@@ -424,11 +427,16 @@ export default function RefrigeradoresSection() {
                     originalPrice={product.originalPrice}
                     discount={product.discount}
                     isNew={product.isNew}
+                    isFavorite={isFavorite(product.id)}
                     onAddToCart={(productId: string, color: string) => {
                       console.log(`Añadir al carrito: ${productId} - ${color}`);
                     }}
                     onToggleFavorite={(productId: string) => {
-                      console.log(`Toggle favorito: ${productId}`);
+                      if (isFavorite(productId)) {
+                        removeFromFavorites(productId);
+                      } else {
+                        addToFavorites(productId);
+                      }
                     }}
                     className={viewMode === "list" ? "flex-row" : ""}
                   />

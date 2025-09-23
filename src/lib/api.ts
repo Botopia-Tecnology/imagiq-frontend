@@ -128,6 +128,18 @@ export const productEndpoints = {
   getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?codigoMarket=${codigoMarket}`),
   search: (query: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
   getOffers: () => apiClient.get<ProductApiResponse>('/api/products/filtered?conDescuento=true'),
+  //NUEVO - aun falta endpoints reales
+  getFavorites: (params: FavoriteFilterParams) => {
+    const searchParams = new URLSearchParams();
+     Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        searchParams.append(key, String(value));
+      }
+    });
+    const url = `/api/user/favorites/filtered?${searchParams.toString()}`;
+    return apiClient.get<FavoriteApiResponse>(url);},
+  addFavorite: (productId: string) => apiClient.post<void>(`/api/user/favorites/${productId}`),
+  removeFavorite: (productId: string) => apiClient.delete<void>(`/api/user/favorites/${productId}`),
 };
 
 // Product filter parameters interface
@@ -143,6 +155,12 @@ export interface ProductFilterParams {
   nombre?: string;
   desDetallada?: string; 
   codigoMarket?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Favorite filter 
+export interface FavoriteFilterParams {
   page?: number;
   limit?: number;
 }
@@ -175,4 +193,13 @@ export interface ProductApiData {
   precioDescto: number[];
   fechaInicioVigencia: string[];
   fechaFinalVigencia: string[];
+}
+
+export interface FavoriteApiResponse {
+  products: ProductApiData[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }

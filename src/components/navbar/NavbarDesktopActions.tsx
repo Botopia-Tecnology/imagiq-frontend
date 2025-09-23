@@ -145,7 +145,7 @@ export default function NavbarDesktopActions({
           showWhiteItems ? "text-white" : "text-black"
         )}
         title="Favoritos"
-        onClick={() => router.push("/product-favoritos")}
+        onClick={() => router.push("/favoritos")}
       >
         <Image
           src={showWhiteItems ? favoritoIconWhite : favoritoIconBlack}

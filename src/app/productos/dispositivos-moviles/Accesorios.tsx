@@ -22,7 +22,7 @@ import {
   accessoryFilters,
 } from "./constants/accesoriosConstants";
 import { getApiFilters } from "./utils/accesoriosUtils";
-import AccesoriosProductsGrid from "./components/AccesoriosProductsGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
 import HeaderSection from "./components/HeaderSection";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
@@ -31,7 +31,7 @@ import { useDeviceType } from "@/components/responsive";
 
 export default function AccesoriosSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
-    new Set(["tipoAccesorio", "color"])
+    new Set(["tipoAccesorio"])
   );
   const [filters, setFilters] = useState<FilterState>({});
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -63,11 +63,9 @@ export default function AccesoriosSection() {
   }, [apiFilters, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con filtros dinámicos y paginación
-  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } =
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
     useProducts(initialFilters);
 
-  // Ref para evitar bucles infinitos
-  const lastFiltersRef = useRef<string>("");
 
   // Sticky behavior (solo en desktop/large)
   const stickyEnabled = device === "desktop" || device === "large";
@@ -85,22 +83,6 @@ export default function AccesoriosSection() {
     setCurrentPage(1);
   }, [filters]);
 
-  // Actualizar filtros cuando cambien los parámetros de paginación
-  useEffect(() => {
-    const filtersWithPagination = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    
-    // Crear una clave única para evitar bucles infinitos
-    const filtersKey = JSON.stringify(filtersWithPagination);
-    
-    if (lastFiltersRef.current !== filtersKey) {
-      lastFiltersRef.current = filtersKey;
-      filterProducts(filtersWithPagination);
-    }
-  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -181,6 +163,7 @@ export default function AccesoriosSection() {
         onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
+        clearAllFiltersText="Ver todos los accesorios"
       />
     ),
     [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
@@ -212,12 +195,14 @@ export default function AccesoriosSection() {
 
           <main className="flex-1">
             {HeaderSectionMemo}
-            <AccesoriosProductsGrid
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
               loading={loading}
               error={error}
               refreshProducts={refreshProducts}
+              viewMode={viewMode}
+              categoryName="accesorios"
             />
             
             {/* Paginación */}

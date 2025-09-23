@@ -18,7 +18,8 @@ import { ProductCardProps } from '@/app/productos/components/ProductCard';
 interface ProductFilters {
   category?: string;
   subcategory?: string;
-  priceRange?: { min: number; max: number };
+  precioMin?: number;
+  precioMax?: number;
   color?: string;
   capacity?: string;
   name?: string;
@@ -72,8 +73,16 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
     // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
     if (filters.category) params.categoria = filters.category;
     if (filters.subcategory) params.subcategoria = filters.subcategory;
-    if (filters.priceRange?.min) params.precioMin = filters.priceRange.min; // Sobrescribe el valor por defecto
-    if (filters.priceRange?.max) params.precioMax = filters.priceRange.max;
+    
+    // Manejar filtros de precio usando precioMin/precioMax
+    if (filters.precioMin !== undefined) {
+      params.precioMin = filters.precioMin;
+    }
+    
+    if (filters.precioMax !== undefined) {
+      params.precioMax = filters.precioMax;
+    }
+    
     if (filters.color) params.color = filters.color;
     if (filters.capacity) params.capacidad = filters.capacity;
     if (filters.name) params.nombre = filters.name;
@@ -94,7 +103,6 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
 
     try {
       const apiParams = convertFiltersToApiParams(filters);
-      console.log(`🌐 Parámetros de API enviados:`, apiParams);
       const response = await productEndpoints.getFiltered(apiParams);
 
       if (response.success && response.data) {
@@ -254,7 +262,6 @@ export const useProduct = (productId: string) => {
 
 export const useFavorites = () => {
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [loading] = useState(false);
 
   // Cargar favoritos desde localStorage
   useEffect(() => {
@@ -289,7 +296,6 @@ export const useFavorites = () => {
     addToFavorites,
     removeFromFavorites,
     isFavorite,
-    loading,
   };
 };
 

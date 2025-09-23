@@ -1,7 +1,6 @@
 /**
- * 🎧 GALAXY BUDS HEADER SECTION
  *
- * Header con filtros, ordenamiento y vista para Galaxy Buds
+ * Header genérico con filtros, ordenamiento y vista para todas las categorías
  */
 
 import { cn } from "@/lib/utils";
@@ -21,6 +20,7 @@ interface HeaderSectionProps {
   onShowMobileFilters: () => void;
   filters?: FilterState;
   setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
+  clearAllFiltersText: string; // Texto completo para el botón de limpiar filtros
 }
 
 export default function HeaderSection({
@@ -33,18 +33,33 @@ export default function HeaderSection({
   onShowMobileFilters,
   filters,
   setFilters,
+  clearAllFiltersText,
 }: HeaderSectionProps) {
+  // Verificar si hay algún filtro activo
+  const hasActiveFilters = filters && Object.values(filters).some(filterArray => filterArray.length > 0);
+
+  // Función para limpiar todos los filtros
+  const clearAllFilters = () => {
+    if (setFilters && filters) {
+      const clearedFilters: FilterState = {};
+      Object.keys(filters).forEach(key => {
+        clearedFilters[key] = [];
+      });
+      setFilters(clearedFilters);
+    }
+  };
+
   return (
     <div className="flex items-center justify-between mb-6">
       <div className="flex items-center gap-4">
         <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         <span className="text-sm text-gray-500">{totalItems} resultados</span>
-        {filters?.tipoAccesorio && filters.tipoAccesorio.length > 0 && setFilters && (
+        {hasActiveFilters && setFilters && (
           <button
-            onClick={() => setFilters({ ...filters, tipoAccesorio: [] })}
+            onClick={clearAllFilters}
             className="text-sm text-blue-600 hover:text-blue-800 underline"
           >
-            Ver todos los accesorios
+            {clearAllFiltersText}
           </button>
         )}
       </div>

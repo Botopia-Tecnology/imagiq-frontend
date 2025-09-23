@@ -73,7 +73,6 @@ export class ApiClient {
 
   // HTTP methods
   async get<T>(endpoint: string): Promise<ApiResponse<T>> {
-    console.log("ENDPOINT", endpoint)
     return this.request<T>(endpoint, { method: "GET" });
   }
 
@@ -119,7 +118,6 @@ export const productEndpoints = {
       }
     });
     const url = `/api/products/filtered?${searchParams.toString()}`;
-    console.log(`🌐 URL completa generada: ${url}`);
     return apiClient.get<ProductApiResponse>(url);
   },
   getById: (id: string) => apiClient.get<ProductApiResponse>(`/api/products/${id}`),

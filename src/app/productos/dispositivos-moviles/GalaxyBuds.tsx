@@ -13,93 +13,21 @@
 import { useProducts } from "@/features/products/useProducts";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
-import CategorySlider, { Category } from "../components/CategorySlider";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
-  FilterConfig,
   MobileFilterModal,
   type FilterState,
 } from "../components/FilterSidebar";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-
-// Importar imágenes del slider
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
-import LoadingState from "./components/LoadingState";
-import ErrorState from "./components/ErrorState";
 import { cn } from "@/lib/utils";
 import HeaderSection from "./components/HeaderSection";
-import ProductGrid from "./components/ProductGrid";
+import CategoryProductsGrid from "./components/ProductsGrid";
+import { budsCategories, budsFilters } from "./constants/galaxyBudsConstants";
+import { getApiFilters } from "./utils/budsUtils";
 
-// Categorías del slider (idénticas a la imagen)
-const budsCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "?section=smartphones",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "#galaxy-buds",
-  },
-];
-
-// Configuración de filtros específica para Galaxy Buds
-const budsFilters: FilterConfig = {
-  serie: [
-    "Galaxy Buds Pro",
-    "Galaxy Buds2 Pro",
-    "Galaxy Buds FE",
-    "Galaxy Buds Live",
-  ],
-  tipoAjuste: ["In-ear", "Semi abierto", "Abierto"],
-  cancelacionRuido: ["ANC Activa", "ANC Pasiva", "Sin ANC"],
-  resistenciaAgua: ["IPX4", "IPX5", "IPX7", "Sin resistencia"],
-  conectividad: [
-    "Bluetooth 5.0",
-    "Bluetooth 5.1",
-    "Bluetooth 5.2",
-    "Bluetooth 5.3",
-  ],
-  caracteristicas: [
-    "Carga inalámbrica",
-    "Detección de uso",
-    "Ecualización adaptable",
-    "Audio 360",
-    "Control táctil",
-  ],
-  rangoPrecio: [
-    { label: "Menos de $200.000", min: 0, max: 200000 },
-    { label: "$200.000 - $400.000", min: 200000, max: 400000 },
-    { label: "$400.000 - $600.000", min: 400000, max: 600000 },
-    { label: "Más de $600.000", min: 600000, max: Infinity },
-  ],
-  autonomiaBateria: ["4-6 horas", "6-8 horas", "8+ horas"],
-  controlVoz: ["Bixby", "Google Assistant", "Alexa", "Múltiples"],
-};
 
 
 export default function GalaxyBudsSection() {
@@ -120,12 +48,7 @@ export default function GalaxyBudsSection() {
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con filtro por palabra "buds"
-  const apiFilters = useMemo(
-    () => ({
-      name: "buds", // Filtrar productos que contengan "buds" en el nombre
-    }),
-    []
-  );
+  const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
   // Crear filtros iniciales con paginación
   const initialFilters = useMemo(() => {
@@ -137,11 +60,9 @@ export default function GalaxyBudsSection() {
     return filters;
   }, [apiFilters, currentPage, itemsPerPage]);
 
-  const { products, loading, error, totalItems, totalPages, filterProducts, refreshProducts } =
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
     useProducts(initialFilters);
 
-  // Ref para evitar bucles infinitos
-  const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Obtén el tipo de dispositivo
 
   // Sticky behavior (solo en desktop/large)
@@ -155,27 +76,12 @@ export default function GalaxyBudsSection() {
 
   const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
 
+
   // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // Actualizar filtros cuando cambien los parámetros de paginación
-  useEffect(() => {
-    const filtersWithPagination = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    
-    // Crear una clave única para evitar bucles infinitos
-    const filtersKey = JSON.stringify(filtersWithPagination);
-    
-    if (lastFiltersRef.current !== filtersKey) {
-      lastFiltersRef.current = filtersKey;
-      filterProducts(filtersWithPagination);
-    }
-  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -224,53 +130,44 @@ export default function GalaxyBudsSection() {
     // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
-  if (loading) {
-    return (
-      <LoadingState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
+
+  // Memoizar el modal de filtros móviles
+  const MobileFilterModalMemo = useMemo(
+    () => (
+      <MobileFilterModal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        filterConfig={budsFilters}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        resultCount={totalItems}
+        expandedFilters={expandedFilters}
+        onToggleFilter={toggleFilter}
+        trackingPrefix="buds_filter"
       />
-    );
-  }
+    ),
+    [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
+  );
 
-  if (error) {
-    return (
-      <ErrorState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
-        error={error}
-        onRetry={refreshProducts}
+  // Memoizar el HeaderSection para evitar re-renders innecesarios
+  const HeaderSectionMemo = useMemo(
+    () => (
+      <HeaderSection
+        title="Galaxy Buds"
+        totalItems={totalItems}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onShowMobileFilters={() => setShowMobileFilters(true)}
+        filters={filters}
+        setFilters={setFilters}
+        clearAllFiltersText="Ver todos los Galaxy Buds"
       />
-    );
-  }
+    ),
+    [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
+  );
 
-  const handleAddToCart = (productId: string, color: string) => {
-    console.log(`Añadir al carrito: ${productId} - ${color}`);
-  };
-
-  const handleToggleFavorite = (productId: string) => {
-    console.log(`Toggle favorito: ${productId}`);
-  };
-
-  if (loading) {
-    return (
-      <LoadingState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <ErrorState
-        categories={budsCategories}
-        trackingPrefix="buds_category"
-        error={error}
-        onRetry={refreshProducts}
-      />
-    );
-  }
 
   // Ejemplo de renderizado responsive
   return (
@@ -313,22 +210,15 @@ export default function GalaxyBudsSection() {
           )}
 
           <main className="flex-1">
-            <HeaderSection
-              title="Galaxy Buds"
-              totalItems={totalItems}
-              sortBy={sortBy}
-              setSortBy={setSortBy}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              onShowMobileFilters={() => setShowMobileFilters(true)}
-            />
-
-            <ProductGrid
+            {HeaderSectionMemo}
+            <CategoryProductsGrid
               ref={productsRef}
               products={products}
+              loading={loading}
+              error={error}
+              refreshProducts={refreshProducts}
               viewMode={viewMode}
-              onAddToCart={handleAddToCart}
-              onToggleFavorite={handleToggleFavorite}
+              categoryName="Galaxy Buds"
             />
             
             {/* Paginación */}
@@ -353,20 +243,7 @@ export default function GalaxyBudsSection() {
         </div>
       </div>
 
-      {/* Modal de filtros solo en mobile/tablet */}
-      {(device === "mobile" || device === "tablet") && (
-        <MobileFilterModal
-          isOpen={showMobileFilters}
-          onClose={() => setShowMobileFilters(false)}
-          filterConfig={budsFilters}
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          resultCount={totalItems}
-          expandedFilters={expandedFilters}
-          onToggleFilter={toggleFilter}
-          trackingPrefix="buds_filter"
-        />
-      )}
+      {MobileFilterModalMemo}
     </div>
   );
 }

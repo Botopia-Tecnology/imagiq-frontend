@@ -10,84 +10,23 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   MobileFilterModal,
-  type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
+import CategorySlider from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
-import { useDeviceType } from "@/components/responsive"; // Importa el hook responsive
+import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+import HeaderSection from "./components/HeaderSection";
+import CategoryProductsGrid from "./components/ProductsGrid";
+import { tabletCategories, tabletFilters } from "./constants/tabletsConstants";
+import { getApiFilters } from "./utils/tabletsUtils";
 
-// Importar imágenes del slider
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
-
-// Categorías del slider (idénticas a la imagen)
-const tabletCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "?section=smartphones",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "?section=buds",
-  },
-];
-
-// Configuración de filtros específica para tabletas
-const tabletFilters: FilterConfig = {
-  serie: ["Galaxy Tab S", "Galaxy Tab A", "Galaxy Tab FE", "Galaxy Tab Active"],
-  tamanoPantalla: ['8"', '10.4"', '11"', '12.4"', '14.6"'],
-  almacenamiento: ["64GB", "128GB", "256GB", "512GB", "1TB"],
-  ram: ["4GB", "6GB", "8GB", "12GB", "16GB"],
-  conectividad: ["WiFi", "WiFi + 5G", "WiFi + LTE"],
-  caracteristicas: [
-    "S Pen incluido",
-    "Teclado compatible",
-    "DeX",
-    "Resistente al agua",
-    "Carga rápida",
-  ],
-  rangoPrecio: [
-    { label: "Menos de $800.000", min: 0, max: 800000 },
-    { label: "$800.000 - $1.500.000", min: 800000, max: 1500000 },
-    { label: "$1.500.000 - $2.500.000", min: 1500000, max: 2500000 },
-    { label: "Más de $2.500.000", min: 2500000, max: Infinity },
-  ],
-  procesador: ["Snapdragon", "Exynos", "MediaTek"],
-  sistemaOperativo: ["Android", "One UI"],
-  uso: ["Productividad", "Gaming", "Educación", "Entretenimiento"],
-};
 
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -107,12 +46,7 @@ export default function TabletasSection() {
   const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con filtro de subcategoría "Tablets"
-  const apiFilters = useMemo(
-    () => ({
-      subcategory: "Tablets",
-    }),
-    []
-  );
+  const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
 
   // Crear filtros iniciales con paginación
   const initialFilters = useMemo(() => {
@@ -124,10 +58,8 @@ export default function TabletasSection() {
     return filters;
   }, [apiFilters, currentPage, itemsPerPage]);
 
-  const { products, loading, error, totalItems, totalPages, filterProducts } = useProducts(initialFilters);
+  const { products, loading, error, totalItems, totalPages, refreshProducts } = useProducts(initialFilters);
 
-  // Ref para evitar bucles infinitos
-  const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Responsive global
 
   // Sticky behavior (solo en desktop/large)
@@ -146,22 +78,6 @@ export default function TabletasSection() {
     setCurrentPage(1);
   }, [filters]);
 
-  // Actualizar filtros cuando cambien los parámetros de paginación
-  useEffect(() => {
-    const filtersWithPagination = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    
-    // Crear una clave única para evitar bucles infinitos
-    const filtersKey = JSON.stringify(filtersWithPagination);
-    
-    if (lastFiltersRef.current !== filtersKey) {
-      lastFiltersRef.current = filtersKey;
-      filterProducts(filtersWithPagination);
-    }
-  }, [currentPage, itemsPerPage, apiFilters, filterProducts]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -211,6 +127,43 @@ export default function TabletasSection() {
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
+  // Memoizar el modal de filtros móviles
+  const MobileFilterModalMemo = useMemo(
+    () => (
+      <MobileFilterModal
+        isOpen={showMobileFilters}
+        onClose={() => setShowMobileFilters(false)}
+        filterConfig={tabletFilters}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        resultCount={totalItems}
+        expandedFilters={expandedFilters}
+        onToggleFilter={toggleFilter}
+        trackingPrefix="tablet_filter"
+      />
+    ),
+    [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
+  );
+
+  // Memoizar el HeaderSection para evitar re-renders innecesarios
+  const HeaderSectionMemo = useMemo(
+    () => (
+      <HeaderSection
+        title="Tabletas"
+        totalItems={totalItems}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onShowMobileFilters={() => setShowMobileFilters(true)}
+        filters={filters}
+        setFilters={setFilters}
+        clearAllFiltersText="Ver todas las tabletas"
+      />
+    ),
+    [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
+  );
+
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
@@ -250,120 +203,16 @@ export default function TabletasSection() {
           )}
 
           <main className="flex-1">
-            <div
-              className={cn(
-                "flex items-center justify-between mb-6",
-                device === "mobile" && "flex-col items-start gap-2 mb-4"
-              )}
-            >
-              <div className="flex items-center gap-4">
-                <h1
-                  className={cn(
-                    "text-2xl font-bold text-gray-900",
-                    device === "mobile" && "text-lg"
-                  )}
-                >
-                  Galaxy Tab
-                </h1>
-                <span
-                  className={cn(
-                    "text-sm text-gray-500",
-                    device === "mobile" && "text-xs"
-                  )}
-                >
-                  {totalItems} resultados
-                </span>
-              </div>
-
-              <div
-                className={cn(
-                  "flex items-center gap-4",
-                  device === "mobile" && "gap-2"
-                )}
-              >
-                {(device === "mobile" || device === "tablet") && (
-                  <button
-                    onClick={() => setShowMobileFilters(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-                  >
-                    <Filter className="w-4 h-4" />
-                    Filtros
-                  </button>
-                )}
-
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className={cn(
-                    "bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent",
-                    device === "mobile" && "px-2 py-1 text-xs"
-                  )}
-                >
-                  <option value="relevancia">Relevancia</option>
-                  <option value="precio-menor">Precio: menor a mayor</option>
-                  <option value="precio-mayor">Precio: mayor a menor</option>
-                  <option value="nombre">Nombre A-Z</option>
-                  <option value="calificacion">Mejor calificados</option>
-                </select>
-
-                {(device === "desktop" || device === "large") && (
-                  <div className="flex border border-gray-300 rounded-lg overflow-hidden">
-                    <button
-                      onClick={() => setViewMode("grid")}
-                      className={cn(
-                        "p-2",
-                        viewMode === "grid"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      <Grid3X3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setViewMode("list")}
-                      className={cn(
-                        "p-2",
-                        viewMode === "list"
-                          ? "bg-blue-600 text-white"
-                          : "bg-white text-gray-600 hover:bg-gray-50"
-                      )}
-                    >
-                      <List className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div
+            {HeaderSectionMemo}
+            <CategoryProductsGrid
               ref={productsRef}
-              className={cn(
-                "grid gap-6",
-                viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
-                  : "grid-cols-1",
-                device === "mobile" && "gap-3"
-              )}
-            >
-              {products.length === 0 ? (
-                <div className="col-span-full text-center py-12 text-gray-500">
-                  No se encontraron tabletas con los filtros seleccionados.
-                </div>
-              ) : (
-                products.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    {...product}
-                    onAddToCart={(productId: string, color: string) => {
-                      console.log(`Añadir al carrito: ${productId} - ${color}`);
-                    }}
-                    onToggleFavorite={(productId: string) => {
-                      console.log(`Toggle favorito: ${productId}`);
-                    }}
-                  />
-                ))
-              )}
-            </div>
+              products={products}
+              loading={loading}
+              error={error}
+              refreshProducts={refreshProducts}
+              viewMode={viewMode}
+              categoryName="tabletas"
+            />
             
             {/* Paginación */}
             {!loading && !error && totalItems > 0 && (
@@ -387,19 +236,7 @@ export default function TabletasSection() {
         </div>
       </div>
 
-      {(device === "mobile" || device === "tablet") && (
-        <MobileFilterModal
-          isOpen={showMobileFilters}
-          onClose={() => setShowMobileFilters(false)}
-          filterConfig={tabletFilters}
-          filters={filters}
-          onFilterChange={handleFilterChange}
-          resultCount={totalItems}
-          expandedFilters={expandedFilters}
-          onToggleFilter={toggleFilter}
-          trackingPrefix="tablet_filter"
-        />
-      )}
+      {MobileFilterModalMemo}
     </div>
   );
 }

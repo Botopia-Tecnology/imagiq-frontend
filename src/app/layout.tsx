@@ -123,7 +123,7 @@ export default function RootLayout({
                           <ChatbotWidget />
                           {/* Toast notifications */}
                           <Toaster
-                            position="top-right"
+                            position="top-center"
                             expand={true}
                             richColors
                             closeButton

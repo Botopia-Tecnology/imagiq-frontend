@@ -78,31 +78,32 @@ const CountryCodeSelect: React.FC<CountryCodeSelectProps> = ({
             autoFocus
             style={{ borderRadius: "0.75rem 0.75rem 0 0" }}
           />
-          <ul className="max-h-48 overflow-auto">
-            {filtered.length === 0 && (
-              <li className="px-3 py-2 text-gray-400">No encontrado</li>
-            )}
-            {filtered.map((c) => (
-              <li
-                key={c.code}
-                className={`px-3 py-2 flex items-center gap-2 cursor-pointer hover:bg-[#e6f3ff] transition-all duration-100 ${
-                  c.code === value ? "bg-[#e6f3ff] font-bold" : ""
-                }`}
-                onClick={() => {
-                  onChange(c.code);
-                  setOpen(false);
-                  setSearch("");
-                }}
-                tabIndex={0}
-                role="option"
-                aria-selected={c.code === value}
-              >
-                <span>{c.flag}</span>
-                <span>{c.label}</span>
-                <span className="ml-auto text-xs text-gray-500">{c.code}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="max-h-48 overflow-auto">
+            <select
+              className="w-full px-3 py-2 text-sm border-none bg-transparent appearance-none focus:outline-none"
+              size={Math.min(6, Math.max(3, filtered.length))}
+              value={filtered.some(f => f.code === value) ? value : ""}
+              onChange={(e) => {
+                const selectedCode = e.target.value;
+                onChange(selectedCode);
+                setOpen(false);
+                setSearch("");
+              }}
+              aria-label="Seleccionar código de país"
+            >
+              {filtered.length === 0 ? (
+                <option disabled value="">
+                  No encontrado
+                </option>
+              ) : (
+                filtered.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {`${c.flag} ${c.label} ${c.code}`}
+                  </option>
+                ))
+              )}
+            </select>
+          </div>
           <style jsx>{`
             .animate-fadein {
               animation: fadein 0.18s ease;

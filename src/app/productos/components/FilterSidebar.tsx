@@ -165,11 +165,6 @@ export default function FilterSidebar({
     ],
   };
 
-  // Debug: Log de configuración de color
-  if (filterConfig.color) {
-    console.log("🎨 Configuración de color desde filterConfig:", filterConfig.color);
-  }
-
   return (
     <div
       className={cn(

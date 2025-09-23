@@ -103,7 +103,6 @@ export const useProducts = (initialFilters?: ProductFilters | (() => ProductFilt
 
     try {
       const apiParams = convertFiltersToApiParams(filters);
-      console.log(`🌐 Parámetros de API enviados:`, apiParams);
       const response = await productEndpoints.getFiltered(apiParams);
 
       if (response.success && response.data) {

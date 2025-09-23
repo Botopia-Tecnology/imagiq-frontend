@@ -139,11 +139,6 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       discount = `-${discountPercent}%`;
     }
     
-    // Debug: Log para verificar consistencia de colores
-    if (color !== colorInfo.label) {
-      console.log(`🎨 Color mapping: "${color}" -> "${colorInfo.label}" (hex: ${colorInfo.hex})`);
-    }
-    
     colorsWithPrices.push({
       name: normalizedColor.replace(/\s+/g, '-'),
       hex: colorInfo.hex,

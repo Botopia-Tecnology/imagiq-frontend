@@ -33,7 +33,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     if (allKeywords.length > 0) {
       // Usar todas las palabras clave separadas por coma para OR
       apiFilters.descriptionKeyword = allKeywords.join(',');
-      console.log(`🔍 Buscando accesorios tipos "${selectedTypes.join(', ')}" con palabras clave: "${allKeywords.join(',')}"`);
     }
   }
 
@@ -61,7 +60,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       } else {
         apiFilters.descriptionKeyword = materialKeywords.join(',');
       }
-      console.log(`🔍 Buscando materiales "${selectedMaterials.join(', ')}" con palabras clave: "${materialKeywords.join(',')}"`);
     }
   }
 
@@ -70,7 +68,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     // Para color, usar OR (unión) - múltiples colores separados por coma
     const selectedColors = filters.color;
     apiFilters.color = selectedColors.join(',');
-    console.log(`🎨 Filtrando por colores: "${selectedColors.join(', ')}"`);
   }
 
   // Filtro de características usando desDetallada
@@ -94,7 +91,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       } else {
         apiFilters.descriptionKeyword = characteristicKeywords.join(',');
       }
-      console.log(`⚡ Buscando características "${selectedCharacteristics.join(', ')}" con palabras clave: "${characteristicKeywords.join(',')}"`);
     }
   }
 
@@ -133,12 +129,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     if (maxPrice !== undefined) {
       apiFilters.precioMax = maxPrice;
     }
-    
-    console.log(`💰 Filtrando accesorios por rango de precios:`, {
-      precioMin: minPrice,
-      precioMax: maxPrice,
-      selectedRanges: selectedPriceRanges
-    });
   }
 
   return apiFilters;

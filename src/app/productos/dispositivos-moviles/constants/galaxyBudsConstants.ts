@@ -1,6 +1,4 @@
-/**
- * 🎧 GALAXY BUDS CONSTANTS
- *
+/** *
  * Configuraciones y constantes para la sección Galaxy Buds
  */
 

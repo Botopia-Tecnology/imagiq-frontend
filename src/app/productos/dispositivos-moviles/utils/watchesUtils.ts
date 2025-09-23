@@ -15,8 +15,21 @@ export function getApiFilters(filters: FilterState): ApiFilters {
 
   // Aplicar filtros específicos si existen
   if (filters.serie && filters.serie.length > 0) {
-    // Buscar por serie en el nombre del producto
-    apiFilters.descriptionKeyword = filters.serie.join(',');
+    // Buscar por serie con lógica específica para Galaxy Watch Classic
+    const selectedSeries = filters.serie;
+    const seriesKeywords: string[] = [];
+    
+    selectedSeries.forEach(series => {
+      if (series === "Galaxy Watch Classic") {
+        // Para Galaxy Watch Classic, buscar solo "Classic" en desDetallada
+        seriesKeywords.push("Classic");
+      } else {
+        // Para otras series, usar el nombre completo
+        seriesKeywords.push(series);
+      }
+    });
+    
+    apiFilters.descriptionKeyword = seriesKeywords.join(',');
   }
 
   if (filters.caracteristicas && filters.caracteristicas.length > 0) {

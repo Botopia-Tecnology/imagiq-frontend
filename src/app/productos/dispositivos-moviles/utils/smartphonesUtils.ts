@@ -45,7 +45,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     } else {
       apiFilters.descriptionKeyword = ramKeywords.join(',');
     }
-    console.log(`🧠 Buscando RAM "${selectedRAM.join(', ')}" con palabras clave: "${ramKeywords.join(',')}"`);
   }
 
   // Filtro de color usando query param color
@@ -53,7 +52,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     // Para color, usar OR (unión) - múltiples colores separados por coma
     const selectedColors = filters.color;
     apiFilters.color = selectedColors.join(',');
-    console.log(`🎨 Filtrando smartphones por colores: "${selectedColors.join(', ')}"`);
   }
 
   // Filtro de rango de precios usando query params precioMin y precioMax
@@ -91,12 +89,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     if (maxPrice !== undefined) {
       apiFilters.precioMax = maxPrice;
     }
-    
-    console.log(`💰 Filtrando smartphones por rango de precios:`, {
-      precioMin: minPrice,
-      precioMax: maxPrice,
-      selectedRanges: selectedPriceRanges
-    });
   }
 
   return apiFilters;

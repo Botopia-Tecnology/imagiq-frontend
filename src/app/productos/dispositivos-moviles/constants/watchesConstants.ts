@@ -1,6 +1,4 @@
-/**
- * WATCHES CONSTANTS
- *
+/** *
  * Configuraciones y constantes para la sección Relojes
  */
 

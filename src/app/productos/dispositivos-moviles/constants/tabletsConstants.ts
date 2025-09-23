@@ -1,6 +1,4 @@
-/**
- * TABLETS CONSTANTS
- *
+/** *
  * Configuraciones y constantes para la sección Tablets
  */
 

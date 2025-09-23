@@ -1,6 +1,4 @@
-/**
- * SMARTPHONES CONSTANTS
- *
+/** *
  * Configuraciones y constantes para la sección Smartphones
  */
 

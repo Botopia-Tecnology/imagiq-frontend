@@ -64,10 +64,10 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
               key={product.id}
               {...product}
               onAddToCart={(productId: string, color: string) => {
-                console.log(`Añadir al carrito: ${productId} - ${color}`);
+                // TODO: Implementar lógica de añadir al carrito
               }}
               onToggleFavorite={(productId: string) => {
-                console.log(`Toggle favorito: ${productId}`);
+                // TODO: Implementar lógica de toggle favorito
               }}
               className={viewMode === "list" ? "flex-row" : ""}
             />

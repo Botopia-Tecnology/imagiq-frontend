@@ -38,7 +38,8 @@ const colorMap: Record<string, { hex: string; label: string }> = {
   'negro medianoche': { hex: '#000000', label: 'Negro Medianoche' },
   'blanco perla': { hex: '#FFFFFF', label: 'Blanco Perla' },
   'gris grafito': { hex: '#4B5563', label: 'Gris Grafito' },
-  'oro rosa': { hex: '#E8B4B8', label: 'Oro Rosa' }
+  'oro rosa': { hex: '#E8B4B8', label: 'Oro Rosa' },
+  'morado lavanda': { hex: '#B19CD9', label: 'Morado Lavanda' }
 };
 
 /**

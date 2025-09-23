@@ -23,7 +23,7 @@ export const watchCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Watch",
     image: galaxyWatchImg,
-    href: "#galaxy-watch",
+    href: "?section=relojes",
   },
   {
     id: "galaxy-tab",

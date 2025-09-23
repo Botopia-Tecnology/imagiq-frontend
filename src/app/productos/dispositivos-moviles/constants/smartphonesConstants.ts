@@ -16,7 +16,7 @@ export const smartphoneCategories: Category[] = [
     name: "Galaxy",
     subtitle: "Smartphone",
     image: smartphonesImg,
-    href: "#galaxy-smartphone",
+    href: "?galaxy-smartphone",
   },
   {
     id: "galaxy-watch",
@@ -63,5 +63,14 @@ export const smartphoneFilters: FilterConfig = {
   //procesador: ["Exynos", "Snapdragon", "MediaTek"],
   ram: ["4GB", "6GB", "8GB", "12GB", "16GB"],
   //conectividad: ["4G", "5G"],
-  color: ["Negro", "Blanco", "Azul", "Rosa", "Verde", "Morado", "Dorado", "Plateado"],
+  color: [
+    "Negro",
+    "Blanco",
+    "Azul",
+    "Rosa",
+    "Verde",
+    "Morado",
+    "Dorado",
+    "Plateado",
+  ],
 };

@@ -401,7 +401,8 @@ export default function Navbar() {
               : "max-h-20 opacity-100"
           )}
         >
-          <ul className="flex items-center justify-center space-x-6 lg:space-x-12 py-4 px-4 md:px-8 min-w-max">
+          {/* NAVBAR DESKTOP: Espaciado reducido y responsivo solo para PC */}
+          <ul className="flex items-center justify-center gap-4 xl:gap-8 py-4 px-4 md:px-8 min-w-max">
             {navbarRoutes.map((item) => {
               // Indicador activo
               const isActive =

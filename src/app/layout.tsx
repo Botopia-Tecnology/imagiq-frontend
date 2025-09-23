@@ -17,6 +17,7 @@ import ClientLayout from "./ClientLayout";
 import { ResponsiveProvider } from "@/components/responsive"; // Importa el provider
 import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 import { ProductProvider } from "@/features/products/ProductContext";
+import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -116,25 +117,27 @@ export default function RootLayout({
                   <AuthProvider>
                     <UserPreferencesProvider>
                       <CartProvider>
-                        <ClientLayout>{safeChildren}</ClientLayout>
-                        {/* Widget del chatbot */}
-                        <ChatbotWidget />
-                        {/* Toast notifications */}
-                        <Toaster
-                          position="top-center"
-                          expand={true}
-                          richColors
-                          closeButton
-                          toastOptions={{
-                            duration: 4000,
-                            style: {
-                              background: "white",
-                              border: "1px solid #e2e8f0",
-                              color: "#1e293b",
-                              fontFamily: "var(--font-inter)",
-                            },
-                          }}
-                        />
+                        <SelectedColorProvider>
+                          <ClientLayout>{safeChildren}</ClientLayout>
+                          {/* Widget del chatbot */}
+                          <ChatbotWidget />
+                          {/* Toast notifications */}
+                          <Toaster
+                            position="top-center"
+                            expand={true}
+                            richColors
+                            closeButton
+                            toastOptions={{
+                              duration: 4000,
+                              style: {
+                                background: "white",
+                                border: "1px solid #e2e8f0",
+                                color: "#1e293b",
+                                fontFamily: "var(--font-inter)",
+                              },
+                            }}
+                          />
+                        </SelectedColorProvider>
                       </CartProvider>
                     </UserPreferencesProvider>
                   </AuthProvider>

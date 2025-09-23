@@ -13,6 +13,8 @@
 
 import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useDynamicBackgroundColor } from "@/hooks/useDynamicBackgroundColor";
+import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import addiLogo from "@/img/iconos/addi_logo.png";
 import packageCar from "@/img/iconos/package_car.png";
 import samsungLogo from "@/img/Samsung_black.png";
@@ -20,15 +22,11 @@ import { motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FiEye } from "react-icons/fi";
-import { IoClose } from "react-icons/io5";
-import HouseButton from "../components/Button";
+
 import { productsMock } from "../components/productsMock";
 import ComparationProduct from "./ComparationProduct";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import VideosSection from "./VideosSection";
-import ModalWithoutBackground from "@/components/ModalWithoutBackground";
-import QRDesktop from "../components/QRDesktop";
 
 // Tipos para producto
 interface ProductColor {
@@ -49,9 +47,19 @@ interface ProductData {
 
 export default function ViewProduct({
   product,
+  selectedColor,
 }: {
   product: Readonly<ProductData>;
+  selectedColor?: string;
 }) {
+  // Usar el color del contexto global
+  const { selectedColor: globalSelectedColor } = useSelectedColor();
+
+  // Hook para background dinámico - usa el color global del contexto
+  const { backgroundStyle } = useDynamicBackgroundColor({
+    initialColor: product?.colors?.[0]?.hex || "#17407A",
+    selectedColor: globalSelectedColor,
+  });
   // Animación scroll reveal para hero principal
   const heroReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
@@ -157,15 +165,7 @@ export default function ViewProduct({
   return (
     <div
       className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
-      style={{
-        background: `
-          radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.35), transparent 50%),
-          radial-gradient(circle at 70% 70%, rgba(255, 255, 255, 0.25), transparent 60%),
-          radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.2), transparent 70%),
-          linear-gradient(135deg, #082B4D 0%, #0A3A66 100%)
-        `,
-        fontFamily: "SamsungSharpSans",
-      }}
+      style={backgroundStyle}
     >
       {/* Feedback UX al añadir al carrito */}
       {cartFeedback && (

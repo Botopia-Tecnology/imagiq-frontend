@@ -16,11 +16,13 @@ const HIDDEN_NAVBAR_ROUTES = [
   "/charging-result",
   "/success-checkout",
   "/error-checkout",
-  "/verify-purchase/**/*"
+  "/verify-purchase/",
 ];
 
 function shouldHideNavbar(pathname: string) {
-  return HIDDEN_NAVBAR_ROUTES.includes(pathname);
+  return HIDDEN_NAVBAR_ROUTES.some((route) =>
+    route.endsWith("/") ? pathname.startsWith(route) : pathname === route
+  );
 }
 
 export default function ClientLayout({

@@ -44,7 +44,7 @@ export const watchCategories: Category[] = [
 // Configuración de filtros específica para relojes
 export const watchFilters: FilterConfig = {
   serie: ["Galaxy Watch", "Galaxy Watch Active", "Galaxy Watch Classic"],
-  tamaño: ["40mm", "42mm", "43mm", "44mm", "45mm","46mm", "47mm"],
+  tamaño: ["40mm", "42mm", "43mm", "44mm", "45mm", "46mm", "47mm"],
   //resistenciaAgua: ["5ATM", "10ATM", "IP68", "MIL-STD-810G"],
   //conectividad: ["Bluetooth", "LTE", "Wi-Fi"],
   /*
@@ -63,5 +63,5 @@ export const watchFilters: FilterConfig = {
     { label: "Más de $2.000.000", min: 2000000, max: Infinity },
   ],
   //material: ["Aluminio", "Acero inoxidable", "Titanio"],
-    color: ["Negro", "Plata", "Dorado", "Rosa", "Azul", "Morado"],
+  color: ["Negro", "Plata", "Dorado", "Rosa", "Azul", "Morado"],
 };

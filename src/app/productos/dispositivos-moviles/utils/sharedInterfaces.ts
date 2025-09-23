@@ -10,7 +10,8 @@ export interface ApiFilters {
   category?: string;
   subcategory?: string;
   name?: string;
-  priceRange?: { min: number; max: number };
+  precioMin?: number;
+  precioMax?: number;
   color?: string;
   capacity?: string;
   withDiscount?: boolean;

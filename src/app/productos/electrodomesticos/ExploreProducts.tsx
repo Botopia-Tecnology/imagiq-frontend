@@ -2,25 +2,97 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import CardExplore from "./components/CardExplore";
-import { StaticImageData } from "next/image";
-interface Product {
-  id: string;
-  name: string;
-  image: string | StaticImageData;
-}
+import { useProducts } from "@/features/products/useProducts";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import SkeletonCard from "@/components/SkeletonCard";
 
 interface ExploreProductsProps {
-  products: Product[];
   viewMode?: "grid" | "list";
   title: string;
+  filters?: {
+    [key: string]: any;
+  };
+  limit?: number;
 }
 
 export default function ExploreProducts({
-  products,
   viewMode = "grid",
   title,
+  filters = {},
+  limit = 4,
 }: ExploreProductsProps) {
+  //{descriptionKeyword: "Bespoke",}
+  const lastFiltersRef = useRef<string>("");
+  const apiFilters = useMemo(() => filters, []);
+
+  const initialFilters = useMemo(() => {
+    const filters = {
+      ...apiFilters,
+      limit: 4,
+    };
+    return filters;
+  }, [apiFilters]);
+
+  //   const initialFilters = {
+  //   ...filters,
+  //   limit,
+  // };
+
+  const { products, loading, error, refreshProducts, filterProducts } =
+    useProducts(initialFilters);
+
+  // Actualizar filtros cuando cambien los parámetros de paginación
+  useEffect(() => {
+    const filtersWithPagination = {
+      ...filters, //...aoiFilters
+      page: 1,
+      limit,
+    };
+
+    // Crear una clave única para evitar bucles infinitos
+    const filtersKey = JSON.stringify(filtersWithPagination);
+
+    if (lastFiltersRef.current !== filtersKey) {
+      lastFiltersRef.current = filtersKey;
+      filterProducts(filtersWithPagination);
+    }
+  }, [apiFilters, filterProducts, limit]);
+
+  if (loading) {
+    return (
+      <div className="bg-white">
+        <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 max-w-7xl mx-auto pl-4 pr-4 py-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">
+              Error al cargar línea bespoke
+            </h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={refreshProducts}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="pb-8 bg-white">
       <h3

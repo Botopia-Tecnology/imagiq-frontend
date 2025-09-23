@@ -12,6 +12,7 @@
  */
 
 import React, { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useCartContext } from "@/features/cart/CartContext";
 import Image, { StaticImageData } from "next/image";
 import { motion } from "framer-motion";
@@ -25,14 +26,11 @@ import VideosSection from "./VideosSection";
 import { usePathname, useRouter } from "next/navigation";
 import ARExperienceHandler from "./components/ARExperienceHandler";
 import SizeProduct from "./components/SizeProduct";
-
+import { productsMock } from "../components/productsMock";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import nevera from "@/img/electrodomesticos/nevera.png";
-import lavadora from "@/img/electrodomesticos/lavadora.png";
-import aspiradora from "@/img/electrodomesticos/aspiradora.png";
-import aire from "@/img/electrodomesticos/aire.png";
 import CaracteristicasProduct from "./CaracteristicasProduct";
 import ExploreProducts from "./ExploreProducts";
+import SkeletonCard from "@/components/SkeletonCard";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -55,29 +53,6 @@ export default function ViewProductAppliance({
 }: {
   product: Readonly<ProductData>;
 }) {
-  const productsMock = [
-    {
-      id: "RT42DG6220B1CO",
-      name: "Neveras Bespoke AI",
-      image: nevera,
-    },
-    {
-      id: "DVG24A8870V_CO",
-      name: "Bespoke AI Laundry™",
-      image: lavadora,
-    },
-    {
-      id: "VR05R5050WK_AP",
-      name: "Aspiradoras Bespoke AI",
-      image: aspiradora,
-    },
-    {
-      id: "AX40T3030WM_AZ",
-      name: "WindFree™- AI Digital Inverteeeeeeeee eeeeeeeeeeeeeeeeeeeee eeeeeeeeeeeeeeeeeee",
-      image: aire,
-    },
-  ];
-
   // Animación scroll reveal para hero principal
   const heroReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
@@ -177,6 +152,19 @@ export default function ViewProductAppliance({
   const handleBuy = () => {
     router.push("/productos/electrodomesticos/details");
   };
+
+  const ExploreProducts = dynamic(() => import("./ExploreProducts"), {
+    loading: () => (
+      <div className="bg-white">
+        <div className="grid gap-6 grid-cols-2 md:grid-cols-4 lg:grid-cols-4 max-w-7xl mx-auto pl-4 pr-4 py-8">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      </div>
+    ),
+    ssr: false, // opcional, si quieres que solo se renderice en el cliente
+  });
 
   return (
     <div
@@ -432,8 +420,9 @@ export default function ViewProductAppliance({
       </motion.div>
       <motion.div ref={exploreReveal.ref} {...exploreReveal.motionProps}>
         <ExploreProducts
-          products={productsMock}
           title="Explora la linea BeSpoke"
+          filters={{ descriptionKeyword: "Bespoke" }}
+          limit={4}
         ></ExploreProducts>
       </motion.div>
     </div>

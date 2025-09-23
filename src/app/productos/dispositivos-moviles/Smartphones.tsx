@@ -281,7 +281,7 @@ export default function SmartphonesSection() {
   }
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       
       <CategorySlider
         categories={smartphoneCategories}
@@ -297,7 +297,8 @@ export default function SmartphonesSection() {
       >
         <div
           className={cn(
-            "flex gap-8",
+            "flex",
+            (device === "desktop" || device === "large") && "gap-6",
             device === "mobile" && "flex-col gap-4",
             device === "tablet" && "gap-6"
           )}
@@ -407,7 +408,9 @@ export default function SmartphonesSection() {
               className={cn(
                 "grid gap-6",
                 viewMode === "grid"
-                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"
+                  ? products.length === 1 
+                    ? "grid-cols-1 justify-items-center"
+                    : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 justify-items-center"
                   : "grid-cols-1",
                 device === "mobile" && "gap-3"
               )}

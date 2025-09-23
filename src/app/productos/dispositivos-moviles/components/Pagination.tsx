@@ -64,7 +64,12 @@ export default function Pagination({
   }
 
   return (
-    <div className={cn("w-full px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6", className)}>
+    <div
+      className={cn(
+        "w-full px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6",
+        className
+      )}
+    >
       {/* Información de resultados */}
       <div className="w-full sm:w-auto text-sm text-gray-700 text-left">
         Mostrando {startItem} - {endItem} de {totalItems} productos
@@ -93,16 +98,20 @@ export default function Pagination({
             const isDots = page === "...";
             const isCurrent = page === currentPage;
 
-            let btnClasses = "px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-[40px]";
+            let btnClasses =
+              "px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-[40px]";
             if (isDots) {
               btnClasses += " text-gray-400 cursor-default";
             } else if (isCurrent) {
-              btnClasses += " bg-blue-600 text-white hover:bg-blue-700 cursor-pointer";
+              btnClasses +=
+                " bg-blue-600 text-white hover:bg-blue-700 cursor-pointer";
             } else {
-              btnClasses += " text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer";
+              btnClasses +=
+                " text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer";
             }
 
-            const key = typeof page === "number" ? `page-${page}` : `dots-${index}`;
+            const key =
+              typeof page === "number" ? `page-${page}` : `dots-${index}`;
 
             return (
               <button

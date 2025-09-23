@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useDeviceType } from "@/components/responsive";
@@ -30,35 +30,38 @@ type SectionType =
 
 function DispositivosMovilesContent() {
   const searchParams = useSearchParams();
-  const [activeSection, setActiveSection] =
-    useState<SectionType>("smartphones");
   const device = useDeviceType();
 
+  // Prefetch manual de los bundles de las secciones (mount only)
   useEffect(() => {
-    // Prefetch manual de los bundles de las secciones
     import("./Smartphones");
     import("./Relojes");
     import("./Tabletas");
     import("./GalaxyBuds");
     import("./Accesorios");
+  }, []);
 
-    const section = searchParams.get("section") as SectionType;
-    if (
-      section &&
-      ["smartphones", "relojes", "tabletas", "buds", "accesorios"].includes(
-        section
-      )
-    ) {
-      setActiveSection(section);
-    }
+  // Derivar la sección activa directamente desde los query params
+  const sectionParam = (searchParams.get("section") || "") as SectionType | "";
+  const activeSection: SectionType = [
+    "smartphones",
+    "relojes",
+    "tabletas",
+    "buds",
+    "accesorios",
+  ].includes(sectionParam as SectionType)
+    ? (sectionParam as SectionType)
+    : "smartphones";
+
+  // Tracking de vista de página cuando cambian los params o device
+  useEffect(() => {
     posthogUtils.capture("page_view", {
       page: "dispositivos_moviles",
-      section: section || activeSection,
+      section: sectionParam || activeSection,
       category: "productos",
       device,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams, device]);
+  }, [sectionParam, device, activeSection]);
 
   let SectionComponent;
   switch (activeSection) {
@@ -81,16 +84,15 @@ function DispositivosMovilesContent() {
       SectionComponent = SmartphonesSection;
   }
 
+  let devicePaddingClass = "px-0 py-0";
+  if (device === "mobile") {
+    devicePaddingClass = "px-2 py-2";
+  } else if (device === "tablet") {
+    devicePaddingClass = "px-4 py-4";
+  }
+
   return (
-    <div
-      className={
-        device === "mobile"
-          ? "bg-white min-h-screen px-2 py-2"
-          : device === "tablet"
-          ? "bg-white min-h-screen px-4 py-4"
-          : "bg-white min-h-screen px-0 py-0"
-      }
-    >
+    <div className={`bg-white min-h-screen ${devicePaddingClass}`}>
       <SectionComponent />
     </div>
   );

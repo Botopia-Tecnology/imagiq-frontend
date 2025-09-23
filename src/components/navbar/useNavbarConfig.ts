@@ -9,7 +9,6 @@ export function useNavbarConfig(
 ) {
   const pathname = usePathname();
   const { isAppliance } = useProductContext();
-  //const isAppliance = searchParams.get("appliance") === "true";
   return useMemo(() => {
     const isProductDetail =
       pathname.startsWith("/productos/") &&

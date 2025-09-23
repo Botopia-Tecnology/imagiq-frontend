@@ -63,5 +63,5 @@ export const watchFilters: FilterConfig = {
     { label: "Más de $2.000.000", min: 2000000, max: Infinity },
   ],
   //material: ["Aluminio", "Acero inoxidable", "Titanio"],
-  color: ["Negro", "Plata", "Dorado", "Rosa", "Azul"],
+    color: ["Negro", "Plata", "Dorado", "Rosa", "Azul", "Morado"],
 };

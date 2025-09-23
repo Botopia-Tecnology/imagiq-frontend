@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useSelectedColor } from "@/contexts/SelectedColorContext";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -56,6 +57,8 @@ export interface ProductCardProps {
   stock?: number;
   sku?: string | null;
   detailedDescription?: string | null;
+  selectedColor?: ProductColor;
+  setSelectedColor?: (color: ProductColor) => void;
 }
 
 export default function ProductCard({
@@ -71,15 +74,23 @@ export default function ProductCard({
   onToggleFavorite,
   className,
   sku,
+  selectedColor: selectedColorProp,
+  setSelectedColor: setSelectedColorProp,
 }: ProductCardProps) {
   const router = useRouter();
-  const [selectedColor, setSelectedColor] = useState<ProductColor | null>(
-    colors && colors.length > 0 ? colors[0] : null
-  );
   const [isLoading, setIsLoading] = useState(false);
+  const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
+
+  // Si el estado viene de props, úsalo. Si no, usa local.
+  const [selectedColorLocal, setSelectedColorLocal] =
+    useState<ProductColor | null>(
+      colors && colors.length > 0 ? colors[0] : null
+    );
+  const selectedColor = selectedColorProp ?? selectedColorLocal;
+  const setSelectedColor = setSelectedColorProp ?? setSelectedColorLocal;
 
   // Calcular precios dinámicos basados en el color seleccionado
   const currentPrice = selectedColor?.price || price;
@@ -89,6 +100,8 @@ export default function ProductCard({
   // Tracking de interacciones
   const handleColorSelect = (color: ProductColor) => {
     setSelectedColor(color);
+    // Actualizar el color global para que ViewProductMobile lo use
+    setGlobalSelectedColor(color.hex);
     posthogUtils.capture("product_color_select", {
       product_id: id,
       product_name: name,
@@ -138,13 +151,12 @@ export default function ProductCard({
     console.log(`🔗 Navegando a producto con ID: ${id}`);
     console.log(`📝 Nombre del producto: ${name}`);
     // Navega usando el id del mock, no el nombre ni slug
-      router.push(`/productos/view/${id}`);
-      posthogUtils.capture("product_more_info_click", {
-        product_id: id,
-        product_name: name,
-        source: "product_card",
-      });
-    
+    router.push(`/productos/view/${id}`);
+    posthogUtils.capture("product_more_info_click", {
+      product_id: id,
+      product_name: name,
+      source: "product_card",
+    });
   };
 
   const cardReveal = useScrollReveal<HTMLDivElement>({
@@ -196,9 +208,7 @@ export default function ProductCard({
             src={image}
             alt={name}
             fill
-            className={cn(
-              "object-cover p-4"
-            )}
+            className={cn("object-cover p-4")}
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         </div>
@@ -210,7 +220,6 @@ export default function ProductCard({
         <h3 className="font-semibold text-gray-900 text-base mb-3 line-clamp-2 leading-5 truncate">
           {name}
         </h3>
-
 
         {/* Selector de colores */}
         {colors && colors.length > 0 && (
@@ -267,7 +276,7 @@ export default function ProductCard({
               isLoading && "animate-pulse"
             )}
           >
-            {isLoading ? (<Loader/>) : (<ShoppingCart />)}
+            {isLoading ? <Loader /> : <ShoppingCart />}
           </button>
 
           <button

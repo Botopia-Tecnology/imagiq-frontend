@@ -10,10 +10,10 @@
  * - Tracking de clicks
  */
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 
 import Image, { StaticImageData } from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+// Iconos de navegación eliminados: el slider usa scroll horizontal condicionalmente
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -39,9 +39,9 @@ export default function CategorySlider({
   trackingPrefix = "category",
   className,
 }: Readonly<CategorySliderProps>) {
-  const [slideIndex, setSlideIndex] = useState(0);
   const [itemsPerView, setItemsPerView] = useState(4);
-  const sliderRef = useRef<HTMLDivElement>(null);
+  const sliderRef = useRef<HTMLUListElement>(null);
+  const [isScrollable, setIsScrollable] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -78,15 +78,33 @@ export default function CategorySlider({
     return () => window.removeEventListener("resize", updateItemsPerView);
   }, []);
 
-  const maxIndex = Math.max(0, categories.length - itemsPerView);
+  // Detecta si el contenedor desborda (activar scroll horizontal solo si es necesario)
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el) return;
 
-  const slideLeft = () => {
-    setSlideIndex((prev) => Math.max(0, prev - 1));
-  };
+    const check = () => {
+      // scrollWidth > clientWidth => hay overflow horizontal
+      setIsScrollable(el.scrollWidth > el.clientWidth + 1);
+    };
 
-  const slideRight = () => {
-    setSlideIndex((prev) => Math.min(maxIndex, prev + 1));
-  };
+    // Initial check
+    check();
+
+    // Observa cambios de tamaño del contenedor y del contenido
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+
+    // También re-evalúa en resize de ventana por si cambia el layout
+    window.addEventListener("resize", check);
+
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", check);
+    };
+  }, [categories, itemsPerView]);
+
+  // Navegación por scroll horizontal — se eliminó el estado y funciones de slide.
 
   const handleCategoryClick = (category: Category) => {
     posthogUtils.capture(`${trackingPrefix}_click`, {
@@ -112,56 +130,40 @@ export default function CategorySlider({
     >
       <div className="container mx-auto px-0 sm:px-6">
         <div className="relative max-w-6xl mx-auto">
-          {/* Botones de navegación: se ocultan en pantallas pequeñas (se usará scroll horizontal) */}
-          <button
-            onClick={slideLeft}
-            disabled={slideIndex === 0}
-            className={cn(
-              "hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white shadow-lg border border-gray-200 items-center justify-center transition-all duration-200",
-              slideIndex === 0
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-gray-50 hover:shadow-xl"
-            )}
-          >
-            <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-          </button>
-
-          <button
-            onClick={slideRight}
-            disabled={slideIndex >= maxIndex}
-            className={cn(
-              "hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white shadow-lg border border-gray-200 items-center justify-center transition-all duration-200",
-              slideIndex >= maxIndex
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-gray-50 hover:shadow-xl"
-            )}
-          >
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600" />
-          </button>
+          {/* Navegación por scroll horizontal únicamente - botones eliminados */}
 
           {/* Contenedor de categorías */}
           {/* En móviles permitimos scroll horizontal y tamaños más pequeños, sin margen lateral (a ras de pantalla) */}
           <div className="-mx-2 sm:mx-8">
-            <div
+            <ul
               ref={sliderRef}
-              className="flex transition-transform duration-300 ease-in-out sm:overflow-hidden overflow-x-auto no-scrollbar gap-4 py-2"
-              style={{
-                transform:
-                  itemsPerView >= 4
-                    ? `translateX(-${slideIndex * (100 / itemsPerView)}%)`
-                    : undefined,
-              }}
+              // Aplica scroll horizontal y snap solo si hay overflow
+              className={cn(
+                "flex gap-4 py-2",
+                isScrollable
+                  ? "overflow-x-auto no-scrollbar snap-x snap-mandatory items-start"
+                  : "overflow-visible justify-between items-center",
+                "-ml-0"
+              )}
             >
               {categories.map((category, index) => (
-                <div
+                <li
                   key={`${category.id}-${index}`}
                   className={cn(
-                    "flex-shrink-0 px-1 sm:px-3 flex flex-col items-center",
-                    // En móvil queremos que quepan más y sean pequeños, con ancho fijo para el scroll
-                    itemsPerView === 1 && "w-36 sm:w-full",
-                    itemsPerView === 2 && "w-32 sm:w-1/2",
-                    itemsPerView === 3 && "w-40 sm:w-1/3",
-                    itemsPerView === 4 && "w-40 sm:w-1/4"
+                    // base
+                    "px-1 sm:px-3 flex flex-col items-center",
+                    // Si no es scrollable, dejamos que los items se expandan para evitar overflow
+                    !isScrollable
+                      ? "flex-1 min-w-0"
+                      : // Si es scrollable, mantenemos anchos fijos para snap
+                        "flex-shrink-0",
+                    // Anchos por itemsPerView (solo relevantes cuando es scrollable)
+                    isScrollable && itemsPerView === 1 && "w-36 sm:w-full",
+                    isScrollable && itemsPerView === 2 && "w-32 sm:w-1/2",
+                    isScrollable && itemsPerView === 3 && "w-40 sm:w-1/3",
+                    isScrollable && itemsPerView === 4 && "w-40 sm:w-1/4",
+                    // Si es scrollable, habilita snap
+                    isScrollable && "snap-start"
                   )}
                 >
                   <button
@@ -198,9 +200,9 @@ export default function CategorySlider({
                       {category.subtitle}
                     </div>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </div>
       </div>

@@ -15,7 +15,8 @@ const HIDDEN_NAVBAR_ROUTES = [
   "/carrito",
   "/charging-result",
   "/success-checkout",
-  "/carrito/ErrorCheckout",
+  "/error-checkout",
+  "/verify-purchase/**/*"
 ];
 
 function shouldHideNavbar(pathname: string) {

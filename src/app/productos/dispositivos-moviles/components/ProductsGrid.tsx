@@ -1,4 +1,4 @@
-/** 
+/**
  * Grid de productos genérico para todas las categorías de dispositivos móviles
  * con funcionalidades avanzadas y manejo de estados
  */
@@ -18,8 +18,21 @@ interface CategoryProductsGridProps {
   categoryName: string; // Nombre de la categoría para mensajes personalizados
 }
 
-const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProps>(
-  ({ products, loading, error, refreshProducts, viewMode = "grid", categoryName }, ref) => {
+const CategoryProductsGrid = forwardRef<
+  HTMLDivElement,
+  CategoryProductsGridProps
+>(
+  (
+    {
+      products,
+      loading,
+      error,
+      refreshProducts,
+      viewMode = "grid",
+      categoryName,
+    },
+    ref
+  ) => {
     if (loading) {
       return (
         <div className="flex justify-center items-center min-h-[400px]">
@@ -46,31 +59,31 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
     }
 
     return (
-      <div 
-        ref={ref} 
-        className={`grid gap-6 ${
-          viewMode === "grid" 
-            ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" 
-            : "grid-cols-1"
-        }`}
-      >
+      <div ref={ref} className="flex flex-wrap gap-6">
         {products.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            No se encontraron {categoryName.toLowerCase()} con los filtros seleccionados.
+          <div className="w-full text-center py-12 text-gray-500">
+            No se encontraron {categoryName.toLowerCase()} con los filtros
+            seleccionados.
           </div>
         ) : (
           products.map((product) => (
-            <ProductCard
+            <div
               key={product.id}
-              {...product}
-              onAddToCart={(productId: string, color: string) => {
-                // TODO: Implementar lógica de añadir al carrito
-              }}
-              onToggleFavorite={(productId: string) => {
-                // TODO: Implementar lógica de toggle favorito
-              }}
-              className={viewMode === "list" ? "flex-row" : ""}
-            />
+              className={
+                viewMode === "grid" ? "w-full sm:w-1/2 lg:w-1/4 mx-auto" : "w-full"
+              }
+            >
+              <ProductCard
+                {...product}
+                onAddToCart={(productId: string, color: string) => {
+                  // TODO: Implementar lógica de añadir al carrito
+                }}
+                onToggleFavorite={(productId: string) => {
+                  // TODO: Implementar lógica de toggle favorito
+                }}
+                className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+              />
+            </div>
           ))
         )}
       </div>

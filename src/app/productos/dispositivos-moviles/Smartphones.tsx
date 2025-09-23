@@ -226,7 +226,7 @@ export default function SmartphonesSection() {
             </aside>
           )}
 
-          <main className="flex-1">
+          <main className="container mx-auto flex-1">
             {HeaderSectionMemo}
             <CategoryProductsGrid
               ref={productsRef}

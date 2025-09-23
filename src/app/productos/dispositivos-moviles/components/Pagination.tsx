@@ -8,12 +8,12 @@ import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
-  totalItems: number;
-  itemsPerPage: number;
-  className?: string;
+  readonly currentPage: number;
+  readonly totalPages: number;
+  readonly onPageChange: (page: number) => void;
+  readonly totalItems: number;
+  readonly itemsPerPage: number;
+  readonly className?: string;
 }
 
 export default function Pagination({
@@ -64,14 +64,14 @@ export default function Pagination({
   }
 
   return (
-    <div className={cn("flex flex-col sm:flex-row items-center justify-between gap-4 py-6", className)}>
+    <div className={cn("w-full px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6", className)}>
       {/* Información de resultados */}
-      <div className="text-sm text-gray-700">
+      <div className="w-full sm:w-auto text-sm text-gray-700 text-left">
         Mostrando {startItem} - {endItem} de {totalItems} productos
       </div>
 
       {/* Controles de paginación */}
-      <div className="flex items-center gap-2">
+      <div className="w-full sm:w-auto flex flex-wrap sm:flex-nowrap items-center gap-2 justify-start sm:justify-end">
         {/* Botón anterior */}
         <button
           onClick={() => onPageChange(currentPage - 1)}
@@ -88,24 +88,33 @@ export default function Pagination({
         </button>
 
         {/* Números de página */}
-        <div className="flex items-center gap-1">
-          {pageNumbers.map((page, index) => (
-            <button
-              key={index}
-              onClick={() => typeof page === "number" && onPageChange(page)}
-              disabled={page === "..."}
-              className={cn(
-                "px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-[40px]",
-                page === "..."
-                  ? "text-gray-400 cursor-default"
-                  : page === currentPage
-                  ? "bg-blue-600 text-white hover:bg-blue-700 cursor-pointer"
-                  : "text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer"
-              )}
-            >
-              {page}
-            </button>
-          ))}
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-hidden">
+          {pageNumbers.map((page, index) => {
+            const isDots = page === "...";
+            const isCurrent = page === currentPage;
+
+            let btnClasses = "px-3 py-2 text-sm font-medium rounded-lg transition-colors min-w-[40px]";
+            if (isDots) {
+              btnClasses += " text-gray-400 cursor-default";
+            } else if (isCurrent) {
+              btnClasses += " bg-blue-600 text-white hover:bg-blue-700 cursor-pointer";
+            } else {
+              btnClasses += " text-gray-700 hover:bg-gray-100 hover:text-gray-900 cursor-pointer";
+            }
+
+            const key = typeof page === "number" ? `page-${page}` : `dots-${index}`;
+
+            return (
+              <button
+                key={key}
+                onClick={() => typeof page === "number" && onPageChange(page)}
+                disabled={isDots}
+                className={cn(btnClasses)}
+              >
+                {page}
+              </button>
+            );
+          })}
         </div>
 
         {/* Botón siguiente */}

@@ -128,13 +128,13 @@ export default function CategorySlider({
         className
       )}
     >
-      <div className="container mx-auto px-0 sm:px-6">
-        <div className="relative max-w-6xl mx-auto">
+      <div className="container mx-auto px-6">
+        <div className="relative w-full">
           {/* Navegación por scroll horizontal únicamente - botones eliminados */}
 
           {/* Contenedor de categorías */}
           {/* En móviles permitimos scroll horizontal y tamaños más pequeños, sin margen lateral (a ras de pantalla) */}
-          <div className="-mx-2 sm:mx-8">
+          <div className="w-full">
             <ul
               ref={sliderRef}
               // Aplica scroll horizontal y snap solo si hay overflow
@@ -143,7 +143,7 @@ export default function CategorySlider({
                 isScrollable
                   ? "overflow-x-auto no-scrollbar snap-x snap-mandatory items-start"
                   : "overflow-visible justify-between items-center",
-                "-ml-0"
+                "w-full"
               )}
             >
               {categories.map((category, index) => (

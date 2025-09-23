@@ -189,8 +189,6 @@ function ProductosContent() {
 
 export default function ProductosPage() {
   return (
-    <Suspense fallback={<div>Cargando...</div>}>
-      <ProductosContent />
-    </Suspense>
+    <ProductosContent />
   );
 }

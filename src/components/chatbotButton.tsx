@@ -4,7 +4,7 @@ export default function ChatbotButton({ onClick }: { onClick?: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-16 h-16 bg-[#0a2342] hover:bg-[#143362] shadow-lg rounded-full transition-all duration-200"
+      className="fixed bottom-6 right-10 z-50 flex items-center justify-center w-16 h-16 bg-[#0a2342] hover:bg-[#143362] shadow-lg rounded-full transition-all duration-200"
       aria-label="Abrir chat de ayuda"
       type="button"
     >

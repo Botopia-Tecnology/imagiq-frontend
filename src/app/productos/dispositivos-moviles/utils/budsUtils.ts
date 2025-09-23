@@ -46,5 +46,49 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       : newKeywords;
   }
 
+  // Filtro de color usando query param color
+  if (filters.color && filters.color.length > 0) {
+    // Para color, usar OR (unión) - múltiples colores separados por coma
+    const selectedColors = filters.color;
+    apiFilters.color = selectedColors.join(',');
+  }
+
+  // Filtro de rango de precios usando precioMin y precioMax
+  if (filters.rangoPrecio && filters.rangoPrecio.length > 0) {
+    const selectedPriceRanges = filters.rangoPrecio;
+    
+    // Procesar cada rango de precio seleccionado
+    let minPrice: number | undefined;
+    let maxPrice: number | undefined;
+    
+    selectedPriceRanges.forEach(range => {
+      // Para "Menos de $200.000" usar solo maxPrice
+      if (range === "Menos de $200.000") {
+        maxPrice = 200000;
+      }
+      // Para "Más de $600.000" usar solo minPrice
+      else if (range === "Más de $600.000") {
+        minPrice = 600000;
+      }
+      // Para rangos intermedios, usar ambos valores
+      else if (range === "$200.000 - $400.000") {
+        minPrice = minPrice ? Math.min(minPrice, 200000) : 200000;
+        maxPrice = maxPrice ? Math.max(maxPrice, 400000) : 400000;
+      }
+      else if (range === "$400.000 - $600.000") {
+        minPrice = minPrice ? Math.min(minPrice, 400000) : 400000;
+        maxPrice = maxPrice ? Math.max(maxPrice, 600000) : 600000;
+      }
+    });
+    
+    // Aplicar los valores de precio a los filtros de API
+    if (minPrice !== undefined) {
+      apiFilters.precioMin = minPrice;
+    }
+    if (maxPrice !== undefined) {
+      apiFilters.precioMax = maxPrice;
+    }
+  }
+
   return apiFilters;
 }

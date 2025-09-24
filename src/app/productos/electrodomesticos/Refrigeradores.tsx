@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
+import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
+import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,

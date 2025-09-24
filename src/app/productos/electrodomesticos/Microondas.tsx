@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,

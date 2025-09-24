@@ -34,7 +34,10 @@ export async function payWithCard(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify(props),
+      body: JSON.stringify({
+        ...props,
+        dues: props.dues.trim() === "" ? "1" : props.dues,
+      }),
     });
     if (!res.ok) {
       throw new Error("Failed to process card payment");

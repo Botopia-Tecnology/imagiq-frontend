@@ -49,7 +49,9 @@ const STORAGE_KEYS = {
   APPLIED_DISCOUNT: "applied-discount",
 } as const;
 
-const SHIPPING_COST = 20000;
+// Real shipping used in calculations is 0 (envío gratuito). Keep original value for marketing display.
+export const ORIGINAL_SHIPPING_COST = 20000;
+const SHIPPING_COST = 0;
 const TAX_RATE = 0.09;
 
 // Función para normalizar productos del localStorage

@@ -51,25 +51,32 @@ export function useDynamicBackgroundColor(
   }, [options?.selectedColor]);
 
   /**
-   * Genera un degradado radial y linear usando el color seleccionado.
-   * El degradado se adapta automáticamente al color y la intensidad.
-   * Aplica transición suave.
+   * Genera un degradado con efecto "linterna": centro blanco translúcido y bordes con el color base.
    */
   const backgroundStyle = useMemo(() => {
     const secondary = "#0A3A66";
+    // Convierte hex a rgb
+    const hexToRgb = (hex: string) => {
+      let c = hex.replace("#", "");
+      if (c.length === 3)
+        c = c
+          .split("")
+          .map((x) => x + x)
+          .join("");
+      const num = parseInt(c, 16);
+      return `${(num >> 16) & 255},${(num >> 8) & 255},${num & 255}`;
+    };
+    const rgb = hexToRgb(color);
     return {
       background:
-        `radial-gradient(circle at 30% 30%, ${color}${Math.round(
-          intensity * 255
-        ).toString(16)}, transparent 50%),` +
-        `radial-gradient(circle at 70% 70%, ${color}${Math.round(
-          intensity * 180
-        ).toString(16)}, transparent 60%),` +
-        `radial-gradient(circle at 10% 80%, ${color}${Math.round(
-          intensity * 120
-        ).toString(16)}, transparent 70%),` +
-        `linear-gradient(135deg, ${color} 0%, ${secondary} 100%)`,
-      transition: "background 500ms ease",
+        // Linterna: centro blanco, bordes color base
+        `radial-gradient(circle at 60% 40%, rgba(255,255,255,0.55) 0%, rgba(${rgb},0.18) 60%, transparent 100%),` +
+        // Luz secundaria y profundidad
+        `radial-gradient(circle at 50% 40%, rgba(${rgb},0.38) 0%, transparent 70%),` +
+        `radial-gradient(circle at 80% 80%, rgba(${rgb},0.18) 0%, transparent 80%),` +
+        `radial-gradient(circle at 20% 80%, rgba(255,255,255,0.14) 0%, transparent 85%),` +
+        `linear-gradient(120deg, ${color} 0%, ${secondary} 100%)`,
+      transition: "background 500ms cubic-bezier(0.4,0,0.2,1)",
     };
   }, [color, intensity]);
 

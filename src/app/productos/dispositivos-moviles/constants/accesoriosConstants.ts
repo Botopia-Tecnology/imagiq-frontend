@@ -1,6 +1,4 @@
-/**
- * 📦 ACCESORIOS CONSTANTS
- *
+/** *
  * Configuraciones y constantes para la sección Accesorios
  */
 

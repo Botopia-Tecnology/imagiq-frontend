@@ -15,11 +15,14 @@ const HIDDEN_NAVBAR_ROUTES = [
   "/carrito",
   "/charging-result",
   "/success-checkout",
-  "/carrito/ErrorCheckout",
+  "/error-checkout",
+  "/verify-purchase/",
 ];
 
 function shouldHideNavbar(pathname: string) {
-  return HIDDEN_NAVBAR_ROUTES.includes(pathname);
+  return HIDDEN_NAVBAR_ROUTES.some((route) =>
+    route.endsWith("/") ? pathname.startsWith(route) : pathname === route
+  );
 }
 
 export default function ClientLayout({

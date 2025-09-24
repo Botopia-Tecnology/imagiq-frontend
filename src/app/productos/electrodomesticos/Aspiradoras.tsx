@@ -4,55 +4,23 @@
 
 "use client";
 
-import { useState, useEffect , useMemo} from "react";
-import ProductCard from "../components/ProductCard";
+import { posthogUtils } from "@/lib/posthogClient";
+import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useState } from "react";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import { cn } from "@/lib/utils";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
+import ProductCard from "../components/ProductCard";
 
-import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
-import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
-import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import { useProducts } from "@/features/products/useProducts";
+
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useProducts } from "@/features/products/useProducts";
 import { Filter, Grid3X3, List } from "lucide-react";
+import { applianceCategories } from "./constants";
 
-const applianceCategories: Category[] = [
-  {
-    id: "refrigeradores",
-    name: "Refrigeradores",
-    subtitle: "",
-    image: refrigeradorImg,
-    href: "/productos/electrodomesticos?section=refrigeradores",
-  },
-  {
-    id: "lavadoras",
-    name: "Lavadoras",
-    subtitle: "",
-    image: lavadoraImg,
-    href: "/productos/electrodomesticos?section=lavadoras",
-  },
-  {
-    id: "microondas",
-    name: "Microondas",
-    subtitle: "",
-    image: microondasImg,
-    href: "/productos/electrodomesticos?section=microondas",
-  },
-  {
-    id: "aspiradoras",
-    name: "Aspiradoras",
-    subtitle: "",
-    image: aspiradoraImg,
-    href: "/productos/electrodomesticos?section=aspiradoras",
-  },
-];
 const aspiradorasFilters: FilterConfig = {
   tipo: ["Vertical", "Robot", "De cilindro"],
   precio: [

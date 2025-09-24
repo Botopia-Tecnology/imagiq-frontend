@@ -1,61 +1,20 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
- import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { useProducts } from "@/features/products/useProducts";
+import { posthogUtils } from "@/lib/posthogClient";
+import { cn } from "@/lib/utils";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
   MobileFilterModal,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
-import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
-import refrigeradorImg from "@/img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "@/img/electrodomesticos/electrodomesticos2.png";
-import microondasImg from "@/img/electrodomesticos/electrodomesticos4.png";
-import aspiradoraImg from "@/img/electrodomesticos/electrodomesticos3.png";
-import { useProducts } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { Filter, Grid3X3, List } from "lucide-react";
+import ProductCard from "../components/ProductCard";
+import { applianceCategories } from "./constants";
 
-const applianceCategories: Category[] = [
-  {
-    id: "refrigeradores",
-    name: "Refrigeradores",
-    subtitle: "",
-    image: refrigeradorImg,
-    href: "/productos/electrodomesticos?section=refrigeradores",
-  },
-  {
-    id: "lavadoras",
-    name: "Lavadoras",
-    subtitle: "",
-    image: lavadoraImg,
-    href: "/productos/electrodomesticos?section=lavadoras",
-  },
-  {
-    id: "lavavajillas",
-    name: "Lavavajillas",
-    subtitle: "",
-    image: lavavajillasImg,
-    href: "/productos/electrodomesticos?section=lavavajillas",
-  },
-  {
-    id: "microondas",
-    name: "Microondas",
-    subtitle: "",
-    image: microondasImg,
-    href: "/productos/electrodomesticos?section=microondas",
-  },
-  {
-    id: "aspiradoras",
-    name: "Aspiradoras",
-    subtitle: "",
-    image: aspiradoraImg,
-    href: "/productos/electrodomesticos?section=aspiradoras",
-  },
-];
 
 const lavavajillasFilters: FilterConfig = {
   tipo: ["Integrable", "Libre Instalación", "Compacto", "Industrial"],

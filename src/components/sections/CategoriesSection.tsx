@@ -128,42 +128,42 @@ export const CategoriesSection = () => {
           </div>
         </div>
         {/* Desktop y tablet: grid original */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-12">
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-12 justify-center">
           {categories.map((category) => (
             <Link
               key={category.id}
               href={category.href}
               onClick={() => handleCategoryClick(category)}
-              className="group block"
+              className="group flex justify-center"
               onMouseEnter={() => setHoveredCategory(category.id)}
               onMouseLeave={() => setHoveredCategory(null)}
             >
               <div
                 className={cn(
-                  "relative rounded-2xl p-8 transition-all duration-300 shadow-sm hover:shadow-lg",
-                  "transform hover:scale-105 cursor-pointer"
+                  "relative rounded-2xl p-8 transition-all duration-300 shadow-sm hover:shadow-lg transform hover:scale-105 cursor-pointer overflow-hidden max-w-[260px] w-full flex flex-col items-center"
                 )}
                 style={{ backgroundColor: "#D6E3F3" }}
               >
                 {/* Título de la categoría */}
-                <div className="text-center mb-6">
+                <div className="w-full pt-4 pb-2 text-center">
                   <h3
-                    className="text-2xl font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700"
+                    className="text-lg font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700 text-center truncate"
                     style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
+                    title={category.title}
                   >
                     {category.title}
                   </h3>
                 </div>
 
                 {/* Imagen del producto real */}
-                <div className="flex justify-center items-center h-48 mb-4">
-                  <div className="relative w-full h-full">
+                <div className="flex justify-center items-center w-full mb-4">
+                  <div className="relative w-full h-[160px] flex justify-center items-center">
                     <Image
                       src={category.image}
                       alt={category.title}
                       fill
                       className={cn(
-                        "object-contain transition-transform duration-300",
+                        "object-contain transition-transform duration-300 max-h-[160px] w-auto",
                         hoveredCategory === category.id && "scale-110"
                       )}
                       sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"

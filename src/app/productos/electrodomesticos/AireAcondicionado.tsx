@@ -1,61 +1,20 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { useProducts } from "@/features/products/useProducts";
+import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
-import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
-import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
-import { Filter, Grid3X3, List } from "lucide-react";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { useProducts } from "@/features/products/useProducts";
+import ProductCard from "../components/ProductCard";
+import { applianceCategories } from "./constants";
 
-const applianceCategories: Category[] = [
-  {
-    id: "refrigeradores",
-    name: "Refrigeradores",
-    subtitle: "",
-    image: refrigeradorImg,
-    href: "/productos/electrodomesticos?section=refrigeradores",
-  },
-  {
-    id: "lavadoras",
-    name: "Lavadoras",
-    subtitle: "",
-    image: lavadoraImg,
-    href: "/productos/electrodomesticos?section=lavadoras",
-  },
-  {
-    id: "microondas",
-    name: "Microondas",
-    subtitle: "",
-    image: microondasImg,
-    href: "/productos/electrodomesticos?section=microondas",
-  },
-  {
-    id: "aspiradoras",
-    name: "Aspiradoras",
-    subtitle: "",
-    image: aspiradoraImg,
-    href: "/productos/electrodomesticos?section=aspiradoras",
-  },
-  {
-    id: "aire-acondicionado",
-    name: "Aire Acondicionado",
-    subtitle: "",
-    image: aireImg,
-    href: "/productos/electrodomesticos?section=aire-acondicionado",
-  },
-];
 
 const aireFilters: FilterConfig = {
   tipo: ["Split", "Inverter", "Portátil", "Cassette", "Ventana"],

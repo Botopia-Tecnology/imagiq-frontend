@@ -10,7 +10,7 @@
  * - Tracking de clicks
  */
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 
 import Image, { StaticImageData } from "next/image";
 // Iconos de navegación eliminados: el slider usa scroll horizontal condicionalmente
@@ -42,6 +42,9 @@ export default function CategorySlider({
   const [itemsPerView, setItemsPerView] = useState(4);
   const sliderRef = useRef<HTMLUListElement>(null);
   const [isScrollable, setIsScrollable] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(true);
+  const [canScrollPrev, setCanScrollPrev] = useState(false);
+  const [canScrollNext, setCanScrollNext] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -64,12 +67,16 @@ export default function CategorySlider({
       const width = window.innerWidth;
       if (width < 640) {
         setItemsPerView(1); // móvil: 1 item
+        setIsDesktop(false);
       } else if (width < 768) {
         setItemsPerView(2); // tablet pequeña: 2 items
+        setIsDesktop(false);
       } else if (width < 1024) {
         setItemsPerView(3); // tablet: 3 items
+        setIsDesktop(false);
       } else {
         setItemsPerView(4); // desktop: 4 items
+        setIsDesktop(true);
       }
     };
 
@@ -78,6 +85,17 @@ export default function CategorySlider({
     return () => window.removeEventListener("resize", updateItemsPerView);
   }, []);
 
+  // Helpers to slide by a page (clientWidth) — used only on desktop
+  const scrollByPage = useCallback((direction: 1 | -1) => {
+    const el = sliderRef.current;
+    if (!el) return;
+    const page = el.clientWidth || 300;
+    el.scrollBy({ left: direction * page, behavior: "smooth" });
+  }, []);
+
+  const scrollPrev = useCallback(() => scrollByPage(-1), [scrollByPage]);
+  const scrollNext = useCallback(() => scrollByPage(1), [scrollByPage]);
+
   // Detecta si el contenedor desborda (activar scroll horizontal solo si es necesario)
   useEffect(() => {
     const el = sliderRef.current;
@@ -85,7 +103,16 @@ export default function CategorySlider({
 
     const check = () => {
       // scrollWidth > clientWidth => hay overflow horizontal
-      setIsScrollable(el.scrollWidth > el.clientWidth + 1);
+      // En desktop consideramos que hay scroll si el número de categorías
+      // es mayor que itemsPerView (ej. 5 > 4) o si scrollWidth > clientWidth
+      if (isDesktop) {
+        setIsScrollable(
+          categories.length > itemsPerView ||
+            el.scrollWidth > el.clientWidth + 1
+        );
+      } else {
+        setIsScrollable(el.scrollWidth > el.clientWidth + 1);
+      }
     };
 
     // Initial check
@@ -98,11 +125,38 @@ export default function CategorySlider({
     // También re-evalúa en resize de ventana por si cambia el layout
     window.addEventListener("resize", check);
 
+    // También actualiza los estados de scroll (para botones prev/next)
+    const updateScrollState = () => {
+      setCanScrollPrev(el.scrollLeft > 0);
+      setCanScrollNext(el.scrollLeft + el.clientWidth < el.scrollWidth - 1);
+    };
+
+    // Keyboard navigation en desktop
+    const onKey = (e: KeyboardEvent) => {
+      if (!isDesktop) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scrollPrev();
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scrollNext();
+      }
+    };
+
+    // Escucha el evento scroll para actualizar los botones
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("keydown", onKey);
+    // initial
+    updateScrollState();
+
     return () => {
       ro.disconnect();
       window.removeEventListener("resize", check);
+      el.removeEventListener("scroll", updateScrollState as EventListener);
+      window.removeEventListener("keydown", onKey);
     };
-  }, [categories, itemsPerView]);
+  }, [categories, itemsPerView, isDesktop, scrollPrev, scrollNext]);
 
   // Navegación por scroll horizontal — se eliminó el estado y funciones de slide.
 
@@ -130,6 +184,60 @@ export default function CategorySlider({
     >
       <div className="container mx-auto px-6">
         <div className="relative w-full">
+          {/* Flechas visibles en desktop cuando el slider tiene overflow */}
+          {isDesktop && isScrollable && (
+            <>
+              <button
+                onClick={scrollPrev}
+                aria-label="Anterior"
+                disabled={!canScrollPrev}
+                className={cn(
+                  "hidden lg:flex absolute left-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 p-2 shadow-md",
+                  !canScrollPrev && "opacity-40 cursor-not-allowed"
+                )}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="h-5 w-5 text-gray-700"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
+                </svg>
+              </button>
+
+              <button
+                onClick={scrollNext}
+                aria-label="Siguiente"
+                disabled={!canScrollNext}
+                className={cn(
+                  "hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 z-10 items-center justify-center rounded-full bg-white/90 p-2 shadow-md",
+                  !canScrollNext && "opacity-40 cursor-not-allowed"
+                )}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="h-5 w-5 text-gray-700"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
+            </>
+          )}
           {/* Navegación por scroll horizontal únicamente - botones eliminados */}
 
           {/* Contenedor de categorías */}
@@ -137,14 +245,34 @@ export default function CategorySlider({
           <div className="w-full">
             <ul
               ref={sliderRef}
-              // Aplica scroll horizontal y snap solo si hay overflow
+              // Si mostramos flechas (desktop + isScrollable) desactivamos scroll nativo
               className={cn(
-                "flex gap-4 py-2",
-                isScrollable
-                  ? "overflow-x-auto no-scrollbar snap-x snap-mandatory items-start"
-                  : "overflow-visible justify-between items-center",
-                "w-full"
+                "flex gap-4 sm:gap-6 lg:gap-8 py-2 no-scrollbar snap-x snap-mandatory items-start w-full",
+                // lateral padding cuando hay scroll para que los elementos no queden cortados en los bordes
+                isScrollable ? "px-4 sm:px-6" : "",
+                isDesktop && isScrollable
+                  ? "overflow-x-hidden"
+                  : "overflow-x-auto"
               )}
+              onWheel={(e) => {
+                // Si las flechas están visibles, bloqueamos el desplazamiento horizontal del mouse
+                if (isDesktop && isScrollable) {
+                  // permitimos scroll vertical si el usuario intenta desplazarse verticalmente
+                  if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+                    e.preventDefault();
+                  }
+                }
+              }}
+              onTouchMove={(e) => {
+                if (isDesktop && isScrollable) {
+                  // bloquear el touchmove horizontal en desktop cuando las flechas están activas
+                  const touch = e.touches?.[0];
+                  if (touch) {
+                    // No hacemos nada sofisticado aquí — prevenir el scroll para evitar solapamientos
+                    e.preventDefault();
+                  }
+                }
+              }}
             >
               {categories.map((category, index) => (
                 <li
@@ -152,19 +280,23 @@ export default function CategorySlider({
                   className={cn(
                     // base
                     "px-1 sm:px-3 flex flex-col items-center",
-                    // Si no es scrollable, dejamos que los items se expandan para evitar overflow
-                    !isScrollable
-                      ? "flex-1 min-w-0"
-                      : // Si es scrollable, mantenemos anchos fijos para snap
-                        "flex-shrink-0",
-                    // Anchos por itemsPerView (solo relevantes cuando es scrollable)
-                    isScrollable && itemsPerView === 1 && "w-36 sm:w-full",
-                    isScrollable && itemsPerView === 2 && "w-32 sm:w-1/2",
-                    isScrollable && itemsPerView === 3 && "w-40 sm:w-1/3",
-                    isScrollable && itemsPerView === 4 && "w-40 sm:w-1/4",
-                    // Si es scrollable, habilita snap
-                    isScrollable && "snap-start"
+                    // En móvil/tablet dejamos que los items no se encojan para evitar solapamientos
+                    "flex-shrink-0",
+                    // Snap: si hay overflow queremos centrar los items al hacer snap
+                    isScrollable ? "snap-center" : "snap-start"
                   )}
+                  // En desktop forzamos el ancho para que siempre quepan como máximo `itemsPerView` items
+                  style={
+                    isDesktop
+                      ? ({
+                          flex: `0 0 ${100 / itemsPerView}%`,
+                          maxWidth: `${100 / itemsPerView}%`,
+                        } as React.CSSProperties)
+                      : ({
+                          flex: "0 0 auto",
+                          minWidth: 110,
+                        } as React.CSSProperties)
+                  }
                 >
                   <button
                     onClick={() => handleCategoryClick(category)}
@@ -172,8 +304,8 @@ export default function CategorySlider({
                       "relative flex items-center justify-center transition-all duration-300 hover:-translate-y-1",
                       "rounded-full category-circle",
                       "overflow-hidden",
-                      // Tamaños reducidos en móvil para que se muestren todos
-                      "size-20 sm:size-24 md:size-32 lg:size-36",
+                      // Tamaños reducidos en móvil para que se muestren todos (w/h explícitos)
+                      "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36",
                       activeCategoryId === category.id
                         ? "bg-blue-500/30 ring-2 ring-green-50 scale-[115%]"
                         : "bg-white hover:bg-white-100 scale-75"

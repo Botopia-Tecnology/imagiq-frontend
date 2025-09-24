@@ -70,7 +70,7 @@ const CategoryProductsGrid = forwardRef<
             <div
               key={product.id}
               className={
-                viewMode === "grid" ? "w-full sm:w-1/2 lg:w-1/4 mx-auto" : "w-full"
+                viewMode === "grid" ? "w-full sm:w-1/3 lg:w-1/4 mx-auto" : "w-full"
               }
             >
               <ProductCard

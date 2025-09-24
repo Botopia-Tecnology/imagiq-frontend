@@ -2,12 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import { Filter, Grid3X3, List } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
-import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
-import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
   type FilterConfig,
@@ -15,7 +9,6 @@ import FilterSidebar, {
   MobileFilterModal,
 } from "../components/FilterSidebar";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
@@ -30,6 +23,7 @@ import { Filter, Grid3X3, List } from "lucide-react";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
+import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [
   {

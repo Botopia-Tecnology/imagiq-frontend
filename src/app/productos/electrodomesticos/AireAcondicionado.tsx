@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import { cn } from "@/lib/utils";
-import { Filter, Grid3X3, List } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import CategorySlider from "../components/CategorySlider";
+import { cn } from "@/lib/utils";;
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
@@ -27,6 +24,7 @@ import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
 
 import Pagination from "./components/Pagination";
+import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [
   {

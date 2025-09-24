@@ -140,15 +140,15 @@ export const productEndpoints = {
     apiClient.get<ProductApiResponse>(
       "/api/products/filtered?conDescuento=true"
     ),
-  //NUEVO - aun falta endpoints reales
-  getFavorites: (params: FavoriteFilterParams) => {
+  getFavorites: (userId: string, params: FavoriteFilterParams) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
         searchParams.append(key, String(value));
       }
     });
-    const url = `/api/user/favorites/filtered?${searchParams.toString()}`;
+
+    const url = `/api/products/favorites/${userId}?${searchParams.toString()}`;
     return apiClient.get<FavoriteApiResponse>(url);
   },
   addFavorite: (data: {
@@ -161,7 +161,10 @@ export const productEndpoints = {
       telefono?: string;
     };
   }) =>
-    apiClient.post<{usuario_id?: string}>(`/api/products/add-to-favorites`, data),
+    apiClient.post<{ usuario_id?: string }>(
+      `/api/products/add-to-favorites`,
+      data
+    ),
   removeFavorite: (productId: string) =>
     apiClient.delete<void>(`/api/user/favorites/${productId}`),
 };

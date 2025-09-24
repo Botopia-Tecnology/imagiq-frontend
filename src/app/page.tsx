@@ -17,6 +17,7 @@ import ProductShowcase from "@/components/sections/ProductShowcase";
 import Historias from "@/components/sections/Historias";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import CookieConsentBar from "@/components/CookieConsentBar";
 
 export default function HomePage() {
   // Configuración para animaciones scroll reveal
@@ -135,6 +136,7 @@ export default function HomePage() {
           <CTASection />
         </motion.div>
       </div>
+      <CookieConsentBar moreInfoUrl="/privacidad" />
     </>
   );
 }

@@ -165,11 +165,6 @@ export default function FilterSidebar({
     ],
   };
 
-  // Debug: Log de configuración de color
-  if (filterConfig.color) {
-    console.log("🎨 Configuración de color desde filterConfig:", filterConfig.color);
-  }
-
   return (
     <div
       className={cn(
@@ -180,174 +175,175 @@ export default function FilterSidebar({
       style={stickyStyle}
     >
       <div className={cn(stickyWrapperClasses)}>
-      {/* Header igual a la imagen */}
-      <div className="p-4 border-b border-gray-300">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2 font-bold text-black text-lg">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 18 18"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-black"
-            >
-              <path
-                d="M3.75 6.75H14.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <path
-                d="M6.75 11.25H11.25"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-              <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
-              <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
-            </svg>
-            Filtros
-          </span>
-          <span className="text-base text-black font-medium border-l border-gray-300 pl-4">
-            {resultCount} resultados
-          </span>
+        {/* Header igual a la imagen */}
+        <div className="p-4 border-b border-gray-300">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-2 font-bold text-black text-lg">
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 18 18"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-black"
+              >
+                <path
+                  d="M3.75 6.75H14.25"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M6.75 11.25H11.25"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+                <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
+                <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
+              </svg>
+              Filtros
+            </span>
+            <span className="text-base text-black font-medium border-l border-gray-300 pl-4">
+              {resultCount} resultados
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Contenedor principal con scroll oculto */}
-      <div className="overflow-hidden">
-        {Object.entries(filterConfigWithColor).map(([filterKey, options]) => (
-          <div key={filterKey} className="border-b border-gray-300">
-            <button
-              onClick={() => handleToggleFilter(filterKey)}
-              className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-              aria-expanded={currentExpandedFilters.has(filterKey)}
-              aria-controls={`filter-panel-${filterKey}`}
-            >
-              <span className="font-semibold text-black text-sm tracking-wide">
-                {formatFilterKey(filterKey)}
-              </span>
-              <div className="transform transition-transform duration-300 ease-in-out">
-                {currentExpandedFilters.has(filterKey) ? (
-                  <ChevronUp className="w-4 h-4 text-gray-600" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 text-gray-600" />
+        {/* Contenedor principal con scroll oculto */}
+        <div className="overflow-hidden">
+          {Object.entries(filterConfigWithColor).map(([filterKey, options]) => (
+            <div key={filterKey} className="border-b border-gray-300">
+              <button
+                onClick={() => handleToggleFilter(filterKey)}
+                className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                aria-expanded={currentExpandedFilters.has(filterKey)}
+                aria-controls={`filter-panel-${filterKey}`}
+              >
+                <span className="font-semibold text-black text-sm tracking-wide">
+                  {formatFilterKey(filterKey)}
+                </span>
+                <div className="transform transition-transform duration-300 ease-in-out">
+                  {currentExpandedFilters.has(filterKey) ? (
+                    <ChevronUp className="w-4 h-4 text-gray-600" />
+                  ) : (
+                    <ChevronDown className="w-4 h-4 text-gray-600" />
+                  )}
+                </div>
+              </button>
+              <div
+                id={`filter-panel-${filterKey}`}
+                className={cn(
+                  "overflow-hidden transition-all duration-500 ease-in-out",
+                  currentExpandedFilters.has(filterKey)
+                    ? "max-h-[600px] opacity-100"
+                    : "max-h-0 opacity-0"
                 )}
-              </div>
-            </button>
-            <div
-              id={`filter-panel-${filterKey}`}
-              className={cn(
-                "overflow-hidden transition-all duration-500 ease-in-out",
-                currentExpandedFilters.has(filterKey)
-                  ? "max-h-[600px] opacity-100"
-                  : "max-h-0 opacity-0"
-              )}
-              tabIndex={-1}
-            >
-              <div className="px-4 pb-4">
-                <div
-                  className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
-                  style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                >
-                  {isRangeFilter(options)
-                    ? options.map((range, index) => (
-                        <label
-                          key={`${filterKey}-${index}`}
-                          className={cn(
-                            "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
-                            "hover:bg-blue-50 hover:translate-x-1 transform",
-                            "opacity-0 animate-fadeInUp",
-                            filters[filterKey]?.includes(range.label) &&
-                              "bg-blue-50 font-semibold text-blue-700"
-                          )}
-                          style={{
-                            animationDelay: `${index * 50}ms`,
-                            animationFillMode: "forwards",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={
-                              filters[filterKey]?.includes(range.label) || false
-                            }
-                            onChange={(e) =>
-                              handleFilterChange(
-                                filterKey,
-                                range.label,
-                                e.target.checked
-                              )
-                            }
-                            className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
-                          />
-                          <span className="ml-3 text-sm transition-colors duration-200">
-                            {range.label}
-                          </span>
-                        </label>
-                      ))
-                    : (options as string[]).map((option, index) => (
-                        <label
-                          key={`${filterKey}-${option}`}
-                          className={cn(
-                            "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
-                            "hover:bg-blue-50 hover:translate-x-1 transform",
-                            "opacity-0 animate-fadeInUp",
-                            filters[filterKey]?.includes(option) &&
-                              "bg-blue-50 font-semibold text-blue-700"
-                          )}
-                          style={{
-                            animationDelay: `${index * 50}ms`,
-                            animationFillMode: "forwards",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={
-                              filters[filterKey]?.includes(option) || false
-                            }
-                            onChange={(e) =>
-                              handleFilterChange(
-                                filterKey,
-                                option,
-                                e.target.checked
-                              )
-                            }
-                            className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
-                          />
-                          <span className="ml-3 text-sm transition-colors duration-200">
-                            {option}
-                          </span>
-                        </label>
-                      ))}
+                tabIndex={-1}
+              >
+                <div className="px-4 pb-4">
+                  <div
+                    className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
+                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                  >
+                    {isRangeFilter(options)
+                      ? options.map((range, index) => (
+                          <label
+                            key={`${filterKey}-${index}`}
+                            className={cn(
+                              "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
+                              "hover:bg-blue-50 hover:translate-x-1 transform",
+                              "opacity-0 animate-fadeInUp",
+                              filters[filterKey]?.includes(range.label) &&
+                                "bg-blue-50 font-semibold text-blue-700"
+                            )}
+                            style={{
+                              animationDelay: `${index * 50}ms`,
+                              animationFillMode: "forwards",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={
+                                filters[filterKey]?.includes(range.label) ||
+                                false
+                              }
+                              onChange={(e) =>
+                                handleFilterChange(
+                                  filterKey,
+                                  range.label,
+                                  e.target.checked
+                                )
+                              }
+                              className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
+                            />
+                            <span className="ml-3 text-sm transition-colors duration-200">
+                              {range.label}
+                            </span>
+                          </label>
+                        ))
+                      : (options as string[]).map((option, index) => (
+                          <label
+                            key={`${filterKey}-${option}`}
+                            className={cn(
+                              "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
+                              "hover:bg-blue-50 hover:translate-x-1 transform",
+                              "opacity-0 animate-fadeInUp",
+                              filters[filterKey]?.includes(option) &&
+                                "bg-blue-50 font-semibold text-blue-700"
+                            )}
+                            style={{
+                              animationDelay: `${index * 50}ms`,
+                              animationFillMode: "forwards",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={
+                                filters[filterKey]?.includes(option) || false
+                              }
+                              onChange={(e) =>
+                                handleFilterChange(
+                                  filterKey,
+                                  option,
+                                  e.target.checked
+                                )
+                              }
+                              className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
+                            />
+                            <span className="ml-3 text-sm transition-colors duration-200">
+                              {option}
+                            </span>
+                          </label>
+                        ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-      {/* Estilos CSS personalizados para ocultar scrollbars y animaciones */}
-      <style jsx>{`
-        .scrollbar-hide {
-          -webkit-overflow-scrolling: touch;
-        }
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
+          ))}
+        </div>
+        {/* Estilos CSS personalizados para ocultar scrollbars y animaciones */}
+        <style jsx>{`
+          .scrollbar-hide {
+            -webkit-overflow-scrolling: touch;
           }
-          to {
-            opacity: 1;
-            transform: translateY(0);
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
           }
-        }
-        .animate-fadeInUp {
-          animation: fadeInUp 0.4s ease-out;
-        }
-      `}</style>
+          @keyframes fadeInUp {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .animate-fadeInUp {
+            animation: fadeInUp 0.4s ease-out;
+          }
+        `}</style>
       </div>
     </div>
   );
@@ -380,7 +376,8 @@ export function MobileFilterModal({
       {/* Modal con animación mejorada */}
       <div
         className={cn(
-          "lg:hidden fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl",
+          // en mobile dejamos un pequeño gap a la izquierda con left-4
+          "lg:hidden fixed inset-y-0 right-0 left-4 z-50 w-full max-w-sm bg-white shadow-2xl",
           "transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}

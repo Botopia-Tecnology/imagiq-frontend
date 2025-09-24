@@ -6,19 +6,7 @@
 
 import type { FilterState } from "../../components/FilterSidebar";
 import { keywordMap } from "../constants/accesoriosConstants";
-
-// Interfaces de tipos necesarias
-export interface ApiFilters {
-  category?: string;
-  subcategory?: string;
-  priceRange?: { min: number; max: number };
-  color?: string;
-  capacity?: string;
-  name?: string;
-  withDiscount?: boolean;
-  minStock?: number;
-  descriptionKeyword?: string;
-}
+import type { ApiFilters } from "./sharedInterfaces";
 
 /**
  * Convierte filtros de tipo de accesorio a filtros de API
@@ -45,7 +33,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     if (allKeywords.length > 0) {
       // Usar todas las palabras clave separadas por coma para OR
       apiFilters.descriptionKeyword = allKeywords.join(',');
-      console.log(`🔍 Buscando accesorios tipos "${selectedTypes.join(', ')}" con palabras clave: "${allKeywords.join(',')}"`);
     }
   }
 
@@ -73,7 +60,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       } else {
         apiFilters.descriptionKeyword = materialKeywords.join(',');
       }
-      console.log(`🔍 Buscando materiales "${selectedMaterials.join(', ')}" con palabras clave: "${materialKeywords.join(',')}"`);
     }
   }
 
@@ -82,7 +68,6 @@ export function getApiFilters(filters: FilterState): ApiFilters {
     // Para color, usar OR (unión) - múltiples colores separados por coma
     const selectedColors = filters.color;
     apiFilters.color = selectedColors.join(',');
-    console.log(`🎨 Filtrando por colores: "${selectedColors.join(', ')}"`);
   }
 
   // Filtro de características usando desDetallada
@@ -106,35 +91,43 @@ export function getApiFilters(filters: FilterState): ApiFilters {
       } else {
         apiFilters.descriptionKeyword = characteristicKeywords.join(',');
       }
-      console.log(`⚡ Buscando características "${selectedCharacteristics.join(', ')}" con palabras clave: "${characteristicKeywords.join(',')}"`);
     }
   }
 
   // Filtro de rango de precios usando precioMin y precioMax
   if (filters.rangoPrecio && filters.rangoPrecio.length > 0) {
-    // Para rango de precios, usar OR (unión) - tomar el rango más amplio que cubra todos los rangos seleccionados
-    const priceRanges = [
-      { label: "Menos de $50.000", min: 0, max: 50000 },
-      { label: "$50.000 - $100.000", min: 50000, max: 100000 },
-      { label: "$100.000 - $200.000", min: 100000, max: 200000 },
-      { label: "Más de $200.000", min: 200000, max: Infinity },
-    ];
+    const selectedPriceRanges = filters.rangoPrecio;
     
-    const selectedLabels = filters.rangoPrecio;
-    const selectedRanges = selectedLabels
-      .map(label => priceRanges.find(range => range.label === label))
-      .filter(Boolean);
+    // Procesar cada rango de precio seleccionado
+    let minPrice: number | undefined;
+    let maxPrice: number | undefined;
     
-    if (selectedRanges.length > 0) {
-      // Calcular el rango más amplio que cubra todos los rangos seleccionados
-      const minPrice = Math.min(...selectedRanges.map(range => range!.min));
-      const maxPrice = Math.max(...selectedRanges.map(range => range!.max === Infinity ? Number.MAX_SAFE_INTEGER : range!.max));
-      
-      apiFilters.priceRange = {
-        min: minPrice,
-        max: maxPrice === Number.MAX_SAFE_INTEGER ? Number.MAX_SAFE_INTEGER : maxPrice
-      };
-      console.log(`💰 Filtrando por rangos de precio "${selectedLabels.join(', ')}" con rango combinado: ${minPrice} - ${maxPrice === Number.MAX_SAFE_INTEGER ? '∞' : maxPrice}`);
+    selectedPriceRanges.forEach(range => {
+      // Para "Menos de $50.000" usar solo maxPrice
+      if (range === "Menos de $50.000") {
+        maxPrice = 50000;
+      }
+      // Para "Más de $200.000" usar solo minPrice
+      else if (range === "Más de $200.000") {
+        minPrice = 200000;
+      }
+      // Para rangos intermedios, usar ambos valores
+      else if (range === "$50.000 - $100.000") {
+        minPrice = minPrice ? Math.min(minPrice, 50000) : 50000;
+        maxPrice = maxPrice ? Math.max(maxPrice, 100000) : 100000;
+      }
+      else if (range === "$100.000 - $200.000") {
+        minPrice = minPrice ? Math.min(minPrice, 100000) : 100000;
+        maxPrice = maxPrice ? Math.max(maxPrice, 200000) : 200000;
+      }
+    });
+    
+    // Aplicar los valores de precio a los filtros de API
+    if (minPrice !== undefined) {
+      apiFilters.precioMin = minPrice;
+    }
+    if (maxPrice !== undefined) {
+      apiFilters.precioMax = maxPrice;
     }
   }
 

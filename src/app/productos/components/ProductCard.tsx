@@ -278,9 +278,9 @@ export default function ProductCard({
             }}
             disabled={isLoading}
             className={cn(
-              "w-full bg-blue-900 text-white py-3 px-4 rounded-lg text-sm font-semibold cursor-pointer",
+              "w-full bg-sky-600 text-white py-3 px-4 rounded-lg text-sm font-semibold cursor-pointer",
               "transition-all duration-200 flex items-center justify-center gap-2",
-              "hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed",
+              "hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed",
               isLoading && "animate-pulse"
             )}
           >

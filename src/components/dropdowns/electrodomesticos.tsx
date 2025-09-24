@@ -34,6 +34,10 @@ const categories = [
     name: "Aspiradoras",
     href: "/productos/electrodomesticos?section=aspiradoras",
   },
+  {
+    name: "Hornos",
+    href: "/productos/electrodomesticos?section=hornos",
+  },
 ];
 
 export default function ElectrodomesticosDropdown() {

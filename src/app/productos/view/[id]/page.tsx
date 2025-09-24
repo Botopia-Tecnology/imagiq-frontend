@@ -105,10 +105,22 @@ export default function ProductViewPage({ params }) {
 
   // Convertir el producto al formato esperado por ViewProduct
   const convertedProduct = convertProductForView(product);
+  const categoriasAppliance = [
+    "neveras",
+    "nevecon",
+    "hornos microondas",
+    "lavavajillas",
+    "lavadora",
+    "secadora",
+    "aspiradoras",
+    "aire acondicionado","hornos","microondas"
+  ];
   const subcategoria = convertedProduct.specs
     .find((spec) => spec.label === "Subcategoría")
     ?.value?.toLowerCase();
-  const isRefrigerador = subcategoria?.includes("neveras");
+  const isRefrigerador = subcategoria
+    ? categoriasAppliance.some((cat) => subcategoria.includes(cat))
+    : false;
 
   return (
     <>
@@ -129,6 +141,7 @@ function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
   const { setIsAppliance } = useProductContext();
 
   useEffect(() => {
+    console.log("Setting isAppliance to:", isRefrigerador);
     setIsAppliance(isRefrigerador);
   }, [isRefrigerador, setIsAppliance]);
 

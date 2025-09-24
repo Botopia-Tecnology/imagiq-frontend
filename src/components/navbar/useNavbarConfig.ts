@@ -21,6 +21,7 @@ export function useNavbarConfig(
     );
     const isOfertas = pathname === "/ofertas";
     const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+    
 
     const isNavbarItem =
       pathname.startsWith("/productos/") ||

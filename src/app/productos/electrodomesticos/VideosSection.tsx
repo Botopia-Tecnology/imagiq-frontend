@@ -44,12 +44,12 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
   // Efecto para reproducir automáticamente cuando se monta el componente
   React.useEffect(() => {
     if (videoRef.current) {
-      videoRef.current.play().catch((error) => {
-        console.log("Autoplay was prevented:", error);
+      videoRef.current.load(); // Reset the video
+      videoRef.current.play().catch(() => {
         setIsPlaying(false);
       });
     }
-  }, []);
+  }, [video.src]);
 
   // Handler para play/pause
   const togglePlayPause = () => {
@@ -87,37 +87,23 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
         Tu navegador no soporta el elemento video.
       </video>
 
-      {/* Overlay con gradiente sutil */}
       <div
         className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20"
         style={{ zIndex: 1 }}
       />
 
-      {/* Contenido superpuesto */}
       <div
         className="absolute inset-0 p-6 text-white"
         style={{ zIndex: 2, fontFamily: "SamsungSharpSans" }}
       >
-        {/* Para el primer video - solo Nuevo y Galaxy S25 Ultra */}
-        {index === 0 && (
-          <div className="absolute top-6 left-6">
-            <p className="text-lg md:text-xl font-medium opacity-90">
-              {video.subtitle}
-            </p>
-            <p className="text-lg md:text-xl font-medium opacity-90">
-              {video.description}
-            </p>
-          </div>
-        )}
-
-        {/* Para el segundo video - solo el título dentro del video */}
-        {index === 1 && (
-          <div className="absolute bottom-6 left-6">
-            <p className="text-lg md:text-xl font-medium opacity-90">
-              {video.subtitle}
-            </p>
-          </div>
-        )}
+        <div className="absolute bottom-6 left-6">
+          <p className="text-lg md:text-xl font-medium opacity-90">
+            {video.subtitle}
+          </p>
+          <p className="text-sm md:text-base opacity-80 mt-1">
+            {video.description}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -127,42 +113,79 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
  * Componente principal de la sección de videos
  */
 export default function VideosSection() {
+  const [currentVideo, setCurrentVideo] = useState(0);
+
+  const handlePrev = () => {
+    setCurrentVideo((prev) => (prev === 0 ? videosData.length - 1 : prev - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentVideo((prev) => (prev === videosData.length - 1 ? 0 : prev + 1));
+  };
   return (
     <section
-      className="w-full py-16 px-4"
+      className="w-full pt-8 pb-8 px-4"
       style={{
         fontFamily: "SamsungSharpSans",
-        background: "#ffffffff", // Fondo negro sólido
+        background: "#ffffff", // Fondo blanco
         minHeight: "80vh",
       }}
       aria-label="Sección de videos promocionales"
     >
-      <div className="max-w-6xl mx-auto">
-        {/* Grid vertical de videos - uno encima del otro */}
-        <div className="space-y-24 relative">
-          {videosData.map((video, index) => (
-            <div key={video.id} className="relative">
+      <div className="max-w-7xl mx-auto w-full overflow-hidden">
+        {/* Contenedor de flechas y video en fila */}
+        <div className="flex items-center justify-center w-full">
+          {/* Botón Anterior (izquierda del video) */}
+          <button
+            className="w-10 h-10 sm:w-12 sm:h-12 text-black  rounded-full text-3xl flex items-center justify-center transition"
+            onClick={handlePrev}
+            aria-label="Anterior"
+          >
+            ‹
+          </button>
 
-              {/* Container del video */}
-              <div
-                className="w-full max-w-6xl mx-auto"
-                style={{
-                  height: "500px", // Altura fija para ambos videos
-                  aspectRatio: "16/9", // Relación de aspecto horizontal
-                }}
-              >
-                <VideoPlayer video={video} index={index} />
-              </div>
+          {/* Contenedor del video */}
+          <div
+            className="mx-2 w-0 flex-1"
+            style={{
+              height: "500px",
+              aspectRatio: "16/9",
+            }}
+          >
+            <VideoPlayer
+              video={videosData[currentVideo]}
+              index={currentVideo}
+            />
+          </div>
 
-              {/* Descripción fuera de la card del segundo video */}
-              {index === 1 && (
-                <div className="mt-4 max-w-6xl mx-auto px-6">
-                  <p className="text-sm md:text-base text-white/90 leading-relaxed">
-                    {video.description}
-                  </p>
-                </div>
-              )}
-            </div>
+          {/* Botón Siguiente (derecha del video) */}
+          <button
+            className="w-10 h-10 sm:w-12 sm:h-12 text-black rounded-full text-3xl flex items-center justify-center transition"
+            onClick={handleNext}
+            aria-label="Siguiente"
+          >
+            ›
+          </button>
+        </div>
+
+        {/* Descripción opcional */}
+        {videosData[currentVideo].description && (
+          <div className="mt-6 text-center text-black/80 text-base md:text-lg max-w-3xl mx-auto leading-relaxed">
+            {videosData[currentVideo].description}
+          </div>
+        )}
+
+        {/* Indicadores de carrusel (puntos) */}
+        <div className="flex justify-center mt-10 space-x-3">
+          {videosData.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentVideo(i)}
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${
+                i === currentVideo ? "bg-black" : "bg-black/30"
+              }`}
+              aria-label={`Ir al video ${i + 1}`}
+            />
           ))}
         </div>
       </div>

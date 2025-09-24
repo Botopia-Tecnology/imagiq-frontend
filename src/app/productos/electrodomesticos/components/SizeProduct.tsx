@@ -16,7 +16,7 @@ export default function SizeProduct({ img }: SizeProductProps) {
 
   return (
     <>
-      <div className="ml-auto mr-4 mt-4">
+      <div className="flex justify-end mr-4 pb-8 ml-4">
         <ButtonLabel
           onClick={() => setModalOpen(true)}
           title="Revisa aquí las medidas de tu producto"

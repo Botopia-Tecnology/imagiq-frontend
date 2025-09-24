@@ -165,8 +165,8 @@ export const productEndpoints = {
       `/api/products/add-to-favorites`,
       data
     ),
-  removeFavorite: (productId: string) =>
-    apiClient.delete<void>(`/api/user/favorites/${productId}`),
+  removeFavorite: (userId: string,productSKU: string) =>
+    apiClient.delete<void>(`/api/products/remove-from-favorites/${userId}?productSKU=${productSKU}`),
 };
 
 // Product filter parameters interface

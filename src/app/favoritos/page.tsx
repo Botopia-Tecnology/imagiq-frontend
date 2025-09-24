@@ -18,7 +18,8 @@ export default function FavoritePage() {
   const [itemsPerPage, setItemsPerPage] = useState(15);
   const device = useDeviceType();
   const lastFiltersRef = useRef<string>("");
-  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+    const { addToFavorites, removeFromFavorites, isFavorite } =
+    useFavorites();
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const apiFilters = useMemo(
     () => ({
@@ -47,18 +48,19 @@ export default function FavoritePage() {
     filterFavorites,
   } = useFavorites(initialFilters);
 
-  const handleItemsPerPageChange = useCallback(async (items: number) => {
+    const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
     setCurrentPage(1);
     // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
-  // Funciones para manejar la paginación
+    // Funciones para manejar la paginación
   const handlePageChange = useCallback(async (page: number) => {
     setCurrentPage(page);
     // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
+
 
   // Actualizar filtros cuando cambien los parámetros de paginación
   useEffect(() => {
@@ -167,23 +169,23 @@ export default function FavoritePage() {
           ))
         )}
       </div>
-      {!loading && !error && totalItems > 0 && (
-        <div className="mt-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-            <ItemsPerPageSelector
-              itemsPerPage={itemsPerPage}
-              onItemsPerPageChange={handleItemsPerPageChange}
-            />
-          </div>
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-            totalItems={totalItems}
-            itemsPerPage={itemsPerPage}
-          />
-        </div>
-      )}
+        {!loading && !error && totalItems > 0 && (
+                    <div className="mt-8">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                        <ItemsPerPageSelector
+                          itemsPerPage={itemsPerPage}
+                          onItemsPerPageChange={handleItemsPerPageChange}
+                        />
+                      </div>
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                      />
+                    </div>
+                  )}
     </div>
   );
 }

@@ -3,8 +3,9 @@
  * Paso 2 del carrito de compras: Datos de envío y pago
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
-import React, { useState } from "react";
-import { useCart } from "@/hooks/useCart";
+import React, { useEffect, useState } from "react";
+import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
+import { useRouter } from "next/navigation";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -20,6 +21,7 @@ export default function Step2({
 }) {
   // Usar el hook centralizado useCart
   const { products: cartProducts, calculations, formatPrice } = useCart();
+  const router = useRouter()
   // Recibe onContinue para avanzar al siguiente paso
   // onBack ya existe
   // onContinue?: () => void
@@ -54,7 +56,7 @@ export default function Step2({
 
   // Usar cálculos del hook centralizado
   const subtotal = calculations.subtotal;
-  const envio = 20000;
+  const envio = 0;
   const impuestos = Math.round(subtotal * 0.18);
   const total = subtotal - appliedDiscount + envio;
 
@@ -219,6 +221,13 @@ export default function Step2({
       }, 800);
     }, 1200);
   };
+  useEffect(() => {
+    const haveAccount = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    console.log(haveAccount)
+    if (haveAccount.email){
+      router.push('/carrito/step3')
+    }
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
@@ -831,13 +840,19 @@ export default function Step2({
                   : "0"}
               </span>
             </div>
-            <div className="flex justify-between text-base">
-              <span>Envío</span>
-              <span>
-                {typeof envio === "number" && !isNaN(envio)
-                  ? String(formatPrice(envio))
-                  : "0"}
-              </span>
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between text-base">
+                <span>Envío</span>
+                <span>
+                  <span className="line-through mr-2 text-gray-400">
+                    {String(formatPrice(ORIGINAL_SHIPPING_COST))}
+                  </span>
+                  <span className="font-bold">0</span>
+                </span>
+              </div>
+              <div className="text-sm text-green-600">
+                tienes envío gratis en esta compra
+              </div>
             </div>
             <div className="flex justify-between text-lg font-bold mt-2">
               <span>Total</span>

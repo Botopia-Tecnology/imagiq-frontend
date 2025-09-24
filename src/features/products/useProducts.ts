@@ -120,16 +120,16 @@ export const useProducts = (
       // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
       if (filters.category) params.categoria = filters.category;
       if (filters.subcategory) params.subcategoria = filters.subcategory;
-      
-    // Manejar filtros de precio usando precioMin/precioMax
-    if (filters.precioMin !== undefined) {
-      params.precioMin = filters.precioMin;
-    }
-    
+
+      // Manejar filtros de precio usando precioMin/precioMax
+      if (filters.precioMin !== undefined) {
+        params.precioMin = filters.precioMin;
+      }
+
       if (filters.precioMax !== undefined) {
-      params.precioMax = filters.precioMax;
-    }
-    
+        params.precioMax = filters.precioMax;
+      }
+
       if (filters.color) params.color = filters.color;
       if (filters.capacity) params.capacidad = filters.capacity;
       if (filters.name) params.nombre = filters.name;
@@ -154,7 +154,7 @@ export const useProducts = (
 
       try {
         const apiParams = convertFiltersToApiParams(filters);
-          const response = await productEndpoints.getFiltered(apiParams);
+        const response = await productEndpoints.getFiltered(apiParams);
 
         if (response.success && response.data) {
           const apiData = response.data as ProductApiResponse;
@@ -408,27 +408,56 @@ export const useFavorites = (
     [isAuthenticated, convertFiltersToApiParams]
   );
 
-  const addToFavorites = useCallback((productId: string) => {
+  const addToFavorites = useCallback(async (productId: string) => {
+
     setFavorites((prev) => {
       const newFavorites = [...prev, productId];
       localStorage.setItem("imagiq_favorites", JSON.stringify(newFavorites));
       return newFavorites;
     });
 
-    //Con API
-    //  setFavorites(prev => {
-    //   const updated = [...prev, productId];
-    //   localStorage.setItem('imagiq_favorites', JSON.stringify(updated));
-    //   return updated;
-    // });
+    try {
+      const rawUser = localStorage.getItem("imagiq_user");
+      let userInfo = rawUser ? JSON.parse(rawUser) : null;
 
-    // try {
-    //   if (isAuthenticated) {
-    //     await productEndpoints.addFavorite(productId); // POST /favorites/:id
-    //   }
-    // } catch (err) {
-    //   console.error('Error al agregar favorito en servidor', err);
-    // }
+      let payload;
+
+      if (userInfo && userInfo.userId) {
+        // 2. Si ya tenemos el userId guardado
+        payload = {
+          productSKU: productId,
+          userInfo: {
+            userId: userInfo.userId,
+          },
+        };
+      } else {
+        // 3. Si no hay user guardado, enviar datos completos
+        const guestUserData = {
+          nombre: "Jennyfer5",
+          apellido: "B",
+          email: "correo5@ejemplo.com",
+          telefono: "123456789",
+        };
+
+        payload = {
+          productSKU: productId,
+          userInfo: guestUserData,
+        };
+      }
+
+      // 4. Enviar petición al backend
+      const response = await productEndpoints.addFavorite(payload);
+      // 5. Si recibes un userId lo guardo en el local, para que no cree de nuevo un user
+      if (response?.data?.usuario_id && (!userInfo || !userInfo.userId)) {
+        console.log(response.data)
+        localStorage.setItem(
+          "imagiq_user",
+          JSON.stringify({ userId: response.data.usuario_id })
+        );
+      }
+    } catch (err) {
+      console.error("Error al agregar favorito en servidor", err);
+    }
   }, []);
 
   const removeFromFavorites = useCallback((productId: string) => {
@@ -460,7 +489,7 @@ export const useFavorites = (
     [favorites]
   );
 
-    // API: filtrar
+  // API: filtrar
   const filterFavorites = useCallback(
     async (filters: FavoriteFilters) => {
       setCurrentFilters(filters);
@@ -492,18 +521,18 @@ export const useFavorites = (
     [totalPages, loading, currentFilters, fetchFavorites]
   );
 
-    // API: refrescar
+  // API: refrescar
   const refreshFavorites = useCallback(async () => {
     await fetchFavorites(currentFilters, false);
   }, [currentFilters, fetchFavorites]);
 
-    // Inicial
+  // Inicial
   // useEffect(() => {
   //   fetchFavorites(initialFilters, false);
   // }, [initialFilters, fetchFavorites]);
 
   return {
-      favorites, // ids locales
+    favorites, // ids locales
     favoritesAPI, // productos desde API
     loading,
     error,

@@ -100,44 +100,70 @@ export const apiClient = new ApiClient();
 
 // Helper functions for URL encoding/decoding
 export const encodeCodigoMarketForUrl = (codigoMarket: string): string => {
-  return codigoMarket.replace(/\//g, '_');
+  return codigoMarket.replace(/\//g, "_");
 };
 
 export const decodeCodigoMarketFromUrl = (urlId: string): string => {
-  return urlId.replace(/_/g, '/');
+  return urlId.replace(/_/g, "/");
 };
 
 // Product API endpoints
 export const productEndpoints = {
-  getAll: () => apiClient.get<ProductApiResponse>('/api/products'),
+  getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
   getFiltered: (params: ProductFilterParams) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         searchParams.append(key, String(value));
       }
     });
     const url = `/api/products/filtered?${searchParams.toString()}`;
     return apiClient.get<ProductApiResponse>(url);
   },
-  getById: (id: string) => apiClient.get<ProductApiResponse>(`/api/products/${id}`),
-  getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?categoria=${category}`),
-  getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?subcategoria=${subcategory}`),
-  getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?codigoMarket=${codigoMarket}`),
-  search: (query: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
-  getOffers: () => apiClient.get<ProductApiResponse>('/api/products/filtered?conDescuento=true'),
+  getById: (id: string) =>
+    apiClient.get<ProductApiResponse>(`/api/products/${id}`),
+  getByCategory: (category: string) =>
+    apiClient.get<ProductApiResponse>(
+      `/api/products/filtered?categoria=${category}`
+    ),
+  getBySubcategory: (subcategory: string) =>
+    apiClient.get<ProductApiResponse>(
+      `/api/products/filtered?subcategoria=${subcategory}`
+    ),
+  getByCodigoMarket: (codigoMarket: string) =>
+    apiClient.get<ProductApiResponse>(
+      `/api/products/filtered?codigoMarket=${codigoMarket}`
+    ),
+  search: (query: string) =>
+    apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
+  getOffers: () =>
+    apiClient.get<ProductApiResponse>(
+      "/api/products/filtered?conDescuento=true"
+    ),
   //NUEVO - aun falta endpoints reales
   getFavorites: (params: FavoriteFilterParams) => {
     const searchParams = new URLSearchParams();
-     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
         searchParams.append(key, String(value));
       }
     });
     const url = `/api/user/favorites/filtered?${searchParams.toString()}`;
-    return apiClient.get<FavoriteApiResponse>(url);},
-  addFavorite: (productId: string) => apiClient.post<void>(`/api/user/favorites/${productId}`),
-  removeFavorite: (productId: string) => apiClient.delete<void>(`/api/user/favorites/${productId}`),
+    return apiClient.get<FavoriteApiResponse>(url);
+  },
+  addFavorite: (data: {
+    productSKU: string;
+    userInfo: {
+      userId?: string;
+      nombre?: string;
+      apellido?: string;
+      email?: string;
+      telefono?: string;
+    };
+  }) =>
+    apiClient.post<{usuario_id?: string}>(`/api/products/add-to-favorites`, data),
+  removeFavorite: (productId: string) =>
+    apiClient.delete<void>(`/api/user/favorites/${productId}`),
 };
 
 // Product filter parameters interface
@@ -151,13 +177,13 @@ export interface ProductFilterParams {
   color?: string;
   capacidad?: string;
   nombre?: string;
-  desDetallada?: string; 
+  desDetallada?: string;
   codigoMarket?: string;
   page?: number;
   limit?: number;
 }
 
-// Favorite filter 
+// Favorite filter
 export interface FavoriteFilterParams {
   page?: number;
   limit?: number;

@@ -850,9 +850,11 @@ export default function Step2({
                   <span className="font-bold">0</span>
                 </span>
               </div>
-              <div className="text-sm text-green-600">
-                tienes envío gratis en esta compra
-              </div>
+              {cartProducts.length > 0 && (
+                <div className="text-xs text-green-600">
+                  tienes envío gratis en esta compra
+                </div>
+              )}
             </div>
             <div className="flex justify-between text-lg font-bold mt-2">
               <span>Total</span>

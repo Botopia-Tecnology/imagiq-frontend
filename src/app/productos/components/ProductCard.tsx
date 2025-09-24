@@ -167,8 +167,9 @@ export default function ProductCard({
     <motion.div
       ref={cardReveal.ref}
       {...cardReveal.motionProps}
+      onClick={handleMoreInfo}
       className={cn(
-        "bg-[#D9D9D9] rounded-2xl max-w-72 shadow-sm border border-gray-300 overflow-hidden transition-all duration-300",
+        "bg-[#D9D9D9] rounded-2xl max-w-72 shadow-sm border border-gray-300 overflow-hidden transition-all duration-300 cursor-pointer",
         className
       )}
     >
@@ -190,9 +191,12 @@ export default function ProductCard({
 
         {/* Botón favorito */}
         <button
-          onClick={handleToggleFavorite}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevenir que se active el click de la card
+            handleToggleFavorite();
+          }}
           className={cn(
-            "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200",
+            "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer",
             "bg-white shadow-md hover:shadow-lg",
             isFavorite ? "text-red-500" : "text-gray-400"
           )}
@@ -226,9 +230,12 @@ export default function ProductCard({
               {colors.map((color) => (
                 <button
                   key={color.name}
-                  onClick={() => handleColorSelect(color)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevenir que se active el click de la card
+                    handleColorSelect(color);
+                  }}
                   className={cn(
-                    "w-6 h-6 rounded-full border-2 transition-all duration-200",
+                    "w-6 h-6 rounded-full border-2 transition-all duration-200 cursor-pointer",
                     selectedColor?.name === color.name
                       ? "border-blue-600 ring-2 ring-blue-200"
                       : "border-gray-400 hover:border-gray-600"
@@ -262,26 +269,23 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Botones de acción */}
-        <div className="flex gap-3">
+        {/* Botón de acción */}
+        <div>
           <button
-            onClick={handleAddToCart}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevenir que se active el click de la card
+              handleAddToCart();
+            }}
             disabled={isLoading}
             className={cn(
-              "w-full bg-blue-900 text-white py-2 px-4 rounded-lg text-sm font-semibold",
+              "w-full bg-sky-600 text-white py-3 px-4 rounded-lg text-sm font-semibold cursor-pointer",
               "transition-all duration-200 flex items-center justify-center gap-2",
-              "hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed",
+              "hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed",
               isLoading && "animate-pulse"
             )}
           >
-            {isLoading ? <Loader /> : <ShoppingCart />}
-          </button>
-
-          <button
-            onClick={handleMoreInfo}
-            className="w-full bg-white border border-gray-400 text-gray-700 py-3 px-4 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-colors duration-200"
-          >
-            Información
+            {isLoading ? <Loader className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+            <span>Añadir al carrito</span>
           </button>
         </div>
       </div>

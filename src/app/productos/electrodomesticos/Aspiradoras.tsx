@@ -23,11 +23,11 @@ import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
 import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import { useProducts } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 const applianceCategories: Category[] = [
   {

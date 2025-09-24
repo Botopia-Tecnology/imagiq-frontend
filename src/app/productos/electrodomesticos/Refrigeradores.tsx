@@ -2,14 +2,13 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
+import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
   MobileFilterModal,
 } from "../components/FilterSidebar";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
@@ -25,6 +24,7 @@ import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
 import { useFavorites } from "@/features/products/useProducts";
+import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [
   {

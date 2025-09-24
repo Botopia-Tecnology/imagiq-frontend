@@ -1,18 +1,17 @@
 // ExploreProductList.tsx
 "use client";
 
-import { cn } from "@/lib/utils";
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
-import CardExplore from "./components/CardExplore";
-import { useProducts } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import SkeletonCard from "@/components/SkeletonCard";
+import { useProducts } from "@/features/products/useProducts";
+import { cn } from "@/lib/utils";
+import { useEffect, useMemo, useRef } from "react";
+import CardExplore from "./components/CardExplore";
 
 interface ExploreProductsProps {
   viewMode?: "grid" | "list";
   title: string;
   filters?: {
-    [key: string]: any;
+    [key: string]: string;
   };
   limit?: number;
 }

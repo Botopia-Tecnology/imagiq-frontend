@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
@@ -24,6 +23,7 @@ import Pagination from "./components/Pagination";
 import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import lavavajillasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [
   {

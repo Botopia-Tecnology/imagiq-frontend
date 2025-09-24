@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
-import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
   type FilterState,
@@ -24,6 +23,7 @@ import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
+import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [
   {

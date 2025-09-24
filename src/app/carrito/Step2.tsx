@@ -844,9 +844,11 @@ export default function Step2({
               <div className="flex justify-between text-base">
                 <span>Envío</span>
                 <span>
-                  <span className="line-through mr-2 text-gray-400">
-                    {String(formatPrice(ORIGINAL_SHIPPING_COST))}
-                  </span>
+                  {cartProducts.length > 0 && (
+                    <span className="line-through mr-2 text-gray-400">
+                      {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
+                    </span>
+                  )}
                   <span className="font-bold">0</span>
                 </span>
               </div>

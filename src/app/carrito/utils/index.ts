@@ -36,7 +36,7 @@ export async function payWithCard(
       },
       body: JSON.stringify({
         ...props,
-        dues: props.dues === "" ? "1" : props.dues,
+        dues: props.dues.trim() === "" ? "1" : props.dues,
       }),
     });
     if (!res.ok) {

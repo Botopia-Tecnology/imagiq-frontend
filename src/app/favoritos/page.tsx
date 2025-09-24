@@ -122,12 +122,6 @@ export default function FavoritePage() {
 
   return (
     <div className="pb-8 bg-white">
-      <h3
-        className="text-gray pb-8 text-3xl text-center md:text-5xl font-bold mb-2 hover:text-gray-900 transition-all"
-        style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
-      >
-        Favoritos
-      </h3>
       <div
         className={cn("grid gap-6 bg-white max-w-7xl mx-auto pl-4 pr-4", {
           "grid-cols-2": true,

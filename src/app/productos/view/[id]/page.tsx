@@ -35,7 +35,7 @@ import entregoEstrenoLogo from "@/img/entrego-estreno/entrego-estreno-logo.png";
 import gifEntregoEstreno from "@/img/gif/gif-entrego-estreno.gif";
 
 // Importar hook de variantes de dispositivos
-import { useDeviceVariants } from "@/hooks/useDeviceVariants";
+import { useDeviceVariants, DeviceVariant } from "@/hooks/useDeviceVariants";
 
 // Componente DetailsProduct integrado
 function DetailsProductSection({ productId }: { productId: string }) {
@@ -49,7 +49,6 @@ function DetailsProductSection({ productId }: { productId: string }) {
     selectedDevice,
     selectedStorage,
     selectedColor,
-    selectedVariant,
     loading: variantsLoading,
     error: variantsError,
     setSelectedDevice,
@@ -64,19 +63,13 @@ function DetailsProductSection({ productId }: { productId: string }) {
   const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
 
   // Función para obtener el precio a mostrar
-  const getDisplayPrice = (variant: any) => {
+  const getDisplayPrice = (variant: DeviceVariant | null) => {
     if (!variant) return "Precio no disponible";
     const price = variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
     return formatPrice(price);
   };
 
-  // Función para obtener el precio mensual estimado (dividido entre 36 meses)
-  const getMonthlyPrice = (variant: any) => {
-    if (!variant) return "Precio no disponible";
-    const price = variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
-    const monthlyPrice = Math.round(price / 36);
-    return `Desde ${formatPrice(monthlyPrice)} al mes o`;
-  };
+
 
   // Función para verificar si la combinación actual tiene stock
   const hasStock = () => {

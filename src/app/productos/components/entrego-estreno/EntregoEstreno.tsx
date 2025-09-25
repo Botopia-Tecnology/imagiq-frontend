@@ -24,7 +24,7 @@ export interface Product {
 /**
  * Simulación de función para agregar al carrito (reemplaza por tu contexto real)
  */
-const addToCart = async (product: Product) => {
+const addToCart = async () => {
   // Simula delay y éxito
   return new Promise((resolve) => setTimeout(resolve, 800));
 };
@@ -500,7 +500,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
             }}
             onClick={async () => {
               setLoading(true);
-              await addToCart(product);
+              await addToCart();
               router.push("/carrito");
             }}
             disabled={loading}
@@ -536,7 +536,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
             }}
             onClick={async () => {
               setLoading(true);
-              await addToCart(product);
+              await addToCart();
               router.push("/carrito");
             }}
             disabled={loading}

@@ -1,13 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import Image, { StaticImageData } from "next/image";
-import samsungImage from "@/img/electrodomesticos/especificaciones_nevera.png";
 import eye from "@/img/electrodomesticos/eye.png";
 import battery_full_fill from "@/img/electrodomesticos/battery_full_fill.png";
 import group from "@/img/electrodomesticos/group.png";
 
 
 /**
- * 📱 CaracteristicasProduct - IMAGIQ ECOMMERCE
+ * :iphone: CaracteristicasProduct - IMAGIQ ECOMMERCE
  *
  * Componente premium de especificaciones para electrodomesticos.
  * - Grid 3x2, tarjetas con iconos reales
@@ -33,10 +32,7 @@ const especificacionesData = [
   },
 ];
 
-const deviceImages: (StaticImageData | string)[] = [
-  samsungImage,
-  // Puedes agregar más imágenes aquí si lo deseas
-];
+
 
 /**
  * Componente principal de especificaciones
@@ -45,20 +41,20 @@ const deviceImages: (StaticImageData | string)[] = [
  */
 const CaracteristicasProduct = ({
   specs,
-  productImage = samsungImage,
+  
 }: {
   specs?: { label: string; value: string; icon?: StaticImageData }[];
-  productImage?: StaticImageData | string;
+
 }) => {
-  const images = deviceImages.length > 0 ? deviceImages : [productImage];
+  //const images = deviceImages.length > 0 ? deviceImages : [productImage];
   // Mezclar datos del padre con los originales, priorizando los del padre
   const mergedSpecs = especificacionesData.map((defaultSpec) => {
-    const custom = specs?.find((s) => s.label === defaultSpec.label);
-    return {
-      label: defaultSpec.label,
-      icon: defaultSpec.icon,
-    };
-  });
+  const custom = specs?.find((s) => s.label === defaultSpec.label);
+  return {
+    ...defaultSpec,
+    ...custom,
+  };
+});
 
   return (
     <section

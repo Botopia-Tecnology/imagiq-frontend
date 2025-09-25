@@ -24,7 +24,7 @@ export default function ExploreProducts({
 }: ExploreProductsProps) {
   //{descriptionKeyword: "Bespoke",}
   const lastFiltersRef = useRef<string>("");
-  const apiFilters = useMemo(() => filters, []);
+  const apiFilters = useMemo(() => filters, [filters]);
 
   const initialFilters = useMemo(() => {
     const filters = {
@@ -57,7 +57,7 @@ export default function ExploreProducts({
       lastFiltersRef.current = filtersKey;
       filterProducts(filtersWithPagination);
     }
-  }, [apiFilters, filterProducts, limit]);
+  }, [apiFilters, filterProducts, limit, filters]);
 
   if (loading) {
     return (

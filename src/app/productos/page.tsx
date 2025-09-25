@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
   FilterConfig,

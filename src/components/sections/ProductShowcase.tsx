@@ -54,7 +54,7 @@ export default function ProductShowcase() {
         className="flex flex-col md:flex-row gap-6 md:gap-8 w-full mx-auto px-2 md:px-0"
         style={{ maxWidth: "1800px" }}
       >
-        {products.map((product, idx) => (
+        {products.map((product) => (
           <div
             key={product.title || "watch"}
             className="relative w-full mx-auto aspect-[4/3] h-auto rounded-2xl shadow-lg p-3 mb-6 md:mb-0 md:aspect-auto md:h-[340px] md:min-h-[340px] md:rounded-3xl md:shadow-xl md:p-0 md:flex-1 flex flex-col justify-between md:mr-10"

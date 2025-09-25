@@ -9,10 +9,8 @@
 "use client";
 
 import { useState } from "react";
-import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
-import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
@@ -43,10 +41,7 @@ export default function CardExplore({
 }: ExploreProductProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Integración con el contexto del carrito
-  const { addProduct } = useCartContext();
 
   const handleMoreInfo = () => {
     console.log(`🔗 Navegando a producto con ID: ${id}`);

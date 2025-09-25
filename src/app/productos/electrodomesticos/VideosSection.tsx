@@ -37,7 +37,7 @@ const videosData: VideoData[] = [
 /**
  * Componente de video individual con controles personalizados
  */
-const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
+const VideoPlayer = ({ video }: { video: VideoData; index: number }) => {
   const [isPlaying, setIsPlaying] = useState(true); // Inicia reproduciendo automáticamente
   const videoRef = useRef<HTMLVideoElement>(null);
 

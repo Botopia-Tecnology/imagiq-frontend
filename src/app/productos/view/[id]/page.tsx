@@ -195,9 +195,62 @@ function DetailsProductSection() {
           className="hidden lg:block"
         >
           <div className="max-w-7xl mx-auto px-6 py-16">
-            <div className="grid grid-cols-2 gap-16 items-start">
-              {/* Columna Izquierda - Dispositivo */}
-              <div className="flex flex-col items-center space-y-8">
+            <div className="grid grid-cols-12 gap-8 items-start">
+              {/* Columna Izquierda - Beneficios Imagiq */}
+              <div className="col-span-2 flex flex-col space-y-6">
+                <h2
+                  className="text-lg font-bold text-gray-900 mb-4"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Beneficios Imagiq
+                </h2>
+                <div className="flex flex-col space-y-6">
+                  {benefits.map((benefit, index) => (
+                    <div
+                      key={index}
+                      className="flex flex-col items-center text-center"
+                    >
+                      <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
+                        style={{ backgroundColor: "#002142" }}
+                      >
+                        {benefit.icon === addiIcon ? (
+                          <Image
+                            src={benefit.icon}
+                            alt={benefit.title}
+                            width={24}
+                            height={24}
+                            className="object-contain"
+                          />
+                        ) : (
+                          <Image
+                            src={benefit.icon}
+                            alt={benefit.title}
+                            width={24}
+                            height={24}
+                            className="object-contain filter brightness-0 invert"
+                          />
+                        )}
+                      </div>
+                      <h3
+                        className="font-semibold text-gray-900 text-xs leading-tight"
+                        style={{ fontFamily: "SamsungSharpSans" }}
+                      >
+                        {benefit.title}
+                      </h3>
+                      <p
+                        className="text-gray-600 text-xs leading-tight"
+                        style={{ fontFamily: "SamsungSharpSans" }}
+                      >
+                        {benefit.subtitle}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Columna Centro - Dispositivo */}
+              <div className="col-span-5 flex flex-col items-center space-y-8">
                 {/* Carrusel de dispositivos */}
                 <div className="relative bg-gray-100 rounded-2xl p-8 w-full max-w-2xl">
                   {/* Flechas de navegación */}
@@ -249,7 +302,7 @@ function DetailsProductSection() {
               </div>
 
               {/* Columna Derecha - Especificaciones */}
-              <div className="flex flex-col gap-8">
+              <div className="col-span-5 flex flex-col gap-8">
                 {/* Sección: Dispositivo */}
                 <div>
                   <h3
@@ -643,11 +696,11 @@ function DetailsProductSection() {
           </div>
         </motion.div>
 
-        {/* Sección Beneficios Imagiq */}
+        {/* Sección Beneficios Imagiq para Mobile */}
         <motion.div
           ref={beneficiosReveal.ref}
           {...beneficiosReveal.motionProps}
-          className="bg-gray-100 py-12"
+          className="bg-gray-100 py-12 lg:hidden"
         >
           <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-8">
@@ -659,7 +712,7 @@ function DetailsProductSection() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 gap-6">
               {benefits.map((benefit, index) => (
                 <div
                   key={index}

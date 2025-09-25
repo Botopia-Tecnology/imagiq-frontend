@@ -27,6 +27,7 @@ import { productsMock } from "../components/productsMock";
 import ComparationProduct from "./ComparationProduct";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import VideosSection from "./VideosSection";
+import { Link } from "lucide-react";
 
 // Tipos para producto
 interface ProductColor {
@@ -382,40 +383,44 @@ export default function ViewProduct({
           {/* DESKTOP/TABLET: diseño original */}
           <div className="hidden md:flex w-full items-center justify-between">
             {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-              <Image
-                src="/frame_311_black.png"
-                alt="Frame"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
-              {/* Logo Samsung clickable */}
-              <button
-                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
-                title="Ir al inicio"
-                aria-label="Ir al inicio"
-                onClick={() => (window.location.href = "/")}
-              >
+            <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
+       
+                <Image
+                  src="/frame_black.png"
+                  alt="Q Logo"
+                  height={40}
+                  style={{ display: "block", marginBottom: "5px" }}
+                  width={40}
+                  className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+                  priority
+                />
                 <Image
                   src={samsungLogo}
                   alt="Samsung Logo"
-                  width={110}
-                  height={32}
-                  style={{ objectFit: "contain" }}
+                  onClick={() => {
+                  window.location.href = "/";
+                }}
+                  height={80}
+                  width={70}
+                  className="h-10 min-w-[100px] md:h-12 md:min-w-[150px] cursor-pointer"
                   priority
+                  style={{ display: "block" }}
                 />
-              </button>
-              {/* Imagen store_black */}
-              <Image
-                src="/store_black.png"
-                alt="Store"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
+
+                <span
+                  className={
+                    "text-xs font-bold tracking-wide text-black select-none"
+                  }
+                  style={{
+                    letterSpacing: "0.08em",
+                    marginBottom: "10px", // Ajusta este valor según sea necesario
+                    lineHeight: "normal", // O ajusta el line-height según lo necesites
+                    alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
+                  }}
+                >
+                  Store
+                </span>
+            
             </div>
             {/* Nombre centrado */}
             <div className="flex-1 flex justify-center">

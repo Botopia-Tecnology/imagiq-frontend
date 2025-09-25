@@ -34,59 +34,49 @@ import deviceImage from "@/img/dispositivosmoviles/cel1.png";
 import entregoEstrenoLogo from "@/img/entrego-estreno/entrego-estreno-logo.png";
 import gifEntregoEstreno from "@/img/gif/gif-entrego-estreno.gif";
 
+// Importar hook de variantes de dispositivos
+import { useDeviceVariants } from "@/hooks/useDeviceVariants";
+
 // Componente DetailsProduct integrado
-function DetailsProductSection() {
+function DetailsProductSection({ productId }: { productId: string }) {
   const router = useRouter();
 
-  // Estados para las selecciones del usuario
-  const [selectedDevice, setSelectedDevice] = useState("Galaxy S25");
-  const [selectedStorage, setSelectedStorage] = useState("256 GB");
-  const [selectedColor, setSelectedColor] = useState("Azul Naval");
+  // Importar el hook de variantes de dispositivos
+  const {
+    deviceOptions,
+    storageOptions,
+    colorOptions,
+    selectedDevice,
+    selectedStorage,
+    selectedColor,
+    selectedVariant,
+    loading: variantsLoading,
+    error: variantsError,
+    setSelectedDevice,
+    setSelectedStorage,
+    setSelectedColor,
+  } = useDeviceVariants(productId);
 
   // Estado para el hover del botón flotante Entrego y Estreno
   const [isFloatingHovered, setIsFloatingHovered] = useState(false);
 
-  // Datos de dispositivos disponibles
-  const devices = [
-    {
-      name: "Galaxy S25",
-      monthlyPrice: "Desde $ 128.329 al mes o",
-      totalPrice: "$ 4.299.900",
-      id: "galaxy-s25",
-    },
-    {
-      name: "Galaxy S25+",
-      monthlyPrice: "Desde $ 158.329 al mes o",
-      totalPrice: "$ 4.999.900",
-      id: "galaxy-s25-plus",
-    },
-    {
-      name: "Galaxy S25 Ultra",
-      monthlyPrice: "Desde $ 189.329 al mes o",
-      totalPrice: "$ 5.999.900",
-      id: "galaxy-s25-ultra",
-    },
-  ];
+  // Función para formatear precios
+  const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
 
-  // Datos de almacenamiento disponible
-  const storageOptions = [
-    {
-      size: "256 GB",
-      price: "Desde $ 189.329 al mes o $ 4.299.900",
-    },
-    {
-      size: "512 GB",
-      price: "Desde $ 211.329 al mes o $ 4.999.900",
-    },
-  ];
+  // Función para obtener el precio a mostrar
+  const getDisplayPrice = (variant: any) => {
+    if (!variant) return "Precio no disponible";
+    const price = variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
+    return formatPrice(price);
+  };
 
-  // Colores disponibles
-  const colorOptions = [
-    { name: "Azul Naval", color: "bg-blue-900", hex: "#1e3a8a" },
-    { name: "Azul Hielo", color: "bg-blue-200", hex: "#bfdbfe" },
-    { name: "Plateado", color: "bg-gray-400", hex: "#9ca3af" },
-    { name: "Menta", color: "bg-green-300", hex: "#86efac" },
-  ];
+  // Función para obtener el precio mensual estimado (dividido entre 36 meses)
+  const getMonthlyPrice = (variant: any) => {
+    if (!variant) return "Precio no disponible";
+    const price = variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
+    const monthlyPrice = Math.round(price / 36);
+    return `Desde ${formatPrice(monthlyPrice)} al mes o`;
+  };
 
   // Beneficios de Imagiq
   const benefits = [
@@ -320,57 +310,71 @@ function DetailsProductSection() {
                   >
                     Selecciona tu dispositivo
                   </p>
-                  <div className="flex flex-col gap-3">
-                    {devices.map((device) => (
-                      <button
-                        key={device.id}
-                        className={`flex items-center justify-between w-full rounded-xl border px-5 py-4 transition-colors shadow-sm focus:outline-none ${
-                          selectedDevice === device.name
-                            ? "border-[#17407A] bg-[#F2F6FA]"
-                            : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
-                        }`}
-                        onClick={() => setSelectedDevice(device.name)}
-                        type="button"
-                      >
-                        <div className="flex items-center gap-4">
-                          <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                              selectedDevice === device.name
-                                ? "border-[#17407A] bg-[#17407A]"
-                                : "border-[#BFD7F2] bg-white"
+                  {variantsLoading ? (
+                    <div className="flex justify-center items-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#17407A]"></div>
+                    </div>
+                  ) : variantsError ? (
+                    <div className="text-center text-red-600 py-4">
+                      Error al cargar dispositivos: {variantsError}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-3">
+                      {deviceOptions.map((deviceOption) => {
+                        // Obtener la primera variante para mostrar información base
+                        const baseVariant = deviceOption.variants[0];
+                        return (
+                          <button
+                            key={deviceOption.nombreMarket}
+                            className={`flex items-center justify-between w-full rounded-xl border px-5 py-4 transition-colors shadow-sm focus:outline-none ${
+                              selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                                ? "border-[#17407A] bg-[#F2F6FA]"
+                                : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
                             }`}
+                            onClick={() => setSelectedDevice(deviceOption)}
+                            type="button"
                           >
-                            {selectedDevice === device.name && (
-                              <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
-                            )}
-                          </span>
-                          <div className="flex flex-col items-start">
-                            <span
-                              className="text-[16px] font-semibold text-[#002142]"
-                              style={{ fontFamily: "SamsungSharpSans" }}
-                            >
-                              {device.name}
-                            </span>
-                            <span
-                              className="text-[17px] font-bold text-[#002142]"
-                              style={{ fontFamily: "SamsungSharpSans" }}
-                            >
-                              {device.totalPrice}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center py-1">
-                          <Image
-                            src={deviceImage}
-                            alt={device.name}
-                            width={56}
-                            height={80}
-                            className="object-contain"
-                          />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                            <div className="flex items-center gap-4">
+                              <span
+                                className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                                  selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                                    ? "border-[#17407A] bg-[#17407A]"
+                                    : "border-[#BFD7F2] bg-white"
+                                }`}
+                              >
+                                {selectedDevice?.nombreMarket === deviceOption.nombreMarket && (
+                                  <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
+                                )}
+                              </span>
+                              <div className="flex flex-col items-start">
+                                <span
+                                  className="text-[16px] font-semibold text-[#002142]"
+                                  style={{ fontFamily: "SamsungSharpSans" }}
+                                >
+                                  {deviceOption.nombreMarket}
+                                </span>
+                                <span
+                                  className="text-[17px] font-bold text-[#002142]"
+                                  style={{ fontFamily: "SamsungSharpSans" }}
+                                >
+                                  {getDisplayPrice(baseVariant)}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center py-1">
+                              <Image
+                                src={deviceImage}
+                                alt={deviceOption.nombreMarket}
+                                width={56}
+                                height={80}
+                                className="object-contain"
+                              />
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                   <div className="mt-2 flex items-center justify-end">
                     <span className="text-xs text-gray-400 mr-2">
                       ¿Necesitas ayuda escogiendo tu modelo?
@@ -401,44 +405,48 @@ function DetailsProductSection() {
                     Selecciona el espacio que necesitas
                   </p>
                   <div className="flex flex-col gap-3">
-                    {storageOptions.map((storage) => (
-                      <button
-                        key={storage.size}
-                        className={`flex items-center justify-between w-full rounded-xl border px-5 py-4 transition-colors shadow-sm focus:outline-none ${
-                          selectedStorage === storage.size
-                            ? "border-[#17407A] bg-[#F2F6FA]"
-                            : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
-                        }`}
-                        onClick={() => setSelectedStorage(storage.size)}
-                        type="button"
-                      >
-                        <div className="flex items-center gap-4">
+                    {storageOptions.map((storageOption) => {
+                      // Obtener la primera variante para mostrar precio
+                      const baseVariant = storageOption.variants[0];
+                      return (
+                        <button
+                          key={storageOption.capacidad}
+                          className={`flex items-center justify-between w-full rounded-xl border px-5 py-4 transition-colors shadow-sm focus:outline-none ${
+                            selectedStorage?.capacidad === storageOption.capacidad
+                              ? "border-[#17407A] bg-[#F2F6FA]"
+                              : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
+                          }`}
+                          onClick={() => setSelectedStorage(storageOption)}
+                          type="button"
+                        >
+                          <div className="flex items-center gap-4">
+                            <span
+                              className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                                selectedStorage?.capacidad === storageOption.capacidad
+                                  ? "border-[#17407A] bg-[#17407A]"
+                                  : "border-[#BFD7F2] bg-white"
+                              }`}
+                            >
+                              {selectedStorage?.capacidad === storageOption.capacidad && (
+                                <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
+                              )}
+                            </span>
+                            <span
+                              className="text-[16px] font-semibold text-[#002142]"
+                              style={{ fontFamily: "SamsungSharpSans" }}
+                            >
+                              {storageOption.capacidad}
+                            </span>
+                          </div>
                           <span
-                            className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                              selectedStorage === storage.size
-                                ? "border-[#17407A] bg-[#17407A]"
-                                : "border-[#BFD7F2] bg-white"
-                            }`}
-                          >
-                            {selectedStorage === storage.size && (
-                              <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
-                            )}
-                          </span>
-                          <span
-                            className="text-[16px] font-semibold text-[#002142]"
+                            className="text-[17px] font-bold text-[#002142]"
                             style={{ fontFamily: "SamsungSharpSans" }}
                           >
-                            {storage.size}
+                            {getDisplayPrice(baseVariant)}
                           </span>
-                        </div>
-                        <span
-                          className="text-[17px] font-bold text-[#002142]"
-                          style={{ fontFamily: "SamsungSharpSans" }}
-                        >
-                          {storage.price}
-                        </span>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
                 {/* Sección: Color */}
@@ -461,17 +469,18 @@ function DetailsProductSection() {
                   <div className="flex gap-6">
                     {colorOptions.map((colorOption) => (
                       <button
-                        key={colorOption.name}
+                        key={colorOption.color}
                         className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                          selectedColor === colorOption.name
+                          selectedColor?.color === colorOption.color
                             ? "border-[#17407A] scale-110"
                             : "border-[#BFD7F2]"
-                        } ${colorOption.color}`}
-                        onClick={() => setSelectedColor(colorOption.name)}
-                        aria-label={colorOption.name}
-                        title={colorOption.name}
+                        }`}
+                        style={{ backgroundColor: colorOption.hex }}
+                        onClick={() => setSelectedColor(colorOption)}
+                        aria-label={colorOption.color}
+                        title={colorOption.color}
                       >
-                        <span className="sr-only">{colorOption.name}</span>
+                        <span className="sr-only">{colorOption.color}</span>
                       </button>
                     ))}
                   </div>
@@ -537,55 +546,59 @@ function DetailsProductSection() {
                   Selecciona tu dispositivo
                 </p>
                 <div className="flex flex-col gap-3">
-                  {devices.map((device) => (
-                    <button
-                      key={device.id}
-                      className={`flex items-center justify-between w-full rounded-xl border px-4 py-4 transition-colors shadow-sm focus:outline-none ${
-                        selectedDevice === device.name
-                          ? "border-[#17407A] bg-[#F2F6FA]"
-                          : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
-                      }`}
-                      onClick={() => setSelectedDevice(device.name)}
-                      type="button"
-                    >
-                      <div className="flex items-center gap-4">
-                        <span
-                          className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                            selectedDevice === device.name
-                              ? "border-[#17407A] bg-[#17407A]"
-                              : "border-[#BFD7F2] bg-white"
-                          }`}
-                        >
-                          {selectedDevice === device.name && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
-                          )}
-                        </span>
-                        <div className="flex flex-col items-start">
+                  {deviceOptions.map((deviceOption) => {
+                    // Obtener la primera variante para mostrar información base
+                    const baseVariant = deviceOption.variants[0];
+                    return (
+                      <button
+                        key={deviceOption.nombreMarket}
+                        className={`flex items-center justify-between w-full rounded-xl border px-4 py-4 transition-colors shadow-sm focus:outline-none ${
+                          selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                            ? "border-[#17407A] bg-[#F2F6FA]"
+                            : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
+                        }`}
+                        onClick={() => setSelectedDevice(deviceOption)}
+                        type="button"
+                      >
+                        <div className="flex items-center gap-4">
                           <span
-                            className="text-[16px] font-semibold text-[#002142]"
-                            style={{ fontFamily: "SamsungSharpSans" }}
+                            className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                              selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                                ? "border-[#17407A] bg-[#17407A]"
+                                : "border-[#BFD7F2] bg-white"
+                            }`}
                           >
-                            {device.name}
+                            {selectedDevice?.nombreMarket === deviceOption.nombreMarket && (
+                              <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
+                            )}
                           </span>
-                          <span
-                            className="text-[17px] font-bold text-[#002142]"
-                            style={{ fontFamily: "SamsungSharpSans" }}
-                          >
-                            {device.totalPrice}
-                          </span>
+                          <div className="flex flex-col items-start">
+                            <span
+                              className="text-[16px] font-semibold text-[#002142]"
+                              style={{ fontFamily: "SamsungSharpSans" }}
+                            >
+                              {deviceOption.nombreMarket}
+                            </span>
+                            <span
+                              className="text-[17px] font-bold text-[#002142]"
+                              style={{ fontFamily: "SamsungSharpSans" }}
+                            >
+                              {getDisplayPrice(baseVariant)}
+                            </span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center py-1">
-                        <Image
-                          src={deviceImage}
-                          alt={device.name}
-                          width={56}
-                          height={80}
-                          className="object-contain"
-                        />
-                      </div>
-                    </button>
-                  ))}
+                        <div className="flex items-center py-1">
+                          <Image
+                            src={deviceImage}
+                            alt={deviceOption.nombreMarket}
+                            width={56}
+                            height={80}
+                            className="object-contain"
+                          />
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
                 <div className="mt-2 flex items-center justify-end">
                   <span className="text-xs text-gray-400 mr-2">
@@ -617,44 +630,48 @@ function DetailsProductSection() {
                   Selecciona el espacio que necesitas
                 </p>
                 <div className="flex flex-col gap-3">
-                  {storageOptions.map((storage) => (
-                    <button
-                      key={storage.size}
-                      className={`flex items-center justify-between w-full rounded-xl border px-4 py-4 transition-colors shadow-sm focus:outline-none ${
-                        selectedStorage === storage.size
-                          ? "border-[#17407A] bg-[#F2F6FA]"
-                          : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
-                      }`}
-                      onClick={() => setSelectedStorage(storage.size)}
-                      type="button"
-                    >
-                      <div className="flex items-center gap-4">
+                  {storageOptions.map((storageOption) => {
+                    // Obtener la primera variante para mostrar precio
+                    const baseVariant = storageOption.variants[0];
+                    return (
+                      <button
+                        key={storageOption.capacidad}
+                        className={`flex items-center justify-between w-full rounded-xl border px-4 py-4 transition-colors shadow-sm focus:outline-none ${
+                          selectedStorage?.capacidad === storageOption.capacidad
+                            ? "border-[#17407A] bg-[#F2F6FA]"
+                            : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
+                        }`}
+                        onClick={() => setSelectedStorage(storageOption)}
+                        type="button"
+                      >
+                        <div className="flex items-center gap-4">
+                          <span
+                            className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
+                              selectedStorage?.capacidad === storageOption.capacidad
+                                ? "border-[#17407A] bg-[#17407A]"
+                                : "border-[#BFD7F2] bg-white"
+                            }`}
+                          >
+                            {selectedStorage?.capacidad === storageOption.capacidad && (
+                              <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
+                            )}
+                          </span>
+                          <span
+                            className="text-[16px] font-semibold text-[#002142]"
+                            style={{ fontFamily: "SamsungSharpSans" }}
+                          >
+                            {storageOption.capacidad}
+                          </span>
+                        </div>
                         <span
-                          className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                            selectedStorage === storage.size
-                              ? "border-[#17407A] bg-[#17407A]"
-                              : "border-[#BFD7F2] bg-white"
-                          }`}
-                        >
-                          {selectedStorage === storage.size && (
-                            <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
-                          )}
-                        </span>
-                        <span
-                          className="text-[16px] font-semibold text-[#002142]"
+                          className="text-[17px] font-bold text-[#002142]"
                           style={{ fontFamily: "SamsungSharpSans" }}
                         >
-                          {storage.size}
+                          {getDisplayPrice(baseVariant)}
                         </span>
-                      </div>
-                      <span
-                        className="text-[17px] font-bold text-[#002142]"
-                        style={{ fontFamily: "SamsungSharpSans" }}
-                      >
-                        {storage.price}
-                      </span>
-                    </button>
-                  ))}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
               {/* Color */}
@@ -677,17 +694,18 @@ function DetailsProductSection() {
                 <div className="flex gap-6">
                   {colorOptions.map((colorOption) => (
                     <button
-                      key={colorOption.name}
+                      key={colorOption.color}
                       className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
-                        selectedColor === colorOption.name
+                        selectedColor?.color === colorOption.color
                           ? "border-[#17407A] scale-110"
                           : "border-[#BFD7F2]"
                       }`}
-                      onClick={() => setSelectedColor(colorOption.name)}
-                      aria-label={colorOption.name}
-                      title={colorOption.name}
+                      style={{ backgroundColor: colorOption.hex }}
+                      onClick={() => setSelectedColor(colorOption)}
+                      aria-label={colorOption.color}
+                      title={colorOption.color}
                     >
-                      <span className="sr-only">{colorOption.name}</span>
+                      <span className="sr-only">{colorOption.color}</span>
                     </button>
                   ))}
                 </div>
@@ -874,7 +892,7 @@ export default function ProductViewPage({ params }) {
     <>
       <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
       {/* Mostrar primero el DetailsProduct hasta beneficios imagiq */}
-      <DetailsProductSection />
+      <DetailsProductSection productId={id} />
       {/* Luego mostrar el ViewProduct original */}
       {isRefrigerador ? (
         <ViewProductAppliance product={convertedProduct} />

@@ -25,7 +25,8 @@ import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import HeaderSection from "./components/HeaderSection";
 import CategoryProductsGrid from "./components/ProductsGrid";
-import { watchCategories, watchFilters } from "./constants/watchesConstants";
+import { deviceCategories } from "./constants/sharedCategories";
+import { watchFilters } from "./constants/watchesConstants";
 import { getApiFilters } from "./utils/watchesUtils";
 
 
@@ -176,7 +177,7 @@ export default function RelojesSection() {
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
-        categories={watchCategories}
+        categories={deviceCategories}
         trackingPrefix="watch_category"
       />
 

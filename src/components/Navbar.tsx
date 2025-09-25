@@ -97,62 +97,59 @@ export default function Navbar() {
         aria-label="Navegación principal"
       >
         {/* Logo principal */}
-       <div className="flex items-center justify-between h-16 px-8 max-w-full">
-  <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
-
-  <Link
-    href="/"
-    onClick={(e) => {
-      e.preventDefault();
-      posthogUtils.capture("logo_click", { source: "navbar" });
-      navbar.router.push("/");
-    }}
-    aria-label="Inicio"
-    className="flex items-end gap-2 cursor-pointer"
-    style={{ padding: 0 }}
-  >
-    <Image
-      src={
-        navbar.showWhiteLogo
-          ? "/frame_white.png"
-          : "/frame_black.png"
-      }
-      alt="Q Logo"
-      height={40} 
-      style={{ display: 'block' , marginBottom: '5px',}}
-      width={40}
-      className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
-      priority
-    />
-    <Image
-      src={navbar.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
-      alt="Samsung Logo"
-     height={80}  
-      width={70}  
-      className="h-10 min-w-[100px] md:h-12 md:min-w-[150px]"
-      priority
-      style={{ display: 'block' }}
-    />
-    <span
-      className={
-        navbar.showWhiteLogo
-          ? "text-xs font-bold tracking-wide text-white select-none"
-          : "text-xs font-bold tracking-wide text-black select-none"
-      }
-      style={{
-        letterSpacing: "0.08em",
-        marginBottom: '10px', // Ajusta este valor según sea necesario
-         lineHeight: 'normal', // O ajusta el line-height según lo necesites
-    alignSelf: 'flex-end', // Esto alinea el texto con el fondo de las imágenes
-      }}
-    >
-      Store
-    </span>
-  </Link>
-</div>
+        <div className="flex items-center justify-between h-16 px-8 max-w-full">
+          <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
+            <Link
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                posthogUtils.capture("logo_click", { source: "navbar" });
+                navbar.router.push("/");
+              }}
+              aria-label="Inicio"
+              className="flex items-end gap-2 cursor-pointer"
+              style={{ padding: 0 }}
+            >
+              <Image
+                src={
+                  navbar.showWhiteLogo ? "/frame_white.png" : "/frame_black.png"
+                }
+                alt="Q Logo"
+                height={40}
+                style={{ display: "block", marginBottom: "5px" }}
+                width={40}
+                className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+                priority
+              />
+              <Image
+                src={navbar.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
+                alt="Samsung Logo"
+                height={80}
+                width={70}
+                className="h-10 min-w-[100px] md:h-12 md:min-w-[150px]"
+                priority
+                style={{ display: "block" }}
+              />
+              <span
+                className={
+                  navbar.showWhiteLogo
+                    ? "text-xs font-bold tracking-wide text-white select-none"
+                    : "text-xs font-bold tracking-wide text-black select-none"
+                }
+                style={{
+                  letterSpacing: "0.08em",
+                  marginBottom: "10px", // Ajusta este valor según sea necesario
+                  lineHeight: "normal", // O ajusta el line-height según lo necesites
+                  alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
+                }}
+              >
+                Store
+              </span>
+            </Link>
+          </div>
 
           {/* Iconos desktop */}
-          <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
+          <div className="hidden lg:flex items-center space-x-8 flex-shrink-0">
             {/* Buscador */}
             <form
               onSubmit={navbar.handleSearchSubmit}
@@ -190,7 +187,9 @@ export default function Navbar() {
               type="button"
               className={cn(
                 "flex items-center justify-center w-10 h-10 text-black",
-                navbar.isDispositivosMoviles || navbar.isElectrodomesticos || navbar.isMasInformacionProducto
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
                   ? "text-black"
                   : navbar.showWhiteItems
                   ? "text-white"
@@ -219,7 +218,9 @@ export default function Navbar() {
               href="/carrito"
               className={cn(
                 "flex items-center justify-center w-10 h-10 relative text-black",
-                navbar.isDispositivosMoviles || navbar.isElectrodomesticos || navbar.isMasInformacionProducto
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
                   ? "text-black"
                   : navbar.showWhiteItems
                   ? "text-white"
@@ -255,7 +256,9 @@ export default function Navbar() {
               type="button"
               className={cn(
                 "flex items-center justify-center w-10 h-10",
-                navbar.isDispositivosMoviles || navbar.isElectrodomesticos || navbar.isMasInformacionProducto
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
                   ? "text-black"
                   : navbar.showWhiteItems
                   ? "text-white"
@@ -277,8 +280,179 @@ export default function Navbar() {
               />
             </button>
           </div>
+          {/*Iconos tablet */}
+          <div className="hidden md:flex lg:hidden items-center space-x-4">
+             <button
+              className={cn(
+                "flex items-center justify-center w-10 h-10 text-2xl font-bold",
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+              )}
+              title={
+                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
+              }
+              aria-label={
+                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
+              }
+              onClick={() => {
+                if (navbar.searchQuery === "focus") navbar.setSearchQuery("");
+                else {
+                  navbar.setSearchQuery("focus");
+                  posthogUtils.capture("search_icon_click", {
+                    source: "navbar_tablet",
+                  });
+                }
+              }}
+            >
+              {navbar.searchQuery === "focus" ? (
+                <span className="text-2xl">&#10005;</span>
+              ) : (
+                <Image
+                  src={
+                    navbar.showWhiteItemsMobile
+                      ? searchIconWhite
+                      : searchIconBlack
+                  }
+                  alt="Buscar"
+                  width={26}
+                  height={26}
+                  priority
+                />
+              )}
+            </button>
+            {/* Icono login */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center justify-center w-10 h-10 text-black",
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
+                  ? "text-black"
+                  : navbar.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
+              aria-label={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
+              onClick={() => {
+                posthogUtils.capture("user_icon_click", {
+                  user_authenticated: navbar.isAuthenticated,
+                  destination: "login",
+                });
+                window.location.replace("/login");
+              }}
+            >
+              <Image
+                src={navbar.showWhiteItems ? userIconWhite : userIconBlack}
+                alt="Usuario"
+                width={28}
+                height={28}
+                priority
+              />
+            </button>
+            {/* Icono carrito */}
+            <Link
+              href="/carrito"
+              className={cn(
+                "flex items-center justify-center w-10 h-10 relative text-black",
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
+                  ? "text-black"
+                  : navbar.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title="Carrito de compras"
+              onClick={navbar.handleCartClick}
+            >
+              <Image
+                src={
+                  navbar.showWhiteItems ? carritoIconWhite : carritoIconBlack
+                }
+                alt="Carrito"
+                width={34}
+                height={34}
+                priority
+              />
+              {navbar.isClient && navbar.cartCount > 0 && (
+                <span
+                  className={cn(
+                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-transform duration-150 ease-out",
+                    navbar.bump ? "scale-110" : "scale-100"
+                  )}
+                  aria-label={`Carrito: ${navbar.cartCount} productos`}
+                  aria-live="polite"
+                >
+                  {navbar.cartCount > 99 ? "99+" : navbar.cartCount}
+                </span>
+              )}
+            </Link>
+            {/* Icono favoritos */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center justify-center w-10 h-10",
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
+                  ? "text-black"
+                  : navbar.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title="Favoritos"
+              aria-label="Favoritos"
+              style={{ position: "relative" }}
+              onClick={() => navbar.router.push("/product-favoritos")}
+            >
+              <Image
+                src={
+                  navbar.showWhiteItems ? favoritoIconWhite : favoritoIconBlack
+                }
+                alt="Favoritos"
+                width={20}
+                height={21}
+                priority
+              />
+            </button>
+                        {navbar.searchQuery === "focus" && (
+              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
+                <form
+                  onSubmit={navbar.handleSearchSubmit}
+                  className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
+                >
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
+                    placeholder="Buscar..."
+                    autoFocus
+                    value={
+                      navbar.searchQuery !== "focus" ? navbar.searchQuery : ""
+                    }
+                    onChange={(e) => navbar.setSearchQuery(e.target.value)}
+                  />
+                  <button type="submit" className="ml-2">
+                    <Image
+                      src={searchIconWhite}
+                      alt="Buscar"
+                      width={26}
+                      height={26}
+                      priority
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="ml-4 text-white text-2xl font-bold focus:outline-none"
+                    aria-label="Cerrar buscador"
+                    onClick={() => navbar.setSearchQuery("")}
+                  ></button>
+                </form>
+              </div>
+            )}
+          </div>
           {/* Navbar móvil */}
-          <div className="absolute right-0 top-0 flex md:hidden items-center h-16 space-x-4 pr-2 md:static md:w-auto">
+          <div className="flex md:hidden items-center h-16 space-x-4 pr-2">
             {/* Icono buscar */}
             <button
               className={cn(

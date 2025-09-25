@@ -107,13 +107,13 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
           urlRender3D: product.urlRender3D[i],
         };
 
-        // Solo agregar variantes con SKU válido y stock > 0
+        // Solo agregar variantes con SKU válido (stock puede ser 0)
         console.log('🔍 processApiData - variant:', variant);
-        if (variant.sku && variant.stock > 0) {
+        if (variant.sku) {
           variants.push(variant);
           console.log('✅ processApiData - variant added:', variant);
         } else {
-          console.log('❌ processApiData - variant filtered out:', variant, 'sku:', variant.sku, 'stock:', variant.stock);
+          console.log('❌ processApiData - variant filtered out:', variant, 'sku:', variant.sku);
         }
       }
     });

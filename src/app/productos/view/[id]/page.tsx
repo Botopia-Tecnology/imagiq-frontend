@@ -78,6 +78,20 @@ function DetailsProductSection({ productId }: { productId: string }) {
     return `Desde ${formatPrice(monthlyPrice)} al mes o`;
   };
 
+  // Función para verificar si la combinación actual tiene stock
+  const hasStock = () => {
+    if (!selectedDevice || !selectedStorage || !selectedColor) return true;
+    
+    // Buscar la variante que coincida con la selección actual
+    const variant = selectedColor.variants.find(v => 
+      v.nombreMarket === selectedDevice.nombreMarket &&
+      v.capacidad === selectedStorage.capacidad &&
+      v.color.toLowerCase() === selectedColor.color.toLowerCase()
+    );
+    
+    return variant ? variant.stock > 0 : false;
+  };
+
   // Beneficios de Imagiq
   const benefits = [
     {
@@ -484,6 +498,14 @@ function DetailsProductSection({ productId }: { productId: string }) {
                       </button>
                     ))}
                   </div>
+                  {/* Mensaje de stock */}
+                  {selectedDevice && selectedStorage && selectedColor && !hasStock() && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm font-medium text-center">
+                        Sin stock
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -709,6 +731,14 @@ function DetailsProductSection({ productId }: { productId: string }) {
                     </button>
                   ))}
                 </div>
+                {/* Mensaje de stock - Mobile */}
+                {selectedDevice && selectedStorage && selectedColor && !hasStock() && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-red-600 text-sm font-medium text-center">
+                      Sin stock
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

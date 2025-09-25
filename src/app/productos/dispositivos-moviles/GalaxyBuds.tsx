@@ -25,7 +25,8 @@ import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import { cn } from "@/lib/utils";
 import HeaderSection from "./components/HeaderSection";
 import CategoryProductsGrid from "./components/ProductsGrid";
-import { budsCategories, budsFilters } from "./constants/galaxyBudsConstants";
+import { deviceCategories } from "./constants/sharedCategories";
+import { budsFilters } from "./constants/galaxyBudsConstants";
 import { getApiFilters } from "./utils/budsUtils";
 
 
@@ -173,7 +174,7 @@ export default function GalaxyBudsSection() {
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
-        categories={budsCategories}
+        categories={deviceCategories}
         trackingPrefix="buds_category"
       />
 

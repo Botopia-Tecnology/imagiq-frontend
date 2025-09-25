@@ -2,44 +2,11 @@
  * Configuraciones y constantes para la sección Galaxy Buds
  */
 
-import type { Category } from "../../components/CategorySlider";
 import type { FilterConfig } from "../../components/FilterSidebar";
-import smartphonesImg from "../../../../img/categorias/Smartphones.png";
-import tabletasImg from "../../../../img/categorias/Tabletas.png";
-import galaxyBudsImg from "../../../../img/categorias/galaxy_buds.png";
-import galaxyWatchImg from "../../../../img/categorias/galaxy_watch.png";
+import { deviceCategories } from "./sharedCategories";
 
-// Categorías del slider (idénticas a la imagen)
-export const budsCategories: Category[] = [
-  {
-    id: "galaxy-smartphone",
-    name: "Galaxy",
-    subtitle: "Smartphone",
-    image: smartphonesImg,
-    href: "/productos/dispositivos-moviles?section=smartphones",
-  },
-  {
-    id: "galaxy-watch",
-    name: "Galaxy",
-    subtitle: "Watch",
-    image: galaxyWatchImg,
-    href: "/productos/dispositivos-moviles?section=relojes",
-  },
-  {
-    id: "galaxy-tab",
-    name: "Galaxy",
-    subtitle: "Tab",
-    image: tabletasImg,
-    href: "/productos/dispositivos-moviles?section=tabletas",
-  },
-  {
-    id: "galaxy-buds",
-    name: "Galaxy",
-    subtitle: "Buds",
-    image: galaxyBudsImg,
-    href: "#galaxy-buds",
-  },
-];
+// Categorías del slider (importadas desde archivo centralizado)
+export const budsCategories = deviceCategories;
 
 // Configuración de filtros específica para Galaxy Buds
 export const budsFilters: FilterConfig = {

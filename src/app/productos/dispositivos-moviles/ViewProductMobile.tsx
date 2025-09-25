@@ -199,7 +199,7 @@ export default function ViewProduct({
                 }}
                   height={80}
                   width={70}
-                  className="h-10 min-w-[100px] md:h-12 md:min-w-[150px] cursor-pointer"
+                  className="h-10 md:h-12 w-auto cursor-pointer"
                   priority
                   style={{ display: "block" }}
                 />
@@ -210,7 +210,7 @@ export default function ViewProduct({
                   }
                   style={{
                     letterSpacing: "0.08em",
-                    marginBottom: "10px", // Ajusta este valor según sea necesario
+                    marginBottom: "11px", // Ajusta este valor según sea necesario
                     lineHeight: "normal", // O ajusta el line-height según lo necesites
                     alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
                   }}

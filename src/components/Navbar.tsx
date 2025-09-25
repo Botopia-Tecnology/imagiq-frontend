@@ -93,55 +93,60 @@ export default function Navbar() {
         aria-label="Navegación principal"
       >
         {/* Logo principal */}
-        <div className="flex items-center justify-between h-16 px-8 max-w-full">
-          <div className="flex items-center flex-shrink-0 gap-1 md:gap-2">
-            <Link
-              href="/"
-              onClick={(e) => {
-                e.preventDefault();
-                posthogUtils.capture("logo_click", { source: "navbar" });
-                navbar.router.push("/");
-              }}
-              aria-label="Inicio"
-              className="flex items-center gap-0 md:gap-0 cursor-pointer"
-              style={{ padding: 0 }}
-            >
-              <Image
-                src={
-                  navbar.showWhiteLogo
-                    ? "/frame_311_white.png"
-                    : "/frame_311_black.png"
-                }
-                alt="Q Logo"
-                height={22}
-                width={22}
-                className="h-[22px] w-[22px] min-w-[22px] md:h-[24px] md:w-[24px] md:min-w-[24px]"
-                priority
-              />
-              <Image
-                src={navbar.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
-                alt="Samsung Logo"
-                height={28}
-                className="h-7 min-w-[80px] md:h-8 md:min-w-[120px]"
-                priority
-              />
-              <span
-                className={
-                  navbar.showWhiteLogo
-                    ? "ml-2 text-base font-bold tracking-wide text-white select-none"
-                    : "ml-2 text-base font-bold tracking-wide text-black select-none"
-                }
-                style={{
-                  marginLeft: 8,
-                  marginRight: 0,
-                  cursor: "pointer",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                Store
-              </span>
-            </Link>
-          </div>
+       <div className="flex items-center justify-between h-16 px-8 max-w-full">
+  <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
+
+  <Link
+    href="/"
+    onClick={(e) => {
+      e.preventDefault();
+      posthogUtils.capture("logo_click", { source: "navbar" });
+      navbar.router.push("/");
+    }}
+    aria-label="Inicio"
+    className="flex items-end gap-2 cursor-pointer"
+    style={{ padding: 0 }}
+  >
+    <Image
+      src={
+        navbar.showWhiteLogo
+          ? "/frame_white.png"
+          : "/frame_black.png"
+      }
+      alt="Q Logo"
+      height={40} 
+      style={{ display: 'block' , marginBottom: '5px',}}
+      width={40}
+      className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+      priority
+    />
+    <Image
+      src={navbar.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
+      alt="Samsung Logo"
+     height={80}  
+      width={70}  
+      className="h-10 min-w-[100px] md:h-12 md:min-w-[150px]"
+      priority
+      style={{ display: 'block' }}
+    />
+    <span
+      className={
+        navbar.showWhiteLogo
+          ? "text-xs font-bold tracking-wide text-white select-none"
+          : "text-xs font-bold tracking-wide text-black select-none"
+      }
+      style={{
+        letterSpacing: "0.08em",
+        marginBottom: '10px', // Ajusta este valor según sea necesario
+         lineHeight: 'normal', // O ajusta el line-height según lo necesites
+    alignSelf: 'flex-end', // Esto alinea el texto con el fondo de las imágenes
+      }}
+    >
+      Store
+    </span>
+  </Link>
+</div>
+
           {/* Iconos desktop */}
           <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
             {/* Buscador */}

@@ -10,7 +10,7 @@
  * - Tracking de clicks
  */
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 
 import Image, { StaticImageData } from "next/image";
 // Iconos de navegación eliminados: el slider usa scroll horizontal condicionalmente
@@ -54,12 +54,26 @@ export default function CategorySlider({
   const hash = typeof window !== "undefined" ? window.location.hash : "";
 
   // Busca la categoría activa según el parámetro de la URL o el hash
-  const activeCategoryId =
-    categories.find(
-      (cat) =>
-        cat.href.includes(sectionParam || "") ||
-        (cat.href.startsWith("#") && cat.href === hash)
-    )?.id || categories[0].id;
+  const activeCategoryId = useMemo(() => {
+    if (sectionParam) {
+      // Busca por el parámetro de sección específico
+      const foundCategory = categories.find(cat =>
+        cat.href.includes(`section=${sectionParam}`)
+      );
+      if (foundCategory) return foundCategory.id;
+    }
+
+    if (hash) {
+      // Busca por hash
+      const foundCategory = categories.find(cat =>
+        cat.href.startsWith("#") && cat.href === hash
+      );
+      if (foundCategory) return foundCategory.id;
+    }
+
+    // Por defecto, primera categoría
+    return categories[0]?.id || "";
+  }, [sectionParam, hash, categories]);
 
   // Configuración responsive para items por vista
   React.useEffect(() => {
@@ -157,6 +171,52 @@ export default function CategorySlider({
       window.removeEventListener("keydown", onKey);
     };
   }, [categories, itemsPerView, isDesktop, scrollPrev, scrollNext]);
+
+  // Auto-scroll hacia la categoría activa cuando cambie
+  useEffect(() => {
+    const el = sliderRef.current;
+    if (!el || !activeCategoryId) return;
+
+    const scrollToActiveCategory = () => {
+      const activeIndex = categories.findIndex(cat => cat.id === activeCategoryId);
+      if (activeIndex === -1) return;
+
+      // En desktop, calculamos la posición basada en el ancho del contenedor
+      if (isDesktop) {
+        const containerWidth = el.clientWidth;
+        const itemWidth = containerWidth / itemsPerView;
+        const targetScrollLeft = activeIndex * itemWidth;
+
+        // Solo hacer scroll si la categoría activa no está visible
+        const currentScrollLeft = el.scrollLeft;
+        const visibleStart = currentScrollLeft;
+        const visibleEnd = currentScrollLeft + containerWidth;
+        const itemStart = targetScrollLeft;
+        const itemEnd = targetScrollLeft + itemWidth;
+
+        if (itemStart < visibleStart || itemEnd > visibleEnd) {
+          el.scrollTo({
+            left: Math.max(0, targetScrollLeft - itemWidth / 2),
+            behavior: "smooth"
+          });
+        }
+      } else {
+        // En móvil/tablet, scroll hacia el elemento específico
+        const activeElement = el.children[activeIndex] as HTMLElement;
+        if (activeElement) {
+          activeElement.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center"
+          });
+        }
+      }
+    };
+
+    // Pequeño delay para asegurar que el DOM esté renderizado
+    const timer = setTimeout(scrollToActiveCategory, 100);
+    return () => clearTimeout(timer);
+  }, [activeCategoryId, categories, isDesktop, itemsPerView]);
 
   // Navegación por scroll horizontal — se eliminó el estado y funciones de slide.
 
@@ -302,7 +362,7 @@ export default function CategorySlider({
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
                       "relative flex items-center justify-center transition-all duration-300 hover:-translate-y-1",
-                      "rounded-full category-circle",
+                      "rounded-full category-circle cursor-pointer",
                       "overflow-hidden",
                       // Tamaños reducidos en móvil para que se muestren todos (w/h explícitos)
                       "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36",

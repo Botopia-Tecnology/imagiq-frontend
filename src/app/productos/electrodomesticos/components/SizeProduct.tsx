@@ -35,7 +35,7 @@ export default function SizeProduct({ img }: SizeProductProps) {
             <div className="w-full mb-6 flex justify-center px-4">
               {/* Renderizado condicional según tipo de imagen */}
               {typeof img === "string" ? (
-                <img
+                <Image
                   src={img}
                   alt="Store"
                   className="object-contain w-full max-w-md h-auto"

@@ -26,10 +26,8 @@ import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-import {
-  smartphoneCategories,
-  smartphoneFilters,
-} from "./constants/smartphonesConstants";
+import { deviceCategories } from "./constants/sharedCategories";
+import { smartphoneFilters } from "./constants/smartphonesConstants";
 import { getApiFilters } from "./utils/smartphonesUtils";
 import HeaderSection from "./components/HeaderSection";
 import CategoryProductsGrid from "./components/ProductsGrid";
@@ -193,7 +191,7 @@ export default function SmartphonesSection() {
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
-        categories={smartphoneCategories}
+        categories={deviceCategories}
         trackingPrefix="smartphone_category"
       />
 

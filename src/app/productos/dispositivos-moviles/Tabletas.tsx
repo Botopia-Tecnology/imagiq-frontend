@@ -24,7 +24,8 @@ import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import HeaderSection from "./components/HeaderSection";
 import CategoryProductsGrid from "./components/ProductsGrid";
-import { tabletCategories, tabletFilters } from "./constants/tabletsConstants";
+import { deviceCategories } from "./constants/sharedCategories";
+import { tabletFilters } from "./constants/tabletsConstants";
 import { getApiFilters } from "./utils/tabletsUtils";
 
 
@@ -167,7 +168,7 @@ export default function TabletasSection() {
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
-        categories={tabletCategories}
+        categories={deviceCategories}
         trackingPrefix="tablet_category"
       />
 

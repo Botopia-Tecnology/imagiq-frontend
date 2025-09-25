@@ -19,9 +19,9 @@ import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
-import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
+import aireImg from "../../../img/electrodomesticos/aire2.png";
+import hornosImg from "../../../img/electrodomesticos/horno.png";
 import { useProducts } from "@/features/products/useProducts";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { useDeviceType } from "@/components/responsive";

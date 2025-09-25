@@ -75,10 +75,10 @@ const CategoryProductsGrid = forwardRef<
             >
               <ProductCard
                 {...product}
-                onAddToCart={(productId: string, color: string) => {
+                onAddToCart={() => {
                   // TODO: Implementar lógica de añadir al carrito
                 }}
-                onToggleFavorite={(productId: string) => {
+                onToggleFavorite={() => {
                   // TODO: Implementar lógica de toggle favorito
                 }}
                 className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}

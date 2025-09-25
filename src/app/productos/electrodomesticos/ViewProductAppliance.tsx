@@ -29,7 +29,6 @@ import SizeProduct from "./components/SizeProduct";
 import { productsMock } from "../components/productsMock";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import CaracteristicasProduct from "./CaracteristicasProduct";
-import ExploreProducts from "./ExploreProducts";
 import SkeletonCard from "@/components/SkeletonCard";
 // Tipos para producto
 interface ProductColor {
@@ -80,7 +79,6 @@ export default function ViewProductAppliance({
 
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
-  const [selectedColor] = useState(safeProduct?.colors?.[0]);
   const router = useRouter();
   const pathname = usePathname();
   const [showBar, setShowBar] = useState(false);

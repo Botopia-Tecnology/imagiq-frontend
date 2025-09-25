@@ -66,7 +66,7 @@ export const CategoriesSection = () => {
   };
 
   return (
-    <section className="py-16 bg-transparent md:bg-white mt-[-75%] md:mt-0 relative z-[100] md:z-auto">
+    <section className="py-22 bg-transparent md:bg-white mt-[-75%] md:mt-0 relative z-[100] md:z-auto">
       <div className="container mx-auto px-0 md:px-8 max-w-7xl">
         {/* Grid/Carrusel de categorías */}
         <div className="block md:hidden">

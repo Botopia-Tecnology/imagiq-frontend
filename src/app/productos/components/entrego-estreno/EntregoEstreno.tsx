@@ -536,7 +536,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = ({ product }) => {
             }}
             onClick={async () => {
               setLoading(true);
-              await addToCart(product);
+              await addToCart();
               router.push("/carrito");
             }}
             disabled={loading}

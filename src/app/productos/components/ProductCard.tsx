@@ -20,7 +20,6 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { useSelectedColor } from "@/contexts/SelectedColorContext";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -117,42 +116,25 @@ export default function ProductCard({
   className,
   sku,
   selectedColor: selectedColorProp,
-  setSelectedColor: setSelectedColorProp,
 }: ProductCardProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
 
   // Si el estado viene de props, úsalo. Si no, usa local.
-  const [selectedColorLocal, setSelectedColorLocal] =
+  const [selectedColorLocal] =
     useState<ProductColor | null>(
       colors && colors.length > 0 ? colors[0] : null
     );
   const selectedColor = selectedColorProp ?? selectedColorLocal;
-  const setSelectedColor = setSelectedColorProp ?? setSelectedColorLocal;
 
   // Calcular precios dinámicos basados en el color seleccionado
   const currentPrice = selectedColor?.price || price;
   const currentOriginalPrice = selectedColor?.originalPrice || originalPrice;
   const currentDiscount = selectedColor?.discount || discount;
 
-  // Tracking de interacciones
-  const handleColorSelect = (color: ProductColor) => {
-    setSelectedColor(color);
-    // Actualizar el color global para que ViewProductMobile lo use
-    setGlobalSelectedColor(color.hex);
-    posthogUtils.capture("product_color_select", {
-      product_id: id,
-      product_name: name,
-      color_selected: color.name,
-      color_label: color.label,
-      color_sku: color.sku, // Incluir SKU del color
-      price_change: color.price !== price,
-    });
-  };
 
   const handleAddToCart = async () => {
     setIsLoading(true);

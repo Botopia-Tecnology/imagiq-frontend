@@ -13,8 +13,6 @@
 
 import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { useDynamicBackgroundColor } from "@/hooks/useDynamicBackgroundColor";
-import { useSelectedColor } from "@/contexts/SelectedColorContext";
 
 import samsungLogo from "@/img/Samsung_black.png";
 import { motion } from "framer-motion";
@@ -24,9 +22,7 @@ import { useEffect, useState } from "react";
 
 import { productsMock } from "../components/productsMock";
 import ComparationProduct from "./ComparationProduct";
-import EspecificacionesProduct from "./EspecificacionesProduct";
 import VideosSection from "./VideosSection";
-import { Link } from "lucide-react";
 
 // Tipos para producto
 interface ProductColor {
@@ -47,25 +43,11 @@ interface ProductData {
 
 export default function ViewProduct({
   product,
-  selectedColor,
 }: {
   product: Readonly<ProductData>;
   selectedColor?: string;
 }) {
-  // Usar el color del contexto global
-  const { selectedColor: globalSelectedColor } = useSelectedColor();
 
-  // Hook para background dinámico - usa el color global del contexto
-  const { backgroundStyle } = useDynamicBackgroundColor({
-    initialColor: product?.colors?.[0]?.hex || "#17407A",
-    selectedColor: globalSelectedColor,
-  });
-  // Animación scroll reveal para hero principal
-  const heroReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
@@ -88,11 +70,9 @@ export default function ViewProduct({
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
-  const [showLabel, setShowLabel] = useState(true);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 

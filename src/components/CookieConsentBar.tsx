@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef, KeyboardEvent } from "react";
  * - Persistencia en localStorage.
  * - Animación suave de aparición/desaparición.
  * - Accesibilidad y responsive con TailwindCSS.
+ * - Z-Index máximo para estar siempre por encima de cualquier elemento.
  */
 export interface CookieConsentBarProps {
   /** Mensaje principal de la barra */
@@ -25,13 +26,28 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
   message = defaultMessage,
   moreInfoUrl,
 }) => {
-  const [visible, setVisible] = useState(true); // Mostrar siempre al cargar
+  // Estado de visibilidad y animación
+  const [visible, setVisible] = useState(false); // Inicialmente oculto
   const [animatingOut, setAnimatingOut] = useState(false);
   const [justAccepted, setJustAccepted] = useState<ConsentStatus | null>(null);
   const barRef = useRef<HTMLDialogElement>(null);
 
-  // Eliminar verificación de localStorage para mostrar siempre
+  // Chequea persistencia en localStorage al montar
+  useEffect(() => {
+    const consent = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!consent) {
+      setVisible(true); // Mostrar barra si no hay registro previo
+    }
+  }, []);
 
+  // Enfoca la barra cuando se muestra
+  useEffect(() => {
+    if (visible && barRef.current) {
+      barRef.current.focus();
+    }
+  }, [visible]);
+
+  // Maneja la decisión del usuario y la persistencia
   const handleConsent = (status: ConsentStatus) => {
     localStorage.setItem(LOCAL_STORAGE_KEY, status);
     setJustAccepted(status);
@@ -39,12 +55,7 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
     setTimeout(() => setVisible(false), 400); // Espera la animación
   };
 
-  useEffect(() => {
-    if (visible && barRef.current) {
-      barRef.current.focus();
-    }
-  }, [visible]);
-
+  // Permite cerrar con Escape
   const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
     if (e.key === "Escape") {
       setAnimatingOut(true);
@@ -52,6 +63,7 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
     }
   };
 
+  // Borde animado según decisión
   const borderClass =
     justAccepted === "accepted"
       ? "border-t-4 border-green-500"
@@ -59,6 +71,7 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
       ? "border-t-4 border-red-500"
       : "";
 
+  // Si no debe mostrarse, retorna null
   if (!visible) return null;
 
   return (
@@ -68,7 +81,7 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
       role="alertdialog"
       aria-modal="true"
       tabIndex={-1}
-      className={`fixed bottom-0 left-0 w-full z-[99] md:z-50 px-4 py-6 md:px-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-3 shadow-lg
+      className={`fixed bottom-0 left-0 w-full z-[9999] md:z-[9999] px-4 py-6 md:px-3 md:py-4 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-3 shadow-lg
         bg-black/80 backdrop-blur-sm text-white
         transition-all duration-400 ease-in-out
         ${
@@ -78,7 +91,7 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
         }
         ${borderClass}
       `}
-      style={{ outline: "none" }}
+      style={{ outline: "none", zIndex: 9999 }}
       open
     >
       <span

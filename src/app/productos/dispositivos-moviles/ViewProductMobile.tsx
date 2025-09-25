@@ -137,9 +137,9 @@ export default function ViewProduct({
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
   };
-  // Mejorado: Comprar, navega a DetailsProduct
+  // Mejorado: Comprar, navega al carrito
   const handleBuy = () => {
-    router.push("/productos/dispositivos-moviles/details");
+    router.push("/carrito");
   };
 
   return (

@@ -35,12 +35,10 @@ export default function HeaderSection({
   setFilters,
   clearAllFiltersText,
 }: HeaderSectionProps) {
-  // Verificar si hay algún filtro activo
   const hasActiveFilters =
     filters &&
     Object.values(filters).some((filterArray) => filterArray.length > 0);
 
-  // Función para limpiar todos los filtros
   const clearAllFilters = () => {
     if (setFilters && filters) {
       const clearedFilters: FilterState = {};
@@ -52,7 +50,7 @@ export default function HeaderSection({
   };
 
   return (
-    <div className="bg-white border-b border-gray-200 py-6 mb-8">
+    <div className="bg-white py-4 sm:py-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header principal */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">

@@ -362,7 +362,7 @@ export default function CategorySlider({
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
                       "relative flex items-center justify-center transition-all duration-300 hover:-translate-y-1",
-                      "rounded-full category-circle",
+                      "rounded-full category-circle cursor-pointer",
                       "overflow-hidden",
                       // Tamaños reducidos en móvil para que se muestren todos (w/h explícitos)
                       "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36",

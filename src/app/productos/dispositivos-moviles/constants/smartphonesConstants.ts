@@ -8,6 +8,7 @@ import smartphonesImg from "../../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../../img/categorias/galaxy_watch.png";
+import accesoriosImg from "../../../../img/categorias/accesorios.png";
 
 // Categorías del slider
 export const smartphoneCategories: Category[] = [
@@ -38,6 +39,13 @@ export const smartphoneCategories: Category[] = [
     subtitle: "Buds",
     image: galaxyBudsImg,
     href: "?section=buds",
+  },
+  {
+    id: "accesorios",
+    name: "Accesorios",
+    subtitle: "",
+    image: accesoriosImg,
+    href: "/productos/dispositivos-moviles?section=accesorios",
   },
 ];
 

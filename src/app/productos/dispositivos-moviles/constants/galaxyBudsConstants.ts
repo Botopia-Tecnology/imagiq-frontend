@@ -8,6 +8,7 @@ import smartphonesImg from "../../../../img/categorias/Smartphones.png";
 import tabletasImg from "../../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../../img/categorias/galaxy_watch.png";
+import accesoriosImg from "../../../../img/categorias/accesorios.png";
 
 // Categorías del slider (idénticas a la imagen)
 export const budsCategories: Category[] = [
@@ -39,6 +40,13 @@ export const budsCategories: Category[] = [
     image: galaxyBudsImg,
     href: "#galaxy-buds",
   },
+  {
+    id: "accesorios",
+    name: "Accesorios",
+    subtitle: "",
+    image: accesoriosImg,
+    href: "/productos/dispositivos-moviles?section=accesorios",
+  }
 ];
 
 // Configuración de filtros específica para Galaxy Buds

@@ -25,7 +25,7 @@ export default  function ARExperienceHandler({glbUrl,
       </div>
 
       {/* Componente AR (solo en móvil) */}
-      <div className="block md:hidden ml-auto">
+      <div className="block md:hidden  mr-4 ml-4">
         <ARMobile glbUrl={glbUrl} usdzUrl={usdzUrl} />
       </div>
 

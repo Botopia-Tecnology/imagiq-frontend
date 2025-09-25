@@ -54,6 +54,7 @@ function ElectrodomesticosContent() {
         "aspiradoras",
         "microondas",
         "aire-acondicionado",
+        "hornos"
       ].includes(section)
     ) {
       setActiveSection(section);

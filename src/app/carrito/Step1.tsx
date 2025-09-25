@@ -2,7 +2,7 @@
 import { useState } from "react";
 import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
-import { useCart } from "@/hooks/useCart";
+import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 
 /**
  * Paso 1 del carrito de compras
@@ -179,11 +179,23 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               <span>Subtotal</span>
               <span>$ {Number(subtotal).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm">
-              <span>Envío</span>
-              <span>
-                {envio === 0 ? "0" : `$ ${Number(envio).toLocaleString()}`}
-              </span>
+            <div className="flex flex-col gap-1">
+              <div className="flex justify-between text-sm">
+                <span>Envío</span>
+                <span>
+                  {cartProducts.length > 0 && (
+                    <span className="line-through mr-2 text-gray-400">
+                      {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
+                    </span>
+                  )}
+                  <span className="font-bold">0</span>
+                </span>
+              </div>
+              {cartProducts.length > 0 && (
+                <div className="text-xs text-green-600">
+                  tienes envío gratis en esta compra
+                </div>
+              )}
             </div>
             <div className="flex justify-between text-base font-bold mt-2">
               <span>Total</span>

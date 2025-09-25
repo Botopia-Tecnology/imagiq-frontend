@@ -1,16 +1,20 @@
 import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import samsungImage from "@/img/electrodomesticos/especificaciones_nevera.png";
-import cpuIcon from "@/img/dispositivosmoviles/cpu-icon.png";
-import fullAltIcon from "@/img/dispositivosmoviles/full_alt_light-icon.png";
-import cameraIcon from "@/img/dispositivosmoviles/camera-icon.png";
-import boxOpenIcon from "@/img/dispositivosmoviles/box_open_light-icon.png";
-import wifiIcon from "@/img/dispositivosmoviles/wifi-icon.png";
+import i1 from "@/img/electrodomesticos/i1.png";
+import i2 from "@/img/electrodomesticos/i2.png";
+import i3 from "@/img/electrodomesticos/i3.png";
+import i4 from "@/img/electrodomesticos/i4.png";
+import i5 from "@/img/electrodomesticos/i5.png";
+import i6 from "@/img/electrodomesticos/i6.png";
+import i7 from "@/img/electrodomesticos/i7.png";
+import i8 from "@/img/electrodomesticos/i8.png";
+import i9 from "@/img/electrodomesticos/i9.png";
 
 /**
  * 📱 EspecificacionesProduct - IMAGIQ ECOMMERCE
  *
- * Componente premium de especificaciones para productos móviles.
+ * Componente premium de especificaciones para electrodomesticos.
  * - Grid 3x2, tarjetas con iconos reales
  * - Imagen del producto a la izquierda
  * - Animaciones suaves y diseño responsive
@@ -23,47 +27,47 @@ const especificacionesData = [
   {
     label: "Parte inferior izquierda",
     desc: "...",
-    icon: cpuIcon,
+    icon: i1,
   },
   {
     label: "Parte inferior derecha",
     desc: "...",
-    icon: fullAltIcon,
+    icon: i2,
   },
   {
     label: "Capacidad",
     desc: "...",
-    icon: cameraIcon,
+    icon: i3,
   },
   {
     label: "Rendimiento",
     desc: "...",
-    icon: boxOpenIcon,
+    icon: i4,
   },
   {
     label: "Conectividad",
     desc: "...",
-    icon: wifiIcon,
+    icon: i5,
   },
   {
     label: "Categoría",
     desc: "...",
-    icon: wifiIcon,
+    icon: i6,
   },
   {
     label: "Funicón de enfriamiento",
     desc: "...",
-    icon: wifiIcon,
+    icon: i7,
   },
   {
     label: "Características exteriores",
     desc: "...",
-    icon: boxOpenIcon,
+    icon: i8,
   },
   {
     label: "Especificaciones fisicas",
     desc: "...",
-    icon: boxOpenIcon,
+    icon: i9,
   },
 ];
 
@@ -104,6 +108,12 @@ const EspecificacionesProduct = ({
   };
 
   return (
+    <div
+        className="relative flex items-center justify-center w-full min-h-[600px] "
+        style={{
+          fontFamily: "SamsungSharpSans",
+        }}
+      >
     <section
       className="w-full flex flex-col items-center"
       style={{
@@ -117,14 +127,14 @@ const EspecificacionesProduct = ({
       aria-label="Especificaciones del producto"
     >
       <div className="max-w-7xl w-full mx-auto">
-        <div className="flex flex-col xl:flex-row w-full items-center justify-between px-4 md:px-10 lg:px-16">
+        <div className="flex flex-col xl:flex-row w-full items-center justify-between ">
           {/* Imagen del producto a la izquierda */}
           <div className="w-full xl:flex-1 flex flex-col items-center mb-12 xl:mb-0 relative h-full ">
             <div className="relative mx-auto sm:mx-0 flex justify-center items-center w-full h-full">
               <div className="w-[98vw] h-[80vw] max-w-[370px] max-h-[370px] sm:w-[340px] sm:h-[450px] rounded-2xl flex items-center justify-center">
                 {/* Flecha izquierda */}
                 <button
-                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-black bg-black/30  rounded-full shadow-lg p-2 text-3xl sm:left-0 sm:text-black sm:bg-transparent sm:shadow-none sm:text-4xl"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-black  rounded-full shadow-lg p-2 text-3xl sm:left-0 sm:text-black sm:bg-transparent sm:shadow-none sm:text-4xl"
                   aria-label="Anterior"
                   onClick={handlePrev}
                   style={{ transition: "background 0.2s" }}
@@ -141,7 +151,7 @@ const EspecificacionesProduct = ({
                 />
                 {/* Flecha derecha */}
                 <button
-                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-black bg-black/30  rounded-full shadow-lg p-2 text-3xl sm:right-0 sm:text-black sm:bg-transparent sm:shadow-none sm:text-4xl"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-black   rounded-full shadow-lg p-2 text-3xl sm:right-0 sm:text-black sm:bg-transparent sm:shadow-none sm:text-4xl"
                   aria-label="Siguiente"
                   onClick={handleNext}
                   style={{ transition: "background 0.2s" }}
@@ -156,7 +166,7 @@ const EspecificacionesProduct = ({
                 <span
                   key={i}
                   className={`block w-2.5 h-2.5 rounded-full ${
-                    i === currentImg ? "bg-black" : "bg-white/30"
+                    i === currentImg ? "bg-black" : "bg-black/30"
                   }`}
                 />
               ))}
@@ -191,14 +201,12 @@ const EspecificacionesProduct = ({
                       className="w-10 h-10 sm:w-[70px] sm:h-[70px]"
                     />
                   </div>
-                  <div className="text-center text-gray-600 text-[11px] sm:text-xs leading-tight mt-auto mb-3">
-                    {spec.desc.split("\n").map((line, i) => (
-                      <div key={i}>{line}</div>
-                    ))}
-                  </div>
-                  <h3 className="font-bold text-[13px] sm:text-base text-black mb-1">
+                  <h3 className="font-bold text-[11px] sm:text-[13px] md:text-base text-black mb-1 break-words whitespace-normal text-center">
                     {spec.label}
                   </h3>
+                  <div className="text-center text-gray-600 text-[11px] sm:text-xs leading-tight mt-auto mb-3 break-words whitespace-pre-line">
+                    {spec.desc}
+                  </div>
                 </div>
               ))}
             </div>
@@ -206,6 +214,7 @@ const EspecificacionesProduct = ({
         </div>
       </div>
     </section>
+    </div>
   );
 };
 

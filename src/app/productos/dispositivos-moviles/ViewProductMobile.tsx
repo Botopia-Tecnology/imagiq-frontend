@@ -13,10 +13,7 @@
 
 import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import { useDynamicBackgroundColor } from "@/hooks/useDynamicBackgroundColor";
-import { useSelectedColor } from "@/contexts/SelectedColorContext";
-import addiLogo from "@/img/iconos/addi_logo.png";
-import packageCar from "@/img/iconos/package_car.png";
+
 import samsungLogo from "@/img/Samsung_black.png";
 import { motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
@@ -25,7 +22,6 @@ import { useEffect, useState } from "react";
 
 import { productsMock } from "../components/productsMock";
 import ComparationProduct from "./ComparationProduct";
-import EspecificacionesProduct from "./EspecificacionesProduct";
 import VideosSection from "./VideosSection";
 
 // Tipos para producto
@@ -47,25 +43,11 @@ interface ProductData {
 
 export default function ViewProduct({
   product,
-  selectedColor,
 }: {
   product: Readonly<ProductData>;
   selectedColor?: string;
 }) {
-  // Usar el color del contexto global
-  const { selectedColor: globalSelectedColor } = useSelectedColor();
 
-  // Hook para background dinámico - usa el color global del contexto
-  const { backgroundStyle } = useDynamicBackgroundColor({
-    initialColor: product?.colors?.[0]?.hex || "#17407A",
-    selectedColor: globalSelectedColor,
-  });
-  // Animación scroll reveal para hero principal
-  const heroReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
@@ -88,11 +70,9 @@ export default function ViewProduct({
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
   const router = useRouter();
-  const [modalOpen, setModalOpen] = useState(false);
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
   const [showBar, setShowBar] = useState(false);
-  const [showLabel, setShowLabel] = useState(true);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
@@ -157,205 +137,23 @@ export default function ViewProduct({
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
   };
-  // Mejorado: Comprar, navega a DetailsProduct
+  // Mejorado: Comprar, navega al carrito
   const handleBuy = () => {
-    router.push("/productos/dispositivos-moviles/details");
+    router.push("/carrito");
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
-      style={backgroundStyle}
-    >
+     <div
+       className="min-h-screen w-full flex flex-col mt-0 pt-0"
+       
+     >
       {/* Feedback UX al añadir al carrito */}
       {cartFeedback && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
           {cartFeedback}
         </div>
       )}
-      {/* Hero section */}
-      <motion.section
-        ref={heroReveal.ref}
-        {...heroReveal.motionProps}
-        className="flex flex-1 items-center justify-center px-4 py-8 md:py-0"
-      >
-        <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
-          {/* MOBILE: Imagen arriba, info y acciones abajo */}
-          <div className="w-full flex flex-col md:hidden items-center justify-center">
-            <h1
-              className="text-white text-2xl font-bold mb-4 text-center cursor-pointer hover:text-blue-200 transition-all"
-              style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
-            >
-              {safeProduct.name}
-            </h1>
-            <div className="flex items-center justify-center mb-4">
-              <Image
-                src={safeProduct.image}
-                alt={safeProduct.name}
-                width={320}
-                height={320}
-                className="object-contain drop-shadow-2xl w-[80vw] h-[80vw] max-w-[320px] max-h-[320px]"
-                priority
-                style={{ background: "none" }}
-              />
-            </div>
-            {/* Badges más grandes */}
-            <div className="flex flex-col gap-3 mb-2">
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-white bg-white/10"
-                  style={{
-                    minWidth: 64,
-                    width: 64,
-                    height: 64,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image
-                    src={addiLogo}
-                    alt="Addi Logo"
-                    width={40}
-                    height={40}
-                  />
-                </div>
-                <span
-                  className="text-white text-sm"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Paga hasta en 24 cuotas
-                  <br />
-                  con Addi
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-white bg-white/10"
-                  style={{
-                    minWidth: 64,
-                    width: 64,
-                    height: 64,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image src={packageCar} alt="Envío" width={40} height={40} />
-                </div>
-                <span
-                  className="text-white text-sm"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Envío gratis a todo
-                  <br />
-                  Colombia. *Aplican TYC*
-                </span>
-              </div>
-            </div>
-            {/* Botones más grandes solo en mobile */}
-            <div className="flex gap-2 mt-12">
-              <button
-                className="bg-black text-white px-6 py-2 rounded-full font-bold text-lg shadow hover:bg-gray-900 transition-all border border-black w-full"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleBuy}
-              >
-                ¡Compra aquí!
-              </button>
-              <button
-                className="bg-transparent text-white px-8 py-4 rounded-full font-bold text-lg shadow border border-white hover:bg-white/10 transition-all w-full"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleAddToCart}
-              >
-                Añadir al carrito
-              </button>
-            </div>
-          </div>
-          {/* DESKTOP/TABLET: info y acciones a la izquierda, imagen a la derecha */}
-          <div className="hidden md:flex flex-1 flex-col items-start justify-center gap-6">
-            <h1
-              className="text-white text-3xl md:text-5xl font-bold mb-2 cursor-pointer hover:text-blue-200 transition-all"
-              style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
-            >
-              {safeProduct.name}
-            </h1>
-            <div className="flex flex-col gap-3 mb-2">
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-white bg-white/10"
-                  style={{
-                    minWidth: 80,
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image
-                    src={addiLogo}
-                    alt="Addi Logo"
-                    width={58}
-                    height={58}
-                  />
-                </div>
-                <span
-                  className="text-white text-lg"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Paga hasta en 24 cuotas
-                  <br />
-                  con Addi
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-white bg-white/10"
-                  style={{
-                    minWidth: 80,
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image src={packageCar} alt="Envío" width={58} height={58} />
-                </div>
-                <span
-                  className="text-white text-lg"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Envío gratis a todo
-                  <br />
-                  Colombia. *Aplican TYC*
-                </span>
-              </div>
-            </div>
-            <div className="flex gap-4 mt-4">
-              <button
-                className="bg-black text-white px-8 py-3 rounded-full font-bold text-lg shadow hover:bg-gray-900 transition-all border border-black"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleBuy}
-              >
-                ¡Compra aquí!
-              </button>
-              <button
-                className="bg-transparent text-white px-8 py-3 rounded-full font-bold text-lg shadow border border-white hover:bg-white/10 transition-all"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleAddToCart}
-              >
-                Añadir al carrito
-              </button>
-            </div>
-          </div>
-          <div className="hidden md:flex flex-1 items-center justify-center">
-            <div className="flex-1 flex items-center justify-center">
-              <Image
-                src={safeProduct.image}
-                alt={safeProduct.name}
-                width={420}
-                height={420}
-                className="object-contain drop-shadow-2xl"
-                priority
-                style={{ background: "none" }}
-              />
-            </div>
-          </div>
-        </div>
-      </motion.section>
+    
       {isProductDetailView && showBar && (
         <div
           className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
@@ -382,40 +180,44 @@ export default function ViewProduct({
           {/* DESKTOP/TABLET: diseño original */}
           <div className="hidden md:flex w-full items-center justify-between">
             {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-              <Image
-                src="/frame_311_black.png"
-                alt="Frame"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
-              {/* Logo Samsung clickable */}
-              <button
-                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
-                title="Ir al inicio"
-                aria-label="Ir al inicio"
-                onClick={() => (window.location.href = "/")}
-              >
+            <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
+       
+                <Image
+                  src="/frame_black.png"
+                  alt="Q Logo"
+                  height={40}
+                  style={{ display: "block", marginBottom: "5px" }}
+                  width={40}
+                  className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+                  priority
+                />
                 <Image
                   src={samsungLogo}
                   alt="Samsung Logo"
-                  width={110}
-                  height={32}
-                  style={{ objectFit: "contain" }}
+                  onClick={() => {
+                  window.location.href = "/";
+                }}
+                  height={80}
+                  width={70}
+                  className="h-10 md:h-12 w-auto cursor-pointer"
                   priority
+                  style={{ display: "block" }}
                 />
-              </button>
-              {/* Imagen store_black */}
-              <Image
-                src="/store_black.png"
-                alt="Store"
-                width={32}
-                height={32}
-                className="object-contain"
-                priority
-              />
+
+                <span
+                  className={
+                    "text-xs font-bold tracking-wide text-black select-none"
+                  }
+                  style={{
+                    letterSpacing: "0.08em",
+                    marginBottom: "11px", // Ajusta este valor según sea necesario
+                    lineHeight: "normal", // O ajusta el line-height según lo necesites
+                    alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
+                  }}
+                >
+                  Store
+                </span>
+            
             </div>
             {/* Nombre centrado */}
             <div className="flex-1 flex justify-center">
@@ -443,37 +245,38 @@ export default function ViewProduct({
                 onClick={handleBuy}
               >
                 Comprar
-              </button>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
-      {/* Oculta el navbar principal con una clase global */}
-      <style>{`
-        body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
-      `}</style>
-      <div className="h-[56px] w-full" />
+        )}
+        {/* Oculta el navbar principal con una clase global */}
+        <style>{`
+          body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
+        `}</style>
+       <div className="h-[1px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <motion.div
         ref={specsReveal.ref}
         {...specsReveal.motionProps}
-        className="relative flex items-center justify-center w-full min-h-[600px] py-16 mt-8"
+         className="relative flex items-center justify-center w-full min-h-[100px] py-0 mt-0"
       >
         {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
-        <EspecificacionesProduct specs={safeProduct.specs} />
+        {/*<EspecificacionesProduct specs={safeProduct.specs} */}
       </motion.div>
 
-      {/* Componente de videos */}
-      <motion.div ref={videosReveal.ref} {...videosReveal.motionProps}>
-        <VideosSection />
-      </motion.div>
-      {/* Componente de comparación justo debajo de VideosSection */}
-      <motion.div
-        ref={comparationReveal.ref}
-        {...comparationReveal.motionProps}
-      >
-        <ComparationProduct />
-      </motion.div>
+       {/* Componente de videos */}
+       <motion.div ref={videosReveal.ref} {...videosReveal.motionProps} className="mt-0">
+         <VideosSection />
+       </motion.div>
+       {/* Componente de comparación justo debajo de VideosSection */}
+       <motion.div
+         ref={comparationReveal.ref}
+         {...comparationReveal.motionProps}
+         className="mt-0"
+       >
+         <ComparationProduct />
+       </motion.div>
     </div>
   );
 }

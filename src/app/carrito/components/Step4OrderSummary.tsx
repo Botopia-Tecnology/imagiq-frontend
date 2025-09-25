@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
-import { useCart } from "@/hooks/useCart";
+import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 
 interface Step4OrderSummaryProps {
   isProcessing: boolean;
@@ -15,7 +15,12 @@ export default function Step4OrderSummary({
   onFinishPayment,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
-  const { calculations, formatPrice: cartFormatPrice, isEmpty } = useCart();
+  const {
+    calculations,
+    formatPrice: cartFormatPrice,
+    isEmpty,
+    products,
+  } = useCart();
 
   if (isEmpty) {
     return (
@@ -54,9 +59,23 @@ export default function Step4OrderSummary({
           </span>
         </div>
         {/* Envío: siempre string */}
-        <div className="flex justify-between text-base">
-          <span>Envío</span>
-          <span>{cartFormatPrice(calculations.shipping)}</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex justify-between text-base">
+            <span>Envío</span>
+            <span>
+              {products.length > 0 && (
+                <span className="line-through mr-2 text-gray-400">
+                  {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
+                </span>
+              )}
+              <span className="font-bold">{cartFormatPrice(0)}</span>
+            </span>
+          </div>
+          {products.length > 0 && (
+            <div className="text-xs text-green-600">
+              tienes envío gratis en esta compra
+            </div>
+          )}
         </div>
         {/* Total: siempre string */}
         <div className="flex justify-between text-lg font-bold mt-2">

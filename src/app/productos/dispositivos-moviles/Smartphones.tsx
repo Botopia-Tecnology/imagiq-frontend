@@ -26,11 +26,11 @@ import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-import { smartphoneCategories, smartphoneFilters } from "./constants/smartphonesConstants";
+import { deviceCategories } from "./constants/sharedCategories";
+import { smartphoneFilters } from "./constants/smartphonesConstants";
 import { getApiFilters } from "./utils/smartphonesUtils";
 import HeaderSection from "./components/HeaderSection";
 import CategoryProductsGrid from "./components/ProductsGrid";
-
 
 export default function SmartphonesSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
@@ -50,7 +50,7 @@ export default function SmartphonesSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  
+
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
@@ -72,14 +72,8 @@ export default function SmartphonesSection() {
     return filters;
   }, [apiFilters, currentPage, itemsPerPage]);
 
-  const { 
-    products, 
-    loading, 
-    error, 
-    totalItems,
-    totalPages,
-    refreshProducts 
-  } = useProducts(initialFilters);
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
+    useProducts(initialFilters);
 
   const device = useDeviceType(); // Responsive global
 
@@ -92,13 +86,13 @@ export default function SmartphonesSection() {
     enabled: stickyEnabled,
   });
 
-  const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
+  const { containerClasses, wrapperClasses, style } =
+    useStickyClasses(stickyState);
 
   // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters]);
-
+  }, [filters, stickyEnabled]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -182,15 +176,22 @@ export default function SmartphonesSection() {
         clearAllFiltersText="Ver todos los Smartphones"
       />
     ),
-    [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
+    [
+      totalItems,
+      sortBy,
+      setSortBy,
+      viewMode,
+      setViewMode,
+      setShowMobileFilters,
+      filters,
+      setFilters,
+    ]
   );
 
-
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
-      
+    <div className="min-h-screen bg-white">
       <CategorySlider
-        categories={smartphoneCategories}
+        categories={deviceCategories}
         trackingPrefix="smartphone_category"
       />
 
@@ -210,7 +211,10 @@ export default function SmartphonesSection() {
           )}
         >
           {(device === "desktop" || device === "large") && (
-            <aside ref={sidebarRef} className="hidden lg:block w-80 flex-shrink-0">
+            <aside
+              ref={sidebarRef}
+              className="hidden lg:block w-80 flex-shrink-0"
+            >
               <FilterSidebar
                 filterConfig={smartphoneFilters}
                 filters={filters}
@@ -226,7 +230,7 @@ export default function SmartphonesSection() {
             </aside>
           )}
 
-          <main className="container mx-auto flex-1">
+          <main className="flex-1">
             {HeaderSectionMemo}
             <CategoryProductsGrid
               ref={productsRef}
@@ -237,7 +241,7 @@ export default function SmartphonesSection() {
               viewMode={viewMode}
               categoryName="smartphones"
             />
-            
+
             {/* Paginación */}
             {!loading && !error && totalItems > 0 && (
               <div className="mt-8">

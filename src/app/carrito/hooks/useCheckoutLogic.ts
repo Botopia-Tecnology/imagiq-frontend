@@ -34,7 +34,7 @@ export function useCheckoutLogic() {
       name: "",
       docType: "C.C.",
       docNumber: cedula,
-      installments: "",
+      installments: "1",
     };
   });
   const [cardErrors, setCardErrors] = useState<CardErrors>({

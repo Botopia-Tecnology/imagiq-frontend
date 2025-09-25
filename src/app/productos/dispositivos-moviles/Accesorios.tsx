@@ -17,10 +17,8 @@ import FilterSidebar, {
   MobileFilterModal,
   type FilterState,
 } from "../components/FilterSidebar";
-import {
-  accessoryCategories,
-  accessoryFilters,
-} from "./constants/accesoriosConstants";
+import { deviceCategories } from "./constants/sharedCategories";
+import { accessoryFilters } from "./constants/accesoriosConstants";
 import { getApiFilters } from "./utils/accesoriosUtils";
 import CategoryProductsGrid from "./components/ProductsGrid";
 import HeaderSection from "./components/HeaderSection";
@@ -172,7 +170,7 @@ export default function AccesoriosSection() {
   return (
     <div className="min-h-screen bg-white">
       <CategorySlider
-        categories={accessoryCategories}
+        categories={deviceCategories}
         trackingPrefix="accessory_category"
       />
 

@@ -20,9 +20,9 @@ import { Filter, Grid3X3, List } from "lucide-react";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
-import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import lavavajillasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
+import aireImg from "../../../img/electrodomesticos/aire2.png";
+import hornosImg from "../../../img/electrodomesticos/horno.png";
 import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [

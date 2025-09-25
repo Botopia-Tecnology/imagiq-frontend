@@ -10,10 +10,10 @@ import FilterSidebar, {
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
-import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import aireImg from "../../../img/electrodomesticos/aire2.png";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
-import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import hornosImg from "../../../img/electrodomesticos/horno.png";
 import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
 import { Filter, Grid3X3, List } from "lucide-react";
@@ -21,7 +21,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useProducts } from "@/features/products/useProducts";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
-import lavavajillasImg from "@/img/electrodomesticos/electrodomesticos4.png";
+import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
 
 import Pagination from "./components/Pagination";
 import ProductCard from "../components/ProductCard";

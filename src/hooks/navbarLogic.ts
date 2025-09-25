@@ -138,12 +138,11 @@ export function useNavbarLogic() {
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  const isMasInformacionProducto = pathname.startsWith("/productos/view/");
+  const isMasInformacionProducto = pathname.startsWith("/productos/view/") ||
+    pathname.startsWith("/productos/dispositivos-moviles/details");
   // Determina si mostrar logo blanco y estilos claros
   const showWhiteLogo =
-    isMasInformacionProducto && !isScrolled && !isAppliance
-      ? true
-      : isOfertas || (isHome && !isScrolled);
+    isOfertas || (isHome && !isScrolled);
   const showWhiteItems = showWhiteLogo;
   const showWhiteItemsMobile =
     isOfertas ||

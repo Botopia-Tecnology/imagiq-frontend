@@ -24,6 +24,7 @@ import { navbarRoutes } from "../routes/navbarRoutes";
 import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import TelevisionesDropdown from "./dropdowns/televisiones";
+import { useState } from "react";
 
 // Helper para dropdown
 const getDropdownComponent = (name: string) => {
@@ -40,6 +41,7 @@ const getDropdownComponent = (name: string) => {
 };
 
 export default function Navbar() {
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navbar = useNavbarLogic();
 
   // --- Render principal ---
@@ -308,9 +310,7 @@ export default function Navbar() {
               ) : (
                 <Image
                   src={
-                    navbar.showWhiteItems
-                      ? searchIconWhite
-                      : searchIconBlack
+                    navbar.showWhiteItems ? searchIconWhite : searchIconBlack
                   }
                   alt="Buscar"
                   width={26}
@@ -613,69 +613,142 @@ export default function Navbar() {
                 &#10005;
               </button>
               <div className="flex flex-col items-start px-15 mt-5 space-y-8 w-full max-w-sm">
-              <form
-                onSubmit={navbar.handleSearchSubmit}
-                className="flex items-center bg-white/70 backdrop-blur-md  mb-10 rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-full"
-                style={{ zIndex: 1000, overflow: "hidden" }}
-              >
-                <input
-                  type="text"
-                  className="w-full bg-transparent text-gray-900 placeholder-gray-500 border-none focus:outline-none text-lg px-2"
-                  placeholder="Buscar productos..."
-                  value={navbar.searchQuery}
-                  onChange={(e) => navbar.setSearchQuery(e.target.value)}
-                  aria-label="Buscar productos"
-                  autoComplete="off"
-                />
-                <button
-                  type="submit"
-                  className="flex items-center justify-center w-10 h-10"
-                  title="Buscar"
-                  style={{ zIndex: 1001 }}
+                <form
+                  onSubmit={navbar.handleSearchSubmit}
+                  className="flex items-center bg-white/70 backdrop-blur-md  mb-10 rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-full"
+                  style={{ zIndex: 1000, overflow: "hidden" }}
                 >
-                  <Image
-                    src={
-                      navbar.showWhiteItems ? searchIconWhite : searchIconBlack
-                    }
-                    alt="Buscar"
-                    width={26}
-                    height={26}
-                    priority
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-gray-900 placeholder-gray-500 border-none focus:outline-none text-lg px-2"
+                    placeholder="Buscar productos..."
+                    value={navbar.searchQuery}
+                    onChange={(e) => navbar.setSearchQuery(e.target.value)}
+                    aria-label="Buscar productos"
+                    autoComplete="off"
                   />
-                </button>
-              </form>
-              {/* Ítems del menú con padding y área de toque mejorada */}
-              <div
-                className="flex flex-col space-y-3 w-full"
-                role="menu"
-                aria-label="Opciones de navegación"
-              >
-                {navbarRoutes.map((item) => {
-                  const isActive =
-                    navbar.pathname === item.href ||
-                    navbar.pathname.startsWith(item.href + "/") ||
-                    navbar.pathname.startsWith(item.href + "?") ||
-                    navbar.cleanPath === item.href ||
-                    navbar.cleanPath.startsWith(item.href + "/") ||
-                    navbar.cleanPath.startsWith(item.href + "?");
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      className={cn(
-                        "text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100",
-                        isActive && "bg-blue-50 text-blue-700 shadow"
-                      )}
-                      aria-label={item.name}
-                      aria-current={isActive ? "page" : undefined}
-                      onClick={() => navbar.handleNavClick(item)}
-                      tabIndex={0}
-                    >
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </div>
+                  <button
+                    type="submit"
+                    className="flex items-center justify-center w-10 h-10"
+                    title="Buscar"
+                    style={{ zIndex: 1001 }}
+                  >
+                    <Image
+                      src={
+                        navbar.showWhiteItems
+                          ? searchIconWhite
+                          : searchIconBlack
+                      }
+                      alt="Buscar"
+                      width={26}
+                      height={26}
+                      priority
+                    />
+                  </button>
+                </form>
+                {/* Ítems del menú con padding y área de toque mejorada */}
+
+                <div
+                  className="flex flex-col space-y-3 w-full"
+                  role="menu"
+                  aria-label="Opciones de navegación"
+                >
+                  {navbarRoutes.map((item) => {
+                    const hasDropdown =
+                      item.name === "Dispositivos móviles" ||
+                      item.name == "Televisores y AV" ||
+                      item.name === "Electrodomésticos";
+
+                    const isDropdownOpen = activeDropdown === item.name;
+
+                    const someDropdownOpen = Boolean(activeDropdown);
+
+                    const matchesUrl =
+                      navbar.pathname === item.href ||
+                      navbar.pathname.startsWith(item.href + "/") ||
+                      navbar.pathname.startsWith(item.href + "?") ||
+                      navbar.cleanPath === item.href ||
+                      navbar.cleanPath.startsWith(item.href + "/") ||
+                      navbar.cleanPath.startsWith(item.href + "?");
+
+                    const isActive = hasDropdown
+                      ? activeDropdown === item.name || matchesUrl // dropdown activo si está abierto o la URL coincide
+                      : someDropdownOpen
+                      ? false // si hay dropdown abierto, no resaltar los links normales
+                      : matchesUrl; // si no hay dropdown abierto, marcar por URL
+                    return (
+                      <div key={item.name} className="flex flex-col">
+                        {hasDropdown ? (
+                          <button
+                            onClick={() => {
+                              setActiveDropdown((prev) =>
+                                prev === item.name ? null : item.name
+                              );
+                            }}
+                            className={cn(
+                              "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100",
+                              isActive && "bg-blue-50 text-blue-700 shadow"
+                            )}
+                            aria-label={item.name}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            {item.name}
+                          </button>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100",
+                              isActive && "bg-blue-50 text-blue-700 shadow"
+                            )}
+                            aria-label={item.name}
+                            aria-current={isActive ? "page" : undefined}
+                            onClick={() => {
+                              navbar.setIsMobileMenuOpen(false);
+                              setActiveDropdown(null); // Cierra cualquier dropdown
+                              // También podrías cerrar menú móvil aquí si lo tenés
+                            }}
+                          >
+                            {item.name}
+                          </Link>
+                        )}
+
+                        {/* Dropdown si aplica */}
+                        {hasDropdown && isDropdownOpen && (
+                          <div className="ml-4 mt-2">
+                            {item.name === "Dispositivos móviles" && (
+                              <DispositivosMovilesDropdown
+                                isMobile
+                                onItemClick={() => {
+                                  setActiveDropdown(null);
+                                  navbar.setIsMobileMenuOpen(false);
+                                }}
+                              />
+                            )}
+                            {item.name == "Televisores y AV" && (
+                              <TelevisionesDropdown
+                                isMobile
+                                onItemClick={() => {
+                                  setActiveDropdown(null);
+                                  navbar.setIsMobileMenuOpen(false);
+                                }}
+                              />
+                            )}
+                            {item.name === "Electrodomésticos" && (
+                              <ElectrodomesticosDropdown
+                                isMobile
+                                onItemClick={() => {
+                                  setActiveDropdown(null);
+                                  navbar.setIsMobileMenuOpen(false);
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           </>

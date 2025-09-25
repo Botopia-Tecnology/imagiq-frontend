@@ -126,7 +126,7 @@ export default function Navbar() {
                 alt="Samsung Logo"
                 height={80}
                 width={70}
-                className="h-10 min-w-[100px] md:h-12 md:min-w-[150px]"
+                className="h-10 md:h-12 w-auto"
                 priority
                 style={{ display: "block" }}
               />
@@ -138,7 +138,7 @@ export default function Navbar() {
                 }
                 style={{
                   letterSpacing: "0.08em",
-                  marginBottom: "10px", // Ajusta este valor según sea necesario
+                  marginBottom: "11px", // Ajusta este valor según sea necesario
                   lineHeight: "normal", // O ajusta el line-height según lo necesites
                   alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
                 }}
@@ -282,10 +282,10 @@ export default function Navbar() {
           </div>
           {/*Iconos tablet */}
           <div className="hidden md:flex lg:hidden items-center space-x-4">
-             <button
+            <button
               className={cn(
                 "flex items-center justify-center w-10 h-10 text-2xl font-bold",
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                navbar.showWhiteItems ? "text-white" : "text-black"
               )}
               title={
                 navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
@@ -308,7 +308,7 @@ export default function Navbar() {
               ) : (
                 <Image
                   src={
-                    navbar.showWhiteItemsMobile
+                    navbar.showWhiteItems
                       ? searchIconWhite
                       : searchIconBlack
                   }
@@ -416,7 +416,7 @@ export default function Navbar() {
                 priority
               />
             </button>
-                        {navbar.searchQuery === "focus" && (
+            {navbar.searchQuery === "focus" && (
               <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
                 <form
                   onSubmit={navbar.handleSearchSubmit}
@@ -452,45 +452,7 @@ export default function Navbar() {
             )}
           </div>
           {/* Navbar móvil */}
-          <div className="flex md:hidden items-center h-16 space-x-4 pr-2">
-            {/* Icono buscar */}
-            <button
-              className={cn(
-                "flex items-center justify-center w-10 h-10 text-2xl font-bold",
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
-              )}
-              title={
-                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
-              }
-              aria-label={
-                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
-              }
-              onClick={() => {
-                if (navbar.searchQuery === "focus") navbar.setSearchQuery("");
-                else {
-                  navbar.setSearchQuery("focus");
-                  posthogUtils.capture("search_icon_click", {
-                    source: "navbar_mobile",
-                  });
-                }
-              }}
-            >
-              {navbar.searchQuery === "focus" ? (
-                <span className="text-2xl">&#10005;</span>
-              ) : (
-                <Image
-                  src={
-                    navbar.showWhiteItemsMobile
-                      ? searchIconWhite
-                      : searchIconBlack
-                  }
-                  alt="Buscar"
-                  width={26}
-                  height={26}
-                  priority
-                />
-              )}
-            </button>
+          <div className="flex md:hidden items-center h-16 space-x-4  align-end">
             {/* Icono carrito */}
             <Link
               href="/carrito"
@@ -537,41 +499,6 @@ export default function Navbar() {
             >
               <Menu className="w-6 h-6" />
             </button>
-            {/* Input animado */}
-            {navbar.searchQuery === "focus" && (
-              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
-                <form
-                  onSubmit={navbar.handleSearchSubmit}
-                  className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
-                >
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-                    placeholder="Buscar..."
-                    autoFocus
-                    value={
-                      navbar.searchQuery !== "focus" ? navbar.searchQuery : ""
-                    }
-                    onChange={(e) => navbar.setSearchQuery(e.target.value)}
-                  />
-                  <button type="submit" className="ml-2">
-                    <Image
-                      src={searchIconWhite}
-                      alt="Buscar"
-                      width={26}
-                      height={26}
-                      priority
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-4 text-white text-2xl font-bold focus:outline-none"
-                    aria-label="Cerrar buscador"
-                    onClick={() => navbar.setSearchQuery("")}
-                  ></button>
-                </form>
-              </div>
-            )}
           </div>
         </div>
 
@@ -685,9 +612,41 @@ export default function Navbar() {
               >
                 &#10005;
               </button>
+              <div className="flex flex-col items-start px-15 mt-5 space-y-8 w-full max-w-sm">
+              <form
+                onSubmit={navbar.handleSearchSubmit}
+                className="flex items-center bg-white/70 backdrop-blur-md  mb-10 rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-full"
+                style={{ zIndex: 1000, overflow: "hidden" }}
+              >
+                <input
+                  type="text"
+                  className="w-full bg-transparent text-gray-900 placeholder-gray-500 border-none focus:outline-none text-lg px-2"
+                  placeholder="Buscar productos..."
+                  value={navbar.searchQuery}
+                  onChange={(e) => navbar.setSearchQuery(e.target.value)}
+                  aria-label="Buscar productos"
+                  autoComplete="off"
+                />
+                <button
+                  type="submit"
+                  className="flex items-center justify-center w-10 h-10"
+                  title="Buscar"
+                  style={{ zIndex: 1001 }}
+                >
+                  <Image
+                    src={
+                      navbar.showWhiteItems ? searchIconWhite : searchIconBlack
+                    }
+                    alt="Buscar"
+                    width={26}
+                    height={26}
+                    priority
+                  />
+                </button>
+              </form>
               {/* Ítems del menú con padding y área de toque mejorada */}
               <div
-                className="flex flex-col py-10 px-8 space-y-3"
+                className="flex flex-col space-y-3 w-full"
                 role="menu"
                 aria-label="Opciones de navegación"
               >
@@ -716,6 +675,7 @@ export default function Navbar() {
                     </Link>
                   );
                 })}
+              </div>
               </div>
             </div>
           </>

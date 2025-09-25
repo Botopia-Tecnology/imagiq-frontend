@@ -10,9 +10,9 @@ import FilterSidebar, {
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import { posthogUtils } from "@/lib/posthogClient";
 import microondasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import aireImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import lavavajillasImg from "../../../img/electrodomesticos/electrodomesticos4.png";
-import hornosImg from "../../../img/electrodomesticos/electrodomesticos4.png";
+import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
+import aireImg from "../../../img/electrodomesticos/aire2.png";
+import hornosImg from "../../../img/electrodomesticos/horno.png";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";

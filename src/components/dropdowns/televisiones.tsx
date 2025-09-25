@@ -8,6 +8,7 @@
 
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
+import { cn } from "@/lib/utils";
 
 const categories = [
   { name: "Smart TV", href: "/productos/televisores?section=smart-tv" },
@@ -17,19 +18,32 @@ const categories = [
   { name: "Sistemas de Audio", href: "/productos/Audio?section=sistemas" },
 ];
 
-export default function TelevisionesDropdown() {
+export default function TelevisionesDropdown({
+  isMobile = false,
+  onItemClick,
+}: {
+  isMobile?: boolean;
+  onItemClick?: () => void;
+}) {
   const handleItemClick = (itemName: string, href: string) => {
     posthogUtils.capture("dropdown_item_click", {
       category: "Televisores y AV",
       item: itemName,
       href: href,
     });
+     if (onItemClick) {
+    onItemClick(); // Cierra menú móvil
+  }
   };
+ 
 
   return (
     <div
       data-dropdown="televisiones"
-      className="absolute top-full left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[220px] transition-all duration-200"
+      className={cn(
+        "z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px] transition-all duration-200",
+        !isMobile && "absolute top-full left-0"
+      )}
     >
       <div className="space-y-1.5">
         {categories.map((item) => (

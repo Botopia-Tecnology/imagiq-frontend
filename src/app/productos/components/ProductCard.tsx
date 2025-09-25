@@ -61,6 +61,48 @@ export interface ProductCardProps {
   setSelectedColor?: (color: ProductColor) => void;
 }
 
+// Función para limpiar el nombre del producto
+const cleanProductName = (productName: string): string => {
+  // Patrones para eliminar conectividad
+  const connectivityPatterns = [
+    /\s*5G\s*/gi,
+    /\s*4G\s*/gi,
+    /\s*LTE\s*/gi,
+    /\s*Wi-Fi\s*/gi,
+    /\s*Bluetooth\s*/gi,
+  ];
+
+  // Patrones para eliminar almacenamiento
+  const storagePatterns = [
+    /\s*64GB\s*/gi,
+    /\s*32GB\s*/gi,
+    /\s*128GB\s*/gi,
+    /\s*256GB\s*/gi,
+    /\s*512GB\s*/gi,
+    /\s*1TB\s*/gi,
+    /\s*2TB\s*/gi,
+    /\s*16GB\s*/gi,
+    /\s*8GB\s*/gi,
+  ];
+
+  let cleanedName = productName;
+
+  // Eliminar patrones de conectividad
+  connectivityPatterns.forEach(pattern => {
+    cleanedName = cleanedName.replace(pattern, ' ');
+  });
+
+  // Eliminar patrones de almacenamiento
+  storagePatterns.forEach(pattern => {
+    cleanedName = cleanedName.replace(pattern, ' ');
+  });
+
+  // Limpiar espacios múltiples y espacios al inicio/final
+  cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
+
+  return cleanedName;
+};
+
 export default function ProductCard({
   id,
   name,
@@ -263,11 +305,11 @@ export default function ProductCard({
       <div className="p-4 bg-[#D9D9D9] max-[640px]:hidden">
         {/* Título del producto */}
         <h3 className="font-semibold text-gray-900 text-base mb-3 line-clamp-2 leading-5 truncate">
-          {name}
+          {cleanProductName(name)}
         </h3>
 
-        {/* Selector de colores */}
-        {colors && colors.length > 0 && (
+        {/* Selector de colores - OCULTO */}
+        {/* {colors && colors.length > 0 && (
           <div className="mb-4">
             <div className="flex gap-2">
               {colors.map((color) => (
@@ -289,7 +331,7 @@ export default function ProductCard({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Precios */}
         {currentPrice && (
@@ -338,12 +380,12 @@ export default function ProductCard({
         {/* Título del producto */}
         <div className="flex-shrink-0">
           <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2 leading-tight">
-            {name}
+            {cleanProductName(name)}
           </h3>
         </div>
 
-        {/* Selector de colores */}
-        {colors && colors.length > 0 && (
+        {/* Selector de colores - OCULTO */}
+        {/* {colors && colors.length > 0 && (
           <div className="flex-shrink-0 mb-2">
             <div className="flex gap-1.5">
               {colors.map((color) => (
@@ -365,7 +407,7 @@ export default function ProductCard({
               ))}
             </div>
           </div>
-        )}
+        )} */}
 
         {/* Precios */}
         {currentPrice && (

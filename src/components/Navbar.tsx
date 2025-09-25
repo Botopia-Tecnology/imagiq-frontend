@@ -69,6 +69,7 @@ export default function Navbar() {
             ? "bg-white/60 shadow backdrop-blur-md"
             : navbar.isDispositivosMoviles ||
               navbar.isElectrodomesticos ||
+              navbar.isMasInformacionProducto ||
               navbar.isScrolledNavbar
             ? "bg-white/60 shadow backdrop-blur-md"
             : navbar.isHome && !navbar.isScrolled
@@ -81,7 +82,10 @@ export default function Navbar() {
           boxShadow:
             navbar.isOfertas && !navbar.isScrolled
               ? "none"
-              : navbar.isScrolled
+              : navbar.isScrolled ||
+                navbar.isDispositivosMoviles ||
+                navbar.isElectrodomesticos ||
+                navbar.isMasInformacionProducto
               ? "0 2px 8px 0 rgba(30, 64, 175, 0.12)"
               : "none",
           background:
@@ -186,7 +190,7 @@ export default function Navbar() {
               type="button"
               className={cn(
                 "flex items-center justify-center w-10 h-10 text-black",
-                navbar.isDispositivosMoviles || navbar.isElectrodomesticos
+                navbar.isDispositivosMoviles || navbar.isElectrodomesticos || navbar.isMasInformacionProducto
                   ? "text-black"
                   : navbar.showWhiteItems
                   ? "text-white"
@@ -215,7 +219,7 @@ export default function Navbar() {
               href="/carrito"
               className={cn(
                 "flex items-center justify-center w-10 h-10 relative text-black",
-                navbar.isDispositivosMoviles || navbar.isElectrodomesticos
+                navbar.isDispositivosMoviles || navbar.isElectrodomesticos || navbar.isMasInformacionProducto
                   ? "text-black"
                   : navbar.showWhiteItems
                   ? "text-white"
@@ -251,7 +255,7 @@ export default function Navbar() {
               type="button"
               className={cn(
                 "flex items-center justify-center w-10 h-10",
-                navbar.isDispositivosMoviles || navbar.isElectrodomesticos
+                navbar.isDispositivosMoviles || navbar.isElectrodomesticos || navbar.isMasInformacionProducto
                   ? "text-black"
                   : navbar.showWhiteItems
                   ? "text-white"
@@ -401,7 +405,7 @@ export default function Navbar() {
         <nav
           className={cn(
             "hidden md:block transition-all duration-500 relative",
-            navbar.isScrolled
+            navbar.isScrolled && !navbar.isMasInformacionProducto
               ? "max-h-0 opacity-0 overflow-hidden"
               : "max-h-20 opacity-100"
           )}

@@ -13,7 +13,7 @@ export interface Usuario {
   email: string;
   email_verificado?: boolean;
   contrasena: string;
-  rol: "usuario" | "admin";
+  rol: 1 | 2 | 3 | 4;
   activo?: boolean;
   bloqueado?: boolean;
   fecha_creacion?: Date;
@@ -28,9 +28,11 @@ export interface Usuario {
 export interface User {
   id: string;
   email: string;
-  name: string;
-  last_name: string;
+  nombre: string;
+  apellido: string;
   role?: 1 | 2 | 3 | 4;
+  telefono: string;
+  numero_documento: string;
 }
 
 // Legacy interface - keeping for compatibility

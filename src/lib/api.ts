@@ -53,7 +53,7 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      const data = await response?.json();
 
       return {
         data: data as T,
@@ -140,33 +140,53 @@ export const productEndpoints = {
     apiClient.get<ProductApiResponse>(
       "/api/products/filtered?conDescuento=true"
     ),
-  getFavorites: (userId: string, params: FavoriteFilterParams) => {
+  getFavorites: (id: string, params?: FavoriteFilterParams) => {
     const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        searchParams.append(key, String(value));
-      }
-    });
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
 
-    const url = `/api/products/favorites/${userId}?${searchParams.toString()}`;
+    const queryString = searchParams.toString();
+    const url = queryString
+      ? `/api/products/favorites/${id}?${queryString}`
+      : `/api/products/favorites/${id}`;
+
     return apiClient.get<FavoriteApiResponse>(url);
   },
   addFavorite: (data: {
     productSKU: string;
     userInfo: {
-      userId?: string;
+      //userId?: string;
+      id?: string;
       nombre?: string;
       apellido?: string;
       email?: string;
       telefono?: string;
+      numero_documento?: string;
+      rol?: string;
     };
   }) =>
-    apiClient.post<{ usuario_id?: string }>(
-      `/api/products/add-to-favorites`,
-      data
+    apiClient.post<{
+      productSKU: string;
+      userInfo: {
+        id?: string;
+        //userId?: string;
+        nombre?: string;
+        apellido?: string;
+        email?: string;
+        telefono?: string;
+        numero_documento?: string | null;
+        rol?: number;
+      };
+    }>(`/api/products/add-to-favorites`, data),
+  removeFavorite: (id: string, productSKU: string) =>
+    apiClient.delete<void>(
+      `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
     ),
-  removeFavorite: (userId: string,productSKU: string) =>
-    apiClient.delete<void>(`/api/products/remove-from-favorites/${userId}?productSKU=${productSKU}`),
 };
 
 // Product filter parameters interface

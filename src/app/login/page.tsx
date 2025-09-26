@@ -16,6 +16,9 @@ import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { notifyError, notifyLoginSuccess } from "./notifications";
+import { useFavorites} from "@/features/products/useProducts";
+
+
 
 // API endpoint for authentication
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -41,6 +44,8 @@ export default function LoginPage() {
   // ...existing code...
   const router = useRouter();
   const { login, isAuthenticated } = useAuthContext();
+  // const { fetchAllFavorites } = useFavorites();
+
 
   // Detectar redirect a CreateAccount y navegar automáticamente
   useEffect(() => {
@@ -244,6 +249,7 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push(user.rol === "admin" ? "/dashboard" : "/tienda");
       }, 500);
+      //await fetchAllFavorites()// Actualizar favoritos tras login
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error de conexión";
       setModalContent({ type: "error", message: msg });

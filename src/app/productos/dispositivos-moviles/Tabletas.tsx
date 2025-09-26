@@ -1,15 +1,13 @@
-/**
- * 📱 TABLETAS SECTION - IMAGIQ ECOMMERCE
- *
- * Sección de tabletas con:
- * - Filtros específicos para tablets
- * - Productos Galaxy Tab
- * - Características específicas de tabletas
- */
-
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import { cn } from "@/lib/utils";
 import FilterSidebar, {
   MobileFilterModal,
@@ -28,7 +26,6 @@ import { deviceCategories } from "./constants/sharedCategories";
 import { tabletFilters } from "./constants/tabletsConstants";
 import { getApiFilters } from "./utils/tabletsUtils";
 
-
 export default function TabletasSection() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["serie"])
@@ -37,33 +34,26 @@ export default function TabletasSection() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  
-  // Estados para paginación
+
+  // ===== Paginación / data =====
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
-  // Refs para sticky behavior
   const sidebarRef = useRef<HTMLDivElement>(null);
   const productsRef = useRef<HTMLDivElement>(null);
 
-  // Usar el hook de productos con filtro de subcategoría "Tablets"
   const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
+  const initialFilters = useMemo(
+    () => ({ ...apiFilters, page: currentPage, limit: itemsPerPage }),
+    [apiFilters, currentPage, itemsPerPage]
+  );
 
-  // Crear filtros iniciales con paginación
-  const initialFilters = useMemo(() => {
-    const filters = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    return filters;
-  }, [apiFilters, currentPage, itemsPerPage]);
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
+    useProducts(initialFilters);
 
-  const { products, loading, error, totalItems, totalPages, refreshProducts } = useProducts(initialFilters);
+  const device = useDeviceType();
 
-  const device = useDeviceType(); // Responsive global
-
-  // Sticky behavior (solo en desktop/large)
+  // ===== Sidebar sticky (tu hook) =====
   const stickyEnabled = device === "desktop" || device === "large";
   const stickyState = useSticky({
     sidebarRef,
@@ -71,14 +61,12 @@ export default function TabletasSection() {
     topOffset: 120,
     enabled: stickyEnabled,
   });
+  const { containerClasses, wrapperClasses, style } =
+    useStickyClasses(stickyState);
 
-  const { containerClasses, wrapperClasses, style } = useStickyClasses(stickyState);
-
-  // Resetear a la página 1 cuando cambien los filtros
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters]);
-
+  }, [filters, stickyEnabled]);
 
   useEffect(() => {
     posthogUtils.capture("section_view", {
@@ -97,38 +85,31 @@ export default function TabletasSection() {
       ...prev,
       [filterType]: checked
         ? [...(prev[filterType] || []), value]
-        : (prev[filterType] || []).filter((item) => item !== value),
+        : (prev[filterType] || []).filter((i) => i !== value),
     }));
   };
 
   const toggleFilter = useCallback(
     (filterKey: string) => {
-      const newExpanded = new Set(expandedFilters);
-      if (newExpanded.has(filterKey)) {
-        newExpanded.delete(filterKey);
-      } else {
-        newExpanded.add(filterKey);
-      }
-      setExpandedFilters(newExpanded);
+      const next = new Set(expandedFilters);
+      next.has(filterKey) ? next.delete(filterKey) : next.add(filterKey);
+      setExpandedFilters(next);
     },
     [expandedFilters]
   );
 
-  // Funciones para manejar la paginación
   const handlePageChange = useCallback(async (page: number) => {
     setCurrentPage(page);
-    // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
     setCurrentPage(1);
-    // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
-  // Memoizar el modal de filtros móviles
+  // ===== Modal filtros móvil =====
   const MobileFilterModalMemo = useMemo(
     () => (
       <MobileFilterModal
@@ -146,7 +127,7 @@ export default function TabletasSection() {
     [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
   );
 
-  // Memoizar el HeaderSection para evitar re-renders innecesarios
+  // ===== Header de la lista (NO sticky) =====
   const HeaderSectionMemo = useMemo(
     () => (
       <HeaderSection
@@ -162,16 +143,93 @@ export default function TabletasSection() {
         clearAllFiltersText="Ver todas las tabletas"
       />
     ),
-    [totalItems, sortBy, setSortBy, viewMode, setViewMode, setShowMobileFilters, filters, setFilters]
+    [totalItems, sortBy, viewMode, filters]
   );
+
+  /**
+   * ===== Barra fija de categorías (idéntica a Smartphones) =====
+   * - Medimos altura del navbar global y la usamos como "top" de la barra fija
+   * - Medimos la altura real de la barra para insertar un spacer debajo
+   * - Modo "condensed" al hacer scroll: logos más chicos y sin textos
+   */
+  const [globalTop, setGlobalTop] = useState(0);
+  useLayoutEffect(() => {
+    const candidates = [
+      "[data-global-header]",
+      "#main-navbar",
+      "header[role='banner']",
+      "header.site-header",
+      "header",
+      "nav[role='navigation']",
+      ".navbar",
+    ] as const;
+
+    let el: HTMLElement | null = null;
+    for (const sel of candidates) {
+      const found = document.querySelector<HTMLElement>(sel);
+      if (found) {
+        el = found;
+        break;
+      }
+    }
+
+    const measure = () => setGlobalTop(el?.offsetHeight ?? 0);
+    measure();
+
+    if (!el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  const catBarRef = useRef<HTMLDivElement>(null);
+  const [catBarH, setCatBarH] = useState(0);
+  useLayoutEffect(() => {
+    const measure = () => setCatBarH(catBarRef.current?.offsetHeight ?? 0);
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (catBarRef.current) ro.observe(catBarRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  const [condensed, setCondensed] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setCondensed(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
-      <CategorySlider
-        categories={deviceCategories}
-        trackingPrefix="tablet_category"
-      />
+      {/* ✅ SOLO las categorías: barra FIJA que acompaña hasta el footer */}
+      <div
+        ref={catBarRef}
+        className="fixed inset-x-0 z-[60] bg-white"
+        style={{ top: globalTop }}
+      >
+        <CategorySlider
+          categories={deviceCategories}
+          className="py-3 sm:py-4"
+          condensed={condensed} // logos más pequeños + sin textos al scrollear
+        />
+      </div>
 
+      {/* Spacer para no tapar contenido */}
+      <div style={{ height: catBarH }} />
+
+      {/* Header de la lista (no sticky) */}
+      {HeaderSectionMemo}
+
+      {/* Contenido */}
       <div
         className={cn(
           "container mx-auto px-6 py-8",
@@ -204,7 +262,6 @@ export default function TabletasSection() {
           )}
 
           <main className="flex-1">
-            {HeaderSectionMemo}
             <CategoryProductsGrid
               ref={productsRef}
               products={products}
@@ -214,8 +271,7 @@ export default function TabletasSection() {
               viewMode={viewMode}
               categoryName="tabletas"
             />
-            
-            {/* Paginación */}
+
             {!loading && !error && totalItems > 0 && (
               <div className="mt-8">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">

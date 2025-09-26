@@ -1,31 +1,29 @@
 ///Smartphones section carpeta dispositivos-moviles
-
-/**
- * 📱 SMARTPHONES SECTION - IMAGIQ ECOMMERCE
- *
- * Sección de smartphones con:
- * - Grid de productos específicos para smartphones
- * - Filtros especializados para celulares
- * - Categorías de acceso rápido
- * - Tracking específico para smartphones
- * - Responsive global implementado
- */
-
 "use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+  useLayoutEffect,
+} from "react";
 import { cn } from "@/lib/utils";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterState,
 } from "../components/FilterSidebar";
+
 import CategorySlider from "../components/CategorySlider";
+
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import { useDeviceType } from "@/components/responsive";
 import Pagination from "./components/Pagination";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+
 import { deviceCategories } from "./constants/sharedCategories";
 import { smartphoneFilters } from "./constants/smartphonesConstants";
 import { getApiFilters } from "./utils/smartphonesUtils";
@@ -51,33 +49,33 @@ export default function SmartphonesSection() {
   const [sortBy, setSortBy] = useState("relevancia");
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Estados para paginación
+  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
-  // Refs para sticky behavior
+  // Refs para sticky sidebar
   const sidebarRef = useRef<HTMLDivElement>(null);
   const productsRef = useRef<HTMLDivElement>(null);
 
-  // Usar el hook de productos con filtro de subcategoría "Celulares"
+  // Filtros API
   const apiFilters = useMemo(() => getApiFilters(filters), [filters]);
+  const initialFilters = useMemo(
+    () => ({ ...apiFilters, page: currentPage, limit: itemsPerPage }),
+    [apiFilters, currentPage, itemsPerPage]
+  );
 
-  // Crear filtros iniciales con paginación
-  const initialFilters = useMemo(() => {
-    const filters = {
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    };
-    return filters;
-  }, [apiFilters, currentPage, itemsPerPage]);
+  const {
+    products,
+    loading,
+    error,
+    totalItems,
+    totalPages,
+    refreshProducts,
+  } = useProducts(initialFilters);
 
-  const { products, loading, error, totalItems, totalPages, refreshProducts } =
-    useProducts(initialFilters);
+  const device = useDeviceType();
 
-  const device = useDeviceType(); // Responsive global
-
-  // Sticky behavior (solo en desktop/large)
+  // Sidebar sticky (tu hook)
   const stickyEnabled = device === "desktop" || device === "large";
   const stickyState = useSticky({
     sidebarRef,
@@ -85,11 +83,10 @@ export default function SmartphonesSection() {
     topOffset: 120,
     enabled: stickyEnabled,
   });
-
   const { containerClasses, wrapperClasses, style } =
     useStickyClasses(stickyState);
 
-  // Resetear a la página 1 cuando cambien los filtros
+  // Reset a página 1 cuando cambian filtros o breakpoint
   useEffect(() => {
     setCurrentPage(1);
   }, [filters, stickyEnabled]);
@@ -111,38 +108,31 @@ export default function SmartphonesSection() {
       ...prev,
       [filterType]: checked
         ? [...(prev[filterType] || []), value]
-        : (prev[filterType] || []).filter((item) => item !== value),
+        : (prev[filterType] || []).filter((i) => i !== value),
     }));
   };
 
   const toggleFilter = useCallback(
     (filterKey: string) => {
-      const newExpanded = new Set(expandedFilters);
-      if (newExpanded.has(filterKey)) {
-        newExpanded.delete(filterKey);
-      } else {
-        newExpanded.add(filterKey);
-      }
-      setExpandedFilters(newExpanded);
+      const next = new Set(expandedFilters);
+      next.has(filterKey) ? next.delete(filterKey) : next.add(filterKey);
+      setExpandedFilters(next);
     },
     [expandedFilters]
   );
 
-  // Funciones para manejar la paginación
   const handlePageChange = useCallback(async (page: number) => {
     setCurrentPage(page);
-    // Scroll suave hacia arriba cuando cambie de página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
   const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
     setCurrentPage(1);
-    // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
 
-  // Memoizar el modal de filtros móviles
+  // Modal filtros móvil
   const MobileFilterModalMemo = useMemo(
     () => (
       <MobileFilterModal
@@ -160,7 +150,7 @@ export default function SmartphonesSection() {
     [showMobileFilters, filters, totalItems, expandedFilters, toggleFilter]
   );
 
-  // Memoizar el HeaderSection para evitar re-renders innecesarios
+  // Header (NO sticky): va en el flujo normal
   const HeaderSectionMemo = useMemo(
     () => (
       <HeaderSection
@@ -176,25 +166,93 @@ export default function SmartphonesSection() {
         clearAllFiltersText="Ver todos los Smartphones"
       />
     ),
-    [
-      totalItems,
-      sortBy,
-      setSortBy,
-      viewMode,
-      setViewMode,
-      setShowMobileFilters,
-      filters,
-      setFilters,
-    ]
+    [totalItems, sortBy, viewMode, filters]
   );
+
+  /**
+   * Altura automática del header global (navbar) — para posicionar la barra fija
+   */
+  const [globalTop, setGlobalTop] = useState(0);
+  useLayoutEffect(() => {
+    const candidates = [
+      "[data-global-header]",
+      "header[role='banner']",
+      "header.site-header",
+      "header",
+      "nav[role='navigation']",
+      ".navbar",
+    ] as const;
+
+    let el: HTMLElement | null = null;
+    for (const sel of candidates) {
+      const found = document.querySelector<HTMLElement>(sel);
+      if (found) {
+        el = found;
+        break;
+      }
+    }
+
+    const measure = () => setGlobalTop(el?.offsetHeight ?? 0);
+    measure();
+
+    if (!el) return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  /**
+   * Barra fija de categorías:
+   * - Medimos su alto para poner un "spacer" y que no tape el contenido
+   * - Modo "condensed" al hacer scroll: logos más chicos y sin textos
+   */
+  const catBarRef = useRef<HTMLDivElement>(null);
+  const [catBarH, setCatBarH] = useState(0);
+  useLayoutEffect(() => {
+    const measure = () => setCatBarH(catBarRef.current?.offsetHeight ?? 0);
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (catBarRef.current) ro.observe(catBarRef.current);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  const [condensed, setCondensed] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setCondensed(window.scrollY > 20);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-white">
-      <CategorySlider
-        categories={deviceCategories}
-        trackingPrefix="smartphone_category"
-      />
+      {/* ✅ SOLO las categorías: barra FIJA que acompaña hasta el footer */}
+      <div
+        ref={catBarRef}
+        className="fixed inset-x-0 z-[60] bg-white"
+        style={{ top: globalTop }}
+      >
+        <CategorySlider
+          categories={deviceCategories}
+          className="py-3 sm:py-4"
+          condensed={condensed} // logos más pequeños + sin textos al scrollear
+        />
+      </div>
+      {/* Spacer para no tapar contenido */}
+      <div style={{ height: catBarH }} />
 
+      {/* Header de la lista (no sticky) */}
+      {HeaderSectionMemo}
+
+      {/* Contenido */}
       <div
         className={cn(
           "container mx-auto px-6 py-8",
@@ -211,10 +269,7 @@ export default function SmartphonesSection() {
           )}
         >
           {(device === "desktop" || device === "large") && (
-            <aside
-              ref={sidebarRef}
-              className="hidden lg:block w-80 flex-shrink-0"
-            >
+            <aside ref={sidebarRef} className="hidden lg:block w-80 flex-shrink-0">
               <FilterSidebar
                 filterConfig={smartphoneFilters}
                 filters={filters}
@@ -231,7 +286,6 @@ export default function SmartphonesSection() {
           )}
 
           <main className="flex-1">
-            {HeaderSectionMemo}
             <CategoryProductsGrid
               ref={productsRef}
               products={products}
@@ -242,7 +296,6 @@ export default function SmartphonesSection() {
               categoryName="smartphones"
             />
 
-            {/* Paginación */}
             {!loading && !error && totalItems > 0 && (
               <div className="mt-8">
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">

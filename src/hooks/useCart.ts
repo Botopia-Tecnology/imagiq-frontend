@@ -9,6 +9,11 @@ export interface CartProduct {
   price: number;
   quantity: number;
   sku: string;
+  /**
+   * Puntos Q acumulables por producto (valor fijo por ahora)
+   * Si no se especifica, se asume 0.
+   */
+  puntos_q?: number;
 }
 
 interface CartCalculations {
@@ -62,16 +67,36 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     .filter(
       (p): p is Record<string, unknown> => typeof p === "object" && p !== null
     )
-    .map((p) => ({
-      id: String(p.id || ""),
-      name: String(p.nombre || p.name || "Producto"),
-      image: String(p.imagen || p.image || "/img/logo_imagiq.png"),
-      price: Number(p.precio || p.price || 0),
-      quantity: Number(p.cantidad || p.quantity || 1),
-      sku: String(
-        p.sku || `SKU-${p.id || Math.random().toString(36).slice(2, 10)}`
-      ),
-    }))
+    .map((p) => {
+      // id
+      let id = "";
+      if (typeof p.id === "string") id = p.id;
+      else if (p.id) id = String(p.id);
+      // name
+      let name = "Producto";
+      if (typeof p.nombre === "string") name = p.nombre;
+      else if (typeof p.name === "string") name = p.name;
+      // image
+      let image = "/img/logo_imagiq.png";
+      if (typeof p.imagen === "string") image = p.imagen;
+      else if (typeof p.image === "string") image = p.image;
+      // sku
+      let sku = "";
+      if (typeof p.sku === "string") sku = p.sku;
+      else
+        sku = `SKU-${
+          typeof p.id === "string"
+            ? p.id
+            : Math.random().toString(36).slice(2, 10)
+        }`;
+      // puntos_q
+      const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 0;
+      // price
+      const price = Number(p.precio || p.price || 0);
+      // quantity
+      const quantity = Number(p.cantidad || p.quantity || 1);
+      return { id, name, image, price, quantity, sku, puntos_q };
+    })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }
 

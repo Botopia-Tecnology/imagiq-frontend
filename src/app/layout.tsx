@@ -18,6 +18,7 @@ import { ResponsiveProvider } from "@/components/responsive"; // Importa el prov
 import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 import { ProductProvider } from "@/features/products/ProductContext";
 import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
+import { PointsProvider } from "@/contexts/PointsContext";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -118,7 +119,9 @@ export default function RootLayout({
                     <UserPreferencesProvider>
                       <CartProvider>
                         <SelectedColorProvider>
-                          <ClientLayout>{safeChildren}</ClientLayout>
+                          <PointsProvider>
+                            <ClientLayout>{safeChildren}</ClientLayout>
+                          </PointsProvider>
                           {/* Widget del chatbot */}
                           <ChatbotWidget />
                           {/* Toast notifications */}

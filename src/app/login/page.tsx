@@ -244,7 +244,7 @@ export default function LoginPage() {
         email: user.email,
       });
       setTimeout(() => {
-        router.push(user.rol === 1? "/dashboard" : "/tienda");
+        router.push(user.rol === 1? "/dashboard" : "/");
       }, 500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error de conexión";

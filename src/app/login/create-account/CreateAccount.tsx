@@ -4,6 +4,7 @@ import { useState } from "react";
 import { notifyRegisterSuccess, notifyError } from "../notifications";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
+import { Usuario } from "@/types/user";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -171,7 +172,11 @@ const CreateAccountForm = () => {
         setSubmitting(false);
         return;
       }
-      const result = await response.json();
+      const result = (await response.json()) as {
+        access_token: string;
+        user: Usuario;
+        message?: string;
+      };
       if (!response.ok) {
         let errorMsg = "Error al registrar";
         errorMsg = result.message || errorMsg;
@@ -190,8 +195,10 @@ const CreateAccountForm = () => {
         await login({
           id: result.user.id,
           email: result.user.email,
-          name: result.user.nombre,
-          last_name: result.user.apellido,
+          nombre: result.user.nombre,
+          apellido: result.user.apellido,
+          numero_documento: result.user.numero_documento,
+          telefono: result.user.telefono,
         });
       }
       setModalContent({

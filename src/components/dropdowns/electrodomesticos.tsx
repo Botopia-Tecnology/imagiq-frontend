@@ -8,6 +8,7 @@
 
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
+import { cn } from "@/lib/utils";
 
 const categories = [
   {
@@ -40,19 +41,31 @@ const categories = [
   },
 ];
 
-export default function ElectrodomesticosDropdown() {
+export default function ElectrodomesticosDropdown({
+  isMobile = false,
+  onItemClick,
+}: {
+  isMobile?: boolean;
+  onItemClick?: () => void;
+}) {
   const handleItemClick = (itemName: string, href: string) => {
     posthogUtils.capture("dropdown_item_click", {
       category: "Electrodomésticos",
       item: itemName,
       href: href,
     });
+    if (onItemClick) {
+      onItemClick(); // Cierra menú móvil
+    }
   };
 
   return (
     <div
       data-dropdown="refrigeradores"
-      className="absolute top-full left-0 z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[240px] transition-all duration-200"
+       className={cn(
+              "z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px] transition-all duration-200",
+              !isMobile && "absolute top-full left-0"
+            )}
     >
       <div className="space-y-1.5">
         {categories.map((item) => (

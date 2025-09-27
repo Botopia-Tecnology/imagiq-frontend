@@ -17,6 +17,7 @@ import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import TelevisionesDropdown from "./dropdowns/televisiones";
 import { usePointsContext } from "@/contexts/PointsContext";
+import UserOptionsDropdown from "@/components/dropdowns/user_options";
 
 // Imports de imágenes
 import logoSamsungWhite from "@/img/logo_Samsung.png";
@@ -344,22 +345,8 @@ export default function Navbar() {
   // Helper para renderizar saludo o icono de usuario (solo desktop/tablet)
   const renderUserGreetingOrIcon = (variant: "desktop" | "tablet") => {
     if (navbar.isAuthenticated && navbar.user && navbar.user.nombre) {
-      const primerNombre = navbar.user.nombre.split(" ")[0];
-      return (
-        <span
-          className={cn(
-            // Más espacio para el saludo, permite ver nombres largos
-            "max-w-[130px] min-w-[90px] truncate flex flex-col items-center leading-tight text-xs md:text-sm font-medium px-2",
-            navbar.showWhiteItems ? "text-white" : "text-black"
-          )}
-          aria-label={`Hola, ${primerNombre}`}
-          style={{ minWidth: 0 }}
-        >
-          Hola,
-          <br />
-          {primerNombre}
-        </span>
-      );
+      // Reemplaza el saludo por el dropdown de usuario
+      return <UserOptionsDropdown />;
     }
     return renderUserIcon(variant);
   };
@@ -566,7 +553,9 @@ export default function Navbar() {
                 "flex items-center justify-center w-10 h-10",
                 navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )}
-              aria-label={navbar.isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-label={
+                navbar.isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"
+              }
               aria-expanded={navbar.isMobileMenuOpen}
               aria-controls="mobile-menu"
               onClick={() => navbar.setIsMobileMenuOpen((open) => !open)}
@@ -705,7 +694,9 @@ export default function Navbar() {
                   >
                     <Image
                       src={
-                        navbar.showWhiteItems ? searchIconWhite : searchIconBlack
+                        navbar.showWhiteItems
+                          ? searchIconWhite
+                          : searchIconBlack
                       }
                       alt="Buscar"
                       width={26}

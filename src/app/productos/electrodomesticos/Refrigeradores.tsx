@@ -116,18 +116,14 @@ type UserInfo = {
   rol?: number;
 };
 
-
-
-
 export default function RefrigeradoresSection() {
-  const {  addToFavorites, removeFromFavorites, isFavorite } =
-    useFavorites();
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
   const [showGuestModal, setShowGuestModal] = useState(false);
-const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
-const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
@@ -263,47 +259,45 @@ const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   }, []);
 
   const handleAddToFavorites = (productId: string) => {
-      const rawUser = localStorage.getItem("imagiq_user");
-    const parsed = rawUser ? JSON.parse(rawUser) : null;
-    setUserInfo(parsed);
- 
-  if (parsed?.id) {
-    addToFavorites(productId, parsed);
-  } else {
-    // Mostrar modal y guardar el producto pendiente
-    setPendingFavorite(productId);
-    setShowGuestModal(true);
-  }
-};
-
- const handleRemoveToFavorites = (productId: string) => {
-      const rawUser = localStorage.getItem("imagiq_user");
+    const rawUser = localStorage.getItem("imagiq_user");
     const parsed = rawUser ? JSON.parse(rawUser) : null;
     setUserInfo(parsed);
 
-  if (parsed?.id) {
-    removeFromFavorites(productId, parsed);
-  } 
-};
-
-const handleGuestSubmit = async (guestUserData: {
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono: string;
-}) => {
-
-  setShowGuestModal(false);
-
-  if (pendingFavorite) {
-     const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
-    if (newUserInfo) {
-      setUserInfo(newUserInfo); // <- aquí se actualiza el estado local
+    if (parsed?.id) {
+      addToFavorites(productId, parsed);
+    } else {
+      // Mostrar modal y guardar el producto pendiente
+      setPendingFavorite(productId);
+      setShowGuestModal(true);
     }
-    setPendingFavorite(null);
-  }
-};
+  };
 
+  const handleRemoveToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
+    if (parsed?.id) {
+      removeFromFavorites(productId, parsed);
+    }
+  };
+
+  const handleGuestSubmit = async (guestUserData: {
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+  }) => {
+    setShowGuestModal(false);
+
+    if (pendingFavorite) {
+      const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
+      if (newUserInfo) {
+        setUserInfo(newUserInfo); // <- aquí se actualiza el estado local
+      }
+      setPendingFavorite(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -499,7 +493,7 @@ const handleGuestSubmit = async (guestUserData: {
                     }}
                     onToggleFavorite={(productId: string) => {
                       if (isFavorite(productId)) {
-                        handleRemoveToFavorites(productId)
+                        handleRemoveToFavorites(productId);
                       } else {
                         handleAddToFavorites(productId);
                       }
@@ -544,15 +538,14 @@ const handleGuestSubmit = async (guestUserData: {
         />
       )}
       {showGuestModal && (
-  <GuestDataModal
-    onSubmit={handleGuestSubmit}
-    onCancel={() => {
-      setShowGuestModal(false);
-      setPendingFavorite(null);
-    }}
-  />
-)}
-
+        <GuestDataModal
+          onSubmit={handleGuestSubmit}
+          onCancel={() => {
+            setShowGuestModal(false);
+            setPendingFavorite(null);
+          }}
+        />
+      )}
     </div>
   );
 }

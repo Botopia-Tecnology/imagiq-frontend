@@ -50,9 +50,11 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({ onSubmit, onCancel }) =
   };
 
   return (
-   <div className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50" onClick={onCancel} >
+ <div className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50" onClick={onCancel}>
 
-      <div className="bg-white p-6 rounded-md w-full max-w-md shadow-lg relative" onClick={(e) => e.stopPropagation()}>
+
+    <div  className="bg-white p-4 rounded-md w-full max-w-sm shadow-md relative transform translate-y-25" onClick={(e) => e.stopPropagation()}>
+
         <h2 className="text-xl font-semibold mb-4">Tus datos para guardar favoritos</h2>
 
         <div className="space-y-3" >
@@ -75,7 +77,8 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({ onSubmit, onCancel }) =
               name="apellido"
               value={formData.apellido}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 mt-1"
+              className="w-full border rounded px-2 py-1 mt-1 text-sm"
+
             />
             {errors.apellido && <p className="text-red-500 text-sm">{errors.apellido}</p>}
           </div>
@@ -110,7 +113,7 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({ onSubmit, onCancel }) =
           <button
             onClick={handleSubmit}
             className={cn(
-                          "w-full bg-sky-600 text-white py-3 px-4 rounded-lg text-sm font-semibold cursor-pointer",
+                          "w-full bg-sky-600 text-white py-2 px-3 rounded-md text-sm font-medium cursor-pointer",
                           "transition-all duration-200 flex items-center justify-center gap-2",
                           "hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed",
                        

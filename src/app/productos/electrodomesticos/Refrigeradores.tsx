@@ -292,11 +292,6 @@ const handleGuestSubmit = async (guestUserData: {
   email: string;
   telefono: string;
 }) => {
-  // Guardar en localStorage
-  //localStorage.setItem("imagiq_user", JSON.stringify(guestUserData));
-
-  // Opcional: actualizar estado global si usas contexto
-  // setUserInfo(guestUserData); 
 
   setShowGuestModal(false);
 

@@ -4,11 +4,9 @@
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useFavorites } from "@/features/products/useProducts";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import SkeletonCard from "@/components/SkeletonCard";
 import { useDeviceType } from "@/components/responsive";
 import { posthogUtils } from "@/lib/posthogClient";
-import CardExplore from "../productos/electrodomesticos/components/CardExplore";
 import ProductCard from "../productos/components/ProductCard";
 import ItemsPerPageSelector from "./ItemsPerPageSelector";
 import Pagination from "./Pagination";
@@ -21,7 +19,7 @@ export default function FavoritePage() {
   const lastFiltersRef = useRef<string>("");
     const { addToFavorites, removeFromFavorites, isFavorite } =
     useFavorites();
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [viewMode] = useState<"grid" | "list">("grid");
   const apiFilters = useMemo(
     () => ({
       subcategory: "Neveras,Nevecon",
@@ -46,7 +44,7 @@ export default function FavoritePage() {
   }, [apiFilters, currentPage, itemsPerPage]);
 
   const {
-    favorites,
+
     favoritesAPI,
     loading,
     error,

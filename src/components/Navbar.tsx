@@ -16,8 +16,8 @@ import { navbarRoutes } from "../routes/navbarRoutes";
 import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import TelevisionesDropdown from "./dropdowns/televisiones";
-import { usePointsContext } from "@/contexts/PointsContext";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
+import { PointsQCard } from "@/components/ui/PointsQCard";
 
 // Imports de imágenes
 import logoSamsungWhite from "@/img/logo_Samsung.png";
@@ -60,9 +60,6 @@ const getDropdownComponent = (
 export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navbar = useNavbarLogic();
-
-  // Obtener puntos Q acumulados del contexto global
-  const { totalPoints } = usePointsContext();
 
   // Helper para determinar colores de iconos basado en contexto
   const getIconColors = (variant: "desktop" | "tablet" | "mobile") => {
@@ -302,43 +299,15 @@ export default function Navbar() {
       "background 0.6s cubic-bezier(.4,0,.2,1), box-shadow 0.6s cubic-bezier(.4,0,.2,1)",
   };
 
-  // Helper para renderizar icono de puntos Q
-  const renderPointsIcon = (variant: "desktop" | "tablet") => {
-    const colorScheme = getIconColors(variant);
+  // Helper para renderizar mini card de puntos Q
+  const renderPointsQCard = (variant: "desktop" | "tablet") => {
+    const isDark = getIconColors(variant) === "white";
     return (
-      <div
-        className={cn(iconButtonClass, "relative")}
-        title="Puntos Q acumulados"
-        aria-label="Puntos Q acumulados"
-        style={{
-          minWidth: 40,
-          minHeight: 40,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Image
-          src={
-            colorScheme === "white" ? "/frame_white.png" : "/frame_black.png"
-          }
-          alt="Puntos Q"
-          width={28}
-          height={28}
-          priority
-        />
-        <span
-          className={cn(
-            "absolute -top-1 -right-1 bg-red-600 text-white text-xs rounded-full px-2 py-[2px] font-bold flex items-center justify-center transition-all duration-200",
-            totalPoints > 0 ? "opacity-100 scale-100" : "opacity-0 scale-0"
-          )}
-          style={{ minWidth: 22, minHeight: 18, pointerEvents: "none" }}
-          aria-label={`Puntos Q: ${totalPoints}`}
-          aria-live="polite"
-        >
-          {totalPoints > 999 ? "999+" : totalPoints}
-        </span>
-      </div>
+      <PointsQCard
+        variant={variant}
+        isDark={isDark}
+        className="flex-shrink-0"
+      />
     );
   };
 
@@ -459,7 +428,7 @@ export default function Navbar() {
                 />
               </button>
             </form>
-            {renderPointsIcon("desktop")}
+            {renderPointsQCard("desktop")}
             {renderUserGreetingOrIcon("desktop")}
             {renderCartIcon("desktop")}
             {renderFavoritesIcon("desktop")}
@@ -503,7 +472,7 @@ export default function Navbar() {
                 />
               )}
             </button>
-            {renderPointsIcon("tablet")}
+            {renderPointsQCard("tablet")}
             {renderUserGreetingOrIcon("tablet")}
             {renderCartIcon("tablet")}
             {renderFavoritesIcon("tablet")}

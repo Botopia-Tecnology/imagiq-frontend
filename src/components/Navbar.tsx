@@ -150,7 +150,7 @@ export default function Navbar() {
       title="Favoritos"
       aria-label="Favoritos"
       style={{ position: "relative" }}
-      onClick={() => navbar.router.push("/product-favoritos")}
+      onClick={() => navbar.router.push("/favoritos")}
     >
       <Image
         src={navbar.showWhiteItems ? favoritoIconWhite : favoritoIconBlack}

@@ -8,7 +8,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -428,9 +428,9 @@ export default function Navbar() {
                 }
                 style={{
                   letterSpacing: "0.08em",
-                  marginBottom: "11px", // Ajusta este valor según sea necesario
-                  lineHeight: "normal", // O ajusta el line-height según lo necesites
-                  alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
+                  marginBottom: "11px",
+                  lineHeight: "normal",
+                  alignSelf: "flex-end",
                 }}
               >
                 Store
@@ -477,7 +477,7 @@ export default function Navbar() {
             {renderCartIcon("desktop")}
             {renderFavoritesIcon("desktop")}
           </div>
-          {/* Iconos tablet */}
+          {/*Iconos tablet */}
           <div className="hidden md:flex lg:hidden items-center space-x-4">
             <button
               className={cn(
@@ -522,18 +522,60 @@ export default function Navbar() {
             {renderFavoritesIcon("tablet")}
             {renderSearchOverlay()}
           </div>
+
           {/* Navbar móvil */}
-          <div className="flex md:hidden items-center h-16 space-x-4 align-end">
-            {renderCartIcon("mobile")}
-            <button
+          <div className="flex md:hidden items-center h-16 space-x-4  align-end">
+            {/* Icono carrito */}
+            <Link
+              href="/carrito"
               className={cn(
-                iconButtonClass,
+                "flex items-center justify-center w-10 h-10 relative",
                 navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )}
-              aria-label="Abrir menú"
+              title="Carrito"
+              onClick={navbar.handleCartClick}
+            >
+              <Image
+                src={
+                  navbar.showWhiteItemsMobile
+                    ? carritoIconWhite
+                    : carritoIconBlack
+                }
+                alt="Carrito"
+                width={34}
+                height={34}
+                priority
+              />
+              {navbar.isClient && (
+                <span
+                  className={cn(
+                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
+                    navbar.itemCount > 0
+                      ? "opacity-100 scale-100"
+                      : "opacity-0 scale-0"
+                  )}
+                  aria-label={`Carrito: ${navbar.itemCount} productos`}
+                >
+                  {navbar.itemCount > 99 ? "99+" : navbar.itemCount}
+                </span>
+              )}
+            </Link>
+            {/* Icono menú hamburguesa */}
+            <button
+              className={cn(
+                "flex items-center justify-center w-10 h-10",
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+              )}
+              aria-label={navbar.isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"}
+              aria-expanded={navbar.isMobileMenuOpen}
+              aria-controls="mobile-menu"
               onClick={() => navbar.setIsMobileMenuOpen((open) => !open)}
             >
-              <Menu className="w-6 h-6" />
+              {navbar.isMobileMenuOpen ? (
+                <X className="w-8 h-8" />
+              ) : (
+                <Menu className="w-7 h-7" />
+              )}
             </button>
           </div>
         </div>
@@ -547,10 +589,8 @@ export default function Navbar() {
               : "max-h-20 opacity-100"
           )}
         >
-          {/* NAVBAR DESKTOP: Espaciado reducido y responsivo solo para PC */}
           <ul className="flex items-center justify-center gap-4 xl:gap-8 py-4 px-4 md:px-8 min-w-max">
             {navbarRoutes.map((item) => {
-              // Indicador activo
               const isActive =
                 item.name === "Electrodomésticos"
                   ? navbar.pathname.startsWith("/productos/Electrodomesticos")
@@ -562,7 +602,7 @@ export default function Navbar() {
                     navbar.cleanPath.startsWith(item.href + "/") ||
                     navbar.cleanPath.startsWith(item.href + "?") ||
                     navbar.cleanPath.startsWith(item.href + "#");
-              // Clases animación hover suave mejorada SOLO Tailwind
+
               const itemTextColor = navbar.showWhiteItems
                 ? "text-white"
                 : "text-gray-800";
@@ -570,7 +610,6 @@ export default function Navbar() {
                 navbar.showWhiteItems && isActive
                   ? "bg-white"
                   : "bg-gradient-to-r from-blue-500 via-blue-400 to-blue-600";
-              // Animación hover: fade + slide + escala, curva personalizada
               const hoverClass = cn(
                 "transition-all duration-900 ease-[cubic-bezier(.4,0,.2,1)] will-change-transform will-change-opacity transform-gpu",
                 navbar.showWhiteItems
@@ -602,7 +641,6 @@ export default function Navbar() {
                     >
                       <span className="relative flex flex-col items-center">
                         {item.name}
-                        {/* Indicador activo con animación fade/slide */}
                         <span
                           className={cn(
                             "hidden md:block w-full mt-1 rounded-full transition-all duration-900 ease-[cubic-bezier(.4,0,.2,1)] will-change-transform will-change-opacity transform-gpu",
@@ -614,7 +652,6 @@ export default function Navbar() {
                         />
                       </span>
                     </Link>
-                    {/* Dropdown con animación fade + slide */}
                     {navbar.activeDropdown === item.name &&
                       getDropdownComponent(item.name)}
                   </div>
@@ -623,35 +660,32 @@ export default function Navbar() {
             })}
           </ul>
         </nav>
+
         {/* Overlay menú móvil */}
         {navbar.isMobileMenuOpen && (
           <>
-            {/* Overlay oscuro, clickeable para cerrar */}
+            {/* Overlay oscuro */}
             <div
               className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-black/60 z-40 animate-fade-in transition-opacity duration-500"
               onClick={() => navbar.setIsMobileMenuOpen(false)}
               aria-label="Cerrar menú móvil"
             />
-            {/* Menú hamburguesa animado */}
+            {/* Panel del menú móvil */}
             <div
+              id="mobile-menu"
               className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-white z-50 shadow-2xl border-t border-gray-200 flex flex-col animate-slide-in transition-all duration-500 overflow-y-auto rounded-b-2xl"
               style={{ minHeight: "60vh", maxHeight: "calc(100vh - 4rem)" }}
               role="menu"
               aria-label="Menú móvil"
             >
-              {/* Botón de cierre grande y visible */}
-              <button
-                className="absolute top-4 right-6 text-gray-700 hover:text-blue-700 text-3xl font-bold focus:outline-none bg-white/80 rounded-full p-2 shadow-md transition-colors duration-300"
-                aria-label="Cerrar menú"
-                onClick={() => navbar.setIsMobileMenuOpen(false)}
-                tabIndex={0}
-              >
-                &#10005;
-              </button>
-              <div className="flex flex-col items-start px-15 mt-5 space-y-8 w-full max-w-sm">
+              {/* 🔧 QUITADO el botón “X” interno para evitar duplicado */}
+
+              {/* 🔧 Contenido ahora ocupa todo el ancho (sin max-w) */}
+              <div className="flex flex-col items-start px-4 sm:px-6 mt-5 space-y-8 w-full">
+                {/* 🔧 Buscador más largo: w-full dentro de contenedor ancho */}
                 <form
                   onSubmit={navbar.handleSearchSubmit}
-                  className="flex items-center bg-white/70 backdrop-blur-md mb-10 rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-full"
+                  className="flex items-center bg-white/70 backdrop-blur-md  mb-10 rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-full"
                   style={{ zIndex: 1000, overflow: "hidden" }}
                 >
                   <input
@@ -671,9 +705,7 @@ export default function Navbar() {
                   >
                     <Image
                       src={
-                        navbar.showWhiteItems
-                          ? searchIconWhite
-                          : searchIconBlack
+                        navbar.showWhiteItems ? searchIconWhite : searchIconBlack
                       }
                       alt="Buscar"
                       width={26}
@@ -682,7 +714,6 @@ export default function Navbar() {
                     />
                   </button>
                 </form>
-                {/* Ítems del menú con padding y área de toque mejorada */}
 
                 {/* Ítems del menú móvil */}
                 <div
@@ -690,7 +721,101 @@ export default function Navbar() {
                   role="menu"
                   aria-label="Opciones de navegación"
                 >
-                  {renderMobileMenuItems()}
+                  {navbarRoutes.map((item) => {
+                    const hasDropdown =
+                      item.name === "Dispositivos móviles" ||
+                      item.name == "Televisores y AV" ||
+                      item.name === "Electrodomésticos";
+
+                    const isDropdownOpen = activeDropdown === item.name;
+
+                    const someDropdownOpen = Boolean(activeDropdown);
+
+                    const matchesUrl =
+                      navbar.pathname === item.href ||
+                      navbar.pathname.startsWith(item.href + "/") ||
+                      navbar.pathname.startsWith(item.href + "?") ||
+                      navbar.cleanPath === item.href ||
+                      navbar.cleanPath.startsWith(item.href + "/") ||
+                      navbar.cleanPath.startsWith(item.href + "?");
+
+                    const isActive = hasDropdown
+                      ? activeDropdown === item.name || matchesUrl // dropdown activo si está abierto o la URL coincide
+                      : someDropdownOpen
+                      ? false // si hay dropdown abierto, no resaltar los links normales
+                      : matchesUrl; // si no hay dropdown abierto, marcar por URL
+                    return (
+                      <div key={item.name} className="flex flex-col">
+                        {hasDropdown ? (
+                          <button
+                            onClick={() => {
+                              setActiveDropdown((prev) =>
+                                prev === item.name ? null : item.name
+                              );
+                            }}
+                            className={cn(
+                              "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100",
+                              isActive && "bg-blue-50 text-blue-700 shadow"
+                            )}
+                            aria-label={item.name}
+                            aria-current={isActive ? "page" : undefined}
+                          >
+                            {item.name}
+                          </button>
+                        ) : (
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100",
+                              isActive && "bg-blue-50 text-blue-700 shadow"
+                            )}
+                            aria-label={item.name}
+                            aria-current={isActive ? "page" : undefined}
+                            onClick={() => {
+                              navbar.setIsMobileMenuOpen(false);
+                              setActiveDropdown(null); // Cierra cualquier dropdown
+                              // También podrías cerrar menú móvil aquí si lo tenés
+                            }}
+                          >
+                            {item.name}
+                          </Link>
+                        )}
+
+                        {/* Dropdown si aplica */}
+                        {hasDropdown && isDropdownOpen && (
+                          <div className="ml-4 mt-2">
+                            {item.name === "Dispositivos móviles" && (
+                              <DispositivosMovilesDropdown
+                                isMobile
+                                onItemClick={() => {
+                                  setActiveDropdown(null);
+                                  navbar.setIsMobileMenuOpen(false);
+                                }}
+                              />
+                            )}
+                            {item.name == "Televisores y AV" && (
+                              <TelevisionesDropdown
+                                isMobile
+                                onItemClick={() => {
+                                  setActiveDropdown(null);
+                                  navbar.setIsMobileMenuOpen(false);
+                                }}
+                              />
+                            )}
+                            {item.name === "Electrodomésticos" && (
+                              <ElectrodomesticosDropdown
+                                isMobile
+                                onItemClick={() => {
+                                  setActiveDropdown(null);
+                                  navbar.setIsMobileMenuOpen(false);
+                                }}
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>

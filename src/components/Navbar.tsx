@@ -472,11 +472,137 @@ export default function Navbar() {
                 />
               )}
             </button>
-            {renderPointsQCard("tablet")}
-            {renderUserGreetingOrIcon("tablet")}
-            {renderCartIcon("tablet")}
-            {renderFavoritesIcon("tablet")}
-            {renderSearchOverlay()}
+            {/* Icono login */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center justify-center w-10 h-10 text-black",
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
+                  ? "text-black"
+                  : navbar.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
+              aria-label={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
+              onClick={() => {
+                posthogUtils.capture("user_icon_click", {
+                  user_authenticated: navbar.isAuthenticated,
+                  destination: "login",
+                });
+                window.location.replace("/login");
+              }}
+            >
+              <Image
+                src={navbar.showWhiteItems ? userIconWhite : userIconBlack}
+                alt="Usuario"
+                width={28}
+                height={28}
+                priority
+              />
+            </button>
+            {/* Icono carrito */}
+            <Link
+              href="/carrito"
+              className={cn(
+                "flex items-center justify-center w-10 h-10 relative text-black",
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
+                  ? "text-black"
+                  : navbar.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title="Carrito de compras"
+              onClick={navbar.handleCartClick}
+            >
+              <Image
+                src={
+                  navbar.showWhiteItems ? carritoIconWhite : carritoIconBlack
+                }
+                alt="Carrito"
+                width={34}
+                height={34}
+                priority
+              />
+              {navbar.isClient && navbar.cartCount > 0 && (
+                <span
+                  className={cn(
+                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-transform duration-150 ease-out",
+                    navbar.bump ? "scale-110" : "scale-100"
+                  )}
+                  aria-label={`Carrito: ${navbar.cartCount} productos`}
+                  aria-live="polite"
+                >
+                  {navbar.cartCount > 99 ? "99+" : navbar.cartCount}
+                </span>
+              )}
+            </Link>
+            {/* Icono favoritos */}
+            <button
+              type="button"
+              className={cn(
+                "flex items-center justify-center w-10 h-10",
+                navbar.isDispositivosMoviles ||
+                  navbar.isElectrodomesticos ||
+                  navbar.isMasInformacionProducto
+                  ? "text-black"
+                  : navbar.showWhiteItems
+                  ? "text-white"
+                  : "text-black"
+              )}
+              title="Favoritos"
+              aria-label="Favoritos"
+              style={{ position: "relative" }}
+              onClick={() => navbar.router.push("/product-favoritos")}
+            >
+              <Image
+                src={
+                  navbar.showWhiteItems ? favoritoIconWhite : favoritoIconBlack
+                }
+                alt="Favoritos"
+                width={20}
+                height={21}
+                priority
+              />
+            </button>
+            {navbar.searchQuery === "focus" && (
+              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
+                <form
+                  onSubmit={navbar.handleSearchSubmit}
+                  className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
+                >
+                  <input
+                    type="text"
+                    className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
+                    placeholder="Buscar..."
+                    autoFocus
+                    value={
+                      navbar.searchQuery !== "focus" ? navbar.searchQuery : ""
+                    }
+                    onChange={(e) => navbar.setSearchQuery(e.target.value)}
+                  />
+                  <button type="submit" className="ml-2">
+                    <Image
+                      src={searchIconWhite}
+                      alt="Buscar"
+                      width={26}
+                      height={26}
+                      priority
+                    />
+                  </button>
+                  <button
+                    type="button"
+                    className="ml-4 text-white text-2xl font-bold focus:outline-none"
+                    aria-label="Cerrar buscador"
+                    onClick={() => navbar.setSearchQuery("")}
+                  ></button>
+                </form>
+              </div>
+            )}
           </div>
 
           {/* Navbar móvil */}

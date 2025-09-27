@@ -53,7 +53,7 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response.json();
+      const data = await response?.json();
 
       return {
         data: data as T,
@@ -100,32 +100,93 @@ export const apiClient = new ApiClient();
 
 // Helper functions for URL encoding/decoding
 export const encodeCodigoMarketForUrl = (codigoMarket: string): string => {
-  return codigoMarket.replace(/\//g, '_');
+  return codigoMarket.replace(/\//g, "_");
 };
 
 export const decodeCodigoMarketFromUrl = (urlId: string): string => {
-  return urlId.replace(/_/g, '/');
+  return urlId.replace(/_/g, "/");
 };
 
 // Product API endpoints
 export const productEndpoints = {
-  getAll: () => apiClient.get<ProductApiResponse>('/api/products'),
+  getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
   getFiltered: (params: ProductFilterParams) => {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
+      if (value !== undefined && value !== null && value !== "") {
         searchParams.append(key, String(value));
       }
     });
     const url = `/api/products/filtered?${searchParams.toString()}`;
     return apiClient.get<ProductApiResponse>(url);
   },
-  getById: (id: string) => apiClient.get<ProductApiResponse>(`/api/products/${id}`),
-  getByCategory: (category: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?categoria=${category}`),
-  getBySubcategory: (subcategory: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?subcategoria=${subcategory}`),
-  getByCodigoMarket: (codigoMarket: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?codigoMarket=${codigoMarket}`),
-  search: (query: string) => apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
-  getOffers: () => apiClient.get<ProductApiResponse>('/api/products/filtered?conDescuento=true'),
+  getById: (id: string) =>
+    apiClient.get<ProductApiResponse>(`/api/products/${id}`),
+  getByCategory: (category: string) =>
+    apiClient.get<ProductApiResponse>(
+      `/api/products/filtered?categoria=${category}`
+    ),
+  getBySubcategory: (subcategory: string) =>
+    apiClient.get<ProductApiResponse>(
+      `/api/products/filtered?subcategoria=${subcategory}`
+    ),
+  getByCodigoMarket: (codigoMarket: string) =>
+    apiClient.get<ProductApiResponse>(
+      `/api/products/filtered?codigoMarket=${codigoMarket}`
+    ),
+  search: (query: string) =>
+    apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
+  getOffers: () =>
+    apiClient.get<ProductApiResponse>(
+      "/api/products/filtered?conDescuento=true"
+    ),
+  getFavorites: (id: string, params?: FavoriteFilterParams) => {
+    const searchParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          searchParams.append(key, String(value));
+        }
+      });
+    }
+
+    const queryString = searchParams.toString();
+    const url = queryString
+      ? `/api/products/favorites/${id}?${queryString}`
+      : `/api/products/favorites/${id}`;
+
+    return apiClient.get<FavoriteApiResponse>(url);
+  },
+  addFavorite: (data: {
+    productSKU: string;
+    userInfo: {
+      //userId?: string;
+      id?: string;
+      nombre?: string;
+      apellido?: string;
+      email?: string;
+      telefono?: string;
+      numero_documento?: string;
+      rol?: string;
+    };
+  }) =>
+    apiClient.post<{
+      productSKU: string;
+      userInfo: {
+        id?: string;
+        //userId?: string;
+        nombre?: string;
+        apellido?: string;
+        email?: string;
+        telefono?: string;
+        numero_documento?: string | null;
+        rol?: number;
+      };
+    }>(`/api/products/add-to-favorites`, data),
+  removeFavorite: (id: string, productSKU: string) =>
+    apiClient.delete<void>(
+      `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
+    ),
 };
 
 // Product filter parameters interface
@@ -139,8 +200,14 @@ export interface ProductFilterParams {
   color?: string;
   capacidad?: string;
   nombre?: string;
-  desDetallada?: string; 
+  desDetallada?: string;
   codigoMarket?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Favorite filter
+export interface FavoriteFilterParams {
   page?: number;
   limit?: number;
 }
@@ -173,4 +240,13 @@ export interface ProductApiData {
   precioDescto: number[];
   fechaInicioVigencia: string[];
   fechaFinalVigencia: string[];
+}
+
+export interface FavoriteApiResponse {
+  products: ProductApiData[];
+  totalItems: number;
+  totalPages: number;
+  currentPage: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
 }

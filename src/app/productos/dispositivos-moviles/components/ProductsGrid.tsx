@@ -3,11 +3,11 @@
  * con funcionalidades avanzadas y manejo de estados
  */
 
-import { forwardRef } from "react";
+import { forwardRef, useState } from "react";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import ProductCard, {
-  type ProductCardProps,
-} from "../../components/ProductCard";
+import ProductCard, { type ProductCardProps } from "../../components/ProductCard";
+import { useFavorites } from "@/features/products/useProducts";
+import GuestDataModal from "../../components/GuestDataModal";
 
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
@@ -15,24 +15,73 @@ interface CategoryProductsGridProps {
   error: string | null;
   refreshProducts: () => void;
   viewMode?: "grid" | "list";
-  categoryName: string; // Nombre de la categoría para mensajes personalizados
+  categoryName: string;
 }
 
-const CategoryProductsGrid = forwardRef<
-  HTMLDivElement,
-  CategoryProductsGridProps
->(
+type UserInfo = {
+  id?: string;
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  telefono?: string;
+  numero_documento?: string | null;
+  rol?: number;
+};
+
+const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProps>(
   (
-    {
-      products,
-      loading,
-      error,
-      refreshProducts,
-      viewMode = "grid",
-      categoryName,
-    },
+    { products, loading, error, refreshProducts, viewMode = "grid", categoryName },
     ref
   ) => {
+    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    const [showGuestModal, setShowGuestModal] = useState(false);
+    const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
+
+    const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+
+
+
+   const handleAddToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
+    if (parsed?.id) {
+      addToFavorites(productId, parsed);
+    } else {
+      // Mostrar modal y guardar el producto pendiente
+      setPendingFavorite(productId);
+      setShowGuestModal(true);
+    }
+  };
+
+     const handleRemoveToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
+    if (parsed?.id) {
+      removeFromFavorites(productId, parsed);
+    }
+  };
+
+    const handleGuestSubmit = async (guestUserData: {
+      nombre: string;
+      apellido: string;
+      email: string;
+      telefono: string;
+    }) => {
+      setShowGuestModal(false);
+
+      if (pendingFavorite) {
+        const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
+        if (newUserInfo) {
+          setUserInfo(newUserInfo);
+        }
+        setPendingFavorite(null);
+      }
+    };
+
     if (loading) {
       return (
         <div className="flex justify-center items-center min-h-[400px]">
@@ -62,8 +111,7 @@ const CategoryProductsGrid = forwardRef<
       <div ref={ref} className="flex flex-wrap gap-6">
         {products.length === 0 ? (
           <div className="w-full text-center py-12 text-gray-500">
-            No se encontraron {categoryName.toLowerCase()} con los filtros
-            seleccionados.
+            No se encontraron {categoryName.toLowerCase()} con los filtros seleccionados.
           </div>
         ) : (
           products.map((product) => (
@@ -75,16 +123,31 @@ const CategoryProductsGrid = forwardRef<
             >
               <ProductCard
                 {...product}
+                isFavorite={isFavorite(product.id)}
                 onAddToCart={() => {
                   // TODO: Implementar lógica de añadir al carrito
                 }}
-                onToggleFavorite={() => {
-                  // TODO: Implementar lógica de toggle favorito
+                onToggleFavorite={(productId: string) => {
+                  if (isFavorite(productId)) {
+                    handleRemoveToFavorites(productId);
+                  } else {
+                    handleAddToFavorites(productId);
+                  }
                 }}
                 className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
               />
             </div>
           ))
+        )}
+
+        {showGuestModal && (
+          <GuestDataModal
+            onSubmit={handleGuestSubmit}
+            onCancel={() => {
+              setShowGuestModal(false);
+              setPendingFavorite(null);
+            }}
+          />
         )}
       </div>
     );

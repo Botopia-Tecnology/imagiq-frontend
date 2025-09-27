@@ -23,7 +23,9 @@ import { Filter, Grid3X3, List } from "lucide-react";
 import { useDeviceType } from "@/components/responsive";
 import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
 import Pagination from "./components/Pagination";
+import { useFavorites } from "@/features/products/useProducts";
 import ProductCard from "../components/ProductCard";
+import GuestDataModal from "../components/GuestDataModal";
 
 const applianceCategories: Category[] = [
   {
@@ -104,16 +106,36 @@ const refrigeradoresFilters: FilterConfig = {
     { label: "Más de $4.000.000", min: 4000000, max: Infinity },
   ],
 };
+type UserInfo = {
+  id?: string;
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  telefono?: string;
+  numero_documento?: string | null;
+  rol?: number;
+};
 
 export default function RefrigeradoresSection() {
+  const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["tipo"])
   );
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
+
+  // Cargar información del usuario al montar el componente
+  useEffect(() => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+  }, []);
 
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -235,6 +257,47 @@ export default function RefrigeradoresSection() {
     // Scroll suave hacia arriba cuando cambie la cantidad de productos por página
     window.scrollTo({ top: 200, behavior: "smooth" });
   }, []);
+
+  const handleAddToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
+    if (parsed?.id) {
+      addToFavorites(productId, parsed);
+    } else {
+      // Mostrar modal y guardar el producto pendiente
+      setPendingFavorite(productId);
+      setShowGuestModal(true);
+    }
+  };
+
+  const handleRemoveToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
+    if (parsed?.id) {
+      removeFromFavorites(productId, parsed);
+    }
+  };
+
+  const handleGuestSubmit = async (guestUserData: {
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+  }) => {
+    setShowGuestModal(false);
+
+    if (pendingFavorite) {
+      const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
+      if (newUserInfo) {
+        setUserInfo(newUserInfo); // <- aquí se actualiza el estado local
+      }
+      setPendingFavorite(null);
+    }
+  };
 
   if (loading) {
     return (
@@ -424,11 +487,16 @@ export default function RefrigeradoresSection() {
                     originalPrice={product.originalPrice}
                     discount={product.discount}
                     isNew={product.isNew}
+                    isFavorite={isFavorite(product.id)}
                     onAddToCart={(productId: string, color: string) => {
                       console.log(`Añadir al carrito: ${productId} - ${color}`);
                     }}
                     onToggleFavorite={(productId: string) => {
-                      console.log(`Toggle favorito: ${productId}`);
+                      if (isFavorite(productId)) {
+                        handleRemoveToFavorites(productId);
+                      } else {
+                        handleAddToFavorites(productId);
+                      }
                     }}
                     className={viewMode === "list" ? "flex-row" : ""}
                   />
@@ -467,6 +535,15 @@ export default function RefrigeradoresSection() {
           expandedFilters={expandedFilters}
           onToggleFilter={toggleFilter}
           trackingPrefix="refrigerador_filter"
+        />
+      )}
+      {showGuestModal && (
+        <GuestDataModal
+          onSubmit={handleGuestSubmit}
+          onCancel={() => {
+            setShowGuestModal(false);
+            setPendingFavorite(null);
+          }}
         />
       )}
     </div>

@@ -8,7 +8,6 @@
  * - Tracking de eventos de login con PostHog
  */
 
-
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
 import { Usuario } from "@/types/user";
@@ -25,7 +24,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 // Login success response
 interface LoginSuccessResponse {
   access_token: string;
-  user: Omit<Usuario, "contrasena" | "tipo_documento" | "numero_documento">;
+  user: Omit<Usuario, "contrasena" | "tipo_documento">;
 }
 
 // Login error response
@@ -237,8 +236,11 @@ export default function LoginPage() {
       login({
         id: user.id,
         email: user.email,
-        name: user.nombre,
-        last_name: user.apellido,
+        nombre: user.nombre,
+        apellido: user.apellido,
+        numero_documento: user.numero_documento,
+        telefono: user.telefono,
+        role: user.rol,
       });
       posthogUtils.capture("login_success", {
         user_id: user.id,
@@ -246,7 +248,7 @@ export default function LoginPage() {
         email: user.email,
       });
       setTimeout(() => {
-        router.push(user.rol === "admin" ? "/dashboard" : "/tienda");
+        router.push(user.rol === 1? "/dashboard" : "/");
       }, 500);
       //await fetchAllFavorites()// Actualizar favoritos tras login
     } catch (err) {

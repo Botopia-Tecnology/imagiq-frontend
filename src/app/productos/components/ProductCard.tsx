@@ -58,6 +58,7 @@ export interface ProductCardProps {
   detailedDescription?: string | null;
   selectedColor?: ProductColor;
   setSelectedColor?: (color: ProductColor) => void;
+  puntos_q?: number; // Puntos Q acumulables por producto (valor fijo por ahora)
 }
 
 // Función para limpiar el nombre del producto
@@ -87,17 +88,17 @@ const cleanProductName = (productName: string): string => {
   let cleanedName = productName;
 
   // Eliminar patrones de conectividad
-  connectivityPatterns.forEach(pattern => {
-    cleanedName = cleanedName.replace(pattern, ' ');
+  connectivityPatterns.forEach((pattern) => {
+    cleanedName = cleanedName.replace(pattern, " ");
   });
 
   // Eliminar patrones de almacenamiento
-  storagePatterns.forEach(pattern => {
-    cleanedName = cleanedName.replace(pattern, ' ');
+  storagePatterns.forEach((pattern) => {
+    cleanedName = cleanedName.replace(pattern, " ");
   });
 
   // Limpiar espacios múltiples y espacios al inicio/final
-  cleanedName = cleanedName.replace(/\s+/g, ' ').trim();
+  cleanedName = cleanedName.replace(/\s+/g, " ").trim();
 
   return cleanedName;
 };
@@ -116,7 +117,8 @@ export default function ProductCard({
   className,
   sku,
   selectedColor: selectedColorProp,
-}: ProductCardProps) {
+  puntos_q = 4, // Valor fijo por defecto
+}: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -124,17 +126,15 @@ export default function ProductCard({
   const { addProduct } = useCartContext();
 
   // Si el estado viene de props, úsalo. Si no, usa local.
-  const [selectedColorLocal] =
-    useState<ProductColor | null>(
-      colors && colors.length > 0 ? colors[0] : null
-    );
+  const [selectedColorLocal] = useState<ProductColor | null>(
+    colors && colors.length > 0 ? colors[0] : null
+  );
   const selectedColor = selectedColorProp ?? selectedColorLocal;
 
   // Calcular precios dinámicos basados en el color seleccionado
   const currentPrice = selectedColor?.price || price;
   const currentOriginalPrice = selectedColor?.originalPrice || originalPrice;
   const currentDiscount = selectedColor?.discount || discount;
-
 
   const handleAddToCart = async () => {
     setIsLoading(true);
@@ -156,6 +156,7 @@ export default function ProductCard({
           : currentPrice || 0,
       quantity: 1,
       sku: selectedColor?.sku || sku || id, // Usar el SKU del color seleccionado
+      puntos_q, // Nuevo campo: puntos acumulables
     });
     setIsLoading(false);
   };
@@ -351,7 +352,11 @@ export default function ProductCard({
               isLoading && "animate-pulse"
             )}
           >
-            {isLoading ? <Loader className="w-4 h-4" /> : <ShoppingCart className="w-4 h-4" />}
+            {isLoading ? (
+              <Loader className="w-4 h-4" />
+            ) : (
+              <ShoppingCart className="w-4 h-4" />
+            )}
             <span>Añadir al carrito</span>
           </button>
         </div>
@@ -427,7 +432,11 @@ export default function ProductCard({
               isLoading && "animate-pulse"
             )}
           >
-            {isLoading ? <Loader className="w-3 h-3" /> : <ShoppingCart className="w-3 h-3" />}
+            {isLoading ? (
+              <Loader className="w-3 h-3" />
+            ) : (
+              <ShoppingCart className="w-3 h-3" />
+            )}
             <span>Añadir al carrito</span>
           </button>
         </div>

@@ -140,7 +140,6 @@ export default function VideosSection() {
       className="w-full py-16 px-4"
       style={{
         fontFamily: "SamsungSharpSans",
-        background: "#000000", // Fondo negro sólido
         minHeight: "80vh",
       }}
       aria-label="Sección de videos promocionales"

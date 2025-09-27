@@ -28,6 +28,8 @@ import packageIcon from "@/img/iconos/package_car.png";
 import percentIcon from "@/img/iconos/Percent_light.png";
 
 // Importar imagen del dispositivo por defecto
+// Importar contexto para funcionalidad de color dinámico
+import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import deviceImage from "@/img/dispositivosmoviles/cel1.png";
 
 // Importar imagen de Entrego y Estreno
@@ -35,7 +37,11 @@ import entregoEstrenoLogo from "@/img/entrego-estreno/entrego-estreno-logo.png";
 import gifEntregoEstreno from "@/img/gif/gif-entrego-estreno.gif";
 
 // Importar hook de variantes de dispositivos
-import { useDeviceVariants, DeviceVariant } from "@/hooks/useDeviceVariants";
+import {
+  useDeviceVariants,
+  DeviceVariant,
+  ColorOption,
+} from "@/hooks/useDeviceVariants";
 
 // Componente DetailsProduct integrado
 function DetailsProductSection({ productId }: { productId: string }) {
@@ -56,32 +62,90 @@ function DetailsProductSection({ productId }: { productId: string }) {
     setSelectedColor,
   } = useDeviceVariants(productId);
 
+  // Contexto global para el color seleccionado (sincronización entre componentes)
+  const {
+    selectedColor: globalSelectedColor,
+    setSelectedColor: setGlobalSelectedColor,
+  } = useSelectedColor();
+
+  // Hook para generar estilos dinámicos basados en el color seleccionado (opcional para futuras mejoras)
+  // const { backgroundStyle } = useDynamicBackgroundColor({
+  //   selectedColor: selectedColor?.hex || globalSelectedColor,
+  //   intensity: 0.4
+  // });
+
+  // Función para manejar la selección de color (sincroniza local y contexto global)
+  const handleColorSelection = (colorOption: ColorOption) => {
+    setSelectedColor(colorOption);
+    // Sincronizar con el contexto global para que otros componentes puedan reaccionar
+    if (colorOption?.hex) {
+      setGlobalSelectedColor(colorOption.hex);
+    }
+  };
+
+  // Función para generar sombra dinámica basada en el color seleccionado
+  const getDynamicShadowStyle = () => {
+    const shadowColor = selectedColor?.hex || globalSelectedColor || "#17407A";
+
+    // Convertir hex a rgba para la sombra con opacidad
+    const hexToRgba = (hex: string, alpha: number = 0.25) => {
+      let c = hex.replace("#", "");
+      if (c.length === 3) {
+        c = c
+          .split("")
+          .map((x) => x + x)
+          .join("");
+      }
+      const num = parseInt(c, 16);
+      const r = (num >> 16) & 255;
+      const g = (num >> 8) & 255;
+      const b = num & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+
+    // Sombra multicapa premium: profundidad, halo y color dinámico
+    return {
+      boxShadow: [
+        // Sombra base profunda
+        `0 8px 32px 0 ${hexToRgba(shadowColor, 0.32)}`,
+        // Sombra secundaria más suave
+        `0 2px 8px 0 ${hexToRgba(shadowColor, 0.13)}`,
+        // Halo exterior sutil
+        `0 0 0 8px ${hexToRgba(shadowColor, 0.07)}`,
+        // Sombra neutra para contraste
+        "0 1.5px 8px 0 rgba(30,41,59,0.08)",
+      ].join(", "),
+      transition: "box-shadow 0.7s cubic-bezier(0.4,0,0.2,1)",
+      willChange: "box-shadow",
+    };
+  };
+
   // Estado para el hover del botón flotante Entrego y Estreno
   const [isFloatingHovered, setIsFloatingHovered] = useState(false);
 
   // Función para formatear precios
-  const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
+  const formatPrice = (price: number) => `$ ${price.toLocaleString("es-CO")}`;
 
   // Función para obtener el precio a mostrar
   const getDisplayPrice = (variant: DeviceVariant | null) => {
     if (!variant) return "Precio no disponible";
-    const price = variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
+    const price =
+      variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
     return formatPrice(price);
   };
-
-
 
   // Función para verificar si la combinación actual tiene stock
   const hasStock = () => {
     if (!selectedDevice || !selectedStorage || !selectedColor) return true;
-    
+
     // Buscar la variante que coincida con la selección actual
-    const variant = selectedColor.variants.find(v => 
-      v.nombreMarket === selectedDevice.nombreMarket &&
-      v.capacidad === selectedStorage.capacidad &&
-      v.color.toLowerCase() === selectedColor.color.toLowerCase()
+    const variant = selectedColor.variants.find(
+      (v) =>
+        v.nombreMarket === selectedDevice.nombreMarket &&
+        v.capacidad === selectedStorage.capacidad &&
+        v.color.toLowerCase() === selectedColor.color.toLowerCase()
     );
-    
+
     return variant ? variant.stock > 0 : false;
   };
 
@@ -248,8 +312,11 @@ function DetailsProductSection({ productId }: { productId: string }) {
 
               {/* Columna Centro - Dispositivo */}
               <div className="col-span-5 flex flex-col items-center space-y-8">
-                {/* Carrusel de dispositivos */}
-                <div className="relative bg-gray-100 rounded-2xl p-8 w-full max-w-2xl">
+                {/* Carrusel de dispositivos con sombra dinámica basada en color seleccionado */}
+                <div
+                  className="relative bg-gray-100 rounded-2xl p-8 w-full max-w-2xl"
+                  style={getDynamicShadowStyle()}
+                >
                   {/* Flechas de navegación */}
                   <button
                     className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-2xl z-10"
@@ -334,7 +401,8 @@ function DetailsProductSection({ productId }: { productId: string }) {
                           <button
                             key={deviceOption.nombreMarket}
                             className={`flex items-center justify-between w-full rounded-xl border px-5 py-4 transition-colors shadow-sm focus:outline-none ${
-                              selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                              selectedDevice?.nombreMarket ===
+                              deviceOption.nombreMarket
                                 ? "border-[#17407A] bg-[#F2F6FA]"
                                 : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
                             }`}
@@ -344,12 +412,14 @@ function DetailsProductSection({ productId }: { productId: string }) {
                             <div className="flex items-center gap-4">
                               <span
                                 className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                                  selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                                  selectedDevice?.nombreMarket ===
+                                  deviceOption.nombreMarket
                                     ? "border-[#17407A] bg-[#17407A]"
                                     : "border-[#BFD7F2] bg-white"
                                 }`}
                               >
-                                {selectedDevice?.nombreMarket === deviceOption.nombreMarket && (
+                                {selectedDevice?.nombreMarket ===
+                                  deviceOption.nombreMarket && (
                                   <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
                                 )}
                               </span>
@@ -419,7 +489,8 @@ function DetailsProductSection({ productId }: { productId: string }) {
                         <button
                           key={storageOption.capacidad}
                           className={`flex items-center justify-between w-full rounded-xl border px-5 py-4 transition-colors shadow-sm focus:outline-none ${
-                            selectedStorage?.capacidad === storageOption.capacidad
+                            selectedStorage?.capacidad ===
+                            storageOption.capacidad
                               ? "border-[#17407A] bg-[#F2F6FA]"
                               : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
                           }`}
@@ -429,12 +500,14 @@ function DetailsProductSection({ productId }: { productId: string }) {
                           <div className="flex items-center gap-4">
                             <span
                               className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                                selectedStorage?.capacidad === storageOption.capacidad
+                                selectedStorage?.capacidad ===
+                                storageOption.capacidad
                                   ? "border-[#17407A] bg-[#17407A]"
                                   : "border-[#BFD7F2] bg-white"
                               }`}
                             >
-                              {selectedStorage?.capacidad === storageOption.capacidad && (
+                              {selectedStorage?.capacidad ===
+                                storageOption.capacidad && (
                                 <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
                               )}
                             </span>
@@ -483,7 +556,7 @@ function DetailsProductSection({ productId }: { productId: string }) {
                             : "border-[#BFD7F2]"
                         }`}
                         style={{ backgroundColor: colorOption.hex }}
-                        onClick={() => setSelectedColor(colorOption)}
+                        onClick={() => handleColorSelection(colorOption)}
                         aria-label={colorOption.color}
                         title={colorOption.color}
                       >
@@ -492,13 +565,16 @@ function DetailsProductSection({ productId }: { productId: string }) {
                     ))}
                   </div>
                   {/* Mensaje de stock */}
-                  {selectedDevice && selectedStorage && selectedColor && !hasStock() && (
-                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-red-600 text-sm font-medium text-center">
-                        Sin stock
-                      </p>
-                    </div>
-                  )}
+                  {selectedDevice &&
+                    selectedStorage &&
+                    selectedColor &&
+                    !hasStock() && (
+                      <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-red-600 text-sm font-medium text-center">
+                          Sin stock
+                        </p>
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
@@ -514,7 +590,11 @@ function DetailsProductSection({ productId }: { productId: string }) {
           <div className="px-4 py-8 space-y-8">
             {/* Dispositivo en mobile */}
             <div className="flex flex-col items-center space-y-6">
-              <div className="relative bg-gray-100 rounded-2xl p-6 w-full max-w-sm">
+              {/* Card con sombra dinámica basada en color seleccionado */}
+              <div
+                className="relative bg-gray-100 rounded-2xl p-6 w-full max-w-sm"
+                style={getDynamicShadowStyle()}
+              >
                 <div className="flex justify-center">
                   <Image
                     src={deviceImage}
@@ -568,7 +648,8 @@ function DetailsProductSection({ productId }: { productId: string }) {
                       <button
                         key={deviceOption.nombreMarket}
                         className={`flex items-center justify-between w-full rounded-xl border px-4 py-4 transition-colors shadow-sm focus:outline-none ${
-                          selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                          selectedDevice?.nombreMarket ===
+                          deviceOption.nombreMarket
                             ? "border-[#17407A] bg-[#F2F6FA]"
                             : "border-[#E3E8EF] bg-white hover:border-[#BFD7F2]"
                         }`}
@@ -578,12 +659,14 @@ function DetailsProductSection({ productId }: { productId: string }) {
                         <div className="flex items-center gap-4">
                           <span
                             className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                              selectedDevice?.nombreMarket === deviceOption.nombreMarket
+                              selectedDevice?.nombreMarket ===
+                              deviceOption.nombreMarket
                                 ? "border-[#17407A] bg-[#17407A]"
                                 : "border-[#BFD7F2] bg-white"
                             }`}
                           >
-                            {selectedDevice?.nombreMarket === deviceOption.nombreMarket && (
+                            {selectedDevice?.nombreMarket ===
+                              deviceOption.nombreMarket && (
                               <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
                             )}
                           </span>
@@ -662,12 +745,14 @@ function DetailsProductSection({ productId }: { productId: string }) {
                         <div className="flex items-center gap-4">
                           <span
                             className={`w-5 h-5 flex items-center justify-center rounded-full border-2 ${
-                              selectedStorage?.capacidad === storageOption.capacidad
+                              selectedStorage?.capacidad ===
+                              storageOption.capacidad
                                 ? "border-[#17407A] bg-[#17407A]"
                                 : "border-[#BFD7F2] bg-white"
                             }`}
                           >
-                            {selectedStorage?.capacidad === storageOption.capacidad && (
+                            {selectedStorage?.capacidad ===
+                              storageOption.capacidad && (
                               <span className="w-2.5 h-2.5 rounded-full bg-white block"></span>
                             )}
                           </span>
@@ -716,7 +801,7 @@ function DetailsProductSection({ productId }: { productId: string }) {
                           : "border-[#BFD7F2]"
                       }`}
                       style={{ backgroundColor: colorOption.hex }}
-                      onClick={() => setSelectedColor(colorOption)}
+                      onClick={() => handleColorSelection(colorOption)}
                       aria-label={colorOption.color}
                       title={colorOption.color}
                     >
@@ -725,13 +810,16 @@ function DetailsProductSection({ productId }: { productId: string }) {
                   ))}
                 </div>
                 {/* Mensaje de stock - Mobile */}
-                {selectedDevice && selectedStorage && selectedColor && !hasStock() && (
-                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600 text-sm font-medium text-center">
-                      Sin stock
-                    </p>
-                  </div>
-                )}
+                {selectedDevice &&
+                  selectedStorage &&
+                  selectedColor &&
+                  !hasStock() && (
+                    <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm font-medium text-center">
+                        Sin stock
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>
@@ -902,7 +990,9 @@ export default function ProductViewPage({ params }) {
     "lavadora",
     "secadora",
     "aspiradoras",
-    "aire acondicionado","hornos","microondas"
+    "aire acondicionado",
+    "hornos",
+    "microondas",
   ];
   const subcategoria = convertedProduct.specs
     .find((spec) => spec.label === "Subcategoría")

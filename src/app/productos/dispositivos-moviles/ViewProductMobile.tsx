@@ -13,9 +13,10 @@
 
 import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
 import samsungLogo from "@/img/Samsung_black.png";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -43,11 +44,9 @@ interface ProductData {
 
 export default function ViewProduct({
   product,
-}: {
+}: Readonly<{
   product: Readonly<ProductData>;
-  selectedColor?: string;
-}) {
-
+}>) {
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
@@ -72,37 +71,43 @@ export default function ViewProduct({
   const router = useRouter();
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
-  const [showBar, setShowBar] = useState(false);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
-  useEffect(() => {
-    /* Navbar que se bugea al hacer scroll */
-    const handleScroll = () => {
-      // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
-      setShowBar(window.scrollY > 100 && isProductDetailView);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Inicializa correctamente al montar y tras navegación
-    setTimeout(handleScroll, 0);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [isProductDetailView]);
+  /**
+   * Hook personalizado para control avanzado del navbar fijo - ANTI-FLICKER
+   * Usa histeresis amplia con thresholdShow=150px y thresholdHide=50px
+   * Zona de amortiguación de 100px previene toggles constantes
+   * Solo activo en vistas de detalle de producto
+   */
+  const showNavbarFixed = useScrollNavbar(150, 50, isProductDetailView);
 
-  // useEffect para ocultar el navbar principal (solo con showBar)
+  /**
+   * Efecto optimizado para control del navbar principal
+   * Aplica/quita clase global con timing perfecto para evitar parpadeos
+   */
   useEffect(() => {
-    if (showBar) {
+    if (typeof document === "undefined") return; // Protección SSR
+
+    if (showNavbarFixed) {
+      // Inmediatamente ocultar navbar principal cuando aparece el fijo
       document.body.classList.add("hide-main-navbar");
     } else {
-      document.body.classList.remove("hide-main-navbar");
+      // Delay optimizado para permitir transición suave del navbar fijo
+      const timer = setTimeout(() => {
+        document.body.classList.remove("hide-main-navbar");
+      }, 250); // Sincronizado con nueva duración de animación exit más lenta
+
+      return () => clearTimeout(timer);
     }
+
+    // Cleanup: siempre remover la clase al desmontar
     return () => {
       document.body.classList.remove("hide-main-navbar");
     };
-  }, [showBar]);
+  }, [showNavbarFixed]);
 
-  if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
+  if (!safeProduct?.colors?.length) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-[#17407A]">
         <div className="text-center">
@@ -143,140 +148,342 @@ export default function ViewProduct({
   };
 
   return (
-     <div
-       className="min-h-screen w-full flex flex-col mt-0 pt-0"
-       
-     >
+    <div className="min-h-screen w-full flex flex-col mt-0 pt-0">
       {/* Feedback UX al añadir al carrito */}
       {cartFeedback && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
           {cartFeedback}
         </div>
       )}
-    
-      {isProductDetailView && showBar && (
-        <div
-          className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
-          style={{ fontFamily: "SamsungSharpSans" }}
-        >
-          {/* MOBILE: solo nombre y botón comprar */}
-          <div className="flex w-full items-center justify-between md:hidden">
-            {/* Nombre a la izquierda */}
-            <span
-              className="font-bold text-base text-black text-left truncate"
-              style={{ fontFamily: "SamsungSharpSans", maxWidth: "60vw" }}
-            >
-              {safeProduct.name}
-            </span>
-            {/* Botón comprar a la derecha */}
-            <button
-              className="bg-black text-white rounded-full px-4 py-2 h-10 font-semibold text-sm shadow hover:bg-gray-900 transition-all min-w-[90px]"
-              style={{ fontFamily: "SamsungSharpSans" }}
-              onClick={handleBuy}
-            >
-              Comprar
-            </button>
-          </div>
-          {/* DESKTOP/TABLET: diseño original */}
-          <div className="hidden md:flex w-full items-center justify-between">
-            {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-            <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
-       
-                <Image
-                  src="/frame_black.png"
-                  alt="Q Logo"
-                  height={40}
-                  style={{ display: "block", marginBottom: "5px" }}
-                  width={40}
-                  className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
-                  priority
-                />
-                <Image
-                  src={samsungLogo}
-                  alt="Samsung Logo"
-                  onClick={() => {
-                  window.location.href = "/";
-                }}
-                  height={80}
-                  width={70}
-                  className="h-10 md:h-12 w-auto cursor-pointer"
-                  priority
-                  style={{ display: "block" }}
-                />
 
-                <span
-                  className={
-                    "text-xs font-bold tracking-wide text-black select-none"
-                  }
-                  style={{
-                    letterSpacing: "0.08em",
-                    marginBottom: "11px", // Ajusta este valor según sea necesario
-                    lineHeight: "normal", // O ajusta el line-height según lo necesites
-                    alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
-                  }}
-                >
-                  Store
-                </span>
-            
-            </div>
-            {/* Nombre centrado */}
-            <div className="flex-1 flex justify-center">
-              <span
-                className="font-bold text-base md:text-lg text-center"
-                style={{ fontFamily: "SamsungSharpSans" }}
+      {/* Navbar fijo con animación ELEGANTE y suave - Entrada cinematográfica */}
+      <AnimatePresence mode="wait">
+        {showNavbarFixed && (
+          <motion.div
+            key="fixed-navbar"
+            initial={{
+              y: -100,
+              opacity: 0,
+              scale: 0.95,
+              filter: "blur(4px)",
+            }}
+            animate={{
+              y: 0,
+              opacity: 1,
+              scale: 1,
+              filter: "blur(0px)",
+            }}
+            exit={{
+              y: -100,
+              opacity: 0,
+              scale: 0.98,
+              filter: "blur(2px)",
+            }}
+            transition={{
+              type: "spring",
+              stiffness: 280,
+              damping: 35,
+              mass: 1.2,
+              opacity: {
+                duration: 0.6,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              },
+              scale: {
+                duration: 0.5,
+                ease: [0.25, 0.46, 0.45, 0.94],
+              },
+              filter: {
+                duration: 0.45,
+                ease: [0.25, 0.1, 0.25, 1],
+              },
+            }}
+            className="fixed-navbar-container w-full bg-white/92 backdrop-blur-xl shadow-2xl h-[72px] flex items-center px-4 pt-2 border-b border-gray-200/30"
+            style={{
+              fontFamily: "SamsungSharpSans",
+              zIndex: 9999,
+              backdropFilter: "blur(20px) saturate(1.1)",
+              WebkitBackdropFilter: "blur(20px) saturate(1.1)",
+              boxShadow:
+                "0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05)",
+            }}
+          >
+            {/* MOBILE: solo nombre y botón comprar con animación escalonada */}
+            <div className="flex w-full items-center justify-between md:hidden">
+              {/* Nombre a la izquierda */}
+              <motion.span
+                initial={{ x: -25, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{
+                  delay: 0.25,
+                  duration: 0.6,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                }}
+                className="font-bold text-base text-black text-left truncate"
+                style={{ fontFamily: "SamsungSharpSans", maxWidth: "60vw" }}
               >
                 {safeProduct.name}
-              </span>
-            </div>
-            {/* Parte derecha: botón añadir al carrito + botón comprar */}
-            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
-              {/* Botón añadir al carrito */}
-              <button
-                className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleAddToCart}
-              >
-                Añadir al carrito
-              </button>
-              {/* Botón comprar */}
-              <button
-                className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
+              </motion.span>
+              {/* Botón comprar a la derecha */}
+              <motion.button
+                initial={{ x: 25, opacity: 0, scale: 0.92 }}
+                animate={{ x: 0, opacity: 1, scale: 1 }}
+                whileHover={{
+                  scale: 1.03,
+                  boxShadow: "0 6px 25px rgba(0, 0, 0, 0.12)",
+                  transition: { duration: 0.25 },
+                }}
+                whileTap={{ scale: 0.99 }}
+                transition={{
+                  delay: 0.35,
+                  duration: 0.6,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                }}
+                className="bg-black text-white rounded-full px-4 py-2 h-10 font-semibold text-sm shadow-lg hover:bg-gray-900 transition-all min-w-[90px]"
                 style={{ fontFamily: "SamsungSharpSans" }}
                 onClick={handleBuy}
               >
                 Comprar
-                </button>
-              </div>
+              </motion.button>
             </div>
-          </div>
+            {/* DESKTOP/TABLET: diseño con animaciones elegantes escalonadas */}
+            <div className="hidden md:flex w-full items-center justify-between">
+              {/* Parte izquierda: logos con entrada desde la izquierda */}
+              <motion.div
+                initial={{ x: -35, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{
+                  delay: 0.2,
+                  duration: 0.7,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                }}
+                className="flex items-end flex-shrink-0 gap-2 md:gap-4"
+              >
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0, y: 8 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{
+                    delay: 0.3,
+                    duration: 0.5,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  whileHover={{
+                    scale: 1.03,
+                    y: -2,
+                    transition: { duration: 0.3 },
+                  }}
+                >
+                  <Image
+                    src="/frame_black.png"
+                    alt="Q Logo"
+                    height={40}
+                    style={{ display: "block", marginBottom: "5px" }}
+                    width={40}
+                    className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+                    priority
+                  />
+                </motion.div>
+                <motion.div
+                  initial={{ scale: 0.85, opacity: 0, y: 8 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  transition={{
+                    delay: 0.4,
+                    duration: 0.5,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  whileHover={{
+                    scale: 1.03,
+                    y: -2,
+                    transition: { duration: 0.3 },
+                  }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <Image
+                    src={samsungLogo}
+                    alt="Samsung Logo"
+                    onClick={() => {
+                      window.location.href = "/";
+                    }}
+                    height={80}
+                    width={70}
+                    className="h-10 md:h-12 w-auto cursor-pointer"
+                    priority
+                    style={{ display: "block" }}
+                  />
+                </motion.div>
+                <motion.span
+                  initial={{ y: 12, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{
+                    delay: 0.5,
+                    duration: 0.5,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  className="text-xs font-bold tracking-wide text-black select-none"
+                  style={{
+                    letterSpacing: "0.08em",
+                    marginBottom: "11px",
+                    lineHeight: "normal",
+                    alignSelf: "flex-end",
+                  }}
+                >
+                  Store
+                </motion.span>
+              </motion.div>
+
+              {/* Nombre centrado con entrada desde arriba */}
+              <motion.div
+                initial={{ y: -15, opacity: 0, scale: 0.96 }}
+                animate={{ y: 0, opacity: 1, scale: 1 }}
+                transition={{
+                  delay: 0.6,
+                  duration: 0.6,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                }}
+                className="flex-1 flex justify-center"
+              >
+                <span
+                  className="font-bold text-base md:text-lg text-center"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  {safeProduct.name}
+                </span>
+              </motion.div>
+
+              {/* Parte derecha: botones con entrada desde la derecha */}
+              <motion.div
+                initial={{ x: 35, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{
+                  delay: 0.7,
+                  duration: 0.7,
+                  ease: [0.25, 0.46, 0.45, 0.94],
+                }}
+                className="flex items-center gap-2"
+                style={{ minWidth: 110 }}
+              >
+                {/* Botón añadir al carrito */}
+                <motion.button
+                  initial={{ scale: 0.92, opacity: 0, y: 8 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  whileHover={{
+                    scale: 1.015,
+                    y: -1,
+                    boxShadow: "0 6px 25px rgba(0, 0, 0, 0.08)",
+                    transition: { duration: 0.3 },
+                  }}
+                  whileTap={{ scale: 0.995, y: 0 }}
+                  transition={{
+                    delay: 0.8,
+                    duration: 0.5,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow-md hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                  onClick={handleAddToCart}
+                >
+                  Añadir al carrito
+                </motion.button>
+                {/* Botón comprar */}
+                <motion.button
+                  initial={{ scale: 0.92, opacity: 0, y: 8 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  whileHover={{
+                    scale: 1.015,
+                    y: -1,
+                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.15)",
+                    transition: { duration: 0.3 },
+                  }}
+                  whileTap={{ scale: 0.995, y: 0 }}
+                  transition={{
+                    delay: 0.9,
+                    duration: 0.5,
+                    ease: [0.25, 0.46, 0.45, 0.94],
+                  }}
+                  className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow-lg hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                  onClick={handleBuy}
+                >
+                  Comprar
+                </motion.button>
+              </motion.div>
+            </div>
+          </motion.div>
         )}
-        {/* Oculta el navbar principal con una clase global */}
-        <style>{`
-          body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
-        `}</style>
-       <div className="h-[1px] w-full" />
+      </AnimatePresence>
+
+      {/* Estilos CSS globales optimizados para transiciones cinematográficas */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          body.hide-main-navbar header[data-navbar="true"] { 
+            transform: translateY(-100%) scale(0.97) !important;
+            opacity: 0 !important;
+            filter: blur(3px) !important;
+            transition: 
+              transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+            pointer-events: none !important;
+          }
+          
+          /* Asegurar que el navbar fijo tenga prioridad visual absoluta */
+          .fixed-navbar-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            will-change: transform, opacity, filter !important;
+          }
+          
+          /* Efecto de cristal mejorado para el navbar fijo */
+          .fixed-navbar-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: inherit;
+            pointer-events: none;
+          }
+          
+          /* Animación de entrada más suave para elementos internos */
+          .fixed-navbar-container * {
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+          }
+        `,
+        }}
+      />
+      <div className="h-[1px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <motion.div
         ref={specsReveal.ref}
         {...specsReveal.motionProps}
-         className="relative flex items-center justify-center w-full min-h-[100px] py-0 mt-0"
+        className="relative flex items-center justify-center w-full min-h-[100px] py-0 mt-0"
       >
         {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
         {/*<EspecificacionesProduct specs={safeProduct.specs} */}
       </motion.div>
 
-       {/* Componente de videos */}
-       <motion.div ref={videosReveal.ref} {...videosReveal.motionProps} className="mt-0">
-         <VideosSection />
-       </motion.div>
-       {/* Componente de comparación justo debajo de VideosSection */}
-       <motion.div
-         ref={comparationReveal.ref}
-         {...comparationReveal.motionProps}
-         className="mt-0"
-       >
-         <ComparationProduct />
-       </motion.div>
+      {/* Componente de videos */}
+      <motion.div
+        ref={videosReveal.ref}
+        {...videosReveal.motionProps}
+        className="mt-0"
+      >
+        <VideosSection />
+      </motion.div>
+      {/* Componente de comparación justo debajo de VideosSection */}
+      <motion.div
+        ref={comparationReveal.ref}
+        {...comparationReveal.motionProps}
+        className="mt-0"
+      >
+        <ComparationProduct />
+      </motion.div>
     </div>
   );
 }

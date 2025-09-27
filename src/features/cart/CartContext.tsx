@@ -10,7 +10,7 @@
  * - Tracking de abandono de carrito
  */
 
-import { createContext, useContext } from "react";
+import React, { createContext, useContext, useCallback } from "react";
 import { useCart, CartProduct } from "@/hooks/useCart";
 
 /**
@@ -36,6 +36,8 @@ type CartContextType = {
   isEmpty: boolean;
   /** Formatear precios */
   formatPrice: (price: number) => string;
+  /** Puntos Q acumulados en el carrito (valor global reactivo) */
+  pointsQ: number;
 };
 
 /**
@@ -74,32 +76,56 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     formatPrice,
   } = useCart();
 
-  // Adaptar la interfaz para mantener compatibilidad
-  const addProduct = (product: CartProduct) => {
-    addToCart(product);
-  };
+  // Calcular puntos Q globales (reactivo)
+  const pointsQ = products.reduce(
+    (acc, p) => acc + Number(p.puntos_q || 0) * Number(p.quantity || 1),
+    0
+  );
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    updateQty(productId, quantity);
-  };
+  // Memoizar funciones para evitar que cambien en cada render
+  const addProduct = useCallback(
+    (product: CartProduct) => {
+      addToCart(product);
+    },
+    [addToCart]
+  );
 
-  const getProducts = () => products;
+  const updateQuantity = useCallback(
+    (productId: string, quantity: number) => {
+      updateQty(productId, quantity);
+    },
+    [updateQty]
+  );
 
-  /**
-   * value
-   * Valor del contexto global del carrito usando el hook centralizado.
-   */
-  const value: CartContextType = {
-    cart: products,
-    addProduct,
-    removeProduct,
-    updateQuantity,
-    clearCart,
-    getProducts,
-    itemCount: calculations.productCount,
-    isEmpty,
-    formatPrice,
-  };
+  const getProducts = useCallback(() => products, [products]);
+
+  // Memoizar el value para evitar renders innecesarios y cumplir con las reglas de React Context
+  const value = React.useMemo(
+    () => ({
+      cart: products,
+      addProduct,
+      removeProduct,
+      updateQuantity,
+      clearCart,
+      getProducts,
+      itemCount: calculations.productCount,
+      isEmpty,
+      formatPrice,
+      pointsQ,
+    }),
+    [
+      products,
+      addProduct,
+      removeProduct,
+      updateQuantity,
+      clearCart,
+      getProducts,
+      calculations.productCount,
+      isEmpty,
+      formatPrice,
+      pointsQ,
+    ]
+  );
 
   /**
    * Renderiza el proveedor global del carrito.

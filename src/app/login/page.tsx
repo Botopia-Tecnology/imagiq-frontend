@@ -16,7 +16,6 @@ import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { notifyError, notifyLoginSuccess } from "./notifications";
-import { useFavorites} from "@/features/products/useProducts";
 
 
 
@@ -44,7 +43,6 @@ export default function LoginPage() {
   // ...existing code...
   const router = useRouter();
   const { login, isAuthenticated } = useAuthContext();
-  // const { fetchAllFavorites } = useFavorites();
 
 
   // Detectar redirect a CreateAccount y navegar automáticamente
@@ -221,6 +219,7 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
+      console.log(result)
       const { user, access_token } = result;
       posthogUtils.capture("login_attempt", {
         email: formData.email,

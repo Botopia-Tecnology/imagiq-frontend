@@ -15,8 +15,9 @@ import Pagination from "./Pagination";
 
 export default function FavoritePage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(12);
   const device = useDeviceType();
+   const [userId, setUserId] = useState<string | undefined>(undefined); // 👈 estado local para el userId
   const lastFiltersRef = useRef<string>("");
     const { addToFavorites, removeFromFavorites, isFavorite } =
     useFavorites();
@@ -27,6 +28,13 @@ export default function FavoritePage() {
     }),
     []
   );
+   // cargar userId desde localStorage al montar
+  useEffect(() => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserId(parsed?.id);
+  }, []);
+
 
   const initialFilters = useMemo(() => {
     const filters = {
@@ -46,7 +54,7 @@ export default function FavoritePage() {
     totalItems,
     totalPages,
     filterFavorites,
-  } = useFavorites(initialFilters);
+  } = useFavorites(userId, initialFilters);
 
     const handleItemsPerPageChange = useCallback(async (items: number) => {
     setItemsPerPage(items);
@@ -64,6 +72,7 @@ export default function FavoritePage() {
 
   // Actualizar filtros cuando cambien los parámetros de paginación
   useEffect(() => {
+     if (!userId) return; // 👈 evita llamar si no hay usuario aún
     const filtersWithPagination = {
       ...apiFilters,
       page: currentPage,
@@ -77,7 +86,7 @@ export default function FavoritePage() {
       lastFiltersRef.current = filtersKey;
       filterFavorites(filtersWithPagination);
     }
-  }, [apiFilters, itemsPerPage, apiFilters, filterFavorites]);
+  }, [apiFilters, itemsPerPage, apiFilters, filterFavorites, userId]);
 
   useEffect(() => {
     posthogUtils.capture("favorites_view", {

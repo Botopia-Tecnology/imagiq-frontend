@@ -24,7 +24,6 @@ import {
   groupProductsByCategory,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
-import { useAuthContext } from "../auth/context";
 
 interface ProductFilters {
   category?: string;
@@ -40,6 +39,16 @@ interface ProductFilters {
   page?: number; // Página actual para paginación
   limit?: number; // Límite de productos por página
 }
+
+type UserInfo = {
+  id?: string;
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  telefono?: string;
+  numero_documento?: string | null;
+  rol?: number;
+};
 
 interface UseProductsReturn {
   products: ProductCardProps[];
@@ -75,8 +84,24 @@ interface UseFavoritesReturn {
   hasPreviousPage: boolean;
 
   // acciones con ids
-  addToFavorites: (id: string) => void;
-  removeFromFavorites: (id: string) => void;
+  addToFavorites: (
+    id: string,
+
+    guestUserData?: {
+      id?:string,
+      nombre: string;
+      apellido: string;
+      email: string;
+      telefono: string;
+    }
+  ) => Promise<UserInfo | undefined>;
+  removeFromFavorites: (id: string, guestUserData?: {
+      id?:string,
+      nombre: string;
+      apellido: string;
+      email: string;
+      telefono: string;
+    }) => Promise<void>;
   isFavorite: (id: string) => boolean;
 
   // acciones con API
@@ -332,7 +357,7 @@ export const useProduct = (productId: string) => {
   };
 };
 
-export const useFavorites = (
+export const useFavorites = (userId?: string,
   initialFilters?: FavoriteFilters | (() => FavoriteFilters)
 ): UseFavoritesReturn => {
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -346,7 +371,7 @@ export const useFavorites = (
   const [hasNextPage, setHasNextPage] = useState(false);
   const [hasPreviousPage, setHasPreviousPage] = useState(false);
 
-  const [currentFilters, setCurrentFilters] = useState<ProductFilters>(
+  const [currentFilters, setCurrentFilters] = useState<FavoriteFilters>(
     typeof initialFilters === "function"
       ? initialFilters()
       : initialFilters || {}
@@ -371,36 +396,23 @@ export const useFavorites = (
     }
   }, []);
 
-  // Obtener favoritos desde API
-  const rawUser = localStorage.getItem("imagiq_user");
-  let userInfo = rawUser ? JSON.parse(rawUser) : null;
-
   const fetchFavorites = useCallback(
     async (filters: FavoriteFilters = {}, append = false) => {
-      if (userInfo && userInfo.id) {
+      if (userId) { //userInfo?.id
         setLoading(true);
         setError(null);
         try {
           const apiParams = convertFiltersToApiParams(filters);
-          console.log(apiParams);
+      
           const response = await productEndpoints.getFavorites(
-            userInfo.id,
+           userId, //userInfo?.id
             apiParams
           );
 
           if (response.success && response.data) {
-            console.log(response);
+           
             const apiData = response.data as FavoriteApiResponse;
             const mapped = mapApiProductsToFrontend(apiData.products);
-
-            //const newFavoriteIds = mapped.map((product) => product.id);
-
-            //console.log(newFavoriteIds);
-            // setFavorites(newFavoriteIds);
-            // localStorage.setItem(
-            //   "imagiq_favorites",
-            //   JSON.stringify(newFavoriteIds)
-            // );
 
             if (append) {
               setFavoritesAPI((prev) => [...prev, ...mapped]);
@@ -424,7 +436,7 @@ export const useFavorites = (
         }
       }
     },
-    [convertFiltersToApiParams]
+    [convertFiltersToApiParams, userId] //userInfo
   );
   // API: filtrar
   const filterFavorites = useCallback(
@@ -463,80 +475,45 @@ export const useFavorites = (
     await fetchFavorites(currentFilters, false);
   }, [currentFilters, fetchFavorites]);
 
-  const addToFavorites = useCallback(async (productId: string) => {
-    console.log(productId);
-
-    try {
-      const rawUser = localStorage.getItem("imagiq_user");
-      let userInfo = rawUser ? JSON.parse(rawUser) : null;
-
-      let payload;
-
-      if (userInfo && userInfo.id) {
-        // 2. Si ya tenemos el id guardado
-        payload = {
-          productSKU: productId,
-          userInfo: {
-            id: userInfo.id,
-          },
-        };
-      } else {
-        // 3. Si no hay user guardado, enviar datos completos
-        const guestUserData = {
-          nombre: "Jennyfer16",
-          apellido: "B",
-          email: "correo16@ejemplo.com",
-          telefono: "123456789",
-        };
-
-        payload = {
-          productSKU: productId,
-          userInfo: guestUserData,
-        };
+  const addToFavorites = useCallback(
+    async (
+      productId: string,
+      guestUserData?: {
+        id?:string,
+        nombre: string;
+        apellido: string;
+        email: string;
+        telefono: string;
       }
+    ) => {
+     
 
-      // 4. Enviar petición al backend
-      const response = await productEndpoints.addFavorite(payload);
-      console.log(response, "sii");
-      if (response.success) {
-        setFavorites((prev) => {
-          const newFavorites = [...prev, productId];
-          localStorage.setItem(
-            "imagiq_favorites",
-            JSON.stringify(newFavorites)
-          );
-          return newFavorites;
-        });
-      }
-      const userIdFromResponse = response?.data?.userInfo?.id;
-      // 5. Si recibes un id lo guardo en el local, para que no cree de nuevo un user
-      if (userIdFromResponse && (!userInfo || !userInfo.id)) {
-        console.log(response.data);
-        localStorage.setItem(
-          "imagiq_user",
-          JSON.stringify(response.data.userInfo)
-        );
-      }
-    } catch (err) {
-      console.error("Error al agregar favorito en servidor", err);
-    }
-  }, []);
+      try {
+        let payload;
+     
+        if (guestUserData?.id) {
+          // 2. Si ya tenemos el id guardado
+          payload = {
+            productSKU: productId,
+            userInfo: {
+              id: guestUserData.id,
+            },
+          };
+        } else {
+          // 3. Si no hay user guardado, enviar datos completos
 
-  const removeFromFavorites = useCallback(async (productSKU: string) => {
-    console.log(productSKU);
-    const rawUser = localStorage.getItem("imagiq_user");
-    let userInfo = rawUser ? JSON.parse(rawUser) : null;
-    try {
-      if (userInfo && userInfo.id) {
-        const response = await productEndpoints.removeFavorite(
-          userInfo.id,
-          productSKU,
-        );
-        console.log(response, "noo");
+          payload = {
+            productSKU: productId,
+            userInfo: guestUserData || {},
+          };
+        }
+
+        // 4. Enviar petición al backend
+        const response = await productEndpoints.addFavorite(payload);
+       
         if (response.success) {
-          console.log(productSKU);
           setFavorites((prev) => {
-            const newFavorites = prev.filter((id) => id !== productSKU);
+            const newFavorites = [...prev, productId];
             localStorage.setItem(
               "imagiq_favorites",
               JSON.stringify(newFavorites)
@@ -544,11 +521,56 @@ export const useFavorites = (
             return newFavorites;
           });
         }
+        const userIdFromResponse = response?.data?.userInfo?.id;
+        // 5. Si recibes un id lo guardo en el local, para que no cree de nuevo un user
+        if (userIdFromResponse) {
+          
+          const newUserInfo = response.data.userInfo;
+          localStorage.setItem("imagiq_user", JSON.stringify(newUserInfo));
+          return newUserInfo;
+        }
+      } catch (err) {
+        console.error("Error al agregar favorito en servidor", err);
       }
-    } catch (err) {
-      console.error("Error al quitar favorito en servidor", err);
-    }
-  }, []);
+    },
+    []
+  );
+
+  const removeFromFavorites = useCallback(
+    async (productSKU: string, guestUserData?: {
+        id?:string,
+        nombre: string;
+        apellido: string;
+        email: string;
+        telefono: string;
+      }) => {
+     
+      try {
+     
+        if (guestUserData?.id) {
+          const response = await productEndpoints.removeFavorite(
+            guestUserData.id,
+            productSKU
+          );
+          
+          if (response.success) {
+        
+            setFavorites((prev) => {
+              const newFavorites = prev.filter((id) => id !== productSKU);
+              localStorage.setItem(
+                "imagiq_favorites",
+                JSON.stringify(newFavorites)
+              );
+              return newFavorites;
+            });
+          }
+        }
+      } catch (err) {
+        console.error("Error al quitar favorito en servidor", err);
+      }
+    },
+    []
+  );
 
   const isFavorite = useCallback(
     (productId: string) => {
@@ -558,12 +580,14 @@ export const useFavorites = (
   );
 
   useEffect(() => {
-    const filtersToUse =
-      typeof initialFilters === "function"
-        ? initialFilters()
-        : initialFilters || {};
-    fetchFavorites(filtersToUse, false);
-  }, [initialFilters, fetchFavorites]);
+    if (userId) { //userInfo?.id
+      const filtersToUse =
+        typeof initialFilters === "function"
+          ? initialFilters()
+          : initialFilters || {};
+      fetchFavorites(filtersToUse, false);
+    }
+  }, [initialFilters, fetchFavorites, userId]);
 
   return {
     favorites, // ids locales

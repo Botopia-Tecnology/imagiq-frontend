@@ -79,7 +79,7 @@ export function useNavbarLogic() {
     window.addEventListener("storage", syncCart);
     return () => window.removeEventListener("storage", syncCart);
   }, []);
-  const { isAuthenticated } = useAuthContext(); // ¿Usuario autenticado?
+  const { isAuthenticated, user } = useAuthContext(); // ¿Usuario autenticado? y datos del usuario
   const router = useRouter(); // Router para navegación
   const { hideNavbar } = useNavbarVisibility(); // Estado global para ocultar navbar
 
@@ -138,11 +138,11 @@ export function useNavbarLogic() {
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
-  const isMasInformacionProducto = pathname.startsWith("/productos/view/") ||
+  const isMasInformacionProducto =
+    pathname.startsWith("/productos/view/") ||
     pathname.startsWith("/productos/dispositivos-moviles/details");
   // Determina si mostrar logo blanco y estilos claros
-  const showWhiteLogo =
-    isOfertas || (isHome && !isScrolled);
+  const showWhiteLogo = isOfertas || (isHome && !isScrolled);
   const showWhiteItems = showWhiteLogo;
   const showWhiteItemsMobile =
     isOfertas ||
@@ -252,6 +252,7 @@ export function useNavbarLogic() {
     debouncedSearch,
     itemCount,
     isAuthenticated,
+    user, // Nuevo: datos del usuario para saludo
     router,
     hideNavbar,
     sentinelRef,

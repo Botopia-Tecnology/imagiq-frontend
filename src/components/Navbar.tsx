@@ -341,6 +341,29 @@ export default function Navbar() {
     );
   };
 
+  // Helper para renderizar saludo o icono de usuario (solo desktop/tablet)
+  const renderUserGreetingOrIcon = (variant: "desktop" | "tablet") => {
+    if (navbar.isAuthenticated && navbar.user && navbar.user.nombre) {
+      const primerNombre = navbar.user.nombre.split(" ")[0];
+      return (
+        <span
+          className={cn(
+            // Más espacio para el saludo, permite ver nombres largos
+            "max-w-[130px] min-w-[90px] truncate flex flex-col items-center leading-tight text-xs md:text-sm font-medium px-2",
+            navbar.showWhiteItems ? "text-white" : "text-black"
+          )}
+          aria-label={`Hola, ${primerNombre}`}
+          style={{ minWidth: 0 }}
+        >
+          Hola,
+          <br />
+          {primerNombre}
+        </span>
+      );
+    }
+    return renderUserIcon(variant);
+  };
+
   return (
     <>
       {/* Sentinel para IntersectionObserver (scroll detection) */}
@@ -450,7 +473,7 @@ export default function Navbar() {
               </button>
             </form>
             {renderPointsIcon("desktop")}
-            {renderUserIcon("desktop")}
+            {renderUserGreetingOrIcon("desktop")}
             {renderCartIcon("desktop")}
             {renderFavoritesIcon("desktop")}
           </div>
@@ -494,7 +517,7 @@ export default function Navbar() {
               )}
             </button>
             {renderPointsIcon("tablet")}
-            {renderUserIcon("tablet")}
+            {renderUserGreetingOrIcon("tablet")}
             {renderCartIcon("tablet")}
             {renderFavoritesIcon("tablet")}
             {renderSearchOverlay()}

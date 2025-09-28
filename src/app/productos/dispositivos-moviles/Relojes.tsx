@@ -66,7 +66,7 @@ export default function RelojesSection() {
   const stickyState = useSticky({
     sidebarRef,
     productsRef,
-    topOffset: 120,
+    topOffset: 200,
     enabled: stickyEnabled,
   });
   const { containerClasses, wrapperClasses, style } =

@@ -28,6 +28,13 @@ const iconButtonClass = "flex items-center justify-center w-10 h-10";
 const badgeClass =
   "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-transform duration-150 ease-out";
 
+// Helper para verificar si un item tiene dropdown
+const hasDropdownMenu = (name: string): boolean => {
+  return name === "Dispositivos móviles" ||
+         name === "Televisores y AV" ||
+         name === "Electrodomésticos";
+};
+
 // Helper para dropdowns con soporte móvil
 const getDropdownComponent = (
   name: string,
@@ -469,7 +476,7 @@ export default function Navbar() {
                         />
                       </span>
                     </Link>
-                    {navbar.activeDropdown === item.name && (
+                    {navbar.activeDropdown === item.name && hasDropdownMenu(item.name) && (
                       <div
                         className="fixed z-[9999] dropdown-bubble"
                         style={{
@@ -586,7 +593,7 @@ export default function Navbar() {
                               );
                             }}
                             className={cn(
-                              "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100",
+                              "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100 w-full flex items-center justify-between",
                               isActive && "bg-blue-50 text-blue-700 shadow"
                             )}
                             aria-label={item.name}

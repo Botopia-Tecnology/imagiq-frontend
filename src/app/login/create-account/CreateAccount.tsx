@@ -271,9 +271,9 @@ const CreateAccountForm = () => {
           <div className="absolute top-4 left-0 right-0 h-[2px] bg-gradient-to-r from-[#002142]/10 via-[#e5e5e5] to-[#002142]/10 z-0" />
 
           {/* Círculos de pasos */}
-          <div className="flex w-full justify-between items-center relative z-10 px-2 sm:px-4">
-            {stepConfigs.map((_, n) => (
-              <div className="flex flex-col items-center" key={n}>
+          <div className="flex w-full justify-between items-start relative z-10 px-2 sm:px-4">
+            {stepConfigs.map((stepConfig, n) => (
+              <div className="flex flex-col items-center flex-1" key={n}>
                 <button
                   type="button"
                   className={`rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold text-xs focus:outline-none transition-all duration-200 shadow-md border-2 ${
@@ -288,20 +288,14 @@ const CreateAccountForm = () => {
                 >
                   {step > n ? '✓' : n + 1}
                 </button>
-              </div>
-            ))}
-          </div>
-
-          {/* Nombres de pasos - Solo mostrar en pantallas grandes */}
-          <div className="hidden lg:flex w-full justify-between items-center mt-3 px-2 sm:px-4">
-            {stepConfigs.map((stepConfig, n) => (
-              <div
-                key={stepConfig.id}
-                className={`flex-1 text-xs text-center px-1 ${
-                  step === n ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
-                }`}
-              >
-                {stepConfig.name}
+                {/* Nombre del paso directamente bajo cada círculo */}
+                <div className="hidden lg:block mt-2 text-center">
+                  <span className={`text-xs px-1 ${
+                    step === n ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
+                  }`}>
+                    {stepConfig.name}
+                  </span>
+                </div>
               </div>
             ))}
           </div>

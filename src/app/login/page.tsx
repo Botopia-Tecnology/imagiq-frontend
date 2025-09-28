@@ -80,7 +80,7 @@ export default function LoginPage() {
   if (isAuthenticated) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e6eef5] via-white to-[#b3c7db] relative mb-10">
-        <div className="w-full max-w-md mx-auto bg-white border border-[#002142]/20 rounded-2xl shadow-lg p-8 flex flex-col items-center animate-fade-in">
+        <div className="w-full mx-auto bg-white border border-[#002142]/20 rounded-2xl shadow-lg p-8 flex flex-col items-center animate-fade-in">
           <h2
             className="text-center text-2xl font-semibold mb-6"
             style={{ color: "#002142" }}
@@ -286,7 +286,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#e6eef5] via-white to-[#b3c7db] relative mb-10 animate-fade-in">
       {/* Card container con efecto glass y sombra */}
-      <div className="w-full max-w-md mx-auto bg-white/90 backdrop-blur border border-[#002142]/10 rounded-2xl shadow-2xl p-10 flex flex-col items-center animate-fade-in">
+      <div className="w-full mx-auto bg-white/90 backdrop-blur border border-[#002142]/10 rounded-2xl shadow-2xl p-10 flex flex-col items-center animate-fade-in">
         {/* Title */}
         <h2 className="text-center text-3xl font-bold mb-4 text-[#002142] drop-shadow-sm tracking-tight animate-fade-in">
           Iniciar sesión
@@ -456,7 +456,7 @@ export default function LoginPage() {
       </div>
 
       {/* Divider and create account button */}
-      <div className="w-full max-w-md mx-auto flex flex-col items-center mt-8 animate-fade-in">
+      <div className="w-full mx-auto flex flex-col items-center mt-8 animate-fade-in">
         <div className="w-full flex items-center gap-3 mb-4">
           <hr className="flex-1 border-[#002142]/30" />
           <span className="text-xs text-[#002142]">

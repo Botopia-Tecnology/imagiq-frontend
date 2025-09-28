@@ -5,6 +5,12 @@ import { notifyRegisterSuccess, notifyError } from "../notifications";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
 import { Usuario } from "@/types/user";
+import { RegistrationFormData, RegistrationAddress } from "@/types/registration";
+import PhoneSelector from "@/components/forms/PhoneSelector";
+import DocumentSelector from "@/components/forms/DocumentSelector";
+import AddressForm from "@/components/forms/AddressForm";
+import VerificationStep from "@/components/forms/VerificationStep";
+import PasswordInput from "@/components/forms/PasswordInput";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -25,124 +31,141 @@ const CreateAccountForm = () => {
     message: string;
   } | null>(null);
   const [step, setStep] = useState(0);
-  // Estado local para valores y errores
-  const [values, setValues] = useState<Record<string, string>>({
+
+  // Estado extendido del formulario
+  const [formData, setFormData] = useState<Partial<RegistrationFormData>>({
     email: "",
     nombre: "",
     apellido: "",
-    password: "",
+    contrasena: "",
+    confirmPassword: "",
     fecha_nacimiento: "",
+    telefono: "",
+    codigo_pais: "CO",
+    tipo_documento: "CC",
+    numero_documento: "",
+    shippingAddress: {
+      type: 'home',
+      name: '',
+      addressLine1: '',
+      addressLine2: '',
+      city: '',
+      state: '',
+      zipCode: '',
+      country: 'Colombia',
+      isDefault: true
+    },
+    useSameForBilling: true,
+    preferredVerificationChannel: 'whatsapp',
+    isVerified: false
   });
-  const [fieldErrors, setFieldErrors] = useState<
-    Record<string, string | undefined>
-  >({});
+
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Definición de los pasos y campos
-  const steps = [
-    {
-      name: "Correo",
-      fields: [
-        {
-          name: "email",
-          type: "email",
-          label: "¿Cuál es tu correo?",
-          placeholder: "Ingresa tu correo electrónico",
-          required: true,
-          validate: (value: string) =>
-            !value
-              ? "El correo es requerido"
-              : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-              ? "Formato de correo inválido"
-              : undefined,
-        },
-      ],
-    },
-    {
-      name: "Información básica",
-      fields: [
-        {
-          name: "nombre",
-          type: "text",
-          label: "Nombre",
-          placeholder: "Ingresa tu nombre",
-          required: true,
-          validate: (value: string) =>
-            !value ? "El nombre es requerido" : undefined,
-        },
-        {
-          name: "apellido",
-          type: "text",
-          label: "Apellido",
-          placeholder: "Ingresa tu apellido",
-          required: true,
-        },
-        {
-          name: "fecha_nacimiento",
-          type: "date",
-          label: "Fecha de nacimiento",
-          placeholder: "Selecciona tu fecha de nacimiento",
-          required: false,
-        },
-      ],
-    },
-    {
-      name: "Contraseña",
-      fields: [
-        {
-          name: "password",
-          type: "password",
-          label: "Define una contraseña",
-          placeholder: "Crea una contraseña segura",
-          required: true,
-          validate: (value: string) =>
-            !value
-              ? "La contraseña es requerida"
-              : value.length < 8
-              ? "La contraseña debe tener al menos 8 caracteres"
-              : undefined,
-        },
-      ],
-    },
+  // Definición de los pasos del formulario extendido
+  const stepConfigs = [
+    { id: 'email', name: 'Correo', title: 'Correo electrónico' },
+    { id: 'basic', name: 'Información básica', title: 'Datos personales' },
+    { id: 'contact', name: 'Contacto', title: 'Teléfono y documento' },
+    { id: 'address', name: 'Direcciones', title: 'Información de envío' },
+    { id: 'password', name: 'Contraseña', title: 'Crear contraseña' },
+    { id: 'verification', name: 'Verificación', title: 'Verificar información' }
   ];
 
-  const currentFields = steps[step].fields;
+  const currentStep = stepConfigs[step];
 
-  // Validación manual por paso
-  const getErrors = () => {
+  // Validación por paso
+  const validateCurrentStep = (): Record<string, string> => {
     const errors: Record<string, string> = {};
-    currentFields.forEach((config) => {
-      const value = values[config.name] ?? "";
-      if (typeof config.validate === "function") {
-        const error = config.validate(value);
-        if (error) errors[config.name] = error;
-      } else if (config.required && !value) {
-        errors[config.name] = "Este campo es requerido";
-      }
-    });
+
+    switch (currentStep.id) {
+      case 'email':
+        if (!formData.email) errors.email = 'El correo es requerido';
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+          errors.email = 'Formato de correo inválido';
+        }
+        break;
+
+      case 'basic':
+        if (!formData.nombre) errors.nombre = 'El nombre es requerido';
+        if (!formData.apellido) errors.apellido = 'El apellido es requerido';
+        break;
+
+      case 'contact':
+        if (!formData.telefono) errors.telefono = 'El teléfono es requerido';
+        if (!formData.numero_documento) errors.numero_documento = 'El documento es requerido';
+        break;
+
+      case 'address':
+        if (!formData.shippingAddress?.addressLine1) {
+          errors.shippingAddressLine1 = 'La dirección es requerida';
+        }
+        if (!formData.shippingAddress?.city) errors.shippingCity = 'La ciudad es requerida';
+        if (!formData.shippingAddress?.state) errors.shippingState = 'El departamento es requerido';
+        if (!formData.shippingAddress?.zipCode) errors.shippingZipCode = 'El código postal es requerido';
+        break;
+
+      case 'password':
+        // Validación de contraseña con requisitos robustos
+        if (!formData.contrasena) {
+          errors.contrasena = 'La contraseña es requerida';
+        } else {
+          const password = formData.contrasena;
+          if (password.length < 8) errors.contrasena = 'Mínimo 8 caracteres';
+          else if (!/[A-Z]/.test(password)) errors.contrasena = 'Debe contener una mayúscula';
+          else if (!/[a-z]/.test(password)) errors.contrasena = 'Debe contener una minúscula';
+          else if (!/\d/.test(password)) errors.contrasena = 'Debe contener un número';
+          else if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+            errors.contrasena = 'Debe contener un carácter especial';
+          }
+        }
+
+        // Validación de confirmación de contraseña
+        if (!formData.confirmPassword) {
+          errors.confirmPassword = 'Confirma tu contraseña';
+        } else if (formData.contrasena !== formData.confirmPassword) {
+          errors.confirmPassword = 'Las contraseñas no coinciden';
+        }
+        break;
+
+      case 'verification':
+        if (!formData.isVerified) {
+          errors.verification = 'Debes verificar tu información para continuar';
+        }
+        break;
+    }
+
     return errors;
   };
 
-  const handleFieldChange = (name: string, value: string) => {
-    setValues((prev) => ({ ...prev, [name]: value }));
-    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+  // Actualizar datos del formulario
+  const updateFormData = (updates: Partial<RegistrationFormData>) => {
+    setFormData(prev => ({ ...prev, ...updates }));
+    setFieldErrors({});
+  };
+
+  // Mock para envío de código OTP
+  const handleSendVerificationCode = async (channel: 'whatsapp' | 'sms' | 'email') => {
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Simular delay
+    console.log(`Código enviado por ${channel}`);
   };
 
   const next = () => {
-    const errors = getErrors();
+    const errors = validateCurrentStep();
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
     }
     setFieldErrors({});
-    setStep((s) => Math.min(s + 1, steps.length - 1));
+    setStep((s) => Math.min(s + 1, stepConfigs.length - 1));
   };
 
   const prev = () => setStep((s) => Math.max(s - 1, 0));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const errors = getErrors();
+    const errors = validateCurrentStep();
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
@@ -152,15 +175,21 @@ const CreateAccountForm = () => {
     setModalContent(null);
     setSubmitting(true);
     try {
+      // Combinar teléfono con código de país
+      const fullPhone = `+${formData.codigo_pais === 'CO' ? '57' : '1'}${formData.telefono}`;
+
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: values.email,
-          nombre: values.nombre,
-          apellido: values.apellido,
-          contrasena: values.password,
-          fecha_nacimiento: values.fecha_nacimiento,
+          email: formData.email,
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          contrasena: formData.contrasena,
+          fecha_nacimiento: formData.fecha_nacimiento,
+          telefono: fullPhone,
+          tipo_documento: formData.tipo_documento,
+          numero_documento: formData.numero_documento,
         }),
       });
       if (!response || typeof response.status !== "number") {
@@ -203,10 +232,10 @@ const CreateAccountForm = () => {
       }
       setModalContent({
         type: "success",
-        message: `¡Cuenta creada exitosamente para ${values.email}!`,
+        message: `¡Cuenta creada exitosamente para ${formData.email}!`,
       });
       setShowModal(true);
-      await notifyRegisterSuccess(values.email);
+      await notifyRegisterSuccess(formData.email!);
       setTimeout(() => {
         router.back();
       }, 500);
@@ -222,10 +251,10 @@ const CreateAccountForm = () => {
 
   return (
     <>
-      <h2 className="text-center text-3xl font-bold mb-2 text-[#002142] drop-shadow-sm tracking-tight animate-fade-in">
+      <h2 className="text-center text-lg sm:text-xl lg:text-2xl font-bold mb-1.5 sm:mb-2 text-[#002142] drop-shadow-sm tracking-tight animate-fade-in">
         Crear una cuenta
       </h2>
-      <p className="text-center text-base text-[#4a5a6a] mb-6 animate-fade-in">
+      <p className="text-center text-xs sm:text-sm text-[#4a5a6a] mb-3 sm:mb-4 animate-fade-in">
         ¿Ya tienes una cuenta?{" "}
         <button
           className="underline text-[#003366] hover:text-[#002142] font-semibold transition-colors duration-150"
@@ -235,58 +264,53 @@ const CreateAccountForm = () => {
           Inicia sesión
         </button>
       </p>
-      <div className="flex flex-col items-center w-full mb-8 animate-fade-in">
-        <div
-          className="relative w-full flex flex-col items-center"
-          style={{ maxWidth: "400px" }}
-        >
-          <div
-            className="absolute top-4 left-0 right-0 h-[3px] bg-gradient-to-r from-[#002142]/10 via-[#e5e5e5] to-[#002142]/10"
-            style={{ zIndex: 0 }}
-          />
-          <div
-            className="flex w-full justify-between items-center relative"
-            style={{ zIndex: 1 }}
-          >
-            {[0, 1, 2].map((n) => (
-              <div className="flex flex-col items-center flex-1" key={n}>
+      {/* Indicador de progreso responsive */}
+      <div className="flex flex-col items-center w-full mb-3 sm:mb-4 lg:mb-6 animate-fade-in">
+        <div className="relative w-full flex flex-col items-center max-w-4xl">
+          {/* Línea de progreso */}
+          <div className="absolute top-4 left-0 right-0 h-[2px] bg-gradient-to-r from-[#002142]/10 via-[#e5e5e5] to-[#002142]/10 z-0" />
+
+          {/* Círculos de pasos */}
+          <div className="flex w-full justify-between items-center relative z-10 px-2 sm:px-4">
+            {stepConfigs.map((_, n) => (
+              <div className="flex flex-col items-center" key={n}>
                 <button
                   type="button"
-                  className={`rounded-full w-8 h-8 flex items-center justify-center font-bold text-base focus:outline-none transition-all duration-200 shadow-md border-2 ${
+                  className={`rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold text-xs focus:outline-none transition-all duration-200 shadow-md border-2 ${
                     step === n
                       ? "bg-[#002142] text-white border-[#002142] scale-110"
-                      : "bg-[#e5e5e5] text-[#bdbdbd] border-[#e5e5e5] hover:bg-[#d1d1d1]"
+                      : step > n
+                      ? "bg-green-500 text-white border-green-500"
+                      : "bg-[#e5e5e5] text-[#bdbdbd] border-[#e5e5e5]"
                   }`}
                   disabled={step === n || step < n}
                   aria-label={`Ir al paso ${n + 1}`}
                 >
-                  {n + 1}
+                  {step > n ? '✓' : n + 1}
                 </button>
               </div>
             ))}
           </div>
-          <div className="flex w-full justify-between items-center mt-2">
-            <div
-              className={`flex-1 text-xs text-center ${
-                step === 0 ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
-              }`}
-            >
-              Ingresa tu correo
-            </div>
-            <div
-              className={`flex-1 text-xs text-center ${
-                step === 1 ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
-              }`}
-            >
-              Información básica
-            </div>
-            <div
-              className={`flex-1 text-xs text-center ${
-                step === 2 ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
-              }`}
-            >
-              Define tu contraseña
-            </div>
+
+          {/* Nombres de pasos - Solo mostrar en pantallas grandes */}
+          <div className="hidden lg:flex w-full justify-between items-center mt-3 px-2 sm:px-4">
+            {stepConfigs.map((stepConfig, n) => (
+              <div
+                key={stepConfig.id}
+                className={`flex-1 text-xs text-center px-1 ${
+                  step === n ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
+                }`}
+              >
+                {stepConfig.name}
+              </div>
+            ))}
+          </div>
+
+          {/* Nombre del paso actual - Mostrar solo en móvil y tablet */}
+          <div className="lg:hidden mt-2 text-center">
+            <span className="text-xs sm:text-sm text-[#002142] font-semibold">
+              Paso {step + 1} de {stepConfigs.length}: {stepConfigs[step].name}
+            </span>
           </div>
         </div>
       </div>
@@ -303,112 +327,192 @@ const CreateAccountForm = () => {
           )}
         </div>
       )}
-      <form
-        onSubmit={
-          step === steps.length - 1
-            ? handleSubmit
-            : (e) => {
-                e.preventDefault();
-                next();
-              }
-        }
-        className="w-full flex flex-col gap-6 animate-fade-in"
-      >
-        {currentFields.map((config) => (
-          <div key={config.name} className="w-full">
-            <label
-              htmlFor={config.name}
-              className="block text-base font-semibold text-[#002142] mb-2 tracking-tight"
-            >
-              {config.label}
-            </label>
-            <input
-              id={config.name}
-              type={config.type}
-              name={config.name}
-              value={values[config.name] ?? ""}
-              onChange={(e) => handleFieldChange(config.name, e.target.value)}
-              className={`w-full px-4 py-3 border-2 rounded-lg text-[#002142] placeholder-[#bdbdbd] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal mb-2 bg-[#f7fafd] transition-all duration-200 shadow-sm ${
-                fieldErrors[config.name] ? "border-red-400" : "border-[#e5e5e5]"
-              }`}
-              placeholder={config.placeholder}
-              autoComplete={config.type === "password" ? "new-password" : "off"}
+      {/* Contenido del formulario responsive */}
+      <div className="w-full max-w-lg mx-auto">
+        <h3 className="text-sm sm:text-base lg:text-lg font-semibold text-[#002142] mb-2 sm:mb-3 lg:mb-4 text-center">
+          {currentStep.title}
+        </h3>
+
+        {/* Renderizado condicional por paso */}
+        {currentStep.id === 'email' && (
+          <div className="space-y-2.5 sm:space-y-3">
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-[#002142] mb-1 sm:mb-1.5 tracking-tight">
+                ¿Cuál es tu correo?
+              </label>
+              <input
+                type="email"
+                value={formData.email || ''}
+                onChange={(e) => updateFormData({ email: e.target.value })}
+                placeholder="Ingresa tu correo electrónico"
+                disabled={submitting}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 rounded-lg text-xs sm:text-sm text-[#002142] placeholder-[#bdbdbd] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal bg-[#f7fafd] transition-all duration-200 shadow-sm ${
+                  fieldErrors.email ? "border-red-400" : "border-[#e5e5e5]"
+                }`}
+              />
+              {fieldErrors.email && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {currentStep.id === 'basic' && (
+          <div className="space-y-2.5 sm:space-y-3">
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-[#002142] mb-1 sm:mb-1.5 tracking-tight">
+                Nombre
+              </label>
+              <input
+                type="text"
+                value={formData.nombre || ''}
+                onChange={(e) => updateFormData({ nombre: e.target.value })}
+                placeholder="Ingresa tu nombre"
+                disabled={submitting}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 rounded-lg text-xs sm:text-sm text-[#002142] placeholder-[#bdbdbd] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal bg-[#f7fafd] transition-all duration-200 shadow-sm ${
+                  fieldErrors.nombre ? "border-red-400" : "border-[#e5e5e5]"
+                }`}
+              />
+              {fieldErrors.nombre && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.nombre}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-[#002142] mb-1 sm:mb-1.5 tracking-tight">
+                Apellido
+              </label>
+              <input
+                type="text"
+                value={formData.apellido || ''}
+                onChange={(e) => updateFormData({ apellido: e.target.value })}
+                placeholder="Ingresa tu apellido"
+                disabled={submitting}
+                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 rounded-lg text-xs sm:text-sm text-[#002142] placeholder-[#bdbdbd] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal bg-[#f7fafd] transition-all duration-200 shadow-sm ${
+                  fieldErrors.apellido ? "border-red-400" : "border-[#e5e5e5]"
+                }`}
+              />
+              {fieldErrors.apellido && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.apellido}</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-[#002142] mb-1 sm:mb-1.5 tracking-tight">
+                Fecha de nacimiento (opcional)
+              </label>
+              <input
+                type="date"
+                value={formData.fecha_nacimiento || ''}
+                onChange={(e) => updateFormData({ fecha_nacimiento: e.target.value })}
+                disabled={submitting}
+                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 border-[#e5e5e5] rounded-lg text-xs sm:text-sm text-[#002142] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal bg-[#f7fafd] transition-all duration-200 shadow-sm"
+              />
+            </div>
+          </div>
+        )}
+
+        {currentStep.id === 'contact' && (
+          <div className="space-y-2.5 sm:space-y-3">
+            <PhoneSelector
+              value={{
+                countryCode: formData.codigo_pais || 'CO',
+                number: formData.telefono || ''
+              }}
+              onChange={(phoneData) => updateFormData({
+                codigo_pais: phoneData.countryCode,
+                telefono: phoneData.number
+              })}
+              error={fieldErrors.telefono}
               disabled={submitting}
             />
-            {fieldErrors[config.name] && (
-              <p className="text-red-500 text-xs mt-1 animate-fade-in">
-                {fieldErrors[config.name]}
-              </p>
-            )}
+            <DocumentSelector
+              value={{
+                type: formData.tipo_documento || 'CC',
+                number: formData.numero_documento || ''
+              }}
+              onChange={(docData) => updateFormData({
+                tipo_documento: docData.type,
+                numero_documento: docData.number
+              })}
+              error={fieldErrors.numero_documento}
+              disabled={submitting}
+            />
           </div>
-        ))}
-        <div className="flex w-full gap-2 mt-2">
+        )}
+        {currentStep.id === 'address' && (
+          <AddressForm
+            shippingAddress={formData.shippingAddress!}
+            billingAddress={formData.billingAddress}
+            useSameForBilling={formData.useSameForBilling!}
+            onChange={(addressData) => updateFormData(addressData)}
+            errors={fieldErrors}
+            disabled={submitting}
+          />
+        )}
+
+        {currentStep.id === 'password' && (
+          <PasswordInput
+            password={formData.contrasena || ''}
+            confirmPassword={formData.confirmPassword || ''}
+            onChange={(passwordData) => updateFormData({
+              contrasena: passwordData.password,
+              confirmPassword: passwordData.confirmPassword
+            })}
+            errors={fieldErrors}
+            disabled={submitting}
+          />
+        )}
+
+        {currentStep.id === 'verification' && (
+          <VerificationStep
+            email={formData.email!}
+            phone={`+${formData.codigo_pais === 'CO' ? '57' : '1'}${formData.telefono}`}
+            preferredChannel={formData.preferredVerificationChannel!}
+            verificationCode={formData.verificationCode}
+            isVerified={formData.isVerified!}
+            onChange={(verificationData) => updateFormData(verificationData)}
+            onSendCode={handleSendVerificationCode}
+            errors={fieldErrors}
+            disabled={submitting}
+          />
+        )}
+
+        {/* Botones de navegación responsive */}
+        <div className="flex flex-col sm:flex-row w-full gap-2 sm:gap-2 mt-3 sm:mt-4 lg:mt-6">
           {step > 0 && (
             <button
               type="button"
               onClick={prev}
-              className="w-1/2 py-3 rounded-full font-semibold bg-gradient-to-r from-[#e5e5e5] to-[#b3c7db] text-[#222] hover:bg-[#d1d1d1] transition-all duration-150 shadow-md"
+              className="w-full sm:w-1/2 py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-semibold bg-gradient-to-r from-[#e5e5e5] to-[#b3c7db] text-[#222] hover:bg-[#d1d1d1] transition-all duration-150 shadow-md text-xs sm:text-sm"
             >
-              Atrás
+              ← Atrás
             </button>
           )}
           <button
-            type={step === steps.length - 1 ? "submit" : "button"}
-            onClick={step === steps.length - 1 ? undefined : next}
-            className={`w-full py-3 rounded-full font-semibold transition-all duration-200 shadow-lg ${
-              submitting
+            type="button"
+            onClick={step === stepConfigs.length - 1 ? handleSubmit : next}
+            className={`${step > 0 ? 'w-full sm:w-1/2' : 'w-full'} py-2 sm:py-2.5 px-3 sm:px-4 rounded-full font-semibold transition-all duration-200 shadow-lg text-xs sm:text-sm ${
+              submitting || (step === stepConfigs.length - 1 && !formData.isVerified)
                 ? "bg-[#f3f3f3] text-[#d1d1d1] cursor-not-allowed"
-                : "bg-gradient-to-r from-[#002142] to-[#003366] text-white hover:from-[#003366] hover:to-[#002142] active:bg-[#00152a]"
+                : "bg-gradient-to-r from-[#002142] to-[#003366] text-white hover:from-[#003366] hover:to-[#002142]"
             }`}
-            disabled={submitting}
+            disabled={submitting || (step === stepConfigs.length - 1 && !formData.isVerified)}
           >
             {submitting ? (
               <span className="flex items-center justify-center gap-2">
-                <svg
-                  className="animate-spin h-5 w-5 text-[#003366]"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8v8z"
-                  />
+                <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
                 </svg>
                 Procesando...
               </span>
-            ) : step === steps.length - 1 ? (
-              "Crear cuenta"
+            ) : step === stepConfigs.length - 1 ? (
+              formData.isVerified ? "✓ Crear cuenta" : "🔒 Verifica tu código primero"
             ) : (
-              "Siguiente"
+              `Siguiente →`
             )}
           </button>
         </div>
-      </form>
-      <style jsx>{`
-        .animate-fade-in {
-          animation: fadeIn 0.7s cubic-bezier(0.39, 0.575, 0.565, 1) both;
-        }
-        @keyframes fadeIn {
-          0% {
-            opacity: 0;
-            transform: translateY(24px);
-          }
-          100% {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+      </div>
     </>
   );
 };

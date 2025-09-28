@@ -367,7 +367,7 @@ export function MobileFilterModal({
       {/* Backdrop animado */}
       <div
         className={cn(
-          "lg:hidden fixed inset-0 z-50 transition-all duration-300 ease-in-out",
+          "lg:hidden fixed inset-0 z-[70] transition-all duration-300 ease-in-out",
           isOpen ? "bg-black/50 backdrop-blur-sm" : "bg-transparent"
         )}
         onClick={onClose}
@@ -377,7 +377,7 @@ export function MobileFilterModal({
       <div
         className={cn(
           // en mobile dejamos un pequeño gap a la izquierda con left-4
-          "lg:hidden fixed inset-y-0 right-0 left-4 z-50 w-full max-w-sm bg-white shadow-2xl",
+          "lg:hidden fixed inset-y-0 right-0 left-4 z-[70] w-full max-w-sm bg-white shadow-2xl",
           "transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}

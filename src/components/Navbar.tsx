@@ -64,14 +64,13 @@ export default function Navbar() {
     if (variant === "mobile") {
       return navbar.showWhiteItemsMobile ? "white" : "black";
     }
-    if (
-      navbar.isDispositivosMoviles ||
+    return navbar.isDispositivosMoviles ||
       navbar.isElectrodomesticos ||
       navbar.isMasInformacionProducto
-    ) {
-      return "black";
-    }
-    return navbar.showWhiteItems ? "white" : "black";
+      ? "black"
+      : navbar.showWhiteItems
+      ? "white"
+      : "black";
   };
 
   // Helper para renderizar iconos de usuario
@@ -105,11 +104,6 @@ export default function Navbar() {
     const cartCount =
       variant === "mobile" ? navbar.itemCount : navbar.cartCount;
 
-    const mobileBadgeClass = cartCount > 0 ? "opacity-100 scale-100" : "opacity-0 scale-0";
-    const badgeClassAddition = variant === "mobile"
-      ? mobileBadgeClass
-      : (navbar.bump ? "scale-110" : "scale-100");
-
     return (
       <Link
         href="/carrito"
@@ -128,7 +122,13 @@ export default function Navbar() {
           <span
             className={cn(
               badgeClass,
-              badgeClassAddition
+              variant === "mobile"
+                ? cartCount > 0
+                  ? "opacity-100 scale-100"
+                  : "opacity-0 scale-0"
+                : navbar.bump
+                ? "scale-110"
+                : "scale-100"
             )}
             aria-label={`Carrito: ${cartCount} productos`}
             aria-live="polite"
@@ -160,19 +160,24 @@ export default function Navbar() {
     </button>
   );
 
-  // Clases dinámicas para el header
-  let backgroundClass = "bg-white/60 shadow backdrop-blur-md";
-  if (
-    (navbar.isOfertas && !navbar.isScrolled) ||
-    (navbar.isHome && !navbar.isScrolled) ||
-    navbar.isProductDetail
-  ) {
-    backgroundClass = "bg-transparent";
-  }
 
+  // Clases dinámicas para el header
   const headerClasses = cn(
-    "w-full z-50 transition-all duration-300 backdrop-blur-md sticky top-0 left-0 md:static",
-    backgroundClass
+    "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60 sticky top-0 left-0 md:static",
+    navbar.isOfertas && !navbar.isScrolled
+      ? "bg-transparent"
+      : navbar.isOfertas && navbar.isScrolled
+      ? "bg-white/60 shadow backdrop-blur-md"
+      : navbar.isDispositivosMoviles ||
+        navbar.isElectrodomesticos ||
+        navbar.isMasInformacionProducto ||
+        navbar.isScrolledNavbar
+      ? "bg-white/60 shadow backdrop-blur-md"
+      : navbar.isHome && !navbar.isScrolled
+      ? "bg-transparent"
+      : navbar.isProductDetail
+      ? "bg-transparent"
+      : "bg-white/60 shadow backdrop-blur-md"
   );
 
   // Estilos dinámicos para el header
@@ -292,7 +297,7 @@ export default function Navbar() {
             {/* Buscador */}
             <form
               onSubmit={navbar.handleSearchSubmit}
-              className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-2 h-12 shadow-sm border border-white/30 transition-all duration-300 "
+              className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-72"
               style={{ zIndex: 1000, overflow: "hidden" }}
             >
               <input
@@ -389,14 +394,13 @@ export default function Navbar() {
         {/* Menú de navegación principal - animación hover suave */}
         <nav
           className={cn(
-            "hidden md:block transition-all duration-500 relative",
+            "hidden lg:block transition-all duration-500 relative",
             navbar.isScrolled && !navbar.isMasInformacionProducto
               ? "max-h-0 opacity-0 overflow-hidden"
               : "max-h-20 opacity-100"
           )}
         >
-          <ul className="flex items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-6 py-3 md:py-4 px-2 sm:px-4 md:px-6 lg:px-8 overflow-x-auto">
-
+          <ul className="flex items-center justify-center gap-0.5 sm:gap-1 md:gap-1.5 lg:gap-2 xl:gap-2.5 2xl:gap-3 py-1.5 sm:py-2 md:py-2.5 lg:py-3 px-0.5 sm:px-1 md:px-2 lg:px-3 xl:px-4 2xl:px-6 w-full overflow-x-auto scrollbar-hide">
             {navbarRoutes.map((item) => {
               const isActive =
                 item.name === "Electrodomésticos"
@@ -438,11 +442,12 @@ export default function Navbar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "text-sm sm:text-base md:text-lg font-normal whitespace-nowrap block py-2 sm:py-3 px-1 sm:px-2 md:px-3 lg:px-4 rounded-lg focus:outline-none",
+                        "font-normal whitespace-nowrap block py-0.5 sm:py-1 md:py-1.5 lg:py-2 xl:py-2.5 px-0.5 sm:px-1 md:px-1.5 lg:px-2 xl:px-3 2xl:px-4 rounded-lg focus:outline-none flex-shrink-0 text-center min-w-fit",
                         itemTextColor,
                         hoverClass,
                         isActive && navbar.showWhiteItems && "text-white",
-                        isActive && !navbar.showWhiteItems && "text-gray-900"
+                        isActive && !navbar.showWhiteItems && "text-gray-900",
+                        "text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-lg"
                       )}
                       aria-label={item.name}
                     >
@@ -533,7 +538,7 @@ export default function Navbar() {
                   {navbarRoutes.map((item) => {
                     const hasDropdown =
                       item.name === "Dispositivos móviles" ||
-                      item.name == "Televisores y AV" ||
+                      item.name === "Televisores y AV" ||
                       item.name === "Electrodomésticos";
 
                     const isDropdownOpen = activeDropdown === item.name;
@@ -567,7 +572,6 @@ export default function Navbar() {
                               isActive && "bg-blue-50 text-blue-700 shadow"
                             )}
                             aria-label={item.name}
-                            aria-current={isActive ? "page" : undefined}
                           >
                             {item.name}
                           </button>
@@ -602,7 +606,7 @@ export default function Navbar() {
                                 }}
                               />
                             )}
-                            {item.name == "Televisores y AV" && (
+                            {item.name === "Televisores y AV" && (
                               <TelevisionesDropdown
                                 isMobile
                                 onItemClick={() => {

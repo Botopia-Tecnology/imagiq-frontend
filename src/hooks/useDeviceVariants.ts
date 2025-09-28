@@ -6,8 +6,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { productEndpoints, ProductApiResponse, decodeCodigoMarketFromUrl } from '@/lib/api';
-import { ProductApiData } from '@/lib/api';
+import { productEndpoints, ProductApiResponse, ProductApiData } from '@/lib/api';
 
 export interface DeviceVariant {
   sku: string;
@@ -204,11 +203,8 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
     setError(null);
 
     try {
-      const codigoMarket = decodeCodigoMarketFromUrl(productId);
-      console.log('🔍 useDeviceVariants - productId:', productId);
-      console.log('🔍 useDeviceVariants - codigoMarket:', codigoMarket);
-      const response = await productEndpoints.getByCodigoMarket(codigoMarket);
-      console.log('🔍 useDeviceVariants - API response:', response);
+      const codigoMarketBase = productId;
+      const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
 
       if (response.success && response.data) {
         const apiData = response.data as ProductApiResponse;

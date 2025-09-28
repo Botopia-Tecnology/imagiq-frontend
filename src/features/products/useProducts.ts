@@ -303,11 +303,10 @@ export const useProduct = (productId: string) => {
       setError(null);
 
       try {
-        // Decodificar el ID de la URL para obtener el codigoMarket real
-        const codigoMarket = decodeCodigoMarketFromUrl(productId);
+        const codigoMarketBase = productId;
 
-        // Usar el endpoint específico para buscar por codigoMarket
-        const response = await productEndpoints.getByCodigoMarket(codigoMarket);
+        // Usar el endpoint específico para buscar por codigoMarketBase
+        const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
 
         if (response.success && response.data) {
           const apiData = response.data as ProductApiResponse;

@@ -98,15 +98,6 @@ export class ApiClient {
 // Export singleton instance
 export const apiClient = new ApiClient();
 
-// Helper functions for URL encoding/decoding
-export const encodeCodigoMarketForUrl = (codigoMarket: string): string => {
-  return codigoMarket.replace(/\//g, "_");
-};
-
-export const decodeCodigoMarketFromUrl = (urlId: string): string => {
-  return urlId.replace(/_/g, "/");
-};
-
 // Product API endpoints
 export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
@@ -223,7 +214,8 @@ export interface ProductApiResponse {
 }
 
 export interface ProductApiData {
-  codigoMarket: string;
+  codigoMarketBase: string;
+  codigoMarket: string[];
   nombreMarket: string;
   categoria: string;
   subcategoria: string;

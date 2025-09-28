@@ -7,7 +7,6 @@
 import { ProductApiData } from './api';
 import { ProductCardProps, ProductColor } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
-import { encodeCodigoMarketForUrl } from './api';
 
 // Importar imágenes mock para usar temporalmente
 import emptyImg from '@/img/empty.jpeg';
@@ -57,8 +56,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   // Calcular precios y descuentos (usar el primer precio disponible)
   const { price, originalPrice, discount, isNew } = calculatePricingFromArray(apiProduct);
   
-  // Usar codigoMarket como ID único (codificado para URL)
-  const id = encodeCodigoMarketForUrl(apiProduct.codigoMarket);
+  const id = apiProduct.codigoMarketBase;
 
   
   return {

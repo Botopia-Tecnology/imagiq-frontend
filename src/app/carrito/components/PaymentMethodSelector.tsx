@@ -1,9 +1,5 @@
 "use client";
-import Image from "next/image";
-import visaLogo from "@/img/carrito/visa_logo.png";
-import mastercardLogo from "@/img/carrito/masterdcard_logo.png";
-import amexLogo from "@/img/carrito/amex_logo.png";
-import dinersLogo from "@/img/carrito/logo4.png";
+import { SiVisa, SiMastercard, SiAmericanexpress } from "react-icons/si";
 import { PaymentMethod } from "../types";
 
 interface PaymentMethodSelectorProps {
@@ -41,38 +37,13 @@ export default function PaymentMethodSelector({
             onChange={() => onMethodChange("tarjeta")}
             className="accent-blue-600 w-5 h-5"
           />
-          <span className="font-medium text-black">Pago con tarjeta</span>
+          <span className="font-medium text-black">Tarjeta</span>
         </label>
-        <span className="flex gap-3">
-          <Image
-            src={visaLogo}
-            alt="Visa"
-            width={40}
-            height={24}
-            style={{ objectFit: "contain" }}
-          />
-          <Image
-            src={mastercardLogo}
-            alt="Mastercard"
-            width={40}
-            height={24}
-            style={{ objectFit: "contain" }}
-          />
-          <Image
-            src={amexLogo}
-            alt="Amex"
-            width={40}
-            height={24}
-            style={{ objectFit: "contain" }}
-          />
-          <Image
-            src={dinersLogo}
-            alt="Diners"
-            width={40}
-            height={24}
-            style={{ objectFit: "contain" }}
-          />
-        </span>
+        <div className="flex gap-3 items-center">
+          <SiVisa className="w-11 h-6 text-[#1A1F71]" />
+          <SiMastercard className="w-11 h-6 text-[#EB001B]" />
+          <SiAmericanexpress className="w-11 h-6 text-[#006FCF]" />
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import HeaderStep1 from "@/components/headerStep1";
-import Image from "next/image";
+import { Refrigerator } from "lucide-react";
 
 export default function Step4() {
   return (
@@ -9,13 +9,9 @@ export default function Step4() {
         Este es el producto para ti
       </h1>
       <div className="bg-[#e5e5e5] rounded-2xl flex flex-col items-center px-12 py-10 shadow-lg">
-        <Image
-          src="/chatbot/hogar.png"
-          alt="658 L Nevecon Tipo Europeo Bespoke - AI Home"
-          width={150}
-          height={180}
-          className="mb-6 object-contain"
-        />
+        <div className="mb-6 flex items-center justify-center w-32 h-32 bg-gray-200 rounded-lg">
+          <Refrigerator className="w-20 h-20 text-gray-600" />
+        </div>
         <div className="text-center text-gray-800 text-lg mb-2">
           658 L Nevecon Tipo Europeo<br />
           Bespoke - AI Home

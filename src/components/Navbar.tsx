@@ -8,7 +8,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ShoppingCart, Heart, Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -19,17 +19,9 @@ import TelevisionesDropdown from "./dropdowns/televisiones";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import { PointsQCard } from "@/components/ui/PointsQCard";
 
-// Imports de imágenes
+// Imports de imágenes de logos de marca
 import logoSamsungWhite from "@/img/logo_Samsung.png";
 import logoSamsungBlack from "@/img/Samsung_black.png";
-import carritoIconBlack from "@/img/navbar-icons/carrito-icon-black.png";
-import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
-import favoritoIconWhite from "@/img/navbar-icons/favorito-icon-white.png";
-import favoritoIconBlack from "@/img/navbar-icons/favoritos-icon-black.png";
-import searchIconBlack from "@/img/navbar-icons/search-icon-black.png";
-import searchIconWhite from "@/img/navbar-icons/search-icon-white.png";
-import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
-import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
 
 // Clases reutilizables
 const iconButtonClass = "flex items-center justify-center w-10 h-10";
@@ -59,7 +51,7 @@ export default function Navbar() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const navbar = useNavbarLogic();
 
-  // Helper para determinar colores de iconos basado en contexto
+  // Helper para determinar colores de iconos basado en contexto (legacy para Image components)
   const getIconColors = (variant: "desktop" | "tablet" | "mobile") => {
     if (variant === "mobile") {
       return navbar.showWhiteItemsMobile ? "white" : "black";
@@ -71,6 +63,25 @@ export default function Navbar() {
       : navbar.showWhiteItems
       ? "white"
       : "black";
+  };
+
+  // Helper para obtener clases CSS de color para íconos Lucide
+  const getIconColorClasses = (variant: "desktop" | "tablet" | "mobile") => {
+    // Forzar iconos negros en secciones específicas con fondo claro
+    if (navbar.isElectrodomesticos ||
+        navbar.isDispositivosMoviles ||
+        navbar.isMasInformacionProducto) {
+      console.log("Forcing black icons for electrodomesticos/dispositivos/masInfo");
+      return "text-black";
+    }
+
+    // Para móvil
+    if (variant === "mobile") {
+      return navbar.showWhiteItemsMobile ? "text-white" : "text-black";
+    }
+
+    // Default basado en showWhiteItems
+    return navbar.showWhiteItems ? "text-white" : "text-black";
   };
 
   // Helper para renderizar iconos de usuario
@@ -88,12 +99,9 @@ export default function Navbar() {
         window.location.replace("/login");
       }}
     >
-      <Image
-        src={navbar.showWhiteItems ? userIconWhite : userIconBlack}
-        alt="Usuario"
-        width={28}
-        height={28}
-        priority
+      <User
+        className={`w-7 h-7 ${getIconColorClasses(variant)}`}
+        aria-label="Usuario"
       />
     </button>
   );
@@ -111,12 +119,9 @@ export default function Navbar() {
         title={variant === "mobile" ? "Carrito" : "Carrito de compras"}
         onClick={navbar.handleCartClick}
       >
-        <Image
-          src={colorScheme === "white" ? carritoIconWhite : carritoIconBlack}
-          alt="Carrito"
-          width={34}
-          height={34}
-          priority
+        <ShoppingCart
+          className={`w-7 h-7 ${getIconColorClasses(variant)}`}
+          aria-label="Carrito"
         />
         {navbar.isClient && cartCount > 0 && (
           <span
@@ -150,12 +155,9 @@ export default function Navbar() {
       style={{ position: "relative" }}
       onClick={() => navbar.router.push("/favoritos")}
     >
-      <Image
-        src={navbar.showWhiteItems ? favoritoIconWhite : favoritoIconBlack}
-        alt="Favoritos"
-        width={20}
-        height={21}
-        priority
+      <Heart
+        className={`w-6 h-6 ${getIconColorClasses(variant)}`}
+        aria-label="Favoritos"
       />
     </button>
   );
@@ -329,14 +331,9 @@ export default function Navbar() {
                 title="Buscar"
                 style={{ zIndex: 1001 }}
               >
-                <Image
-                  src={
-                    navbar.showWhiteItems ? searchIconWhite : searchIconBlack
-                  }
-                  alt="Buscar"
-                  width={26}
-                  height={26}
-                  priority
+                <Search
+                  className={`w-6 h-6 ${getIconColorClasses("desktop")}`}
+                  aria-label="Buscar"
                 />
               </button>
             </form>
@@ -353,21 +350,14 @@ export default function Navbar() {
               href="/carrito"
               className={cn(
                 "flex items-center justify-center w-10 h-10 relative",
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                getIconColorClasses("mobile")
               )}
               title="Carrito"
               onClick={navbar.handleCartClick}
             >
-              <Image
-                src={
-                  navbar.showWhiteItemsMobile
-                    ? carritoIconWhite
-                    : carritoIconBlack
-                }
-                alt="Carrito"
-                width={34}
-                height={34}
-                priority
+              <ShoppingCart
+                className={`w-7 h-7 ${getIconColorClasses("mobile")}`}
+                aria-label="Carrito"
               />
               {navbar.isClient && (
                 <span
@@ -387,7 +377,7 @@ export default function Navbar() {
             <button
               className={cn(
                 "flex items-center justify-center w-10 h-10",
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                getIconColorClasses("mobile")
               )}
               aria-label={
                 navbar.isMobileMenuOpen ? "Cerrar menú" : "Abrir menú"
@@ -550,16 +540,9 @@ export default function Navbar() {
                     title="Buscar"
                     style={{ zIndex: 1001 }}
                   >
-                    <Image
-                      src={
-                        navbar.showWhiteItems
-                          ? searchIconWhite
-                          : searchIconBlack
-                      }
-                      alt="Buscar"
-                      width={26}
-                      height={26}
-                      priority
+                    <Search
+                      className={`w-6 h-6 ${getIconColorClasses("mobile")}`}
+                      aria-label="Buscar"
                     />
                   </button>
                 </form>

@@ -218,6 +218,20 @@ export default function Navbar() {
     return renderUserIcon(variant);
   };
 
+  // Helper para calcular posición del dropdown
+  const getDropdownPosition = (itemName: string) => {
+    if (typeof window === 'undefined') return { left: 0, top: 120 };
+
+    const element = document.querySelector(`[data-item-name="${itemName}"]`) as HTMLElement;
+    if (!element) return { left: 0, top: 120 };
+
+    const rect = element.getBoundingClientRect();
+    return {
+      left: rect.left, // Alineado al borde izquierdo del filtro
+      top: rect.bottom - 2 // Conectado directamente (sin gap)
+    };
+  };
+
   return (
     <>
       {/* Sentinel para IntersectionObserver (scroll detection) */}
@@ -394,7 +408,7 @@ export default function Navbar() {
         {/* Menú de navegación principal - animación hover suave */}
         <nav
           className={cn(
-            "hidden lg:block transition-all duration-500 relative",
+            "hidden lg:block transition-all duration-500 relative z-[9999]",
             navbar.isScrolled && !navbar.isMasInformacionProducto
               ? "max-h-0 opacity-0 overflow-hidden"
               : "max-h-20 opacity-100"
@@ -430,7 +444,7 @@ export default function Navbar() {
               return (
                 <li
                   key={item.name}
-                  className="relative"
+                  className="relative z-[9999]"
                   aria-current={isActive ? "page" : undefined}
                 >
                   <div
@@ -438,6 +452,7 @@ export default function Navbar() {
                     ref={navbar.setNavItemRef}
                     onMouseEnter={() => navbar.handleDropdownEnter(item.name)}
                     onMouseLeave={navbar.handleDropdownLeave}
+                    className="relative z-[9999]"
                   >
                     <Link
                       href={item.href}
@@ -464,8 +479,28 @@ export default function Navbar() {
                         />
                       </span>
                     </Link>
-                    {navbar.activeDropdown === item.name &&
-                      getDropdownComponent(item.name)}
+                    {navbar.activeDropdown === item.name && (
+                      <div
+                        className="fixed z-[9999] dropdown-bubble"
+                        style={{
+                          zIndex: 9999,
+                          left: `${getDropdownPosition(item.name).left}px`,
+                          top: `${getDropdownPosition(item.name).top}px`
+                        }}
+                      >
+                        {/* Triángulo de conexión */}
+                        <div
+                          className="absolute -top-2 left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"
+                          style={{
+                            filter: 'drop-shadow(0 -2px 4px rgba(0,0,0,0.1))'
+                          }}
+                        />
+                        {/* Contenido del dropdown */}
+                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                          {getDropdownComponent(item.name)}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </li>
               );

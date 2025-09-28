@@ -1,14 +1,18 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
   FilterConfig,
   FilterState,
 } from "./components/FilterSidebar";
-import ProductGrid from "./components/ProductGrid";
 import { ProductCardProps } from "./components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import { useDeviceType } from "@/components/responsive";
+import { useSticky, useStickyClasses } from "@/hooks/useSticky";
+import { cn } from "@/lib/utils";
+import CategoryProductsGrid from "./dispositivos-moviles/components/ProductsGrid";
+import HeaderSection from "./dispositivos-moviles/components/HeaderSection";
 
 // Configuración de filtros (puedes personalizar según la categoría)
 const filterConfig: FilterConfig = {
@@ -52,7 +56,7 @@ function filterProducts(products: ProductCardProps[], filters: FilterState) {
         );
       }
       // Filtrado genérico por cualquier campo string o array de strings
-      if (Object.prototype.hasOwnProperty.call(product, filterKey)) {
+      if (Object.hasOwn(product, filterKey)) {
         const value = (product as unknown as Record<string, unknown>)[
           filterKey
         ];
@@ -82,6 +86,12 @@ function ProductosContent() {
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["color"])
   );
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("relevancia");
+
+  // Refs para sticky sidebar
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const productsRef = useRef<HTMLDivElement>(null);
 
   // Usar el hook de productos con API real
   const { products, loading, error, totalItems, refreshProducts } =
@@ -96,12 +106,30 @@ function ProductosContent() {
   // UX: contador de resultados
   const resultCount = filteredProducts.length;
 
+  const device = useDeviceType();
+
+  // Sidebar sticky (tu hook)
+  const stickyEnabled = device === "desktop" || device === "large";
+  const stickyState = useSticky({
+    sidebarRef,
+    productsRef,
+    topOffset: 120,
+    enabled: stickyEnabled,
+  });
+  const { containerClasses, wrapperClasses, style } =
+    useStickyClasses(stickyState);
+
+  // Reset cuando cambian filtros o breakpoint
+  useEffect(() => {
+    // Reset logic if needed
+  }, [filters, stickyEnabled]);
+
   // UX: animación de scroll al filtrar
-  function handleFilterChange(
+  const handleFilterChange = useCallback((
     filterType: string,
     value: string,
     checked: boolean
-  ) {
+  ) => {
     setFilters((prev) => ({
       ...prev,
       [filterType]: checked
@@ -109,23 +137,45 @@ function ProductosContent() {
         : (prev[filterType] || []).filter((item) => item !== value),
     }));
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  }, []);
 
-  function handleToggleFilter(filterKey: string) {
-    const newExpanded = new Set(expandedFilters);
-    if (newExpanded.has(filterKey)) {
-      newExpanded.delete(filterKey);
-    } else {
-      newExpanded.add(filterKey);
-    }
-    setExpandedFilters(newExpanded);
-  }
+  const toggleFilter = useCallback(
+    (filterKey: string) => {
+      const next = new Set(expandedFilters);
+      next.has(filterKey) ? next.delete(filterKey) : next.add(filterKey);
+      setExpandedFilters(next);
+    },
+    [expandedFilters]
+  );
+
+
+  // Header (NO sticky): va en el flujo normal
+  const HeaderSectionMemo = useMemo(
+    () => (
+      <HeaderSection
+        title="Productos Samsung"
+        totalItems={totalItems}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onShowMobileFilters={() => {}}
+        filters={filters}
+        setFilters={setFilters}
+        clearAllFiltersText="Ver todos los productos"
+      />
+    ),
+    [totalItems, sortBy, viewMode, filters]
+  );
 
   if (loading && products.length === 0) {
     return (
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <LoadingSpinner />
+      <div className="min-h-screen bg-white">
+        {HeaderSectionMemo}
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <LoadingSpinner />
+          </div>
         </div>
       </div>
     );
@@ -133,55 +183,75 @@ function ProductosContent() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-6 py-8">
-        <div className="text-center py-12">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">
-            Error al cargar productos
-          </h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <button
-            onClick={refreshProducts}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Reintentar
-          </button>
+      <div className="min-h-screen bg-white">
+        {HeaderSectionMemo}
+        <div className="container mx-auto px-6 py-8">
+          <div className="text-center py-12">
+            <h2 className="text-2xl font-bold text-red-600 mb-4">
+              Error al cargar productos
+            </h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <button
+              onClick={refreshProducts}
+              className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Reintentar
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Productos Samsung</h1>
-        <div className="text-sm text-gray-600">
-          {totalItems > 0 && (
-            <span>
-              Mostrando {resultCount} de {totalItems} productos
-            </span>
-          )}
-        </div>
-      </div>
+    <div className="min-h-screen bg-white">
+      {/* Header de la lista (no sticky) */}
+      {HeaderSectionMemo}
 
-      <div className="flex gap-8">
-        <aside className="hidden lg:block w-80 flex-shrink-0">
-          <FilterSidebar
-            filterConfig={filterConfig}
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            resultCount={resultCount}
-            expandedFilters={expandedFilters}
-            onToggleFilter={handleToggleFilter}
-          />
-        </aside>
-        <main className="flex-1">
-          {loading && products.length > 0 && (
-            <div className="mb-4 flex justify-center">
-              <LoadingSpinner />
-            </div>
+      {/* Contenido */}
+      <div
+        className={cn(
+          "container mx-auto px-6 py-8",
+          device === "mobile" && "px-5 py-4",
+          device === "tablet" && "px-4 py-6"
+        )}
+      >
+        <div
+          className={cn(
+            "flex",
+            (device === "desktop" || device === "large") && "gap-6",
+            device === "mobile" && "flex-col gap-4",
+            device === "tablet" && "gap-6"
           )}
-          <ProductGrid products={filteredProducts} />
-        </main>
+        >
+          {(device === "desktop" || device === "large") && (
+            <aside ref={sidebarRef} className="hidden lg:block w-80 flex-shrink-0">
+              <FilterSidebar
+                filterConfig={filterConfig}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                resultCount={resultCount}
+                expandedFilters={expandedFilters}
+                onToggleFilter={toggleFilter}
+                stickyContainerClasses={containerClasses}
+                stickyWrapperClasses={wrapperClasses}
+                stickyStyle={style}
+              />
+            </aside>
+          )}
+
+          <main className="flex-1">
+            <CategoryProductsGrid
+              ref={productsRef}
+              products={filteredProducts}
+              loading={loading}
+              error={error}
+              refreshProducts={refreshProducts}
+              viewMode={viewMode}
+              categoryName="productos"
+            />
+          </main>
+        </div>
       </div>
     </div>
   );

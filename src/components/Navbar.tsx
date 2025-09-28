@@ -33,8 +33,6 @@ import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
 
 // Clases reutilizables
 const iconButtonClass = "flex items-center justify-center w-10 h-10";
-const navLinkClass =
-  "text-left text-xl font-semibold py-4 px-6 rounded-xl transition-all duration-200 text-gray-900 active:bg-blue-100 focus:bg-blue-100";
 const badgeClass =
   "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-transform duration-150 ease-out";
 
@@ -66,13 +64,14 @@ export default function Navbar() {
     if (variant === "mobile") {
       return navbar.showWhiteItemsMobile ? "white" : "black";
     }
-    return navbar.isDispositivosMoviles ||
+    if (
+      navbar.isDispositivosMoviles ||
       navbar.isElectrodomesticos ||
       navbar.isMasInformacionProducto
-      ? "black"
-      : navbar.showWhiteItems
-      ? "white"
-      : "black";
+    ) {
+      return "black";
+    }
+    return navbar.showWhiteItems ? "white" : "black";
   };
 
   // Helper para renderizar iconos de usuario
@@ -106,6 +105,11 @@ export default function Navbar() {
     const cartCount =
       variant === "mobile" ? navbar.itemCount : navbar.cartCount;
 
+    const mobileBadgeClass = cartCount > 0 ? "opacity-100 scale-100" : "opacity-0 scale-0";
+    const badgeClassAddition = variant === "mobile"
+      ? mobileBadgeClass
+      : (navbar.bump ? "scale-110" : "scale-100");
+
     return (
       <Link
         href="/carrito"
@@ -124,13 +128,7 @@ export default function Navbar() {
           <span
             className={cn(
               badgeClass,
-              variant === "mobile"
-                ? cartCount > 0
-                  ? "opacity-100 scale-100"
-                  : "opacity-0 scale-0"
-                : navbar.bump
-                ? "scale-110"
-                : "scale-100"
+              badgeClassAddition
             )}
             aria-label={`Carrito: ${cartCount} productos`}
             aria-live="polite"
@@ -162,124 +160,19 @@ export default function Navbar() {
     </button>
   );
 
-  // Helper para renderizar buscador tablet/mobile
-  const renderSearchOverlay = () =>
-    navbar.searchQuery === "focus" && (
-      <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
-        <form
-          onSubmit={navbar.handleSearchSubmit}
-          className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
-        >
-          <input
-            type="text"
-            className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-            placeholder="Buscar..."
-            autoFocus
-            value={navbar.searchQuery !== "focus" ? navbar.searchQuery : ""}
-            onChange={(e) => navbar.setSearchQuery(e.target.value)}
-          />
-          <button type="submit" className="ml-2">
-            <Image
-              src={searchIconWhite}
-              alt="Buscar"
-              width={26}
-              height={26}
-              priority
-            />
-          </button>
-        </form>
-      </div>
-    );
-
-  // Helper para renderizar items del menú móvil
-  const renderMobileMenuItems = () =>
-    navbarRoutes.map((item) => {
-      const hasDropdown = [
-        "Dispositivos móviles",
-        "Televisores y AV",
-        "Electrodomésticos",
-      ].includes(item.name);
-      const isDropdownOpen = activeDropdown === item.name;
-      const someDropdownOpen = Boolean(activeDropdown);
-
-      const matchesUrl = [
-        navbar.pathname === item.href,
-        navbar.pathname.startsWith(item.href + "/"),
-        navbar.pathname.startsWith(item.href + "?"),
-        navbar.cleanPath === item.href,
-        navbar.cleanPath.startsWith(item.href + "/"),
-        navbar.cleanPath.startsWith(item.href + "?"),
-      ].some(Boolean);
-
-      const isActive = hasDropdown
-        ? isDropdownOpen || matchesUrl
-        : someDropdownOpen
-        ? false
-        : matchesUrl;
-
-      return (
-        <div key={item.name} className="flex flex-col">
-          {hasDropdown ? (
-            <button
-              onClick={() =>
-                setActiveDropdown(isDropdownOpen ? null : item.name)
-              }
-              className={cn(
-                navLinkClass,
-                isActive && "bg-blue-50 text-blue-700 shadow"
-              )}
-              aria-label={item.name}
-              aria-current={isActive ? "page" : undefined}
-            >
-              {item.name}
-            </button>
-          ) : (
-            <Link
-              href={item.href}
-              className={cn(
-                navLinkClass,
-                isActive && "bg-blue-50 text-blue-700 shadow"
-              )}
-              aria-label={item.name}
-              aria-current={isActive ? "page" : undefined}
-              onClick={() => {
-                navbar.setIsMobileMenuOpen(false);
-                setActiveDropdown(null);
-              }}
-            >
-              {item.name}
-            </Link>
-          )}
-
-          {hasDropdown && isDropdownOpen && (
-            <div className="ml-4 mt-2">
-              {getDropdownComponent(item.name, true, () => {
-                setActiveDropdown(null);
-                navbar.setIsMobileMenuOpen(false);
-              })}
-            </div>
-          )}
-        </div>
-      );
-    });
-
   // Clases dinámicas para el header
+  let backgroundClass = "bg-white/60 shadow backdrop-blur-md";
+  if (
+    (navbar.isOfertas && !navbar.isScrolled) ||
+    (navbar.isHome && !navbar.isScrolled) ||
+    navbar.isProductDetail
+  ) {
+    backgroundClass = "bg-transparent";
+  }
+
   const headerClasses = cn(
-    "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60 sticky top-0 left-0 md:static",
-    navbar.isOfertas && !navbar.isScrolled
-      ? "bg-transparent"
-      : navbar.isOfertas && navbar.isScrolled
-      ? "bg-white/60 shadow backdrop-blur-md"
-      : navbar.isDispositivosMoviles ||
-        navbar.isElectrodomesticos ||
-        navbar.isMasInformacionProducto ||
-        navbar.isScrolledNavbar
-      ? "bg-white/60 shadow backdrop-blur-md"
-      : navbar.isHome && !navbar.isScrolled
-      ? "bg-transparent"
-      : navbar.isProductDetail
-      ? "bg-transparent"
-      : "bg-white/60 shadow backdrop-blur-md"
+    "w-full z-50 transition-all duration-300 backdrop-blur-md sticky top-0 left-0 md:static",
+    backgroundClass
   );
 
   // Estilos dinámicos para el header
@@ -399,7 +292,7 @@ export default function Navbar() {
             {/* Buscador */}
             <form
               onSubmit={navbar.handleSearchSubmit}
-              className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-4 h-12 shadow-sm border border-white/30 transition-all duration-300 w-72"
+              className="flex items-center bg-white/70 backdrop-blur-md rounded-full px-2 h-12 shadow-sm border border-white/30 transition-all duration-300 "
               style={{ zIndex: 1000, overflow: "hidden" }}
             >
               <input
@@ -433,180 +326,9 @@ export default function Navbar() {
             {renderCartIcon("desktop")}
             {renderFavoritesIcon("desktop")}
           </div>
-          {/*Iconos tablet */}
-          <div className="hidden md:flex lg:hidden items-center space-x-4">
-            <button
-              className={cn(
-                iconButtonClass,
-                "text-2xl font-bold",
-                navbar.showWhiteItems ? "text-white" : "text-black"
-              )}
-              title={
-                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
-              }
-              aria-label={
-                navbar.searchQuery === "focus" ? "Cerrar buscador" : "Buscar"
-              }
-              onClick={() => {
-                if (navbar.searchQuery === "focus") {
-                  navbar.setSearchQuery("");
-                } else {
-                  navbar.setSearchQuery("focus");
-                  posthogUtils.capture("search_icon_click", {
-                    source: "navbar_tablet",
-                  });
-                }
-              }}
-            >
-              {navbar.searchQuery === "focus" ? (
-                <span className="text-2xl">&#10005;</span>
-              ) : (
-                <Image
-                  src={
-                    navbar.showWhiteItems ? searchIconWhite : searchIconBlack
-                  }
-                  alt="Buscar"
-                  width={26}
-                  height={26}
-                  priority
-                />
-              )}
-            </button>
-            {/* Icono login */}
-            <button
-              type="button"
-              className={cn(
-                "flex items-center justify-center w-10 h-10 text-black",
-                navbar.isDispositivosMoviles ||
-                  navbar.isElectrodomesticos ||
-                  navbar.isMasInformacionProducto
-                  ? "text-black"
-                  : navbar.showWhiteItems
-                  ? "text-white"
-                  : "text-black"
-              )}
-              title={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
-              aria-label={navbar.isAuthenticated ? "Dashboard" : "Ingresar"}
-              onClick={() => {
-                posthogUtils.capture("user_icon_click", {
-                  user_authenticated: navbar.isAuthenticated,
-                  destination: "login",
-                });
-                window.location.replace("/login");
-              }}
-            >
-              <Image
-                src={navbar.showWhiteItems ? userIconWhite : userIconBlack}
-                alt="Usuario"
-                width={28}
-                height={28}
-                priority
-              />
-            </button>
-            {/* Icono carrito */}
-            <Link
-              href="/carrito"
-              className={cn(
-                "flex items-center justify-center w-10 h-10 relative text-black",
-                navbar.isDispositivosMoviles ||
-                  navbar.isElectrodomesticos ||
-                  navbar.isMasInformacionProducto
-                  ? "text-black"
-                  : navbar.showWhiteItems
-                  ? "text-white"
-                  : "text-black"
-              )}
-              title="Carrito de compras"
-              onClick={navbar.handleCartClick}
-            >
-              <Image
-                src={
-                  navbar.showWhiteItems ? carritoIconWhite : carritoIconBlack
-                }
-                alt="Carrito"
-                width={34}
-                height={34}
-                priority
-              />
-              {navbar.isClient && navbar.cartCount > 0 && (
-                <span
-                  className={cn(
-                    "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-transform duration-150 ease-out",
-                    navbar.bump ? "scale-110" : "scale-100"
-                  )}
-                  aria-label={`Carrito: ${navbar.cartCount} productos`}
-                  aria-live="polite"
-                >
-                  {navbar.cartCount > 99 ? "99+" : navbar.cartCount}
-                </span>
-              )}
-            </Link>
-            {/* Icono favoritos */}
-            <button
-              type="button"
-              className={cn(
-                "flex items-center justify-center w-10 h-10",
-                navbar.isDispositivosMoviles ||
-                  navbar.isElectrodomesticos ||
-                  navbar.isMasInformacionProducto
-                  ? "text-black"
-                  : navbar.showWhiteItems
-                  ? "text-white"
-                  : "text-black"
-              )}
-              title="Favoritos"
-              aria-label="Favoritos"
-              style={{ position: "relative" }}
-              onClick={() => navbar.router.push("/favoritos")}
-            >
-              <Image
-                src={
-                  navbar.showWhiteItems ? favoritoIconWhite : favoritoIconBlack
-                }
-                alt="Favoritos"
-                width={20}
-                height={21}
-                priority
-              />
-            </button>
-            {navbar.searchQuery === "focus" && (
-              <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-[90vw] max-w-md z-[10000] animate-fade-in">
-                <form
-                  onSubmit={navbar.handleSearchSubmit}
-                  className="bg-[#17407A] rounded-full flex items-center px-6 py-4 shadow-lg"
-                >
-                  <input
-                    type="text"
-                    className="w-full bg-transparent text-white placeholder-white/80 border-none focus:outline-none text-lg"
-                    placeholder="Buscar..."
-                    autoFocus
-                    value={
-                      navbar.searchQuery !== "focus" ? navbar.searchQuery : ""
-                    }
-                    onChange={(e) => navbar.setSearchQuery(e.target.value)}
-                  />
-                  <button type="submit" className="ml-2">
-                    <Image
-                      src={searchIconWhite}
-                      alt="Buscar"
-                      width={26}
-                      height={26}
-                      priority
-                    />
-                  </button>
-                  <button
-                    type="button"
-                    className="ml-4 text-white text-2xl font-bold focus:outline-none"
-                    aria-label="Cerrar buscador"
-                    onClick={() => navbar.setSearchQuery("")}
-                  ></button>
-                </form>
-              </div>
-            )}
-          </div>
 
           {/* Navbar móvil */}
-          <div className="flex md:hidden items-center h-16 space-x-4  align-end">
+          <div className="flex lg:hidden items-center h-16 space-x-4  align-end">
             {/* Icono carrito */}
             <Link
               href="/carrito"
@@ -673,7 +395,8 @@ export default function Navbar() {
               : "max-h-20 opacity-100"
           )}
         >
-          <ul className="flex items-center justify-center gap-4 xl:gap-8 py-4 px-4 md:px-8 min-w-max">
+          <ul className="flex items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 xl:gap-6 py-3 md:py-4 px-2 sm:px-4 md:px-6 lg:px-8 overflow-x-auto">
+
             {navbarRoutes.map((item) => {
               const isActive =
                 item.name === "Electrodomésticos"
@@ -715,7 +438,7 @@ export default function Navbar() {
                     <Link
                       href={item.href}
                       className={cn(
-                        "text-lg font-normal whitespace-nowrap block py-3 px-2 lg:px-4 rounded-lg focus:outline-none",
+                        "text-sm sm:text-base md:text-lg font-normal whitespace-nowrap block py-2 sm:py-3 px-1 sm:px-2 md:px-3 lg:px-4 rounded-lg focus:outline-none",
                         itemTextColor,
                         hoverClass,
                         isActive && navbar.showWhiteItems && "text-white",
@@ -750,14 +473,14 @@ export default function Navbar() {
           <>
             {/* Overlay oscuro */}
             <div
-              className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-black/60 z-40 animate-fade-in transition-opacity duration-500"
+              className="lg:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-black/60 z-40 animate-fade-in transition-opacity duration-500"
               onClick={() => navbar.setIsMobileMenuOpen(false)}
               aria-label="Cerrar menú móvil"
             />
             {/* Panel del menú móvil */}
             <div
               id="mobile-menu"
-              className="md:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-white z-50 shadow-2xl border-t border-gray-200 flex flex-col animate-slide-in transition-all duration-500 overflow-y-auto rounded-b-2xl"
+              className="lg:hidden fixed top-16 left-0 w-full h-[calc(100vh-4rem)] bg-white z-50 shadow-2xl border-t border-gray-200 flex flex-col animate-slide-in transition-all duration-500 overflow-y-auto rounded-b-2xl"
               style={{ minHeight: "60vh", maxHeight: "calc(100vh - 4rem)" }}
               role="menu"
               aria-label="Menú móvil"

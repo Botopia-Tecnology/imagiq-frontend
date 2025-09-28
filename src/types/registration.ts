@@ -33,9 +33,7 @@ export interface VerificationChannel {
 }
 
 // Extensión de UserAddress para el formulario de registro
-export interface RegistrationAddress extends Omit<UserAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'> {
-  // Reutiliza UserAddress pero sin campos de BD
-}
+export type RegistrationAddress = Omit<UserAddress, 'id' | 'userId' | 'createdAt' | 'updatedAt'>;
 
 // Datos del formulario de registro - extiende Usuario existente
 export interface RegistrationFormData extends Pick<Usuario, 'email' | 'nombre' | 'apellido' | 'contrasena' | 'telefono' | 'codigo_pais' | 'tipo_documento' | 'numero_documento'> {

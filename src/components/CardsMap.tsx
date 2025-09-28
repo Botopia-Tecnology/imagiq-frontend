@@ -1,6 +1,4 @@
-import Image from "next/image";
-import mapsIcon from "../img/hero/maps_icon.png";
-import wazeIcon from "../img/hero/waze_icon.png";
+import { MapPin, Navigation } from "lucide-react";
 
 export interface Location {
   id: number;
@@ -104,14 +102,7 @@ export const StoreCard: React.FC<StoreCardProps> = ({ store }) => {
             tabIndex={0}
             aria-label="Abrir en Google Maps"
           >
-            <Image
-              src={mapsIcon}
-              alt="Maps"
-              width={22}
-              height={22}
-              className="w-5 h-5 object-contain"
-              priority
-            />
+            <MapPin className="w-5 h-5 text-green-600" />
             Ir con Maps
           </a>
           <a
@@ -122,14 +113,7 @@ export const StoreCard: React.FC<StoreCardProps> = ({ store }) => {
             tabIndex={0}
             aria-label="Abrir en Waze"
           >
-            <Image
-              src={wazeIcon}
-              alt="Waze"
-              width={22}
-              height={22}
-              className="w-5 h-5 object-contain"
-              priority
-            />
+            <Navigation className="w-5 h-5 text-blue-600" />
             Ir con Waze
           </a>
         </div>

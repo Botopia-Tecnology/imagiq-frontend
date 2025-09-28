@@ -35,7 +35,7 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
         {/* Formulario de pago */}
         <form
           id="checkout-form"
-          className="col-span-2 flex flex-col gap-8 bg-[#F3F3F3] rounded-2xl p-8 shadow"
+          className="col-span-2 flex flex-col gap-8  rounded-2xl p-8"
           onSubmit={handleFinish}
           autoComplete="off"
         >

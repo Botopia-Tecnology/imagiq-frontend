@@ -1,23 +1,26 @@
-import Image from "next/image";
-import watchImg from "@/img/carrito/watch7.png";
-import budsImg from "@/img/carrito/buds3.png";
-import chargerImg from "@/img/carrito/cargador.png";
+import { Watch, Headphones, Zap, Plus } from "lucide-react";
 
 const sugerencias = [
   {
     nombre: "Samsung Galaxy Watch7",
     precio: 1099900,
-    imagen: watchImg,
+    icon: Watch,
+    bgColor: "bg-blue-100",
+    iconColor: "text-blue-600",
   },
   {
     nombre: "Galaxy Buds3 Pro",
     precio: 629900,
-    imagen: budsImg,
+    icon: Headphones,
+    bgColor: "bg-purple-100",
+    iconColor: "text-purple-600",
   },
   {
     nombre: "Cargador Adaptador de carga rápida - Cable tipo-C (15W)",
     precio: 74900,
-    imagen: chargerImg,
+    icon: Zap,
+    bgColor: "bg-yellow-100",
+    iconColor: "text-yellow-600",
   },
 ];
 
@@ -36,19 +39,15 @@ export default function Sugerencias({
             className="flex flex-col items-center w-full md:w-1/3 px-2"
           >
             <div className="relative w-28 h-28 mb-2 flex items-center justify-center">
-              <Image
-                src={s.imagen}
-                alt={s.nombre}
-                fill
-                className="object-contain rounded-xl bg-white"
-                sizes="112px"
-              />
+              <div className={`w-full h-full rounded-xl ${s.bgColor} flex items-center justify-center`}>
+                <s.icon className={`w-12 h-12 ${s.iconColor}`} />
+              </div>
               <button
                 className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-blue-600 transition"
                 aria-label={`Agregar ${s.nombre}`}
                 onClick={() => onAdd?.(s.nombre)}
               >
-                <span className="text-2xl font-bold">+</span>
+                <Plus className="w-5 h-5" />
               </button>
             </div>
             <div className="text-center mt-2">

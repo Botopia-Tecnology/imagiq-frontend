@@ -7,7 +7,6 @@
 import { ProductApiData } from './api';
 import { ProductCardProps, ProductColor } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
-import { encodeCodigoMarketForUrl } from './api';
 
 // Importar imágenes mock para usar temporalmente
 import emptyImg from '@/img/empty.jpeg';
@@ -57,8 +56,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   // Calcular precios y descuentos (usar el primer precio disponible)
   const { price, originalPrice, discount, isNew } = calculatePricingFromArray(apiProduct);
   
-  // Usar codigoMarket como ID único (codificado para URL)
-  const id = encodeCodigoMarketForUrl(apiProduct.codigoMarket);
+  const id = apiProduct.codigoMarketBase;
 
   
   return {
@@ -107,8 +105,14 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
   const colorsWithPrices: ProductColor[] = [];
   
   // Crear un mapa de colores únicos con sus precios correspondientes
-  const colorPriceMap = new Map<string, { color: string; precioNormal: number; precioDescto: number; index: number }>();
+  const colorPriceMap = new Map<string, { 
+    color: string; 
+    preciosNormales: number[]; 
+    preciosDescuento: number[]; 
+    indices: number[] 
+  }>();
   
+  // Agrupar precios por color
   apiProduct.color.forEach((color, index) => {
     const precioNormal = apiProduct.precioNormal[index] || 0;
     const precioDescto = apiProduct.precioDescto[index] || 0;
@@ -116,29 +120,54 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Solo incluir colores con precios válidos (mayores a 0)
     if (precioNormal > 0 || precioDescto > 0) {
       const key = color.toLowerCase();
-      if (!colorPriceMap.has(key) || precioDescto > 0) {
-        colorPriceMap.set(key, { color, precioNormal, precioDescto, index });
+      
+      if (!colorPriceMap.has(key)) {
+        colorPriceMap.set(key, { 
+          color, 
+          preciosNormales: [], 
+          preciosDescuento: [], 
+          indices: [] 
+        });
       }
+      
+      const colorData = colorPriceMap.get(key)!;
+      colorData.preciosNormales.push(precioNormal);
+      colorData.preciosDescuento.push(precioDescto);
+      colorData.indices.push(index);
     }
   });
   
   // Convertir el mapa a array de ProductColor
-  colorPriceMap.forEach(({ color, precioNormal, precioDescto, index }) => {
+  colorPriceMap.forEach(({ color, preciosNormales, preciosDescuento, indices }) => {
     // Normalizar el color para búsqueda consistente
     const normalizedColor = color.toLowerCase().trim();
     const colorInfo = colorMap[normalizedColor] || { hex: '#808080', label: color };
     const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
     
-    const price = formatPrice(precioDescto > 0 ? precioDescto : precioNormal);
+    // Encontrar el precio más bajo entre todas las variantes de este color
+    const preciosNormalesValidos = preciosNormales.filter(p => p > 0);
+    const preciosDescuentoValidos = preciosDescuento.filter(p => p > 0);
+    
+    const precioNormalMin = preciosNormalesValidos.length > 0 
+      ? Math.min(...preciosNormalesValidos) 
+      : 0;
+    const precioDesctoMin = preciosDescuentoValidos.length > 0 
+      ? Math.min(...preciosDescuentoValidos) 
+      : precioNormalMin;
+    
+    const price = formatPrice(precioDesctoMin);
     let originalPrice: string | undefined;
     let discount: string | undefined;
     
     // Si hay descuento real
-    if (precioDescto > 0 && precioDescto < precioNormal && precioNormal > 0) {
-      originalPrice = formatPrice(precioNormal);
-      const discountPercent = Math.round(((precioNormal - precioDescto) / precioNormal) * 100);
+    if (precioDesctoMin > 0 && precioDesctoMin < precioNormalMin && precioNormalMin > 0) {
+      originalPrice = formatPrice(precioNormalMin);
+      const discountPercent = Math.round(((precioNormalMin - precioDesctoMin) / precioNormalMin) * 100);
       discount = `-${discountPercent}%`;
     }
+    
+    // Usar el primer SKU disponible para este color
+    const firstIndex = indices[0];
     
     colorsWithPrices.push({
       name: normalizedColor.replace(/\s+/g, '-'),
@@ -147,7 +176,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       price,
       originalPrice,
       discount,
-      sku: apiProduct.sku[index]
+      sku: apiProduct.sku[firstIndex]
     });
   });
   

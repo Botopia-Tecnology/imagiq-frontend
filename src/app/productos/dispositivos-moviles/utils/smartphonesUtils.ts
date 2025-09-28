@@ -20,8 +20,22 @@ export function getApiFilters(filters: FilterState): ApiFilters {
   }
 
   if (filters.serie && filters.serie.length > 0) {
-    // Buscar por serie en el nombre del producto
-    apiFilters.descriptionKeyword = filters.serie.join(',');
+    // Buscar por serie en el nombre del producto usando variantes de nombres
+    const serieVariants = filters.serie.map(serie => {
+      switch (serie) {
+        case "Galaxy A":
+          return "Galaxy A,Galaxy-A,+A+";
+        case "Galaxy Z":
+          return "Galaxy Z, Galaxy-Z,+Z+";
+        case "Galaxy S":
+          return "Galaxy S,Galaxy-S,+S+";
+        case "Galaxy Note":
+          return "Galaxy Note,Galaxy-Note,+Note+";
+        default:
+          return serie;
+      }
+    });
+    apiFilters.name = serieVariants.join(',');
   }
 
   if (filters.caracteristicas && filters.caracteristicas.length > 0) {

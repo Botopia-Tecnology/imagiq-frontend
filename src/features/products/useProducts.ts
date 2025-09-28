@@ -15,7 +15,6 @@ import {
   productEndpoints,
   ProductFilterParams,
   ProductApiResponse,
-  decodeCodigoMarketFromUrl,
   FavoriteFilterParams,
   FavoriteApiResponse,
 } from "@/lib/api";

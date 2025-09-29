@@ -130,7 +130,7 @@ export function useNavbarLogic() {
     "/productos/dispositivos-moviles"
   );
   const isElectrodomesticos = pathname.startsWith(
-    "/productos/Electrodomesticos"
+    "/productos/electrodomesticos"
   );
   const isNavbarItem = navbarRoutes.some((route: (typeof navbarRoutes)[0]) =>
     pathname.startsWith(route.href)

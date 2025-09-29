@@ -8,14 +8,19 @@ import type { FilterConfig, FilterState } from "../../components/FilterSidebar";
 import type { Category } from "../../components/CategorySlider";
 
 // Importar imágenes para el CategorySlider
-import smartphoneImg from "../../../../img/categorias/Smartphones.png";
-import tabletImg from "../../../../img/categorias/Tabletas.png";
-import watchImg from "../../../../img/categorias/galaxy_watch.png";
-import budsImg from "../../../../img/categorias/galaxy_buds.png";
-import accesoriosImg from "../../../../img/categorias/accesorios.png";
-import refrigeradorImg from "../../../../img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "../../../../img/electrodomesticos/electrodomesticos2.png";
-import tvImg from "../../../../img/categorias/Tv_Monitores.png";
+import smartphoneImg from "@/img/categorias/Smartphones.png";
+import tabletImg from "@/img/categorias/Tabletas.png";
+import watchImg from "@/img/categorias/galaxy_watch.png";
+import budsImg from "@/img/categorias/galaxy_buds.png";
+import accesoriosImg from "@/img/categorias/accesorios.png";
+import refrigeradorImg from "@/img/electrodomesticos/electrodomesticos1.png";
+import lavadoraImg from "@/img/electrodomesticos/electrodomesticos2.png";
+import tvImg from "@/img/categorias/Tv_Monitores.png";
+import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
+import aspiradoraImg from "@/img/electrodomesticos/electrodomesticos3.png";
+import microondasImg from "@/img/electrodomesticos/electrodomesticos4.png";
+import aireImg from "@/img/electrodomesticos/aire2.png";
+import hornosImg from "@/img/electrodomesticos/horno.png";
 
 /**
  * Configuración de filtros para electrodomésticos - OPCIONES DISPONIBLES
@@ -320,16 +325,52 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
     {
       id: "refrigeradores",
       name: "Refrigeradores",
-      subtitle: "Neveras y refrigeradores",
+      subtitle: "",
       image: refrigeradorImg,
-      href: "/productos/electrodomestico?seccion=refrigeradores",
+      href: "/productos/electrodomesticos?seccion=refrigeradores",
     },
     {
       id: "lavadoras",
       name: "Lavadoras",
-      subtitle: "Lavadoras y secadoras",
+      subtitle: "",
       image: lavadoraImg,
-      href: "/productos/electrodomestico?seccion=lavadoras",
+      href: "/productos/electrodomesticos?seccion=lavadoras",
+    },
+
+    {
+      id: "microondas",
+      name: "Microondas",
+      subtitle: "",
+      image: microondasImg,
+      href: "/productos/electrodomesticos?seccion=microondas",
+    },
+    {
+      id: "aspiradoras",
+      name: "Aspiradoras",
+      subtitle: "",
+      image: aspiradoraImg,
+      href: "/productos/electrodomesticos?seccion=aspiradoras",
+    },
+    {
+      id: "aire-acondicionado",
+      name: "Aire Acondicionado",
+      subtitle: "",
+      image: aireImg,
+      href: "/productos/electrodomesticos?seccion=aire-acondicionado",
+    },
+    {
+      id: "lavavajillas",
+      name: "Lavavajillas",
+      subtitle: "",
+      image: lavavajillasImg,
+      href: "/productos/electrodomesticos?seccion=lavavajillas",
+    },
+    {
+      id: "hornos",
+      name: "Hornos",
+      image: hornosImg,
+      subtitle: "",
+      href: "/productos/electrodomesticos?seccion=hornos",
     },
   ],
   moviles: [
@@ -378,14 +419,14 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
       href: "/productos/televisores?seccion=smart-tv",
     },
     {
-      id: "qled-tv",
+      id: "qled",
       name: "QLED",
       subtitle: "TV",
       image: tvImg,
-      href: "/productos/televisores?seccion=qled-tv",
+      href: "/productos/televisores?seccion=qled",
     },
     {
-      id: "crystal-uhd-tv",
+      id: "crystal-uhd",
       name: "Crystal",
       subtitle: "UHD TV",
       image: tvImg,

@@ -18,7 +18,6 @@ import { useDeviceType } from "@/components/responsive";
 import { CategoriaParams, Seccion } from "./types";
 import { isValidCategory } from "./utils/categoryUtils";
 import {
-  CATEGORY_SECTIONS,
   DEFAULT_SECTION,
   isValidSectionForCategory,
   getSectionTitle,
@@ -39,7 +38,6 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   const seccionParam = searchParams.get("seccion");
 
   // Validar y obtener sección activa
-  const validSections = CATEGORY_SECTIONS[categoria];
   const activeSection =
     seccionParam && isValidSectionForCategory(categoria, seccionParam)
       ? (seccionParam as Seccion)
@@ -54,19 +52,6 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
       device,
     });
   }, [categoria, activeSection, device]);
-
-  // Prefetch de los bundles de las secciones (mount only)
-  useEffect(() => {
-    validSections.forEach((section) => {
-      // Prefetch dinámico basado en la categoría
-      import(`./components/${categoria}/${section}`).catch(() => {
-        // Si no existe el componente específico, usar el genérico
-        console.log(
-          `Componente específico para ${section} no encontrado, usando genérico`
-        );
-      });
-    });
-  }, [categoria, validSections]);
 
   // Padding responsivo
   let devicePaddingClass = "px-0 py-0";

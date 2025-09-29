@@ -31,11 +31,11 @@ export const CATEGORY_MAPPING: Record<
   electrodomestico: {
     apiCategory: "Electrodoméstico",
     subcategorias: {
-      refrigeradores: "Refrigeradores",
-      lavadoras: "Lavadoras",
-      microondas: "Microondas",
-      "aire-acondicionado": "Aires Acondicionados",
-      hornos: "Cocinas",
+      refrigeradores: "Neveras,Nevecon",
+      lavadoras: "Lavadora,Secadora",
+      microondas: "Hornos Microondas",
+      "aire-acondicionado": "Aire Acondicionado",
+      hornos: "Hornos Microondas",
       lavavajillas: "Lavavajillas",
       aspiradoras: "Aspiradoras",
     },

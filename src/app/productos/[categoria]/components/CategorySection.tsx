@@ -13,16 +13,21 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { Filter, X } from "lucide-react";
+import { X } from "lucide-react";
 import { useProducts } from "@/features/products/useProducts";
 import Pagination from "../../dispositivos-moviles/components/Pagination";
 import { posthogUtils } from "@/lib/posthogClient";
 import FilterSidebar, {
   type FilterState,
 } from "../../components/FilterSidebar";
-import CategorySlider from "../../components/CategorySlider";
-import ProductCard from "../../components/ProductCard";
+import CategorySlider, {
+  type Category,
+} from "./CategorySliderNew";
+import CategoryProductsGrid from "./ProductsGrid";
+import HeaderSection from "./HeaderSection";
+import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useDeviceType } from "@/components/responsive";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 
@@ -60,11 +65,16 @@ export default function CategorySection({
   );
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
+  // Estados para vista y ordenamiento
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [sortBy, setSortBy] = useState("relevancia");
+
   // Refs para sticky
   const sidebarRef = useRef<HTMLDivElement>(null);
   const productsRef = useRef<HTMLDivElement>(null);
 
   const device = useDeviceType();
+  const router = useRouter();
 
   // Sticky sidebar (desktop)
   const stickyEnabled = device === "desktop" || device === "large";
@@ -101,6 +111,30 @@ export default function CategorySection({
   // Configuraciones para los componentes
   const sliderCategories = getCategorySliderConfig(categoria);
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
+
+  // Determinar categoría activa
+  const searchParams = useSearchParams();
+  const sectionParam = searchParams.get("seccion");
+  const activeCategoryId = useMemo(() => {
+    if (sectionParam) {
+      // Buscar por ID directamente primero
+      const directMatch = sliderCategories.find(
+        (cat) => cat.id === sectionParam
+      );
+      if (directMatch) {
+        return directMatch.id;
+      }
+      // Si no hay match directo, buscar en el href
+      const foundCategory = sliderCategories.find((cat) =>
+        cat.href.includes(`seccion=${sectionParam}`)
+      );
+      if (foundCategory) {
+        return foundCategory.id;
+      }
+    }
+    // Default: primera categoría
+    return sliderCategories[0]?.id || "";
+  }, [sectionParam, sliderCategories]);
 
   // Tracking de vista de página
   useEffect(() => {
@@ -161,6 +195,33 @@ export default function CategorySection({
     [expandedFilters]
   );
 
+  // Header Section
+  const HeaderSectionMemo = useMemo(
+    () => (
+      <HeaderSection
+        title={sectionTitle}
+        totalItems={totalItems}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        onShowMobileFilters={() => setShowMobileFilters(true)}
+        filters={filters}
+        setFilters={setFilters}
+        clearAllFiltersText={`Ver todos los ${sectionTitle.toLowerCase()}`}
+      />
+    ),
+    [sectionTitle, totalItems, sortBy, viewMode, filters]
+  );
+
+  // Category click handler
+  const handleCategoryClick = useCallback(
+    (category: Category) => {
+      router.replace(category.href);
+    },
+    [router]
+  );
+
   // Layout classes dinámicas
   const containerClasses = cn(
     "flex gap-6",
@@ -201,9 +262,16 @@ export default function CategorySection({
   return (
     <div>
       {/* CategorySlider */}
-      <div className="mb-6">
-        <CategorySlider categories={sliderCategories} />
+      <div className="my-8 relative z-10 mx-auto">
+        <CategorySlider
+          categories={sliderCategories}
+          onCategoryClick={handleCategoryClick}
+          activeCategoryId={activeCategoryId}
+        />
       </div>
+
+      {/* Header Section */}
+      {HeaderSectionMemo}
 
       {/* Main content */}
       <div className={containerClasses}>
@@ -264,28 +332,6 @@ export default function CategorySection({
 
         {/* Contenido principal */}
         <div ref={productsRef} className={contentClasses}>
-          {/* Header con título y controles mobile */}
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {sectionTitle}
-              </h1>
-              <p className="text-gray-600">
-                {totalItems} productos disponibles
-              </p>
-            </div>
-
-            {(device === "mobile" || device === "tablet") && (
-              <button
-                onClick={() => setShowMobileFilters(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-              >
-                <Filter className="w-4 h-4" />
-                Filtros
-              </button>
-            )}
-          </div>
-
           {/* Loading state */}
           {loading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -298,56 +344,26 @@ export default function CategorySection({
           )}
 
           {/* Products Grid */}
-          {!loading && products.length > 0 && (
+          {!loading && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                {products.map((product) => (
-                  <ProductCard
-                    key={product.sku || product.id}
-                    id={product.id}
-                    name={product.name}
-                    image={product.image || "/img/empty.jpeg"}
-                    colors={product.colors || []}
-                    price={product.price?.toString()}
-                    originalPrice={product.originalPrice?.toString()}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
-                    brand={product.brand}
-                    category={product.category}
-                    subcategory={product.subcategory}
-                    sku={product.sku}
-                    puntos_q={100}
-                  />
-                ))}
-              </div>
+              <CategoryProductsGrid
+                ref={productsRef}
+                products={products}
+                loading={loading}
+                error={error}
+                refreshProducts={refreshProducts}
+                viewMode={viewMode}
+                categoryName={sectionTitle}
+              />
 
-              {/* Controls */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <label
-                    htmlFor="items-per-page"
-                    className="text-sm text-gray-700"
-                  >
-                    Productos por página:
-                  </label>
-                  <select
-                    id="items-per-page"
-                    value={itemsPerPage}
-                    onChange={(e) =>
-                      handleItemsPerPageChange(Number(e.target.value))
-                    }
-                    className="border border-gray-300 rounded-md px-3 py-2 text-sm"
-                  >
-                    <option value={15}>15</option>
-                    <option value={30}>30</option>
-                    <option value={45}>45</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Paginación */}
-              {totalPages > 1 && (
+              {!error && products.length > 0 && (
                 <div className="mt-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ItemsPerPageSelector
+                      itemsPerPage={itemsPerPage}
+                      onItemsPerPageChange={handleItemsPerPageChange}
+                    />
+                  </div>
                   <Pagination
                     currentPage={currentPage}
                     totalPages={totalPages}
@@ -358,18 +374,6 @@ export default function CategorySection({
                 </div>
               )}
             </>
-          )}
-
-          {/* Empty state */}
-          {!loading && products.length === 0 && (
-            <div className="text-center py-12">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                No se encontraron productos
-              </h3>
-              <p className="text-gray-600">
-                Intenta con diferentes filtros o revisa más tarde
-              </p>
-            </div>
           )}
         </div>
       </div>

@@ -115,10 +115,7 @@ export default function CategorySlider({
 
     const check = () => {
       if (isDesktop) {
-        setIsScrollable(
-          categories.length > itemsPerView ||
-            el.scrollWidth > el.clientWidth + 1
-        );
+        setIsScrollable(categories.length > itemsPerView);
       } else {
         setIsScrollable(el.scrollWidth > el.clientWidth + 1);
       }
@@ -360,7 +357,7 @@ export default function CategorySlider({
                   <button
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
-                      "relative flex items-center justify-center transition-all duration-200",
+                      "relative flex items-center justify-center transition-all duration-200 z-30",
                       "transform-gpu will-change-transform origin-center",
                       "rounded-full category-circle cursor-pointer",
                       "overflow-hidden",
@@ -371,7 +368,7 @@ export default function CategorySlider({
                         : "bg-white hover:bg-white-100"
                     )}
                   >
-                    <div className="flex items-center justify-center w-full h-full pointer-events-none">
+                    <div className="flex items-center justify-center w-full h-full">
                       <Image
                         src={category.image}
                         alt={`${category.name} ${category.subtitle}`}

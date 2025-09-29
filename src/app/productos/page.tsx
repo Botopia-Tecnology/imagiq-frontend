@@ -14,6 +14,8 @@ import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import { cn } from "@/lib/utils";
 import CategoryProductsGrid from "./dispositivos-moviles/components/ProductsGrid";
 import HeaderSection from "./dispositivos-moviles/components/HeaderSection";
+import Pagination from "./dispositivos-moviles/components/Pagination";
+import ItemsPerPageSelector from "./dispositivos-moviles/components/ItemsPerPageSelector";
 
 // Configuración de filtros (puedes personalizar según la categoría)
 const filterConfig: FilterConfig = {
@@ -92,6 +94,10 @@ function ProductosContent() {
   );
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
+  
+  // Paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Refs para sticky sidebar
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -99,16 +105,20 @@ function ProductosContent() {
 
   // Configurar filtros iniciales basados en la búsqueda
   const initialFilters = useMemo(() => {
+    const baseFilters: any = {
+      page: currentPage,
+      limit: itemsPerPage,
+    };
+    
     if (searchQuery) {
-      return {
-        searchQuery: searchQuery, // Usa tanto nombre como desDetallada con OR
-      };
+      baseFilters.searchQuery = searchQuery; // Usa tanto nombre como desDetallada con OR
     }
-    return {};
-  }, [searchQuery]);
+    
+    return baseFilters;
+  }, [searchQuery, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con API real
-  const { products, loading, error, totalItems, refreshProducts } =
+  const { products, loading, error, totalItems, totalPages, refreshProducts } =
     useProducts(initialFilters);
 
   // Filtrado funcional y robusto (combinando API filters con UI filters)
@@ -135,7 +145,8 @@ function ProductosContent() {
 
   // Reset cuando cambian filtros o breakpoint
   useEffect(() => {
-    // Reset logic if needed
+    // Reset a página 1 cuando cambian filtros o breakpoint
+    setCurrentPage(1);
   }, [filters, stickyEnabled]);
 
   // UX: animación de scroll al filtrar
@@ -161,6 +172,18 @@ function ProductosContent() {
     },
     [expandedFilters]
   );
+
+  // Controladores de paginación
+  const handlePageChange = useCallback(async (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, []);
+
+  const handleItemsPerPageChange = useCallback(async (items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+    window.scrollTo({ top: 200, behavior: "smooth" });
+  }, []);
 
 
   // Header (NO sticky): va en el flujo normal
@@ -264,6 +287,24 @@ function ProductosContent() {
               viewMode={viewMode}
               categoryName="productos"
             />
+
+            {!loading && !error && totalItems > 0 && (
+              <div className="mt-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                  <ItemsPerPageSelector
+                    itemsPerPage={itemsPerPage}
+                    onItemsPerPageChange={handleItemsPerPageChange}
+                  />
+                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                />
+              </div>
+            )}
           </main>
         </div>
       </div>

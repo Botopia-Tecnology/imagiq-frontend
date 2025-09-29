@@ -182,12 +182,27 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                     Elige tu capacidad
                   </label>
                   <div className="flex gap-3">
-                    {/* Renderizar capacidades si existen */}
-                    {product.capacity ? (
-                      <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
-                        {product.capacity}
-                      </button>
-                    ) : null}
+                    {/* Renderizar capacidades únicas si existen */}
+                    {selectedDevice && Array.isArray(selectedDevice.variants)
+                      ? Array.from(
+                          new Set(
+                            selectedDevice.variants.map((v) => v.capacidad)
+                          )
+                        )
+                          .filter(Boolean)
+                          .map((cap) => (
+                            <button
+                              key={String(cap)}
+                              className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out"
+                            >
+                              {cap}
+                            </button>
+                          ))
+                      : product.capacity && (
+                          <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
+                            {product.capacity}
+                          </button>
+                        )}
                   </div>
                 </section>
                 {/* Selector de color */}
@@ -293,11 +308,25 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                 Elige tu capacidad
               </label>
               <div className="flex gap-3 justify-center">
-                {product.capacity ? (
-                  <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
-                    {product.capacity}
-                  </button>
-                ) : null}
+                {/* Renderizar capacidades únicas si existen */}
+                {selectedDevice && Array.isArray(selectedDevice.variants)
+                  ? Array.from(
+                      new Set(selectedDevice.variants.map((v) => v.capacidad))
+                    )
+                      .filter(Boolean)
+                      .map((cap) => (
+                        <button
+                          key={String(cap)}
+                          className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out"
+                        >
+                          {cap}
+                        </button>
+                      ))
+                  : product.capacity && (
+                      <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
+                        {product.capacity}
+                      </button>
+                    )}
               </div>
             </section>
             {/* Selector de color */}

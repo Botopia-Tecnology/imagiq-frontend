@@ -25,7 +25,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 interface LoginSuccessResponse {
   access_token: string;
   user: Omit<Usuario, "contrasena" | "tipo_documento">;
-  skus: string[];
+  skus: string[] | { sku: string }[];
 }
 
 // Login error response
@@ -225,7 +225,8 @@ export default function LoginPage() {
 
       // Store SKUs as favorites
       if (skus && Array.isArray(skus)) {
-        localStorage.setItem("imagiq_favorites", JSON.stringify(skus));
+        const skuStrings = skus.map(item => typeof item === 'string' ? item : item.sku);
+        localStorage.setItem("imagiq_favorites", JSON.stringify(skuStrings));
       }
 
       posthogUtils.capture("login_attempt", {

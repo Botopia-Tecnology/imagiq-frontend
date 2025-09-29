@@ -26,6 +26,7 @@ import { productsMock } from "../components/productsMock";
 import ComparationProduct from "./ComparationProduct";
 import Specifications from "@/app/productos/dispositivos-moviles/detalles-producto/Specifications";
 import VideosSection from "./VideosSection";
+import Destacados from "./detalles-producto/Destacados";
 
 // Tipo auxiliar para producto de entrada (raw)
 type RawProduct = {
@@ -520,6 +521,9 @@ export default function ViewProduct({
         {/* Especificaciones técnicas dinámicas del producto */}
         <Specifications product={productCard} />
       </motion.div>
+
+      {/* Características destacadas (nuevo componente) */}
+      <Destacados />
 
       {/* Componente de videos */}
       <motion.div

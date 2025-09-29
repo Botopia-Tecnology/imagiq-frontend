@@ -191,8 +191,10 @@ export interface ProductFilterParams {
   color?: string;
   capacidad?: string;
   nombre?: string;
+  modelo?: string;
   desDetallada?: string;
   codigoMarket?: string;
+  filterMode?: string;
   page?: number;
   limit?: number;
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
   FilterConfig,
@@ -82,6 +83,9 @@ function filterProducts(products: ProductCardProps[], filters: FilterState) {
 }
 
 function ProductosContent() {
+  const searchParams = useSearchParams();
+  const searchQuery = searchParams.get("q") || "";
+  
   const [filters, setFilters] = useState<FilterState>({});
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["color"])
@@ -93,9 +97,19 @@ function ProductosContent() {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const productsRef = useRef<HTMLDivElement>(null);
 
+  // Configurar filtros iniciales basados en la búsqueda
+  const initialFilters = useMemo(() => {
+    if (searchQuery) {
+      return {
+        searchQuery: searchQuery, // Usa tanto nombre como desDetallada con OR
+      };
+    }
+    return {};
+  }, [searchQuery]);
+
   // Usar el hook de productos con API real
   const { products, loading, error, totalItems, refreshProducts } =
-    useProducts();
+    useProducts(initialFilters);
 
   // Filtrado funcional y robusto (combinando API filters con UI filters)
   const filteredProducts = useMemo(

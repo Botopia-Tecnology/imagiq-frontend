@@ -10,55 +10,19 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { Filter, Grid3X3, List } from "lucide-react";
+import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
-import ProductCard, { type ProductColor } from "../components/ProductCard";
+import { Filter, Grid3X3, List } from "lucide-react";
+import { useEffect, useState } from "react";
+import CategorySlider from "../components/CategorySlider";
 import FilterSidebar, {
   MobileFilterModal,
   type FilterConfig,
   type FilterState,
 } from "../components/FilterSidebar";
-import CategorySlider, { type Category } from "../components/CategorySlider";
-import { posthogUtils } from "@/lib/posthogClient";
-
-// Importar imágenes del slider
-import crystalUhdImg from "../../../img/categorias/Tv_Monitores.png";
-import qledImg from "../../../img/categorias/Tv_Monitores.png";
+import ProductCard, { type ProductColor } from "../components/ProductCard";
 import smartTvImg from "../../../img/categorias/Tv_Monitores.png";
-import barrasSonidoImg from "../../../img/categorias/Tv_Monitores.png";
-
-// Categorías específicas para Smart TV
-const smartTvCategories: Category[] = [
-  {
-    id: "smart-tv",
-    name: "Smart",
-    subtitle: "TV",
-    image: smartTvImg,
-    href: "#smart-tv",
-  },
-  {
-    id: "qled-tv",
-    name: "QLED",
-    subtitle: "TV",
-    image: qledImg,
-    href: "/productos/televisores?section=qled-tv",
-  },
-  {
-    id: "crystal-uhd-tv",
-    name: "Crystal",
-    subtitle: "UHD TV",
-    image: crystalUhdImg,
-    href: "/productos/televisores?section=crystal-uhd",
-  },
-  {
-    id: "barras-sonido",
-    name: "Barras",
-    subtitle: "Sonido",
-    image: barrasSonidoImg,
-    href: "/productos/televisores?section=barras-sonido",
-  },
-];
+import { smartTvCategories } from "./constants";
 
 // Configuración de filtros específica para Smart TV
 const smartTvFilters: FilterConfig = {

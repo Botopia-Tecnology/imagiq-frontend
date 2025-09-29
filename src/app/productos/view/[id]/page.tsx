@@ -1,31 +1,31 @@
 "use client";
 
-import { use } from "react";
-import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
-import { useProduct } from "@/features/products/useProducts";
-import { notFound } from "next/navigation";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { StaticImageData } from "next/image";
-import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
 import {
   ProductCardProps,
   ProductColor,
 } from "@/app/productos/components/ProductCard";
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { useProduct } from "@/features/products/useProducts";
+import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
+import { StaticImageData } from "next/image";
+import { notFound } from "next/navigation";
+import { use } from "react";
+import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 
 import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 
 // Imports adicionales del DetailsProduct
-import React, { useState } from "react";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useState } from "react";
 
 // Importar iconos para beneficios
-import settingIcon from "@/img/iconos/Setting_line.png";
 import addiIcon from "@/img/iconos/addi_logo.png";
 import packageIcon from "@/img/iconos/package_car.png";
 import percentIcon from "@/img/iconos/Percent_light.png";
+import settingIcon from "@/img/iconos/Setting_line.png";
 
 // Importar imagen del dispositivo por defecto
 // Importar contexto para funcionalidad de color dinámico
@@ -38,9 +38,9 @@ import gifEntregoEstreno from "@/img/gif/gif-entrego-estreno.gif";
 
 // Importar hook de variantes de dispositivos
 import {
-  useDeviceVariants,
-  DeviceVariant,
   ColorOption,
+  DeviceVariant,
+  useDeviceVariants,
 } from "@/hooks/useDeviceVariants";
 
 // Componente DetailsProduct integrado
@@ -1016,8 +1016,8 @@ export default function ProductViewPage({ params }) {
   );
 }
 
-import { useEffect } from "react";
 import { useProductContext } from "@/features/products/ProductContext";
+import { useEffect } from "react";
 
 function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
   const { setIsAppliance } = useProductContext();

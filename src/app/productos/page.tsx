@@ -70,7 +70,7 @@ function ProductosContent() {
   const HeaderSectionMemo = useMemo(
     () => (
       <HeaderSection
-        title="Productos Samsung"
+        title={searchQuery ? `Resultados de "${searchQuery}"` : "Productos Samsung"}
         totalItems={totalItems}
         sortBy={sortBy}
         setSortBy={setSortBy}
@@ -82,7 +82,7 @@ function ProductosContent() {
         clearAllFiltersText="Ver todos los productos"
       />
     ),
-    [totalItems, sortBy, viewMode]
+    [totalItems, sortBy, viewMode, searchQuery]
   );
 
   if (loading && products.length === 0) {

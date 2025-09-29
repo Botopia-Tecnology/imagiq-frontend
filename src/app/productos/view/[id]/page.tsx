@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useEffect } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
@@ -12,7 +12,6 @@ import {
 } from "@/app/productos/components/ProductCard";
 import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
-import { useEffect } from "react";
 import { useProductContext } from "@/features/products/ProductContext";
 
 // Convierte ProductCardProps a formato esperado por ViewProduct

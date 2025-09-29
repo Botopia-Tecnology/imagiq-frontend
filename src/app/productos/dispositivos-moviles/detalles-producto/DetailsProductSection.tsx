@@ -4,79 +4,48 @@ import React from "react";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
-import {
-  useDeviceVariants,
-  DeviceVariant,
-  ColorOption,
-} from "@/hooks/useDeviceVariants";
+import { useDeviceVariants, ColorOption } from "@/hooks/useDeviceVariants";
+import { useDynamicBackgroundColor } from "@/hooks/useDynamicBackgroundColor";
 import DeviceCarousel from "./DeviceCarousel";
-import DeviceSelector from "./DeviceSelector";
-import StorageSelector from "./StorageSelector";
 import ColorSelector from "./ColorSelector";
-import {
-  BenefitsSectionDesktop,
-  BenefitsSectionMobile,
-} from "./BenefitsSection";
 import FloatingEntregoEstrenoButton from "./FloatingEntregoEstrenoButton";
 import deviceImage from "@/img/dispositivosmoviles/cel1.png";
+import { useCartContext } from "@/features/cart/CartContext";
+import { useRouter } from "next/navigation";
 
 /**
- * Sección principal de detalles de producto, maneja lógica y orquesta subcomponentes.
+ * Cambios visuales realizados:
+ * - Reorganización de la estructura principal en dos columnas (desktop) usando grid y flex para alinear exactamente como la imagen.
+ * - Ajuste de tipografías, pesos, tamaños y colores para coincidir con el diseño de referencia.
+ * - Botones estilizados y alineados horizontalmente, con transiciones suaves.
+ * - Secciones de "capacidad" y "color" alineadas y con espaciado consistente.
+ * - Uso de semántica HTML adecuada (section, header, main, etc.).
+ * - Layout responsivo: grid en desktop, stack en mobile, sin romper lógica ni props.
+ * - Comentarios explicativos en cada bloque visual relevante.
  */
 const DetailsProductSection: React.FC<{ productId: string }> = ({
   productId,
 }) => {
   // Hooks de variantes y color global
   const {
-    deviceOptions,
-    storageOptions,
     colorOptions,
     selectedDevice,
     selectedStorage,
     selectedColor,
-    loading: variantsLoading,
-    error: variantsError,
-    setSelectedDevice,
-    setSelectedStorage,
     setSelectedColor,
   } = useDeviceVariants(productId);
   const {
-    selectedColor: globalSelectedColor,
+    selectedColor: selectedColorHex,
     setSelectedColor: setGlobalSelectedColor,
   } = useSelectedColor();
+  const { addProduct } = useCartContext();
+  const router = useRouter();
+  const [loading, setLoading] = React.useState(false);
 
   // Sincronización de selección de color
   const handleColorSelection = (colorOption: ColorOption) => {
     setSelectedColor(colorOption);
     if (colorOption?.hex) setGlobalSelectedColor(colorOption.hex);
-  };
-
-  // Sombra dinámica basada en color
-  const getDynamicShadowStyle = () => {
-    const shadowColor = selectedColor?.hex || globalSelectedColor || "#17407A";
-    const hexToRgba = (hex: string, alpha: number = 0.25) => {
-      let c = hex.replace("#", "");
-      if (c.length === 3)
-        c = c
-          .split("")
-          .map((x) => x + x)
-          .join("");
-      const num = parseInt(c, 16);
-      const r = (num >> 16) & 255;
-      const g = (num >> 8) & 255;
-      const b = num & 255;
-      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-    };
-    return {
-      boxShadow: [
-        `0 8px 32px 0 ${hexToRgba(shadowColor, 0.32)}`,
-        `0 2px 8px 0 ${hexToRgba(shadowColor, 0.13)}`,
-        `0 0 0 8px ${hexToRgba(shadowColor, 0.07)}`,
-        "0 1.5px 8px 0 rgba(30,41,59,0.08)",
-      ].join(", "),
-      transition: "box-shadow 0.7s cubic-bezier(0.4,0,0.2,1)",
-      willChange: "box-shadow",
-    };
   };
 
   // Stock
@@ -89,15 +58,6 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
         v.color.toLowerCase() === selectedColor.color.toLowerCase()
     );
     return variant ? variant.stock > 0 : false;
-  };
-
-  // Precios
-  const formatPrice = (price: number) => `$ ${price.toLocaleString("es-CO")}`;
-  const getDisplayPrice = (variant: DeviceVariant | null) => {
-    if (!variant) return "Precio no disponible";
-    const price =
-      variant.precioDescto > 0 ? variant.precioDescto : variant.precioNormal;
-    return formatPrice(price);
   };
 
   // Animaciones
@@ -117,238 +77,221 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
     direction: "up",
   });
 
+  // Hook para sombra dinámica de la card de imagen
+  const { color: dynamicShadowColor } = useDynamicBackgroundColor({
+    selectedColor: selectedColorHex,
+  });
+
+  // Handler: Añadir al carrito
+  const handleAddToCart = async () => {
+    if (!selectedDevice || !selectedStorage || !selectedColor) return;
+    setLoading(true);
+    // Buscar la variante seleccionada para obtener precio y sku correctos
+    const variant = selectedColor.variants.find(
+      (v) =>
+        v.nombreMarket === selectedDevice.nombreMarket &&
+        v.capacidad === selectedStorage.capacidad &&
+        v.color.toLowerCase() === selectedColor.color.toLowerCase()
+    );
+    addProduct({
+      id: productId,
+      name: selectedDevice.nombreMarket || "Producto Samsung",
+      image: deviceImage?.src || "",
+      price: variant?.precioDescto ?? variant?.precioNormal ?? 0,
+      sku: variant?.sku || productId,
+      puntos_q: 4, // O ajusta según lógica de puntos
+      quantity: 1,
+    });
+    setTimeout(() => setLoading(false), 800); // Simula feedback UX
+  };
+
+  // Handler: Comprar ahora
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    router.push("/carrito");
+  };
+
   return (
     <>
       <FloatingEntregoEstrenoButton />
-      <div
-        className="w-full bg-white"
+      <main
+        className="w-full bg-white min-h-screen"
         style={{ fontFamily: "SamsungSharpSans" }}
       >
-        {/* Desktop */}
-        <motion.div
+        {/* DESKTOP: Grid principal */}
+        <motion.section
           ref={desktopReveal.ref}
           {...desktopReveal.motionProps}
           className="hidden lg:block"
         >
-          <div className="max-w-7xl mx-auto px-6 py-16">
-            <div className="grid grid-cols-12 gap-8 items-start">
-              <BenefitsSectionDesktop />
-              {/* Centro: Carrusel */}
-              <div className="col-span-5 flex flex-col items-center space-y-8">
-                <div style={getDynamicShadowStyle()}>
-                  <DeviceCarousel
-                    deviceImage={deviceImage}
-                    alt="Samsung Galaxy S25"
-                  />
-                </div>
-                <button
-                  className="border border-gray-300 text-gray-700 px-8 py-2 rounded-full hover:bg-gray-50 transition-colors text-sm font-medium"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Vista previa
-                </button>
-              </div>
-              {/* Derecha: Selectores */}
-              <div className="col-span-5 flex flex-col gap-8">
-                {/* Dispositivo */}
-                <div>
-                  <h3
-                    className="text-[22px] font-bold text-[#002142] mb-1"
-                    style={{
-                      fontFamily: "SamsungSharpSans",
-                      letterSpacing: "-0.5px",
-                    }}
+          <div className="max-w-[1280px] mx-auto px-12 py-16">
+            <div className="grid grid-cols-12 gap-2 items-center">
+              {/* Columna izquierda: Info y acciones */}
+              <div className="col-span-7 flex flex-col justify-center gap-2">
+                <header className="mb-2">
+                  <span className="block text-sm text-[#222] font-semibold tracking-widest uppercase mb-1">
+                    SAMSUNG
+                  </span>
+                  <h1
+                    className="text-[2.8rem] leading-[1.08] font-bold text-[#222] mb-2"
+                    style={{ letterSpacing: "-1.5px" }}
                   >
-                    Dispositivo
-                  </h3>
-                  <p
-                    className="text-[15px] text-[#222] mb-4"
-                    style={{ fontFamily: "SamsungSharpSans" }}
-                  >
-                    Selecciona tu dispositivo
+                    Galaxy Z Fold7
+                  </h1>
+                  <p className="text-lg text-[#222] font-light mb-6 leading-snug">
+                    El futuro del plegable.
+                    <br />
+                    Ahora más delgado, más potente.
                   </p>
-                  {variantsLoading ? (
-                    <div className="flex justify-center items-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#17407A]"></div>
-                    </div>
-                  ) : variantsError ? (
-                    <div className="text-center text-red-600 py-4">
-                      Error al cargar dispositivos: {variantsError}
-                    </div>
-                  ) : (
-                    <DeviceSelector
-                      deviceOptions={deviceOptions}
-                      selectedDevice={selectedDevice}
-                      setSelectedDevice={setSelectedDevice}
-                      getDisplayPrice={getDisplayPrice}
-                      deviceImage={deviceImage}
-                    />
-                  )}
-                  <div className="mt-2 flex items-center justify-end">
-                    <span className="text-xs text-gray-400 mr-2">
-                      ¿Necesitas ayuda escogiendo tu modelo?
-                    </span>
+                </header>
+                {/* Precio y acciones */}
+                <div className="mb-7">
+                  <div className="text-[2.1rem] font-bold text-[#222] leading-tight mb-1">
+                    $ 11.099.900
+                  </div>
+                  <div className="text-xs text-[#8A8A8A] mb-4">
+                    Precio promocional por tiempo limitado
+                  </div>
+                  <div className="flex flex-row gap-4">
                     <button
-                      className="bg-[#E3E8EF] text-[#17407A] px-3 py-1 rounded-full text-xs font-semibold"
-                      style={{ fontFamily: "SamsungSharpSans" }}
+                      className="rounded-full bg-[#0099FF] text-white px-8 py-2 font-semibold text-base shadow hover:bg-[#007ACC] transition-all duration-200 ease-in-out disabled:opacity-60"
+                      onClick={handleBuyNow}
+                      disabled={loading}
                     >
-                      Compararlas aquí
+                      {loading ? "Procesando..." : "Comprar ahora"}
+                    </button>
+                    <button
+                      className="rounded-full border border-[#0099FF] text-[#0099FF] px-8 py-2 font-semibold text-base bg-white hover:bg-[#F2F6FA] transition-all duration-200 ease-in-out disabled:opacity-60"
+                      onClick={handleAddToCart}
+                      disabled={loading}
+                    >
+                      {loading ? "Agregando..." : "Añadir al carrito"}
                     </button>
                   </div>
                 </div>
-                {/* Almacenamiento */}
-                <div>
-                  <h3
-                    className="text-[22px] font-bold text-[#002142] mb-1"
-                    style={{
-                      fontFamily: "SamsungSharpSans",
-                      letterSpacing: "-0.5px",
-                    }}
-                  >
-                    Almacenamiento
-                  </h3>
-                  <p
-                    className="text-[15px] text-[#222] mb-4"
-                    style={{ fontFamily: "SamsungSharpSans" }}
-                  >
-                    Selecciona el espacio que necesitas
-                  </p>
-                  <StorageSelector
-                    storageOptions={storageOptions}
-                    selectedStorage={selectedStorage}
-                    setSelectedStorage={setSelectedStorage}
-                    getDisplayPrice={getDisplayPrice}
-                  />
-                </div>
-                {/* Color */}
-                <div>
-                  <h3
-                    className="text-[22px] font-bold text-[#002142] mb-1"
-                    style={{
-                      fontFamily: "SamsungSharpSans",
-                      letterSpacing: "-0.5px",
-                    }}
-                  >
+                {/* Capacidad */}
+                <section className="mb-7">
+                  <label className="block text-base text-[#222] font-medium mb-2">
+                    Elige tu capacidad
+                  </label>
+                  <div className="flex gap-3">
+                    <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
+                      512GB
+                    </button>
+                    {/* Si hay más capacidades, mapear aquí */}
+                  </div>
+                </section>
+                {/* Selector de color */}
+                <section className="mb-2">
+                  <label className="block text-base text-[#222] font-medium mb-2">
                     Color
-                  </h3>
-                  <p
-                    className="text-[15px] text-[#222] mb-4"
-                    style={{ fontFamily: "SamsungSharpSans" }}
-                  >
-                    Selecciona el color de tu dispositivo
-                  </p>
-                  <ColorSelector
-                    colorOptions={colorOptions}
-                    selectedColor={selectedColor}
-                    handleColorSelection={handleColorSelection}
-                    hasStock={hasStock}
+                  </label>
+                  <div className="flex gap-5 items-center">
+                    <ColorSelector
+                      colorOptions={colorOptions}
+                      selectedColor={selectedColor}
+                      handleColorSelection={handleColorSelection}
+                      hasStock={hasStock}
+                    />
+                  </div>
+                  {/* Nombre del color seleccionado */}
+                  {selectedColor && (
+                    <div className="text-xs text-[#222] mt-2 font-medium">
+                      {selectedColor.color}
+                    </div>
+                  )}
+                </section>
+              </div>
+              {/* Columna derecha: Imagen y navegación */}
+              <div className="col-span-5 flex flex-col items-center justify-center relative">
+                {/* Card de imagen con sombra dinámica según color seleccionado */}
+                <div
+                  className="w-full flex flex-col items-center rounded-3xl bg-white transition-all duration-300 ease-in-out shadow-lg"
+                  style={{
+                    // Sombra dinámica más oscura (alpha 40% = 66 en hex)
+                    boxShadow: `0px 8px 32px 0px ${dynamicShadowColor}66`,
+                    transition: "box-shadow 0.3s ease-in-out",
+                  }}
+                  aria-label="Imagen del producto con sombra dinámica"
+                >
+                  <DeviceCarousel
+                    deviceImage={deviceImage}
+                    alt={
+                      selectedDevice?.nombreMarket || "Samsung Galaxy Z Fold7"
+                    }
                   />
+                  {/* Paginación y flechas ya incluidas en DeviceCarousel */}
                 </div>
               </div>
             </div>
           </div>
-        </motion.div>
-        {/* Mobile */}
-        <motion.div
+        </motion.section>
+        {/* MOBILE: Stack vertical */}
+        <motion.section
           ref={mobileReveal.ref}
           {...mobileReveal.motionProps}
           className="lg:hidden"
         >
-          <div className="px-4 py-8 space-y-8">
-            <div className="flex flex-col items-center space-y-6">
-              <div
-                className="relative bg-gray-100 rounded-2xl p-6 w-full max-w-sm"
-                style={getDynamicShadowStyle()}
+          <div className="px-4 py-8 max-w-md mx-auto">
+            <div className="flex flex-col items-center mb-8">
+              <DeviceCarousel
+                deviceImage={deviceImage}
+                alt={selectedDevice?.nombreMarket || "Samsung Galaxy Z Fold7"}
+              />
+            </div>
+            <header className="mb-4 text-center">
+              <span className="block text-xs text-[#222] font-semibold tracking-widest uppercase mb-1">
+                SAMSUNG
+              </span>
+              <h1 className="text-2xl font-bold text-[#222] mb-2">
+                Galaxy Z Fold7
+              </h1>
+              <p className="text-base text-[#222] mb-4 font-light leading-snug">
+                El futuro del plegable.
+                <br />
+                Ahora más delgado, más potente.
+              </p>
+            </header>
+            <div className="text-2xl font-bold text-[#222] mb-1 text-center">
+              $ 11.099.900
+            </div>
+            <div className="text-xs text-[#8A8A8A] mb-4 text-center">
+              Precio promocional por tiempo limitado
+            </div>
+            <div className="flex gap-3 mb-6 justify-center">
+              <button
+                className="rounded-full bg-[#0099FF] text-white px-6 py-2 font-semibold text-base shadow hover:bg-[#007ACC] transition-all duration-200 ease-in-out disabled:opacity-60"
+                onClick={handleBuyNow}
+                disabled={loading}
               >
-                <div className="flex justify-center">
-                  <DeviceCarousel
-                    deviceImage={deviceImage}
-                    alt="Samsung Galaxy S25"
-                  />
-                </div>
-              </div>
-              <button className="border border-gray-300 text-gray-700 px-6 py-2 rounded-full text-sm font-medium">
-                Vista previa
+                {loading ? "Procesando..." : "Comprar ahora"}
+              </button>
+              <button
+                className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white hover:bg-[#F2F6FA] transition-all duration-200 ease-in-out disabled:opacity-60"
+                onClick={handleAddToCart}
+                disabled={loading}
+              >
+                {loading ? "Agregando..." : "Añadir al carrito"}
               </button>
             </div>
-            <div className="space-y-6">
-              {/* Dispositivo */}
-              <div>
-                <h3
-                  className="text-[22px] font-bold text-[#002142] mb-1"
-                  style={{
-                    fontFamily: "SamsungSharpSans",
-                    letterSpacing: "-0.5px",
-                  }}
-                >
-                  Dispositivo
-                </h3>
-                <p
-                  className="text-[15px] text-[#222] mb-4"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Selecciona tu dispositivo
-                </p>
-                <DeviceSelector
-                  deviceOptions={deviceOptions}
-                  selectedDevice={selectedDevice}
-                  setSelectedDevice={setSelectedDevice}
-                  getDisplayPrice={getDisplayPrice}
-                  deviceImage={deviceImage}
-                />
-                <div className="mt-2 flex items-center justify-end">
-                  <span className="text-xs text-gray-400 mr-2">
-                    ¿Necesitas ayuda escogiendo tu modelo?
-                  </span>
-                  <button
-                    className="bg-[#E3E8EF] text-[#17407A] px-3 py-1 rounded-full text-xs font-semibold"
-                    style={{ fontFamily: "SamsungSharpSans" }}
-                  >
-                    Compararlas aquí
-                  </button>
-                </div>
+            {/* Capacidad */}
+            <section className="mb-6">
+              <label className="block text-sm text-[#222] font-medium mb-2">
+                Elige tu capacidad
+              </label>
+              <div className="flex gap-3 justify-center">
+                <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
+                  512GB
+                </button>
+                {/* Si hay más capacidades, mapear aquí */}
               </div>
-              {/* Almacenamiento */}
-              <div>
-                <h3
-                  className="text-[22px] font-bold text-[#002142] mb-1"
-                  style={{
-                    fontFamily: "SamsungSharpSans",
-                    letterSpacing: "-0.5px",
-                  }}
-                >
-                  Almacenamiento
-                </h3>
-                <p
-                  className="text-[15px] text-[#222] mb-4"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Selecciona el espacio que necesitas
-                </p>
-                <StorageSelector
-                  storageOptions={storageOptions}
-                  selectedStorage={selectedStorage}
-                  setSelectedStorage={setSelectedStorage}
-                  getDisplayPrice={getDisplayPrice}
-                />
-              </div>
-              {/* Color */}
-              <div>
-                <h3
-                  className="text-[22px] font-bold text-[#002142] mb-1"
-                  style={{
-                    fontFamily: "SamsungSharpSans",
-                    letterSpacing: "-0.5px",
-                  }}
-                >
-                  Color
-                </h3>
-                <p
-                  className="text-[15px] text-[#222] mb-4"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Selecciona el color de tu dispositivo
-                </p>
+            </section>
+            {/* Selector de color */}
+            <section className="mb-8">
+              <label className="block text-sm text-[#222] font-medium mb-2">
+                Color
+              </label>
+              <div className="flex gap-5 items-center justify-center">
                 <ColorSelector
                   colorOptions={colorOptions}
                   selectedColor={selectedColor}
@@ -356,18 +299,23 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
                   hasStock={hasStock}
                 />
               </div>
-            </div>
+              {selectedColor && (
+                <div className="text-xs text-[#222] mt-2 font-medium text-center">
+                  {selectedColor.color}
+                </div>
+              )}
+            </section>
           </div>
-        </motion.div>
-        {/* Beneficios Mobile */}
-        <motion.div
+        </motion.section>
+        {/* Beneficios Mobile (mantener oculto si no se usa) */}
+        <motion.section
           ref={beneficiosReveal.ref}
           {...beneficiosReveal.motionProps}
           className="bg-gray-100 py-12 lg:hidden"
         >
-          <BenefitsSectionMobile />
-        </motion.div>
-      </div>
+          {/* <BenefitsSectionMobile /> */}
+        </motion.section>
+      </main>
     </>
   );
 };

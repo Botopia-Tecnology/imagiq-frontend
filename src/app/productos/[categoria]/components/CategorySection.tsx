@@ -53,7 +53,7 @@ export default function CategorySection({
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Estados para filtros
-  const initialFilters = getCategoryFilters(categoria);
+  const initialFilters = getCategoryFilters(categoria, seccion);
   const [filters, setFilters] = useState<FilterState>(initialFilters);
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(Object.keys(initialFilters).slice(0, 2))
@@ -100,7 +100,7 @@ export default function CategorySection({
 
   // Configuraciones para los componentes
   const sliderCategories = getCategorySliderConfig(categoria);
-  const filterConfig = getCategoryFilterConfig(categoria);
+  const filterConfig = getCategoryFilterConfig(categoria, seccion);
 
   // Tracking de vista de página
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function CategorySection({
   // Resetear página y filtros cuando cambie la sección
   useEffect(() => {
     setCurrentPage(1);
-    setFilters(getCategoryFilters(categoria));
+    setFilters(getCategoryFilters(categoria, seccion));
   }, [categoria, seccion]);
 
   // Handlers

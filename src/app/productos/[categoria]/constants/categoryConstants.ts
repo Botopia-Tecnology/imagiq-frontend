@@ -69,6 +69,159 @@ export const movilesFilters: FilterConfig = {
 };
 
 /**
+ * Configuración de filtros específicos por sección para dispositivos móviles
+ */
+export const movilesSectionFilters: Record<string, FilterConfig> = {
+  smartphones: {
+    almacenamiento: ["64GB", "128GB", "256GB", "512GB", "1TB"],
+    caracteristicas: [
+      "5G",
+      // "Resistente al agua",
+      // "Carga inalámbrica",
+      // "NFC",
+      // "Dual SIM",
+    ],
+    rangoPrecio: [
+      { label: "Menos de $500.000", min: 0, max: 500000 },
+      { label: "$500.000 - $1.000.000", min: 500000, max: 1000000 },
+      { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
+      { label: "Más de $2.000.000", min: 2000000, max: Infinity },
+    ],
+    serie: ["Galaxy A", "Galaxy S", "Galaxy Note", "Galaxy Z"],
+    ram: ["4GB", "6GB", "8GB", "12GB", "16GB"],
+    color: [
+      "Negro",
+      "Blanco",
+      "Azul",
+      "Rosa",
+      "Verde",
+      "Morado",
+      "Dorado",
+      "Plateado",
+    ],
+  },
+  tabletas: {
+    serie: ["Galaxy Tab S", "Galaxy Tab A", "Galaxy Tab Active"],
+    almacenamiento: ["32GB", "64GB", "128GB", "256GB", "512GB"],
+    conectividad: ["Wi-Fi", "LTE", "5G"],
+    caracteristicas: [
+      "S Pen",
+      "Carga rápida",
+      // "Resistente al agua",
+      "Carga inalámbrica",
+      // "Dual SIM",
+    ],
+    rangoPrecio: [
+      { label: "Menos de $500.000", min: 0, max: 500000 },
+      { label: "$500.000 - $1.000.000", min: 500000, max: 1000000 },
+      { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
+      { label: "Más de $2.000.000", min: 2000000, max: Infinity },
+    ],
+    color: [
+      "Negro",
+      "Blanco",
+      "Azul",
+      "Rosa",
+      "Verde",
+      "Morado",
+      "Dorado",
+      "Plateado",
+    ],
+  },
+  relojes: {
+    serie: ["Galaxy Watch", "Galaxy Watch Active", "Galaxy Watch Classic"],
+    tamaño: ["40mm", "42mm", "43mm", "44mm", "45mm", "46mm", "47mm"],
+    rangoPrecio: [
+      { label: "Menos de $500.000", min: 0, max: 500000 },
+      { label: "$500.000 - $1.000.000", min: 500000, max: 1000000 },
+      { label: "$1.000.000 - $2.000.000", min: 1000000, max: 2000000 },
+      { label: "Más de $2.000.000", min: 2000000, max: Infinity },
+    ],
+    color: ["Negro", "Plata", "Dorado", "Rosa", "Azul", "Morado"],
+  },
+  buds: {
+    serie: [
+      "Galaxy Buds Pro",
+      "Galaxy Buds 2",
+      "Galaxy Buds 2 Pro",
+      "Galaxy Buds FE",
+      "Galaxy Buds Live",
+    ],
+    rangoPrecio: [
+      { label: "Menos de $200.000", min: 0, max: 200000 },
+      { label: "$200.000 - $400.000", min: 200000, max: 400000 },
+      { label: "$400.000 - $600.000", min: 400000, max: 600000 },
+      { label: "Más de $600.000", min: 600000, max: Infinity },
+    ],
+    color: [
+      "Negro",
+      "Blanco",
+      "Gris",
+      "Azul",
+      "Rosa",
+      "Verde",
+      "Morado",
+      "Dorado",
+      "Plateado",
+      "Oro Rosa",
+    ],
+  },
+  accesorios: {
+    tipoAccesorio: [
+      "Cargadores",
+      "Cables",
+      "Fundas",
+      "Protectores de pantalla",
+      "Correas",
+      "Soportes",
+      "PowerBank",
+    ],
+    compatibilidad: [
+      "Galaxy S Series",
+      "Galaxy A Series",
+      "Galaxy Note",
+      "Galaxy Tab",
+      "Galaxy Watch",
+      "Universal",
+    ],
+    material: [
+      "Silicona",
+      "Cuero",
+      "Metal",
+      "Plástico",
+      "Cristal templado",
+      "TPU",
+    ],
+    color: [
+      "Negro",
+      "Blanco",
+      "Transparente",
+      "Azul",
+      "Rojo",
+      "Rosa",
+      "Morado",
+      "Gris",
+    ],
+    caracteristicas: [
+      "Carga rápida",
+      "Inalámbrico",
+      "Magnético",
+      "Resistente al agua",
+      "Anti-golpes",
+      "Ultra delgado",
+    ],
+    rangoPrecio: [
+      { label: "Menos de $50.000", min: 0, max: 50000 },
+      { label: "$50.000 - $100.000", min: 50000, max: 100000 },
+      { label: "$100.000 - $200.000", min: 100000, max: 200000 },
+      { label: "Más de $200.000", min: 200000, max: Infinity },
+    ],
+    marca: ["Samsung", "Original", "Genérico"],
+    tipoConector: ["USB-C", "USB-A", "Lightning", "Jack 3.5mm", "Micro USB"],
+  },
+};
+
+/**
  * Configuración de filtros para TVs - OPCIONES DISPONIBLES
  */
 export const tvsFilters: FilterConfig = {
@@ -254,8 +407,11 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
  * Obtiene la configuración de filtros para una categoría y sección específica
  * Devuelve el estado inicial (arrays vacíos) para usar con useState
  */
-export function getCategoryFilters(categoria: CategoriaParams): FilterState {
-  const filterConfig = getCategoryFilterConfig(categoria);
+export function getCategoryFilters(
+  categoria: CategoriaParams,
+  seccion?: Seccion
+): FilterState {
+  const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const initialState: FilterState = {};
 
   // Convertir FilterConfig a FilterState inicial (arrays vacíos)
@@ -294,12 +450,18 @@ export function getCategorySliderConfig(
 }
 
 /**
- * Obtiene la configuración de filtros disponibles para una categoría
+ * Obtiene la configuración de filtros disponibles para una categoría y sección específica
  */
 export function getCategoryFilterConfig(
-  categoria: CategoriaParams
+  categoria: CategoriaParams,
+  seccion?: Seccion
 ): FilterConfig {
-  // Devolver directamente la configuración de filtros con opciones disponibles
+  // Para móviles, usar filtros específicos por sección si se proporciona
+  if (categoria === "moviles" && seccion && movilesSectionFilters[seccion]) {
+    return movilesSectionFilters[seccion];
+  }
+
+  // Devolver configuración genérica por categoría
   switch (categoria) {
     case "electrodomestico":
       return electrodomesticoFilters;

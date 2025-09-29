@@ -250,6 +250,66 @@ function applyMovilesFilters(
     result.name = serieVariants.join(",");
   }
 
+  // Filtros específicos para accesorios
+  if (filters.tipoAccesorio && filters.tipoAccesorio.length > 0) {
+    const tipoAccesorioKeywords = filters.tipoAccesorio.map((tipo) => {
+      switch (tipo) {
+        case "Cargadores":
+          return "charger,cargador,carga,power,adaptador";
+        case "Cables":
+          return "cable,usb,c-type,lightning,conector";
+        case "Fundas":
+          return "case,funda,cover,protector,silicone";
+        case "Protectores de pantalla":
+          return "protector,screen,pantalla,vidrio,tempered,glass";
+        case "Correas":
+          return "strap,correa,band,banda,pulsera,bracelet";
+        case "Soportes":
+          return "soporte,stand,holder";
+        case "PowerBank":
+          return "powerbank,bateria,portatil";
+        default:
+          return tipo;
+      }
+    });
+
+    const existing = result.descriptionKeyword || "";
+    const newKeywords = tipoAccesorioKeywords.join(",");
+    result.descriptionKeyword = existing
+      ? `${existing},${newKeywords}`
+      : newKeywords;
+  }
+
+  if (filters.compatibilidad && filters.compatibilidad.length > 0) {
+    const existing = result.descriptionKeyword || "";
+    const newKeywords = filters.compatibilidad.join(",");
+    result.descriptionKeyword = existing
+      ? `${existing},${newKeywords}`
+      : newKeywords;
+  }
+
+  if (filters.material && filters.material.length > 0) {
+    const existing = result.descriptionKeyword || "";
+    const newKeywords = filters.material.join(",");
+    result.descriptionKeyword = existing
+      ? `${existing},${newKeywords}`
+      : newKeywords;
+  }
+
+  if (filters.marca && filters.marca.length > 0) {
+    const existing = result.name || "";
+    const newKeywords = filters.marca.join(",");
+    result.name = existing ? `${existing},${newKeywords}` : newKeywords;
+  }
+
+  if (filters.tipoConector && filters.tipoConector.length > 0) {
+    const existing = result.descriptionKeyword || "";
+    const newKeywords = filters.tipoConector.join(",");
+    result.descriptionKeyword = existing
+      ? `${existing},${newKeywords}`
+      : newKeywords;
+  }
+
   return result;
 }
 

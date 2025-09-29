@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { useProducts } from "@/features/products/useProducts";
+import { useProducts, ProductFilters } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useDeviceType } from "@/components/responsive";
 import { cn } from "@/lib/utils";
@@ -13,7 +13,7 @@ import ItemsPerPageSelector from "./dispositivos-moviles/components/ItemsPerPage
 
 // Sin configuración de filtros ya que no tenemos sidebar
 
-function ProductosContent() {
+function ProductosContentWithSearch() {
   const searchParams = useSearchParams();
   const searchQuery = searchParams.get("q") || "";
   
@@ -29,7 +29,7 @@ function ProductosContent() {
 
   // Configurar filtros iniciales basados en la búsqueda
   const initialFilters = useMemo(() => {
-    const baseFilters: any = {
+    const baseFilters: ProductFilters = {
       page: currentPage,
       limit: itemsPerPage,
     };
@@ -166,8 +166,22 @@ function ProductosContent() {
   );
 }
 
-export default function ProductosPage() {
+function ProductosContent() {
   return (
-    <ProductosContent />
+    <Suspense fallback={
+      <div className="min-h-screen bg-white">
+        <div className="container mx-auto px-6 py-8">
+          <div className="flex justify-center items-center min-h-[400px]">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </div>
+    }>
+      <ProductosContentWithSearch />
+    </Suspense>
   );
+}
+
+export default function ProductosPage() {
+  return <ProductosContent />;
 }

@@ -24,7 +24,7 @@ import {
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
-interface ProductFilters {
+export interface ProductFilters {
   category?: string;
   subcategory?: string;
   precioMin?: number;

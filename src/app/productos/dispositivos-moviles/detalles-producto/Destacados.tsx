@@ -59,14 +59,15 @@ const Destacados: FC<{ destacados?: Destacado[] }> = ({
       </h2>
       {/* Grid de destacados (scroll horizontal en mobile, grid en desktop) */}
       <ul
-        className="w-full max-w-6xl flex md:grid md:grid-cols-4 gap-6 md:gap-8 px-4 md:px-0 overflow-x-auto md:overflow-visible"
+        className="w-full max-w-6xl flex md:grid md:grid-cols-4 gap-6 md:gap-8 px-4 md:px-0 overflow-x-auto md:overflow-visible scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {destacados.map((item) => (
+        {destacados.map((item, idx) => (
           <li
             key={item.id}
-            className="flex-shrink-0 w-[260px] md:w-auto md:max-w-none bg-transparent flex flex-col items-center text-center px-2 md:px-0 group transition-all duration-300"
+            className="flex-shrink-0 w-[85vw] max-w-[260px] md:w-auto md:max-w-none bg-transparent flex flex-col items-center text-center px-2 md:px-0 group transition-all duration-300 first:ml-0 last:mr-0"
             aria-label={item.nombre}
+            style={{ minWidth: "220px" }}
           >
             {/* Círculo azul con sombra suave y animación de hover */}
             <span
@@ -89,6 +90,15 @@ const Destacados: FC<{ destacados?: Destacado[] }> = ({
           </li>
         ))}
       </ul>
+      {/* Indicadores de scroll mobile */}
+      <div className="flex md:hidden justify-center mt-4 gap-2">
+        {destacados.map((_, i) => (
+          <span
+            key={i}
+            className="w-2 h-2 rounded-full bg-[#E6F3FF] inline-block"
+          />
+        ))}
+      </div>
     </section>
   );
 };

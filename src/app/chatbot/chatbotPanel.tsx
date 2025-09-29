@@ -4,7 +4,7 @@ import Step1 from "./step1";
 import Step2 from "./step2";
 import Step3 from "./step3";
 import Step4 from "./step4";
-import Image from "next/image";
+import { Bot, X } from "lucide-react";
 
 // Importa la función para enviar mensajes a Gemini
 import { sendMessageToGemini } from "./apikey";
@@ -61,23 +61,17 @@ export default function ChatbotPanel({ onClose }: { onClose: () => void }) {
           <span className="font-bold text-lg text-black">
             Samsung Asistente Inteligente
           </span>
-          {/* Icono SamsungIA.png */}
-          <span className="inline-block">
-            <Image
-              src="/chatbot/SamsungIA.png"
-              alt="Samsung IA"
-              width={28}
-              height={28}
-              style={{ objectFit: "contain" }}
-            />
-          </span>
+          {/* Icono Bot */}
+          <div className="flex items-center justify-center w-7 h-7 bg-blue-600 rounded-full">
+            <Bot className="w-4 h-4 text-white" />
+          </div>
         </div>
         <button
           onClick={onClose}
-          className="text-gray-500 hover:text-gray-700 text-2xl font-bold"
+          className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
           aria-label="Cerrar chat"
         >
-          ×
+          <X className="w-5 h-5" />
         </button>
       </div>
       {/* Chat Body */}

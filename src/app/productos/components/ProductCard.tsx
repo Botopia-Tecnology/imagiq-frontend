@@ -202,7 +202,7 @@ export default function ProductCard({
       )}
     >
       {/* Header con badges - Desktop */}
-      <div className="relative max-[640px]:hidden">
+      <div className="relative hidden min-[641px]:block">
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
           {isNew && (
@@ -285,7 +285,7 @@ export default function ProductCard({
       </div>
 
       {/* Contenido - Desktop */}
-      <div className="p-4 bg-[#D9D9D9] max-[640px]:hidden">
+      <div className="p-4 bg-[#D9D9D9] hidden min-[641px]:block">
         {/* Título del producto */}
         <h3 className="font-semibold text-gray-900 text-base mb-3 line-clamp-2 leading-5 truncate">
           {cleanProductName(name)}

@@ -9,7 +9,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MessageCircle, Mail, Smartphone, RefreshCw, CheckCircle2, X } from "lucide-react";
+import { Mail, Smartphone, RefreshCw, CheckCircle2, X } from "lucide-react";
+import { SiWhatsapp } from "react-icons/si";
 import { VerificationChannel } from "@/types/registration";
 
 interface VerificationStepProps {
@@ -32,7 +33,7 @@ const VERIFICATION_CHANNELS: VerificationChannel[] = [
   {
     type: 'whatsapp',
     label: 'WhatsApp',
-    icon: 'MessageCircle',
+    icon: 'WhatsApp',
     description: 'Código por WhatsApp'
   },
   {
@@ -112,12 +113,12 @@ export default function VerificationStep({
 
   const getChannelIcon = (iconName: string) => {
     const icons = {
-      MessageCircle: MessageCircle,
-      Smartphone: Smartphone,
-      Mail: Mail
+      WhatsApp: () => <SiWhatsapp className="w-5 h-5 text-[#25D366]" />,
+      Smartphone: () => <Smartphone className="w-5 h-5" />,
+      Mail: () => <Mail className="w-5 h-5" />
     };
     const IconComponent = icons[iconName as keyof typeof icons];
-    return IconComponent ? <IconComponent className="w-5 h-5" /> : null;
+    return IconComponent ? <IconComponent /> : null;
   };
 
   const getDestinationText = () => {
@@ -137,7 +138,7 @@ export default function VerificationStep({
       {/* Header con diseño moderno */}
       <div className="text-center mb-3 sm:mb-4 lg:mb-6">
         <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-2 sm:mb-3 bg-gradient-to-br from-[#002142] to-[#003366] rounded-full flex items-center justify-center shadow-lg">
-          <MessageCircle className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
+          <SiWhatsapp className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
         </div>
         <h3 className="text-base sm:text-lg lg:text-xl font-bold text-[#002142] mb-1.5 sm:mb-2">
           Verificar tu información

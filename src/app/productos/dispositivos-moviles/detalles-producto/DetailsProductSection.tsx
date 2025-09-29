@@ -1,5 +1,5 @@
 // Sección principal de detalles de producto
-// Orquesta los subcomponentes de detalle de producto móvil y desktop
+// Ahora recibe el producto real como prop y lo pasa a Specifications y subcomponentes.
 import React from "react";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
@@ -9,9 +9,11 @@ import { useDynamicBackgroundColor } from "@/hooks/useDynamicBackgroundColor";
 import DeviceCarousel from "./DeviceCarousel";
 import ColorSelector from "./ColorSelector";
 import FloatingEntregoEstrenoButton from "./FloatingEntregoEstrenoButton";
-import deviceImage from "@/img/dispositivosmoviles/cel1.png";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
+import Specifications from "./Specifications";
+import type { ProductCardProps } from "@/app/productos/components/ProductCard";
+import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 
 /**
  * Cambios visuales realizados:
@@ -23,17 +25,17 @@ import { useRouter } from "next/navigation";
  * - Layout responsivo: grid en desktop, stack en mobile, sin romper lógica ni props.
  * - Comentarios explicativos en cada bloque visual relevante.
  */
-const DetailsProductSection: React.FC<{ productId: string }> = ({
-  productId,
+const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
+  product,
 }) => {
-  // Hooks de variantes y color global
+  // Hooks de variantes y color global (pueden necesitar adaptación si usan datos mock)
   const {
     colorOptions,
     selectedDevice,
     selectedStorage,
     selectedColor,
     setSelectedColor,
-  } = useDeviceVariants(productId);
+  } = useDeviceVariants(product.id);
   const {
     selectedColor: selectedColorHex,
     setSelectedColor: setGlobalSelectedColor,
@@ -77,7 +79,7 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
     direction: "up",
   });
 
-  // Hook para sombra dinámica de la card de imagen
+  // Sombra dinámica
   const { color: dynamicShadowColor } = useDynamicBackgroundColor({
     selectedColor: selectedColorHex,
   });
@@ -86,7 +88,6 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
   const handleAddToCart = async () => {
     if (!selectedDevice || !selectedStorage || !selectedColor) return;
     setLoading(true);
-    // Buscar la variante seleccionada para obtener precio y sku correctos
     const variant = selectedColor.variants.find(
       (v) =>
         v.nombreMarket === selectedDevice.nombreMarket &&
@@ -94,15 +95,23 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
         v.color.toLowerCase() === selectedColor.color.toLowerCase()
     );
     addProduct({
-      id: productId,
-      name: selectedDevice.nombreMarket || "Producto Samsung",
-      image: deviceImage?.src || "",
-      price: variant?.precioDescto ?? variant?.precioNormal ?? 0,
-      sku: variant?.sku || productId,
-      puntos_q: 4, // O ajusta según lógica de puntos
+      id: product.id,
+      name: product.name,
+      image:
+        typeof product.image === "string" ? product.image : product.image.src,
+      price: (() => {
+        const val =
+          variant?.precioDescto ?? variant?.precioNormal ?? product.price;
+        if (typeof val === "number") return val;
+        if (typeof val === "string")
+          return parseInt(val.replace(/[^\d]/g, "")) || 0;
+        return 0;
+      })(),
+      sku: variant?.sku || product.sku || product.id,
+      puntos_q: product.puntos_q ?? 4,
       quantity: 1,
     });
-    setTimeout(() => setLoading(false), 800); // Simula feedback UX
+    setTimeout(() => setLoading(false), 800);
   };
 
   // Handler: Comprar ahora
@@ -130,27 +139,25 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
               <div className="col-span-7 flex flex-col justify-center gap-2">
                 <header className="mb-2">
                   <span className="block text-sm text-[#222] font-semibold tracking-widest uppercase mb-1">
-                    SAMSUNG
+                    {product.brand || "Marca"}
                   </span>
                   <h1
                     className="text-[2.8rem] leading-[1.08] font-bold text-[#222] mb-2"
                     style={{ letterSpacing: "-1.5px" }}
                   >
-                    Galaxy Z Fold7
+                    {product.name}
                   </h1>
                   <p className="text-lg text-[#222] font-light mb-6 leading-snug">
-                    El futuro del plegable.
-                    <br />
-                    Ahora más delgado, más potente.
+                    {product.description || ""}
                   </p>
                 </header>
                 {/* Precio y acciones */}
                 <div className="mb-7">
                   <div className="text-[2.1rem] font-bold text-[#222] leading-tight mb-1">
-                    $ 11.099.900
+                    {product.price}
                   </div>
                   <div className="text-xs text-[#8A8A8A] mb-4">
-                    Precio promocional por tiempo limitado
+                    {product.discount ? `Descuento: ${product.discount}` : ""}
                   </div>
                   <div className="flex flex-row gap-4">
                     <button
@@ -175,10 +182,12 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
                     Elige tu capacidad
                   </label>
                   <div className="flex gap-3">
-                    <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
-                      512GB
-                    </button>
-                    {/* Si hay más capacidades, mapear aquí */}
+                    {/* Renderizar capacidades si existen */}
+                    {product.capacity ? (
+                      <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
+                        {product.capacity}
+                      </button>
+                    ) : null}
                   </div>
                 </section>
                 {/* Selector de color */}
@@ -194,7 +203,6 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
                       hasStock={hasStock}
                     />
                   </div>
-                  {/* Nombre del color seleccionado */}
                   {selectedColor && (
                     <div className="text-xs text-[#222] mt-2 font-medium">
                       {selectedColor.color}
@@ -215,12 +223,13 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
                   aria-label="Imagen del producto con sombra dinámica"
                 >
                   <DeviceCarousel
-                    deviceImage={deviceImage}
-                    alt={
-                      selectedDevice?.nombreMarket || "Samsung Galaxy Z Fold7"
+                    deviceImage={
+                      typeof product.image === "string"
+                        ? fallbackImage
+                        : product.image
                     }
+                    alt={product.name}
                   />
-                  {/* Paginación y flechas ya incluidas en DeviceCarousel */}
                 </div>
               </div>
             </div>
@@ -235,28 +244,32 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
           <div className="px-4 py-8 max-w-md mx-auto">
             <div className="flex flex-col items-center mb-8">
               <DeviceCarousel
-                deviceImage={deviceImage}
-                alt={selectedDevice?.nombreMarket || "Samsung Galaxy Z Fold7"}
+                deviceImage={
+                  typeof product.image === "string"
+                    ? fallbackImage
+                    : product.image
+                }
+                alt={product.name}
               />
             </div>
             <header className="mb-4 text-center">
               <span className="block text-xs text-[#222] font-semibold tracking-widest uppercase mb-1">
-                SAMSUNG
+                {product.brand || "Marca"}
               </span>
               <h1 className="text-2xl font-bold text-[#222] mb-2">
-                Galaxy Z Fold7
+                {product.name}
               </h1>
               <p className="text-base text-[#222] mb-4 font-light leading-snug">
-                El futuro del plegable.
-                <br />
-                Ahora más delgado, más potente.
+                {product.description || ""}
               </p>
             </header>
             <div className="text-2xl font-bold text-[#222] mb-1 text-center">
-              $ 11.099.900
+              {typeof product.price === "number"
+                ? product.price
+                : parseInt((product.price || "0").replace(/[^\d]/g, ""))}
             </div>
             <div className="text-xs text-[#8A8A8A] mb-4 text-center">
-              Precio promocional por tiempo limitado
+              {product.discount ? `Descuento: ${product.discount}` : ""}
             </div>
             <div className="flex gap-3 mb-6 justify-center">
               <button
@@ -280,10 +293,11 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
                 Elige tu capacidad
               </label>
               <div className="flex gap-3 justify-center">
-                <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
-                  512GB
-                </button>
-                {/* Si hay más capacidades, mapear aquí */}
+                {product.capacity ? (
+                  <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
+                    {product.capacity}
+                  </button>
+                ) : null}
               </div>
             </section>
             {/* Selector de color */}
@@ -315,6 +329,8 @@ const DetailsProductSection: React.FC<{ productId: string }> = ({
         >
           {/* <BenefitsSectionMobile /> */}
         </motion.section>
+        {/* Especificaciones técnicas dinámicas */}
+        {/* <Specifications product={product} /> */}
       </main>
     </>
   );

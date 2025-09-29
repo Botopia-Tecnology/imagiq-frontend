@@ -133,7 +133,7 @@ export default function ProductViewPage({ params }) {
     <>
       <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
       {/* Detalles de producto refactorizado */}
-      <DetailsProductSection productId={id} />
+      <DetailsProductSection product={product} />
       {/* Vista original de producto */}
       {isRefrigerador ? (
         <ViewProductAppliance product={convertedProduct} />

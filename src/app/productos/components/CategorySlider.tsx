@@ -51,11 +51,11 @@ export default function CategorySlider({
     // Si hay un parámetro de sección en la URL, buscar la categoría correspondiente
     if (sectionParam) {
       // Buscar por ID directamente primero (más eficiente)
-      const directMatch = categories.find(cat => cat.id === sectionParam);
+      const directMatch = categories.find((cat) => cat.id === sectionParam);
       if (directMatch) {
         return directMatch.id;
       }
-      
+
       // Si no hay match directo, buscar en el href
       const foundCategory = categories.find((cat) =>
         cat.href.includes(`seccion=${sectionParam}`)
@@ -64,7 +64,7 @@ export default function CategorySlider({
         return foundCategory.id;
       }
     }
-    
+
     // Fallback para URLs con hash
     if (hash) {
       const foundCategory = categories.find(
@@ -72,7 +72,7 @@ export default function CategorySlider({
       );
       if (foundCategory) return foundCategory.id;
     }
-    
+
     // Default: primera categoría
     return categories[0]?.id || "";
   }, [sectionParam, hash, categories]);
@@ -322,8 +322,8 @@ export default function CategorySlider({
                 listGap,
                 listPy,
                 // Centrar cuando no es scrolleable, padding cuando sí lo es
-                isScrollable 
-                  ? "px-1 sm:px-2 lg:px-16 xl:px-20 2xl:px-24" 
+                isScrollable
+                  ? "px-1 sm:px-2 lg:px-16 xl:px-20 2xl:px-24"
                   : "justify-center",
 
                 isDesktop && isScrollable

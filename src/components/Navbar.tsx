@@ -30,9 +30,11 @@ const badgeClass =
 
 // Helper para verificar si un item tiene dropdown
 const hasDropdownMenu = (name: string): boolean => {
-  return name === "Dispositivos móviles" ||
-         name === "Televisores y AV" ||
-         name === "Electrodomésticos";
+  return (
+    name === "Dispositivos móviles" ||
+    name === "Televisores y AV" ||
+    name === "Electrodomésticos"
+  );
 };
 
 // Helper para dropdowns con soporte móvil
@@ -75,10 +77,14 @@ export default function Navbar() {
   // Helper para obtener clases CSS de color para íconos Lucide
   const getIconColorClasses = (variant: "desktop" | "tablet" | "mobile") => {
     // Forzar iconos negros en secciones específicas con fondo claro
-    if (navbar.isElectrodomesticos ||
-        navbar.isDispositivosMoviles ||
-        navbar.isMasInformacionProducto) {
-      console.log("Forcing black icons for electrodomesticos/dispositivos/masInfo");
+    if (
+      navbar.isElectrodomesticos ||
+      navbar.isDispositivosMoviles ||
+      navbar.isMasInformacionProducto
+    ) {
+      console.log(
+        "Forcing black icons for electrodomesticos/dispositivos/masInfo"
+      );
       return "text-black";
     }
 
@@ -169,7 +175,6 @@ export default function Navbar() {
     </button>
   );
 
-
   // Clases dinámicas para el header
   const headerClasses = cn(
     "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60 sticky top-0 left-0 md:static",
@@ -229,15 +234,17 @@ export default function Navbar() {
 
   // Helper para calcular posición del dropdown
   const getDropdownPosition = (itemName: string) => {
-    if (typeof window === 'undefined') return { left: 0, top: 120 };
+    if (typeof window === "undefined") return { left: 0, top: 120 };
 
-    const element = document.querySelector(`[data-item-name="${itemName}"]`) as HTMLElement;
+    const element = document.querySelector(
+      `[data-item-name="${itemName}"]`
+    ) as HTMLElement;
     if (!element) return { left: 0, top: 120 };
 
     const rect = element.getBoundingClientRect();
     return {
       left: rect.left, // Alineado al borde izquierdo del filtro
-      top: rect.bottom - 2 // Conectado directamente (sin gap)
+      top: rect.bottom - 2, // Conectado directamente (sin gap)
     };
   };
 
@@ -476,28 +483,29 @@ export default function Navbar() {
                         />
                       </span>
                     </Link>
-                    {navbar.activeDropdown === item.name && hasDropdownMenu(item.name) && (
-                      <div
-                        className="fixed z-[9999] dropdown-bubble"
-                        style={{
-                          zIndex: 9999,
-                          left: `${getDropdownPosition(item.name).left}px`,
-                          top: `${getDropdownPosition(item.name).top}px`
-                        }}
-                      >
-                        {/* Triángulo de conexión */}
+                    {navbar.activeDropdown === item.name &&
+                      hasDropdownMenu(item.name) && (
                         <div
-                          className="absolute -top-2 left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"
+                          className="fixed z-[9999] dropdown-bubble"
                           style={{
-                            filter: 'drop-shadow(0 -2px 4px rgba(0,0,0,0.1))'
+                            zIndex: 9999,
+                            left: `${getDropdownPosition(item.name).left}px`,
+                            top: `${getDropdownPosition(item.name).top}px`,
                           }}
-                        />
-                        {/* Contenido del dropdown */}
-                        <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
-                          {getDropdownComponent(item.name)}
+                        >
+                          {/* Triángulo de conexión */}
+                          <div
+                            className="absolute -top-2 left-4 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-white"
+                            style={{
+                              filter: "drop-shadow(0 -2px 4px rgba(0,0,0,0.1))",
+                            }}
+                          />
+                          {/* Contenido del dropdown */}
+                          <div className="bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden">
+                            {getDropdownComponent(item.name)}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
                   </div>
                 </li>
               );

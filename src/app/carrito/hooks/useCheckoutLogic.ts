@@ -170,8 +170,10 @@ export function useCheckoutLogic() {
           });
           if (res === null) {
             redirectToError();
+          } else {
+            router.push(res.redirectUrl)
           }
-          console.log(res);
+          
           break;
 
         case "tarjeta":

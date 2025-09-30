@@ -19,82 +19,33 @@ import samsungLogo from "@/img/Samsung_black.png";
 import { AnimatePresence, motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
-import type { ProductCardProps } from "@/app/productos/components/ProductCard";
+import { useEffect, useState } from "react";
 
 import { productsMock } from "../components/productsMock";
 import ComparationProduct from "./ComparationProduct";
-import Specifications from "@/app/productos/dispositivos-moviles/detalles-producto/Specifications";
 import VideosSection from "./VideosSection";
-import Destacados from "./detalles-producto/Destacados";
 
-// Tipo auxiliar para producto de entrada (raw)
-type RawProduct = {
+// Tipos para producto
+interface ProductColor {
+  name: string;
+  hex: string;
+}
+interface ProductData {
   id: string;
   name: string;
-  image: string | StaticImageData;
-  price: string | number;
-  colors: Array<{ name: string; hex: string; label?: string; sku?: string }>;
+  image: string | StaticImageData; // Permite string o StaticImageData
+  price: string;
   originalPrice?: string;
   discount?: string;
+  colors: ProductColor[];
   description?: string;
-  brand?: string;
-  model?: string;
-  category?: string;
-  subcategory?: string;
-  capacity?: string;
-  stock?: number;
-  sku?: string;
-  puntos_q?: number;
-  detailedDescription?: string;
-  reviewCount?: number;
-  rating?: number;
-};
-
-// Utilidad para convertir RawProduct a ProductCardProps compatible
-function convertToProductCardProps(product: RawProduct): ProductCardProps {
-  return {
-    id: String(product.id ?? ""),
-    name: String(product.name ?? ""),
-    image: product.image ?? "",
-    price:
-      typeof product.price === "string" ? product.price : String(product.price),
-    colors: Array.isArray(product.colors)
-      ? product.colors.map((color) => ({
-          ...color,
-          label: color.label || color.name,
-          sku: color.sku || color.name || "SKU",
-        }))
-      : [],
-    selectedColor:
-      Array.isArray(product.colors) && product.colors.length > 0
-        ? {
-            ...product.colors[0],
-            label: product.colors[0].label || product.colors[0].name,
-            sku: product.colors[0].sku || product.colors[0].name || "SKU",
-          }
-        : undefined,
-    sku: product.sku || product.id || "SKU",
-    puntos_q: product.puntos_q ?? 4,
-    originalPrice: product.originalPrice,
-    discount: product.discount,
-    description: product.description,
-    brand: product.brand,
-    model: product.model,
-    category: product.category,
-    subcategory: product.subcategory,
-    capacity: product.capacity,
-    stock: product.stock,
-    detailedDescription: product.detailedDescription,
-    reviewCount: product.reviewCount,
-    rating: product.rating,
-  };
+  specs?: { label: string; value: string }[];
 }
 
 export default function ViewProduct({
   product,
 }: Readonly<{
-  product: RawProduct;
+  product: Readonly<ProductData>;
 }>) {
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
@@ -117,11 +68,6 @@ export default function ViewProduct({
 
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
-  // Conversión a tipo compatible para especificaciones y carrito
-  const productCard = React.useMemo(
-    () => convertToProductCardProps(safeProduct),
-    [safeProduct]
-  );
   const router = useRouter();
   const pathname = usePathname();
   const isProductDetailView = pathname.startsWith("/productos/view/");
@@ -516,14 +462,11 @@ export default function ViewProduct({
       <motion.div
         ref={specsReveal.ref}
         {...specsReveal.motionProps}
-        className="relative flex items-center justify-center w-full min-h-[100px] py-0 md:-mt-40"
+        className="relative flex items-center justify-center w-full min-h-[100px] py-0 mt-0"
       >
-        {/* Especificaciones técnicas dinámicas del producto */}
-        <Specifications product={productCard} />
+        {/* SOLO especificaciones y teléfono juntos, sin duplicar imagen */}
+        {/*<EspecificacionesProduct specs={safeProduct.specs} */}
       </motion.div>
-
-      {/* Características destacadas (nuevo componente) */}
-      <Destacados />
 
       {/* Componente de videos */}
       <motion.div

@@ -24,7 +24,7 @@ import {
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
-export interface ProductFilters {
+interface ProductFilters {
   category?: string;
   subcategory?: string;
   precioMin?: number;
@@ -35,7 +35,6 @@ export interface ProductFilters {
   withDiscount?: boolean;
   minStock?: number;
   descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
-  searchQuery?: string; // Query de búsqueda general para nombre Y desDetallada
   page?: number; // Página actual para paginación
   limit?: number; // Límite de productos por página
 }
@@ -164,14 +163,6 @@ export const useProducts = (
       if (filters.descriptionKeyword) {
         // Usar el campo desDetallada para buscar en la descripción detallada
         params.desDetallada = filters.descriptionKeyword;
-      }
-
-      if (filters.searchQuery) {
-        // Búsqueda general: usar tanto nombre como desDetallada con OR
-        params.nombre = filters.searchQuery;
-        params.desDetallada = filters.searchQuery;
-        params.modelo = filters.searchQuery;
-        params.filterMode = "OR";
       }
 
       return params;

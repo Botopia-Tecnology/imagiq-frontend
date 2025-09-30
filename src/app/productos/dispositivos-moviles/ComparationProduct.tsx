@@ -2,28 +2,21 @@
 /**
  * 📱 COMPARATION PRODUCT COMPONENT - IMAGIQ ECOMMERCE
  *
- * Componente para comparar dispositivos, fiel al diseño adjunto.
- * - Layout grid responsivo, sin scroll lateral en mobile
- * - Tipografías, colores y espaciados ajustados a la referencia
- * - Accesibilidad y semántica mejoradas
- * - Lógica y handlers intactos
+ * Componente para comparar dos productos (celulares).
+ * - Selectores de producto arriba
+ * - Imágenes centradas
+ * - Tarjeta comparativa con especificaciones
+ * - Código limpio, escalable y documentado
+ * - Experiencia de usuario optimizada
  */
 
 import React, { useState } from "react";
-import Image, { StaticImageData } from "next/image";
-import samsungS25 from "@/img/dispositivosmoviles/cel1.png";
-import samsungS24 from "@/img/dispositivosmoviles/cel2.png";
+import Image from "next/image";
+import samsungS25 from "@/img/dispositivosmoviles/cel1.png"; // Cambia por la imagen real
+import samsungS24 from "@/img/dispositivosmoviles/cel2.png"; // Cambia por la imagen real
+import cameraIcon from "@/img/dispositivosmoviles/camera-icon.png"; // Cambia por la imagen real
 
-// --- Tipos para claridad y escalabilidad ---
-interface Product {
-  name: string;
-  image: StaticImageData;
-  specs: {
-    camera: string[];
-  };
-}
-
-const products: Product[] = [
+const products = [
   {
     name: "Galaxy S25 Ultra 5G",
     image: samsungS25,
@@ -48,223 +41,367 @@ const products: Product[] = [
   },
 ];
 
-// --- Clases base reutilizables ---
-const baseSelect =
-  "bg-transparent text-[#222] px-4 py-2 rounded-full font-bold text-sm border border-[#E5E7EB] shadow focus:outline-none focus:ring-2 focus:ring-[#0099FF] transition-all duration-200 hover:border-[#0099FF] cursor-pointer appearance-none pr-8 w-full";
-const baseCell =
-  "text-[15px] md:text-base text-[#222] font-normal py-3 px-2 md:px-4 border-b border-[#E5E7EB] text-center align-middle truncate";
-const baseHeader =
-  "text-xs md:text-sm font-semibold text-[#8A8A8A] bg-[#F7FAFD] py-2 px-2 md:px-4 border-b border-[#E5E7EB] text-center align-middle uppercase tracking-wide";
-
 export default function ComparationProduct() {
   // Estado para producto seleccionado
   const [selectedLeft, setSelectedLeft] = useState(products[0]);
+  const [selectedRight, setSelectedRight] = useState(products[1]);
 
-  // --- Layout principal ---
   return (
-    <section
-      className="w-full min-h-screen bg-white flex flex-col items-center justify-start py-8 px-2 md:px-6 lg:px-0"
-      aria-label="Comparación de dispositivos"
-      style={{ fontFamily: "SamsungSharpSans" }}
+    <div
+      className="w-full flex flex-col items-center justify-center gap-12 py-16 px-4"
+      style={{
+        fontFamily: "SamsungSharpSans",
+        minHeight: "100vh",
+      }}
     >
-      {/* Título y subtítulo */}
-      <header className="w-full max-w-6xl mx-auto mb-2 md:mb-4 text-center">
-        <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[#222] mb-1 md:mb-2 tracking-tight">
-          Compara dispositivos
-        </h1>
-        <p className="text-[#8A8A8A] text-sm md:text-base font-normal mb-4 md:mb-8">
-          Ve cómo se compara el Galaxy Z Fold7 con otros dispositivos
-        </p>
-      </header>
-
-      {/* --- Tabla comparativa --- */}
-      <div className="w-full max-w-6xl overflow-x-auto rounded-2xl shadow bg-white">
-        <table className="w-full border-separate border-spacing-0">
-          <thead>
-            <tr>
-              <th
-                className={
-                  baseHeader + " w-[120px] md:w-[180px] lg:w-[220px] bg-white"
-                }
-              ></th>
-              <th
-                className={
-                  baseHeader +
-                  " min-w-[120px] md:min-w-[180px] lg:min-w-[220px] bg-[#F7FAFD]"
-                }
-              >
-                <div className="flex flex-col items-center justify-center gap-2 py-2">
-                  <div className="w-16 h-16 md:w-20 md:h-20 flex items-center justify-center mx-auto mb-1">
-                    <Image
-                      src={selectedLeft.image}
-                      alt={selectedLeft.name}
-                      className="object-contain rounded-xl border border-[#E5E7EB] bg-white"
-                      width={80}
-                      height={80}
-                    />
-                  </div>
-                  <span
-                    className="text-[#222] text-xs md:text-base font-semibold truncate"
-                    title={selectedLeft.name}
-                  >
-                    {selectedLeft.name}
-                  </span>
-                </div>
-              </th>
-              <th
-                className={
-                  baseHeader +
-                  " min-w-[120px] md:min-w-[180px] lg:min-w-[220px] bg-white/60"
-                }
-              >
-                <span className="inline-block text-[#8A8A8A] text-xs md:text-base font-semibold py-2 px-1 rounded-lg bg-[#F7FAFD]">
-                  Galaxy S25
-                </span>
-              </th>
-              <th
-                className={
-                  baseHeader +
-                  " min-w-[120px] md:min-w-[180px] lg:min-w-[220px] bg-white/60"
-                }
-              >
-                <span className="inline-block text-[#8A8A8A] text-xs md:text-base font-semibold py-2 px-1 rounded-lg bg-[#F7FAFD]">
-                  Galaxy S24 Ultra
-                </span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* Pantalla */}
-            <tr>
-              <td className={baseCell + " font-semibold text-left"}>
-                Pantalla
-              </td>
-              <td
-                className={
-                  baseCell + " text-[#0099FF] underline cursor-pointer"
-                }
-              >
-                7.6&quot; plegable + 6.5&quot; externa
-              </td>
-              <td className={baseCell}>6.7&quot;</td>
-              <td className={baseCell}>6.8&quot;</td>
-            </tr>
-            {/* Procesador */}
-            <tr>
-              <td className={baseCell + " font-semibold text-left"}>
-                Procesador
-              </td>
-              <td
-                className={
-                  baseCell + " text-[#0099FF] underline cursor-pointer"
-                }
-              >
-                Snapdragon 8 Gen 4
-              </td>
-              <td className={baseCell}>A17 Pro</td>
-              <td className={baseCell}>Snapdragon 8 Gen 3</td>
-            </tr>
-            {/* RAM */}
-            <tr>
-              <td className={baseCell + " font-semibold text-left"}>RAM</td>
-              <td
-                className={
-                  baseCell + " text-[#0099FF] underline cursor-pointer"
-                }
-              >
-                12GB / 16GB
-              </td>
-              <td className={baseCell}>8GB</td>
-              <td className={baseCell}>12GB</td>
-            </tr>
-            {/* Cámara principal */}
-            <tr>
-              <td className={baseCell + " font-semibold text-left"}>
-                Cámara principal
-              </td>
-              <td
-                className={
-                  baseCell + " text-[#0099FF] underline cursor-pointer"
-                }
-              >
-                200MP
-              </td>
-              <td className={baseCell}>48MP</td>
-              <td className={baseCell}>200MP</td>
-            </tr>
-            {/* Batería */}
-            <tr>
-              <td className={baseCell + " font-semibold text-left"}>Batería</td>
-              <td
-                className={
-                  baseCell + " text-[#0099FF] underline cursor-pointer"
-                }
-              >
-                5000mAh
-              </td>
-              <td className={baseCell}>4444mAh</td>
-              <td className={baseCell}>5000mAh</td>
-            </tr>
-            {/* Característica única */}
-            <tr>
-              <td className={baseCell + " font-semibold text-left"}>
-                Característica única
-              </td>
-              <td
-                className={
-                  baseCell + " text-[#0099FF] underline cursor-pointer"
-                }
-              >
-                Pantalla plegable + S Pen integrado
-              </td>
-              <td className={baseCell}>Action Button</td>
-              <td className={baseCell}>S Pen incluido</td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Título móvil */}
+      <div className="block md:hidden">
+        <h2 className="text-white text-2xl font-bold text-center mb-8">
+          Comparálos
+        </h2>
       </div>
 
-      {/* --- Selector de dispositivos (solo para el primer dispositivo, como en la imagen) --- */}
-      <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-start gap-4 mt-6">
-        <div className="flex flex-col items-center md:items-start w-full md:w-auto">
-          <label
-            htmlFor="device-select"
-            className="text-xs text-[#8A8A8A] font-semibold mb-1 ml-1"
-          >
-            Cambiar dispositivo principal
-          </label>
+      {/* Selectores móvil */}
+      <div className="flex md:hidden justify-center gap-4 w-full max-w-sm mb-8">
+        {/* Selector izquierdo móvil */}
+        <div className="relative flex-1">
           <select
-            id="device-select"
-            className={baseSelect + " max-w-xs"}
+            className="bg-transparent text-white px-4 py-2 rounded-full font-bold text-sm border-2 border-white/50 shadow-lg focus:outline-none focus:border-white transition-all duration-300 hover:border-white cursor-pointer appearance-none pr-8 w-full"
             value={selectedLeft.name}
             onChange={(e) => {
               const prod = products.find((p) => p.name === e.target.value);
               if (prod) setSelectedLeft(prod);
             }}
-            aria-label="Seleccionar dispositivo principal para comparar"
           >
             {products.map((p) => (
               <option
                 key={p.name}
                 value={p.name}
-                className="bg-white text-[#222]"
+                className="bg-[#17407A] text-white"
               >
                 {p.name}
               </option>
             ))}
           </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg
+              width="10"
+              height="6"
+              viewBox="0 0 12 8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M1 1L6 6L11 1"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Selector derecho móvil */}
+        <div className="relative flex-1">
+          <select
+            className="bg-transparent text-white px-4 py-2 rounded-full font-bold text-sm border-2 border-white/50 shadow-lg focus:outline-none focus:border-white transition-all duration-300 hover:border-white cursor-pointer appearance-none pr-8 w-full"
+            value={selectedRight.name}
+            onChange={(e) => {
+              const prod = products.find((p) => p.name === e.target.value);
+              if (prod) setSelectedRight(prod);
+            }}
+          >
+            {products.map((p) => (
+              <option
+                key={p.name}
+                value={p.name}
+                className="bg-[#17407A] text-white"
+              >
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+            <svg
+              width="10"
+              height="6"
+              viewBox="0 0 12 8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M1 1L6 6L11 1"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* --- Botón de comparación completa (solo desktop/tablet) --- */}
-      <div className="hidden md:flex w-full max-w-6xl justify-center mt-8">
-        <button
-          className="bg-[#0099FF] hover:bg-[#007ACC] text-white font-bold py-3 px-8 rounded-full shadow-lg text-base transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 focus:ring-offset-2"
-          aria-label="Ver comparación completa"
-        >
-          Ver comparación completa
-        </button>
+      {/* Comparación móvil */}
+      <div className="flex md:hidden justify-center gap-6 w-full max-w-md px-4">
+        {/* Producto izquierdo móvil */}
+        <div className="flex flex-col items-center text-center flex-1">
+          {/* Imagen del producto */}
+          <div className="mb-4">
+            <Image
+              src={selectedLeft.image}
+              alt={selectedLeft.name}
+              width={120}
+              height={140}
+              className="object-contain"
+            />
+          </div>
+
+          {/* Ícono de cámara */}
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4">
+            <Image src={cameraIcon} alt="Cámara" width={24} height={24} />
+          </div>
+
+          {/* Especificaciones verticales */}
+          <div className="space-y-3 text-white">
+            <p className="text-sm font-bold leading-tight">
+              Cámara
+              <br />
+              ultraancha
+              <br />
+              50 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Cámara de
+              <br />
+              ángulo amplio
+              <br />
+              200 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Teleobjetivo
+              <br />
+              50/10 MP
+            </p>
+          </div>
+        </div>
+
+        {/* Producto derecho móvil */}
+        <div className="flex flex-col items-center text-center flex-1">
+          {/* Imagen del producto */}
+          <div className="mb-4">
+            <Image
+              src={selectedRight.image}
+              alt={selectedRight.name}
+              width={120}
+              height={140}
+              className="object-contain"
+            />
+          </div>
+
+          {/* Ícono de cámara */}
+          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-4">
+            <Image src={cameraIcon} alt="Cámara" width={24} height={24} />
+          </div>
+
+          {/* Especificaciones verticales */}
+          <div className="space-y-3 text-white">
+            <p className="text-sm font-bold leading-tight">
+              Cámara
+              <br />
+              ultraancha
+              <br />
+              12 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Cámara de
+              <br />
+              ángulo amplio
+              <br />
+              200 MP
+            </p>
+            <p className="text-sm font-bold leading-tight">
+              Teleobjetivo
+              <br />
+              50/10 MP
+            </p>
+          </div>
+        </div>
       </div>
-    </section>
+
+      {/* Selectores y celulares - Desktop */}
+      <div className="hidden md:flex items-end justify-center gap-20 w-full max-w-5xl">
+        {/* Producto izquierdo */}
+        <div className="flex flex-col items-center gap-6">
+          {/* Selector elegante */}
+          <div className="relative">
+            <select
+              className="bg-transparent text-white px-8 py-3 rounded-full font-bold text-base border-2 border-white/50 shadow-lg focus:outline-none focus:border-white transition-all duration-300 hover:border-white cursor-pointer appearance-none pr-12"
+              value={selectedLeft.name}
+              onChange={(e) => {
+                const prod = products.find((p) => p.name === e.target.value);
+                if (prod) setSelectedLeft(prod);
+              }}
+              style={{ minWidth: "200px" }}
+            >
+              {products.map((p) => (
+                <option
+                  key={p.name}
+                  value={p.name}
+                  className="bg-[#17407A] text-white"
+                >
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {/* Flecha personalizada */}
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M1 1L6 6L11 1"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Imagen del producto */}
+          <div className="transform transition-all duration-300 hover:scale-105">
+            <Image
+              src={selectedLeft.image}
+              alt={selectedLeft.name}
+              width={240}
+              height={280}
+              className="object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+              priority
+            />
+          </div>
+        </div>
+
+        {/* Producto derecho */}
+        <div className="flex flex-col items-center gap-6">
+          {/* Selector elegante */}
+          <div className="relative">
+            <select
+              className="bg-transparent text-white px-8 py-3 rounded-full font-bold text-base border-2 border-white/50 shadow-lg focus:outline-none focus:border-white transition-all duration-300 hover:border-white cursor-pointer appearance-none pr-12"
+              value={selectedRight.name}
+              onChange={(e) => {
+                const prod = products.find((p) => p.name === e.target.value);
+                if (prod) setSelectedRight(prod);
+              }}
+              style={{ minWidth: "200px" }}
+            >
+              {products.map((p) => (
+                <option
+                  key={p.name}
+                  value={p.name}
+                  className="bg-[#17407A] text-white"
+                >
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            {/* Flecha personalizada */}
+            <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg
+                width="12"
+                height="8"
+                viewBox="0 0 12 8"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M1 1L6 6L11 1"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+          </div>
+
+          {/* Imagen del producto */}
+          <div className="transform transition-all duration-300 hover:scale-105">
+            <Image
+              src={selectedRight.image}
+              alt={selectedRight.name}
+              width={240}
+              height={280}
+              className="object-contain drop-shadow-[0_20px_40px_rgba(0,0,0,0.3)]"
+              priority
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Tarjeta comparativa - Desktop */}
+      <div className="hidden md:block w-full max-w-4xl bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-8">
+        <div className="flex items-stretch justify-between gap-8">
+          {/* Icono y título */}
+          <div className="flex flex-col items-center justify-center gap-3 min-w-[120px]">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+              <Image src={cameraIcon} alt="Cámara" width={62} height={62} />
+            </div>
+            <span className="font-bold text-xl text-gray-800">Cámara</span>
+          </div>
+
+          {/* Especificaciones izquierda */}
+          <div className="flex-1 flex flex-col justify-center gap-10 text-center">
+            <h4 className="font-bold text-lg text-gray-800 mb-2">
+              Cámara ultraancha
+              <br />
+              50 MP
+            </h4>
+            <div className="space-y-8">
+              <p className="text-gray-600 text-lg font-bold">
+                Cámara de ángulo
+                <br />
+                amplio
+                <br />
+                200 MP
+              </p>
+              <p className="text-gray-600 text-lg font-bold">
+                Teleobjetivo
+                <br />
+                50/10 MP
+              </p>
+            </div>
+          </div>
+
+          {/* Especificaciones derecha */}
+          <div className="flex-1 flex flex-col justify-center gap-10 text-center">
+            <h4 className="font-bold text-lg text-gray-800 mb-2">
+              Cámara ultraancha
+              <br />
+              12 MP
+            </h4>
+            <div className="space-y-8">
+              <p className="text-gray-600 text-lg font-bold">
+                Cámara de ángulo
+                <br />
+                amplio
+                <br />
+                200 MP
+              </p>
+              <p className="text-gray-600 text-lg font-bold">
+                Teleobjetivo
+                <br />
+                50/10 MP
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

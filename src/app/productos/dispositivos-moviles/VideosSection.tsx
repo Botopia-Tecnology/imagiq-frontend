@@ -103,7 +103,7 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
 
       {/* Contenido superpuesto */}
       <div
-        className="absolute inset-0 p-6 text-black"
+        className="absolute inset-0 p-6 text-white"
         style={{ zIndex: 2, fontFamily: "SamsungSharpSans" }}
       >
         {/* Para el primer video - solo Nuevo y Galaxy S25 Ultra */}
@@ -152,7 +152,7 @@ export default function VideosSection() {
               {/* Título centrado arriba del primer video */}
               {index === 0 && (
                 <div className="pb-4 text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold text-black">
+                  <h2 className="text-4xl md:text-5xl font-bold text-white">
                     ¡Explora su potencial!
                   </h2>
                 </div>
@@ -182,7 +182,7 @@ export default function VideosSection() {
                     zIndex: 10,
                   }}
                 >
-                  <h3 className="text-4xl md:text-5xl -mt-20 font-bold text-black text-center">
+                  <h3 className="text-4xl md:text-5xl -mt-20 font-bold text-white text-center">
                     Galaxy AI ✨
                   </h3>
                 </div>
@@ -191,7 +191,7 @@ export default function VideosSection() {
               {/* Descripción fuera de la card del segundo video */}
               {index === 1 && (
                 <div className="mt-4 max-w-6xl mx-auto px-6">
-                  <p className="text-sm md:text-base text-black/90 leading-relaxed">
+                  <p className="text-sm md:text-base text-white/90 leading-relaxed">
                     {video.description}
                   </p>
                 </div>

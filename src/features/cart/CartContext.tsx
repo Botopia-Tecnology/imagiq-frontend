@@ -85,7 +85,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Memoizar funciones para evitar que cambien en cada render
   const addProduct = useCallback(
     (product: CartProduct) => {
-      addToCart(product);
+      // Extraer quantity del producto y pasarlo por separado para evitar problemas de tipo
+      const { quantity, ...productWithoutQuantity } = product;
+      addToCart(productWithoutQuantity, quantity || 1);
     },
     [addToCart]
   );

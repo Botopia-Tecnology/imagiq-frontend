@@ -137,28 +137,40 @@ export default function ProductCard({
   const currentDiscount = selectedColor?.discount || discount;
 
   const handleAddToCart = async () => {
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
+
     setIsLoading(true);
-    posthogUtils.capture("add_to_cart_click", {
-      product_id: id,
-      product_name: name,
-      selected_color: selectedColor?.name || "Sin color",
-      selected_color_sku: selectedColor?.sku || sku || id, // Incluir SKU del color seleccionado
-      source: "product_card",
-    });
-    // Agrega el producto al carrito usando el contexto
-    addProduct({
-      id,
-      name,
-      image: typeof image === "string" ? image : image.src || "",
-      price:
-        typeof currentPrice === "string"
-          ? parseInt(currentPrice.replace(/[^\d]/g, ""))
-          : currentPrice || 0,
-      quantity: 1,
-      sku: selectedColor?.sku || sku || id, // Usar el SKU del color seleccionado
-      puntos_q, // Nuevo campo: puntos acumulables
-    });
-    setIsLoading(false);
+
+    try {
+      posthogUtils.capture("add_to_cart_click", {
+        product_id: id,
+        product_name: name,
+        selected_color: selectedColor?.name || "Sin color",
+        selected_color_sku: selectedColor?.sku || sku || id,
+        source: "product_card",
+      });
+
+      // Agrega el producto al carrito usando el contexto - SIEMPRE cantidad 1
+      addProduct({
+        id,
+        name,
+        image: typeof image === "string" ? image : image.src ?? "",
+        price:
+          typeof currentPrice === "string"
+            ? parseInt(currentPrice.replace(/[^\d]/g, ""))
+            : currentPrice || 0,
+        quantity: 1, // SIEMPRE agregar de 1 en 1
+        sku: selectedColor?.sku || sku || id,
+        puntos_q,
+      });
+    } finally {
+      // Restaurar el estado después de un delay para prevenir clics rápidos
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300); // Tiempo reducido para mejor UX
+    }
   };
 
   const handleToggleFavorite = () => {

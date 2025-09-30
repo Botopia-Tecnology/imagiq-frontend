@@ -1,5 +1,5 @@
 /**
- * Grid de productos genérico para todas las categorías de dispositivos móviles
+ * Grid de productos genérico para todas las categorías
  * con funcionalidades avanzadas y manejo de estados
  */
 
@@ -121,7 +121,7 @@ const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <div ref={ref} className="flex flex-wrap gap-6">
+      <div ref={ref} className="flex flex-wrap gap-6 ">
         {products.length === 0 ? (
           <div className="w-full text-center py-12 text-gray-500">
             No se encontraron {categoryName.toLowerCase()} con los filtros

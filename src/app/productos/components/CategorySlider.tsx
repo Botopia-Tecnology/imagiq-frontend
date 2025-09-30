@@ -1,5 +1,11 @@
 "use client";
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  useMemo,
+} from "react";
 import Image, { StaticImageData } from "next/image";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -38,22 +44,36 @@ export default function CategorySlider({
 
   const searchParams = useSearchParams();
   const router = useRouter();
-  const sectionParam = searchParams.get("section");
+  const sectionParam = searchParams.get("seccion");
   const hash = typeof window !== "undefined" ? window.location.hash : "";
 
   const activeCategoryId = useMemo(() => {
+    // Si hay un parámetro de sección en la URL, buscar la categoría correspondiente
     if (sectionParam) {
+      // Buscar por ID directamente primero (más eficiente)
+      const directMatch = categories.find((cat) => cat.id === sectionParam);
+      if (directMatch) {
+        return directMatch.id;
+      }
+
+      // Si no hay match directo, buscar en el href
       const foundCategory = categories.find((cat) =>
-        cat.href.includes(`section=${sectionParam}`)
+        cat.href.includes(`seccion=${sectionParam}`)
       );
-      if (foundCategory) return foundCategory.id;
+      if (foundCategory) {
+        return foundCategory.id;
+      }
     }
+
+    // Fallback para URLs con hash
     if (hash) {
       const foundCategory = categories.find(
         (cat) => cat.href.startsWith("#") && cat.href === hash
       );
       if (foundCategory) return foundCategory.id;
     }
+
+    // Default: primera categoría
     return categories[0]?.id || "";
   }, [sectionParam, hash, categories]);
 
@@ -61,10 +81,19 @@ export default function CategorySlider({
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
-      if (w < 640) { setItemsPerView(1); setIsDesktop(false); }
-      else if (w < 768) { setItemsPerView(2); setIsDesktop(false); }
-      else if (w < 1024) { setItemsPerView(3); setIsDesktop(false); }
-      else { setItemsPerView(4); setIsDesktop(true); }
+      if (w < 640) {
+        setItemsPerView(1);
+        setIsDesktop(false);
+      } else if (w < 768) {
+        setItemsPerView(2);
+        setIsDesktop(false);
+      } else if (w < 1024) {
+        setItemsPerView(3);
+        setIsDesktop(false);
+      } else {
+        setItemsPerView(4);
+        setIsDesktop(true);
+      }
     };
     update();
     window.addEventListener("resize", update);
@@ -86,9 +115,7 @@ export default function CategorySlider({
 
     const check = () => {
       if (isDesktop) {
-        setIsScrollable(
-          categories.length > itemsPerView || el.scrollWidth > el.clientWidth + 1
-        );
+        setIsScrollable(categories.length > itemsPerView);
       } else {
         setIsScrollable(el.scrollWidth > el.clientWidth + 1);
       }
@@ -106,8 +133,14 @@ export default function CategorySlider({
 
     const onKey = (e: KeyboardEvent) => {
       if (!isDesktop) return;
-      if (e.key === "ArrowLeft") { e.preventDefault(); scrollPrev(); }
-      if (e.key === "ArrowRight") { e.preventDefault(); scrollNext(); }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        scrollPrev();
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        scrollNext();
+      }
     };
 
     el.addEventListener("scroll", updateScrollState, { passive: true });
@@ -141,11 +174,19 @@ export default function CategorySlider({
         const itemEnd = targetScrollLeft + itemWidth;
 
         if (itemStart < visibleStart || itemEnd > visibleEnd) {
-          el.scrollTo({ left: Math.max(0, targetScrollLeft - itemWidth / 2), behavior: "smooth" });
+          el.scrollTo({
+            left: Math.max(0, targetScrollLeft - itemWidth / 2),
+            behavior: "smooth",
+          });
         }
       } else {
         const node = el.children[idx] as HTMLElement;
-        if (node) node.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        if (node)
+          node.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+            inline: "center",
+          });
       }
     };
 
@@ -168,13 +209,25 @@ export default function CategorySlider({
 
   // 1) Círculo (más grande en móvil, y más chico si "condensed")
   const circleSize = condensed
-    ? (isMobile ? "" : "w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16")
-    : (isMobile ? "" : "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36");
+    ? isMobile
+      ? ""
+      : "w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
+    : isMobile
+    ? ""
+    : "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36";
 
   // 2) Imagen interna (subo el tamaño base en móvil)
   const imgSize = condensed
-    ? (isMobile ? 64 : (itemsPerView <= 2 ? 40 : 60))
-    : (isMobile ? 88 : (itemsPerView <= 2 ? 90 : 150));
+    ? isMobile
+      ? 64
+      : itemsPerView <= 2
+      ? 40
+      : 60
+    : isMobile
+    ? 88
+    : itemsPerView <= 2
+    ? 90
+    : 150;
 
   // 3) Activo: se encoge con scroll; crece en vista normal
   const activeScale = condensed ? "scale-75" : "scale-[100%]";
@@ -185,7 +238,12 @@ export default function CategorySlider({
 
   // 5) Espaciados: container más angosto en móvil y gutters mínimos en la lista
   const sectionPadding = "py-0";
-  const listGap = condensed ? "gap-2 sm:gap-3 lg:gap-4" : "gap-4 sm:gap-6 lg:gap-8";
+  const getListGap = () => {
+    if (condensed) return "gap-2 sm:gap-3 lg:gap-4";
+    if (isScrollable) return "gap-4 sm:gap-6 lg:gap-8";
+    return "gap-6 sm:gap-8 lg:gap-12"; // Más espacio cuando está centrado
+  };
+  const listGap = getListGap();
   const listPy = condensed ? "py-0" : "py-2";
 
   return (
@@ -210,9 +268,19 @@ export default function CategorySlider({
                   !canScrollPrev && "opacity-40 cursor-not-allowed"
                 )}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" className="h-5 w-5 text-gray-700">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="h-5 w-5 text-gray-700"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M15 19l-7-7 7-7"
+                  />
                 </svg>
               </button>
 
@@ -221,14 +289,23 @@ export default function CategorySlider({
                 aria-label="Siguiente"
                 disabled={!canScrollNext}
                 className={cn(
-  "hidden lg:flex absolute -right-8 xl:-right-10 top-1/2 -translate-y-1/2 z-20 items-center justify-center rounded-full bg-white/90 p-2 shadow-md",
-  !canScrollNext && "opacity-40 cursor-not-allowed"
-)}
-
+                  "hidden lg:flex absolute -right-8 xl:-right-10 top-1/2 -translate-y-1/2 z-20 items-center justify-center rounded-full bg-white/90 p-2 shadow-md",
+                  !canScrollNext && "opacity-40 cursor-not-allowed"
+                )}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" className="h-5 w-5 text-gray-700">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  className="h-5 w-5 text-gray-700"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
                 </svg>
               </button>
             </>
@@ -241,10 +318,14 @@ export default function CategorySlider({
                 "flex no-scrollbar snap-x snap-mandatory items-start w-full transition-[gap,padding] duration-200",
                 listGap,
                 listPy,
-                // gutters aún más angostos en móvil
-                isScrollable ? "px-1 sm:px-2 lg:px-16 xl:px-20 2xl:px-24" : "",
+                // Centrar cuando no es scrolleable, padding cuando sí lo es
+                isScrollable
+                  ? "px-1 sm:px-2 lg:px-16 xl:px-20 2xl:px-24"
+                  : "justify-center",
 
-                isDesktop && isScrollable ? "overflow-x-hidden" : "overflow-x-auto"
+                isDesktop && isScrollable
+                  ? "overflow-x-hidden"
+                  : "overflow-x-auto"
               )}
             >
               {categories.map((category, index) => (
@@ -255,16 +336,28 @@ export default function CategorySlider({
                     "flex-shrink-0",
                     isScrollable ? "snap-center" : "snap-start"
                   )}
-                  style={
-                    isDesktop
-                      ? ({ flex: `0 0 ${100 / itemsPerView}%`, maxWidth: `${100 / itemsPerView}%` } as React.CSSProperties)
-                      : ({ flex: "0 0 auto", minWidth: condensed ? 76 : 108 } as React.CSSProperties)
-                  }
+                  style={(() => {
+                    if (isDesktop && isScrollable) {
+                      return {
+                        flex: `0 0 ${100 / itemsPerView}%`,
+                        maxWidth: `${100 / itemsPerView}%`,
+                      } as React.CSSProperties;
+                    } else if (isDesktop && !isScrollable) {
+                      return {
+                        flex: "0 0 auto",
+                      } as React.CSSProperties;
+                    } else {
+                      return {
+                        flex: "0 0 auto",
+                        minWidth: condensed ? 76 : 108,
+                      } as React.CSSProperties;
+                    }
+                  })()}
                 >
                   <button
                     onClick={() => handleCategoryClick(category)}
                     className={cn(
-                      "relative flex items-center justify-center transition-all duration-200",
+                      "relative flex items-center justify-center transition-all duration-200 z-30",
                       "transform-gpu will-change-transform origin-center",
                       "rounded-full category-circle cursor-pointer",
                       "overflow-hidden",
@@ -275,7 +368,7 @@ export default function CategorySlider({
                         : "bg-white hover:bg-white-100"
                     )}
                   >
-                    <div className="flex items-center justify-center w-full h-full pointer-events-none">
+                    <div className="flex items-center justify-center w-full h-full">
                       <Image
                         src={category.image}
                         alt={`${category.name} ${category.subtitle}`}

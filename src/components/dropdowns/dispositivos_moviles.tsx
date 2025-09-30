@@ -7,23 +7,23 @@ import { cn } from "@/lib/utils";
 const dispositivosMoviles = [
   {
     name: "Smartphones",
-    href: "/productos/dispositivos-moviles?section=smartphones",
+    href: "/productos/dispositivos-moviles?seccion=smartphones",
   },
   {
     name: "Tabletas",
-    href: "/productos/dispositivos-moviles?section=tabletas",
+    href: "/productos/dispositivos-moviles?seccion=tabletas",
   },
   {
     name: "Relojes",
-    href: "/productos/dispositivos-moviles?section=relojes",
+    href: "/productos/dispositivos-moviles?seccion=relojes",
   },
   {
     name: "Galaxy Buds",
-    href: "/productos/dispositivos-moviles?section=buds",
+    href: "/productos/dispositivos-moviles?seccion=buds",
   },
   {
     name: "Accesorios",
-    href: "/productos/dispositivos-moviles?section=accesorios",
+    href: "/productos/dispositivos-moviles?seccion=accesorios",
   },
 ];
 
@@ -68,4 +68,3 @@ export default function DispositivosMovilesDropdown({
     </div>
   );
 }
-

@@ -291,8 +291,8 @@ export default function ProductCard({
           {cleanProductName(name)}
         </h3>
 
-        {/* Selector de colores - OCULTO */}
-        {/* {colors && colors.length > 0 && (
+        {/* Selector de colores */}
+        {colors && colors.length > 0 && (
           <div className="mb-4">
             <div className="flex gap-2">
               {colors.map((color) => (
@@ -300,7 +300,7 @@ export default function ProductCard({
                   key={color.name}
                   onClick={(e) => {
                     e.stopPropagation(); // Prevenir que se active el click de la card
-                    handleColorSelect(color);
+                    // handleColorSelect(color);
                   }}
                   className={cn(
                     "w-6 h-6 rounded-full border-2 transition-all duration-200 cursor-pointer",
@@ -314,7 +314,7 @@ export default function ProductCard({
               ))}
             </div>
           </div>
-        )} */}
+        )}
 
         {/* Precios */}
         {currentPrice && (
@@ -371,8 +371,8 @@ export default function ProductCard({
           </h3>
         </div>
 
-        {/* Selector de colores - OCULTO */}
-        {/* {colors && colors.length > 0 && (
+        {/* Selector de colores */}
+        {colors && colors.length > 0 && (
           <div className="flex-shrink-0 mb-2">
             <div className="flex gap-1.5">
               {colors.map((color) => (
@@ -380,7 +380,7 @@ export default function ProductCard({
                   key={color.name}
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleColorSelect(color);
+                    // handleColorSelect(color);
                   }}
                   className={cn(
                     "w-4 h-4 rounded-full border transition-all duration-200 cursor-pointer",
@@ -394,7 +394,7 @@ export default function ProductCard({
               ))}
             </div>
           </div>
-        )} */}
+        )}
 
         {/* Precios */}
         {currentPrice && (

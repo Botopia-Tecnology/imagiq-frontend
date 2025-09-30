@@ -11,11 +11,11 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { cn } from "@/lib/utils";
 
 const categories = [
-  { name: "Smart TV", href: "/productos/televisores?section=smart-tv" },
-  { name: "QLED TV", href: "/productos/televisores?section=qled" },
-  { name: "Crystal UHD", href: "/productos/televisores?section=crystal-uhd" },
-  { name: "Barras de Sonido", href: "/productos/Audio?section=barras-sonido" },
-  { name: "Sistemas de Audio", href: "/productos/Audio?section=sistemas" },
+  { name: "Smart TV", href: "/productos/televisores?seccion=smart-tv" },
+  { name: "QLED TV", href: "/productos/televisores?seccion=qled" },
+  { name: "Crystal UHD", href: "/productos/televisores?seccion=crystal-uhd" },
+  { name: "Barras de Sonido", href: "/productos/Audio?seccion=barras-sonido" },
+  { name: "Sistemas de Audio", href: "/productos/Audio?seccion=sistemas" },
 ];
 
 export default function TelevisionesDropdown({
@@ -31,11 +31,10 @@ export default function TelevisionesDropdown({
       item: itemName,
       href: href,
     });
-     if (onItemClick) {
-    onItemClick(); // Cierra menú móvil
-  }
+    if (onItemClick) {
+      onItemClick(); // Cierra menú móvil
+    }
   };
- 
 
   return (
     <div

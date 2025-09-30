@@ -32,21 +32,21 @@ const applianceCategories: Category[] = [
     name: "Lavavajillas",
     subtitle: "",
     image: lavavajillasImg,
-    href: "/productos/electrodomesticos?section=lavavajillas",
+    href: "/productos/electrodomesticos?seccion=lavavajillas",
   },
   {
     id: "refrigeradores",
     name: "Refrigeradores",
     subtitle: "",
     image: refrigeradorImg,
-    href: "/productos/electrodomesticos?section=refrigeradores",
+    href: "/productos/electrodomesticos?seccion=refrigeradores",
   },
   {
     id: "lavadoras",
     name: "Lavadoras",
     subtitle: "",
     image: lavadoraImg,
-    href: "/productos/electrodomesticos?section=lavadoras",
+    href: "/productos/electrodomesticos?seccion=lavadoras",
   },
 
   {
@@ -54,21 +54,21 @@ const applianceCategories: Category[] = [
     name: "Microondas",
     subtitle: "",
     image: microondasImg,
-    href: "/productos/electrodomesticos?section=microondas",
+    href: "/productos/electrodomesticos?seccion=microondas",
   },
   {
     id: "aspiradoras",
     name: "Aspiradoras",
     subtitle: "",
     image: aspiradoraImg,
-    href: "/productos/electrodomesticos?section=aspiradoras",
+    href: "/productos/electrodomesticos?seccion=aspiradoras",
   },
   {
     id: "aire-acondicionado",
     name: "Aire Acondicionado",
     subtitle: "",
     image: aireImg,
-    href: "/productos/electrodomesticos?section=aire-acondicionado",
+    href: "/productos/electrodomesticos?seccion=aire-acondicionado",
   },
 
   {
@@ -76,7 +76,7 @@ const applianceCategories: Category[] = [
     name: "Hornos",
     image: hornosImg,
     subtitle: "",
-    href: "/productos/electrodomesticos?section=hornos",
+    href: "/productos/electrodomesticos?seccion=hornos",
   },
 ];
 

@@ -14,7 +14,7 @@ import watchImg from "@/img/categorias/galaxy_watch.png";
 import budsImg from "@/img/categorias/galaxy_buds.png";
 import accesoriosImg from "@/img/categorias/accesorios.png";
 import refrigeradorImg from "@/img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "@/img/electrodomesticos/electrodomesticos2.png";
+import lavadoraImg from "@/img/electrodomesticos/electrodomesticos5.png";
 import tvImg from "@/img/categorias/Tv_Monitores.png";
 import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
 import aspiradoraImg from "@/img/electrodomesticos/electrodomesticos3.png";

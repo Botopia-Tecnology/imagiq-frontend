@@ -14,8 +14,8 @@ const categories = [
   { name: "Smart TV", href: "/productos/televisores?seccion=smart-tv" },
   { name: "QLED TV", href: "/productos/televisores?seccion=qled" },
   { name: "Crystal UHD", href: "/productos/televisores?seccion=crystal-uhd" },
-  { name: "Barras de Sonido", href: "/productos/Audio?seccion=barras-sonido" },
-  { name: "Sistemas de Audio", href: "/productos/Audio?seccion=sistemas" },
+  { name: "Barras de Sonido", href: "/productos/audio?seccion=barras-sonido" },
+  { name: "Sistemas de Audio", href: "/productos/audio?seccion=sistemas" },
 ];
 
 export default function TelevisionesDropdown({

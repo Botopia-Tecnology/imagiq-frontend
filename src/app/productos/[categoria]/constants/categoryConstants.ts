@@ -504,7 +504,11 @@ export function getCategoryFilterConfig(
   seccion?: Seccion
 ): FilterConfig {
   // Para móviles, usar filtros específicos por sección si se proporciona
-  if (categoria === "dispositivos-moviles" && seccion && movilesSectionFilters[seccion]) {
+  if (
+    categoria === "dispositivos-moviles" &&
+    seccion &&
+    movilesSectionFilters[seccion]
+  ) {
     return movilesSectionFilters[seccion];
   }
 

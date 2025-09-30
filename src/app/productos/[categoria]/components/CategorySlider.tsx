@@ -47,7 +47,7 @@ export default function CategorySlider({
     if (!el) return;
 
     setCanScrollLeft(el.scrollLeft > 0);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 1);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
   }, []);
 
   useEffect(() => {
@@ -84,12 +84,12 @@ export default function CategorySlider({
   const needsArrows = canScrollLeft || canScrollRight;
 
   return (
-    <div className={cn("relative w-full", className)}>
+    <div className={cn("relative", className)}>
       {/* Left Arrow */}
       {needsArrows && canScrollLeft && (
         <button
           onClick={scrollLeft}
-          className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 rounded-full p-2 shadow-md hover:bg-white transition-colors"
+          className="absolute left-0 -bottom-10 -translate-y-1/2 z-20 bg-white/90 rounded-full p-2 shadow-md hover:bg-white transition-colors"
           aria-label="Scroll left"
         >
           <svg
@@ -112,7 +112,7 @@ export default function CategorySlider({
       {needsArrows && canScrollRight && (
         <button
           onClick={scrollRight}
-          className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-white/90 rounded-full p-2 shadow-md hover:bg-white transition-colors"
+          className="absolute right-0 -bottom-10 -translate-y-1/2 z-20 bg-white/90 rounded-full p-2 shadow-md hover:bg-white transition-colors"
           aria-label="Scroll right"
         >
           <svg
@@ -137,7 +137,7 @@ export default function CategorySlider({
         className={cn(
           "flex gap-12 overflow-x-auto scrollbar-hide scroll-smooth",
           isDesktop ? "px-8" : "px-4",
-          needsArrows ? "justify-start px-12" : "justify-center"
+          needsArrows ? "justify-start" : "justify-center"
         )}
       >
         {categories.map((category) => {

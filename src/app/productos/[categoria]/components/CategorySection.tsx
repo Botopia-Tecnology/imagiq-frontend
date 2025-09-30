@@ -22,7 +22,7 @@ import FilterSidebar, {
 } from "../../components/FilterSidebar";
 import CategorySlider, {
   type Category,
-} from "./CategorySliderNew";
+} from "./CategorySlider";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";

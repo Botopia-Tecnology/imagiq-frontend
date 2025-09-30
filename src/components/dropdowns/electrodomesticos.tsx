@@ -13,31 +13,31 @@ import { cn } from "@/lib/utils";
 const categories = [
   {
     name: "Refrigeradores",
-    href: "/productos/electrodomesticos?section=refrigeradores",
+    href: "/productos/electrodomesticos?seccion=refrigeradores",
   },
   {
     name: "Lavadoras",
-    href: "/productos/electrodomesticos?section=lavadoras",
+    href: "/productos/electrodomesticos?seccion=lavadoras",
   },
   {
     name: "Lavavajillas",
-    href: "/productos/electrodomesticos?section=lavavajillas",
+    href: "/productos/electrodomesticos?seccion=lavavajillas",
   },
   {
     name: "Aire Acondicionado",
-    href: "/productos/electrodomesticos?section=aire-acondicionado",
+    href: "/productos/electrodomesticos?seccion=aire-acondicionado",
   },
   {
     name: "Microondas",
-    href: "/productos/electrodomesticos?section=microondas",
+    href: "/productos/electrodomesticos?seccion=microondas",
   },
   {
     name: "Aspiradoras",
-    href: "/productos/electrodomesticos?section=aspiradoras",
+    href: "/productos/electrodomesticos?seccion=aspiradoras",
   },
   {
     name: "Hornos",
-    href: "/productos/electrodomesticos?section=hornos",
+    href: "/productos/electrodomesticos?seccion=hornos",
   },
 ];
 
@@ -62,10 +62,10 @@ export default function ElectrodomesticosDropdown({
   return (
     <div
       data-dropdown="refrigeradores"
-       className={cn(
-              "z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px] transition-all duration-200",
-              !isMobile && "absolute top-full left-0"
-            )}
+      className={cn(
+        "z-50 bg-white rounded-xl shadow-xl border border-gray-100 py-3 px-5 min-w-[200px] transition-all duration-200",
+        !isMobile && "absolute top-full left-0"
+      )}
     >
       <div className="space-y-1.5">
         {categories.map((item) => (

@@ -28,7 +28,7 @@ export const CATEGORY_MAPPING: Record<
   CategoriaParams,
   { apiCategory: string; subcategorias: Record<string, string> }
 > = {
-  electrodomestico: {
+  electrodomesticos: {
     apiCategory: "Electrodoméstico",
     subcategorias: {
       refrigeradores: "Neveras,Nevecon",
@@ -40,7 +40,7 @@ export const CATEGORY_MAPPING: Record<
       aspiradoras: "Aspiradoras",
     },
   },
-  moviles: {
+  "dispositivos-moviles": {
     apiCategory: "Dispositivos Móviles",
     subcategorias: {
       smartphones: "Celulares",
@@ -122,10 +122,10 @@ export function convertFiltersToApi(
 
   // Filtros específicos por categoría
   switch (categoria) {
-    case "electrodomestico":
+    case "electrodomesticos":
       apiFilters = applyElectrodomesticoFilters(apiFilters, filters);
       break;
-    case "moviles":
+    case "dispositivos-moviles":
       apiFilters = applyMovilesFilters(apiFilters, filters);
       break;
     case "televisores":

@@ -28,14 +28,14 @@ const categories = [
     id: 1,
     title: "Smartphones",
     image: smartphoneImage,
-    href: "/productos/dispositivos-moviles?section=smartphones",
+    href: "/productos/dispositivos-moviles?seccion=smartphones",
     description: "Los últimos Galaxy y más",
   },
   {
     id: 2,
     title: "Tabletas",
     image: tabletImage,
-    href: "/productos/dispositivos-moviles?section=tabletas",
+    href: "/productos/dispositivos-moviles?seccion=tabletas",
     description: "Galaxy Tab para trabajo y entretenimiento",
   },
   {

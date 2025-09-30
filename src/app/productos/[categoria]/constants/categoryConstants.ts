@@ -263,7 +263,7 @@ export const audioFilters: FilterConfig = {
  * Secciones disponibles por categoría
  */
 export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
-  electrodomestico: [
+  electrodomesticos: [
     "refrigeradores",
     "lavadoras",
     "lavavajillas",
@@ -272,7 +272,13 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
     "aspiradoras",
     "hornos",
   ],
-  moviles: ["smartphones", "tabletas", "relojes", "buds", "accesorios"],
+  "dispositivos-moviles": [
+    "smartphones",
+    "tabletas",
+    "relojes",
+    "buds",
+    "accesorios",
+  ],
   televisores: ["smart-tv", "qled", "crystal-uhd"],
   audio: ["barras-sonido", "sistemas"],
 };
@@ -281,8 +287,8 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
  * Sección por defecto para cada categoría
  */
 export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
-  electrodomestico: "refrigeradores",
-  moviles: "smartphones",
+  electrodomesticos: "refrigeradores",
+  "dispositivos-moviles": "smartphones",
   televisores: "smart-tv",
   audio: "barras-sonido",
 };
@@ -321,7 +327,7 @@ export const SECTION_TITLES: Record<Seccion, string> = {
  * Configuración del CategorySlider para cada categoría
  */
 export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
-  electrodomestico: [
+  electrodomesticos: [
     {
       id: "refrigeradores",
       name: "Refrigeradores",
@@ -373,41 +379,41 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
       href: "/productos/electrodomesticos?seccion=hornos",
     },
   ],
-  moviles: [
+  "dispositivos-moviles": [
     {
       id: "smartphones",
       name: "Smartphones",
       subtitle: "Galaxy Series",
       image: smartphoneImg,
-      href: "/productos/moviles?seccion=smartphones",
+      href: "/productos/dispositivos-moviles?seccion=smartphones",
     },
     {
       id: "tabletas",
       name: "Tabletas",
       subtitle: "Galaxy Tab",
       image: tabletImg,
-      href: "/productos/moviles?seccion=tabletas",
+      href: "/productos/dispositivos-moviles?seccion=tabletas",
     },
     {
       id: "relojes",
       name: "Relojes",
       subtitle: "Galaxy Watch",
       image: watchImg,
-      href: "/productos/moviles?seccion=relojes",
+      href: "/productos/dispositivos-moviles?seccion=relojes",
     },
     {
       id: "buds",
       name: "Galaxy Buds",
       subtitle: "Audio inalámbrico",
       image: budsImg,
-      href: "/productos/moviles?seccion=buds",
+      href: "/productos/dispositivos-moviles?seccion=buds",
     },
     {
       id: "accesorios",
       name: "Accesorios",
       subtitle: "Fundas y más",
       image: accesoriosImg,
-      href: "/productos/moviles?seccion=accesorios",
+      href: "/productos/dispositivos-moviles?seccion=accesorios",
     },
   ],
   televisores: [
@@ -498,15 +504,15 @@ export function getCategoryFilterConfig(
   seccion?: Seccion
 ): FilterConfig {
   // Para móviles, usar filtros específicos por sección si se proporciona
-  if (categoria === "moviles" && seccion && movilesSectionFilters[seccion]) {
+  if (categoria === "dispositivos-moviles" && seccion && movilesSectionFilters[seccion]) {
     return movilesSectionFilters[seccion];
   }
 
   // Devolver configuración genérica por categoría
   switch (categoria) {
-    case "electrodomestico":
+    case "electrodomesticos":
       return electrodomesticoFilters;
-    case "moviles":
+    case "dispositivos-moviles":
       return movilesFilters;
     case "televisores":
       return tvsFilters;

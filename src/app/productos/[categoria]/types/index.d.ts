@@ -8,7 +8,7 @@ import { tabletFilters } from "../../dispositivos-moviles/constants/tabletsConst
 import { watchFilters } from "../../dispositivos-moviles/constants/watchesConstants";
 import { smartTvCategories } from "../../televisores/constants";
 
-export type CategoriaParams = "moviles" | "televisores" | "electrodomestico" | "audio";
+export type CategoriaParams = "dispositivos-moviles" | "televisores" | "electrodomesticos" | "audio";
 
 export type Seccion =
   // Dispositivos moviles

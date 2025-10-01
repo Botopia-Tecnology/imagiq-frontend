@@ -62,7 +62,8 @@ const Destacados: FC<{ destacados?: Destacado[] }> = ({
         className="w-full max-w-6xl flex md:grid md:grid-cols-4 gap-6 md:gap-8 px-4 md:px-0 overflow-x-auto md:overflow-visible scrollbar-hide"
         style={{ WebkitOverflowScrolling: "touch" }}
       >
-        {destacados.map((item, idx) => (
+        {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+        {destacados.map((item, _idx) => (
           <li
             key={item.id}
             className="flex-shrink-0 w-[85vw] max-w-[260px] md:w-auto md:max-w-none bg-transparent flex flex-col items-center text-center px-2 md:px-0 group transition-all duration-300 first:ml-0 last:mr-0"

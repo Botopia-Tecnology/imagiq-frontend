@@ -8,7 +8,6 @@ interface SpecificationsProps {
 }
 
 // --- DATOS MOCK para visualización UX ---
-type SpecCategoryKey = keyof typeof MOCK_SPECS;
 type SpecItem = { label: string; value: string };
 
 const MOCK_SPECS: Record<string, SpecItem[]> = {

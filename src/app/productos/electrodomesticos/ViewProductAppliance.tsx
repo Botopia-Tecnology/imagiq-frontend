@@ -84,7 +84,7 @@ export default function ViewProductAppliance({
   const [showBar, setShowBar] = useState(false);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
-  const isProductDetailView = pathname.startsWith("/productos/view/");
+  const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
   useEffect(() => {
     /* Navbar que se bugea al hacer scroll */
     const handleScroll = () => {

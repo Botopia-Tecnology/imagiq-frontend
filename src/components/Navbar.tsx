@@ -422,15 +422,15 @@ export default function Navbar() {
             {navbarRoutes.map((item) => {
               const isActive =
                 item.name === "Electrodomésticos"
-                  ? navbar.pathname.startsWith("/productos/Electrodomesticos")
+                  ? navbar.pathname?.startsWith("/productos/Electrodomesticos") ?? false
                   : navbar.pathname === item.href ||
-                    navbar.pathname.startsWith(item.href + "/") ||
-                    navbar.pathname.startsWith(item.href + "?") ||
-                    navbar.pathname.startsWith(item.href + "#") ||
+                    navbar.pathname?.startsWith(item.href + "/") ||
+                    navbar.pathname?.startsWith(item.href + "?") ||
+                    navbar.pathname?.startsWith(item.href + "#") ||
                     navbar.cleanPath === item.href ||
-                    navbar.cleanPath.startsWith(item.href + "/") ||
-                    navbar.cleanPath.startsWith(item.href + "?") ||
-                    navbar.cleanPath.startsWith(item.href + "#");
+                    navbar.cleanPath?.startsWith(item.href + "/") ||
+                    navbar.cleanPath?.startsWith(item.href + "?") ||
+                    navbar.cleanPath?.startsWith(item.href + "#");
 
               const itemTextColor = navbar.showWhiteItems
                 ? "text-white"
@@ -580,11 +580,11 @@ export default function Navbar() {
 
                     const matchesUrl =
                       navbar.pathname === item.href ||
-                      navbar.pathname.startsWith(item.href + "/") ||
-                      navbar.pathname.startsWith(item.href + "?") ||
+                      navbar.pathname?.startsWith(item.href + "/") ||
+                      navbar.pathname?.startsWith(item.href + "?") ||
                       navbar.cleanPath === item.href ||
-                      navbar.cleanPath.startsWith(item.href + "/") ||
-                      navbar.cleanPath.startsWith(item.href + "?");
+                      navbar.cleanPath?.startsWith(item.href + "/") ||
+                      navbar.cleanPath?.startsWith(item.href + "?");
 
                     const isActive = hasDropdown
                       ? activeDropdown === item.name || matchesUrl // dropdown activo si está abierto o la URL coincide

@@ -10,6 +10,8 @@ import ProductCard, {
 } from "../../components/ProductCard";
 import { useFavorites } from "@/features/products/useProducts";
 import GuestDataModal from "../../components/GuestDataModal";
+import { useCartContext } from "@/features/cart/CartContext";
+import { posthogUtils } from "@/lib/posthogClient";
 
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
@@ -20,15 +22,6 @@ interface CategoryProductsGridProps {
   categoryName: string;
 }
 
-type UserInfo = {
-  id?: string;
-  nombre?: string;
-  apellido?: string;
-  email?: string;
-  telefono?: string;
-  numero_documento?: string | null;
-  rol?: number;
-};
 
 const CategoryProductsGrid = forwardRef<
   HTMLDivElement,
@@ -45,16 +38,15 @@ const CategoryProductsGrid = forwardRef<
     },
     ref
   ) => {
-    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+    const { addProduct } = useCartContext();
 
     const handleAddToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");
       const parsed = rawUser ? JSON.parse(rawUser) : null;
-      setUserInfo(parsed);
 
       if (parsed?.id) {
         addToFavorites(productId, parsed);
@@ -68,7 +60,6 @@ const CategoryProductsGrid = forwardRef<
     const handleRemoveToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");
       const parsed = rawUser ? JSON.parse(rawUser) : null;
-      setUserInfo(parsed);
 
       if (parsed?.id) {
         removeFromFavorites(productId, parsed);
@@ -84,13 +75,7 @@ const CategoryProductsGrid = forwardRef<
       setShowGuestModal(false);
 
       if (pendingFavorite) {
-        const newUserInfo = await addToFavorites(
-          pendingFavorite,
-          guestUserData
-        );
-        if (newUserInfo) {
-          setUserInfo(newUserInfo);
-        }
+        await addToFavorites(pendingFavorite, guestUserData);
         setPendingFavorite(null);
       }
     };
@@ -141,7 +126,23 @@ const CategoryProductsGrid = forwardRef<
                 {...product}
                 isFavorite={isFavorite(product.id)}
                 onAddToCart={() => {
-                  // TODO: Implementar lógica de añadir al carrito
+                  posthogUtils.capture("add_to_cart", {
+                    product_id: product.id,
+                    product_name: product.name,
+                    source: "mobile_devices_grid",
+                    category: categoryName
+                  });
+                  addProduct({
+                    id: product.id,
+                    name: product.name,
+                    image: typeof product.image === "string" ? product.image : product.image.src ?? "",
+                    price: typeof product.price === "string"
+                      ? parseInt(product.price.replace(/[^\d]/g, ""))
+                      : product.price || 0,
+                    quantity: 1,
+                    sku: product.sku || product.id,
+                    puntos_q: product.puntos_q || 0,
+                  });
                 }}
                 onToggleFavorite={(productId: string) => {
                   if (isFavorite(productId)) {

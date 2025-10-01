@@ -8,9 +8,9 @@ interface ProductShowcaseProps {
   selectedIndustry?: string;
 }
 
-export default function ProductShowcase({
-  selectedIndustry,
-}: ProductShowcaseProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export default function ProductShowcase(_props: ProductShowcaseProps) {
+  // selectedIndustry parameter is currently unused but kept for future implementation
   const [activeCategory, setActiveCategory] = useState<string>("ofertas");
 
   const activeProducts =

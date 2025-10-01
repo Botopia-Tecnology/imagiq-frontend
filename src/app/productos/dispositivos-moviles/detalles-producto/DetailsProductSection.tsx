@@ -11,7 +11,6 @@ import ColorSelector from "./ColorSelector";
 import FloatingEntregoEstrenoButton from "./FloatingEntregoEstrenoButton";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
-import Specifications from "./Specifications";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 

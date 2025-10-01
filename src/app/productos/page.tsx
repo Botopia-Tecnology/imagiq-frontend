@@ -91,7 +91,7 @@ function ProductosContent() {
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Obtener parámetro de búsqueda de la URL
-  const searchQuery = searchParams.get("q");
+  const searchQuery = searchParams?.get("q");
 
   // Memoizar los filtros para evitar recargas continuas
   const initialFilters = useMemo(() => {

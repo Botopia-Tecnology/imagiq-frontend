@@ -114,5 +114,13 @@ export const trackSEOMetrics = (
   }
 ) => {
   // Track SEO-related metrics with PostHog
-  console.log("SEO Metrics for", page, metrics);
+  if (typeof window !== 'undefined') {
+    import('@/lib/posthogClient').then(({ posthogUtils }) => {
+      posthogUtils.capture('seo_metrics', {
+        page,
+        ...metrics,
+        timestamp: new Date().toISOString()
+      });
+    });
+  }
 };

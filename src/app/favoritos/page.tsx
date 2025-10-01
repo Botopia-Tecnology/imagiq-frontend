@@ -84,7 +84,7 @@ export default function FavoritePage() {
       lastFiltersRef.current = filtersKey;
       filterFavorites(filtersWithPagination);
     }
-  }, [apiFilters, itemsPerPage, apiFilters, filterFavorites, userId]);
+  }, [apiFilters, itemsPerPage, currentPage, filterFavorites, userId]);
 
   useEffect(() => {
     posthogUtils.capture("favorites_view", {

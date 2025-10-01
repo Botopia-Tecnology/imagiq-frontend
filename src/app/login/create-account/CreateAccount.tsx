@@ -130,33 +130,20 @@ const CreateAccountForm = () => {
         break;
 
       case 'address':
-        console.log('🔍 Validando paso address:', {
-          formData: formData,
-          shippingAddress: formData.shippingAddress,
-          addressLine1: formData.shippingAddress?.addressLine1,
-          city: formData.shippingAddress?.city,
-          state: formData.shippingAddress?.state,
-          zipCode: formData.shippingAddress?.zipCode
-        });
 
         if (!formData.shippingAddress?.addressLine1) {
           errors.shippingAddressLine1 = 'La dirección es requerida';
-          console.log('❌ Falta addressLine1');
         }
         if (!formData.shippingAddress?.city) {
           errors.shippingCity = 'La ciudad es requerida';
-          console.log('❌ Falta city');
         }
         if (!formData.shippingAddress?.state) {
           errors.shippingState = 'El departamento es requerido';
-          console.log('❌ Falta state');
         }
         if (!formData.shippingAddress?.zipCode) {
           errors.shippingZipCode = 'El código postal es requerido';
-          console.log('❌ Falta zipCode');
         }
 
-        console.log('🔍 Errores de validación address:', errors);
         break;
 
       case 'password':
@@ -201,15 +188,12 @@ const CreateAccountForm = () => {
   // Mock para envío de código OTP
   const handleSendVerificationCode = async (channel: 'whatsapp' | 'sms' | 'email') => {
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simular delay
-    console.log(`Código enviado por ${channel}`);
   };
 
   // Helper function to save addresses using comprehensive address system
   const saveAddressesToComprehensiveSystem = async () => {
-    console.log('💾 Iniciando guardado de direcciones en sistema completo', placeDetailsData);
 
     if (!placeDetailsData.shippingPlaceDetails) {
-      console.log('⚠️ No hay dirección de envío para guardar');
       return;
     }
 
@@ -226,9 +210,7 @@ const CreateAccountForm = () => {
         puntoReferencia: placeDetailsData.shippingReferencePoint || undefined,
       };
 
-      console.log('📤 Guardando dirección de envío:', shippingAddressRequest);
       const shippingResponse = await addressesService.createAddress(shippingAddressRequest);
-      console.log('✅ Dirección de envío guardada:', shippingResponse);
 
       // Create billing address if different
       if (!formData.useSameForBilling && placeDetailsData.billingPlaceDetails) {
@@ -243,12 +225,9 @@ const CreateAccountForm = () => {
           puntoReferencia: placeDetailsData.billingReferencePoint || undefined,
         };
 
-        console.log('📤 Guardando dirección de facturación:', billingAddressRequest);
         const billingResponse = await addressesService.createAddress(billingAddressRequest);
-        console.log('✅ Dirección de facturación guardada:', billingResponse);
       }
 
-      console.log('🎉 Todas las direcciones guardadas exitosamente');
     } catch (error) {
       console.error('❌ Error guardando direcciones:', error);
       // Don't throw the error to avoid breaking the registration flow
@@ -555,7 +534,6 @@ const CreateAccountForm = () => {
             billingAddress={formData.billingAddress}
             useSameForBilling={formData.useSameForBilling}
             onChange={(addressData) => {
-              console.log('📥 CreateAccount recibiendo datos de dirección:', addressData);
               setFormData(prev => ({
                 ...prev,
                 shippingAddress: addressData.shippingAddress
@@ -568,7 +546,6 @@ const CreateAccountForm = () => {
               }));
             }}
             onPlaceDetailsChange={(placeDetailsData) => {
-              console.log('📥 CreateAccount recibiendo PlaceDetails:', placeDetailsData);
               setPlaceDetailsData(placeDetailsData);
             }}
           />

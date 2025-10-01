@@ -51,19 +51,19 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   };
 
   return (
-    <div className="relative bg-gray-100 rounded-2xl p-8 w-full max-w-2xl">
+    <div className="relative rounded-2xl p-8 w-full max-w-2xl">
       {/* Flechas de navegación */}
       {images.length > 1 && (
         <>
           <button
-            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-2xl z-10 transition-colors"
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-4xl z-10 transition-colors w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100"
             aria-label="Imagen anterior"
             onClick={goToPrevious}
           >
             ‹
           </button>
           <button
-            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-2xl z-10 transition-colors"
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 text-4xl z-10 transition-colors w-12 h-12 flex items-center justify-center rounded-full hover:bg-gray-100"
             aria-label="Imagen siguiente"
             onClick={goToNext}
           >
@@ -79,7 +79,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
           alt={`${alt} - Imagen ${currentImageIndex + 1}`}
           width={1000}
           height={1600}
-          className="object-contain drop-shadow-2xl transition-opacity duration-300"
+          className="object-contain transition-opacity duration-300"
           priority={currentImageIndex === 0}
         />
       </div>

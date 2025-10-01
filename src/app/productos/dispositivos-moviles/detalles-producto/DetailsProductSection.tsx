@@ -231,15 +231,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
               </div>
               {/* Columna derecha: Imagen y navegación */}
               <div className="col-span-5 flex flex-col items-center justify-center relative">
-                {/* Card de imagen con sombra dinámica según color seleccionado */}
+                {/* Card de imagen sin sombra */}
                 <div
-                  className="w-full flex flex-col items-center rounded-3xl bg-white transition-all duration-300 ease-in-out shadow-lg"
-                  style={{
-                    // Sombra dinámica más oscura (alpha 40% = 66 en hex)
-                    boxShadow: `0px 8px 32px 0px ${dynamicShadowColor}66`,
-                    transition: "box-shadow 0.3s ease-in-out",
-                  }}
-                  aria-label="Imagen del producto con sombra dinámica"
+                  className="w-full flex flex-col items-center"
+                  aria-label="Imagen del producto"
                 >
                   <DeviceCarousel
                     deviceImage={
@@ -369,6 +364,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
         >
           {/* <BenefitsSectionMobile /> */}
         </motion.section>
+        {/* Espaciado adicional antes de especificaciones técnicas */}
+        <div className="py-16 lg:py-20"></div>
         {/* Especificaciones técnicas dinámicas */}
         {/* <Specifications product={product} /> */}
       </main>

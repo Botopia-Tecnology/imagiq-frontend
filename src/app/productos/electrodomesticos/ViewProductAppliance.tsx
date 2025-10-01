@@ -166,9 +166,8 @@ export default function ViewProductAppliance({
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
+      className="min-h-screen w-full flex flex-col pt-10 bg-gray-200/60"
       style={{
-        background: "#D9D9D9",
         fontFamily: "SamsungSharpSans",
       }}
     >
@@ -178,132 +177,6 @@ export default function ViewProductAppliance({
           {cartFeedback}
         </div>
       )}
-      {/* Hero section */}
-      <motion.section
-        ref={heroReveal.ref}
-        {...heroReveal.motionProps}
-        className="flex flex-1 items-center justify-center px-4 py-8 md:py-0"
-      >
-        <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
-          {/* Columna izquierda: info y acciones */}
-          <div
-            className="flex-1 flex flex-col items-start justify-center gap-6"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
-            {/* Nombre producto dinámico */}
-            <h1
-              className="text-gray text-3xl md:text-5xl font-bold mb-2 hover:text-gray-900 transition-all"
-              style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
-            >
-              {safeProduct.name}
-            </h1>
-            {/* Logos y badges debajo del nombre */}
-            <div className="flex flex-col gap-3 mb-2">
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-black bg-white/10"
-                  style={{
-                    minWidth: 80,
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image
-                    src={addiLogo}
-                    alt="Addi Logo"
-                    width={58}
-                    height={58}
-                  />
-                </div>
-                <span
-                  className="text-gray text-lg"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Paga hasta en 24 cuotas
-                  <br />
-                  con Addi
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-black bg-white/10"
-                  style={{
-                    minWidth: 80,
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image src={packageCar} alt="Envío" width={58} height={58} />
-                </div>
-                <span
-                  className="text-gray text-lg"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Envío gratis a todo
-                  <br />
-                  Colombia. *Aplican TYC*
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div
-                  className="flex items-center justify-center border border-black bg-white/10"
-                  style={{
-                    minWidth: 80,
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                  }}
-                >
-                  <Image
-                    src={setingLogo}
-                    alt="Setting Logo"
-                    width={58}
-                    height={58}
-                  />
-                </div>
-                <span
-                  className="text-gray text-lg"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  Instalación gratis
-                </span>
-              </div>
-            </div>
-            {/* Botones de acción */}
-            <div className="flex gap-4 mt-4">
-              <button
-                className="bg-black text-white px-8 py-3 rounded-full font-bold text-lg shadow hover:bg-gray-900 transition-all border border-black"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleBuy}
-              >
-                ¡Compra aquí!
-              </button>
-              <button
-                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-white/30  transition-all"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleAddToCart}
-              >
-                Añadir al carrito
-              </button>
-            </div>
-          </div>
-
-          {/* Columna derecha: imagen producto dinámica */}
-          <div className="flex-1 flex items-center justify-center p-8">
-            <Image
-              src={safeProduct.image}
-              alt={safeProduct.name}
-              width={420}
-              height={420}
-              className="object-contain drop-shadow-2xl"
-              priority
-              style={{ background: "none" }}
-            />
-          </div>
-        </div>
-      </motion.section>
       <ARExperienceHandler
         glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_nueva.glb"
         usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"

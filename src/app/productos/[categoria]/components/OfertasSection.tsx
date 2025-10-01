@@ -8,12 +8,12 @@ import ProductCard from "../../components/ProductCard";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-// Mapeo de secciones a categorías de API
-const ofertasCategoryMap: Record<string, string> = {
-  accesorios: "IM",
-  "tv-monitores-audio": "TV", 
-  "smartphones-tablets": "IM",
-  electrodomesticos: "EL",
+// Mapeo de secciones a filtros de API
+const ofertasFiltersMap: Record<string, { categoria?: string; subcategoria?: string }> = {
+  accesorios: { subcategoria: "Accesorios" },
+  "tv-monitores-audio": { categoria: "AV,IT" },
+  "smartphones-tablets": { subcategoria: "Celulares,Tablets" },
+  electrodomesticos: { categoria: "DA" },
 };
 
 // Mapeo de secciones a títulos
@@ -30,10 +30,15 @@ interface OfertasSectionProps {
 
 export default function OfertasSection({ seccion }: OfertasSectionProps) {
   // Memoizar los filtros para evitar recreaciones innecesarias
-  const initialFilters = useMemo(() => ({
-    withDiscount: true,
-    category: seccion ? ofertasCategoryMap[seccion] : undefined,
-  }), [seccion]);
+  const initialFilters = useMemo(() => {
+    const baseFilters = { withDiscount: true };
+    const sectionFilters = seccion ? ofertasFiltersMap[seccion] : {};
+    
+    return {
+      ...baseFilters,
+      ...sectionFilters,
+    };
+  }, [seccion]);
 
   // Usar el hook de productos con filtro de ofertas
   const { 

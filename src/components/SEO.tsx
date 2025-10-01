@@ -32,24 +32,7 @@ export default function SEO({
   const openGraphType = type === "product" ? "website" : type;
 
   // Example usage - this would be used in generateMetadata functions
-  console.log("SEO Data:", {
-    title,
-    description,
-    keywords: keywords?.split(",") || [],
-    openGraph: {
-      title,
-      description,
-      type: openGraphType,
-      url,
-      images: image ? [{ url: image }] : [],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: image ? [image] : [],
-    },
-  });
+  // SEO metadata is handled by Next.js 13+ generateMetadata function
 
   return null;
 }

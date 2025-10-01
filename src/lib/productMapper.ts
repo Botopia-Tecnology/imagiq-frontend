@@ -87,7 +87,15 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
  * Obtiene la imagen apropiada para el producto
  */
 function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
-  // Si hay URL de imagen en la API, usarla (cuando esté disponible)
+  // Priorizar imagePreviewUrl si existe y tiene elementos
+  if (apiProduct.imagePreviewUrl && apiProduct.imagePreviewUrl.length > 0) {
+    const firstPreviewUrl = apiProduct.imagePreviewUrl[0];
+    if (firstPreviewUrl && firstPreviewUrl.trim() !== '') {
+      return firstPreviewUrl;
+    }
+  }
+  
+  // Si no hay imagePreviewUrl, usar urlImagenes como fallback
   const firstImageUrl = apiProduct.urlImagenes.find(url => url && url.trim() !== '');
   if (firstImageUrl) {
     return firstImageUrl;

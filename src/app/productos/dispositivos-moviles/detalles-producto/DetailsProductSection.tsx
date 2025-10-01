@@ -30,10 +30,14 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
   // Hooks de variantes y color global (pueden necesitar adaptación si usan datos mock)
   const {
     colorOptions,
+    storageOptions,
     selectedDevice,
     selectedStorage,
     selectedColor,
+    selectedVariant,
+    currentPrice,
     setSelectedColor,
+    setSelectedStorage,
   } = useDeviceVariants(product.id);
   const {
     selectedColor: selectedColorHex,
@@ -153,10 +157,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                 {/* Precio y acciones */}
                 <div className="mb-7">
                   <div className="text-[2.1rem] font-bold text-[#222] leading-tight mb-1">
-                    {product.price}
+                    {currentPrice ? `$${currentPrice.toLocaleString()}` : product.price}
                   </div>
                   <div className="text-xs text-[#8A8A8A] mb-4">
-                    {product.discount ? `Descuento: ${product.discount}` : ""}
+                    {selectedVariant && selectedVariant.precioDescto > 0 && selectedVariant.precioDescto < selectedVariant.precioNormal
+                      ? `Descuento: $${(selectedVariant.precioNormal - selectedVariant.precioDescto).toLocaleString()}`
+                      : product.discount ? `Descuento: ${product.discount}` : ""}
                   </div>
                   <div className="flex flex-row gap-4">
                     <button
@@ -181,22 +187,21 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                     Elige tu capacidad
                   </label>
                   <div className="flex gap-3">
-                    {/* Renderizar capacidades únicas si existen */}
-                    {selectedDevice && Array.isArray(selectedDevice.variants)
-                      ? Array.from(
-                          new Set(
-                            selectedDevice.variants.map((v) => v.capacidad)
-                          )
-                        )
-                          .filter(Boolean)
-                          .map((cap) => (
-                            <button
-                              key={String(cap)}
-                              className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out"
-                            >
-                              {cap}
-                            </button>
-                          ))
+                    {/* Renderizar capacidades filtradas por color seleccionado */}
+                    {storageOptions && storageOptions.length > 0
+                      ? storageOptions.map((storage) => (
+                          <button
+                            key={storage.capacidad}
+                            className={`rounded-full border px-7 py-2 font-semibold text-base transition-all duration-200 ease-in-out focus:outline-none ${
+                              selectedStorage?.capacidad === storage.capacidad
+                                ? "border-[#0099FF] bg-[#0099FF] text-white"
+                                : "border-[#0099FF] text-[#0099FF] bg-white hover:bg-[#F2F6FA]"
+                            }`}
+                            onClick={() => setSelectedStorage(storage)}
+                          >
+                            {storage.capacidad}
+                          </button>
+                        ))
                       : product.capacity && (
                           <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
                             {product.capacity}
@@ -226,15 +231,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
               </div>
               {/* Columna derecha: Imagen y navegación */}
               <div className="col-span-5 flex flex-col items-center justify-center relative">
-                {/* Card de imagen con sombra dinámica según color seleccionado */}
+                {/* Card de imagen sin sombra */}
                 <div
-                  className="w-full flex flex-col items-center rounded-3xl bg-white transition-all duration-300 ease-in-out shadow-lg"
-                  style={{
-                    // Sombra dinámica más oscura (alpha 40% = 66 en hex)
-                    boxShadow: `0px 8px 32px 0px ${dynamicShadowColor}66`,
-                    transition: "box-shadow 0.3s ease-in-out",
-                  }}
-                  aria-label="Imagen del producto con sombra dinámica"
+                  className="w-full flex flex-col items-center"
+                  aria-label="Imagen del producto"
                 >
                   <DeviceCarousel
                     deviceImage={
@@ -243,6 +243,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                         : product.image
                     }
                     alt={product.name}
+                    imagePreviewUrl={selectedVariant?.imagePreviewUrl}
+                    imageDetailsUrls={selectedVariant?.imageDetailsUrls}
                   />
                 </div>
               </div>
@@ -264,6 +266,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                     : product.image
                 }
                 alt={product.name}
+                imagePreviewUrl={selectedVariant?.imagePreviewUrl}
+                imageDetailsUrls={selectedVariant?.imageDetailsUrls}
               />
             </div>
             <header className="mb-4 text-center">
@@ -278,12 +282,14 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
               </p>
             </header>
             <div className="text-2xl font-bold text-[#222] mb-1 text-center">
-              {typeof product.price === "number"
+              {currentPrice ? `$${currentPrice.toLocaleString()}` : (typeof product.price === "number"
                 ? product.price
-                : parseInt((product.price || "0").replace(/[^\d]/g, ""))}
+                : parseInt((product.price || "0").replace(/[^\d]/g, "")))}
             </div>
             <div className="text-xs text-[#8A8A8A] mb-4 text-center">
-              {product.discount ? `Descuento: ${product.discount}` : ""}
+              {selectedVariant && selectedVariant.precioDescto > 0 && selectedVariant.precioDescto < selectedVariant.precioNormal
+                ? `Descuento: $${(selectedVariant.precioNormal - selectedVariant.precioDescto).toLocaleString()}`
+                : product.discount ? `Descuento: ${product.discount}` : ""}
             </div>
             <div className="flex gap-3 mb-6 justify-center">
               <button
@@ -307,20 +313,21 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                 Elige tu capacidad
               </label>
               <div className="flex gap-3 justify-center">
-                {/* Renderizar capacidades únicas si existen */}
-                {selectedDevice && Array.isArray(selectedDevice.variants)
-                  ? Array.from(
-                      new Set(selectedDevice.variants.map((v) => v.capacidad))
-                    )
-                      .filter(Boolean)
-                      .map((cap) => (
-                        <button
-                          key={String(cap)}
-                          className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out"
-                        >
-                          {cap}
-                        </button>
-                      ))
+                {/* Renderizar capacidades filtradas por color seleccionado */}
+                {storageOptions && storageOptions.length > 0
+                  ? storageOptions.map((storage) => (
+                      <button
+                        key={storage.capacidad}
+                        className={`rounded-full border px-6 py-2 font-semibold text-base transition-all duration-200 ease-in-out focus:outline-none ${
+                          selectedStorage?.capacidad === storage.capacidad
+                            ? "border-[#0099FF] bg-[#0099FF] text-white"
+                            : "border-[#0099FF] text-[#0099FF] bg-white hover:bg-[#F2F6FA]"
+                        }`}
+                        onClick={() => setSelectedStorage(storage)}
+                      >
+                        {storage.capacidad}
+                      </button>
+                    ))
                   : product.capacity && (
                       <button className="rounded-full border border-[#0099FF] text-[#0099FF] px-6 py-2 font-semibold text-base bg-white focus:bg-[#F2F6FA] focus:outline-none transition-all duration-200 ease-in-out">
                         {product.capacity}
@@ -357,6 +364,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
         >
           {/* <BenefitsSectionMobile /> */}
         </motion.section>
+        {/* Espaciado adicional antes de especificaciones técnicas */}
+        <div className="py-16 lg:py-20"></div>
         {/* Especificaciones técnicas dinámicas */}
         {/* <Specifications product={product} /> */}
       </main>

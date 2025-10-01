@@ -6,6 +6,9 @@
 import React, { useEffect, useState } from "react";
 import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
+import AddressAutocomplete from "@/components/forms/AddressAutocomplete";
+import AddressMap3D from "@/components/AddressMap3D";
+import { PlaceDetails } from "@/types/places.types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -36,6 +39,30 @@ export default function Step2({
     direccion_linea_uno: "",
     direccion_ciudad: "",
   });
+
+  // Estado para la dirección seleccionada con Google Places
+  const [selectedAddress, setSelectedAddress] = useState<PlaceDetails | null>(null);
+
+  // Handler para cuando se selecciona una dirección
+  const handleAddressSelect = (place: PlaceDetails) => {
+    console.log('🏠 Dirección seleccionada en checkout:', place);
+    setSelectedAddress(place);
+
+    // Actualizar los campos del formulario automáticamente
+    setGuestForm(prev => ({
+      ...prev,
+      direccion_linea_uno: place.formattedAddress,
+      direccion_ciudad: place.city || ""
+    }));
+
+    // Limpiar errores de dirección ya que se seleccionó una válida
+    setFieldErrors(prev => ({
+      ...prev,
+      direccion_linea_uno: "",
+      direccion_ciudad: ""
+    }));
+  };
+
   // Eliminado: indicativo
   const appliedDiscount = 0;
 
@@ -341,28 +368,23 @@ export default function Step2({
                   )}
                 </div>
               </div>
-              {/* Dirección y ciudad */}
+              {/* Dirección con autocompletado inteligente */}
               <div className="flex flex-col gap-1">
-                <input
-                  type="text"
-                  name="direccion_linea_uno"
-                  placeholder="Dirección (línea uno, ej: Calle 91c #84-97 int. 301)"
-                  className={`input-samsung ${
-                    fieldErrors.direccion_linea_uno ? "border-red-500" : ""
-                  }`}
-                  value={guestForm.direccion_linea_uno}
-                  onChange={handleGuestChange}
-                  required
+                <label className="text-sm font-medium text-gray-700 mb-2">
+                  Dirección de Envío *
+                </label>
+                <AddressAutocomplete
+                  addressType="shipping"
+                  placeholder="Busca tu dirección (ej: Calle 80 # 15-25, Bogotá)"
+                  onPlaceSelect={handleAddressSelect}
                   disabled={loading || success}
-                  autoComplete="address-line1"
-                  maxLength={60}
                 />
-                {fieldErrors.direccion_linea_uno && (
-                  <span
-                    className="text-red-500 text-xs"
-                    style={{ marginTop: 2 }}
-                  >
-                    {fieldErrors.direccion_linea_uno}
+                <p className="text-xs text-gray-500 mt-1">
+                  ⚠️ Solo entregas en zonas de cobertura • ✨ Autocompletado con Google Places
+                </p>
+                {(fieldErrors.direccion_linea_uno || fieldErrors.direccion_ciudad) && (
+                  <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
+                    {fieldErrors.direccion_linea_uno || fieldErrors.direccion_ciudad}
                   </span>
                 )}
               </div>
@@ -922,6 +944,24 @@ export default function Step2({
             >
               {loading ? "Procesando..." : "Continuar pago"}
             </button>
+
+            {/* Mapa 3D de la dirección seleccionada */}
+            {selectedAddress && (
+              <div className="mt-6 mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  📍 Ubicación de Entrega Confirmada
+                </h4>
+                <AddressMap3D
+                  address={selectedAddress}
+                  height="200px"
+                  enable3D={true}
+                  showControls={false}
+                />
+                <p className="text-xs text-gray-500 mt-2 text-center">
+                  ✅ Tu pedido será enviado a esta dirección • Verifica que sea correcta
+                </p>
+              </div>
+            )}
             {onBack && (
               <button
                 type="button"

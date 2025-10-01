@@ -8,9 +8,11 @@ import { Usuario } from "@/types/user";
 import { RegistrationFormData, RegistrationAddress } from "@/types/registration";
 import PhoneSelector from "@/components/forms/PhoneSelector";
 import DocumentSelector from "@/components/forms/DocumentSelector";
-import AddressForm from "@/components/forms/AddressForm";
+import RegistrationAddressFormWithPlaceDetails from "@/components/RegistrationAddressFormWithPlaceDetails";
 import VerificationStep from "@/components/forms/VerificationStep";
 import PasswordInput from "@/components/forms/PasswordInput";
+import { addressesService, CreateAddressRequest } from "@/services/addresses.service";
+import { PlaceDetails } from "@/types/places.types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -63,6 +65,22 @@ const CreateAccountForm = () => {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // Store original PlaceDetails for comprehensive address saving
+  const [placeDetailsData, setPlaceDetailsData] = useState<{
+    shippingPlaceDetails?: PlaceDetails;
+    billingPlaceDetails?: PlaceDetails;
+    shippingName?: string;
+    shippingType?: string;
+    billingName?: string;
+    billingType?: string;
+    shippingComplement?: string;
+    shippingDeliveryInstructions?: string;
+    shippingReferencePoint?: string;
+    billingComplement?: string;
+    billingDeliveryInstructions?: string;
+    billingReferencePoint?: string;
+  }>({});
+
   // Definición de los pasos del formulario extendido
   const stepConfigs = [
     { id: 'email', name: 'Correo', title: 'Correo electrónico' },
@@ -90,6 +108,20 @@ const CreateAccountForm = () => {
       case 'basic':
         if (!formData.nombre) errors.nombre = 'El nombre es requerido';
         if (!formData.apellido) errors.apellido = 'El apellido es requerido';
+        if (!formData.fecha_nacimiento) errors.fecha_nacimiento = 'La fecha de nacimiento es requerida';
+        else {
+          // Validar que sea una fecha válida y que el usuario sea mayor de edad
+          const birthDate = new Date(formData.fecha_nacimiento);
+          const today = new Date();
+          const age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+
+          if (birthDate > today) {
+            errors.fecha_nacimiento = 'La fecha de nacimiento no puede ser futura';
+          } else if (age < 18 || (age === 18 && monthDiff < 0) || (age === 18 && monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            errors.fecha_nacimiento = 'Debes ser mayor de 18 años para registrarte';
+          }
+        }
         break;
 
       case 'contact':
@@ -98,12 +130,33 @@ const CreateAccountForm = () => {
         break;
 
       case 'address':
+        console.log('🔍 Validando paso address:', {
+          formData: formData,
+          shippingAddress: formData.shippingAddress,
+          addressLine1: formData.shippingAddress?.addressLine1,
+          city: formData.shippingAddress?.city,
+          state: formData.shippingAddress?.state,
+          zipCode: formData.shippingAddress?.zipCode
+        });
+
         if (!formData.shippingAddress?.addressLine1) {
           errors.shippingAddressLine1 = 'La dirección es requerida';
+          console.log('❌ Falta addressLine1');
         }
-        if (!formData.shippingAddress?.city) errors.shippingCity = 'La ciudad es requerida';
-        if (!formData.shippingAddress?.state) errors.shippingState = 'El departamento es requerido';
-        if (!formData.shippingAddress?.zipCode) errors.shippingZipCode = 'El código postal es requerido';
+        if (!formData.shippingAddress?.city) {
+          errors.shippingCity = 'La ciudad es requerida';
+          console.log('❌ Falta city');
+        }
+        if (!formData.shippingAddress?.state) {
+          errors.shippingState = 'El departamento es requerido';
+          console.log('❌ Falta state');
+        }
+        if (!formData.shippingAddress?.zipCode) {
+          errors.shippingZipCode = 'El código postal es requerido';
+          console.log('❌ Falta zipCode');
+        }
+
+        console.log('🔍 Errores de validación address:', errors);
         break;
 
       case 'password':
@@ -151,6 +204,58 @@ const CreateAccountForm = () => {
     console.log(`Código enviado por ${channel}`);
   };
 
+  // Helper function to save addresses using comprehensive address system
+  const saveAddressesToComprehensiveSystem = async () => {
+    console.log('💾 Iniciando guardado de direcciones en sistema completo', placeDetailsData);
+
+    if (!placeDetailsData.shippingPlaceDetails) {
+      console.log('⚠️ No hay dirección de envío para guardar');
+      return;
+    }
+
+    try {
+      // Create shipping address
+      const shippingAddressRequest: CreateAddressRequest = {
+        nombreDireccion: placeDetailsData.shippingName || 'Dirección de envío',
+        tipoDireccion: (placeDetailsData.shippingType as 'casa' | 'apartamento' | 'oficina' | 'otro') || 'casa',
+        tipo: formData.useSameForBilling ? 'AMBOS' : 'ENVIO',
+        esPredeterminada: true,
+        placeDetails: placeDetailsData.shippingPlaceDetails,
+        complemento: placeDetailsData.shippingComplement || undefined,
+        instruccionesEntrega: placeDetailsData.shippingDeliveryInstructions || undefined,
+        puntoReferencia: placeDetailsData.shippingReferencePoint || undefined,
+      };
+
+      console.log('📤 Guardando dirección de envío:', shippingAddressRequest);
+      const shippingResponse = await addressesService.createAddress(shippingAddressRequest);
+      console.log('✅ Dirección de envío guardada:', shippingResponse);
+
+      // Create billing address if different
+      if (!formData.useSameForBilling && placeDetailsData.billingPlaceDetails) {
+        const billingAddressRequest: CreateAddressRequest = {
+          nombreDireccion: placeDetailsData.billingName || 'Dirección de facturación',
+          tipoDireccion: (placeDetailsData.billingType as 'casa' | 'apartamento' | 'oficina' | 'otro') || 'casa',
+          tipo: 'FACTURACION',
+          esPredeterminada: true,
+          placeDetails: placeDetailsData.billingPlaceDetails,
+          complemento: placeDetailsData.billingComplement || undefined,
+          instruccionesEntrega: placeDetailsData.billingDeliveryInstructions || undefined,
+          puntoReferencia: placeDetailsData.billingReferencePoint || undefined,
+        };
+
+        console.log('📤 Guardando dirección de facturación:', billingAddressRequest);
+        const billingResponse = await addressesService.createAddress(billingAddressRequest);
+        console.log('✅ Dirección de facturación guardada:', billingResponse);
+      }
+
+      console.log('🎉 Todas las direcciones guardadas exitosamente');
+    } catch (error) {
+      console.error('❌ Error guardando direcciones:', error);
+      // Don't throw the error to avoid breaking the registration flow
+      // Just log it for debugging
+    }
+  };
+
   const next = () => {
     const errors = validateCurrentStep();
     if (Object.keys(errors).length > 0) {
@@ -175,9 +280,6 @@ const CreateAccountForm = () => {
     setModalContent(null);
     setSubmitting(true);
     try {
-      // Combinar teléfono con código de país
-      const fullPhone = `+${formData.codigo_pais === 'CO' ? '57' : '1'}${formData.telefono}`;
-
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,8 +288,8 @@ const CreateAccountForm = () => {
           nombre: formData.nombre,
           apellido: formData.apellido,
           contrasena: formData.contrasena,
-          fecha_nacimiento: formData.fecha_nacimiento,
-          telefono: fullPhone,
+          fecha_nacimiento: formData.fecha_nacimiento, // Ahora siempre se envía
+          telefono: formData.telefono, // Solo el número sin código de país
           tipo_documento: formData.tipo_documento,
           numero_documento: formData.numero_documento,
         }),
@@ -229,6 +331,9 @@ const CreateAccountForm = () => {
           numero_documento: result.user.numero_documento,
           telefono: result.user.telefono,
         });
+
+        // Save addresses to comprehensive system after successful registration
+        await saveAddressesToComprehensiveSystem();
       }
       setModalContent({
         type: "success",
@@ -272,32 +377,38 @@ const CreateAccountForm = () => {
 
           {/* Círculos de pasos */}
           <div className="flex w-full justify-between items-start relative z-10 px-2 sm:px-4">
-            {stepConfigs.map((stepConfig, n) => (
-              <div className="flex flex-col items-center flex-1" key={n}>
-                <button
-                  type="button"
-                  className={`rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold text-xs focus:outline-none transition-all duration-200 shadow-md border-2 ${
-                    step === n
-                      ? "bg-[#002142] text-white border-[#002142] scale-110"
-                      : step > n
-                      ? "bg-green-500 text-white border-green-500"
-                      : "bg-[#e5e5e5] text-[#bdbdbd] border-[#e5e5e5]"
-                  }`}
-                  disabled={step === n || step < n}
-                  aria-label={`Ir al paso ${n + 1}`}
-                >
-                  {step > n ? '✓' : n + 1}
-                </button>
-                {/* Nombre del paso directamente bajo cada círculo */}
-                <div className="hidden lg:block mt-2 text-center">
-                  <span className={`text-xs px-1 ${
-                    step === n ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
-                  }`}>
-                    {stepConfig.name}
-                  </span>
+            {stepConfigs.map((stepConfig, n) => {
+              let statusClasses = "";
+
+              if (step === n) {
+                statusClasses = "bg-[#002142] text-white border-[#002142] scale-110";
+              } else if (step > n) {
+                statusClasses = "bg-green-500 text-white border-green-500";
+              } else {
+                statusClasses = "bg-[#e5e5e5] text-[#bdbdbd] border-[#e5e5e5]";
+              }
+
+              return (
+                <div className="flex flex-col items-center flex-1" key={stepConfig.id}>
+                  <button
+                    type="button"
+                    className={`rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center font-bold text-xs focus:outline-none transition-all duration-200 shadow-md border-2 ${statusClasses}`}
+                    disabled={step === n || step < n}
+                    aria-label={`Ir al paso ${n + 1}`}
+                  >
+                    {step > n ? '✓' : n + 1}
+                  </button>
+                  {/* Nombre del paso directamente bajo cada círculo */}
+                  <div className="hidden lg:block mt-2 text-center">
+                    <span className={`text-xs px-1 ${
+                      step === n ? "text-[#002142] font-semibold" : "text-[#bdbdbd]"
+                    }`}>
+                      {stepConfig.name}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Nombre del paso actual - Mostrar solo en móvil y tablet */}
@@ -391,15 +502,21 @@ const CreateAccountForm = () => {
             </div>
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-[#002142] mb-1 sm:mb-1.5 tracking-tight">
-                Fecha de nacimiento (opcional)
+                Fecha de nacimiento *
               </label>
               <input
                 type="date"
                 value={formData.fecha_nacimiento || ''}
                 onChange={(e) => updateFormData({ fecha_nacimiento: e.target.value })}
                 disabled={submitting}
-                className="w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 border-[#e5e5e5] rounded-lg text-xs sm:text-sm text-[#002142] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal bg-[#f7fafd] transition-all duration-200 shadow-sm"
+                max={new Date().toISOString().split('T')[0]} // No permitir fechas futuras
+                className={`w-full px-3 sm:px-4 py-2 sm:py-2.5 border-2 rounded-lg text-xs sm:text-sm text-[#002142] focus:outline-none focus:ring-2 focus:ring-[#002142] font-normal bg-[#f7fafd] transition-all duration-200 shadow-sm ${
+                  fieldErrors.fecha_nacimiento ? "border-red-400" : "border-[#e5e5e5]"
+                }`}
               />
+              {fieldErrors.fecha_nacimiento && (
+                <p className="text-red-500 text-xs mt-1">{fieldErrors.fecha_nacimiento}</p>
+              )}
             </div>
           </div>
         )}
@@ -433,13 +550,27 @@ const CreateAccountForm = () => {
           </div>
         )}
         {currentStep.id === 'address' && (
-          <AddressForm
-            shippingAddress={formData.shippingAddress!}
+          <RegistrationAddressFormWithPlaceDetails
+            shippingAddress={formData.shippingAddress}
             billingAddress={formData.billingAddress}
-            useSameForBilling={formData.useSameForBilling!}
-            onChange={(addressData) => updateFormData(addressData)}
-            errors={fieldErrors}
-            disabled={submitting}
+            useSameForBilling={formData.useSameForBilling}
+            onChange={(addressData) => {
+              console.log('📥 CreateAccount recibiendo datos de dirección:', addressData);
+              setFormData(prev => ({
+                ...prev,
+                shippingAddress: addressData.shippingAddress
+                  ? { ...prev.shippingAddress, ...addressData.shippingAddress } as RegistrationAddress
+                  : prev.shippingAddress,
+                billingAddress: addressData.billingAddress
+                  ? { ...prev.billingAddress, ...addressData.billingAddress } as RegistrationAddress
+                  : prev.billingAddress,
+                useSameForBilling: addressData.useSameForBilling ?? prev.useSameForBilling
+              }));
+            }}
+            onPlaceDetailsChange={(placeDetailsData) => {
+              console.log('📥 CreateAccount recibiendo PlaceDetails:', placeDetailsData);
+              setPlaceDetailsData(placeDetailsData);
+            }}
           />
         )}
 

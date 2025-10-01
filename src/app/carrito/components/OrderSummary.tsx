@@ -49,72 +49,84 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   }, 0);
 
   return (
-    <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] sticky top-8">
-      <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between text-base">
-          <span>
-            Productos ({isNaN(totalQuantity) ? "0" : String(totalQuantity)})
-          </span>
-          <span className="font-bold">
-            {safeSubtotal > 0 ? String(formatPrice(safeSubtotal)) : "0"}
-          </span>
-        </div>
-        <div className="flex justify-between text-base">
-          <span>Descuento</span>
-          <span className="text-red-600">
-            - {safeDiscount > 0 ? String(formatPrice(safeDiscount)) : "0"}
-          </span>
-        </div>
-        <div className="flex flex-col gap-1">
-          <div className="flex justify-between text-base">
-            <span>Envío</span>
-            <span>
-              {cartProducts.length > 0 && (
-                <span className="line-through mr-2 text-gray-400">
-                  {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
-                </span>
-              )}
-              <span className="font-bold">0</span>
+    <div className="bg-white rounded-lg border border-gray-200 h-fit lg:sticky lg:top-6 shadow-lg flex flex-col">
+      <div className="p-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">Resumen de compra</h2>
+
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">
+              Productos ({isNaN(totalQuantity) ? "0" : String(totalQuantity)})
+            </span>
+            <span className="font-semibold text-gray-900">
+              {safeSubtotal > 0 ? String(formatPrice(safeSubtotal)) : "0"}
             </span>
           </div>
-          {cartProducts.length > 0 && (
-            <div className="text-xs text-green-600">
-              tienes envío gratis en esta compra
+
+          <div className="flex justify-between items-center">
+            <span className="text-gray-600">Descuento</span>
+            <span className="font-semibold text-red-600">
+              - {safeDiscount > 0 ? String(formatPrice(safeDiscount)) : "0"}
+            </span>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">Envío</span>
+              <div className="text-right">
+                {cartProducts.length > 0 && (
+                  <span className="line-through text-sm text-gray-400 mr-2">
+                    {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
+                  </span>
+                )}
+                <span className="font-semibold text-gray-900">Gratis</span>
+              </div>
             </div>
-          )}
+            {cartProducts.length > 0 && (
+              <p className="text-sm text-green-600">
+                Tienes envío gratis en esta compra
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex justify-between text-lg font-bold mt-2">
-          <span>Total</span>
-          <span>{total > 0 ? String(formatPrice(total)) : "0"}</span>
-        </div>
-        <div className="text-xs text-gray-500 mt-1">
-          Incluye {impuestos > 0 ? String(formatPrice(impuestos)) : "0"} de
-          impuestos
+
+        <div className="border-t border-gray-200 pt-4 mt-6">
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-lg font-semibold text-gray-900">Total</span>
+            <span className="text-lg font-bold text-gray-900">
+              {total > 0 ? String(formatPrice(total)) : "0"}
+            </span>
+          </div>
+          <p className="text-sm text-gray-500">
+            Incluye {impuestos > 0 ? String(formatPrice(impuestos)) : "0"} de impuestos
+          </p>
         </div>
       </div>
-      <div className="flex flex-col gap-1 mt-2">
+
+      <div className="border-t border-gray-200 p-6 space-y-3">
         <button
-          className={`w-full bg-[#0074E8] text-white font-bold py-3 rounded-lg text-base hover:bg-blue-700 transition ${
-            !canContinue ? "opacity-50 cursor-not-allowed" : ""
+          className={`w-full py-3 px-4 rounded-lg font-semibold text-base transition-all duration-200 ${
+            canContinue
+              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+              : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
           onClick={canContinue ? onContinue : undefined}
           disabled={!canContinue}
         >
           Continuar pago
         </button>
-        {/* Botón para volver al paso anterior */}
+
         {typeof onBack === "function" && (
           <button
             type="button"
-            className="w-full flex items-center justify-center gap-2 text-[#0074E8] font-semibold text-base py-2 rounded-lg bg-white border border-[#e5e5e5] shadow-sm hover:bg-[#e6f3ff] hover:text-[#005bb5] focus:outline-none focus:ring-2 focus:ring-[#0074E8] transition-all duration-150"
+            className="w-full py-3 px-4 rounded-lg font-medium text-blue-600 bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
             onClick={onBack}
           >
-            <span className="text-lg">←</span>
+            <span>←</span>
             <span>Volver</span>
           </button>
         )}
       </div>
-    </aside>
+    </div>
   );
 };

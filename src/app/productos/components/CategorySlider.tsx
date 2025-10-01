@@ -44,7 +44,7 @@ export default function CategorySlider({
 
   const searchParams = useSearchParams();
   const router = useRouter();
-  const sectionParam = searchParams.get("seccion");
+  const sectionParam = searchParams?.get("seccion");
   const hash = typeof window !== "undefined" ? window.location.hash : "";
 
   const activeCategoryId = useMemo(() => {

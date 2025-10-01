@@ -114,7 +114,7 @@ export default function CategorySection({
 
   // Determinar categoría activa
   const searchParams = useSearchParams();
-  const sectionParam = searchParams.get("seccion");
+  const sectionParam = searchParams?.get("seccion");
   const activeCategoryId = useMemo(() => {
     if (sectionParam) {
       // Buscar por ID directamente primero

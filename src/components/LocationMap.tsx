@@ -1,179 +1,69 @@
 /**
  * 🗺️ MAPA INTERACTIVO DE TIENDAS SAMSUNG - IMAGIQ
+ * Convertido a Google Maps para consistencia con el sistema de direcciones
  */
 
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Filter } from "lucide-react";
 import { stores, type Store } from "./LocationsArray";
 import { posthogUtils } from "@/lib/posthogClient";
-import dynamic from "next/dynamic";
 import { StoreCard } from "./CardsMap";
-
-// Dynamically import react-leaflet components
-const MapContainer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-
-const TileLayer = dynamic(
-  () => import("react-leaflet").then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-
-const Marker = dynamic(
-  () => import("react-leaflet").then((mod) => mod.Marker),
-  { ssr: false }
-);
-
-const Popup = dynamic(() => import("react-leaflet").then((mod) => mod.Popup), {
-  ssr: false,
-});
-
-// Create a simple map controller component with proper types
-const MapController = dynamic(
-  () =>
-    import("react-leaflet").then((mod) => {
-      return function MapControllerInner({
-        selectedCity,
-        cityCoordinates,
-      }: {
-        selectedCity: string;
-        cityCoordinates: Record<
-          string,
-          { lat: number; lng: number; zoom: number }
-        >;
-      }) {
-        const map = mod.useMap();
-
-        useEffect(() => {
-          if (map && selectedCity) {
-            if (selectedCity === "Todas las ciudades") {
-              map.setView([4.5709, -74.2973], 6);
-            } else if (cityCoordinates[selectedCity]) {
-              const coords = cityCoordinates[selectedCity];
-              map.setView([coords.lat, coords.lng], coords.zoom);
-            }
-          }
-        }, [map, selectedCity, cityCoordinates]);
-
-        return null;
-      };
-    }),
-  { ssr: false }
-);
-
-// Global Leaflet instance
-let L: Record<string, unknown> = {};
-
-// Initialize Leaflet
-const initializeLeaflet = async () => {
-  if (typeof window !== "undefined" && !L.divIcon) {
-    await import("leaflet/dist/leaflet.css");
-    const leaflet = await import("leaflet");
-    L = leaflet.default || leaflet;
-  }
-  return L;
-};
-
-// Type for Leaflet icon
-type LeafletIcon = {
-  iconSize: [number, number];
-  iconAnchor: [number, number];
-  popupAnchor: [number, number];
-  className?: string;
-  html?: string;
-};
-
-// Better custom marker icon with location pin design
-const createCustomIcon = (isHovered: boolean): LeafletIcon | undefined => {
-  const leafletLib = L as Record<string, unknown>;
-  const divIcon = leafletLib?.divIcon as
-    | ((options: Record<string, unknown>) => LeafletIcon)
-    | undefined;
-
-  if (!divIcon) return undefined;
-
-  try {
-    const size = isHovered ? 40 : 32;
-    const backgroundColor = isHovered ? "#ef4444" : "#2563eb";
-
-    return divIcon({
-      html: `
-        <div style="
-          width: ${size}px; 
-          height: ${size}px; 
-          position: relative;
-          transform: ${isHovered ? "scale(1.1)" : "scale(1)"};
-          transition: all 0.3s ease;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-        ">
-          <svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22S19 14.25 19 9C19 5.13 15.87 2 12 2Z" 
-                  fill="${backgroundColor}" 
-                  stroke="white" 
-                  stroke-width="2"/>
-            <circle cx="12" cy="9" r="3" fill="white"/>
-          </svg>
-          ${
-            isHovered
-              ? `
-            <div style="
-              position: absolute;
-              top: 0;
-              left: 0;
-              width: ${size}px;
-              height: ${size}px;
-              border-radius: 50% 50% 50% 0;
-              border: 2px solid #fca5a5;
-              animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
-            "></div>
-          `
-              : ""
-          }
-        </div>
-        <style>
-          @keyframes ping {
-            75%, 100% {
-              transform: scale(1.5);
-              opacity: 0;
-            }
-          }
-        </style>
-      `,
-      className: "custom-marker",
-      iconSize: [size, size],
-      iconAnchor: [size / 2, size],
-      popupAnchor: [0, -size],
-    });
-  } catch (error) {
-    console.warn("Failed to create custom icon, using default", error);
-    return undefined;
-  }
-};
+import { useGoogleMaps } from "@/services/googleMapsLoader";
 
 export default function LocationMap() {
-  const [selectedCity, setSelectedCity] =
-    useState<string>("Todas las ciudades");
+  const [selectedCity, setSelectedCity] = useState<string>("Todas las ciudades");
   const [hoveredStore, setHoveredStore] = useState<Store | null>(null);
   const [isClient, setIsClient] = useState(false);
-  const [leafletReady, setLeafletReady] = useState(false);
-  const [mapKey, setMapKey] = useState(0);
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const map = useRef<google.maps.Map | null>(null);
+  const markers = useRef<google.maps.Marker[]>([]);
+  const infoWindow = useRef<google.maps.InfoWindow | null>(null);
 
-  // Initialize Leaflet
+  // Usar el hook del servicio singleton
+  const { isLoaded: isGoogleMapsLoaded, error: mapError, isLoading } = useGoogleMaps();
+
+  // Marcar como cliente
   useEffect(() => {
     setIsClient(true);
-
-    initializeLeaflet().then(() => {
-      setLeafletReady(true);
-    });
   }, []);
 
-  // Force map remount when changing cities to avoid container reuse
+  // Inicializar mapa
   useEffect(() => {
-    setMapKey((prev) => prev + 1);
-  }, [selectedCity]);
+    if (!mapContainer.current || mapError || !isGoogleMapsLoaded) return;
+
+    try {
+      // Coordenadas por defecto (centro de Colombia)
+      const defaultCenter = { lat: 4.5709, lng: -74.2973 };
+
+      // Configurar el mapa
+      const mapOptions: google.maps.MapOptions = {
+        center: defaultCenter,
+        zoom: 6,
+        mapTypeId: 'roadmap',
+        disableDefaultUI: false,
+        zoomControl: true,
+        mapTypeControl: true,
+        scaleControl: true,
+        streetViewControl: true,
+        rotateControl: true,
+        fullscreenControl: true,
+        gestureHandling: 'cooperative'
+      };
+
+      // Crear el mapa
+      map.current = new google.maps.Map(mapContainer.current, mapOptions);
+
+      // Crear InfoWindow global
+      infoWindow.current = new google.maps.InfoWindow();
+
+      console.log('Google Maps inicializado para tiendas Samsung');
+
+    } catch (error) {
+      console.error('Error inicializando Google Maps:', error);
+    }
+  }, [isGoogleMapsLoaded, mapError]);
 
   // Get unique cities for filter
   const cities = useMemo(
@@ -192,7 +82,7 @@ export default function LocationMap() {
     return stores.filter((store) => store.city === selectedCity);
   }, [selectedCity]);
 
-  // City coordinates for map centering with proper typing
+  // City coordinates for map centering
   const cityCoordinates: Record<
     string,
     { lat: number; lng: number; zoom: number }
@@ -209,10 +99,22 @@ export default function LocationMap() {
     []
   );
 
-  // Handle city selection
+  // Handle city selection with map repositioning
   const handleCityChange = useCallback((city: string) => {
     setSelectedCity(city);
     setHoveredStore(null);
+
+    // Reposicionar mapa
+    if (map.current) {
+      if (city === "Todas las ciudades") {
+        map.current.setCenter({ lat: 4.5709, lng: -74.2973 });
+        map.current.setZoom(6);
+      } else if (cityCoordinates[city]) {
+        const coords = cityCoordinates[city];
+        map.current.setCenter({ lat: coords.lat, lng: coords.lng });
+        map.current.setZoom(coords.zoom);
+      }
+    }
 
     posthogUtils.capture("city_filter_change", {
       selected_city: city,
@@ -220,7 +122,7 @@ export default function LocationMap() {
         (store) => city === "Todas las ciudades" || store.city === city
       ).length,
     });
-  }, []);
+  }, [cityCoordinates]);
 
   // Handle store hover
   const handleStoreHover = useCallback((store: Store | null) => {
@@ -234,8 +136,142 @@ export default function LocationMap() {
     }
   }, []);
 
-  // If not ready, show loading state
-  if (!isClient || !leafletReady) {
+  // Crear marcadores en el mapa
+  useEffect(() => {
+    if (!map.current || !isGoogleMapsLoaded) return;
+
+    // Limpiar marcadores existentes completamente
+    markers.current.forEach(marker => {
+      marker.setMap(null);
+      google.maps.event.clearInstanceListeners(marker);
+    });
+    markers.current = [];
+
+    // Cerrar InfoWindow si está abierta
+    if (infoWindow.current) {
+      infoWindow.current.close();
+    }
+
+    // Crear nuevos marcadores para las tiendas filtradas
+    filteredStores.forEach((store) => {
+      const position = { lat: store.position[0], lng: store.position[1] };
+
+      // Crear marcador personalizado con logo Samsung
+      const marker = new google.maps.Marker({
+        position: position,
+        map: map.current,
+        title: store.name,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 20,
+          fillColor: '#1D8AFF', // Color Samsung azul
+          fillOpacity: 1,
+          strokeColor: '#ffffff',
+          strokeWeight: 3,
+        },
+        animation: google.maps.Animation.DROP
+      });
+
+      // Event listeners para el marcador
+      marker.addListener('mouseover', () => {
+        handleStoreHover(store);
+      });
+
+      marker.addListener('mouseout', () => {
+        // Small delay to allow moving to info window
+        setTimeout(() => {
+          if (hoveredStore?.name === store.name) {
+            setHoveredStore(null);
+          }
+        }, 200);
+      });
+
+      marker.addListener('click', () => {
+        // Crear contenido para InfoWindow
+        const contentDiv = document.createElement('div');
+        contentDiv.style.padding = '10px';
+        contentDiv.style.maxWidth = '300px';
+        contentDiv.innerHTML = `
+          <div style="font-family: system-ui, -apple-system, sans-serif;">
+            <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: bold; color: #1f2937;">
+              📍 ${store.name}
+            </h3>
+            <p style="margin: 0 0 8px 0; font-size: 14px; color: #6b7280;">
+              ${store.address}
+            </p>
+            ${store.mall ? `
+              <p style="margin: 0 0 8px 0; font-size: 12px; color: #3b82f6;">
+                🏢 ${store.mall}
+              </p>
+            ` : ''}
+            <div style="margin: 8px 0; padding: 8px 0; border-top: 1px solid #e5e7eb;">
+              <p style="margin: 0 0 4px 0; font-size: 12px; color: #6b7280;">
+                ⏰ ${store.hours}
+              </p>
+              ${store.phone ? `
+                <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                  📞 ${store.phone}
+                </p>
+              ` : ''}
+            </div>
+          </div>
+        `;
+
+        // Mostrar InfoWindow
+        if (infoWindow.current) {
+          infoWindow.current.setContent(contentDiv);
+          infoWindow.current.open(map.current, marker);
+        }
+      });
+
+      markers.current.push(marker);
+    });
+
+  }, [filteredStores, isGoogleMapsLoaded, handleStoreHover, hoveredStore?.name]);
+
+  // Convert Store to Location for StoreCard compatibility
+  const convertStoreToLocation = (store: Store) => ({
+    id: store.id || 0,
+    name: store.name,
+    address: store.address,
+    hours: store.hours,
+    phone: store.phone,
+    lat: store.position[0],
+    lng: store.position[1],
+    city: store.city,
+    mall: store.mall,
+  });
+
+  // Error state
+  if (mapError) {
+    return (
+      <div className="w-full relative z-10">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-normal text-gray-900">
+            Encuentra tu tienda mas cercana
+          </h1>
+        </div>
+
+        <div className="relative bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+          <div className="relative h-[600px] flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+            <div className="text-center p-6 max-w-sm">
+              <div className="text-4xl mb-4">🗺️</div>
+              <h3 className="text-blue-800 font-semibold mb-2">Google Maps No Disponible</h3>
+              <p className="text-blue-600 text-sm mb-3">{mapError}</p>
+              <div className="text-blue-500 text-xs space-y-1">
+                <p>🔧 Backend debe estar corriendo en puerto 3001</p>
+                <p>🔑 Google Places API configurada en backend</p>
+                <p>⚡ Misma API key que el autocompletado</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state
+  if (!isClient || !isGoogleMapsLoaded || isLoading) {
     return (
       <div className="w-full relative z-10">
         {/* Header */}
@@ -278,130 +314,15 @@ export default function LocationMap() {
           <div className="relative h-[600px] flex items-center justify-center bg-gray-50">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <p className="text-gray-600">Cargando mapa interactivo...</p>
+              <p className="text-gray-600">
+                {isLoading || !isGoogleMapsLoaded ? 'Cargando Google Maps...' : 'Inicializando mapa...'}
+              </p>
             </div>
           </div>
         </div>
       </div>
     );
   }
-
-  // Convert Store to Location for StoreCard compatibility
-  const convertStoreToLocation = (store: Store) => ({
-    id: store.id || 0,
-    name: store.name,
-    address: store.address,
-    hours: store.hours,
-    phone: store.phone,
-    lat: store.position[0],
-    lng: store.position[1],
-    city: store.city,
-    mall: store.mall,
-  });
-
-  // Store marker component with improved functionality
-  const StoreMarkerComponent = ({ store }: { store: Store }) => {
-    const isHovered = hoveredStore?.name === store.name;
-    const markerIcon = createCustomIcon(isHovered);
-    const position: [number, number] = [store.position[0], store.position[1]];
-    const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(
-      null
-    );
-
-    const baseProps = {
-      position,
-      eventHandlers: {
-        mouseover: () => {
-          console.log("Marker hovered:", store.name);
-          // Clear any existing timeout
-          if (hoverTimeout) {
-            clearTimeout(hoverTimeout);
-            setHoverTimeout(null);
-          }
-          handleStoreHover(store);
-        },
-        mouseout: () => {
-          console.log("Marker mouseout:", store.name);
-          // Add a delay before closing to allow moving to popup
-          const timeout = setTimeout(() => {
-            if (hoveredStore?.name === store.name) {
-              handleStoreHover(null);
-            }
-          }, 200);
-          setHoverTimeout(timeout);
-        },
-        click: () => {
-          console.log("Marker clicked:", store.name);
-          if (isHovered) {
-            handleStoreHover(null);
-          } else {
-            handleStoreHover(store);
-          }
-        },
-      },
-    };
-
-    return (
-      <>
-        {markerIcon ? (
-          // @ts-expect-error - Leaflet icon types are complex and dynamically loaded
-          <Marker {...baseProps} icon={markerIcon} />
-        ) : (
-          <Marker {...baseProps} />
-        )}
-        {isHovered && (
-          <Popup
-            position={position}
-            closeButton={false}
-            autoClose={false}
-            closeOnClick={false}
-            className="custom-popup"
-            offset={[0, -10]}
-            autoPan={false}
-            keepInView={false}
-            eventHandlers={{
-              mouseover: () => {
-                // Clear timeout and keep popup open when hovering over it
-                if (hoverTimeout) {
-                  clearTimeout(hoverTimeout);
-                  setHoverTimeout(null);
-                }
-                handleStoreHover(store);
-              },
-              mouseout: () => {
-                // Close popup when leaving it
-                const timeout = setTimeout(() => {
-                  handleStoreHover(null);
-                }, 100);
-                setHoverTimeout(timeout);
-              },
-            }}
-          >
-            <div
-              onMouseEnter={() => {
-                // Keep popup open when hovering over content
-                if (hoverTimeout) {
-                  clearTimeout(hoverTimeout);
-                  setHoverTimeout(null);
-                }
-              }}
-              onMouseLeave={() => {
-                // Close popup when leaving content
-                const timeout = setTimeout(() => {
-                  handleStoreHover(null);
-                }, 100);
-                setHoverTimeout(timeout);
-              }}
-            >
-              <StoreCard store={convertStoreToLocation(store)} />
-            </div>
-          </Popup>
-        )}
-      </>
-    );
-  };
-
-  const center: [number, number] = [4.5709, -74.2973];
 
   return (
     <div className="w-full relative z-10 flex flex-col items-center px-2 sm:px-4 md:px-0">
@@ -412,77 +333,71 @@ export default function LocationMap() {
         </h1>
       </div>
 
-      {/* City Filter - Responsive: móvil y desktop/tablet */}
+      {/* City Filter */}
+      <div className="mb-6 flex justify-center w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 max-w-md w-full">
+          <div className="flex items-center space-x-3">
+            <Filter className="w-5 h-5 text-gray-400" />
+            <select
+              value={selectedCity}
+              onChange={(e) => handleCityChange(e.target.value)}
+              className="flex-1 bg-transparent border-none focus:outline-none text-sm font-medium text-gray-700 cursor-pointer"
+            >
+              {cities.map((city) => (
+                <option key={city} value={city}>
+                  {city}{" "}
+                  {city !== "Todas las ciudades" &&
+                    `(${stores.filter((s) => s.city === city).length})`}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-gray-100 text-xs text-gray-500 text-center">
+            {filteredStores.length} tienda
+            {filteredStores.length !== 1 ? "s" : ""} disponible
+            {filteredStores.length !== 1 ? "s" : ""}
+          </div>
+        </div>
+      </div>
 
       {/* Card seleccionada arriba del mapa solo en móvil */}
       {hoveredStore && (
         <div className="md:hidden w-full flex justify-center mb-2 animate-fade-in px-1">
-          <div className=" rounded-xl  p-3 w-full max-w-[99vw] mx-auto">
+          <div className="rounded-xl p-3 w-full max-w-[99vw] mx-auto">
             <StoreCard store={convertStoreToLocation(hoveredStore)} />
           </div>
         </div>
       )}
 
-      {/* Interactive Map Container - Responsive: móvil y desktop/tablet */}
+      {/* Interactive Map Container */}
       <div className="relative rounded-xl overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-1 md:mt-4 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
-        <div className="relative h-[220px] xs:h-[260px] sm:h-[280px] md:h-[500px] lg:h-[600px] md:w-[1200px] lg:w-[1400px] w-full flex justify-center items-center">
-          <MapContainer
-            key={`map-${mapKey}`}
-            center={center}
-            zoom={6}
-            style={{ height: "100%", width: "100%" }}
-            className="rounded-xl focus:outline-none md:rounded-2xl"
-            scrollWheelZoom={true}
-            zoomControl={true}
-            doubleClickZoom={true}
-            dragging={true}
-            touchZoom={true}
+        <div className="relative h-[220px] xs:h-[260px] sm:h-[280px] md:h-[500px] lg:h-[600px] md:w-[1200px] lg:w-[1400px] w-full flex justify-center items-center shadow-lg">
+          {/* Contenedor del mapa */}
+          <div
+            ref={mapContainer}
+            style={{ height: '100%', width: '100%' }}
+            className="bg-gray-100 rounded-xl md:rounded-2xl"
             aria-label="Mapa interactivo de tiendas Samsung"
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            />
+          />
 
-            <MapController
-              selectedCity={selectedCity}
-              cityCoordinates={cityCoordinates}
-            />
-
-            {filteredStores.map((store, index) => (
-              <Marker
-                key={`store-${store.name}-${index}-${mapKey}`}
-                position={[store.position[0], store.position[1]]}
-                icon={
-                  typeof window !== "undefined" && window.L && window.L.divIcon
-                    ? window.L.divIcon({
-                        className: "custom-samsung-pin",
-                        html: `<div style='width:32px;height:40px;display:flex;align-items:center;justify-content:center;'>
-                    <svg width='32' height='40' viewBox='0 0 32 40' fill='none' xmlns='http://www.w3.org/2000/svg'>
-                      <path d='M16 0C7.27 0 0 7.56 0 16.9C0 27.1 16 40 16 40C16 40 32 27.1 32 16.9C32 7.56 24.73 0 16 0Z' fill='#1D8AFF'/>
-                      <text x='50%' y='56%' text-anchor='middle' dominant-baseline='middle' font-family='Samsung Sharp Sans, Arial, sans-serif' font-size='18' font-weight='bold' fill='white'>S</text>
-                    </svg>
-                  </div>`,
-                        iconSize: [32, 40],
-                        iconAnchor: [16, 40],
-                        popupAnchor: [0, -40],
-                      })
-                    : undefined
-                }
-                eventHandlers={{
-                  mouseover: () => handleStoreHover(store),
-                  mouseout: () => handleStoreHover(null),
-                  click: () => handleStoreHover(store),
-                }}
-              >
-                {/* Popup solo en desktop/tablet */}
-                <Popup className="hidden md:block">
-                  <StoreCard store={convertStoreToLocation(store)} />
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
+          {/* Indicador de carga */}
+          {(!isGoogleMapsLoaded || isLoading) && (
+            <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-xl md:rounded-2xl">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                <p className="text-gray-600 text-sm">
+                  {isLoading || !isGoogleMapsLoaded ? 'Cargando Google Maps...' : 'Cargando mapa...'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
+      </div>
+
+      {/* Info sobre Google Maps */}
+      <div className="mt-4 text-center text-xs text-gray-500">
+        <p>🗺️ Powered by Google Maps • 🔑 Configuración automática desde backend</p>
       </div>
     </div>
   );

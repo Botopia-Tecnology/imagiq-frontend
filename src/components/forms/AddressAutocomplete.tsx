@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, MapPin, X, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
@@ -46,7 +46,7 @@ export function AddressAutocomplete({
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Opciones por defecto optimizadas para Colombia
-  const defaultOptions: AutocompleteOptions = {
+  const defaultOptions: AutocompleteOptions = useMemo(() => ({
     countryRestriction: 'CO',
     language: 'es',
     minLength: 3,
@@ -59,7 +59,7 @@ export function AddressAutocomplete({
     radius: 1000000, // Cubrir todo Colombia
     types: [PlaceType.GEOCODE, PlaceType.ADDRESS],
     ...options
-  };
+  }), [options]);
 
   // Determinar si validar cobertura basado en addressType (compatibilidad) o validateCoverage
   const shouldValidateCoverage = validateCoverage || (addressType === 'shipping');

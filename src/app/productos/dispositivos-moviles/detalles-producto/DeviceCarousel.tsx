@@ -15,7 +15,6 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   deviceImage,
   alt,
 }) => {
-  // TODO: Mejorar para múltiples imágenes si es necesario
   return (
     <div className="relative bg-gray-100 rounded-2xl p-8 w-full max-w-2xl">
       {/* Flechas de navegación (placeholder) */}

@@ -35,7 +35,7 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   const device = useDeviceType();
 
   // Obtener la sección de los query params
-  const seccionParam = searchParams.get("seccion");
+  const seccionParam = searchParams?.get("seccion");
 
   // Validar y obtener sección activa
   const activeSection =

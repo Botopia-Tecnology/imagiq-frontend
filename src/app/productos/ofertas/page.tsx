@@ -20,7 +20,7 @@ const categoryMap: Record<string, string> = {
 
 function ProductosOfertasContent() {
   const searchParams = useSearchParams();
-  const categoria = searchParams.get("categoria");
+  const categoria = searchParams?.get("categoria");
   
   // Usar el hook de productos con filtro de ofertas
   const { 

@@ -106,15 +106,6 @@ const refrigeradoresFilters: FilterConfig = {
     { label: "Más de $4.000.000", min: 4000000, max: Infinity },
   ],
 };
-type UserInfo = {
-  id?: string;
-  nombre?: string;
-  apellido?: string;
-  email?: string;
-  telefono?: string;
-  numero_documento?: string | null;
-  rol?: number;
-};
 
 export default function RefrigeradoresSection() {
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
@@ -123,19 +114,12 @@ export default function RefrigeradoresSection() {
   );
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
 
-  // Cargar información del usuario al montar el componente
-  useEffect(() => {
-    const rawUser = localStorage.getItem("imagiq_user");
-    const parsed = rawUser ? JSON.parse(rawUser) : null;
-    setUserInfo(parsed);
-  }, []);
 
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -261,7 +245,6 @@ export default function RefrigeradoresSection() {
   const handleAddToFavorites = (productId: string) => {
     const rawUser = localStorage.getItem("imagiq_user");
     const parsed = rawUser ? JSON.parse(rawUser) : null;
-    setUserInfo(parsed);
 
     if (parsed?.id) {
       addToFavorites(productId, parsed);
@@ -275,7 +258,6 @@ export default function RefrigeradoresSection() {
   const handleRemoveToFavorites = (productId: string) => {
     const rawUser = localStorage.getItem("imagiq_user");
     const parsed = rawUser ? JSON.parse(rawUser) : null;
-    setUserInfo(parsed);
 
     if (parsed?.id) {
       removeFromFavorites(productId, parsed);
@@ -291,10 +273,7 @@ export default function RefrigeradoresSection() {
     setShowGuestModal(false);
 
     if (pendingFavorite) {
-      const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
-      if (newUserInfo) {
-        setUserInfo(newUserInfo); // <- aquí se actualiza el estado local
-      }
+      await addToFavorites(pendingFavorite, guestUserData);
       setPendingFavorite(null);
     }
   };

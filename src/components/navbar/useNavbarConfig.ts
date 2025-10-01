@@ -11,22 +11,22 @@ export function useNavbarConfig(
   const { isAppliance } = useProductContext();
   return useMemo(() => {
     const isProductDetail =
-      pathname.startsWith("/productos/") &&
-      !pathname.includes("/productos/dispositivos-moviles");
-    const isDispositivosMoviles = pathname.startsWith(
+      pathname?.startsWith("/productos/") &&
+      !pathname?.includes("/productos/dispositivos-moviles");
+    const isDispositivosMoviles = pathname?.startsWith(
       "/productos/dispositivos-moviles"
-    );
-    const isElectrodomesticos = pathname.startsWith(
+    ) ?? false;
+    const isElectrodomesticos = pathname?.startsWith(
       "/productos/Electrodomesticos"
-    );
+    ) ?? false;
     const isOfertas = pathname === "/ofertas";
-    const isMasInformacionProducto = pathname.startsWith("/productos/view/");
-    
+    const isMasInformacionProducto = pathname?.startsWith("/productos/view/") ?? false;
+
 
     const isNavbarItem =
-      pathname.startsWith("/productos/") ||
-      pathname.startsWith("/ofertas") ||
-      pathname.startsWith("/tiendas");
+      pathname?.startsWith("/productos/") ||
+      pathname?.startsWith("/ofertas") ||
+      pathname?.startsWith("/tiendas");
 
     const isHeroScrolled = isHome && isScrolled;
     const isScrolledNavbar =

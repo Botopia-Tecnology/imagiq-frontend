@@ -95,9 +95,18 @@ function ProductosContent() {
 
   // Memoizar los filtros para evitar recargas continuas
   const initialFilters = useMemo(() => {
-    return searchQuery 
-      ? { name: searchQuery, page: currentPage, limit: itemsPerPage }
-      : { page: currentPage, limit: itemsPerPage };
+    if (searchQuery) {
+      // Búsqueda avanzada con filterMode=OR en múltiples campos
+      return {
+        name: searchQuery,
+        descriptionKeyword: searchQuery,
+        model: searchQuery,
+        filterMode: "OR" as const,
+        page: currentPage,
+        limit: itemsPerPage
+      };
+    }
+    return { page: currentPage, limit: itemsPerPage };
   }, [searchQuery, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con API real y filtro de búsqueda

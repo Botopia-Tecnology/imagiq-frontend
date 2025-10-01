@@ -127,6 +127,7 @@ export function usePlacesAutocomplete({
   const isMountedRef = useRef(false);
   const lastSearchRef = useRef<string>('');
   const isSelectingPlaceRef = useRef(false); // Flag para prevenir búsqueda automática al seleccionar
+  const debouncedSearchRef = useRef<ReturnType<typeof debounce> | null>(null);
 
   // Efecto para marcar el componente como montado
   useEffect(() => {
@@ -230,19 +231,22 @@ export function usePlacesAutocomplete({
   }, [defaultOptions, onError]);
 
   /**
-   * Función debounced para buscar lugares
+   * Crear función debounced y almacenarla en ref para evitar recreaciones
    */
-  const debouncedSearch = useMemo(
-    () => debounce(performSearch, defaultOptions.debounceTime || 300),
-    [performSearch, defaultOptions.debounceTime]
-  );
+  useEffect(() => {
+    debouncedSearchRef.current = debounce(performSearch, defaultOptions.debounceTime || 300);
+
+    return () => {
+      debouncedSearchRef.current?.cancel();
+    };
+  }, [performSearch, defaultOptions.debounceTime]);
 
   /**
    * Función para buscar lugares
    */
   const searchPlaces = useCallback((query: string) => {
-    debouncedSearch(query);
-  }, [debouncedSearch]);
+    debouncedSearchRef.current?.(query);
+  }, []);
 
   /**
    * Función para seleccionar un lugar
@@ -350,7 +354,7 @@ export function usePlacesAutocomplete({
 
     if (inputValue.trim()) {
       console.log('[usePlacesAutocomplete] Calling debouncedSearch');
-      debouncedSearch(inputValue);
+      debouncedSearchRef.current?.(inputValue);
     } else {
       console.log('[usePlacesAutocomplete] Clearing results - empty input');
       setState(prev => ({
@@ -360,16 +364,16 @@ export function usePlacesAutocomplete({
       }));
       lastSearchRef.current = '';
     }
-  }, [inputValue, debouncedSearch]);
+  }, [inputValue]); // Removemos debouncedSearch de las dependencias
 
   /**
    * Cleanup del debounce al desmontar
    */
   useEffect(() => {
     return () => {
-      debouncedSearch.cancel();
+      debouncedSearchRef.current?.cancel();
     };
-  }, [debouncedSearch]);
+  }, []);
 
   return {
     state,

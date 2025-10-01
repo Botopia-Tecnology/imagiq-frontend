@@ -1,37 +1,47 @@
 /**
- * Página de productos en oferta por categoría
- * Muestra solo los productos con descuento (porcentaje) de la categoría seleccionada
- * Reutiliza ProductCard y las imágenes existentes
+ * Componente para mostrar productos en oferta por sección
  */
 
 "use client";
-import React, { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
-import ProductCard from "../components/ProductCard";
+import React, { useMemo } from "react";
+import ProductCard from "../../components/ProductCard";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
-const categoryMap: Record<string, string> = {
+// Mapeo de secciones a categorías de API
+const ofertasCategoryMap: Record<string, string> = {
   accesorios: "IM",
-  "tv-monitores-audio": "TV",
+  "tv-monitores-audio": "TV", 
   "smartphones-tablets": "IM",
   electrodomesticos: "EL",
 };
 
-function ProductosOfertasContent() {
-  const searchParams = useSearchParams();
-  const categoria = searchParams?.get("categoria");
-  
+// Mapeo de secciones a títulos
+const ofertasTitles: Record<string, string> = {
+  accesorios: "Accesorios",
+  "tv-monitores-audio": "TV, Monitores y Audio",
+  "smartphones-tablets": "Smartphones y Tablets", 
+  electrodomesticos: "Electrodomésticos",
+};
+
+interface OfertasSectionProps {
+  seccion?: string | null;
+}
+
+export default function OfertasSection({ seccion }: OfertasSectionProps) {
+  // Memoizar los filtros para evitar recreaciones innecesarias
+  const initialFilters = useMemo(() => ({
+    withDiscount: true,
+    category: seccion ? ofertasCategoryMap[seccion] : undefined,
+  }), [seccion]);
+
   // Usar el hook de productos con filtro de ofertas
   const { 
     products, 
     loading, 
     error, 
     refreshProducts 
-  } = useProducts({
-    withDiscount: true,
-    category: categoria ? categoryMap[categoria] : undefined,
-  });
+  } = useProducts(initialFilters);
 
   if (loading) {
     return (
@@ -60,16 +70,18 @@ function ProductosOfertasContent() {
     );
   }
 
+  const sectionTitle = seccion ? ofertasTitles[seccion] : "Ofertas Samsung";
+
   return (
     <div className="container mx-auto px-6 py-8">
       <h1 className="text-3xl font-bold mb-8 text-center">
-        {categoria ? `Ofertas - ${categoria}` : 'Ofertas Samsung'}
+        {sectionTitle}
       </h1>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
         {products.length === 0 ? (
           <div className="col-span-3 text-center text-gray-500 text-lg">
-            No hay productos en oferta para esta categoría.
+            Vuelve pronto y encuentra las mejores ofertas
           </div>
         ) : (
           products.map((producto) => (
@@ -78,15 +90,5 @@ function ProductosOfertasContent() {
         )}
       </div>
     </div>
-  );
-}
-
-export default function ProductosOfertasPage() {
-  return (
-    <Suspense
-      fallback={<div className="p-8 text-center">Cargando ofertas...</div>}
-    >
-      <ProductosOfertasContent />
-    </Suspense>
   );
 }

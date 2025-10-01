@@ -21,21 +21,21 @@ const ofertas = [
     icon: audifonosIcon,
     info: "Más información",
     bg: "bg-[#1A407A]",
-    href: "/productos?categoria=accesorios&oferta=descuento",
+    href: "/productos/ofertas?seccion=accesorios",
   },
   {
     title: "TV, Monitores y Audio",
     icon: tvIcon,
     info: "Más información",
     bg: "bg-[#285CA8]",
-    href: "/productos?categoria=tv-monitores-audio&oferta=descuento",
+    href: "/productos/ofertas?seccion=tv-monitores-audio",
   },
   {
     title: "Smartphones y Tablets",
     icon: phoneIcon,
     info: "Más información",
     bg: "bg-[#4A7DC3]",
-    href: "/productos?categoria=smartphones-tablets&oferta=descuento",
+    href: "/productos/ofertas?seccion=smartphones-tablets",
   },
   {
     title: "Electrodomésticos",
@@ -43,7 +43,7 @@ const ofertas = [
     info: "Más información",
     bg: "bg-[#7CA6D6]",
     whiteIcon: true,
-    href: "/productos?categoria=electrodomesticos&oferta=descuento",
+    href: "/productos/ofertas?seccion=electrodomesticos",
   },
 ];
 export default function OfertasPage() {

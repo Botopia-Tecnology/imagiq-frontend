@@ -8,7 +8,7 @@ import { tabletFilters } from "../../dispositivos-moviles/constants/tabletsConst
 import { watchFilters } from "../../dispositivos-moviles/constants/watchesConstants";
 import { smartTvCategories } from "../../televisores/constants";
 
-export type CategoriaParams = "dispositivos-moviles" | "televisores" | "electrodomesticos" | "audio";
+export type CategoriaParams = "dispositivos-moviles" | "televisores" | "electrodomesticos" | "audio" | "ofertas";
 
 export type Seccion =
   // Dispositivos moviles
@@ -31,7 +31,11 @@ export type Seccion =
   | "aire-acondicionado"
   | "microondas"
   | "aspiradoras"
-  | "hornos";
+  | "hornos"
+  // Ofertas
+  | "tv-monitores-audio"
+  | "smartphones-tablets"
+  | "electrodomesticos";
 
 interface Config {
   secciones: Seccion[];

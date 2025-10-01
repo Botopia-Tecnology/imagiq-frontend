@@ -101,24 +101,57 @@ src/
 
 ## 🏃‍♂️ Comandos de Desarrollo
 
+### Con Bun (Recomendado)
+
 ```bash
 # Instalar dependencias
 bun install
 
 # Ejecutar en desarrollo
-bun dev
+bun run dev
 
 # Build de producción
-bun build
+bun run build
 
 # Iniciar servidor de producción
-bun start
+bun run start
 
 # Linting
-bun lint
+bun run lint
+```
 
-# Testing
-bun test
+### Alternativo con Script PowerShell (Windows)
+
+Si tienes problemas con el PATH de Bun, usa el script incluido:
+
+```powershell
+# Ejecutar en desarrollo
+.\run-bun.ps1 run dev
+
+# Instalar dependencias
+.\run-bun.ps1 install
+
+# Build de producción
+.\run-bun.ps1 run build
+```
+
+### Con NPM (Fallback)
+
+```bash
+# Instalar dependencias
+npm install
+
+# Ejecutar en desarrollo
+npm run dev
+
+# Build de producción
+npm run build
+
+# Iniciar servidor de producción
+npm run start
+
+# Linting
+npm run lint
 ```
 
 ## 📝 Variables de Entorno

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { INDUSTRIES } from "@/constants/corporate-sales";
 import { Industry } from "@/types/corporate-sales";
 
@@ -14,10 +15,13 @@ export default function IndustrySelector({
   selectedIndustry,
 }: IndustrySelectorProps) {
   const [selected, setSelected] = useState<string>(selectedIndustry || "");
+  const router = useRouter();
 
   const handleIndustryClick = (industry: Industry) => {
     setSelected(industry.id);
     onIndustrySelect?.(industry);
+    // Navegar a la página específica de la industria
+    router.push(industry.href);
   };
 
   // Función para obtener el color de blur apropiado para cada industria

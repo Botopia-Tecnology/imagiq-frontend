@@ -33,14 +33,14 @@ const applianceCategories: Category[] = [
     name: "Refrigeradores",
     subtitle: "",
     image: refrigeradorImg,
-    href: "/productos/electrodomesticos?seccion=refrigeradores",
+    href: "/productos/electrodomesticos?section=refrigeradores",
   },
   {
     id: "lavadoras",
     name: "Lavadoras",
     subtitle: "",
     image: lavadoraImg,
-    href: "/productos/electrodomesticos?seccion=lavadoras",
+    href: "/productos/electrodomesticos?section=lavadoras",
   },
 
   {
@@ -48,35 +48,35 @@ const applianceCategories: Category[] = [
     name: "Microondas",
     subtitle: "",
     image: microondasImg,
-    href: "/productos/electrodomesticos?seccion=microondas",
+    href: "/productos/electrodomesticos?section=microondas",
   },
   {
     id: "aspiradoras",
     name: "Aspiradoras",
     subtitle: "",
     image: aspiradoraImg,
-    href: "/productos/electrodomesticos?seccion=aspiradoras",
+    href: "/productos/electrodomesticos?section=aspiradoras",
   },
   {
     id: "aire-acondicionado",
     name: "Aire Acondicionado",
     subtitle: "",
     image: aireImg,
-    href: "/productos/electrodomesticos?seccion=aire-acondicionado",
+    href: "/productos/electrodomesticos?section=aire-acondicionado",
   },
   {
     id: "lavavajillas",
     name: "Lavavajillas",
     subtitle: "",
     image: lavavajillasImg,
-    href: "/productos/electrodomesticos?seccion=lavavajillas",
+    href: "/productos/electrodomesticos?section=lavavajillas",
   },
   {
     id: "hornos",
     name: "Hornos",
     image: hornosImg,
     subtitle: "",
-    href: "/productos/electrodomesticos?seccion=hornos",
+    href: "/productos/electrodomesticos?section=hornos",
   },
 ];
 
@@ -106,6 +106,15 @@ const refrigeradoresFilters: FilterConfig = {
     { label: "Más de $4.000.000", min: 4000000, max: Infinity },
   ],
 };
+type UserInfo = {
+  id?: string;
+  nombre?: string;
+  apellido?: string;
+  email?: string;
+  telefono?: string;
+  numero_documento?: string | null;
+  rol?: number;
+};
 
 export default function RefrigeradoresSection() {
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
@@ -114,12 +123,19 @@ export default function RefrigeradoresSection() {
   );
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
+  const [, setUserInfo] = useState<UserInfo | null>(null);
   const [filters, setFilters] = useState<FilterState>({});
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("relevancia");
 
+  // Cargar información del usuario al montar el componente
+  useEffect(() => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+  }, []);
 
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
@@ -245,6 +261,7 @@ export default function RefrigeradoresSection() {
   const handleAddToFavorites = (productId: string) => {
     const rawUser = localStorage.getItem("imagiq_user");
     const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
 
     if (parsed?.id) {
       addToFavorites(productId, parsed);
@@ -258,6 +275,7 @@ export default function RefrigeradoresSection() {
   const handleRemoveToFavorites = (productId: string) => {
     const rawUser = localStorage.getItem("imagiq_user");
     const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
 
     if (parsed?.id) {
       removeFromFavorites(productId, parsed);
@@ -273,7 +291,10 @@ export default function RefrigeradoresSection() {
     setShowGuestModal(false);
 
     if (pendingFavorite) {
-      await addToFavorites(pendingFavorite, guestUserData);
+      const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
+      if (newUserInfo) {
+        setUserInfo(newUserInfo); // <- aquí se actualiza el estado local
+      }
       setPendingFavorite(null);
     }
   };

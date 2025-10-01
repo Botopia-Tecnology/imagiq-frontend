@@ -5,6 +5,7 @@ export interface Industry {
   description: string;
   color: string;
   bgColor: string;
+  href: string;
 }
 
 export interface CorporateProduct {

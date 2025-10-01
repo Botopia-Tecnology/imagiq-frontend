@@ -36,6 +36,7 @@ export function useDynamicBackgroundColor(
   const [color, setColor] = useState<string>(
     options?.selectedColor || options?.initialColor || "#17407A"
   );
+  // const intensity = options?.intensity ?? 0.6; // Reserved for future use
 
   // Actualiza el color si cambia desde fuera (ej: selección en ProductCard)
   useEffect(() => {

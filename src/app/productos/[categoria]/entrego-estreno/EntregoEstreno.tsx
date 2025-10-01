@@ -36,8 +36,7 @@ const addToCart = async () => {
  * - Continuar con la compra: agrega el producto al carrito y navega al carrito
  * - Feedback visual de carga y deshabilitado
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const EntregoEstreno: React.FC<{ product: Product }> = ({ product: _product }) => {
+const EntregoEstreno: React.FC<{ product: Product }> = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [deviceCondition, setDeviceCondition] = useState<string>("");

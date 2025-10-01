@@ -231,6 +231,7 @@ export interface ProductApiData {
   urlImagenes: string[];
   urlRender3D: string[];
   imagePreviewUrl: string[];
+  imageDetailsUrls: string[][];
   precioNormal: number[];
   precioDescto: number[];
   fechaInicioVigencia: string[];

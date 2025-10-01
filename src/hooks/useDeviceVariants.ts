@@ -18,6 +18,7 @@ export interface DeviceVariant {
   stock: number;
   urlImagen?: string;
   urlRender3D?: string;
+  imageDetailsUrls?: string[];
 }
 
 export interface DeviceOption {
@@ -105,6 +106,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
           stock: product.stock[i] || 0,
           urlImagen: product.urlImagenes[i],
           urlRender3D: product.urlRender3D[i],
+          imageDetailsUrls: product.imageDetailsUrls?.[i] || [],
         };
 
         // Solo agregar variantes con SKU válido (stock puede ser 0)

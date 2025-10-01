@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 
 export interface CartProduct {
@@ -71,7 +71,14 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       // id
       let id = "";
       if (typeof p.id === "string") id = p.id;
-      else if (p.id) id = String(p.id);
+      else if (typeof p.id === "number") id = String(p.id);
+      else if (p.id !== null && p.id !== undefined) {
+        // Solo convertir si es primitivo, evitar objetos
+        const idValue = p.id;
+        if (typeof idValue === "boolean" || typeof idValue === "bigint") {
+          id = String(idValue);
+        }
+      }
       // name
       let name = "Producto";
       if (typeof p.nombre === "string") name = p.nombre;
@@ -140,6 +147,9 @@ export function useCart(): UseCartReturn {
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Ref para prevenir múltiples clics del mismo producto en un corto período
+  const addProductTimeoutRef = useRef<Record<string, number>>({});
+
   // Inicializar datos del carrito
   useEffect(() => {
     setProducts(getStoredProducts());
@@ -184,33 +194,57 @@ export function useCart(): UseCartReturn {
   // Acciones del carrito
   const addProduct = useCallback(
     (product: Omit<CartProduct, "quantity">, quantity: number = 1) => {
+      const now = Date.now();
+      const productId = product.id;
+
+      // Prevenir múltiples clics del mismo producto en 300ms (tiempo más estricto)
+      const lastAddTime = addProductTimeoutRef.current[productId] || 0;
+      if (now - lastAddTime < 300) {
+        return;
+      }
+
+      // Registrar este intento
+      addProductTimeoutRef.current[productId] = now;
+
       setProducts((currentProducts) => {
         const existingIndex = currentProducts.findIndex(
           (p) => p.id === product.id
         );
         let newProducts: CartProduct[];
         let wasUpdated = false;
+        let finalQuantity = quantity;
 
         if (existingIndex >= 0) {
           // Actualizar cantidad si el producto ya existe
           newProducts = [...currentProducts];
+          const currentQuantity = newProducts[existingIndex].quantity;
+          finalQuantity = currentQuantity + quantity;
           newProducts[existingIndex] = {
             ...newProducts[existingIndex],
-            quantity: newProducts[existingIndex].quantity + quantity,
+            quantity: finalQuantity,
           };
           wasUpdated = true;
         } else {
           // Agregar nuevo producto
           newProducts = [...currentProducts, { ...product, quantity }];
+          finalQuantity = quantity;
         }
 
-        saveProducts(newProducts);
+        // Llamar saveProducts de forma síncrona para evitar problemas de timing
+        try {
+          localStorage.setItem(
+            STORAGE_KEYS.CART_ITEMS,
+            JSON.stringify(newProducts)
+          );
+        } catch (error) {
+          console.error("Error saving products to localStorage:", error);
+        }
 
         // Mostrar notificación de éxito
         toast.success(
           wasUpdated ? `Cantidad actualizada` : `Producto añadido al carrito`,
           {
-            description: `${product.name} - Cantidad: ${quantity}`,
+            description: `${product.name} - Cantidad: ${finalQuantity}`,
             duration: 3000,
             className: "toast-success",
           }
@@ -218,8 +252,15 @@ export function useCart(): UseCartReturn {
 
         return newProducts;
       });
+
+      // Limpiar el timeout después de 500ms para permitir clics futuros más rápido
+      setTimeout(() => {
+        if (addProductTimeoutRef.current[productId] === now) {
+          delete addProductTimeoutRef.current[productId];
+        }
+      }, 500);
     },
-    [saveProducts]
+    [] // Removemos saveProducts de las dependencias para simplificar
   );
 
   const removeProduct = useCallback(

@@ -65,6 +65,15 @@ export const CATEGORY_MAPPING: Record<
       sistemas: "Sistemas de Audio",
     },
   },
+  ofertas: {
+    apiCategory: "Ofertas",
+    subcategorias: {
+      accesorios: "Accesorios",
+      "tv-monitores-audio": "TV & Audio",
+      "smartphones-tablets": "Dispositivos Móviles",
+      electrodomesticos: "Electrodoméstico",
+    },
+  },
 };
 
 /**

@@ -25,6 +25,7 @@ import {
 
 // Importar componentes de categoría dinámicamente
 import CategorySection from "./components/CategorySection";
+import OfertasSection from "./components/OfertasSection";
 
 interface CategoriaPageContentProps {
   readonly categoria: CategoriaParams;
@@ -36,6 +37,9 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
 
   // Obtener la sección de los query params
   const seccionParam = searchParams?.get("seccion");
+  
+  // Verificar si es una página de ofertas
+  const isOfertasPage = categoria === "ofertas";
 
   // Validar y obtener sección activa
   const activeSection =
@@ -59,6 +63,15 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     devicePaddingClass = "px-2 py-2";
   } else if (device === "tablet") {
     devicePaddingClass = "px-4 py-4";
+  }
+
+  // Si es página de ofertas, mostrar componente especial
+  if (isOfertasPage) {
+    return (
+      <div className={`bg-white min-h-screen ${devicePaddingClass}`}>
+        <OfertasSection seccion={seccionParam} />
+      </div>
+    );
   }
 
   return (
@@ -86,8 +99,8 @@ export default function Page({
 }: Readonly<{ params: Promise<{ categoria: CategoriaParams }> }>) {
   const { categoria } = use(params);
 
-  // Validar que la categoría existe
-  if (!isValidCategory(categoria)) {
+  // Validar que la categoría existe (incluyendo ofertas)
+  if (!isValidCategory(categoria) && categoria !== "ofertas") {
     return (
       <main className="px-8 py-8">
         <div className="text-center">
@@ -96,7 +109,7 @@ export default function Page({
           </h1>
           <p className="text-gray-600">
             Las categorías disponibles son: electrodomestico, moviles, tvs,
-            audio
+            audio, ofertas
           </p>
         </div>
       </main>

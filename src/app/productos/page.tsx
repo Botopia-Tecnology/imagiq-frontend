@@ -211,17 +211,20 @@ function ProductosContent() {
       </div>
 
       <div className="flex gap-8">
-        <aside className="hidden lg:block w-80 flex-shrink-0">
-          <FilterSidebar
-            filterConfig={filterConfig}
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            resultCount={resultCount}
-            expandedFilters={expandedFilters}
-            onToggleFilter={handleToggleFilter}
-          />
-        </aside>
-        <main className="flex-1">
+        {/* Panel de filtros - solo mostrar cuando NO hay búsqueda */}
+        {!searchQuery && (
+          <aside className="hidden lg:block w-80 flex-shrink-0">
+            <FilterSidebar
+              filterConfig={filterConfig}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              resultCount={resultCount}
+              expandedFilters={expandedFilters}
+              onToggleFilter={handleToggleFilter}
+            />
+          </aside>
+        )}
+        <main className={searchQuery ? "w-full max-w-7xl mx-auto" : "flex-1"}>
           {loading && products.length > 0 && (
             <div className="mb-4 flex justify-center">
               <LoadingSpinner />
@@ -231,7 +234,7 @@ function ProductosContent() {
           {/* Grid de productos usando ProductCard avanzado */}
           {filteredProducts.length > 0 ? (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={`grid gap-6 ${searchQuery ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
@@ -9,6 +9,8 @@ import FilterSidebar, {
 } from "./components/FilterSidebar";
 import ProductCard, { ProductCardProps } from "./components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import Pagination from "./dispositivos-moviles/components/Pagination";
+import ItemsPerPageSelector from "./dispositivos-moviles/components/ItemsPerPageSelector";
 
 // Configuración de filtros (puedes personalizar según la categoría)
 const filterConfig: FilterConfig = {
@@ -84,17 +86,29 @@ function ProductosContent() {
     new Set(["color"])
   );
 
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+
   // Obtener parámetro de búsqueda de la URL
   const searchQuery = searchParams.get("q");
 
   // Memoizar los filtros para evitar recargas continuas
   const initialFilters = useMemo(() => {
-    return searchQuery ? { name: searchQuery } : {};
-  }, [searchQuery]);
+    return searchQuery 
+      ? { name: searchQuery, page: currentPage, limit: itemsPerPage }
+      : { page: currentPage, limit: itemsPerPage };
+  }, [searchQuery, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con API real y filtro de búsqueda
-  const { products, loading, error, totalItems, refreshProducts } =
-    useProducts(initialFilters);
+  const { 
+    products, 
+    loading, 
+    error, 
+    totalItems, 
+    totalPages,
+    refreshProducts 
+  } = useProducts(initialFilters);
 
   // Filtrado funcional y robusto (combinando API filters con UI filters)
   const filteredProducts = useMemo(
@@ -104,6 +118,18 @@ function ProductosContent() {
 
   // UX: contador de resultados
   const resultCount = filteredProducts.length;
+
+  // Handlers para paginación
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleItemsPerPageChange = useCallback((items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   // UX: animación de scroll al filtrar
   function handleFilterChange(
@@ -117,6 +143,7 @@ function ProductosContent() {
         ? [...(prev[filterType] || []), value]
         : (prev[filterType] || []).filter((item) => item !== value),
     }));
+    setCurrentPage(1); // Resetear a página 1 al filtrar
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -168,7 +195,7 @@ function ProductosContent() {
         <div className="text-sm text-gray-600">
           {totalItems > 0 && (
             <span>
-              Mostrando {resultCount} de {totalItems} productos
+              {totalItems} productos encontrados
             </span>
           )}
         </div>
@@ -194,25 +221,46 @@ function ProductosContent() {
           
           {/* Grid de productos usando ProductCard avanzado */}
           {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  id={product.id}
-                  name={product.name}
-                  image={product.image}
-                  colors={product.colors}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  discount={product.discount}
-                  isNew={product.isNew}
-                  isFavorite={product.isFavorite}
-                  onToggleFavorite={product.onToggleFavorite}
-                  sku={product.sku}
-                  puntos_q={product.puntos_q}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    id={product.id}
+                    name={product.name}
+                    image={product.image}
+                    colors={product.colors}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    discount={product.discount}
+                    isNew={product.isNew}
+                    isFavorite={product.isFavorite}
+                    onToggleFavorite={product.onToggleFavorite}
+                    sku={product.sku}
+                    puntos_q={product.puntos_q}
+                  />
+                ))}
+              </div>
+              
+              {/* Paginación */}
+              {!error && products.length > 0 && (
+                <div className="mt-8">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <ItemsPerPageSelector
+                      itemsPerPage={itemsPerPage}
+                      onItemsPerPageChange={handleItemsPerPageChange}
+                    />
+                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={handlePageChange}
+                    totalItems={totalItems}
+                    itemsPerPage={itemsPerPage}
+                  />
+                </div>
+              )}
+            </>
           ) : (
             <div className="col-span-full text-center py-12 text-gray-500">
               {searchQuery 

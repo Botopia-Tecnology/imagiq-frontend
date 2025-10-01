@@ -25,15 +25,16 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   // Construir array de imágenes: imagePreviewUrl primero, luego imageDetailsUrls
   const images: (string | StaticImageData)[] = [];
   
-  // Agregar imagePreviewUrl como primera imagen si existe
+  // Agregar imagePreviewUrl como primera imagen si existe y no está vacío
   if (imagePreviewUrl && imagePreviewUrl.trim() !== '') {
     images.push(imagePreviewUrl);
   }
   
-  // Agregar imageDetailsUrls
-  images.push(...imageDetailsUrls);
+  // Agregar imageDetailsUrls, filtrando URLs vacías
+  const validDetailUrls = imageDetailsUrls.filter(url => url && url.trim() !== '');
+  images.push(...validDetailUrls);
   
-  // Si no hay imágenes del backend, usar imagen por defecto o empty.jpg
+  // Si no hay imágenes válidas del backend, usar empty.jpg
   if (images.length === 0) {
     images.push(emptyImg);
   }
@@ -75,12 +76,17 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
       {/* Imagen del dispositivo */}
       <div className="flex justify-center">
         <Image
-          src={images[currentImageIndex]}
+          src={images[currentImageIndex] || emptyImg}
           alt={`${alt} - Imagen ${currentImageIndex + 1}`}
           width={1000}
           height={1600}
           className="object-contain transition-opacity duration-300"
           priority={currentImageIndex === 0}
+          onError={(e) => {
+            // Si la imagen falla al cargar, usar empty.jpg
+            const target = e.target as HTMLImageElement;
+            target.src = emptyImg.src;
+          }}
         />
       </div>
       

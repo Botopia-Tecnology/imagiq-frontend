@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
   FilterConfig,
   FilterState,
 } from "./components/FilterSidebar";
-import ProductGrid from "./components/ProductGrid";
-import { ProductCardProps } from "./components/ProductCard";
+import ProductCard, { ProductCardProps } from "./components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
 
 // Configuración de filtros (puedes personalizar según la categoría)
@@ -52,7 +52,7 @@ function filterProducts(products: ProductCardProps[], filters: FilterState) {
         );
       }
       // Filtrado genérico por cualquier campo string o array de strings
-      if (Object.prototype.hasOwnProperty.call(product, filterKey)) {
+      if (Object.hasOwn(product, filterKey)) {
         const value = (product as unknown as Record<string, unknown>)[
           filterKey
         ];
@@ -78,14 +78,23 @@ function filterProducts(products: ProductCardProps[], filters: FilterState) {
 }
 
 function ProductosContent() {
+  const searchParams = useSearchParams();
   const [filters, setFilters] = useState<FilterState>({});
   const [expandedFilters, setExpandedFilters] = useState<Set<string>>(
     new Set(["color"])
   );
 
-  // Usar el hook de productos con API real
+  // Obtener parámetro de búsqueda de la URL
+  const searchQuery = searchParams.get("q");
+
+  // Memoizar los filtros para evitar recargas continuas
+  const initialFilters = useMemo(() => {
+    return searchQuery ? { name: searchQuery } : {};
+  }, [searchQuery]);
+
+  // Usar el hook de productos con API real y filtro de búsqueda
   const { products, loading, error, totalItems, refreshProducts } =
-    useProducts();
+    useProducts(initialFilters);
 
   // Filtrado funcional y robusto (combinando API filters con UI filters)
   const filteredProducts = useMemo(
@@ -153,7 +162,9 @@ function ProductosContent() {
   return (
     <div className="container mx-auto px-6 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Productos Samsung</h1>
+        <h1 className="text-3xl font-bold">
+          {searchQuery ? `Resultados para "${searchQuery}"` : "Productos Samsung"}
+        </h1>
         <div className="text-sm text-gray-600">
           {totalItems > 0 && (
             <span>
@@ -180,7 +191,36 @@ function ProductosContent() {
               <LoadingSpinner />
             </div>
           )}
-          <ProductGrid products={filteredProducts} />
+          
+          {/* Grid de productos usando ProductCard avanzado */}
+          {filteredProducts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  image={product.image}
+                  colors={product.colors}
+                  price={product.price}
+                  originalPrice={product.originalPrice}
+                  discount={product.discount}
+                  isNew={product.isNew}
+                  isFavorite={product.isFavorite}
+                  onToggleFavorite={product.onToggleFavorite}
+                  sku={product.sku}
+                  puntos_q={product.puntos_q}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              {searchQuery 
+                ? `No se encontraron productos para "${searchQuery}"`
+                : "No se encontraron productos con los filtros seleccionados."
+              }
+            </div>
+          )}
         </main>
       </div>
     </div>

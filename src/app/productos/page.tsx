@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
@@ -287,8 +287,21 @@ function ProductosContent() {
   );
 }
 
+// Componente de loading para el Suspense boundary
+function ProductosPageLoading() {
+  return (
+    <div className="container mx-auto px-6 py-8">
+      <div className="flex justify-center items-center min-h-[400px]">
+        <LoadingSpinner />
+      </div>
+    </div>
+  );
+}
+
 export default function ProductosPage() {
   return (
-    <ProductosContent />
+    <Suspense fallback={<ProductosPageLoading />}>
+      <ProductosContent />
+    </Suspense>
   );
 }

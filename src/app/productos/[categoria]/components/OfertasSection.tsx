@@ -38,7 +38,7 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
   // Memoizar los filtros para evitar recreaciones innecesarias
   const initialFilters = useMemo(() => {
     const baseFilters = { 
-      withDiscount: false,
+      withDiscount: true,
       page: currentPage,
       limit: itemsPerPage
     };

@@ -162,11 +162,10 @@ export function AddressAutocomplete({
    * Inicializa el input con el valor externo solo la primera vez
    */
   useEffect(() => {
-    if (value !== undefined && inputValue === '') {
+    if (value !== undefined && value !== inputValue) {
       setInputValue(value);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]); // Solo cuando value cambia, no inputValue para evitar loops infinitos
+  }, [value, inputValue]);
 
   /**
    * Efecto para cerrar dropdown al hacer click fuera

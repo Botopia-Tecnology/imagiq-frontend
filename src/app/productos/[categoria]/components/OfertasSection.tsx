@@ -3,10 +3,12 @@
  */
 
 "use client";
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import ProductCard from "../../components/ProductCard";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import ItemsPerPageSelector from "../../electrodomesticos/components/ItemsPerPageSelector";
+import Pagination from "../../electrodomesticos/components/Pagination";
 
 // Mapeo de secciones a filtros de API
 const ofertasFiltersMap: Record<string, { category?: string; subcategory?: string }> = {
@@ -29,9 +31,17 @@ interface OfertasSectionProps {
 }
 
 export default function OfertasSection({ seccion }: OfertasSectionProps) {
+  // Estados para paginación
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(15);
+
   // Memoizar los filtros para evitar recreaciones innecesarias
   const initialFilters = useMemo(() => {
-    const baseFilters = { withDiscount: true };
+    const baseFilters = { 
+      withDiscount: false,
+      page: currentPage,
+      limit: itemsPerPage
+    };
     
     if (seccion && ofertasFiltersMap[seccion]) {
       const sectionFilters = ofertasFiltersMap[seccion];
@@ -42,15 +52,29 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
     }
     
     return baseFilters;
-  }, [seccion]);
+  }, [seccion, currentPage, itemsPerPage]);
 
   // Usar el hook de productos con filtro de ofertas
   const { 
     products, 
     loading, 
     error, 
+    totalItems,
+    totalPages,
     refreshProducts 
   } = useProducts(initialFilters);
+
+  // Handlers para paginación
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const handleItemsPerPageChange = useCallback((items: number) => {
+    setItemsPerPage(items);
+    setCurrentPage(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
 
   if (loading) {
     return (
@@ -89,7 +113,7 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
         {products.length === 0 ? (
-          <div className="col-span-3 text-center text-gray-500 text-lg">
+          <div className="col-span-3 text-center text-gray-500 text-lg py-4">
             Vuelve pronto y encuentra las mejores ofertas
           </div>
         ) : (
@@ -98,6 +122,25 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
           ))
         )}
       </div>
+
+      {/* Paginación */}
+      {!error && products.length > 0 && (
+        <div className="mt-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+            <ItemsPerPageSelector
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={handleItemsPerPageChange}
+            />
+          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

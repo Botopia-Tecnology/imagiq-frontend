@@ -248,7 +248,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                         : product.image
                     }
                     alt={product.name}
-                    imageUrls={selectedVariant?.imageDetailsUrls}
+                    imagePreviewUrl={selectedVariant?.imagePreviewUrl}
+                    imageDetailsUrls={selectedVariant?.imageDetailsUrls}
                   />
                 </div>
               </div>
@@ -270,7 +271,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                     : product.image
                 }
                 alt={product.name}
-                imageUrls={selectedVariant?.imageDetailsUrls}
+                imagePreviewUrl={selectedVariant?.imagePreviewUrl}
+                imageDetailsUrls={selectedVariant?.imageDetailsUrls}
               />
             </div>
             <header className="mb-4 text-center">

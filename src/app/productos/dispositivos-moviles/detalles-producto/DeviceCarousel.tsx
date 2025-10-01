@@ -2,11 +2,13 @@
 // Componente reutilizable para mostrar la imagen principal del dispositivo y navegación
 import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
+import emptyImg from "@/img/empty.jpeg";
 
 interface DeviceCarouselProps {
   deviceImage: StaticImageData;
   alt: string;
-  imageUrls?: string[];
+  imagePreviewUrl?: string;
+  imageDetailsUrls?: string[];
 }
 
 /**
@@ -15,12 +17,26 @@ interface DeviceCarouselProps {
 const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   deviceImage,
   alt,
-  imageUrls = [],
+  imagePreviewUrl,
+  imageDetailsUrls = [],
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
-  // Si hay URLs de imágenes, usarlas; de lo contrario, usar la imagen por defecto
-  const images = imageUrls.length > 0 ? imageUrls : [deviceImage];
+  // Construir array de imágenes: imagePreviewUrl primero, luego imageDetailsUrls
+  const images: (string | StaticImageData)[] = [];
+  
+  // Agregar imagePreviewUrl como primera imagen si existe
+  if (imagePreviewUrl && imagePreviewUrl.trim() !== '') {
+    images.push(imagePreviewUrl);
+  }
+  
+  // Agregar imageDetailsUrls
+  images.push(...imageDetailsUrls);
+  
+  // Si no hay imágenes del backend, usar imagen por defecto o empty.jpg
+  if (images.length === 0) {
+    images.push(emptyImg);
+  }
   
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));

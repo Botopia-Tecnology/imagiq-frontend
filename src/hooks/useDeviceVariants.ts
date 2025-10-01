@@ -18,6 +18,7 @@ export interface DeviceVariant {
   stock: number;
   urlImagen?: string;
   urlRender3D?: string;
+  imagePreviewUrl?: string;
   imageDetailsUrls?: string[];
 }
 
@@ -106,6 +107,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
           stock: product.stock[i] || 0,
           urlImagen: product.urlImagenes[i],
           urlRender3D: product.urlRender3D[i],
+          imagePreviewUrl: product.imagePreviewUrl?.[i],
           imageDetailsUrls: product.imageDetailsUrls?.[i] || [],
         };
 

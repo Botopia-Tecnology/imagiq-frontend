@@ -162,7 +162,7 @@ export function AddressAutocomplete({
    * Inicializa el input con el valor externo solo la primera vez
    */
   useEffect(() => {
-    if (value !== undefined && value !== inputValue) {
+    if (value !== undefined && value !== inputValue && value !== '') {
       setInputValue(value);
     }
   }, [value, inputValue]);

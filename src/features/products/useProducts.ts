@@ -35,6 +35,8 @@ interface ProductFilters {
   withDiscount?: boolean;
   minStock?: number;
   descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
+  model?: string; 
+  filterMode?: "AND" | "OR"; // Modo de filtrado
   page?: number; // Página actual para paginación
   limit?: number; // Límite de productos por página
 }
@@ -164,6 +166,8 @@ export const useProducts = (
         // Usar el campo desDetallada para buscar en la descripción detallada
         params.desDetallada = filters.descriptionKeyword;
       }
+      if (filters.model) params.modelo = filters.model;
+      if (filters.filterMode) params.filterMode = filters.filterMode;
 
       return params;
     },

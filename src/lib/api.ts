@@ -192,7 +192,9 @@ export interface ProductFilterParams {
   capacidad?: string;
   nombre?: string;
   desDetallada?: string;
+  modelo?: string;
   codigoMarket?: string;
+  filterMode?: "AND" | "OR";
   page?: number;
   limit?: number;
 }

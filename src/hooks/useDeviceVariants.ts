@@ -6,7 +6,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { productEndpoints, ProductApiResponse, ProductApiData } from '@/lib/api';
+import { productEndpoints, ProductApiData } from '@/lib/api';
 
 export interface DeviceVariant {
   sku: string;
@@ -44,6 +44,7 @@ interface UseDeviceVariantsReturn {
   selectedStorage: StorageOption | null;
   selectedColor: ColorOption | null;
   selectedVariant: DeviceVariant | null;
+  currentPrice: number | null;
   loading: boolean;
   error: string | null;
   setSelectedDevice: (device: DeviceOption | null) => void;
@@ -186,6 +187,33 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
     }));
   }, []);
 
+  // Función para filtrar capacidades basado en dispositivo y color seleccionados
+  const getStorageOptionsForDeviceAndColor = useCallback((
+    deviceOption: DeviceOption | null,
+    colorOption: ColorOption | null
+  ): StorageOption[] => {
+    let variantsToFilter = deviceOption?.variants || [];
+
+    if (colorOption) {
+      variantsToFilter = variantsToFilter.filter(v => v.color.toLowerCase() === colorOption.color.toLowerCase());
+    }
+
+    const storageMap = new Map<string, DeviceVariant[]>();
+
+    variantsToFilter.forEach(variant => {
+      const key = variant.capacidad;
+      if (!storageMap.has(key)) {
+        storageMap.set(key, []);
+      }
+      storageMap.get(key)!.push(variant);
+    });
+
+    return Array.from(storageMap.entries()).map(([capacidad, variants]) => ({
+      capacidad,
+      variants,
+    }));
+  }, []);
+
   // Función para obtener la variante seleccionada actual
   const getCurrentVariant = useCallback((): DeviceVariant | null => {
     if (!selectedDevice || !selectedStorage || !selectedColor) return null;
@@ -207,7 +235,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
       const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
 
       if (response.success && response.data) {
-        const apiData = response.data as ProductApiResponse;
+        const apiData = response.data;
         console.log('🔍 useDeviceVariants - apiData.products:', apiData.products);
         const variants = processApiData(apiData.products);
         console.log('🔍 useDeviceVariants - processed variants:', variants);
@@ -272,13 +300,25 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
     if (selectedDevice) {
       const colors = getColorOptionsForDeviceAndStorage(selectedDevice, storage);
       setColorOptions(colors);
-      setSelectedColorState(colors.length > 0 ? colors[0] : null);
+      
+      // Si el color actual no está disponible para la nueva capacidad, seleccionar el primero disponible
+      const currentColorStillAvailable = colors.find(c => c.color.toLowerCase() === selectedColor?.color.toLowerCase());
+      setSelectedColorState(currentColorStillAvailable || (colors.length > 0 ? colors[0] : null));
     }
-  }, [selectedDevice, getColorOptionsForDeviceAndStorage]);
+  }, [selectedDevice, selectedColor, getColorOptionsForDeviceAndStorage]);
 
   const setSelectedColor = useCallback((color: ColorOption | null) => {
     setSelectedColorState(color);
-  }, []);
+
+    if (selectedDevice) {
+      const storages = getStorageOptionsForDeviceAndColor(selectedDevice, color);
+      setStorageOptions(storages);
+      
+      // Si la capacidad actual no está disponible para el nuevo color, seleccionar la primera disponible
+      const currentStorageStillAvailable = storages.find(s => s.capacidad === selectedStorage?.capacidad);
+      setSelectedStorageState(currentStorageStillAvailable || (storages.length > 0 ? storages[0] : null));
+    }
+  }, [selectedDevice, selectedStorage, getStorageOptionsForDeviceAndColor]);
 
   // Actualizar variante seleccionada cuando cambien las selecciones
   useEffect(() => {
@@ -292,6 +332,12 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
     }
   }, [productId, fetchDeviceVariants]);
 
+  // Función para obtener el precio actual basado en la variante seleccionada
+  const getCurrentPrice = useCallback(() => {
+    if (!selectedVariant) return null;
+    return selectedVariant.precioDescto > 0 ? selectedVariant.precioDescto : selectedVariant.precioNormal;
+  }, [selectedVariant]);
+
   return {
     deviceOptions,
     storageOptions,
@@ -300,6 +346,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
     selectedStorage,
     selectedColor,
     selectedVariant,
+    currentPrice: getCurrentPrice(),
     loading,
     error,
     setSelectedDevice,

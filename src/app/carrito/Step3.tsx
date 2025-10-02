@@ -62,51 +62,63 @@ export default function Step3({
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F7F7] flex flex-col items-center py-8 px-2 md:px-0">
-      <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Forma de entrega */}
-        <div className="col-span-2 flex flex-col gap-8">
-          <div className="bg-white rounded-2xl p-8 shadow flex flex-col gap-8">
-            <DeliveryMethodSelector
-              deliveryMethod={deliveryMethod}
-              onMethodChange={handleDeliveryMethodChange}
-              canContinue={canContinue}
-            />
-            {deliveryMethod === "domicilio" && (
-              <AddressSelector
-                address={address}
-                addresses={addresses}
-                addressEdit={addressEdit}
-                onAddressChange={handleAddressChange}
-                onEditToggle={setAddressEdit}
-                onAddressAdded={addAddress}
+    <div className="min-h-screen w-full">
+      <div className="w-full max-w-7xl mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Forma de entrega */}
+          <div className="lg:col-span-2 space-y-4">
+            <div className="bg-white rounded-lg p-6">
+              <DeliveryMethodSelector
+                deliveryMethod={deliveryMethod}
+                onMethodChange={handleDeliveryMethodChange}
+                canContinue={canContinue}
               />
-            )}
 
-            <StorePickupSelector
-              deliveryMethod={deliveryMethod}
-              onMethodChange={handleDeliveryMethodChange}
+              {deliveryMethod === "domicilio" && (
+                <div className="mt-6">
+                  <AddressSelector
+                    address={address}
+                    addresses={addresses}
+                    addressEdit={addressEdit}
+                    onAddressChange={handleAddressChange}
+                    onEditToggle={setAddressEdit}
+                    onAddressAdded={addAddress}
+                  />
+                </div>
+              )}
+
+              <div className="mt-6">
+                <StorePickupSelector
+                  deliveryMethod={deliveryMethod}
+                  onMethodChange={handleDeliveryMethodChange}
+                />
+              </div>
+
+              {deliveryMethod === "tienda" && (
+                <div className="mt-6">
+                  <StoreSelector
+                    storeQuery={storeQuery}
+                    filteredStores={filteredStores}
+                    selectedStore={selectedStore}
+                    onQueryChange={setStoreQuery}
+                    onStoreSelect={selectedStoreChanged}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Resumen de compra */}
+          <div className="lg:col-span-1">
+            <OrderSummary
+              cartProducts={products}
+              appliedDiscount={appliedDiscount}
+              canContinue={canContinue}
+              onContinue={handleContinue}
+              onBack={onBack}
             />
-            {deliveryMethod === "tienda" && (
-              <StoreSelector
-                storeQuery={storeQuery}
-                filteredStores={filteredStores}
-                selectedStore={selectedStore}
-                onQueryChange={setStoreQuery}
-                onStoreSelect={selectedStoreChanged}
-              />
-            )}
           </div>
         </div>
-
-        {/* Resumen de compra */}
-        <OrderSummary
-          cartProducts={products}
-          appliedDiscount={appliedDiscount}
-          canContinue={canContinue}
-          onContinue={handleContinue}
-          onBack={onBack}
-        />
       </div>
     </div>
   );

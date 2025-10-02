@@ -36,7 +36,7 @@ export function useDynamicBackgroundColor(
   const [color, setColor] = useState<string>(
     options?.selectedColor || options?.initialColor || "#17407A"
   );
-  const intensity = options?.intensity ?? 0.6;
+  // const intensity = options?.intensity ?? 0.6; // Reserved for future use
 
   // Actualiza el color si cambia desde fuera (ej: selección en ProductCard)
   useEffect(() => {
@@ -78,7 +78,7 @@ export function useDynamicBackgroundColor(
         `linear-gradient(120deg, ${color} 0%, ${secondary} 100%)`,
       transition: "background 500ms cubic-bezier(0.4,0,0.2,1)",
     };
-  }, [color, intensity]);
+  }, [color]);
 
   return {
     color,

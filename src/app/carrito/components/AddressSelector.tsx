@@ -43,92 +43,92 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
     onEditToggle(false);
   };
 
+  // Check if we can save the selection
+  const canSaveSelection = address !== null && (addresses.length > 0 || showAddForm);
+
   return (
-    <div className="ml-8 mt-2">
+    <div className="space-y-4">
       {!addressEdit ? (
-        <div className="flex items-center gap-2">
-          <span className="text-gray-700 text-sm">
-            {address
-              ? `${address.linea_uno}, ${address.ciudad}`
-              : "No hay dirección seleccionada"}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex-1">
+            <h4 className="text-sm font-medium text-gray-900 mb-1">Dirección seleccionada</h4>
+            <p className="text-sm text-gray-600">
+              {address
+                ? `${address.linea_uno}, ${address.ciudad}`
+                : "No hay dirección seleccionada"}
+            </p>
+          </div>
           <button
             type="button"
-            className="text-blue-600 text-xs underline ml-2 hover:text-blue-800 transition"
+            className="text-blue-600 text-sm font-medium hover:text-blue-700 transition self-start sm:self-center"
             onClick={() => onEditToggle(true)}
           >
-            Modificar domicilio o elegir otro
+            {address ? "Cambiar dirección" : "Seleccionar dirección"}
           </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          <form
-            className="flex flex-col gap-3 items-start"
-            onSubmit={handleSubmit}
-          >
+        <div className="space-y-6">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             {addresses.length > 0 && (
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-gray-900">
-                  Direcciones guardadas:
+              <div className="space-y-3">
+                <h4 className="text-base font-medium text-gray-900">
+                  Direcciones guardadas
                 </h4>
-                {addresses.map((ad, i) => (
-                  <label
-                    key={ad.id || i}
-                    className="flex items-center gap-3 text-sm p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition"
-                  >
-                    <input
-                      type="radio"
-                      name="address"
-                      checked={address === ad}
-                      onChange={() => onAddressChange(ad)}
-                      className="accent-blue-600 h-4 w-4"
-                    />
-                    <div className="flex-1">
-                      <div className="font-medium text-gray-900">
-                        {ad.linea_uno}
+                <div className="space-y-2">
+                  {addresses.map((ad, i) => (
+                    <label
+                      key={ad.id || i}
+                      className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all"
+                    >
+                      <input
+                        type="radio"
+                        name="address"
+                        checked={address === ad}
+                        onChange={() => onAddressChange(ad)}
+                        className="mt-1 accent-blue-600 h-4 w-4"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 text-sm">
+                          {ad.linea_uno}
+                        </div>
+                        <div className="text-gray-500 text-sm">
+                          {ad.ciudad}, {ad.pais}
+                        </div>
                       </div>
-                      <div className="text-gray-600 text-xs">
-                        {ad.ciudad}, {ad.pais}
-                      </div>
-                    </div>
-                  </label>
-                ))}
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
 
-            <button
-              type="button"
-              onClick={() => setShowAddForm(!showAddForm)}
-              className="text-blue-600 text-sm font-medium hover:text-blue-800 transition flex items-center gap-1"
-            >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+            <div className="border-t border-gray-200 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(!showAddForm)}
+                className="w-full sm:w-auto text-blue-600 text-sm font-medium hover:text-blue-700 transition flex items-center justify-center gap-2 p-3 border border-blue-200 rounded-lg hover:bg-blue-50"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              {showAddForm
-                ? "Cancelar nueva dirección"
-                : "Añadir una nueva dirección"}
-            </button>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                {showAddForm ? "Cancelar nueva dirección" : "Añadir nueva dirección"}
+              </button>
+            </div>
 
-            <div className="flex gap-2 mt-4">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="submit"
-                className="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition"
+                disabled={!canSaveSelection}
+                className={`flex-1 sm:flex-none px-6 py-3 rounded-lg text-sm font-semibold transition ${
+                  canSaveSelection
+                    ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 Guardar selección
               </button>
               <button
                 type="button"
-                className="text-gray-500 text-sm px-4 py-2 hover:text-gray-700 transition"
+                className="flex-1 sm:flex-none text-gray-600 text-sm font-medium px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
                 onClick={() => {
                   onEditToggle(false);
                   setShowAddForm(false);
@@ -140,7 +140,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
           </form>
 
           {showAddForm && (
-            <div className="mt-4">
+            <div className="border-t border-gray-200 pt-6">
               <AddNewAddressForm
                 onAddressAdded={handleAddressAdded}
                 onCancel={() => setShowAddForm(false)}

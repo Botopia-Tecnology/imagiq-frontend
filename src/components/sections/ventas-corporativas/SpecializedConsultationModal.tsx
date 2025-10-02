@@ -102,7 +102,7 @@ export default function SpecializedConsultationModal({
   };
 
   const footerContent = (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <div className="flex items-start space-x-3">
         <input
           type="checkbox"
@@ -127,7 +127,7 @@ export default function SpecializedConsultationModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Solicita una asesoría especializada"
-      size="xl"
+      size="lg"
       isLoading={isLoading}
       preventCloseOnOverlay={isLoading}
       preventCloseOnEsc={isLoading}
@@ -136,7 +136,7 @@ export default function SpecializedConsultationModal({
       <form
         id="consultation-form"
         onSubmit={handleSubmit}
-        className="space-y-6"
+        className="space-y-4"
       >
         <div className="grid md:grid-cols-2 gap-4">
           <FormField label="Nombres y Apellidos" required error={errors.fullName}>
@@ -182,11 +182,11 @@ export default function SpecializedConsultationModal({
 
         {/* Solution Interest */}
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-4">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Solución de interés{" "}
             <span className="text-gray-500">* Obligatorio</span>
           </label>
-          <div className="grid grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 gap-4">
             {SOLUTION_OPTIONS.map((option) => (
               <label
                 key={option.id}
@@ -209,13 +209,13 @@ export default function SpecializedConsultationModal({
 
         {/* Message */}
         <div>
-          <label className="block text-sm font-medium text-gray-900 mb-3">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Mensaje
           </label>
           <textarea
             value={formData.message}
             onChange={(e) => handleInputChange("message", e.target.value)}
-            rows={4}
+            rows={3}
             className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900"
             placeholder="Cuéntanos más sobre tus necesidades..."
             disabled={isLoading}

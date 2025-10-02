@@ -48,7 +48,6 @@ export const posthogConfig = {
 // PostHog initialization
 export const initPostHog = () => {
   // PostHog initialization logic will be implemented here
-  console.log("Initializing PostHog with key:", POSTHOG_KEY);
 };
 
 // PostHog utilities - Mock implementation for now

@@ -281,6 +281,12 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
   ],
   televisores: ["smart-tv", "qled", "crystal-uhd"],
   audio: ["barras-sonido", "sistemas"],
+  ofertas: [
+    "accesorios",
+    "tv-monitores-audio",
+    "smartphones-tablets",
+    "electrodomesticos",
+  ],
 };
 
 /**
@@ -291,6 +297,7 @@ export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
   "dispositivos-moviles": "smartphones",
   televisores: "smart-tv",
   audio: "barras-sonido",
+  ofertas: "accesorios",
 };
 
 /**
@@ -321,6 +328,11 @@ export const SECTION_TITLES: Record<Seccion, string> = {
   // Audio
   "barras-sonido": "Barras de Sonido",
   sistemas: "Sistemas de Audio",
+
+  // Ofertas
+  "tv-monitores-audio": "TV, Monitores y Audio",
+  "smartphones-tablets": "Smartphones y Tablets",
+  electrodomesticos: "Electrodomésticos",
 };
 
 /**
@@ -446,6 +458,36 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
       subtitle: "Audio premium",
       image: budsImg, // Usar la misma imagen por ahora
       href: "/productos/audio?seccion=barras-sonido",
+    },
+  ],
+  ofertas: [
+    {
+      id: "accesorios",
+      name: "Accesorios",
+      subtitle: "Ofertas especiales",
+      image: accesoriosImg,
+      href: "/productos/ofertas?seccion=accesorios",
+    },
+    {
+      id: "tv-monitores-audio",
+      name: "TV, Monitores y Audio",
+      subtitle: "Ofertas especiales",
+      image: tvImg,
+      href: "/productos/ofertas?seccion=tv-monitores-audio",
+    },
+    {
+      id: "smartphones-tablets",
+      name: "Smartphones y Tablets",
+      subtitle: "Ofertas especiales",
+      image: smartphoneImg,
+      href: "/productos/ofertas?seccion=smartphones-tablets",
+    },
+    {
+      id: "electrodomesticos",
+      name: "Electrodomésticos",
+      subtitle: "Ofertas especiales",
+      image: refrigeradorImg,
+      href: "/productos/ofertas?seccion=electrodomesticos",
     },
   ],
 };

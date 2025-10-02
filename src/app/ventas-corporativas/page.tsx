@@ -4,41 +4,48 @@ import React, { useState } from "react";
 import {
   IndustrySelector,
   ProductShowcase,
-  ContactForm,
 } from "@/components/sections/ventas-corporativas";
-import { Industry, ContactFormData } from "@/types/corporate-sales";
+import SecondaryNavbar from "@/components/sections/ventas-corporativas/SecondaryNavbar";
+import SpecializedConsultationModal from "@/components/sections/ventas-corporativas/SpecializedConsultationModal";
+import {
+  Industry,
+  SpecializedConsultationFormData,
+} from "@/types/corporate-sales";
 
 export default function VentasCorporativasPage() {
   const [selectedIndustry, setSelectedIndustry] = useState<Industry | null>(
     null
   );
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleIndustrySelect = (industry: Industry) => {
     setSelectedIndustry(industry);
   };
 
-  const handleFormSubmit = async (formData: ContactFormData) => {
+  const handleContactClick = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    if (!isSubmitting) {
+      setIsModalOpen(false);
+    }
+  };
+
+  const handleFormSubmit = async (data: SpecializedConsultationFormData) => {
     setIsSubmitting(true);
-
     try {
-      // Aquí iría la lógica para enviar el formulario
-      console.log("Formulario enviado:", {
-        ...formData,
-        selectedIndustry: selectedIndustry?.id,
-      });
-
-      // Simular delay de envío
+      console.log("Formulario enviado:", data);
       await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Mostrar mensaje de éxito (aquí podrías usar un toast o modal)
       alert(
-        "¡Formulario enviado exitosamente! Nos pondremos en contacto contigo pronto."
+        "¡Gracias por tu interés! Nos pondremos en contacto contigo pronto."
       );
+      setIsModalOpen(false);
     } catch (error) {
       console.error("Error al enviar formulario:", error);
       alert(
-        "Hubo un error al enviar el formulario. Por favor, inténtalo de nuevo."
+        "Hubo un error al enviar el formulario. Por favor intenta de nuevo."
       );
     } finally {
       setIsSubmitting(false);
@@ -47,6 +54,13 @@ export default function VentasCorporativasPage() {
 
   return (
     <main className="min-h-screen">
+      {/* Topbar secundario sticky */}
+      <SecondaryNavbar
+        items={[]}
+        onContactClick={handleContactClick}
+        brandLabel="Ventas Corporativas"
+      />
+
       {/* Industry Selection Section */}
       <IndustrySelector
         onIndustrySelect={handleIndustrySelect}
@@ -54,10 +68,15 @@ export default function VentasCorporativasPage() {
       />
 
       {/* Product Showcase Section */}
-      <ProductShowcase selectedIndustry={selectedIndustry?.id} />
+      <ProductShowcase />
 
-      {/* Contact Form Section */}
-      <ContactForm onSubmit={handleFormSubmit} isLoading={isSubmitting} />
+      {/* Modal de contacto */}
+      <SpecializedConsultationModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onSubmit={handleFormSubmit}
+        isLoading={isSubmitting}
+      />
     </main>
   );
 }

@@ -40,7 +40,7 @@ export function useNavbarLogic() {
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({}); // Referencias a items del navbar
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout para ocultar dropdown
   const pathname = usePathname(); // Ruta actual
-  const cleanPath = pathname.split(/[?#]/)[0]; // Ruta limpia sin query/hash
+  const cleanPath = pathname?.split(/[?#]/)[0] ?? ""; // Ruta limpia sin query/hash
   const isHome = pathname === "/"; // ¿Está en home?
   const isLogin = pathname === "/login"; // ¿Está en login?
   const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
@@ -124,23 +124,23 @@ export function useNavbarLogic() {
 
   // Helpers para rutas y estado visual del navbar
   const isProductDetail =
-    pathname.startsWith("/productos/") &&
-    !pathname.includes("/productos/dispositivos-moviles");
-  const isDispositivosMoviles = pathname.startsWith(
+    pathname?.startsWith("/productos/") &&
+    !pathname?.includes("/productos/dispositivos-moviles");
+  const isDispositivosMoviles = pathname?.startsWith(
     "/productos/dispositivos-moviles"
-  );
-  const isElectrodomesticos = pathname.startsWith(
+  ) ?? false;
+  const isElectrodomesticos = pathname?.startsWith(
     "/productos/electrodomesticos"
-  );
+  ) ?? false;
   const isNavbarItem = navbarRoutes.some((route: (typeof navbarRoutes)[0]) =>
-    pathname.startsWith(route.href)
+    pathname?.startsWith(route.href) ?? false
   );
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =
     (isScrolled && (isNavbarItem || isProductDetail)) || isHeroScrolled;
   const isMasInformacionProducto =
-    pathname.startsWith("/productos/view/") ||
-    pathname.startsWith("/productos/dispositivos-moviles/details");
+    pathname?.startsWith("/productos/view/") ||
+    pathname?.startsWith("/productos/dispositivos-moviles/details");
   // Determina si mostrar logo blanco y estilos claros
   const showWhiteLogo = isOfertas || (isHome && !isScrolled);
   const showWhiteItems = showWhiteLogo;

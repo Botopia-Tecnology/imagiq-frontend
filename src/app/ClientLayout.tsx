@@ -31,7 +31,7 @@ export default function ClientLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const hideNavbar = shouldHideNavbar(pathname);
+  const hideNavbar = shouldHideNavbar(pathname || '');
   const { hideNavbar: hideNavbarDynamic } = useNavbarVisibility();
 
   // Validar children para evitar NaN

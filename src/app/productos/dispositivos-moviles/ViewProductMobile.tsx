@@ -124,7 +124,7 @@ export default function ViewProduct({
   );
   const router = useRouter();
   const pathname = usePathname();
-  const isProductDetailView = pathname.startsWith("/productos/view/");
+  const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 

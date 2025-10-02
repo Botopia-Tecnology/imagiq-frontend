@@ -5,9 +5,7 @@
 
 import { forwardRef, useState } from "react";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import ProductCard, {
-  type ProductCardProps,
-} from "../../components/ProductCard";
+import ProductCard, { type ProductCardProps } from "../../components/ProductCard";
 import { useFavorites } from "@/features/products/useProducts";
 import GuestDataModal from "../../components/GuestDataModal";
 
@@ -30,50 +28,42 @@ type UserInfo = {
   rol?: number;
 };
 
-const CategoryProductsGrid = forwardRef<
-  HTMLDivElement,
-  CategoryProductsGridProps
->(
+const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProps>(
   (
-    {
-      products,
-      loading,
-      error,
-      refreshProducts,
-      viewMode = "grid",
-      categoryName,
-    },
+    { products, loading, error, refreshProducts, viewMode = "grid", categoryName },
     ref
   ) => {
-    const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    const [, setUserInfo] = useState<UserInfo | null>(null);
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
-    const handleAddToFavorites = (productId: string) => {
-      const rawUser = localStorage.getItem("imagiq_user");
-      const parsed = rawUser ? JSON.parse(rawUser) : null;
-      setUserInfo(parsed);
 
-      if (parsed?.id) {
-        addToFavorites(productId, parsed);
-      } else {
-        // Mostrar modal y guardar el producto pendiente
-        setPendingFavorite(productId);
-        setShowGuestModal(true);
-      }
-    };
 
-    const handleRemoveToFavorites = (productId: string) => {
-      const rawUser = localStorage.getItem("imagiq_user");
-      const parsed = rawUser ? JSON.parse(rawUser) : null;
-      setUserInfo(parsed);
+   const handleAddToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
 
-      if (parsed?.id) {
-        removeFromFavorites(productId, parsed);
-      }
-    };
+    if (parsed?.id) {
+      addToFavorites(productId, parsed);
+    } else {
+      // Mostrar modal y guardar el producto pendiente
+      setPendingFavorite(productId);
+      setShowGuestModal(true);
+    }
+  };
+
+     const handleRemoveToFavorites = (productId: string) => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
+    if (parsed?.id) {
+      removeFromFavorites(productId, parsed);
+    }
+  };
 
     const handleGuestSubmit = async (guestUserData: {
       nombre: string;
@@ -84,10 +74,7 @@ const CategoryProductsGrid = forwardRef<
       setShowGuestModal(false);
 
       if (pendingFavorite) {
-        const newUserInfo = await addToFavorites(
-          pendingFavorite,
-          guestUserData
-        );
+        const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
         if (newUserInfo) {
           setUserInfo(newUserInfo);
         }
@@ -124,17 +111,14 @@ const CategoryProductsGrid = forwardRef<
       <div ref={ref} className="flex flex-wrap gap-6">
         {products.length === 0 ? (
           <div className="w-full text-center py-12 text-gray-500">
-            No se encontraron {categoryName.toLowerCase()} con los filtros
-            seleccionados.
+            No se encontraron {categoryName.toLowerCase()} con los filtros seleccionados.
           </div>
         ) : (
           products.map((product) => (
             <div
-              key={product.sku}
+              key={product.id}
               className={
-                viewMode === "grid"
-                  ? "w-full sm:w-1/3 lg:w-1/4 mx-auto"
-                  : "w-full"
+                viewMode === "grid" ? "w-full sm:w-1/3 lg:w-1/4 mx-auto" : "w-full"
               }
             >
               <ProductCard

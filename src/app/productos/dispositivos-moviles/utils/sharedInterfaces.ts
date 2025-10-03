@@ -1,25 +1,10 @@
 /**
  *
  * Interfaces compartidas para todas las secciones de dispositivos móviles
+ * REDIRIGIDO A: src/lib/sharedInterfaces.ts
  */
 
-import type { FilterState } from "../../components/FilterSidebar";
+import type { ApiFilters, FilterUtils } from "@/lib/sharedInterfaces";
 
-// Interface común para filtros de API
-export interface ApiFilters {
-  category?: string;
-  subcategory?: string;
-  name?: string;
-  precioMin?: number;
-  precioMax?: number;
-  color?: string;
-  capacity?: string;
-  withDiscount?: boolean;
-  minStock?: number;
-  descriptionKeyword?: string;
-}
-
-// Interface común para funciones de filtros
-export interface FilterUtils {
-  getApiFilters: (filters: FilterState) => ApiFilters;
-}
+// Re-exports para mantener compatibilidad hacia atrás
+export type { ApiFilters, FilterUtils };

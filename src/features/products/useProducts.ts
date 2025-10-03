@@ -23,7 +23,7 @@ import {
   groupProductsByCategory,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
-import { FrontendFilterParams } from "@/lib/sortUtils";
+import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
 
 type ProductFilters = FrontendFilterParams;
 

@@ -6,20 +6,11 @@
 import type { FilterState } from "../../components/FilterSidebar";
 import type { CategoriaParams } from "../types";
 
-export interface ApiFilters {
-  category?: string;
-  subcategory?: string;
-  precioMin?: number;
-  precioMax?: number;
-  color?: string;
-  capacity?: string;
-  name?: string;
-  withDiscount?: boolean;
-  minStock?: number;
-  descriptionKeyword?: string;
-  page?: number;
-  limit?: number;
-}
+// Usando interfaces centralizadas desde sharedInterfaces.ts
+import type { CategoryApiFilters } from "@/lib/sharedInterfaces";
+
+// Alias local para mantener compatibilidad
+export type ApiFilters = CategoryApiFilters;
 
 /**
  * Mapea las categorías del frontend a las categorías de la API

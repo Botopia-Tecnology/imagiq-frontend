@@ -2,53 +2,11 @@
  * Utilidades para manejo de ordenamiento de productos
  */
 
-export interface SortParams {
-  sortBy?: string;
-  sortOrder?: string;
-}
-
-export interface SortOptions {
-  value: string;
-  label: string;
-}
-
-/**
- * Interfaz base para filtros que pueden incluir parámetros de ordenamiento
- */
-export interface BaseFilterParams {
-  page?: number;
-  limit?: number;
-  categoria?: string;
-  subcategoria?: string;
-  precioMin?: number;
-  precioMax?: number;
-  color?: string;
-  capacidad?: string;
-  nombre?: string;
-  desDetallada?: string;
-  modelo?: string;
-  codigoMarket?: string;
-  conDescuento?: boolean;
-  stockMinimo?: number;
-  filterMode?: "AND" | "OR";
-}
-
-/**
- * Interfaz para filtros del frontend que extiende BaseFilterParams
- */
-export interface FrontendFilterParams extends BaseFilterParams {
-  sortBy?: string;
-  sortOrder?: string;
-  // Campos específicos del frontend con mapeo a API
-  category?: string;     // maps to categoria
-  subcategory?: string; // maps to subcategoria  
-  capacity?: string;    // maps to capacidad
-  name?: string;        // maps to nombre
-  withDiscount?: boolean; // maps to conDescuento
-  minStock?: number;    // maps to stockMinimo
-  descriptionKeyword?: string; // maps to desDetallada
-  model?: string;       // maps to modelo
-}
+import type { 
+  SortParams, 
+  SortOptions, 
+  BaseApiFilters 
+} from "./sharedInterfaces";
 
 /**
  * Convierte el valor del dropdown de ordenamiento a parámetros de API
@@ -79,7 +37,7 @@ export function getSortParams(sortValue: string): SortParams {
 /**
  * Combina los filtros base con los parámetros de ordenamiento
  */
-export function applySortToFilters<T extends BaseFilterParams>(
+export function applySortToFilters<T extends BaseApiFilters>(
   baseFilters: T, 
   sortValue: string
 ): T & SortParams {

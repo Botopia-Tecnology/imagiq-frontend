@@ -8,6 +8,8 @@
  * - TypeScript interfaces para requests/responses
  */
 
+import type { ProductFilterParams } from "./sharedInterfaces";
+
 // API Client configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -98,6 +100,9 @@ export class ApiClient {
 // Export singleton instance
 export const apiClient = new ApiClient();
 
+// Re-export types used by this module
+export type { ProductFilterParams } from "./sharedInterfaces";
+
 // Product API endpoints
 export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
@@ -180,26 +185,6 @@ export const productEndpoints = {
     ),
 };
 
-// Product filter parameters interface
-export interface ProductFilterParams {
-  categoria?: string;
-  subcategoria?: string;
-  precioMin?: number;
-  precioMax?: number;
-  conDescuento?: boolean;
-  stockMinimo?: number;
-  color?: string;
-  capacidad?: string;
-  nombre?: string;
-  desDetallada?: string;
-  modelo?: string;
-  codigoMarket?: string;
-  filterMode?: "AND" | "OR";
-  page?: number;
-  limit?: number;
-  sortBy?: string;
-  sortOrder?: string;
-}
 
 // Favorite filter
 export interface FavoriteFilterParams {

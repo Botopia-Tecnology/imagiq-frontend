@@ -3,7 +3,7 @@
  */
 
 import type { FilterState } from "../../components/FilterSidebar";
-import type { ApiFilters } from "./sharedInterfaces";
+import type { ApiFilters } from "@/lib/sharedInterfaces";
 
 /**
  * Convierte filtros de Galaxy Buds a filtros de API

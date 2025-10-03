@@ -86,10 +86,16 @@ export default function HeaderSection({
           </div>
 
           <div className="flex items-center gap-3">
-            <SortDropdown
-              value={sortBy}
-              onChange={setSortBy}
-            />
+        <SortDropdown
+          value={sortBy}
+          onChange={setSortBy}
+          options={[
+            { value: "", label: "Sin ordenar" },
+            { value: "precio-menor", label: "Precio: menor a mayor" },
+            { value: "precio-mayor", label: "Precio: mayor a menor" },
+            { value: "nombre", label: "Nombre A-Z" },
+          ]}
+        />
 
             <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
               <button

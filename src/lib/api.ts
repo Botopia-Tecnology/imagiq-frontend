@@ -197,6 +197,8 @@ export interface ProductFilterParams {
   filterMode?: "AND" | "OR";
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 // Favorite filter

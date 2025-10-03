@@ -27,6 +27,7 @@ import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
+import { applySortToFilters } from "@/lib/sortUtils";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDeviceType } from "@/components/responsive";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
@@ -67,7 +68,7 @@ export default function CategorySection({
 
   // Estados para vista y ordenamiento
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("relevancia");
+  const [sortBy, setSortBy] = useState("");
 
   // Refs para sticky
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -97,12 +98,15 @@ export default function CategorySection({
   }, [categoria, seccion, filters]);
 
   const initialFiltersForProducts = useMemo(
-    () => ({
-      ...apiFilters,
-      page: currentPage,
-      limit: itemsPerPage,
-    }),
-    [apiFilters, currentPage, itemsPerPage]
+    () => {
+      const baseFilters = {
+        ...apiFilters,
+        page: currentPage,
+        limit: itemsPerPage,
+      };
+      return applySortToFilters(baseFilters, sortBy);
+    },
+    [apiFilters, currentPage, itemsPerPage, sortBy]
   );
 
   const { products, loading, error, totalItems, totalPages, refreshProducts } =
@@ -150,6 +154,11 @@ export default function CategorySection({
     setCurrentPage(1);
     setFilters(getCategoryFilters(categoria, seccion));
   }, [categoria, seccion]);
+
+  // Resetear página cuando cambie el ordenamiento
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
 
   // Handlers
   const handlePageChange = useCallback((page: number) => {

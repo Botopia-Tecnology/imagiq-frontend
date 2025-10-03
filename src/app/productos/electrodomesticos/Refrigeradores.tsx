@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import SortDropdown from "@/components/ui/SortDropdown";
+import { applySortToFilters } from "@/lib/sortUtils";
 import CategorySlider, { type Category } from "../components/CategorySlider";
 import FilterSidebar, {
   type FilterConfig,
@@ -129,7 +130,7 @@ export default function RefrigeradoresSection() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("relevancia");
+  const [sortBy, setSortBy] = useState("");
 
   // Cargar información del usuario al montar el componente
   useEffect(() => {
@@ -153,15 +154,15 @@ export default function RefrigeradoresSection() {
     []
   );
 
-  // Crear filtros iniciales con paginación
+  // Crear filtros iniciales con paginación y ordenamiento
   const initialFilters = useMemo(() => {
-    const filters = {
+    const baseFilters = {
       ...apiFilters,
       page: currentPage,
       limit: itemsPerPage,
     };
-    return filters;
-  }, [apiFilters, currentPage, itemsPerPage]);
+    return applySortToFilters(baseFilters, sortBy);
+  }, [apiFilters, currentPage, itemsPerPage, sortBy]);
 
   const {
     products,
@@ -193,6 +194,11 @@ export default function RefrigeradoresSection() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
+
+  // Resetear a la página 1 cuando cambie el ordenamiento
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
 
   // Actualizar filtros cuando cambien los parámetros de paginación
   useEffect(() => {

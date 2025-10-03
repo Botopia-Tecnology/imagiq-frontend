@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import { DEFAULT_SORT_OPTIONS } from "@/lib/sortUtils";
 
 export interface SortOption {
   value: string;
@@ -16,13 +17,7 @@ export interface SortDropdownProps {
   placeholder?: string;
 }
 
-const defaultOptions: SortOption[] = [
-  { value: "relevancia", label: "Relevancia", default: true },
-  { value: "precio-menor", label: "Precio: menor a mayor" },
-  { value: "precio-mayor", label: "Precio: mayor a menor" },
-  { value: "nombre", label: "Nombre A-Z" },
-  { value: "calificacion", label: "Mejor calificados" },
-];
+const defaultOptions: SortOption[] = DEFAULT_SORT_OPTIONS.map(opt => ({ value: opt.value, label: opt.label }));
 
 export default function SortDropdown({
   value,
@@ -40,11 +35,6 @@ export default function SortDropdown({
         className
       )}
     >
-      {placeholder && (
-        <option value="" disabled>
-          {placeholder}
-        </option>
-      )}
       {options.map((option) => (
         <option key={option.value} value={option.value}>
           {option.label}

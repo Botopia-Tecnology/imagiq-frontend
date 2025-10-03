@@ -132,7 +132,12 @@ export default function ViewProductAppliance({
   }
 
   // Handlers
-  // Mejorado: Añadir al carrito igual que ProductCard
+  /**
+   * Handler: Añadir al carrito
+   * Solo añade el producto al carrito y muestra feedback.
+   * No realiza ninguna navegación ni renderiza ningún componente adicional.
+   * Garantiza que DetailsProductSection NO se renderice en esta vista.
+   */
   const handleAddToCart = () => {
     addProduct({
       id: safeProduct.id,
@@ -151,9 +156,15 @@ export default function ViewProductAppliance({
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
   };
-  // Mejorado: Comprar, navega a DetailsProduct
+  /**
+   * Handler: Comprar ahora
+   * Añade el producto al carrito y navega al carrito directamente.
+   * Usa la ruta de carrito en lugar de 'details' para evitar renderizar
+   * el componente DetailsProductSection que es exclusivo de dispositivos móviles.
+   */
   const handleBuy = () => {
-    router.push("/productos/electrodomesticos/details");
+    handleAddToCart(); // Primero añadimos el producto al carrito
+    setTimeout(() => router.push("/carrito"), 300); // Navegamos al carrito con pequeño delay para feedback
   };
 
   const ExploreProducts = dynamic(() => import("./ExploreProducts"), {

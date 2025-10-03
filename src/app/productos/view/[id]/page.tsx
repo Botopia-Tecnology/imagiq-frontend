@@ -132,13 +132,16 @@ export default function ProductViewPage({ params }) {
   return (
     <>
       <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
-      {/* Detalles de producto refactorizado */}
-      <DetailsProductSection product={product} />
-      {/* Vista original de producto */}
+      {/* Renderizado condicional de componentes según tipo de producto */}
       {isRefrigerador ? (
+        /* Para electrodomésticos solo renderizar ViewProductAppliance */
         <ViewProductAppliance product={convertedProduct} />
       ) : (
-        <ViewProduct product={convertedProduct} />
+        /* Para dispositivos móviles renderizar DetailsProductSection + ViewProduct */
+        <>
+          <DetailsProductSection product={product} />
+          <ViewProduct product={convertedProduct} />
+        </>
       )}
     </>
   );

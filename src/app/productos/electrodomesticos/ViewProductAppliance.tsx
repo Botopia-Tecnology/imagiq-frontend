@@ -30,6 +30,7 @@ import { productsMock } from "../components/productsMock";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import CaracteristicasProduct from "./CaracteristicasProduct";
 import SkeletonCard from "@/components/SkeletonCard";
+import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -81,35 +82,39 @@ export default function ViewProductAppliance({
   const safeProduct = product || productsMock[0];
   const router = useRouter();
   const pathname = usePathname();
-  const [showBar, setShowBar] = useState(false);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
   const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
-  useEffect(() => {
-    /* Navbar que se bugea al hacer scroll */
-    const handleScroll = () => {
-      // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
-      setShowBar(window.scrollY > 100 && isProductDetailView);
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    // Inicializa correctamente al montar y tras navegación
-    setTimeout(handleScroll, 0);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [isProductDetailView]);
 
-  // useEffect para ocultar el navbar principal (solo con showBar)
+  /**
+   * Hook personalizado para control avanzado del navbar fijo - ANTI-FLICKER
+   * Usa histeresis amplia con thresholdShow=150px y thresholdHide=50px
+   * Zona de amortiguación de 100px previene toggles constantes
+   * Solo activo en vistas de detalle de producto
+   */
+  const showNavbarFixed = useScrollNavbar(150, 50, isProductDetailView);
+
+  /**
+   * Efecto optimizado para control del navbar principal
+   * Aplica/quita clase global con timing perfecto para evitar parpadeos
+   */
   useEffect(() => {
-    if (showBar) {
+    if (typeof document === "undefined") return; // Protección SSR
+    if (showNavbarFixed) {
+      // Inmediatamente ocultar navbar principal cuando aparece el fijo
       document.body.classList.add("hide-main-navbar");
     } else {
-      document.body.classList.remove("hide-main-navbar");
+      // Delay optimizado para permitir transición suave del navbar fijo
+      const timer = setTimeout(() => {
+        document.body.classList.remove("hide-main-navbar");
+      }, 250); // Sincronizado con nueva duración de animación exit más lenta
+      return () => clearTimeout(timer);
     }
+    // Cleanup: siempre remover la clase al desmontar
     return () => {
       document.body.classList.remove("hide-main-navbar");
     };
-  }, [showBar]);
+  }, [showNavbarFixed]);
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -183,7 +188,7 @@ export default function ViewProductAppliance({
       ></ARExperienceHandler>
 
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
-      {isProductDetailView && showBar && (
+      {isProductDetailView && showNavbarFixed && (
         <div
           className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
           style={{ fontFamily: "SamsungSharpSans" }}
@@ -278,9 +283,45 @@ export default function ViewProductAppliance({
         </div>
       )}
       {/* Oculta el navbar principal con una clase global */}
-      <style>{`
-              body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
-            `}</style>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          body.hide-main-navbar header[data-navbar="true"] { 
+            transform: translateY(-100%) scale(0.97) !important;
+            opacity: 0 !important;
+            filter: blur(3px) !important;
+            transition: 
+              transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
+              opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+            pointer-events: none !important;
+          }
+          .fixed-navbar-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            will-change: transform, opacity, filter !important;
+          }
+          .fixed-navbar-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: inherit;
+            pointer-events: none;
+          }
+          .fixed-navbar-container * {
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+          }
+        `,
+        }}
+      />
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <motion.div ref={specsReveal.ref} {...specsReveal.motionProps}>

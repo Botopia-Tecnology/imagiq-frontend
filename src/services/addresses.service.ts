@@ -61,7 +61,7 @@ export interface AddressResponse {
  * Configuración base del servicio
  */
 const BASE_CONFIG = {
-  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
 };
 
 /**
@@ -123,7 +123,7 @@ export class AddressesService {
         }
       }
 
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(requestData),
@@ -148,7 +148,7 @@ export class AddressesService {
     try {
       // Si no hay token JWT, incluir usuarioId como query param
       const token = this.getAuthToken();
-      let url = `${BASE_CONFIG.API_URL}/addresses`;
+      let url = `${BASE_CONFIG.API_URL}/api/addresses`;
 
       if (!token) {
         const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
@@ -180,7 +180,7 @@ export class AddressesService {
    */
   public async getUserAddressesByType(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<AddressResponse[]> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/by-type/${tipo}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/by-type/${tipo}`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -201,7 +201,7 @@ export class AddressesService {
    */
   public async getDefaultAddress(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<AddressResponse | null> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/default/${tipo}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/default/${tipo}`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -225,7 +225,7 @@ export class AddressesService {
    */
   public async updateAddress(addressId: string, updateData: Partial<CreateAddressRequest>): Promise<AddressResponse> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/${addressId}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(updateData),
@@ -248,7 +248,7 @@ export class AddressesService {
    */
   public async deactivateAddress(addressId: string): Promise<{ message: string }> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/${addressId}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
       });
@@ -270,7 +270,7 @@ export class AddressesService {
    */
   public async incrementUsageCount(addressId: string): Promise<{ message: string }> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/${addressId}/increment-usage`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}/increment-usage`, {
         method: 'POST',
         headers: this.getHeaders(),
       });

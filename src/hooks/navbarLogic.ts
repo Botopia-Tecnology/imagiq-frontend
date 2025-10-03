@@ -48,11 +48,21 @@ export function useNavbarLogic() {
   const { cart: cartItems, itemCount } = useCartContext();
   const { isAppliance } = useProductContext();
   // Derivar cartCount con useMemo para evitar stale closures
+  // Usa itemCount como fuente de verdad para garantizar sincronización con el estado global del carrito
   const cartCount = useMemo(() => {
+    // Si itemCount está disponible del contexto, úsalo como fuente principal de verdad
+    if (typeof itemCount === "number") {
+      return itemCount;
+    }
+    // Fallback: calcular basado en los items del carrito si itemCount no está disponible
+    // Verificar también si el carrito está vacío (undefined, null o array vacío)
+    if (!cartItems || (Array.isArray(cartItems) && cartItems.length === 0)) {
+      return 0;
+    }
     return Array.isArray(cartItems)
-      ? cartItems.reduce((sum, item) => sum + item.quantity, 0)
+      ? cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
       : 0;
-  }, [cartItems]);
+  }, [cartItems, itemCount]);
   // Estado para animación del badge
   const [bump, setBump] = useState(false);
   // Efecto: activa animación cuando cambia cartCount
@@ -65,16 +75,30 @@ export function useNavbarLogic() {
       setBump(false);
     }
   }, [cartCount]);
-  // Sincronización multi-tab: escucha storage
+  // Sincronización multi-tab: escucha storage para actualizar contador en tiempo real
   useEffect(() => {
     const syncCart = () => {
       try {
         const stored = localStorage.getItem("cart-items");
+        // Importante: verificar también si el carrito está vacío (null o undefined)
         if (stored) {
-          setBump(true);
-          setTimeout(() => setBump(false), 200);
+          // Verificar si hay productos en el carrito
+          const parsedCart = JSON.parse(stored);
+          if (Array.isArray(parsedCart) && parsedCart.length > 0) {
+            setBump(true);
+            setTimeout(() => setBump(false), 200);
+          } else if (Array.isArray(parsedCart) && parsedCart.length === 0) {
+            // Si el carrito está vacío (array vacío), actualizar estado del contador
+            setBump(false);
+          }
+        } else {
+          // Si no hay productos (carrito vacío), actualizar estado del contador
+          // Esto asegura que el contador se oculte cuando el carrito se vacía
+          setBump(false);
         }
-      } catch {}
+      } catch (error) {
+        console.error("Error syncing cart from storage:", error);
+      }
     };
     window.addEventListener("storage", syncCart);
     return () => window.removeEventListener("storage", syncCart);
@@ -126,14 +150,13 @@ export function useNavbarLogic() {
   const isProductDetail =
     pathname?.startsWith("/productos/") &&
     !pathname?.includes("/productos/dispositivos-moviles");
-  const isDispositivosMoviles = pathname?.startsWith(
-    "/productos/dispositivos-moviles"
-  ) ?? false;
-  const isElectrodomesticos = pathname?.startsWith(
-    "/productos/electrodomesticos"
-  ) ?? false;
-  const isNavbarItem = navbarRoutes.some((route: (typeof navbarRoutes)[0]) =>
-    pathname?.startsWith(route.href) ?? false
+  const isDispositivosMoviles =
+    pathname?.startsWith("/productos/dispositivos-moviles") ?? false;
+  const isElectrodomesticos =
+    pathname?.startsWith("/productos/electrodomesticos") ?? false;
+  const isNavbarItem = navbarRoutes.some(
+    (route: (typeof navbarRoutes)[0]) =>
+      pathname?.startsWith(route.href) ?? false
   );
   const isHeroScrolled = isHome && isScrolled;
   const isScrolledNavbar =

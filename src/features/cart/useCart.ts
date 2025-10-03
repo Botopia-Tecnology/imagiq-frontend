@@ -1,3 +1,6 @@
+import { useRef } from "react";
+import { toast } from "sonner";
+
 /**
  * Hook personalizado para manejo del carrito
  * - Agregar/remover productos
@@ -31,17 +34,51 @@ export type CartProduct = {
 };
 
 export const useCart = () => {
-  // Cart logic will be implemented here
+  // Ref para controlar la unicidad de la notificación de eliminación
+  const toastActiveRef = useRef<Record<string, boolean>>({});
+  
+  // Estado simulado del carrito (reemplazar por useState en implementación real)
+  const items: CartProduct[] = [];
+  
+  /**
+   * Elimina un producto del carrito y muestra una alerta única por acción.
+   * Usa toastActiveRef para evitar mostrar notificaciones duplicadas.
+   */
+  const removeItem = (productId: string) => {
+    // Evitar procesar si ya hay una notificación activa para este producto
+    if (toastActiveRef.current[productId]) return;
+    
+    // Buscar el producto antes de eliminar (simulado)
+    const productToRemove = items.find(p => p.id === productId);
+    if (!productToRemove) return;
+    
+    // Marcar como activo para evitar duplicados
+    toastActiveRef.current[productId] = true;
+    const productName = productToRemove.name;
+    
+    // Lógica de eliminación (simulada)
+    console.log("Removing item:", productId);
+    
+    // Mostrar notificación única
+    toast.info(`Producto eliminado`, {
+      description: `${productName} se quitó del carrito`,
+      duration: 2500,
+      className: "toast-info",
+      // Limpiar el flag cuando la notificación se cierra
+      onAutoClose: () => { toastActiveRef.current[productId] = false; },
+      // Limpiar el flag si el usuario cierra manualmente
+      onDismiss: () => { toastActiveRef.current[productId] = false; },
+    });
+  };
+  
   return {
-    items: [],
+    items,
     total: 0,
     itemCount: 0,
     addItem: (product: Product) => {
       console.log("Adding item:", product);
     },
-    removeItem: (productId: string) => {
-      console.log("Removing item:", productId);
-    },
+    removeItem,
     updateQuantity: (productId: string, quantity: number) => {
       console.log("Updating quantity:", productId, quantity);
     },

@@ -27,7 +27,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     addProduct,
   } = useCart();
 
-  console.log("Render Step1, cartProducts:", cartProducts);
+  // Eliminado el console.log para evitar renderizados innecesarios
 
   // Cargar productos desde el hook centralizado
   // Los productos ya están disponibles a través del hook useCart
@@ -47,10 +47,14 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   };
 
   // Eliminar producto usando el hook
+  // Esto evita el problema de actualizar el estado durante el renderizado
   const handleRemove = (idx: number) => {
     const product = cartProducts[idx];
     if (product) {
-      removeProduct(product.id);
+      // Programar la eliminación para después del renderizado usando setTimeout
+      setTimeout(() => {
+        removeProduct(product.id);
+      }, 0);
     }
   };
 

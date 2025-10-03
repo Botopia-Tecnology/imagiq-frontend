@@ -149,6 +149,8 @@ export function useCart(): UseCartReturn {
 
   // Ref para prevenir múltiples clics del mismo producto en un corto período
   const addProductTimeoutRef = useRef<Record<string, number>>({});
+  // Ref para evitar duplicidad de alertas (toast)
+  const toastActiveRef = useRef<Record<string, boolean>>({});
 
   // Inicializar datos del carrito
   useEffect(() => {
@@ -163,23 +165,50 @@ export function useCart(): UseCartReturn {
       setProducts(getStoredProducts());
       setAppliedDiscount(getStoredDiscount());
     };
-
     window.addEventListener("storage", handleStorageChange);
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
   // Función para guardar productos en localStorage
-  const saveProducts = useCallback((newProducts: CartProduct[]) => {
-    try {
-      localStorage.setItem(
-        STORAGE_KEYS.CART_ITEMS,
-        JSON.stringify(newProducts)
-      );
-      setProducts(newProducts);
-    } catch (error) {
-      console.error("Error saving products to localStorage:", error);
-    }
-  }, []);
+  const saveProducts = useCallback(
+    (newProducts: CartProduct[], skipStorageEvent = false) => {
+      try {
+        // Si el carrito está vacío, mejor eliminar el ítem completamente
+        if (newProducts.length === 0) {
+          localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+        } else {
+          localStorage.setItem(
+            STORAGE_KEYS.CART_ITEMS,
+            JSON.stringify(newProducts)
+          );
+        }
+
+        // Solo actualizar el estado si no está siendo llamado desde removeProduct
+        if (!skipStorageEvent) {
+          // Actualizar el estado local (de manera asincrónica para evitar problemas de renderizado)
+          // Esto evita el error "Cannot update a component while rendering a different component"
+          setTimeout(() => {
+            setProducts(newProducts);
+
+            // Disparar evento storage para otros tabs/componentes después de actualizar el estado
+            // Esto asegura que otros componentes se actualicen incluso dentro de la misma tab
+            try {
+              window.dispatchEvent(new Event("storage"));
+            } catch (error) {
+              // Fallback para navegadores antiguos
+              console.debug(
+                "Manual storage event dispatch failed, relying on natural events",
+                error
+              );
+            }
+          }, 0);
+        }
+      } catch (error) {
+        console.error("Error saving products to localStorage:", error);
+      }
+    },
+    []
+  );
 
   // Función para guardar descuento en localStorage
   const saveDiscount = useCallback((discount: number) => {
@@ -191,21 +220,20 @@ export function useCart(): UseCartReturn {
     }
   }, []);
 
-  // Acciones del carrito
+  /**
+   * Agrega un producto al carrito y muestra una alerta única por acción.
+   * Evita duplicidad de toasts usando un flag temporal por producto.
+   */
   const addProduct = useCallback(
     (product: Omit<CartProduct, "quantity">, quantity: number = 1) => {
       const now = Date.now();
       const productId = product.id;
-
-      // Prevenir múltiples clics del mismo producto en 300ms (tiempo más estricto)
+      // Prevenir múltiples clics del mismo producto en 300ms
       const lastAddTime = addProductTimeoutRef.current[productId] || 0;
       if (now - lastAddTime < 300) {
         return;
       }
-
-      // Registrar este intento
       addProductTimeoutRef.current[productId] = now;
-
       setProducts((currentProducts) => {
         const existingIndex = currentProducts.findIndex(
           (p) => p.id === product.id
@@ -213,9 +241,7 @@ export function useCart(): UseCartReturn {
         let newProducts: CartProduct[];
         let wasUpdated = false;
         let finalQuantity = quantity;
-
         if (existingIndex >= 0) {
-          // Actualizar cantidad si el producto ya existe
           newProducts = [...currentProducts];
           const currentQuantity = newProducts[existingIndex].quantity;
           finalQuantity = currentQuantity + quantity;
@@ -225,12 +251,10 @@ export function useCart(): UseCartReturn {
           };
           wasUpdated = true;
         } else {
-          // Agregar nuevo producto
           newProducts = [...currentProducts, { ...product, quantity }];
           finalQuantity = quantity;
         }
-
-        // Llamar saveProducts de forma síncrona para evitar problemas de timing
+        // Guardar productos en localStorage
         try {
           localStorage.setItem(
             STORAGE_KEYS.CART_ITEMS,
@@ -239,54 +263,109 @@ export function useCart(): UseCartReturn {
         } catch (error) {
           console.error("Error saving products to localStorage:", error);
         }
-
-        // Mostrar notificación de éxito
-        toast.success(
-          wasUpdated ? `Cantidad actualizada` : `Producto añadido al carrito`,
-          {
-            description: `${product.name} - Cantidad: ${finalQuantity}`,
-            duration: 3000,
-            className: "toast-success",
-          }
-        );
-
+        // Mostrar alerta solo si no está activa para este producto
+        if (!toastActiveRef.current[productId]) {
+          toastActiveRef.current[productId] = true;
+          toast.success(
+            wasUpdated ? `Cantidad actualizada` : `Producto añadido al carrito`,
+            {
+              description: `${product.name} - Cantidad: ${finalQuantity}`,
+              duration: 3000,
+              className: "toast-success",
+              onAutoClose: () => {
+                toastActiveRef.current[productId] = false;
+              },
+              onDismiss: () => {
+                toastActiveRef.current[productId] = false;
+              },
+            }
+          );
+        }
         return newProducts;
       });
-
-      // Limpiar el timeout después de 500ms para permitir clics futuros más rápido
+      // Limpiar el timeout después de 500ms
       setTimeout(() => {
         if (addProductTimeoutRef.current[productId] === now) {
           delete addProductTimeoutRef.current[productId];
         }
       }, 500);
     },
-    [] // Removemos saveProducts de las dependencias para simplificar
+    []
   );
 
+  /**
+   * Elimina un producto del carrito y muestra alerta única.
+   * Implementación optimizada para evitar notificaciones duplicadas.
+   */
   const removeProduct = useCallback(
     (productId: string) => {
-      setProducts((currentProducts) => {
-        // Encontrar el producto que se va a eliminar para la notificación
-        const productToRemove = currentProducts.find((p) => p.id === productId);
-        const newProducts = currentProducts.filter((p) => p.id !== productId);
+      // Prevenir múltiples eliminaciones del mismo producto
+      const productToRemove = products.find((p) => p.id === productId);
+      if (!productToRemove) return; // Producto ya no existe
 
-        saveProducts(newProducts);
+      // Usar una flag temporal para evitar notificaciones duplicadas
+      const removeKey = `remove_${productId}`;
+      if (toastActiveRef.current[removeKey]) return; // Ya se está procesando
+      toastActiveRef.current[removeKey] = true;
 
-        // Mostrar notificación de eliminación
-        if (productToRemove) {
-          toast.info(`Producto eliminado`, {
-            description: `${productToRemove.name} se quitó del carrito`,
-            duration: 2500,
-            className: "toast-info",
-          });
+      const productName = productToRemove.name;
+
+      // Actualizar productos localmente
+      const newProducts = products.filter((p) => p.id !== productId);
+
+      // Actualizar estado inmediatamente para UI responsiva
+      setProducts(newProducts);
+
+      // Guardar en localStorage de manera asíncrona
+      setTimeout(() => {
+        try {
+          if (newProducts.length === 0) {
+            localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+          } else {
+            localStorage.setItem(
+              STORAGE_KEYS.CART_ITEMS,
+              JSON.stringify(newProducts)
+            );
+          }
+
+          // Disparar evento de storage para sincronizar entre pestañas
+          try {
+            window.dispatchEvent(new Event("storage"));
+          } catch (error) {
+            console.debug("Error dispatching storage event", error);
+          }
+
+          // Mostrar notificación única después de guardar
+          if (productName) {
+            toast.info(`Producto eliminado`, {
+              description: `${productName} se quitó del carrito`,
+              duration: 2500,
+              className: "toast-info",
+              onAutoClose: () => {
+                toastActiveRef.current[removeKey] = false;
+              },
+              onDismiss: () => {
+                toastActiveRef.current[removeKey] = false;
+              },
+            });
+          }
+
+          // Limpiar flag después de mostrar toast
+          setTimeout(() => {
+            toastActiveRef.current[removeKey] = false;
+          }, 100);
+        } catch (error) {
+          console.error("Error removing product from localStorage:", error);
+          toastActiveRef.current[removeKey] = false;
         }
-
-        return newProducts;
-      });
+      }, 0);
     },
-    [saveProducts]
+    [products]
   );
 
+  /**
+   * Actualiza la cantidad de un producto en el carrito.
+   */
   const updateQuantity = useCallback(
     (productId: string, quantity: number) => {
       if (quantity <= 0) {
@@ -294,33 +373,91 @@ export function useCart(): UseCartReturn {
         return;
       }
 
-      setProducts((currentProducts) => {
-        const newProducts = currentProducts.map((p) =>
-          p.id === productId ? { ...p, quantity } : p
-        );
-        saveProducts(newProducts);
-        return newProducts;
-      });
+      // Actualizar productos localmente
+      const newProducts = products.map((p) =>
+        p.id === productId ? { ...p, quantity } : p
+      );
+
+      // Actualizar estado inmediatamente
+      setProducts(newProducts);
+
+      // Guardar en localStorage de manera asíncrona
+      setTimeout(() => {
+        try {
+          localStorage.setItem(
+            STORAGE_KEYS.CART_ITEMS,
+            JSON.stringify(newProducts)
+          );
+
+          // Disparar evento de storage para sincronizar entre pestañas
+          try {
+            window.dispatchEvent(new Event("storage"));
+          } catch (error) {
+            console.debug("Error dispatching storage event", error);
+          }
+        } catch (error) {
+          console.error(
+            "Error updating product quantity in localStorage:",
+            error
+          );
+        }
+      }, 0);
     },
-    [removeProduct, saveProducts]
+    [products, removeProduct]
   );
 
+  /**
+   * Vacía el carrito y reinicia el contador global en tiempo real.
+   * Muestra alerta única de carrito vacío.
+   */
   const clearCart = useCallback(() => {
     try {
-      localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+      // Prevenir múltiples notificaciones de limpiar carrito
+      const clearKey = "clear_cart";
+      if (toastActiveRef.current[clearKey]) return;
+      toastActiveRef.current[clearKey] = true;
+
+      // Actualizar estado local inmediatamente
       setProducts([]);
 
-      // Mostrar notificación de carrito limpiado
-      toast.info("Carrito vacío", {
-        description: "Todos los productos fueron eliminados",
-        duration: 2500,
-        className: "toast-info",
-      });
+      // Guardar en localStorage sin disparar eventos storage
+      setTimeout(() => {
+        localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+
+        // Disparar evento de storage para sincronizar entre pestañas
+        try {
+          window.dispatchEvent(new Event("storage"));
+        } catch (error) {
+          console.debug("Error dispatching storage event", error);
+        }
+
+        // Notificar al usuario
+        toast.info("Carrito vacío", {
+          description: "Todos los productos fueron eliminados",
+          duration: 2500,
+          className: "toast-info",
+          onAutoClose: () => {
+            toastActiveRef.current[clearKey] = false;
+          },
+          onDismiss: () => {
+            toastActiveRef.current[clearKey] = false;
+          },
+        });
+
+        // Limpiar flag después de mostrar toast
+        setTimeout(() => {
+          toastActiveRef.current[clearKey] = false;
+        }, 100);
+      }, 0);
     } catch (error) {
       console.error("Error clearing cart:", error);
+      toastActiveRef.current["clear_cart"] = false;
     }
   }, []);
 
+  /**
+   * Aplica descuento al carrito.
+   */
   const applyDiscount = useCallback(
     (discount: number) => {
       const validDiscount = Math.max(0, discount);
@@ -335,7 +472,6 @@ export function useCart(): UseCartReturn {
       const qty = Number(p.quantity);
       return acc + (isNaN(qty) ? 0 : qty);
     }, 0),
-
     subtotal: products.reduce((acc, p) => {
       const price = Number(p.price);
       const quantity = Number(p.quantity);
@@ -343,14 +479,11 @@ export function useCart(): UseCartReturn {
       const safeQuantity = isNaN(quantity) ? 0 : quantity;
       return acc + safePrice * safeQuantity;
     }, 0),
-
     shipping: SHIPPING_COST,
     discount: Math.max(0, appliedDiscount),
-
     get taxes() {
       return Math.round(this.subtotal * TAX_RATE);
     },
-
     get total() {
       return Math.max(0, this.subtotal - this.discount + this.shipping);
     },

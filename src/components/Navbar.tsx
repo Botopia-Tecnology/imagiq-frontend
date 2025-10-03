@@ -122,8 +122,8 @@ export default function Navbar() {
   // Helper para renderizar icono de carrito
   const renderCartIcon = (variant: "desktop" | "tablet" | "mobile") => {
     const colorScheme = getIconColors(variant);
-    const cartCount =
-      variant === "mobile" ? navbar.itemCount : navbar.cartCount;
+    // Usar cartCount como fuente única de verdad, que está sincronizado con el estado global
+    const cartCount = navbar.cartCount;
 
     return (
       <Link
@@ -136,17 +136,12 @@ export default function Navbar() {
           className={`w-7 h-7 ${getIconColorClasses(variant)}`}
           aria-label="Carrito"
         />
-        {navbar.isClient && cartCount > 0 && (
+        {navbar.isClient && (
           <span
             className={cn(
               badgeClass,
-              variant === "mobile"
-                ? cartCount > 0
-                  ? "opacity-100 scale-100"
-                  : "opacity-0 scale-0"
-                : navbar.bump
-                ? "scale-110"
-                : "scale-100"
+              cartCount > 0 ? "opacity-100 scale-100" : "opacity-0 scale-0",
+              navbar.bump ? "scale-110" : "scale-100"
             )}
             aria-label={`Carrito: ${cartCount} productos`}
             aria-live="polite"
@@ -377,13 +372,13 @@ export default function Navbar() {
                 <span
                   className={cn(
                     "absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold transition-all duration-200",
-                    navbar.itemCount > 0
+                    navbar.cartCount > 0
                       ? "opacity-100 scale-100"
                       : "opacity-0 scale-0"
                   )}
-                  aria-label={`Carrito: ${navbar.itemCount} productos`}
+                  aria-label={`Carrito: ${navbar.cartCount} productos`}
                 >
-                  {navbar.itemCount > 99 ? "99+" : navbar.itemCount}
+                  {navbar.cartCount > 99 ? "99+" : navbar.cartCount}
                 </span>
               )}
             </Link>
@@ -422,7 +417,9 @@ export default function Navbar() {
             {navbarRoutes.map((item) => {
               const isActive =
                 item.name === "Electrodomésticos"
-                  ? navbar.pathname?.startsWith("/productos/Electrodomesticos") ?? false
+                  ? navbar.pathname?.startsWith(
+                      "/productos/Electrodomesticos"
+                    ) ?? false
                   : navbar.pathname === item.href ||
                     navbar.pathname?.startsWith(item.href + "/") ||
                     navbar.pathname?.startsWith(item.href + "?") ||

@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import SortDropdown from "@/components/ui/SortDropdown";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
@@ -342,17 +343,11 @@ export default function HornosSection() {
                     Filtros
                   </button>
                 )}
-                <select
+                <SortDropdown
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={setSortBy}
                   className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="relevancia">Relevancia</option>
-                  <option value="precio-menor">Precio: menor a mayor</option>
-                  <option value="precio-mayor">Precio: mayor a menor</option>
-                  <option value="nombre">Nombre A-Z</option>
-                  <option value="calificacion">Mejor calificados</option>
-                </select>
+                />
 
                 {(device === "desktop" || device === "large") && (
                   <div className="flex border border-gray-300 rounded-lg overflow-hidden">

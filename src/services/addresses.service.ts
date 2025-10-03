@@ -61,7 +61,7 @@ export interface AddressResponse {
  * Configuración base del servicio
  */
 const BASE_CONFIG = {
-  API_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3001/api',
+  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
 };
 
 /**

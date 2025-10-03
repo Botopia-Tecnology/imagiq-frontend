@@ -91,6 +91,10 @@ export function getCategoryBaseFilters(
       baseFilters.name = mappedValue;
     } else {
       baseFilters.subcategory = mappedValue;
+      // Caso especial para relojes: agregar también filtro por nombre "watch"
+      if (seccion === "relojes") {
+        baseFilters.name = "watch";
+      }
     }
   }
 

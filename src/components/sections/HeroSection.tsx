@@ -373,14 +373,13 @@ export default function HeroSection() {
           </div>
         </div>
       </div>
-      {/* Navegación y logo Samsung (unificado, sin duplicados) */}
-      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center
-        mt-8 sm:mt-12 md:mt-16 lg:mt-0">
-        {/* Slide indicators */}
-        <div className="flex items-center justify-center space-x-3 mb-4">
+      {/* Navegación and logo Samsung - Espaciado superior optimizado para móviles modernos */}
+      <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center justify-center mt-8 min-[414px]:mt-4 sm:mt-12 md:mt-16 lg:mt-0">
+        {/* Slide indicators - Espaciado reducido en móviles modernos */}
+        <div className="flex items-center justify-center space-x-3 mb-4 min-[414px]:mb-2">
           {heroSlides.map((_, index) => (
             <button
-              key={index}
+              key={`slide-dot-${index}`}
               onClick={() => goToSlide(index)}
               className={cn(
                 "w-2.5 h-2.5 rounded-full transition-all duration-300 shadow-md",
@@ -391,8 +390,8 @@ export default function HeroSection() {
             />
           ))}
         </div>
-        {/* Logo Samsung */}
-        <div className="flex items-center justify-center">
+        {/* Logo Samsung - Espaciado superior reducido en móviles modernos */}
+        <div className="flex items-center justify-center min-[414px]:mt-1">
           <Image
             src={isHome ? samsungLogoWhite : samsungLogoBlack}
             alt="Samsung"

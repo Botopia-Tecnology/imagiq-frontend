@@ -97,11 +97,12 @@ export const CategoriesSection = () => {
                   )}
                   style={{ backgroundColor: "#D6E3F3" }}
                 >
-                  {/* Título de la categoría */}
-                  <div className="text-center mb-1">
+                  {/* Título de la categoría - Responsive overflow fix */}
+                  <div className="text-center mb-1 w-full max-w-full overflow-hidden">
                     <h3
-                      className="text-xs font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700"
+                      className="text-xs font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700 truncate break-words leading-tight max-w-full"
                       style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
+                      title={category.title}
                     >
                       {category.title}
                     </h3>

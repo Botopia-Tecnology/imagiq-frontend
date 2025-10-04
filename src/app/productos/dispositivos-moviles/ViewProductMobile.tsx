@@ -538,13 +538,13 @@ export default function ViewProduct({
         <VideosSection />
       </motion.div>
       {/* Componente de comparación justo debajo de VideosSection */}
-      <motion.div
+      {/* <motion.div
         ref={comparationReveal.ref}
         {...comparationReveal.motionProps}
         className="mt-0"
       >
         <ComparationProduct />
-      </motion.div>
+      </motion.div> */}
     </div>
   );
 }

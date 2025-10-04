@@ -27,6 +27,7 @@ import ComparationProduct from "./ComparationProduct";
 import Specifications from "@/app/productos/dispositivos-moviles/detalles-producto/Specifications";
 import VideosSection from "./VideosSection";
 import Destacados from "./detalles-producto/Destacados";
+import BenefitsSection from "./detalles-producto/BenefitsSection";
 
 // Tipo auxiliar para producto de entrada (raw)
 type RawProduct = {
@@ -524,6 +525,9 @@ export default function ViewProduct({
 
       {/* Características destacadas (nuevo componente) */}
       <Destacados />
+
+      {/* Sección de beneficios (responsive) */}
+      <BenefitsSection />
 
       {/* Componente de videos */}
       <motion.div

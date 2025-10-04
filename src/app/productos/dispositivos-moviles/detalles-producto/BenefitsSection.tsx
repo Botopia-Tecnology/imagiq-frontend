@@ -40,113 +40,91 @@ export const benefits: Benefit[] = [
 ];
 
 /**
- * Sección de beneficios para desktop.
+ * Componente individual para cada beneficio
+ * Modular y reutilizable, recibe icono, título y subtítulo
  */
-export const BenefitsSectionDesktop: React.FC = () => (
-  <div className="col-span-2 flex flex-col space-y-6">
-    <h2
-      className="text-lg font-bold text-gray-900 mb-4"
+const BenefitItem: React.FC<Benefit> = ({ icon, title, subtitle }) => (
+  <div className="flex flex-col items-center text-center" role="listitem">
+    <div
+      className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-3 md:mb-4 shadow-md"
+      style={{ backgroundColor: "#0d2345" }}
+      aria-label={title}
+    >
+      <Image
+        src={icon}
+        alt={title}
+        width={40}
+        height={40}
+        className="object-contain"
+        priority
+      />
+    </div>
+    <h3
+      className="font-semibold text-[#0d2345] text-xs md:text-base leading-tight mb-1"
       style={{ fontFamily: "SamsungSharpSans" }}
     >
-      Beneficios Imagiq
-    </h2>
-    <div className="flex flex-col space-y-6">
-      {benefits.map((benefit, index) => (
-        <div key={index} className="flex flex-col items-center text-center">
-          <div
-            className="w-12 h-12 rounded-full flex items-center justify-center mb-2"
-            style={{ backgroundColor: "#002142" }}
-          >
-            {benefit.icon === addiIcon ? (
-              <Image
-                src={benefit.icon}
-                alt={benefit.title}
-                width={24}
-                height={24}
-                className="object-contain"
-              />
-            ) : (
-              <Image
-                src={benefit.icon}
-                alt={benefit.title}
-                width={24}
-                height={24}
-                className="object-contain filter brightness-0 invert"
-              />
-            )}
-          </div>
-          <h3
-            className="font-semibold text-gray-900 text-xs leading-tight"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
-            {benefit.title}
-          </h3>
-          <p
-            className="text-gray-600 text-xs leading-tight"
-            style={{ fontFamily: "SamsungSharpSans" }}
-          >
-            {benefit.subtitle}
-          </p>
-        </div>
-      ))}
-    </div>
+      {title}
+    </h3>
+    <p
+      className="text-gray-700 text-xs md:text-sm leading-tight"
+      style={{ fontFamily: "SamsungSharpSans" }}
+    >
+      {subtitle}
+    </p>
   </div>
 );
 
 /**
- * Sección de beneficios para mobile.
+ * Sección de Beneficios Imagiq
+ * Replica fielmente el diseño de la imagen de referencia
+ * Responsive, modular y profesional
  */
-export const BenefitsSectionMobile: React.FC = () => (
-  <div className="bg-gray-100 py-12 lg:hidden">
-    <div className="max-w-7xl mx-auto px-6">
-      <div className="text-center mb-8">
+const BenefitsSection: React.FC = () => (
+  <section
+    className="w-full py-12 md:py-20 bg-[#fafbfc]"
+    aria-labelledby="benefits-title"
+  >
+    <div className="max-w-6xl mx-auto px-4 md:px-0">
+      {/* Encabezado */}
+      <div className="text-center mb-10 md:mb-14">
         <h2
-          className="text-2xl font-bold text-gray-900 mb-2"
+          id="benefits-title"
+          className="text-3xl md:text-4xl font-light text-[#222] mb-3"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
-          Beneficios Imagiq
+          Beneficios imagiq
         </h2>
+        <p
+          className="text-base md:text-lg text-gray-500 font-light"
+          style={{ fontFamily: "SamsungSharpSans" }}
+        >
+          Compra con confianza y disfruta de ventajas exclusivas
+        </p>
       </div>
-      <div className="grid grid-cols-2 gap-6">
-        {benefits.map((benefit, index) => (
-          <div key={index} className="flex flex-col items-center text-center">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
-              style={{ backgroundColor: "#002142" }}
-            >
-              {benefit.icon === addiIcon ? (
-                <Image
-                  src={benefit.icon}
-                  alt={benefit.title}
-                  width={32}
-                  height={32}
-                  className="object-contain "
-                />
-              ) : (
-                <Image
-                  src={benefit.icon}
-                  alt={benefit.title}
-                  width={32}
-                  height={32}
-                  className="object-contain filter brightness-0 invert"
-                />
-              )}
+      {/* Lista de beneficios - Responsive: horizontal scroll en móvil, vertical en desktop */}
+      <div className="w-full">
+        {/* Móvil: fila horizontal con scroll */}
+        <div
+          className="flex flex-row gap-6 overflow-x-auto whitespace-nowrap scroll-smooth md:hidden pb-2"
+          style={{ WebkitOverflowScrolling: "touch" }}
+          tabIndex={0}
+          aria-label="Beneficios imagiq"
+        >
+          {benefits.map((benefit, idx) => (
+            <div key={idx} className="inline-block min-w-[180px] max-w-[220px]">
+              <BenefitItem {...benefit} />
             </div>
-            <h3
-              className="font-semibold text-gray-900 text-sm"
-              style={{ fontFamily: "SamsungSharpSans" }}
-            >
-              {benefit.title}
-            </h3>
-            <p
-              className="text-gray-600 text-sm"
-              style={{ fontFamily: "SamsungSharpSans" }}
-            >
-              {benefit.subtitle}
-            </p>
-          </div>
-        ))}
+          ))}
+        </div>
+        {/* Desktop: vertical como siempre */}
+        <div className="hidden md:flex md:flex-row md:justify-center md:gap-12 items-center w-full">
+          {benefits.map((benefit, idx) => (
+            <BenefitItem key={idx} {...benefit} />
+          ))}
+        </div>
       </div>
     </div>
-  </div>
+  </section>
 );
+
+export default BenefitsSection;

@@ -141,7 +141,8 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative w-full min-h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 bg-[#24538F] overflow-hidden"
+      className="relative w-full min-h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 bg-[#24538F] overflow-hidden
+        pb-16 sm:pb-20 md:pb-24 lg:pb-0"
       style={{ zIndex: 1 }}
       data-hero="true"
     >
@@ -373,7 +374,8 @@ export default function HeroSection() {
         </div>
       </div>
       {/* Navegación y logo Samsung (unificado, sin duplicados) */}
-      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center">
+      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center
+        mt-8 sm:mt-12 md:mt-16 lg:mt-0">
         {/* Slide indicators */}
         <div className="flex items-center justify-center space-x-3 mb-4">
           {heroSlides.map((_, index) => (

@@ -5,7 +5,7 @@
  */
 
 import React, { useState } from 'react';
-import { Search, Gift, Percent, Calendar, Copy, Check, Tag, Star } from 'lucide-react';
+import { Search, Gift, Calendar, Copy, Check, Tag, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Button from '@/components/Button';
 import { useProfile } from '../../hooks/useProfile';

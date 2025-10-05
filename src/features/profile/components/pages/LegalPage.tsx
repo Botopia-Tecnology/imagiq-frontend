@@ -20,7 +20,7 @@ interface LegalDocument {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   lastUpdated: Date;
   version: string;
   content: LegalSection[];
@@ -94,7 +94,7 @@ const SectionContent: React.FC<{
       </div>
       {section.subsections && (
         <div className="ml-4 mt-6">
-          {section.subsections.map((subsection, index) => (
+          {section.subsections.map((subsection) => (
             <SectionContent
               key={subsection.id}
               section={subsection}
@@ -111,7 +111,6 @@ const DocumentViewer: React.FC<{
   document: LegalDocument;
   onBack: () => void;
 }> = ({ document, onBack }) => {
-  const [activeSection, setActiveSection] = useState<string>('');
 
   const handleDownload = () => {
     console.log('Download document:', document.id);
@@ -183,7 +182,7 @@ const DocumentViewer: React.FC<{
 
             {/* Document Content */}
             <div className="space-y-8">
-              {document.content.map((section, index) => (
+              {document.content.map((section) => (
                 <SectionContent
                   key={section.id}
                   section={{ ...section, title: section.title }}
@@ -350,7 +349,7 @@ export const LegalPage: React.FC<LegalPageProps> = ({
         setSelectedDocument(document);
       }
     }
-  }, [documentType]);
+  }, [documentType, legalDocuments]);
 
   if (selectedDocument) {
     return (

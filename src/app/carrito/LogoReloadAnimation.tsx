@@ -66,7 +66,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           {/* Máscara SVG: la ola azul sube solo dentro del logo PNG */}
           <mask id="wave-logo-mask">
             <image
-              href={typeof LOGO_SRC === "string" ? LOGO_SRC : LOGO_SRC.src}
+              href={LOGO_SRC}
               x="0"
               y="0"
               width="1000"
@@ -132,7 +132,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
         </g>
         {/* Logo Samsung PNG visible encima de la ola, con opacidad animada */}
         <image
-          href={typeof LOGO_SRC === "string" ? LOGO_SRC : LOGO_SRC.src}
+          href={LOGO_SRC}
           x="0"
           y="0"
           width="1000"

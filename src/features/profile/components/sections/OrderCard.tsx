@@ -148,7 +148,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                 {order.items.length} {order.items.length === 1 ? 'artículo' : 'artículos'}
               </p>
               <div className="flex gap-2">
-                {order.items.slice(0, 3).map((item, index) => (
+                {order.items.slice(0, 3).map((item) => (
                   <div
                     key={item.id}
                     className="w-10 h-10 bg-gray-100 rounded-md flex-shrink-0 overflow-hidden"

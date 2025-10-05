@@ -20,7 +20,7 @@ interface NotificationSetting {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   category: 'general' | 'marketing' | 'security';
   channels: {
     email: boolean;
@@ -121,7 +121,7 @@ const NotificationRow: React.FC<{
 const CategorySection: React.FC<{
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   settings: NotificationSetting[];
   onEmailChange: (id: string, enabled: boolean) => void;
   onPushChange: (id: string, enabled: boolean) => void;

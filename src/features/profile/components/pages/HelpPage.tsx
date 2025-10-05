@@ -43,7 +43,7 @@ interface HelpCategory {
   id: string;
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   color: string;
   articles: number;
 }
@@ -112,7 +112,7 @@ const CategoryCard: React.FC<{
 const ContactOption: React.FC<{
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string }>;
   action: string;
   available: string;
   onClick: () => void;

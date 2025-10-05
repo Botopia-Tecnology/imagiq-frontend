@@ -11,7 +11,7 @@ import Button from '@/components/Button';
 import { useProfile } from '../../hooks/useProfile';
 import PageHeader from '../layouts/PageHeader';
 import OrderCard from '../sections/OrderCard';
-import { Order, OrderStatus } from '../../types';
+import type { Order } from '../../types';
 
 interface OrdersPageProps {
   onBack?: () => void;

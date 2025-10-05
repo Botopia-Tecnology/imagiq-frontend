@@ -6,7 +6,7 @@
 
 // Import existing types to extend them instead of recreating
 import { User as BaseUser, UserAddress } from '@/types/user';
-import { Product, CartItem } from '@/types/product';
+import type { CartItem } from '@/types/product';
 
 // ====================================
 // Extended Domain Types (reusing existing)

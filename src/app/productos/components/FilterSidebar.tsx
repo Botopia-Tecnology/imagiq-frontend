@@ -168,7 +168,7 @@ export default function FilterSidebar({
   return (
     <div
       className={cn(
-        "bg-[#F5F5F5] rounded-none border-0 shadow-none",
+        "bg-white rounded-none border-0 shadow-none",
         stickyContainerClasses,
         className
       )}

@@ -230,57 +230,76 @@ function ProductosContent() {
               <LoadingSpinner />
             </div>
           )}
-          
-          {/* Grid de productos usando ProductCard avanzado */}
-          {filteredProducts.length > 0 ? (
-            <>
-              <div className={`grid gap-6 ${searchQuery ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    name={product.name}
-                    image={product.image}
-                    colors={product.colors}
-                    price={product.price}
-                    originalPrice={product.originalPrice}
-                    discount={product.discount}
-                    isNew={product.isNew}
-                    isFavorite={product.isFavorite}
-                    onToggleFavorite={product.onToggleFavorite}
-                    sku={product.sku}
-                    puntos_q={product.puntos_q}
-                  />
-                ))}
-              </div>
-              
-              {/* Paginación */}
-              {!error && products.length > 0 && (
-                <div className="mt-8">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                    <ItemsPerPageSelector
-                      itemsPerPage={itemsPerPage}
-                      onItemsPerPageChange={handleItemsPerPageChange}
-                    />
+
+          <div className="flex gap-6">
+            {/* Grid de productos usando ProductCard avanzado */}
+            <div className="flex-1">
+              {filteredProducts.length > 0 ? (
+                <>
+                  <div className={`grid gap-6 ${searchQuery ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"}`}>
+                    {filteredProducts.map((product) => (
+                      <ProductCard
+                        key={product.id}
+                        id={product.id}
+                        name={product.name}
+                        image={product.image}
+                        colors={product.colors}
+                        price={product.price}
+                        originalPrice={product.originalPrice}
+                        discount={product.discount}
+                        isNew={product.isNew}
+                        isFavorite={product.isFavorite}
+                        onToggleFavorite={product.onToggleFavorite}
+                        sku={product.sku}
+                        puntos_q={product.puntos_q}
+                      />
+                    ))}
                   </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    totalItems={totalItems}
-                    itemsPerPage={itemsPerPage}
-                  />
+              
+                  {/* Paginación */}
+                  {!error && products.length > 0 && (
+                    <div className="mt-8">
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                        <ItemsPerPageSelector
+                          itemsPerPage={itemsPerPage}
+                          onItemsPerPageChange={handleItemsPerPageChange}
+                        />
+                      </div>
+                      <Pagination
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={handlePageChange}
+                        totalItems={totalItems}
+                        itemsPerPage={itemsPerPage}
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="col-span-full text-center py-12 text-gray-500">
+                  {searchQuery
+                    ? `No se encontraron productos para "${searchQuery}"`
+                    : "No se encontraron productos con los filtros seleccionados."
+                  }
                 </div>
               )}
-            </>
-          ) : (
-            <div className="col-span-full text-center py-12 text-gray-500">
-              {searchQuery 
-                ? `No se encontraron productos para "${searchQuery}"`
-                : "No se encontraron productos con los filtros seleccionados."
-              }
             </div>
-          )}
+
+            {/* Banner promocional vertical - Solo visible cuando hay productos y no hay búsqueda */}
+            {!searchQuery && filteredProducts.length >= 4 && (
+              <aside className="hidden lg:block w-64 flex-shrink-0">
+                <div className="sticky top-4">
+                  <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 min-h-[600px] flex flex-col items-center justify-center text-white shadow-lg">
+                    <h3 className="text-2xl font-bold mb-4 text-center">¡Oferta Especial!</h3>
+                    <p className="text-center mb-6">Descuentos exclusivos en productos seleccionados</p>
+                    <button className="bg-white text-blue-600 px-6 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors">
+                      Ver Promociones
+                    </button>
+                  </div>
+                </div>
+              </aside>
+            )}
+          </div>
         </main>
       </div>
     </div>

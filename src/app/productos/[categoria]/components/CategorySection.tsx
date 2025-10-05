@@ -363,6 +363,7 @@ export default function CategorySection({
                 refreshProducts={refreshProducts}
                 viewMode={viewMode}
                 categoryName={sectionTitle}
+                showBanner={(device === "desktop" || device === "large") && products.length >= 4}
               />
 
               {!error && products.length > 0 && (

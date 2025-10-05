@@ -11,7 +11,6 @@ import Button from '@/components/Button';
 import { useProfile } from '../../hooks/useProfile';
 import PageHeader from '../layouts/PageHeader';
 import OrderCard from '../sections/OrderCard';
-import type { Order } from '../../types';
 
 interface OrdersPageProps {
   onBack?: () => void;
@@ -129,7 +128,7 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
           {/* Filter Tabs */}
           <div className="flex items-center gap-2 overflow-x-auto">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
               className="flex-shrink-0"

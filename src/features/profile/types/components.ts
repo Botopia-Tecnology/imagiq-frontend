@@ -5,7 +5,7 @@
  */
 
 import { LucideIcon } from 'lucide-react';
-import { User, Order, Address, PaymentMethod, Credits, Coupon } from './index';
+import { ProfileUser, Order, ProfileAddress, PaymentMethod, Credits, Coupon } from './index';
 
 // ====================================
 // Base Component Types
@@ -79,7 +79,7 @@ export interface SectionTitleProps extends BaseComponentProps {
 }
 
 export interface ProfileHeaderProps extends BaseComponentProps {
-  user: User;
+  user: ProfileUser;
   onEditProfile: () => void;
   loading?: boolean;
 }
@@ -113,7 +113,7 @@ export interface MenuItemProps extends BaseComponentProps, InteractiveProps {
 }
 
 export interface AccountSectionProps extends BaseComponentProps {
-  addresses: Address[];
+  addresses: ProfileAddress[];
   paymentMethods: PaymentMethod[];
   onAddressesClick: () => void;
   onPaymentMethodsClick: () => void;
@@ -188,8 +188,8 @@ export interface ErrorStateProps extends BaseComponentProps {
 // ====================================
 
 export interface EditProfileFormProps extends BaseComponentProps {
-  user: User;
-  onSave: (userData: Partial<User>) => Promise<void>;
+  user: ProfileUser;
+  onSave: (userData: Partial<ProfileUser>) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
@@ -202,7 +202,7 @@ export interface UseProfileReturn {
   state: import('./index').ProfileState;
   actions: {
     loadProfile: () => Promise<void>;
-    updateProfile: (data: Partial<User>) => Promise<void>;
+    updateProfile: (data: Partial<ProfileUser>) => Promise<void>;
     loadOrders: () => Promise<void>;
     loadAddresses: () => Promise<void>;
     loadPaymentMethods: () => Promise<void>;

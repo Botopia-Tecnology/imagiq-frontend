@@ -16,9 +16,6 @@ import dynamic from "next/dynamic";
 import { useCartContext } from "@/features/cart/CartContext";
 import Image, { StaticImageData } from "next/image";
 import { motion } from "framer-motion";
-import addiLogo from "@/img/iconos/addi_negro.png";
-import setingLogo from "@/img/iconos/Setting_line_negro.png";
-import packageCar from "@/img/iconos/package_car_negro.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
@@ -52,7 +49,7 @@ export default function ViewProductAppliance({
   product: Readonly<ProductData>;
 }) {
   // Animación scroll reveal para hero principal
-  const heroReveal = useScrollReveal<HTMLDivElement>({
+  useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",

@@ -16,7 +16,8 @@ import {
   Order,
   Credits,
   Coupon,
-  LoyaltyProgram
+  LoyaltyProgram,
+  ProfilePreferences
 } from '../types';
 import {
   createMockProfileState,
@@ -242,14 +243,14 @@ export const useProfile = (): UseProfileReturn => {
     credits: profileData.credits,
     coupons: profileData.coupons,
     loyaltyProgram: profileData.loyaltyProgram,
-    preferences: userPreferencesContext || {
+    preferences: (userPreferencesContext || {
       categories: [],
       brands: [],
       priceRange: { min: 0, max: 1000000 },
       themes: [],
       notifications: { email: true, push: true, marketing: false },
       shopping: { preferredPayment: '', preferredShipping: '', wishlist: [] }
-    },
+    }) as unknown as ProfilePreferences,
     loading,
     error
   };

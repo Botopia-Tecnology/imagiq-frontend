@@ -69,22 +69,18 @@ const AddressCard: React.FC<{
 
         {/* Actions */}
         <div className="flex flex-col gap-2 ml-4">
-          <Button
-            variant="ghost"
-            size="sm"
+          <button
             onClick={() => onEdit(address)}
-            className="p-2"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
+          </button>
+          <button
             onClick={() => onDelete(address.id)}
-            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
           >
             <Trash2 className="w-4 h-4" />
-          </Button>
+          </button>
         </div>
       </div>
 

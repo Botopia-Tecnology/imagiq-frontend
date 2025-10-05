@@ -114,7 +114,7 @@ const PaymentMethodCard: React.FC<{
         <div className="mt-4 flex items-center justify-between">
           <div className="flex gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={onToggleDetails}
               className="text-gray-600"
@@ -122,7 +122,7 @@ const PaymentMethodCard: React.FC<{
               {showDetails ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => onEdit(paymentMethod)}
               className="text-gray-600"
@@ -130,7 +130,7 @@ const PaymentMethodCard: React.FC<{
               <Edit className="w-4 h-4" />
             </Button>
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => onDelete(paymentMethod.id)}
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
@@ -167,11 +167,11 @@ const PaymentMethodCard: React.FC<{
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="sm" onClick={() => onEdit(paymentMethod)}>
+          <Button variant="outline" size="sm" onClick={() => onEdit(paymentMethod)}>
             <Edit className="w-4 h-4" />
           </Button>
           <Button
-            variant="ghost"
+            variant="outline"
             size="sm"
             onClick={() => onDelete(paymentMethod.id)}
             className="text-red-600"

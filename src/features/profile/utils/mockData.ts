@@ -30,9 +30,7 @@ export const createMockUser = (): ProfileUser => ({
   numero_documento: '1012345678',
   avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
   loyaltyPoints: 8,
-  memberSince: new Date('2023-01-15'),
-  createdAt: new Date('2023-01-15'),
-  updatedAt: new Date('2024-10-01')
+  memberSince: new Date('2023-01-15')
 });
 
 export const createMockAddresses = (): ProfileAddress[] => [
@@ -49,7 +47,9 @@ export const createMockAddresses = (): ProfileAddress[] => [
     country: 'Colombia',
     alias: 'Casa',
     instructions: 'Portería principal, segundo piso',
-    isDefault: true
+    isDefault: true,
+    createdAt: new Date('2023-06-15'),
+    updatedAt: new Date('2024-10-01')
   },
   {
     id: 'addr-2',
@@ -63,7 +63,9 @@ export const createMockAddresses = (): ProfileAddress[] => [
     zipCode: '110221',
     country: 'Colombia',
     alias: 'Oficina',
-    isDefault: false
+    isDefault: false,
+    createdAt: new Date('2023-08-20'),
+    updatedAt: new Date('2024-09-15')
   },
   {
     id: 'addr-3',
@@ -76,7 +78,9 @@ export const createMockAddresses = (): ProfileAddress[] => [
     zipCode: '050001',
     country: 'Colombia',
     alias: 'Casa de Mamá',
-    isDefault: false
+    isDefault: false,
+    createdAt: new Date('2024-01-10'),
+    updatedAt: new Date('2024-01-10')
   }
 ];
 
@@ -120,7 +124,7 @@ export const createMockOrderItems = (): OrderItem[] => [
     product: {
       id: 'prod-1',
       name: 'Camiseta Básica Blanca',
-      images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop'],
+      images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop'] as unknown as any[],
       slug: 'camiseta-basica-blanca',
       categoria: 'ropa',
       subcategoria: 'camisetas',
@@ -144,7 +148,7 @@ export const createMockOrderItems = (): OrderItem[] => [
     product: {
       id: 'prod-2',
       name: 'Jeans Slim Fit',
-      images: ['https://images.unsplash.com/photo-1542272454315-7ad66931c68b?w=80&h=80&fit=crop'],
+      images: ['https://images.unsplash.com/photo-1542272454315-7ad66931c68b?w=80&h=80&fit=crop'] as unknown as any[],
       slug: 'jeans-slim-fit',
       categoria: 'ropa',
       subcategoria: 'pantalones',

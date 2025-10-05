@@ -155,7 +155,7 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                   >
                     {item.product.images?.[0] && (
                       <img
-                        src={item.product.images[0]}
+                        src={typeof item.product.images[0] === 'string' ? item.product.images[0] : item.product.images[0].url}
                         alt={item.product.name}
                         className="w-full h-full object-cover"
                       />

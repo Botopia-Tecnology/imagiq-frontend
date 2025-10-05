@@ -101,7 +101,7 @@ const CouponCard: React.FC<{
                 </div>
               </div>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
                 onClick={() => onCopy(coupon.code)}
                 className="text-white hover:bg-white hover:bg-opacity-20 p-2"
@@ -144,9 +144,8 @@ const CouponCard: React.FC<{
         <div className="bg-white p-4">
           <Button
             variant="primary"
-            fullWidth
             onClick={() => onUse(coupon.id)}
-            className="text-sm"
+            className="text-sm w-full"
           >
             Usar Cupón
           </Button>

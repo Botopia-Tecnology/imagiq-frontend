@@ -169,12 +169,9 @@ const DocumentViewer: React.FC<{
               <ul className="space-y-2">
                 {document.content.map((section, index) => (
                   <li key={section.id}>
-                    <button
-                      onClick={() => setActiveSection(section.id)}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
+                    <div className="text-gray-700 text-sm">
                       {index + 1}. {section.title}
-                    </button>
+                    </div>
                   </li>
                 ))}
               </ul>

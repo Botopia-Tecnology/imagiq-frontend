@@ -7,7 +7,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import Button from '@/components/Button';
 
 interface PageHeaderProps {
   title: string;
@@ -31,14 +30,12 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           {/* Left side - Back button + Title */}
           <div className="flex items-center gap-3">
             {onBack && (
-              <Button
-                variant="ghost"
-                size="sm"
+              <button
                 onClick={onBack}
-                className="p-2 hover:bg-gray-100"
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
-              </Button>
+              </button>
             )}
             <div>
               <h1 className="text-xl font-semibold text-gray-900">

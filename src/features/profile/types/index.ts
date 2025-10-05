@@ -22,10 +22,11 @@ export interface ProfileUser extends BaseUser {
 }
 
 // Extend existing UserAddress type
-export interface ProfileAddress extends UserAddress {
+export interface ProfileAddress extends Omit<UserAddress, 'createdAt' | 'updatedAt'> {
   alias: string;
   instructions?: string;
-  isDefault: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 // Reuse existing types where possible
@@ -53,9 +54,10 @@ export type OrderStatus =
   | 'cancelled';
 
 // Extend existing CartItem instead of creating OrderItem
-export interface OrderItem extends CartItem {
+export interface OrderItem extends Omit<CartItem, 'product'> {
   unitPrice: number;
   totalPrice: number;
+  product: any; // Simplified product for orders
 }
 
 export interface Order {

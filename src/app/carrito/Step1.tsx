@@ -117,43 +117,45 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <main className="min-h-screen bg-[#F7F7F7] py-8 px-2 md:px-0">
+    <main className="min-h-screen py-8 px-2 md:px-0">
       {/* Grid principal: productos y resumen de compra */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Productos */}
         <section
           id="carrito-productos"
-          className="bg-[#EAEAEA] rounded-2xl p-8 shadow-md"
+          className="p-4"
         >
-          <h2 className="font-bold text-lg mb-4">Producto</h2>
+          <h2 className="font-bold text-lg mb-6">Productos</h2>
           {cartProducts.length === 0 ? (
             <div className="text-gray-500 text-center py-16 text-lg">
               No hay productos en el carrito.
             </div>
           ) : (
-            cartProducts.map((product, idx) => (
-              <div
-                key={idx}
-                className={`mb-6 transition-all duration-300 ${
-                  addedName === product.name ? "ring-2 ring-blue-500" : ""
-                }`}
-              >
-                <ProductCard
-                  nombre={product.name}
-                  imagen={product.image}
-                  precio={product.price}
-                  cantidad={product.quantity}
-                  onQuantityChange={(cantidad) =>
-                    handleQuantityChange(idx, cantidad)
-                  }
-                  onRemove={() => handleRemove(idx)}
-                />
-              </div>
-            ))
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              {cartProducts.map((product, idx) => (
+                <div
+                  key={product.id}
+                  className={`p-3 transition-all duration-300 ${
+                    addedName === product.name ? "ring-2 ring-blue-400 rounded-lg" : ""
+                  }`}
+                >
+                  <ProductCard
+                    nombre={product.name}
+                    imagen={product.image}
+                    precio={product.price}
+                    cantidad={product.quantity}
+                    onQuantityChange={(cantidad) =>
+                      handleQuantityChange(idx, cantidad)
+                    }
+                    onRemove={() => handleRemove(idx)}
+                  />
+                </div>
+              ))}
+            </div>
           )}
         </section>
         {/* Resumen de compra */}
-        <aside className="bg-[#EAEAEA] rounded-2xl p-6 shadow-sm flex flex-col gap-6">
+        <aside className="rounded-2xl p-6 flex flex-col gap-6">
           <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-sm">
@@ -211,19 +213,24 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               {validationError}
             </div>
           )}
-          <button
-            className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
+            <button
+              className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
               cartProducts.length === 0
                 ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "bg-blue-600 text-white hover:bg-blue-700"
-            }`}
-            onClick={handleContinue}
-            disabled={cartProducts.length === 0}
-          >
-            {cartProducts.length === 0
+                : "text-black hover:brightness-95"
+              }`}
+              style={
+              cartProducts.length === 0
+                ? undefined
+                : { backgroundColor: "#87CEEB" }
+              }
+              onClick={handleContinue}
+              disabled={cartProducts.length === 0}
+            >
+              {cartProducts.length === 0
               ? "Agrega productos para continuar"
               : "Continuar pago"}
-          </button>
+            </button>
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}

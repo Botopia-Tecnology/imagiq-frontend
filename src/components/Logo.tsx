@@ -1,8 +1,6 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
-import logoImagiq from "@/img/logo_imagiq.png";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -27,13 +25,12 @@ export default function Logo({
       )}
       onClick={onClick}
     >
-      <Image
-        src={logoImagiq}
+      <img
+        src="/img/Samsung_black.svg"
         alt="Imagiq Store"
         width={width}
         height={height}
         className="object-contain"
-        priority
       />
     </Link>
   );

@@ -6,6 +6,16 @@ import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
 import { addressesService, CreateAddressRequest } from "@/services/addresses.service";
 
+// Tipo extendido para manejar diferentes estructuras de PlaceDetails
+type ExtendedPlaceDetails = PlaceDetails & {
+  geometry?: {
+    location: {
+      lat: number;
+      lng: number;
+    };
+  };
+};
+
 interface AddNewAddressFormProps {
   onAddressAdded?: (address: Direccion) => void;
   onCancel?: () => void;
@@ -16,8 +26,8 @@ export default function AddNewAddressForm({
   onCancel,
 }: AddNewAddressFormProps) {
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedAddress, setSelectedAddress] = useState<PlaceDetails | null>(null);
-  const [selectedBillingAddress, setSelectedBillingAddress] = useState<PlaceDetails | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<ExtendedPlaceDetails | null>(null);
+  const [selectedBillingAddress, setSelectedBillingAddress] = useState<ExtendedPlaceDetails | null>(null);
   const [formData, setFormData] = useState({
     nombreDireccion: "",
     tipoDireccion: "casa" as "casa" | "apartamento" | "oficina" | "otro",
@@ -71,13 +81,47 @@ export default function AddNewAddressForm({
     setIsLoading(true);
 
     try {
+      // Validar que selectedAddress tenga la estructura necesaria
+      if (!selectedAddress) {
+        throw new Error('No se ha seleccionado una dirección válida');
+      }
+
+      console.log('📍 Selected address object:', selectedAddress);
+
+      // Obtener coordenadas de manera segura - manejar diferentes estructuras posibles
+      let latitude: number;
+      let longitude: number;
+
+      if (selectedAddress.latitude !== undefined && selectedAddress.longitude !== undefined) {
+        // Estructura directa según PlaceDetails type
+        latitude = selectedAddress.latitude;
+        longitude = selectedAddress.longitude;
+      } else if (selectedAddress.geometry?.location) {
+        // Estructura de Google Places API
+        latitude = selectedAddress.geometry.location.lat;
+        longitude = selectedAddress.geometry.location.lng;
+      } else {
+        throw new Error('No se pudieron obtener las coordenadas de la dirección seleccionada');
+      }
+
+      // Transformar PlaceDetails al formato esperado por el backend
+      const transformedPlaceDetails = {
+        placeId: selectedAddress.placeId,
+        formattedAddress: selectedAddress.formattedAddress,
+        name: selectedAddress.name || '',
+        latitude,
+        longitude,
+        addressComponents: selectedAddress.addressComponents || [],
+        types: selectedAddress.types || [],
+      };
+
       // Crear dirección de envío
       const shippingAddressRequest: CreateAddressRequest = {
         nombreDireccion: formData.nombreDireccion,
         tipoDireccion: formData.tipoDireccion,
         tipo: formData.usarMismaParaFacturacion ? 'AMBOS' : 'ENVIO',
         esPredeterminada: false, // No marcar como predeterminada desde checkout
-        placeDetails: selectedAddress,
+        placeDetails: transformedPlaceDetails as PlaceDetails,
         complemento: formData.complemento || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,
         puntoReferencia: formData.puntoReferencia || undefined,
@@ -89,12 +133,41 @@ export default function AddNewAddressForm({
 
       // Si no usa la misma dirección, crear dirección de facturación separada
       if (!formData.usarMismaParaFacturacion && selectedBillingAddress) {
+        console.log('📍 Selected billing address object:', selectedBillingAddress);
+
+        // Obtener coordenadas de la dirección de facturación de manera segura
+        let billingLatitude: number;
+        let billingLongitude: number;
+
+        if (selectedBillingAddress.latitude !== undefined && selectedBillingAddress.longitude !== undefined) {
+          // Estructura directa según PlaceDetails type
+          billingLatitude = selectedBillingAddress.latitude;
+          billingLongitude = selectedBillingAddress.longitude;
+        } else if (selectedBillingAddress.geometry?.location) {
+          // Estructura de Google Places API
+          billingLatitude = selectedBillingAddress.geometry.location.lat;
+          billingLongitude = selectedBillingAddress.geometry.location.lng;
+        } else {
+          throw new Error('No se pudieron obtener las coordenadas de la dirección de facturación seleccionada');
+        }
+
+        // Transformar PlaceDetails de facturación al formato esperado por el backend
+        const transformedBillingPlaceDetails = {
+          placeId: selectedBillingAddress.placeId,
+          formattedAddress: selectedBillingAddress.formattedAddress,
+          name: selectedBillingAddress.name || '',
+          latitude: billingLatitude,
+          longitude: billingLongitude,
+          addressComponents: selectedBillingAddress.addressComponents || [],
+          types: selectedBillingAddress.types || [],
+        };
+
         const billingAddressRequest: CreateAddressRequest = {
           nombreDireccion: formData.nombreDireccionFacturacion,
           tipoDireccion: formData.tipoDireccionFacturacion,
           tipo: 'FACTURACION',
           esPredeterminada: false,
-          placeDetails: selectedBillingAddress,
+          placeDetails: transformedBillingPlaceDetails as PlaceDetails,
           complemento: formData.complementoFacturacion || undefined,
           instruccionesEntrega: formData.instruccionesEntregaFacturacion || undefined,
           puntoReferencia: formData.puntoReferenciaFacturacion || undefined,
@@ -153,7 +226,7 @@ export default function AddNewAddressForm({
 
   const handleAddressSelect = (place: PlaceDetails) => {
     console.log('✅ Dirección de envío seleccionada en checkout:', place);
-    setSelectedAddress(place);
+    setSelectedAddress(place as ExtendedPlaceDetails);
     // Clear address error when address is selected
     if (errors.address) {
       setErrors((prev) => ({ ...prev, address: "" }));
@@ -162,7 +235,7 @@ export default function AddNewAddressForm({
 
   const handleBillingAddressSelect = (place: PlaceDetails) => {
     console.log('✅ Dirección de facturación seleccionada en checkout:', place);
-    setSelectedBillingAddress(place);
+    setSelectedBillingAddress(place as ExtendedPlaceDetails);
     // Clear billing address error when address is selected
     if (errors.billingAddress) {
       setErrors((prev) => ({ ...prev, billingAddress: "" }));

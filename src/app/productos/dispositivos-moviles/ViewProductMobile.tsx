@@ -15,7 +15,6 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
-import samsungLogo from "@/img/Samsung_black.png";
 import { AnimatePresence, motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -351,8 +350,8 @@ export default function ViewProduct({
                   }}
                   whileTap={{ scale: 0.99 }}
                 >
-                  <Image
-                    src={samsungLogo}
+                  <img
+                    src="/img/Samsung_black.svg"
                     alt="Samsung Logo"
                     onClick={() => {
                       window.location.href = "/";
@@ -360,7 +359,6 @@ export default function ViewProduct({
                     height={80}
                     width={70}
                     className="h-10 md:h-12 w-auto cursor-pointer"
-                    priority
                     style={{ display: "block" }}
                   />
                 </motion.div>

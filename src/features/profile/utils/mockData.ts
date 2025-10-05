@@ -4,6 +4,8 @@
  * Following Single Responsibility Principle - only handles mock data generation
  */
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import {
   ProfileUser,
   ProfileAddress,
@@ -124,7 +126,7 @@ export const createMockOrderItems = (): OrderItem[] => [
     product: {
       id: 'prod-1',
       name: 'Camiseta Básica Blanca',
-      images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop'] as unknown as unknown[],
+      images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=80&h=80&fit=crop'] as any,
       slug: 'camiseta-basica-blanca',
       categoria: 'ropa',
       subcategoria: 'camisetas',
@@ -148,7 +150,7 @@ export const createMockOrderItems = (): OrderItem[] => [
     product: {
       id: 'prod-2',
       name: 'Jeans Slim Fit',
-      images: ['https://images.unsplash.com/photo-1542272454315-7ad66931c68b?w=80&h=80&fit=crop'] as unknown as unknown[],
+      images: ['https://images.unsplash.com/photo-1542272454315-7ad66931c68b?w=80&h=80&fit=crop'] as any,
       slug: 'jeans-slim-fit',
       categoria: 'ropa',
       subcategoria: 'pantalones',

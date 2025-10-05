@@ -53,11 +53,19 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
+// Simplified product for order items (to avoid complex Product type requirements)
+export interface SimplifiedProduct {
+  id: string;
+  name: string;
+  images: unknown[];
+  [key: string]: unknown;
+}
+
 // Extend existing CartItem instead of creating OrderItem
 export interface OrderItem extends Omit<CartItem, 'product'> {
   unitPrice: number;
   totalPrice: number;
-  product: Record<string, unknown>; // Simplified product for orders
+  product: SimplifiedProduct; // Simplified product for orders
 }
 
 export interface Order {

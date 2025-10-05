@@ -153,10 +153,10 @@ export const OrderCard: React.FC<OrderCardProps> = ({
                     key={item.id}
                     className="w-10 h-10 bg-gray-100 rounded-md flex-shrink-0 overflow-hidden"
                   >
-                    {item.product.images?.[0] && (
+                    {(item.product.images?.[0] as unknown) && (
                       <img
-                        src={typeof item.product.images[0] === 'string' ? item.product.images[0] : item.product.images[0].url}
-                        alt={item.product.name}
+                        src={typeof item.product.images[0] === 'string' ? (item.product.images[0] as string) : (item.product.images[0] as {url: string}).url}
+                        alt={(item.product.name as string) || 'Product'}
                         className="w-full h-full object-cover"
                       />
                     )}

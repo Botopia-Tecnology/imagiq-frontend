@@ -57,7 +57,7 @@ export type OrderStatus =
 export interface OrderItem extends Omit<CartItem, 'product'> {
   unitPrice: number;
   totalPrice: number;
-  product: any; // Simplified product for orders
+  product: Record<string, unknown>; // Simplified product for orders
 }
 
 export interface Order {

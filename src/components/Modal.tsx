@@ -41,7 +41,7 @@ export default function Modal({
     sm: "max-w-md",
     md: "max-w-lg",
     lg: "max-w-2xl",
-    xl: "max-w-2xl", // Same as original modal
+    xl: "max-w-xl", // Smaller size for better visibility
   };
 
   // Prevent body scroll when modal is open
@@ -89,14 +89,14 @@ export default function Modal({
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[9999] flex items-start justify-center pt-20 pb-8 px-4 overflow-y-auto",
+        "fixed inset-0 z-[100] flex items-start justify-center pt-40 pb-4 px-4 overflow-y-auto",
         overlayClassName || "bg-white bg-opacity-70 backdrop-blur-sm"
       )}
       onClick={handleOverlayClick}
     >
       <div
         className={cn(
-          "relative bg-white rounded-2xl shadow-2xl w-full max-h-[calc(100vh-10rem)] border border-gray-200 animate-in fade-in-0 zoom-in-95 duration-200 mb-8 flex flex-col",
+          "relative bg-white rounded-2xl shadow-2xl w-full max-h-[calc(100vh-11rem)] border border-gray-200 animate-in fade-in-0 zoom-in-95 duration-200 mb-8 flex flex-col",
           sizes[size],
           contentClassName
         )}
@@ -108,12 +108,12 @@ export default function Modal({
         {showHeader && (
           <div
             className={cn(
-              "flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-6 flex justify-between items-center z-10",
+              "flex-shrink-0 bg-white rounded-t-2xl border-b border-gray-200 p-4 flex justify-between items-center z-10",
               headerClassName
             )}
           >
             {title && (
-              <h3 className="text-2xl font-bold text-gray-900">{title}</h3>
+              <h3 className="text-xl font-bold text-gray-900">{title}</h3>
             )}
             <button
               onClick={onClose}
@@ -128,7 +128,7 @@ export default function Modal({
         <div
           className={cn(
             "flex-1 overflow-y-auto",
-            showHeader ? "p-8" : footer ? "p-6" : "p-6 rounded-2xl"
+            showHeader ? "p-5" : footer ? "p-4" : "p-4 rounded-2xl"
           )}
           style={{
             borderRadius:
@@ -146,7 +146,7 @@ export default function Modal({
         {footer && (
           <div
             className={cn(
-              "flex-shrink-0 bg-white rounded-b-2xl border-t border-gray-200 p-6",
+              "flex-shrink-0 bg-white rounded-b-2xl border-t border-gray-200 p-4",
               footerClassName
             )}
           >

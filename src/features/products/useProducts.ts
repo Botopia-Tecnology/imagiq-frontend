@@ -23,23 +23,9 @@ import {
   groupProductsByCategory,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
+import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
 
-interface ProductFilters {
-  category?: string;
-  subcategory?: string;
-  precioMin?: number;
-  precioMax?: number;
-  color?: string;
-  capacity?: string;
-  name?: string;
-  withDiscount?: boolean;
-  minStock?: number;
-  descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
-  model?: string; 
-  filterMode?: "AND" | "OR"; // Modo de filtrado
-  page?: number; // Página actual para paginación
-  limit?: number; // Límite de productos por página
-}
+type ProductFilters = FrontendFilterParams;
 
 type UserInfo = {
   id?: string;
@@ -168,6 +154,10 @@ export const useProducts = (
       }
       if (filters.model) params.modelo = filters.model;
       if (filters.filterMode) params.filterMode = filters.filterMode;
+
+      // Añadir parámetros de ordenamiento
+      if (filters.sortBy) params.sortBy = filters.sortBy;
+      if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
       return params;
     },
@@ -645,3 +635,5 @@ export const useRecommendations = () => {
     refreshRecommendations,
   };
 };
+
+

@@ -6,7 +6,7 @@
 
 import type { FilterState } from "../../components/FilterSidebar";
 import { keywordMap } from "../constants/accesoriosConstants";
-import type { ApiFilters } from "./sharedInterfaces";
+import type { ApiFilters } from "@/lib/sharedInterfaces";
 
 /**
  * Convierte filtros de tipo de accesorio a filtros de API

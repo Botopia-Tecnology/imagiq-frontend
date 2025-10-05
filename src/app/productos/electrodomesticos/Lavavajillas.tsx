@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
+import SortDropdown from "@/components/ui/SortDropdown";
+import { applySortToFilters } from "@/lib/sortUtils";
 import ProductCard from "../components/ProductCard";
 import FilterSidebar, {
   type FilterConfig,
@@ -115,7 +117,7 @@ export default function LavavajillasSection() {
   const [resultCount] = useState(8);
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("relevancia");
+  const [sortBy, setSortBy] = useState("");
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
@@ -131,15 +133,15 @@ export default function LavavajillasSection() {
     []
   );
 
-  // Crear filtros iniciales con paginación
+  // Crear filtros iniciales con paginación y ordenamiento
   const initialFilters = useMemo(() => {
-    const filters = {
+    const baseFilters = {
       ...apiFilters,
       page: currentPage,
       limit: itemsPerPage,
     };
-    return filters;
-  }, [apiFilters, currentPage, itemsPerPage]);
+    return applySortToFilters(baseFilters, sortBy);
+  }, [apiFilters, currentPage, itemsPerPage, sortBy]);
 
   const {
     products,
@@ -171,6 +173,11 @@ export default function LavavajillasSection() {
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
+
+  // Resetear a la página 1 cuando cambie el ordenamiento
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [sortBy]);
 
   // Actualizar filtros cuando cambien los parámetros de paginación
   useEffect(() => {
@@ -355,17 +362,11 @@ export default function LavavajillasSection() {
                     Filtros
                   </button>
                 )}
-                <select
+                <SortDropdown
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
+                  onChange={setSortBy}
                   className="bg-white border border-gray-300 rounded-lg px-4 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="relevancia">Relevancia</option>
-                  <option value="precio-menor">Precio: menor a mayor</option>
-                  <option value="precio-mayor">Precio: mayor a menor</option>
-                  <option value="nombre">Nombre A-Z</option>
-                  <option value="calificacion">Mejor calificados</option>
-                </select>
+                />
 
                 {/* Toggle vista */}
                 {(device === "desktop" || device === "large") && (

@@ -20,8 +20,6 @@ import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import { PointsQCard } from "@/components/ui/PointsQCard";
 
 // Imports de imágenes de logos de marca
-import logoSamsungWhite from "@/img/logo_Samsung.png";
-import logoSamsungBlack from "@/img/Samsung_black.png";
 
 // Clases reutilizables
 const iconButtonClass = "flex items-center justify-center w-10 h-10";
@@ -136,24 +134,21 @@ export default function Navbar() {
           className={`w-7 h-7 ${getIconColorClasses(variant)}`}
           aria-label="Carrito"
         />
-        {navbar.isClient && cartCount > 0 && (
-          <span
-            className={cn(
-              badgeClass,
-              variant === "mobile"
-                ? cartCount > 0
-                  ? "opacity-100 scale-100"
-                  : "opacity-0 scale-0"
-                : navbar.bump
-                ? "scale-110"
-                : "scale-100"
-            )}
-            aria-label={`Carrito: ${cartCount} productos`}
-            aria-live="polite"
-          >
-            {cartCount > 99 ? "99+" : cartCount}
-          </span>
-        )}
+        {navbar.isClient && cartCount > 0 && (() => {
+          const mobileClasses = cartCount > 0 ? "opacity-100 scale-100" : "opacity-0 scale-0";
+          const desktopClasses = navbar.bump ? "scale-110" : "scale-100";
+          const badgeClasses = variant === "mobile" ? mobileClasses : desktopClasses;
+
+          return (
+            <span
+              className={cn(badgeClass, badgeClasses)}
+              aria-label={`Carrito: ${cartCount} productos`}
+              aria-live="polite"
+            >
+              {cartCount > 99 ? "99+" : cartCount}
+            </span>
+          );
+        })()}
       </Link>
     );
   };
@@ -176,23 +171,34 @@ export default function Navbar() {
   );
 
   // Clases dinámicas para el header
-  const headerClasses = cn(
-    "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60 sticky top-0 left-0 md:static",
-    navbar.isOfertas && !navbar.isScrolled
-      ? "bg-transparent"
-      : navbar.isOfertas && navbar.isScrolled
-      ? "bg-white/60 shadow backdrop-blur-md"
-      : navbar.isDispositivosMoviles ||
-        navbar.isElectrodomesticos ||
-        navbar.isMasInformacionProducto ||
-        navbar.isScrolledNavbar
-      ? "bg-white/60 shadow backdrop-blur-md"
-      : navbar.isHome && !navbar.isScrolled
-      ? "bg-transparent"
-      : navbar.isProductDetail
-      ? "bg-transparent"
-      : "bg-white/60 shadow backdrop-blur-md"
-  );
+  const getHeaderClasses = () => {
+    const baseClasses = "w-full z-50 transition-all duration-300 backdrop-blur-md bg-white/60 sticky top-0 left-0 md:static";
+
+    if (navbar.isOfertas && !navbar.isScrolled) {
+      return cn(baseClasses, "bg-transparent");
+    }
+
+    if (navbar.isOfertas && navbar.isScrolled) {
+      return cn(baseClasses, "bg-white/60 shadow backdrop-blur-md");
+    }
+
+    if (navbar.isDispositivosMoviles || navbar.isElectrodomesticos ||
+        navbar.isMasInformacionProducto || navbar.isScrolledNavbar) {
+      return cn(baseClasses, "bg-white/60 shadow backdrop-blur-md");
+    }
+
+    if (navbar.isHome && !navbar.isScrolled) {
+      return cn(baseClasses, "bg-transparent");
+    }
+
+    if (navbar.isProductDetail) {
+      return cn(baseClasses, "bg-transparent");
+    }
+
+    return cn(baseClasses, "bg-white/60 shadow backdrop-blur-md");
+  };
+
+  const headerClasses = getHeaderClasses();
 
   // Estilos dinámicos para el header
   const headerStyles = {
@@ -267,7 +273,6 @@ export default function Navbar() {
         data-navbar="true"
         className={headerClasses}
         style={headerStyles}
-        role="navigation"
         aria-label="Navegación principal"
       >
         {/* Logo principal */}
@@ -281,7 +286,7 @@ export default function Navbar() {
                 navbar.router.push("/");
               }}
               aria-label="Inicio"
-              className="flex items-end gap-2 cursor-pointer"
+              className="flex items-end cursor-pointer"
               style={{ padding: 0 }}
             >
               <Image
@@ -296,13 +301,16 @@ export default function Navbar() {
                 priority
               />
               <Image
-                src={navbar.showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
+                src="/img/Samsung_black.svg"
                 alt="Samsung Logo"
                 height={80}
                 width={70}
                 className="h-10 md:h-12 w-auto"
+                style={{
+                  display: "block",
+                  filter: navbar.showWhiteLogo ? "invert(1) brightness(2)" : "none"
+                }}
                 priority
-                style={{ display: "block" }}
               />
               <span
                 className={
@@ -312,7 +320,7 @@ export default function Navbar() {
                 }
                 style={{
                   letterSpacing: "0.08em",
-                  marginBottom: "11px",
+                  marginBottom: "9px",
                   lineHeight: "normal",
                   alignSelf: "flex-end",
                 }}

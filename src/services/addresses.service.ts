@@ -89,8 +89,8 @@ export class AddressesService {
    * Obtiene el token de autorización del localStorage o contexto de auth
    */
   private getAuthToken(): string {
-    // Implementar según tu sistema de autenticación
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    // Usar la clave correcta del token que se guarda en login
+    const token = localStorage.getItem('imagiq_token') || sessionStorage.getItem('imagiq_token');
     return token || '';
   }
 
@@ -110,18 +110,23 @@ export class AddressesService {
    */
   public async createAddress(addressData: CreateAddressRequest): Promise<AddressResponse> {
     try {
-      // Si no hay token JWT, incluir usuarioId del localStorage
-      const token = this.getAuthToken();
+      // Obtener información del usuario del localStorage
+      const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
       const requestData = { ...addressData };
 
-      if (!token) {
-        const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
-        if (userInfo.id) {
-          requestData.usuarioId = userInfo.id;
-        } else if (userInfo.email) {
-          requestData.usuarioId = userInfo.email;
-        }
+      // SIEMPRE incluir usuarioId explícitamente
+      if (userInfo.id) {
+        requestData.usuarioId = userInfo.id;
+      } else if (userInfo.email) {
+        requestData.usuarioId = userInfo.email;
+      } else {
+        throw new Error('No se encontró información del usuario. Por favor, inicia sesión nuevamente.');
       }
+
+      console.log('📤 Enviando datos de dirección:', {
+        ...requestData,
+        placeDetails: requestData.placeDetails ? 'PlaceDetails object' : 'null'
+      });
 
       const response = await fetch(`${BASE_CONFIG.API_URL}/addresses`, {
         method: 'POST',
@@ -130,12 +135,22 @@ export class AddressesService {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('❌ Error response from API:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ Dirección creada exitosamente:', result);
+      return result;
     } catch (error: unknown) {
+      console.error('❌ Error creando dirección:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido creando dirección';
       throw new Error(errorMessage);
     }

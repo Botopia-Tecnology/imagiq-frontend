@@ -2,7 +2,7 @@ import CreateAccountForm from "./CreateAccount";
 
 export default function Page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#e6eef5] via-white to-[#b3c7db] py-4 sm:py-6 lg:py-10 px-3 sm:px-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#e6eef5] via-white to-[#b3c7db] pt-6 pb-4 sm:pt-8 sm:pb-6 lg:pt-10 lg:pb-10 px-3 sm:px-4 relative overflow-hidden">
       {/* Elementos decorativos flotantes - reducidos en móvil */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-4 -left-4 w-48 h-48 sm:w-72 sm:h-72 bg-[#002142]/5 rounded-full blur-3xl animate-pulse" />
@@ -10,7 +10,7 @@ export default function Page() {
         <div className="absolute -bottom-8 left-1/3 w-56 h-56 sm:w-80 sm:h-80 bg-indigo-400/8 rounded-full blur-3xl animate-pulse" />
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen">
+      <div className="relative z-10 flex flex-col items-center justify-start">
         {/* Contenedor principal flotante */}
         <div className="w-full max-w-2xl mx-auto">
           {/* Card principal con efecto glassmorphism - padding reducido en móvil */}

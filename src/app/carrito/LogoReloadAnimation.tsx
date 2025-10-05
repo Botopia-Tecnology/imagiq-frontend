@@ -1,6 +1,5 @@
 "use client"
 import React, { useEffect, useRef } from "react";
-import logoSamsung from "@/img/logo_Samsung.png";
 
 /**
  * Animación tipo ola con el logo de Samsung creciendo sobre pantalla azul.
@@ -17,7 +16,7 @@ type LogoReloadAnimationProps = {
 };
 
 // Importa el logo desde el inicio para optimización y visibilidad
-const LOGO_SRC = logoSamsung;
+const LOGO_SRC = "/img/Samsung_black.svg";
 
 /**
  * LogoReloadAnimation

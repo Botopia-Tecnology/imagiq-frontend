@@ -10,9 +10,6 @@ import { ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import gifAudifonos from "@/img/gif/gif_audifonos.gif";
-import samsungLogoBlack from "@/img/Samsung_black.png";
-import samsungLogoWhite from "@/img/logo_Samsung.png";
-import samsungLogoGray from "@/img/samsung_gray.png";
 
 import { useGifOnce } from "@/hooks/useGifOnce";
 
@@ -333,13 +330,13 @@ export default function HeroSection() {
           <h1 className="text-3xl sm:text-3xl lg:text-5xl font-bold text-white mb-2 text-right leading-tight tracking-tight">
             {currentSlideData.title}
             <span className="block ml-2 mt-1">
-              <Image
-                src={samsungLogoGray}
+              <img
+                src="/img/Samsung_black.svg"
                 alt="Samsung"
                 width={90}
                 height={54}
                 className="inline h-10 w-auto align-middle"
-                priority
+                style={{ filter: "brightness(0.7) opacity(0.8)" }}
               />
             </span>
           </h1>
@@ -391,13 +388,13 @@ export default function HeroSection() {
         </div>
         {/* Logo Samsung */}
         <div className="flex items-center justify-center">
-          <Image
-            src={isHome ? samsungLogoWhite : samsungLogoBlack}
+          <img
+            src="/img/Samsung_black.svg"
             alt="Samsung"
             width={110}
             height={32}
             className="h-7 w-auto opacity-80"
-            priority
+            style={{ filter: isHome ? "invert(1) brightness(2)" : "none" }}
           />
         </div>
       </div>

@@ -62,8 +62,10 @@ export const useDelivery = () => {
     (deliveryMethod === "domicilio" && address !== null) ||
     (deliveryMethod === "tienda" && selectedStore !== null);
 
-  // Función para agregar una nueva dirección
+  // Función para refrescar direcciones después de agregar una nueva
   const addAddress = (userIdentifier: string) => {
+    // Esta función solo refresca la lista de direcciones
+    // La creación real se hace en AddNewAddressForm
     fetch(`${API_BASE_URL}/api/users/${userIdentifier}/addresses`)
       .then((res) => res.json())
       .then((data) => {
@@ -71,7 +73,7 @@ export const useDelivery = () => {
         return data;
       })
       .catch((error) => {
-        console.error("Error adding address:", error);
+        console.error("Error refreshing addresses:", error);
         return [];
       });
   };

@@ -19,7 +19,6 @@ import { motion } from "framer-motion";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import setingLogo from "@/img/iconos/Setting_line_negro.png";
 import packageCar from "@/img/iconos/package_car_negro.png";
-import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
@@ -219,8 +218,8 @@ export default function ViewProductAppliance({
                 className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
                 priority
               />
-              <Image
-                src={samsungLogo}
+              <img
+                src="/img/Samsung_black.svg"
                 alt="Samsung Logo"
                 onClick={() => {
                   window.location.href = "/";
@@ -228,7 +227,6 @@ export default function ViewProductAppliance({
                 height={80}
                 width={70}
                 className="h-10 md:h-12 w-auto cursor-pointer"
-                priority
                 style={{ display: "block" }}
               />
 

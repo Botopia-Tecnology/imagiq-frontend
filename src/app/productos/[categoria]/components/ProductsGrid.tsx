@@ -117,16 +117,17 @@ const CategoryProductsGrid = forwardRef<
           </div>
         ) : (
           <>
-            {/* Banner promocional 1 - Grid position: fila 2, columna 1 */}
+            {/* Banner promocional - Grid position: fila 2-3, columna 1 */}
             {showBanner && viewMode === "grid" && products.length >= 4 && (
               <div
-                style={{ gridRow: "2", gridColumn: "1" }}
+                style={{ gridRow: "2 / 4", gridColumn: "1" }}
               >
-                <div className="relative rounded-xl overflow-hidden shadow-lg h-full">
+                <div className="relative rounded-xl overflow-hidden shadow-lg" style={{ height: '900px' }}>
                   <Image
                     src="https://images.samsung.com/is/image/samsung/assets/co/pf/20250929/24038_PC_MX_Offer-deals_s25fe-launch_PD19_Content-Card-1_312x1012_OP02.jpg?$ORIGIN_JPG$"
                     alt="Promoción especial"
                     fill
+                    style={{ objectPosition: 'center center' }}
                     className="object-cover"
                     sizes="(max-width: 768px) 100vw, 33vw"
                     priority
@@ -134,27 +135,6 @@ const CategoryProductsGrid = forwardRef<
                   <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-5 z-10">
                     <h3 className="text-white text-xl font-bold mb-2">¿Aún lo estás pensando?</h3>
                     <p className="text-white text-sm">Usa cupones especiales y termina tu compra con descuento</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Banner promocional 2 - Grid position: fila 4, columna 2 */}
-            {showBanner && viewMode === "grid" && products.length >= 7 && (
-              <div
-                style={{ gridRow: "4", gridColumn: "2" }}
-              >
-                <div className="relative rounded-xl overflow-hidden shadow-lg h-full">
-                  <Image
-                    src="https://images.samsung.com/is/image/samsung/assets/co/smartphones/23086_01_VD_BANNER_PF_VISA_330x1012.jpg?$ORIGIN_JPG$"
-                    alt="10% descuento Visa"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 z-10">
-                    <h3 className="text-white text-base font-bold mb-1">10% de Dto. adicional pagando con tarjetas Visa</h3>
-                    <p className="text-white text-xs leading-tight">Sábados, Domingos y Festivos. Ahora los multiplicamos X10: Redime 25.000 puntos y recibe $250.000 Dto. Úsalos todos y ahorra.</p>
                   </div>
                 </div>
               </div>
@@ -169,38 +149,37 @@ const CategoryProductsGrid = forwardRef<
                   // Fila 1: productos 0, 1, 2 (columnas 1, 2, 3)
                   gridPosition = { gridRow: "1", gridColumn: `${index + 1}` };
                 } else if (index === 3) {
-                  // Fila 2: producto 3 (columna 2, porque columna 1 la ocupa el banner 1)
+                  // Fila 2: producto 3 (columna 2, porque columna 1 la ocupa el banner)
                   gridPosition = { gridRow: "2", gridColumn: "2" };
                 } else if (index === 4) {
                   // Fila 2: producto 4 (columna 3)
                   gridPosition = { gridRow: "2", gridColumn: "3" };
-                } else if (index >= 5 && index <= 7) {
-                  // Fila 3: productos 5, 6, 7 (columnas 1, 2, 3)
-                  gridPosition = { gridRow: "3", gridColumn: `${(index - 5) + 1}` };
-                } else if (index === 8) {
-                  // Fila 4: producto 8 (columna 1)
-                  gridPosition = { gridRow: "4", gridColumn: "1" };
-                } else if (index === 9) {
-                  // Fila 4: producto 9 (columna 3, porque columna 2 la ocupa el banner 2)
-                  gridPosition = { gridRow: "4", gridColumn: "3" };
+                } else if (index === 5) {
+                  // Fila 3: producto 5 (columna 2, porque columna 1 la ocupa el banner)
+                  gridPosition = { gridRow: "3", gridColumn: "2" };
+                } else if (index === 6) {
+                  // Fila 3: producto 6 (columna 3)
+                  gridPosition = { gridRow: "3", gridColumn: "3" };
                 } else {
-                  // Fila 5 en adelante: flujo normal (auto)
-                  const rowAfterBanner2 = Math.floor((index - 10) / 3) + 5;
-                  const colAfterBanner2 = ((index - 10) % 3) + 1;
-                  gridPosition = { gridRow: `${rowAfterBanner2}`, gridColumn: `${colAfterBanner2}` };
+                  // Fila 4 en adelante: flujo normal (auto)
+                  const rowAfterBanner = Math.floor((index - 7) / 3) + 4;
+                  const colAfterBanner = ((index - 7) % 3) + 1;
+                  gridPosition = { gridRow: `${rowAfterBanner}`, gridColumn: `${colAfterBanner}` };
                 }
+              }
+
+              let cardClassName = "w-full";
+
+              if (viewMode === "grid") {
+                cardClassName = showBanner
+                  ? "" // En grid con banner usamos style para posicionar
+                  : "w-full sm:w-1/3 lg:w-1/4 mx-auto";
               }
 
               return (
                 <div
                   key={product.sku}
-                  className={
-                    viewMode === "grid"
-                      ? showBanner
-                        ? "" // En grid con banner usamos style para posicionar
-                        : "w-full sm:w-1/3 lg:w-1/4 mx-auto"
-                      : "w-full"
-                  }
+                  className={cardClassName}
                   style={showBanner && viewMode === "grid" ? gridPosition : undefined}
                 >
                   <ProductCard

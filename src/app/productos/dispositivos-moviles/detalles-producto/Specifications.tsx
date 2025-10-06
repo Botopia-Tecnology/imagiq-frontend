@@ -94,6 +94,7 @@ const Specifications: React.FC<SpecificationsProps> = ({ product }) => {
   // --- VISUAL: UX mejorada, tabs y contenido ---
   return (
     <section
+      id="especificaciones-section"
       className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-8 md:py-12"
       aria-label="Especificaciones técnicas"
     >

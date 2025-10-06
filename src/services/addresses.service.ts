@@ -61,7 +61,7 @@ export interface AddressResponse {
  * Configuración base del servicio
  */
 const BASE_CONFIG = {
-  API_URL: process.env.NEXT_PUBLIC_API_GATEWAY_URL || 'http://localhost:3001/api',
+  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
 };
 
 /**
@@ -89,8 +89,8 @@ export class AddressesService {
    * Obtiene el token de autorización del localStorage o contexto de auth
    */
   private getAuthToken(): string {
-    // Implementar según tu sistema de autenticación
-    const token = localStorage.getItem('auth_token') || sessionStorage.getItem('auth_token');
+    // Usar la clave correcta del token que se guarda en login
+    const token = localStorage.getItem('imagiq_token') || sessionStorage.getItem('imagiq_token');
     return token || '';
   }
 
@@ -110,32 +110,47 @@ export class AddressesService {
    */
   public async createAddress(addressData: CreateAddressRequest): Promise<AddressResponse> {
     try {
-      // Si no hay token JWT, incluir usuarioId del localStorage
-      const token = this.getAuthToken();
+      // Obtener información del usuario del localStorage
+      const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
       const requestData = { ...addressData };
 
-      if (!token) {
-        const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
-        if (userInfo.id) {
-          requestData.usuarioId = userInfo.id;
-        } else if (userInfo.email) {
-          requestData.usuarioId = userInfo.email;
-        }
+      // SIEMPRE incluir usuarioId explícitamente
+      if (userInfo.id) {
+        requestData.usuarioId = userInfo.id;
+      } else if (userInfo.email) {
+        requestData.usuarioId = userInfo.email;
+      } else {
+        throw new Error('No se encontró información del usuario. Por favor, inicia sesión nuevamente.');
       }
 
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses`, {
+      console.log('📤 Enviando datos de dirección:', {
+        ...requestData,
+        placeDetails: requestData.placeDetails ? 'PlaceDetails object' : 'null'
+      });
+
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses`, {
         method: 'POST',
         headers: this.getHeaders(),
         body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorText = await response.text();
+        console.error('❌ Error response from API:', errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = { message: errorText };
+        }
         throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json();
+      const result = await response.json();
+      console.log('✅ Dirección creada exitosamente:', result);
+      return result;
     } catch (error: unknown) {
+      console.error('❌ Error creando dirección:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido creando dirección';
       throw new Error(errorMessage);
     }
@@ -148,7 +163,7 @@ export class AddressesService {
     try {
       // Si no hay token JWT, incluir usuarioId como query param
       const token = this.getAuthToken();
-      let url = `${BASE_CONFIG.API_URL}/addresses`;
+      let url = `${BASE_CONFIG.API_URL}/api/addresses`;
 
       if (!token) {
         const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
@@ -180,7 +195,7 @@ export class AddressesService {
    */
   public async getUserAddressesByType(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<AddressResponse[]> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/by-type/${tipo}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/by-type/${tipo}`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -201,7 +216,7 @@ export class AddressesService {
    */
   public async getDefaultAddress(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<AddressResponse | null> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/default/${tipo}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/default/${tipo}`, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -225,7 +240,7 @@ export class AddressesService {
    */
   public async updateAddress(addressId: string, updateData: Partial<CreateAddressRequest>): Promise<AddressResponse> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/${addressId}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}`, {
         method: 'PUT',
         headers: this.getHeaders(),
         body: JSON.stringify(updateData),
@@ -248,7 +263,7 @@ export class AddressesService {
    */
   public async deactivateAddress(addressId: string): Promise<{ message: string }> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/${addressId}`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}`, {
         method: 'DELETE',
         headers: this.getHeaders(),
       });
@@ -270,7 +285,7 @@ export class AddressesService {
    */
   public async incrementUsageCount(addressId: string): Promise<{ message: string }> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/addresses/${addressId}/increment-usage`, {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}/increment-usage`, {
         method: 'POST',
         headers: this.getHeaders(),
       });

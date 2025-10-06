@@ -5,6 +5,7 @@
 
 import { cn } from "@/lib/utils";
 import { Filter, Grid3X3, List } from "lucide-react";
+import SortDropdown from "@/components/ui/SortDropdown";
 
 interface FilterState {
   [key: string]: string[];
@@ -85,17 +86,16 @@ export default function HeaderSection({
           </div>
 
           <div className="flex items-center gap-3">
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-white border border-gray-300 rounded-lg px-4 py-2.5 text-sm font-medium text-gray-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 shadow-sm min-w-0 max-w-xs hover:border-gray-400"
-            >
-              <option value="relevancia">Relevancia</option>
-              <option value="precio-menor">Precio: menor a mayor</option>
-              <option value="precio-mayor">Precio: mayor a menor</option>
-              <option value="nombre">Nombre A-Z</option>
-              <option value="calificacion">Mejor calificados</option>
-            </select>
+        <SortDropdown
+          value={sortBy}
+          onChange={setSortBy}
+          options={[
+            { value: "", label: "Sin ordenar" },
+            { value: "precio-menor", label: "Precio: menor a mayor" },
+            { value: "precio-mayor", label: "Precio: mayor a menor" },
+            { value: "nombre", label: "Nombre A-Z" },
+          ]}
+        />
 
             <div className="flex border border-gray-300 rounded-lg overflow-hidden shadow-sm">
               <button

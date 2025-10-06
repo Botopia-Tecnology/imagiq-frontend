@@ -153,6 +153,18 @@ export function usePlacesAutocomplete({
     ...options
   }), [options]);
 
+  // Estabilizar los callbacks para evitar recreaciones
+  const onErrorRef = useRef(onError);
+  const onPlaceSelectRef = useRef(onPlaceSelect);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
+
+  useEffect(() => {
+    onPlaceSelectRef.current = onPlaceSelect;
+  }, [onPlaceSelect]);
+
   /**
    * Función para búsqueda sin debounce
    */
@@ -225,16 +237,16 @@ export function usePlacesAutocomplete({
         error: errorMessage
       }));
 
-      onError?.(errorMessage);
+      onErrorRef.current?.(errorMessage);
     }
-  }, [defaultOptions, onError]);
+  }, [defaultOptions]); // Solo depende de defaultOptions
 
   /**
    * Función debounced para buscar lugares
    */
   const debouncedSearch = useMemo(
     () => debounce(performSearch, defaultOptions.debounceTime || 300),
-    [performSearch, defaultOptions.debounceTime]
+    [performSearch, defaultOptions]
   );
 
   /**
@@ -282,7 +294,7 @@ export function usePlacesAutocomplete({
         setInputValue(response.place.formattedAddress);
 
         // Llamar callback
-        onPlaceSelect?.(response.place);
+        onPlaceSelectRef.current?.(response.place);
 
         // Resetear flag después de completar la selección
         setTimeout(() => {
@@ -301,12 +313,12 @@ export function usePlacesAutocomplete({
         error: errorMessage
       }));
 
-      onError?.(errorMessage);
+      onErrorRef.current?.(errorMessage);
 
       // Resetear flag en caso de error también
       isSelectingPlaceRef.current = false;
     }
-  }, [validateCoverage, addressType, onPlaceSelect, onError]);
+  }, [validateCoverage, addressType]); // Solo depende de validateCoverage y addressType
 
   /**
    * Función para limpiar resultados
@@ -336,6 +348,16 @@ export function usePlacesAutocomplete({
   }, []);
 
   /**
+   * Ref para mantener la función debounced estable
+   */
+  const debouncedSearchRef = useRef(debouncedSearch);
+
+  // Actualizar la ref cuando cambie debouncedSearch
+  useEffect(() => {
+    debouncedSearchRef.current = debouncedSearch;
+  }, [debouncedSearch]);
+
+  /**
    * Efecto para buscar cuando cambia el input
    */
   useEffect(() => {
@@ -350,7 +372,7 @@ export function usePlacesAutocomplete({
 
     if (inputValue.trim()) {
       console.log('[usePlacesAutocomplete] Calling debouncedSearch');
-      debouncedSearch(inputValue);
+      debouncedSearchRef.current(inputValue);
     } else {
       console.log('[usePlacesAutocomplete] Clearing results - empty input');
       setState(prev => ({
@@ -360,16 +382,16 @@ export function usePlacesAutocomplete({
       }));
       lastSearchRef.current = '';
     }
-  }, [inputValue, debouncedSearch]);
+  }, [inputValue]); // Solo depende de inputValue
 
   /**
    * Cleanup del debounce al desmontar
    */
   useEffect(() => {
     return () => {
-      debouncedSearch.cancel();
+      debouncedSearchRef.current.cancel();
     };
-  }, [debouncedSearch]);
+  }, []); // Sin dependencias - solo al montar/desmontar
 
   return {
     state,

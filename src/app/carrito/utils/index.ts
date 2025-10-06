@@ -73,13 +73,40 @@ export async function payWithPse(props: PsePaymentData) {
 export async function fetchBanks() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/payments/epayco/banks`);
+
     if (!res.ok) {
-      throw new Error("Failed to fetch banks");
+      const errorText = await res.text();
+      throw new Error(`HTTP ${res.status} - ${res.statusText}: ${errorText || 'No additional error details'}`);
     }
+
     const data = await res.json();
     return data;
   } catch (error) {
-    console.error("Error fetching banks:", error);
-    return [];
+    // Provide detailed error information for debugging
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.error('Network error fetching banks - API server may be down:', {
+        url: `${API_BASE_URL}/api/payments/epayco/banks`,
+        error: error.message,
+        timestamp: new Date().toISOString(),
+        apiBaseUrl: API_BASE_URL
+      });
+      throw new Error(`Network error: Cannot connect to API server at ${API_BASE_URL}. Please check if the microservice is running.`);
+    } else if (error instanceof Error) {
+      console.error('API error fetching banks:', {
+        message: error.message,
+        url: `${API_BASE_URL}/api/payments/epayco/banks`,
+        timestamp: new Date().toISOString(),
+        apiBaseUrl: API_BASE_URL
+      });
+      throw error;
+    } else {
+      console.error('Unknown error fetching banks:', {
+        error,
+        url: `${API_BASE_URL}/api/payments/epayco/banks`,
+        timestamp: new Date().toISOString(),
+        apiBaseUrl: API_BASE_URL
+      });
+      throw new Error('Unknown error occurred while fetching banks');
+    }
   }
 }

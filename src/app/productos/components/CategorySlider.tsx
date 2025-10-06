@@ -249,7 +249,7 @@ export default function CategorySlider({
   return (
     <section
       className={cn(
-        "bg-white w-full transition-[padding,height] duration-200 -mt-px",
+        "bg-white w-full transition-[padding,height] duration-200 border-b border-gray-200",
         sectionPadding,
         className
       )}

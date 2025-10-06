@@ -25,8 +25,8 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 interface LoginSuccessResponse {
   access_token: string;
   user: Omit<Usuario, "contrasena" | "tipo_documento">;
+  skus: string[] | { sku: string }[];
 }
-
 // Login error response
 interface LoginErrorResponse {
   status: number;
@@ -229,13 +229,17 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      console.log(result)
-      const { user, access_token } = result;
+      const { user, access_token, skus } = result;
       posthogUtils.capture("login_attempt", {
         email: formData.email,
         user_role: user.rol,
         success: true,
       });
+            // Store SKUs as favorites
+      if (skus && Array.isArray(skus)) {
+        const skuStrings = skus.map(item => typeof item === 'string' ? item : item.sku);
+        localStorage.setItem("imagiq_favorites", JSON.stringify(skuStrings));
+      }
       setLoginSuccess(true);
       setModalContent({
         type: "success",
@@ -261,7 +265,6 @@ export default function LoginPage() {
       setTimeout(() => {
         router.push(user.rol === 1? "/dashboard" : "/");
       }, 500);
-      //await fetchAllFavorites()// Actualizar favoritos tras login
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error de conexión";
       setModalContent({ type: "error", message: msg });

@@ -482,8 +482,9 @@ export const useFavorites = (userId?: string,
 
       try {
         let payload;
-     
+     console.log('gess', guestUserData?.id)
         if (guestUserData?.id) {
+          console.log('si tengo')
           // 2. Si ya tenemos el id guardado
           payload = {
             productSKU: productId,
@@ -513,9 +514,10 @@ export const useFavorites = (userId?: string,
             return newFavorites;
           });
         }
-        const userIdFromResponse = response?.data?.userInfo?.id;
+        const userNombreFromResponse = response?.data?.userInfo?.nombre;
+        console.log(response.data)
         // 5. Si recibes un id lo guardo en el local, para que no cree de nuevo un user
-        if (userIdFromResponse) {
+        if (userNombreFromResponse) {
           
           const newUserInfo = response.data.userInfo;
           localStorage.setItem("imagiq_user", JSON.stringify(newUserInfo));

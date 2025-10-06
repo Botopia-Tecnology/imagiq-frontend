@@ -1,8 +1,17 @@
+"use client";
+
+import { HeroManuales } from "@/components/sections/soporte/manuales/HeroManuales";
+import { SearchModelSection } from "@/components/sections/soporte/manuales/SearchModelSection";
+import { CategorySelector } from "@/components/sections/soporte/manuales/CategorySelector";
+import { ContactInfoManuales } from "@/components/sections/soporte/manuales/ContactInfoManuales";
+
 export default function ManualYSoftwarePage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Manual y Software</h1>
-      <p className="text-gray-600">Esta página está vacía</p>
+    <div className="min-h-screen bg-white">
+      <HeroManuales />
+      <SearchModelSection />
+      <CategorySelector />
+      <ContactInfoManuales />
     </div>
   );
 }

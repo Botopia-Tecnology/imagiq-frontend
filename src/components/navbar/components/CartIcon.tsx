@@ -18,7 +18,7 @@ export const CartIcon: FC<Props> = ({ count, showBump, isClient, onClick, colorC
     title="Carrito de compras"
     onClick={onClick}
   >
-    <ShoppingCart className={cn("w-7 h-7", colorClass)} />
+    <ShoppingCart className={cn("w-5 h-5", colorClass)} />
     {isClient && count > 0 && (
       <span
         className={cn(

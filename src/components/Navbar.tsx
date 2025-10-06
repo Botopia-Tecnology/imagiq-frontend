@@ -3,7 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, User, Menu } from "lucide-react";
+import { Search, User, Menu, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -204,7 +204,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <SearchBar
                 value={navbar.searchQuery}
                 onChange={navbar.setSearchQuery}
@@ -217,6 +217,13 @@ export default function Navbar() {
                 onClick={navbar.handleCartClick}
                 colorClass={getIconColorClasses()}
               />
+              <Link
+                href="/favoritos"
+                className={cn("flex items-center justify-center w-10 h-10", getIconColorClasses())}
+                aria-label="Favoritos"
+              >
+                <Heart className={cn("w-5 h-5", getIconColorClasses())} />
+              </Link>
               {navbar.isAuthenticated && navbar.user?.nombre ? (
                 <UserOptionsDropdown />
               ) : (
@@ -226,7 +233,7 @@ export default function Navbar() {
                   onClick={() => window.location.replace("/login")}
                   aria-label="Ingresar"
                 >
-                  <User className={cn("w-7 h-7", getIconColorClasses())} />
+                  <User className={cn("w-5 h-5", getIconColorClasses())} />
                 </button>
               )}
             </div>

@@ -57,6 +57,7 @@ export default function CategorySection({
   // Estados básicos
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   // Estados para filtros
   const initialFilters = getCategoryFilters(categoria, seccion);
@@ -148,6 +149,16 @@ export default function CategorySection({
       totalResults: totalItems,
     });
   }, [categoria, seccion, totalItems]);
+
+  // Detectar scroll para modo condensado
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Resetear página y filtros cuando cambie la sección
   useEffect(() => {
@@ -270,14 +281,24 @@ export default function CategorySection({
 
   return (
     <div>
-      {/* CategorySlider */}
-      <div className="my-8 relative z-10 mx-auto">
+      {/* CategorySlider - Siempre fijo */}
+      <div
+        className={cn(
+          "fixed z-40 bg-white border-b border-gray-200 left-0 right-0 transition-all duration-300",
+          isScrolled ? "py-3" : "py-4 lg:py-6",
+          "top-[52px] sm:top-[60px] lg:top-[104px]"
+        )}
+      >
         <CategorySlider
           categories={sliderCategories}
           onCategoryClick={handleCategoryClick}
           activeCategoryId={activeCategoryId}
+          condensed={isScrolled}
         />
       </div>
+
+      {/* Spacer para compensar el espacio de la franja fija */}
+      <div className={cn(isScrolled ? "h-[80px]" : "h-[120px] sm:h-[140px] lg:h-[160px]")} />
 
       {/* Header Section */}
       {HeaderSectionMemo}

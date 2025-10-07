@@ -45,17 +45,25 @@ export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
+
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1536) {
+      const width = window.innerWidth;
+      if (width >= 1280) {
         setMobileMenuOpen(false);
       }
+      // Detectar pantallas entre 1280px (xl) y 1536px (2xl) - más pequeño que desktop pero más grande que tablet
+      setIsIntermediateScreen(width >= 1280 && width < 1536);
     };
 
     // Listener para cerrar dropdown cuando se dispara el evento personalizado
     const handleCloseDropdown = () => {
       navbar.setActiveDropdown(null);
     };
+
+    // Ejecutar una vez al montar
+    handleResize();
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('close-dropdown', handleCloseDropdown as EventListener);
@@ -106,9 +114,9 @@ export default function Navbar() {
         )}
         style={headerStyles}
       >
-        {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1536px */}
+        {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1280px */}
         <div className={cn(
-          "2xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300",
+          "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300",
           mobileMenuOpen && "hidden"
         )}>
           <Link
@@ -121,24 +129,24 @@ export default function Navbar() {
             aria-label="Inicio"
             className="flex items-center gap-2"
           >
-            <Image 
+            <Image
               src={navbar.isScrolled ? "/frame_black.png" : "/frame_white.png"}
-              alt="Q Logo" 
-              height={32} 
-              width={32} 
-              className="h-8 w-8 transition-all duration-300" 
-              priority 
+              alt="Q Logo"
+              height={32}
+              width={32}
+              className="h-8 w-8 transition-all duration-300"
+              priority
             />
-            <Image 
-              src="/img/Samsung_black.svg" 
-              alt="Samsung" 
-              height={28} 
-              width={80} 
+            <Image
+              src="/img/Samsung_black.svg"
+              alt="Samsung"
+              height={28}
+              width={80}
               className={cn(
                 "h-7 w-auto transition-all duration-300",
                 navbar.isScrolled ? "" : "brightness-0 invert"
               )}
-              priority 
+              priority
             />
           </Link>
 
@@ -165,13 +173,13 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Desktop Header completo - Mostrar solo en pantallas >= 1536px */}
-        <div className="hidden 2xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-center justify-between gap-8">
-          <div className="flex items-center gap-6 min-w-0 flex-1">
+        {/* Desktop Header completo - Mostrar en pantallas >= 1280px */}
+        <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-center justify-between gap-4 2xl:gap-8">
+          <div className="flex items-center gap-3 xl:gap-4 2xl:gap-6 min-w-0 flex-1">
             <NavbarLogo showWhiteLogo={navbar.showWhiteLogo} onNavigate={() => navbar.router.push("/")} />
 
             <nav className="min-w-0 flex-1" style={{ marginTop: '4px' }}>
-              <ul className="flex items-center gap-4 md:gap-5 lg:gap-6">
+              <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
                 {menuRoutes.map((item) => {
                   const isActive =
                     item.name === "Electrodomésticos"
@@ -193,12 +201,12 @@ export default function Navbar() {
                         <Link
                           href={item.href}
                           className={cn(
-                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] md:text-[13.5px] leading-6 font-black tracking-tight relative inline-block",
+                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[11px] xl:text-[11.5px] 2xl:text-[13.5px] leading-6 font-black tracking-tight relative inline-block",
                             navbar.showWhiteItems ? "text-white hover:opacity-90" : "text-black hover:text-blue-600",
                             !navbar.showWhiteItems && "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                           )}
                         >
-                          {item.name}
+                          {item.name === "Televisores y AV" && isIntermediateScreen ? "TV y AV" : item.name}
                         </Link>
 
                         {navbar.activeDropdown === item.name && hasDropdownMenu(item.name) && (
@@ -217,7 +225,7 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[380px]">
+          <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
             <div className="flex items-center gap-6 leading-none">
               <div
                 onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}

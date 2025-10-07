@@ -20,7 +20,6 @@ import { MobileMenu, CartIcon, SearchBar, NavbarLogo } from "./navbar/components
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
 import { MENU_ORDER } from "./navbar/constants";
 import type { DropdownName, NavItem } from "./navbar/types";
-import logoSamsungBlack from "@/img/Samsung_black.png";
 
 const getDropdownComponent = (name: DropdownName) => {
   const props = { isMobile: false };

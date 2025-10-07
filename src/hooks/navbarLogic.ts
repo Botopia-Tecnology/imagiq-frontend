@@ -38,7 +38,6 @@ export function useNavbarLogic() {
   const [isScrolled, setIsScrolled] = useState(false); // Estado de scroll
   const [showNavbar] = useState(true); // Siempre mostrar navbar (sticky)
   const [isClient, setIsClient] = useState(false); // Detecta si es cliente
-  const lastScrollY = useRef(0); // Última posición de scroll
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({}); // Referencias a items del navbar
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout para ocultar dropdown
   const pathname = usePathname(); // Ruta actual

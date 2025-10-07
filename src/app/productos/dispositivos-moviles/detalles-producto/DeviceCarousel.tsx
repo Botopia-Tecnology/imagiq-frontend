@@ -5,20 +5,20 @@ import Image, { StaticImageData } from "next/image";
 import emptyImg from "@/img/empty.jpeg";
 
 interface DeviceCarouselProps {
-  deviceImage: StaticImageData;
   alt: string;
   imagePreviewUrl?: string;
   imageDetailsUrls?: string[];
+  onImageClick?: (images: (string | StaticImageData)[], currentIndex: number) => void;
 }
 
 /**
  * Carrusel de dispositivo con imagen y navegación funcional.
  */
 const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
-  deviceImage,
   alt,
   imagePreviewUrl,
   imageDetailsUrls = [],
+  onImageClick,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   
@@ -52,7 +52,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   };
 
   return (
-    <div className="relative rounded-2xl p-8 w-full max-w-2xl">
+    <div className="relative rounded-2xl px-2 py-2 w-full max-w-2xl bg-gray-100">
       {/* Flechas de navegación */}
       {images.length > 1 && (
         <>
@@ -73,20 +73,18 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
         </>
       )}
       
-      {/* Imagen del dispositivo */}
-      <div className="flex justify-center">
+      {/* Imagen del dispositivo con altura fija */}
+      <div
+        className="flex justify-center h-[500px] items-center relative cursor-pointer group"
+        onClick={() => onImageClick?.(images, currentImageIndex)}
+      >
         <Image
           src={images[currentImageIndex] || emptyImg}
           alt={`${alt} - Imagen ${currentImageIndex + 1}`}
           width={1000}
           height={1600}
-          className="object-contain transition-opacity duration-300"
+          className="object-contain transition-opacity duration-300 max-h-full w-auto group-hover:opacity-90"
           priority={currentImageIndex === 0}
-          onError={(e) => {
-            // Si la imagen falla al cargar, usar empty.jpg
-            const target = e.target as HTMLImageElement;
-            target.src = emptyImg.src;
-          }}
         />
       </div>
       
@@ -105,6 +103,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
           ))}
         </div>
       )}
+
     </div>
   );
 };

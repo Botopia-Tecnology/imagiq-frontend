@@ -1,55 +1,51 @@
-import React from "react";
+"use client";
+import React, { useState } from "react";
+import Image from "next/image";
 
 export default function ChatbotButton({ onClick }: { onClick?: () => void }) {
+  const [showTooltip, setShowTooltip] = useState(true);
+
   return (
-    <button
-      onClick={onClick}
-      className="fixed bottom-6 right-10 z-50 flex items-center justify-center w-16 h-16 bg-[#0a2342] hover:bg-[#143362] shadow-lg rounded-full transition-all duration-200"
-      aria-label="Abrir chat de ayuda"
-      type="button"
-    >
-      {/* Icono de mensaje grande y centrado */}
-      <svg width="38" height="38" viewBox="0 0 38 38" fill="none">
-        <rect
-          x="5"
-          y="8"
-          width="28"
-          height="18"
-          rx="6"
-          fill="white"
+    <div className="fixed bottom-32 right-10 z-50 flex items-end gap-2">
+      {/* Burbuja de mensaje */}
+      {showTooltip && (
+        <div className="relative bg-white shadow-lg rounded-xl px-3 py-2 max-w-[160px] mb-1 animate-fade-in">
+          <p className="text-xs text-[#222] font-medium">
+            ¿Dudas? Estoy para ayudarte
+          </p>
+          {/* Triángulo apuntando al botón */}
+          <div className="absolute -right-1.5 bottom-3 w-0 h-0 border-t-6 border-t-transparent border-l-6 border-l-white border-b-6 border-b-transparent"></div>
+          {/* Botón de cerrar tooltip */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowTooltip(false);
+            }}
+            className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-xs text-gray-600"
+            aria-label="Cerrar mensaje"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* Botón con foto de persona */}
+      <button
+        onClick={onClick}
+        className="relative flex items-center justify-center w-14 h-14 bg-white hover:bg-gray-50 shadow-lg rounded-full transition-all duration-200 border-2 border-[#0a2342]"
+        aria-label="Abrir chat de ayuda"
+        type="button"
+      >
+        <Image
+          src="/images/support-agent.png"
+          alt="Agente de soporte"
+          width={56}
+          height={56}
+          className="rounded-full object-cover"
         />
-        <rect
-          x="10"
-          y="15"
-          width="18"
-          height="2.8"
-          rx="1.4"
-          fill="#0a2342"
-        />
-        <rect
-          x="10"
-          y="19.5"
-          width="12"
-          height="2.8"
-          rx="1.4"
-          fill="#0a2342"
-        />
-        {/* Triángulo de "punta" de mensaje */}
-        <polygon
-          points="19,26 23,30 19,28 15,30"
-          fill="white"
-        />
-        {/* Destello arriba a la derecha */}
-        <g>
-          <path
-            d="M32 10 l1.5 -3 l1.5 3"
-            stroke="#fff"
-            strokeWidth="1.2"
-            fill="none"
-          />
-          <circle cx="34" cy="7" r="0.9" fill="#fff" />
-        </g>
-      </svg>
-    </button>
+        {/* Indicador verde de "en línea" */}
+        <span className="absolute bottom-0.5 right-0.5 w-2.5 h-2.5 bg-green-500 rounded-full border-2 border-white"></span>
+      </button>
+    </div>
   );
 }

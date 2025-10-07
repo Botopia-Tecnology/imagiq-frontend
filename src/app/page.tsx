@@ -5,10 +5,15 @@
 "use client";
 
 import HeroSection from "@/components/sections/HeroSection";
+import GalaxyShowcaseBanner from "@/components/sections/GalaxyShowcaseBanner/index";
+import AITVsBanner from "@/components/sections/AITVsBanner";
+import TVProductsGrid from "@/components/sections/TVProductsGrid";
+import BespokeAIBanner from "@/components/sections/BespokeAIBanner";
+import AppliancesProductsGrid from "@/components/sections/AppliancesProductsGrid";
 import Reviews from "@/components/sections/Reviews";
-import { CategoriesSection } from "@/components/sections/CategoriesSection";
-import { Ofertas } from "@/components/sections/Ofertas";
-import Beneficios from "@/components/sections/Beneficios";
+// import { CategoriesSection } from "@/components/sections/CategoriesSection";
+// import { Ofertas } from "@/components/sections/Ofertas";
+// import Beneficios from "@/components/sections/Beneficios";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import LocationMap from "@/components/LocationMap";
@@ -26,21 +31,36 @@ export default function HomePage() {
     duration: 700,
     direction: "up",
   });
-  const categoriesReveal = useScrollReveal<HTMLDivElement>({
+  const galaxyShowcaseReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",
   });
-  const ofertasReveal = useScrollReveal<HTMLDivElement>({
+  const aiTVsReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",
   });
-  const beneficiosReveal = useScrollReveal<HTMLDivElement>({
+  const bespokeAIReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",
   });
+  // const categoriesReveal = useScrollReveal<HTMLDivElement>({
+  //   offset: 80,
+  //   duration: 600,
+  //   direction: "up",
+  // });
+  // const ofertasReveal = useScrollReveal<HTMLDivElement>({
+  //   offset: 80,
+  //   duration: 600,
+  //   direction: "up",
+  // });
+  // const beneficiosReveal = useScrollReveal<HTMLDivElement>({
+  //   offset: 80,
+  //   duration: 600,
+  //   direction: "up",
+  // });
   const showcaseReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
@@ -88,12 +108,29 @@ export default function HomePage() {
           <HeroSection />
         </motion.div>
         <motion.div
+          ref={galaxyShowcaseReveal.ref}
+          {...galaxyShowcaseReveal.motionProps}
+        >
+          <GalaxyShowcaseBanner />
+        </motion.div>
+        <motion.div ref={showcaseReveal.ref} {...showcaseReveal.motionProps}>
+          <ProductShowcase />
+        </motion.div>
+        <motion.div ref={aiTVsReveal.ref} {...aiTVsReveal.motionProps}>
+          <AITVsBanner />
+        </motion.div>
+        <TVProductsGrid />
+        <motion.div ref={bespokeAIReveal.ref} {...bespokeAIReveal.motionProps}>
+          <BespokeAIBanner />
+        </motion.div>
+        <AppliancesProductsGrid />
+        {/* <motion.div
           ref={categoriesReveal.ref}
           {...categoriesReveal.motionProps}
         >
           <CategoriesSection />
-        </motion.div>
-        <motion.div ref={ofertasReveal.ref} {...ofertasReveal.motionProps}>
+        </motion.div> */}
+        {/* <motion.div ref={ofertasReveal.ref} {...ofertasReveal.motionProps}>
           <Ofertas />
         </motion.div>
         <motion.div
@@ -101,11 +138,8 @@ export default function HomePage() {
           {...beneficiosReveal.motionProps}
         >
           <Beneficios />
-        </motion.div>
-        <motion.div ref={showcaseReveal.ref} {...showcaseReveal.motionProps}>
-          <ProductShowcase />
-        </motion.div>
-        {/* Sección de Historias justo debajo de ProductShowcase */}
+        </motion.div> */}
+        {/* Sección de Historias */}
         <motion.div ref={historiasReveal.ref} {...historiasReveal.motionProps}>
           <Historias />
         </motion.div>

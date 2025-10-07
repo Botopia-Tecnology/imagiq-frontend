@@ -47,7 +47,7 @@ interface UseProductsReturn {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
-  searchProducts: (query: string) => Promise<void>;
+  searchProducts: (query: string, page?: number) => Promise<void>;
   filterProducts: (filters: ProductFilters) => Promise<void>;
   loadMore: () => Promise<void>;
   goToPage: (page: number) => Promise<void>;
@@ -101,7 +101,7 @@ interface UseFavoritesReturn {
 }
 
 export const useProducts = (
-  initialFilters?: ProductFilters | (() => ProductFilters)
+  initialFilters?: ProductFilters | (() => ProductFilters) | null
 ): UseProductsReturn => {
   const [products, setProducts] = useState<ProductCardProps[]>([]);
   const [groupedProducts, setGroupedProducts] = useState<
@@ -119,6 +119,7 @@ export const useProducts = (
       ? initialFilters()
       : initialFilters || {}
   );
+  const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -205,13 +206,41 @@ export const useProducts = (
 
   // Función para buscar productos
   const searchProducts = useCallback(
-    async (query: string) => {
-      const filters = { ...currentFilters, name: query };
-      setCurrentFilters(filters);
-      setCurrentPage(1);
-      await fetchProducts(filters, false);
+    async (query: string, page: number = 1) => {
+      setLoading(true);
+      setError(null);
+      setCurrentSearchQuery(query);
+      setCurrentPage(page);
+
+      try {
+        const response = await productEndpoints.search(query, {
+          precioMin: 1,
+          page: page,
+          limit: 15,
+        });
+
+        if (response.success && response.data) {
+          const apiData = response.data as ProductApiResponse;
+          const mappedProducts = mapApiProductsToFrontend(apiData.products);
+
+          setProducts(mappedProducts);
+          setGroupedProducts(groupProductsByCategory(mappedProducts));
+          setTotalItems(apiData.totalItems);
+          setTotalPages(apiData.totalPages);
+          setCurrentPage(apiData.currentPage);
+          setHasNextPage(apiData.hasNextPage);
+          setHasPreviousPage(apiData.hasPreviousPage);
+        } else {
+          setError(response.message || "Error al buscar productos");
+        }
+      } catch (err) {
+        console.error("Error searching products:", err);
+        setError("Error de conexión al buscar productos");
+      } finally {
+        setLoading(false);
+      }
     },
-    [currentFilters, fetchProducts]
+    []
   );
 
   // Función para filtrar productos
@@ -230,32 +259,56 @@ export const useProducts = (
   // Función para cargar más productos (paginación)
   const loadMore = useCallback(async () => {
     if (hasNextPage && !loading) {
-      setCurrentPage((prev) => prev + 1);
-      await fetchProducts(currentFilters, true);
+      const nextPage = currentPage + 1;
+      if (currentSearchQuery) {
+        // Si estamos en modo búsqueda, usar searchProducts
+        await searchProducts(currentSearchQuery, nextPage);
+      } else {
+        // Si no estamos en modo búsqueda, usar fetchProducts normal
+        setCurrentPage(nextPage);
+        await fetchProducts(currentFilters, true);
+      }
     }
-  }, [hasNextPage, loading, currentFilters, fetchProducts]);
+  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
     async (page: number) => {
       if (page >= 1 && page <= totalPages && !loading) {
-        const filtersWithPage = { ...currentFilters, page };
-        setCurrentFilters(filtersWithPage);
-        await fetchProducts(filtersWithPage, false);
+        if (currentSearchQuery) {
+          // Si estamos en modo búsqueda, usar searchProducts
+          await searchProducts(currentSearchQuery, page);
+        } else {
+          // Si no estamos en modo búsqueda, usar fetchProducts normal
+          const filtersWithPage = { ...currentFilters, page };
+          setCurrentFilters(filtersWithPage);
+          await fetchProducts(filtersWithPage, false);
+        }
       }
     },
-    [totalPages, loading, currentFilters, fetchProducts]
+    [totalPages, loading, currentSearchQuery, currentFilters, fetchProducts, searchProducts]
   );
 
   // Función para refrescar productos con filtros dinámicos
   const refreshProducts = useCallback(async () => {
-    const filtersToUse =
-      typeof initialFilters === "function" ? initialFilters() : currentFilters;
-    await fetchProducts(filtersToUse, false);
-  }, [initialFilters, currentFilters, fetchProducts]);
+    if (currentSearchQuery) {
+      // Si estamos en modo búsqueda, refrescar la búsqueda actual
+      await searchProducts(currentSearchQuery, currentPage);
+    } else {
+      // Si no estamos en modo búsqueda, usar fetchProducts normal
+      const filtersToUse =
+        typeof initialFilters === "function" ? initialFilters() : currentFilters;
+      await fetchProducts(filtersToUse, false);
+    }
+  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts]);
 
   // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {
+    // Si initialFilters es null, no hacer fetch inicial
+    if (initialFilters === null) {
+      return;
+    }
+
     const filtersToUse =
       typeof initialFilters === "function"
         ? initialFilters()

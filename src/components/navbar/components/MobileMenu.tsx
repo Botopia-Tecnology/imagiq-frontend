@@ -32,23 +32,58 @@ const MENU_ITEMS: MenuItem[] = [
 const FEATURED_PRODUCTS = [
   {
     name: "Galaxy Z Fold7",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/galaxy-zflod7_hrd0oj.webp",  // 👈 Pon tu URL aquí
-    href: "/productos/dispositivos-moviles/galaxy-z-fold7"
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/galaxy-zflod7_hrd0oj.webp",
+    href: "/productos/multimedia/BSM-F966BE"
   },
   {
     name: "Galaxy Z Flip7",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp",  // 👈 Pon tu URL aquí
-    href: "/productos/dispositivos-moviles/galaxy-z-flip7"
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp",
+    href: "/productos/multimedia/BSM-F766BE"
   },
   {
     name: "Galaxy S25 Ultra",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s-ultra_xfxhqt.webp",  // 👈 Pon tu URL aquí
-    href: "/productos/dispositivos-moviles/galaxy-s25-ultra"
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s-ultra_xfxhqt.webp",
+    href: "/productos/multimedia/BSM-S938BE"
   },
   {
     name: "Galaxy S25 | S25+",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s_skxtgm.webp",  // 👈 Pon tu URL aquí
-    href: "/productos/dispositivos-moviles/galaxy-s25"
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s_skxtgm.webp",
+    href: "/productos/multimedia/BSM-S936BE"
+  },
+  {
+    name: "Galaxy Tab S10 Series",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858346/Tab-s10_e5pn9f.avif",
+    href: "/productos/multimedia/BSM-X920"
+  },
+  {
+    name: "Galaxy Buds3 Pro",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858345/Buds-3pro_nrortn.avif",
+    href: "/productos/multimedia/BSM-R630"
+  },
+  {
+    name: "Neo QLED 8K TV",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858336/Neo-qled-8k_izy66o.avif",
+    href: "/productos/multimedia/QN65QN900FKXZL"
+  },
+  {
+    name: "The Frame Pro",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/The-frame-pro_hwn86v.png",
+    href: "/productos/multimedia/QN65LS03FAKXZL"
+  },
+  {
+    name: "Odyssey OLED G8",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/odyssey-g8_lnte4i.avif",
+    href: "/productos/multimedia/LS55BG970NNXGO"
+  },
+  {
+    name: "Neveras",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/neveras-ofer_lxsxgb.avif",
+    href: "/productos/view/RF26J7500SL"
+  },
+  {
+    name: "Lavadoras y Secadoras",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858349/lavadoras-ofer_jzdngu.avif",
+    href: "/productos/multimedia/DVG22C6370P"
   },
 ];
 
@@ -158,21 +193,22 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
                 <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">
                   NOVEDADES
                 </h3>
-                <div className="grid grid-cols-4 gap-3">
+                <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4">
                   {FEATURED_PRODUCTS.map((product) => (
                     <Link
                       key={product.name}
                       href={product.href}
                       onClick={onClose}
-                      className="text-center"
+                      className="flex-shrink-0 text-center"
+                      style={{ width: '100px' }}
                     >
-                      <div className="bg-gray-50 rounded-lg p-2 mb-1">
+                      <div className="mb-1">
                         <div className="w-full aspect-square relative">
                           <Image
                             src={product.image}
                             alt={product.name}
-                            width={80}
-                            height={80}
+                            width={100}
+                            height={100}
                             className="object-contain w-full h-full"
                             unoptimized
                           />

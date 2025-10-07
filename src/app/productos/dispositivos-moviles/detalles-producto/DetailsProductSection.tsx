@@ -6,12 +6,14 @@ import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useDeviceVariants, type ColorOption } from "@/hooks/useDeviceVariants";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
+import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 
 // Components
 import FloatingEntregoEstrenoButton from "./FloatingEntregoEstrenoButton";
+import StickyPriceBar from "./StickyPriceBar";
 import ImageGalleryModal from "./ImageGalleryModal";
 import ProductHeader from "./ProductHeader";
 import ProductSelectors from "./ProductSelectors";
@@ -39,10 +41,11 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
   const router = useRouter();
+  const { addToFavorites, removeFromFavorites, isFavorite: checkIsFavorite } = useFavorites();
 
   // State
   const [loading, setLoading] = React.useState(false);
-  const [isFavorite, setIsFavorite] = React.useState(false);
+  const isFavorite = checkIsFavorite(product.id);
   const [deliveryOption, setDeliveryOption] = React.useState<"standard" | "express">("standard");
   const [estrenoYEntrego, setEstrenoYEntrego] = React.useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
@@ -50,6 +53,14 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   const [galleryIndex, setGalleryIndex] = React.useState(0);
 
   // Handlers
+  const handleToggleFavorite = () => {
+    if (isFavorite) {
+      removeFromFavorites(product.id);
+    } else {
+      addToFavorites(product.id);
+    }
+  };
+
   const handleColorSelection = (colorOption: ColorOption) => {
     setSelectedColor(colorOption);
     if (colorOption?.hex) setGlobalSelectedColor(colorOption.hex);
@@ -111,6 +122,15 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   return (
     <>
       <FloatingEntregoEstrenoButton />
+      <StickyPriceBar
+        deviceName={product.name}
+        basePrice={currentPrice || 0}
+        originalPrice={originalPrice}
+        selectedColor={selectedColor?.color}
+        selectedStorage={selectedStorage?.capacidad}
+        onBuyClick={handleBuyNow}
+        hasAddiFinancing={true}
+      />
       <ImageGalleryModal
         isOpen={isGalleryOpen}
         onClose={() => setIsGalleryOpen(false)}
@@ -131,7 +151,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     rating={product.rating}
                     reviewCount={product.reviewCount}
                     isFavorite={isFavorite}
-                    onToggleFavorite={() => setIsFavorite(!isFavorite)}
+                    onToggleFavorite={handleToggleFavorite}
                   />
                   <ProductSelectors
                     colorOptions={colorOptions}

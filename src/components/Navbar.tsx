@@ -130,21 +130,21 @@ export default function Navbar() {
             className="flex items-center gap-2"
           >
             <Image
-              src={navbar.isScrolled ? "/frame_black.png" : "/frame_white.png"}
+              src={navbar.showWhiteItemsMobile ? "/frame_white.png" : "/frame_black.png"}
               alt="Q Logo"
-              height={32}
-              width={32}
-              className="h-8 w-8 transition-all duration-300"
+              height={40}
+              width={40}
+              className="h-10 w-10 transition-all duration-300"
               priority
             />
             <Image
               src="/img/Samsung_black.svg"
               alt="Samsung"
-              height={28}
-              width={80}
+              height={32}
+              width={90}
               className={cn(
-                "h-7 w-auto transition-all duration-300",
-                navbar.isScrolled ? "" : "brightness-0 invert"
+                "h-8 w-auto transition-all duration-300",
+                navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
               )}
               priority
             />
@@ -156,18 +156,18 @@ export default function Navbar() {
               showBump={false}
               isClient={navbar.isClient}
               onClick={navbar.handleCartClick}
-              colorClass={navbar.isScrolled ? "text-black" : "text-white"}
+              colorClass={navbar.showWhiteItemsMobile ? "text-white" : "text-black"}
             />
             <button className="p-2" aria-label="Usuario">
               <User className={cn(
                 "w-6 h-6 transition-colors duration-300",
-                navbar.isScrolled ? "text-black" : "text-white"
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )} />
             </button>
             <button onClick={() => setMobileMenuOpen(true)} className="p-2" aria-label="Abrir menú">
               <Menu className={cn(
                 "w-6 h-6 transition-colors duration-300",
-                navbar.isScrolled ? "text-black" : "text-white"
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               )} />
             </button>
           </div>

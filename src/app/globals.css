@@ -1,5 +1,12 @@
 @import url("sweetalert2/dist/sweetalert2.min.css");
 
+/* Soporte para Safari iOS - Safe Area Insets */
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* Animaciones de página */
 @keyframes fadeIn {
   from {

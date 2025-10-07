@@ -49,13 +49,29 @@ export default function UniversalSeriesFilter({
 
   const handleSerieClick = useCallback((serieId: string) => {
     const isActive = activeFilters.serie?.includes(serieId) || false;
-    onFilterChange("serie", serieId, !isActive);
+    
+    // Si ya está activo, no hacer nada (selección obligatoria)
+    if (isActive) {
+      return;
+    }
+
+    // Desactivar todos los demás filtros primero (solo una selección)
+    if (activeFilters.serie && activeFilters.serie.length > 0) {
+      activeFilters.serie.forEach((activeSerieId) => {
+        if (activeSerieId !== serieId) {
+          onFilterChange("serie", activeSerieId, false);
+        }
+      });
+    }
+
+    // Activar el nuevo filtro
+    onFilterChange("serie", serieId, true);
 
     posthogUtils.capture("series_filter_click", {
       categoria,
       seccion,
       serie: serieId,
-      action: !isActive ? "add" : "remove",
+      action: "select",
     });
   }, [activeFilters.serie, categoria, onFilterChange, seccion]);
 

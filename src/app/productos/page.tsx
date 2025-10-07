@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, Suspense } from "react";
+import { useState, useMemo, useCallback, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useProducts } from "@/features/products/useProducts";
 import FilterSidebar, {
@@ -87,7 +87,6 @@ function ProductosContent() {
   );
 
   // Estados para paginación
-  const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Obtener parámetro de búsqueda de la URL
@@ -95,29 +94,32 @@ function ProductosContent() {
 
   // Memoizar los filtros para evitar recargas continuas
   const initialFilters = useMemo(() => {
+    // Si hay búsqueda, no cargar productos inicialmente
     if (searchQuery) {
-      // Búsqueda avanzada con filterMode=OR en múltiples campos
-      return {
-        name: searchQuery,
-        descriptionKeyword: searchQuery,
-        model: searchQuery,
-        filterMode: "OR" as const,
-        page: currentPage,
-        limit: itemsPerPage
-      };
+      return null;
     }
-    return { page: currentPage, limit: itemsPerPage };
-  }, [searchQuery, currentPage, itemsPerPage]);
+    return { page: 1, limit: itemsPerPage };
+  }, [searchQuery, itemsPerPage]);
 
-  // Usar el hook de productos con API real y filtro de búsqueda
-  const { 
-    products, 
-    loading, 
-    error, 
-    totalItems, 
+  // Usar el hook de productos con API real
+  const {
+    products,
+    loading,
+    error,
+    totalItems,
     totalPages,
-    refreshProducts 
+    currentPage: hookCurrentPage,
+    refreshProducts,
+    searchProducts,
+    goToPage
   } = useProducts(initialFilters);
+
+  // Ejecutar búsqueda cuando hay searchQuery
+  useEffect(() => {
+    if (searchQuery) {
+      searchProducts(searchQuery);
+    }
+  }, [searchQuery, searchProducts]);
 
   // Filtrado funcional y robusto (combinando API filters con UI filters)
   const filteredProducts = useMemo(
@@ -130,15 +132,20 @@ function ProductosContent() {
 
   // Handlers para paginación
   const handlePageChange = useCallback((page: number) => {
-    setCurrentPage(page);
+    goToPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [goToPage]);
 
   const handleItemsPerPageChange = useCallback((items: number) => {
     setItemsPerPage(items);
-    setCurrentPage(1);
+    // Si estamos en modo búsqueda, mantener la búsqueda pero ir a página 1
+    if (searchQuery) {
+      searchProducts(searchQuery, 1);
+    } else {
+      goToPage(1);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
+  }, [searchQuery, searchProducts, goToPage]);
 
   // UX: animación de scroll al filtrar
   function handleFilterChange(
@@ -152,7 +159,10 @@ function ProductosContent() {
         ? [...(prev[filterType] || []), value]
         : (prev[filterType] || []).filter((item) => item !== value),
     }));
-    setCurrentPage(1); // Resetear a página 1 al filtrar
+    // Resetear a página 1 al filtrar (solo para filtros UI, no para búsquedas)
+    if (!searchQuery) {
+      goToPage(1);
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -266,7 +276,7 @@ function ProductosContent() {
                         />
                       </div>
                       <Pagination
-                        currentPage={currentPage}
+                        currentPage={hookCurrentPage}
                         totalPages={totalPages}
                         onPageChange={handlePageChange}
                         totalItems={totalItems}

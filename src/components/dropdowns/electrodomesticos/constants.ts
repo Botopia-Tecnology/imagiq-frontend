@@ -15,7 +15,7 @@ export const MAIN_ITEMS: readonly MainItem[] = [
   },
   {
     name: "Hornos Microondas",
-    href: "/productos/electrodomesticos?seccion=hornos-microondas",
+    href: "/productos/electrodomesticos?seccion=microondas",
     imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773406/horno_microondas_askklu.webp",
     imageAlt: "Hornos Microondas",
   },
@@ -33,7 +33,7 @@ export const MAIN_ITEMS: readonly MainItem[] = [
   },
   {
     name: "Lavadoras y Secadoras",
-    href: "/productos/electrodomesticos?seccion=lavadoras-secadoras",
+    href: "/productos/electrodomesticos?seccion=lavadoras",
     imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773409/lavadoras_y_secadoras_nn5seu.webp",
     imageAlt: "Lavadoras y Secadoras",
   },
@@ -45,7 +45,7 @@ export const MAIN_ITEMS: readonly MainItem[] = [
   },
   {
     name: "Aires acondicionados",
-    href: "/productos/electrodomesticos?seccion=aires-acondicionados",
+    href: "/productos/electrodomesticos?seccion=aire-acondicionado",
     imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773392/aires_acondicionados_pcm4pp.avif",
     imageAlt: "Aires acondicionados",
   },

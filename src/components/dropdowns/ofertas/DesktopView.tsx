@@ -48,14 +48,11 @@ export function DesktopView({ onItemClick }: Props) {
           </div>
 
           <div className="grid grid-cols-7 gap-6">
-            {FEATURED_PRODUCTS.slice(7, 11).map((product, index) => (
+            {FEATURED_PRODUCTS.slice(7, 11).map((product) => (
               <div
                 key={product.name}
                 className="flex flex-col items-center text-center group cursor-pointer"
-                style={{
-                  width: `${SIZES.product.container}px`,
-                  gridColumn: index === 3 ? 5 : undefined
-                }}
+                style={{ width: `${SIZES.product.container}px` }}
               >
                 <div
                   className="relative mb-2 transition-transform group-hover:scale-105"

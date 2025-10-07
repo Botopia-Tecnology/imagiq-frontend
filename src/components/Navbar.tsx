@@ -81,13 +81,14 @@ export default function Navbar() {
     .map((name) => navbarRoutes.find((r) => r.name === name))
     .filter((r): r is NavItem => Boolean(r?.name && r?.href && r?.category));
 
-  const isAtTop = typeof window !== 'undefined' ? window.scrollY < 100 : true;
+  // Determinar si debe mostrar fondo transparente o blanco
+  const showTransparentBg = (navbar.isOfertas || navbar.isHome) && !navbar.activeDropdown && !navbar.isScrolled;
 
   const headerStyles: CSSProperties = {
     fontFamily: '"SamsungOne","Samsung Sharp Sans","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial',
-    boxShadow: "none",
-    background: (navbar.isOfertas || navbar.isHome) && !navbar.activeDropdown && isAtTop ? "transparent" : "white",
-    transition: "background 0.6s cubic-bezier(.4,0,.2,1), box-shadow 0.6s cubic-bezier(.4,0,.2,1)",
+    boxShadow: navbar.isScrolled ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
+    background: showTransparentBg ? "transparent" : "white",
+    transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
   };
 
   return (
@@ -108,7 +109,7 @@ export default function Navbar() {
       >
         {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1536px */}
         <div className={cn(
-          "2xl:hidden px-4 py-3 flex items-center justify-between",
+          "2xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300",
           mobileMenuOpen && "hidden"
         )}>
           <Link
@@ -122,11 +123,11 @@ export default function Navbar() {
             className="flex items-center gap-2"
           >
             <Image 
-              src="/frame_white.png" 
+              src={navbar.isScrolled ? "/frame_black.png" : "/frame_white.png"}
               alt="Q Logo" 
               height={32} 
               width={32} 
-              className="h-8 w-8" 
+              className="h-8 w-8 transition-all duration-300" 
               priority 
             />
             <Image 
@@ -134,7 +135,10 @@ export default function Navbar() {
               alt="Samsung" 
               height={28} 
               width={80} 
-              className="h-7 w-auto brightness-0 invert" 
+              className={cn(
+                "h-7 w-auto transition-all duration-300",
+                navbar.isScrolled ? "" : "brightness-0 invert"
+              )}
               priority 
             />
           </Link>
@@ -145,13 +149,19 @@ export default function Navbar() {
               showBump={false}
               isClient={navbar.isClient}
               onClick={navbar.handleCartClick}
-              colorClass="text-white"
+              colorClass={navbar.isScrolled ? "text-black" : "text-white"}
             />
             <button className="p-2" aria-label="Usuario">
-              <User className="w-6 h-6 text-white" />
+              <User className={cn(
+                "w-6 h-6 transition-colors duration-300",
+                navbar.isScrolled ? "text-black" : "text-white"
+              )} />
             </button>
             <button onClick={() => setMobileMenuOpen(true)} className="p-2" aria-label="Abrir menú">
-              <Menu className="w-6 h-6 text-white" />
+              <Menu className={cn(
+                "w-6 h-6 transition-colors duration-300",
+                navbar.isScrolled ? "text-black" : "text-white"
+              )} />
             </button>
           </div>
         </div>

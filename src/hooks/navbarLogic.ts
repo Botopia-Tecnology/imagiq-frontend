@@ -36,7 +36,7 @@ export function useNavbarLogic() {
     width: number;
   } | null>(null); // Coordenadas del dropdown
   const [isScrolled, setIsScrolled] = useState(false); // Estado de scroll
-  const [showNavbar, setShowNavbar] = useState(true); // Mostrar/ocultar navbar
+  const [showNavbar] = useState(true); // Siempre mostrar navbar (sticky)
   const [isClient, setIsClient] = useState(false); // Detecta si es cliente
   const lastScrollY = useRef(0); // Última posición de scroll
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({}); // Referencias a items del navbar
@@ -106,36 +106,9 @@ export function useNavbarLogic() {
     return () => observer.disconnect();
   }, [pathname]);
 
-  // Efecto: Detecta dirección de scroll y muestra/oculta navbar
-  useEffect(() => {
-    const controlNavbar = () => {
-      const currentScrollY = window.scrollY;
-
-      // Siempre mostrar el navbar en los primeros 100px
-      if (currentScrollY < 100) {
-        setShowNavbar(true);
-        lastScrollY.current = currentScrollY;
-        return;
-      }
-
-      // Detectar dirección de scroll
-      if (currentScrollY > lastScrollY.current) {
-        // Scrolleando hacia abajo - ocultar navbar
-        setShowNavbar(false);
-      } else if (currentScrollY < lastScrollY.current) {
-        // Scrolleando hacia arriba - mostrar navbar
-        setShowNavbar(true);
-      }
-
-      lastScrollY.current = currentScrollY;
-    };
-
-    window.addEventListener("scroll", controlNavbar, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", controlNavbar);
-    };
-  }, []);
+  // Efecto: El navbar siempre está visible (sticky behavior)
+  // Ya no se necesita controlar visibilidad basada en scroll
+  // useEffect eliminado para mantener navbar siempre visible
 
   // Efecto: Ejecuta búsqueda y actualiza resultados (mock) + analytics
   useEffect(() => {
@@ -177,8 +150,8 @@ export function useNavbarLogic() {
   // Determina si mostrar logo blanco y estilos claros
   // Solo mostrar logo blanco si estamos en la parte superior de la página (primeros 100px)
   const isAtTop = typeof window !== 'undefined' ? window.scrollY < 100 : true;
-  const showWhiteLogo = (isOfertas || isHome) && !activeDropdown && isAtTop;
-  const showWhiteItems = showWhiteLogo;
+  const showWhiteLogo = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
+  const showWhiteItems = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
   const showWhiteItemsMobile =
     isOfertas ||
     (isMasInformacionProducto && !isScrolled && !isAppliance) ||

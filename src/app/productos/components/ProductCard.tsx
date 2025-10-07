@@ -236,6 +236,21 @@ export default function ProductCard({
     });
   };
 
+  // Handler para el click en la card completa
+  // Navega a multimedia EXCEPTO si se hace click en botones interactivos
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Verificar si el click fue en un botón o dentro de un botón
+    const isButton = target.closest('button') !== null;
+    
+    // Si NO es un botón, navegar a multimedia
+    if (!isButton) {
+      handleMoreInfo();
+    }
+    // Si ES un botón, no hacer nada (el botón maneja su propio onClick con stopPropagation)
+  };
+
   const cardReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
     duration: 500,
@@ -246,7 +261,7 @@ export default function ProductCard({
     <motion.div
       ref={cardReveal.ref}
       {...cardReveal.motionProps}
-      onClick={handleMoreInfo}
+      onClick={handleCardClick}
       className={cn(
         // Diseño vertical para todos los tamaños
         "bg-white rounded-2xl w-full overflow-hidden transition-all duration-300 cursor-pointer",

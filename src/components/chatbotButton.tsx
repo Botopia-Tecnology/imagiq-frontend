@@ -22,7 +22,12 @@ export default function ChatbotButton({ onClick }: Readonly<{ onClick?: () => vo
   }, [showTooltip]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex items-end gap-3">
+    <div
+      className="fixed right-6 z-50 flex items-end gap-3"
+      style={{
+        bottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))',
+      }}
+    >
       {/* Burbuja de mensaje mejorada */}
       {showTooltip && (
         <div className="relative bg-white shadow-xl rounded-2xl px-4 py-3 max-w-[180px] mb-1 animate-fade-in border border-gray-100">

@@ -54,18 +54,18 @@ export default function SeriesFilterBreadcrumb({
   const hasSeries = config.series && config.series.length > 0;
 
   return (
-    <nav className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-      <span className="hover:text-gray-900 cursor-pointer">{config.breadcrumbCategory}</span>
+    <nav className="flex items-center gap-1 sm:gap-2 mb-1.5 sm:mb-4 text-[10px] sm:text-sm text-gray-600">
+      <span className="hover:text-gray-900 cursor-pointer truncate">{config.breadcrumbCategory}</span>
       <span>/</span>
 
       {/* Section Dropdown */}
       <div ref={sectionDropdownRef} className="relative">
         <button
           onClick={onToggleSectionDropdown}
-          className="hover:text-gray-900 font-medium flex items-center gap-1"
+          className="hover:text-gray-900 font-medium flex items-center gap-0.5 sm:gap-1 truncate"
           type="button"
         >
-          {config.breadcrumbSection}
+          <span className="truncate">{config.breadcrumbSection}</span>
           <ChevronDownIcon />
         </button>
 

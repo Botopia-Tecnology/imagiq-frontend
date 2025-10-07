@@ -114,40 +114,42 @@ export default function TrackingService() {
   }, [activeStep]);
 
   return (
-    <div className="min-h-screen bg-gray-200 flex items-center justify-center py-12">
+    <div className="min-h-screen bg-gray-200 flex items-center justify-center py-6 md:py-12">
       {/* Main Content */}
-      <main className="w-full max-w-7xl mx-auto px-4">
+      <main className="w-full max-w-7xl mx-auto px-2 sm:px-4">
         {/* Tracking Card */}
         <div
           className="bg-white rounded-2xl shadow-sm max-w-7xl mx-auto overflow-hidden"
           style={{ minHeight: "500px" }}
         >
           {/* Header del estado */}
-          <div className="pt-8 px-8 pb-4">
-            <h1 className="text-2xl font-bold text-black mb-4">
+          <div className="pt-6 px-4 sm:pt-8 sm:px-8 pb-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-black mb-4">
               Estado de tu pedido:
             </h1>
-            <div className="text-sm text-gray-700 space-y-1">
+            <div className="text-xs sm:text-sm text-gray-700 space-y-1">
               <p>
                 <span className="font-bold">Orden #</span> {orderNumber}
               </p>
               <div className="mt-3">
                 <p className="font-bold text-black">Fecha Entrega estimada</p>
-                <p className="text-base text-gray-700">{estimatedDate}</p>
+                <p className="text-sm sm:text-base text-gray-700">
+                  {estimatedDate}
+                </p>
               </div>
             </div>
           </div>
 
           {/* Progress Tracker */}
-          <div className="relative px-8 py-12">
+          <div className="relative px-2 sm:px-8 py-8 sm:py-12">
             {/* Línea de progreso */}
-            <div className="absolute top-[60px] left-24 right-24 h-16 flex items-center">
-              <div className="w-full h-3 bg-blue-500 rounded-full" />
+            <div className="absolute top-[60px] left-4 right-4 sm:left-24 sm:right-24 h-16 flex items-center">
+              <div className="w-full h-2 sm:h-3 bg-blue-500 rounded-full" />
             </div>
 
             {/* Pasos del tracking */}
             <div
-              className="relative flex justify-between px-8"
+              className="relative flex justify-between px-2 sm:px-8"
               style={{ height: "160px" }}
             >
               {trackingSteps.map((step) => (
@@ -164,10 +166,10 @@ export default function TrackingService() {
                         : "bg-white border-4 border-blue-300"
                     } ${step.active ? "ring-4 ring-blue-200 scale-105" : ""}`}
                     style={{
-                      width: "58px",
-                      height: "58px",
+                      width: "44px",
+                      height: "44px",
                       position: "absolute",
-                      top: "45px", // alineado con la línea
+                      top: "45px",
                       left: "50%",
                       transform: "translate(-50%, -50%)",
                     }}
@@ -175,27 +177,27 @@ export default function TrackingService() {
                     {step.id !== "procesada" && (
                       <div
                         className="rounded-full bg-blue-300"
-                        style={{ width: "10px", height: "10px" }}
+                        style={{ width: "8px", height: "8px" }}
                       />
                     )}
                   </div>
 
                   {/* Icono y texto alineados debajo del círculo */}
                   <div
-                    className="flex flex-col items-center max-w-28"
-                    style={{ marginTop: "80px" }}
+                    className="flex flex-col items-center max-w-20 sm:max-w-28"
+                    style={{ marginTop: "64px" }}
                   >
-                    <div className="mb-5 mt-4">
+                    <div className="mb-3 mt-2 sm:mb-5 sm:mt-4">
                       <Image
                         src={step.icon}
                         alt={step.title}
-                        width={42}
-                        height={42}
-                        className="w-12 h-12 object-contain filter grayscale-0 opacity-90"
+                        width={32}
+                        height={32}
+                        className="w-8 h-8 sm:w-12 sm:h-12 object-contain filter grayscale-0 opacity-90"
                       />
                     </div>
                     <p
-                      className={`text-sm font-semibold leading-tight text-center whitespace-pre-line ${
+                      className={`text-xs sm:text-sm font-semibold leading-tight text-center whitespace-pre-line ${
                         step.id === "procesada" ? "text-black" : "text-gray-600"
                       } ${step.active ? "text-blue-600 font-bold" : ""}`}
                       style={{ marginBottom: "8px" }}

@@ -14,7 +14,7 @@ import { ProductCard } from "./ProductCard";
 
 export default function TVProductsGrid() {
   return (
-    <div className="w-full bg-white py-8">
+    <div className="w-full bg-white pt-8 pb-0">
       <div className="w-full mx-auto" style={{ maxWidth: "1440px" }}>
         {/* Desktop: Grid 4 columnas */}
         <div className="hidden md:grid md:grid-cols-4 gap-[25px]">

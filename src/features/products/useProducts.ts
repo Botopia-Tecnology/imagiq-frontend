@@ -27,6 +27,14 @@ import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
 
 type ProductFilters = FrontendFilterParams;
 
+interface SearchParams {
+  precioMin: number;
+  page: number;
+  limit: number;
+  sortBy?: string;
+  sortOrder?: string;
+}
+
 type UserInfo = {
   id?: string;
   nombre?: string;
@@ -223,23 +231,17 @@ export const useProducts = (
       }
 
       try {
-        const searchParams: any = {
-          precioMin: 1,
-          page: page,
-          limit: 15,
-        };
-
         // Usar los parámetros de ordenamiento actuales o los proporcionados
         const finalSortBy = sortBy !== undefined ? sortBy : currentSortBy;
         const finalSortOrder = sortOrder !== undefined ? sortOrder : currentSortOrder;
 
-        // Agregar parámetros de ordenamiento si están presentes
-        if (finalSortBy) {
-          searchParams.sortBy = finalSortBy;
-        }
-        if (finalSortOrder) {
-          searchParams.sortOrder = finalSortOrder;
-        }
+        const searchParams: SearchParams = {
+          precioMin: 1,
+          page: page,
+          limit: 15,
+          ...(finalSortBy && { sortBy: finalSortBy }),
+          ...(finalSortOrder && { sortOrder: finalSortOrder }),
+        };
 
         const response = await productEndpoints.search(query, searchParams);
 

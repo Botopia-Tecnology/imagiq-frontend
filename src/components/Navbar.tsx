@@ -121,8 +121,22 @@ export default function Navbar() {
             aria-label="Inicio"
             className="flex items-center gap-2"
           >
-            <Image src="/frame_black.png" alt="Q Logo" height={32} width={32} className="h-8 w-8" priority />
-            <Image src={logoSamsungBlack} alt="Samsung" height={28} width={80} className="h-7 w-auto" priority />
+            <Image 
+              src="/frame_white.png" 
+              alt="Q Logo" 
+              height={32} 
+              width={32} 
+              className="h-8 w-8" 
+              priority 
+            />
+            <Image 
+              src="/img/Samsung_black.svg" 
+              alt="Samsung" 
+              height={28} 
+              width={80} 
+              className="h-7 w-auto brightness-0 invert" 
+              priority 
+            />
           </Link>
 
           <div className="flex items-center gap-2">
@@ -131,13 +145,13 @@ export default function Navbar() {
               showBump={false}
               isClient={navbar.isClient}
               onClick={navbar.handleCartClick}
-              colorClass="text-black"
+              colorClass="text-white"
             />
             <button className="p-2" aria-label="Usuario">
-              <User className="w-6 h-6 text-black" />
+              <User className="w-6 h-6 text-white" />
             </button>
             <button onClick={() => setMobileMenuOpen(true)} className="p-2" aria-label="Abrir menú">
-              <Menu className="w-6 h-6 text-black" />
+              <Menu className="w-6 h-6 text-white" />
             </button>
           </div>
         </div>

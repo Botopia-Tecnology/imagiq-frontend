@@ -100,7 +100,7 @@ export function DesktopView({ onItemClick }: Props) {
                       className="object-contain"
                     />
                   </div>
-                  <p className="text-[12px] font-extrabold text-gray-900 leading-tight">
+                  <p className="text-[12px] font-extrabold text-gray-900 leading-tight break-words">
                     {promo.title}
                   </p>
                 </Link>

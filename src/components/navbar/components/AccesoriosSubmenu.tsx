@@ -15,37 +15,37 @@ const ACCESORIOS_ITEMS: SubMenuItem[] = [
   {
     name: "Accesorios para Smartphones Galaxy",
     href: "/productos/accesorios?seccion=smartphones-galaxy",
-    imageSrc: "/CATEGORIAS/ACC/Smartphone-galaxy.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759801666/Acc-smartphone_ngj5pq.webp",
     imageAlt: "Accesorios para Smartphones Galaxy",
   },
   {
     name: "Accesorios para las Galaxy Tab",
     href: "/productos/accesorios?seccion=galaxy-tab",
-    imageSrc: "/CATEGORIAS/ACC/Galaxy-tab.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759801666/Acc-tab_lzxmso.webp",
     imageAlt: "Accesorios para las Galaxy Tab",
   },
   {
     name: "Accesorios para los Galaxy Watch",
     href: "/productos/accesorios?seccion=galaxy-watch",
-    imageSrc: "/CATEGORIAS/ACC/Galaxy-watch.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759801665/Acc-watch-galaxy_tjlm69.webp",
     imageAlt: "Accesorios para los Galaxy Watch",
   },
   {
     name: "Accesorios Galaxy Buds",
     href: "/productos/accesorios?seccion=galaxy-buds",
-    imageSrc: "/CATEGORIAS/ACC/Galaxy-buds.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759801666/Acc-galaxy-buds_qh3osd.webp",
     imageAlt: "Accesorios Galaxy Buds",
   },
   {
     name: "Accesorios de audio",
     href: "/productos/accesorios?seccion=audio",
-    imageSrc: "/CATEGORIAS/ACC/Audio.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759801666/Acc-para-audio_jwwbhf.webp",
     imageAlt: "Accesorios de audio",
   },
   {
     name: "Accesorios para proyector",
     href: "/productos/accesorios?seccion=proyector",
-    imageSrc: "/CATEGORIAS/ACC/Proyector.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759801665/Acc-proyector_b0zhcx.webp",
     imageAlt: "Accesorios para proyector",
   },
 ];

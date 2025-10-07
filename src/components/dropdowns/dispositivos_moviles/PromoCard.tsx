@@ -25,7 +25,7 @@ export const PromoCard: FC<Props> = ({ promo, onClick }) => (
         size={getPromoImageSize(promo.title)}
       />
     </div>
-    <p className="text-[12px] font-extrabold text-gray-900 leading-tight">
+    <p className="text-[12px] font-extrabold text-gray-900 leading-tight break-words">
       {promo.title}
     </p>
   </Link>

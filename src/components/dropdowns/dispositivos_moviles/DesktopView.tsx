@@ -17,7 +17,7 @@ export const DesktopView: FC<Props> = ({ onItemClick }) => (
     <CloseButton onClick={() => onItemClick("close", "")} />
 
     <div className="flex-1">
-      <ul className="grid grid-cols-5 gap-x-[3cm] gap-y-4">
+      <ul className="grid grid-cols-5 w-3/4">
         {MAIN_ITEMS.map((item) => (
           <MainItemCard key={item.name} item={item} onClick={onItemClick} />
         ))}

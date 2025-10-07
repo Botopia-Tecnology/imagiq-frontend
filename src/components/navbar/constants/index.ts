@@ -7,6 +7,7 @@ export const DROPDOWNS: readonly DropdownName[] = [
   "Electrodomésticos",
   "Monitores",
   "Accesorios",
+  "Soporte",
 ] as const;
 
 export const MENU_ORDER: readonly string[] = [
@@ -16,6 +17,7 @@ export const MENU_ORDER: readonly string[] = [
   "Electrodomésticos",
   "Monitores",
   "Accesorios",
+  "Soporte",
 ] as const;
 
 export const ICON_STYLES = {

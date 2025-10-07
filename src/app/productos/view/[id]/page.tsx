@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect } from "react";
+import React, { use, useEffect } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
@@ -12,6 +12,7 @@ import {
 } from "@/app/productos/components/ProductCard";
 import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
+import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import { useProductContext } from "@/features/products/ProductContext";
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
@@ -79,17 +80,23 @@ export default function ProductViewPage({ params }) {
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
+  const [showContent, setShowContent] = React.useState(false);
+
+  // Delay para asegurar transición suave
+  React.useEffect(() => {
+    if (!loading && product) {
+      const timer = setTimeout(() => setShowContent(true), 150);
+      return () => clearTimeout(timer);
+    } else {
+      setShowContent(false);
+    }
+  }, [loading, product]);
+
   if (!id) {
     return notFound();
   }
-  if (loading) {
-    return (
-      <div className="container mx-auto px-6 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <LoadingSpinner />
-        </div>
-      </div>
-    );
+  if (loading || !showContent) {
+    return <ProductDetailSkeleton />;
   }
   if (error) {
     return notFound();
@@ -133,7 +140,7 @@ export default function ProductViewPage({ params }) {
     <>
       <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
       {/* Detalles de producto refactorizado */}
-      <DetailsProductSection product={product} />
+      <DetailsProductSection product={product} /> 
       {/* Vista original de producto */}
       {isRefrigerador ? (
         <ViewProductAppliance product={convertedProduct} />

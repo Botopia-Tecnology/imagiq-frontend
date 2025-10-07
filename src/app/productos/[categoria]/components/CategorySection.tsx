@@ -250,8 +250,7 @@ export default function CategorySection({
 
   const sidebarClasses = cn(
     "shrink-0",
-    device === "mobile" || device === "tablet" ? "w-full" : "w-80",
-    stickyClasses
+    device === "mobile" || device === "tablet" ? "w-full" : "w-80"
   );
 
   let contentPadding = "px-0";

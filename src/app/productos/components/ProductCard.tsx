@@ -57,6 +57,7 @@ export interface ProductCardProps {
   onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
   className?: string;
+  viewMode?: "grid" | "list"; // Modo de visualización
   // Datos adicionales para la página de detalle
   description?: string | null;
   brand?: string;
@@ -133,6 +134,7 @@ export default function ProductCard({
   selectedColor: selectedColorProp,
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
+  viewMode = "grid", // Modo de visualización por defecto
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -265,11 +267,17 @@ export default function ProductCard({
       className={cn(
         // Diseño vertical para todos los tamaños
         "bg-white rounded-2xl w-full overflow-hidden transition-all duration-300 cursor-pointer",
+        viewMode === "list" && "flex flex-row",
         className
       )}
     >
-      {/* Header con badges */}
-      <div className="relative block">
+      {/* Imagen del producto */}
+      <div className={cn(
+        "relative bg-gray-100 overflow-hidden rounded-xl",
+        viewMode === "list" 
+          ? "w-48 h-48 flex-shrink-0 m-4" 
+          : "aspect-square mx-4"
+      )}>
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
           {isNew && (
@@ -299,20 +307,20 @@ export default function ProductCard({
           <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
         </button>
 
-        {/* Imagen del producto */}
-        <div className="relative bg-gray-100 aspect-square overflow-hidden rounded-xl mx-4">
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className={cn("object-contain p-4")}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        </div>
+        <Image
+          src={image}
+          alt={name}
+          fill
+          className={cn("object-contain p-4")}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
       </div>
 
       {/* Contenido */}
-      <div className="p-4 bg-white">
+      <div className={cn(
+        "bg-white",
+        viewMode === "list" ? "flex-1 p-4" : "p-4"
+      )}>
         {/* Título del producto */}
         <h3 className="font-extrabold text-gray-900 text-base mb-3 line-clamp-2 leading-5">
           {cleanProductName(name)}

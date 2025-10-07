@@ -47,7 +47,7 @@ interface UseProductsReturn {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
-  searchProducts: (query: string, page?: number) => Promise<void>;
+  searchProducts: (query: string, page?: number, sortBy?: string, sortOrder?: string) => Promise<void>;
   filterProducts: (filters: ProductFilters) => Promise<void>;
   loadMore: () => Promise<void>;
   goToPage: (page: number) => Promise<void>;
@@ -120,6 +120,8 @@ export const useProducts = (
       : initialFilters || {}
   );
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
+  const [currentSortBy, setCurrentSortBy] = useState<string>("");
+  const [currentSortOrder, setCurrentSortOrder] = useState<string>("");
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -206,18 +208,40 @@ export const useProducts = (
 
   // Función para buscar productos
   const searchProducts = useCallback(
-    async (query: string, page: number = 1) => {
+    async (query: string, page: number = 1, sortBy?: string, sortOrder?: string) => {
       setLoading(true);
       setError(null);
       setCurrentSearchQuery(query);
       setCurrentPage(page);
 
+      // Actualizar estados de ordenamiento si se proporcionan
+      if (sortBy !== undefined) {
+        setCurrentSortBy(sortBy);
+      }
+      if (sortOrder !== undefined) {
+        setCurrentSortOrder(sortOrder);
+      }
+
       try {
-        const response = await productEndpoints.search(query, {
+        const searchParams: any = {
           precioMin: 1,
           page: page,
           limit: 15,
-        });
+        };
+
+        // Usar los parámetros de ordenamiento actuales o los proporcionados
+        const finalSortBy = sortBy !== undefined ? sortBy : currentSortBy;
+        const finalSortOrder = sortOrder !== undefined ? sortOrder : currentSortOrder;
+
+        // Agregar parámetros de ordenamiento si están presentes
+        if (finalSortBy) {
+          searchParams.sortBy = finalSortBy;
+        }
+        if (finalSortOrder) {
+          searchParams.sortOrder = finalSortOrder;
+        }
+
+        const response = await productEndpoints.search(query, searchParams);
 
         if (response.success && response.data) {
           const apiData = response.data as ProductApiResponse;
@@ -240,7 +264,7 @@ export const useProducts = (
         setLoading(false);
       }
     },
-    []
+    [currentSortBy, currentSortOrder]
   );
 
   // Función para filtrar productos
@@ -262,14 +286,14 @@ export const useProducts = (
       const nextPage = currentPage + 1;
       if (currentSearchQuery) {
         // Si estamos en modo búsqueda, usar searchProducts
-        await searchProducts(currentSearchQuery, nextPage);
+        await searchProducts(currentSearchQuery, nextPage, undefined, undefined);
       } else {
         // Si no estamos en modo búsqueda, usar fetchProducts normal
         setCurrentPage(nextPage);
         await fetchProducts(currentFilters, true);
       }
     }
-  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts, currentSortBy, currentSortOrder]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -277,7 +301,7 @@ export const useProducts = (
       if (page >= 1 && page <= totalPages && !loading) {
         if (currentSearchQuery) {
           // Si estamos en modo búsqueda, usar searchProducts
-          await searchProducts(currentSearchQuery, page);
+          await searchProducts(currentSearchQuery, page, undefined, undefined);
         } else {
           // Si no estamos en modo búsqueda, usar fetchProducts normal
           const filtersWithPage = { ...currentFilters, page };
@@ -293,14 +317,14 @@ export const useProducts = (
   const refreshProducts = useCallback(async () => {
     if (currentSearchQuery) {
       // Si estamos en modo búsqueda, refrescar la búsqueda actual
-      await searchProducts(currentSearchQuery, currentPage);
+      await searchProducts(currentSearchQuery, currentPage, undefined, undefined);
     } else {
       // Si no estamos en modo búsqueda, usar fetchProducts normal
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
       await fetchProducts(filtersToUse, false);
     }
-  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts]);
+  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts, currentSortBy, currentSortOrder]);
 
   // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {

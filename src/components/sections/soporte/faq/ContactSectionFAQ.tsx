@@ -1,12 +1,14 @@
 "use client";
 
+import Image from "next/image";
+
 const contactOptions = [
   {
     title: "WhatsApp - 24/7",
     description: "Ayudarte ahora es más fácil a través de nuestro canal de WhatsApp",
     availability: "Disponible las 24 horas al día",
     buttonText: "Chatea aquí",
-    icon: "💬",
+    hasImage: true,
   },
   {
     title: "Chatea con un agente - 24/7",
@@ -14,34 +16,45 @@ const contactOptions = [
       "24 horas, 7 días a la semana, soporte con un agente en línea de compras",
     availability: "Disponible las 24 horas al día",
     buttonText: "Chatea aquí",
-    icon: "💬",
+    hasImage: false,
   },
   {
     title: "Consulta más canales de servicio",
     description: "",
     availability: "",
     buttonText: "Ver más",
-    icon: "📞",
+    hasImage: false,
   },
 ];
 
 export function ContactSectionFAQ() {
   return (
-    <div className="bg-white py-12 px-4">
-      <div className="max-w-7xl mx-auto">
+    <div className="bg-white pt-12 pb-4 px-4">
+      <div className="max-w-7xl mx-auto w-full">
         <h2 className="text-3xl md:text-4xl font-bold text-center mb-8">
           Contacto
         </h2>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full px-0">
           {contactOptions.map((option, index) => (
             <div
               key={index}
-              className="border border-gray-300 rounded-2xl p-6 hover:shadow-lg transition-shadow flex flex-col"
+              className="border border-black rounded-2xl p-6 hover:shadow-lg transition-shadow flex flex-col relative w-full min-h-[200px]"
             >
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-bold flex-1">{option.title}</h3>
-                <span className="text-2xl">{option.icon}</span>
+              {option.hasImage && (
+                <div className="absolute top-4 right-4 w-12 h-12">
+                  <Image
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1759859506/images_jnxm9j.jpg"
+                    alt="WhatsApp"
+                    width={48}
+                    height={48}
+                    className="object-contain"
+                  />
+                </div>
+              )}
+
+              <div className="mb-4">
+                <h3 className="text-lg font-bold">{option.title}</h3>
               </div>
 
               {option.description && (

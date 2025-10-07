@@ -109,15 +109,35 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   // Price calculations
   const originalPrice = React.useMemo(() => {
     if (selectedVariant?.precioNormal && selectedVariant?.precioDescto) {
-      return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, '')) || 0;
+      return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, ''), 10) || 0;
     }
-    return product.originalPrice ? (typeof product.originalPrice === 'number' ? product.originalPrice : parseInt(String(product.originalPrice).replace(/[^\d]/g, '')) || 0) : undefined;
+    if (!product.originalPrice) {
+      return undefined;
+    }
+    const parsedOriginalPrice =
+      typeof product.originalPrice === 'number'
+        ? product.originalPrice
+        : parseInt(String(product.originalPrice).replace(/[^\d]/g, ''), 10) || 0;
+    return parsedOriginalPrice;
   }, [selectedVariant, product.originalPrice]);
 
-  const discountAmount = React.useMemo(() =>
-    originalPrice && currentPrice ? originalPrice - currentPrice : (product.discount ? (typeof product.discount === 'number' ? product.discount : parseInt(String(product.discount).replace(/[^\d]/g, '')) || 0) : undefined),
-    [originalPrice, currentPrice, product.discount]
-  );
+  const parsedProductDiscount = React.useMemo(() => {
+    if (!product.discount) {
+      return undefined;
+    }
+    if (typeof product.discount === "number") {
+      return product.discount;
+    }
+    const parsedValue = parseInt(String(product.discount).replace(/[^\d]/g, ""), 10);
+    return parsedValue || 0;
+  }, [product.discount]);
+
+  const discountAmount = React.useMemo(() => {
+    if (originalPrice && currentPrice) {
+      return originalPrice - currentPrice;
+    }
+    return parsedProductDiscount;
+  }, [originalPrice, currentPrice, parsedProductDiscount]);
 
   return (
     <>
@@ -141,10 +161,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
       <main className="w-full bg-white min-h-screen" style={{ fontFamily: "SamsungSharpSans" }}>
         <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
-          <div className="max-w-[1280px] mx-auto px-12 py-16">
-            <div className="grid grid-cols-12 gap-2 items-start">
-              <div className="col-span-7 flex flex-col justify-start gap-2">
-                <header className="mb-2">
+          <div className="max-w-[1280px] mx-auto px-12 py-20">
+            <div className="grid grid-cols-12 gap-8 items-start">
+              <div className="col-span-7 flex flex-col justify-start gap-6 min-h-full pb-12">
+                <header className="">
                   <ProductHeader
                     name={product.name}
                     sku={selectedVariant?.sku ?? product.sku ?? undefined}
@@ -169,7 +189,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     estrenoYEntrego={estrenoYEntrego}
                     onEstrenoChange={setEstrenoYEntrego}
                   />
-                  <p className="text-base text-[#222] font-light mb-6 leading-snug">{product.description || ""}</p>
+                  <p className="text-base text-[#222] font-light leading-relaxed mb-8">{product.description || ""}</p>
                 </header>
 
                 <AddiFinancing 
@@ -181,7 +201,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                 />
               </div>
 
-              <div className="col-span-5">
+              <div className="col-span-5 sticky top-16 self-start">
                 <StickyImageContainer
                   productName={product.name}
                   imagePreviewUrl={selectedVariant?.imagePreviewUrl}

@@ -17,11 +17,11 @@ export default function DeliveryTradeInOptions({
   return (
     <>
       {/* Opciones de entrega */}
-      <section className="mb-4">
-        <label className="block text-sm text-[#222] font-medium mb-3">
+      <section className="mb-6">
+        <label className="block text-sm text-[#222] font-medium mb-4">
           Opciones de Entrega
         </label>
-        <div className="flex flex-col gap-2 max-w-md">
+        <div className="flex flex-col gap-3 max-w-md">
           {/* Entrega estándar */}
           <button
             onClick={() => onDeliveryChange("standard")}
@@ -87,14 +87,14 @@ export default function DeliveryTradeInOptions({
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-4"></div>
+      <div className="w-48 h-px bg-gray-200 mb-6"></div>
 
       {/* Estreno y Entrego */}
-      <section className="mb-4">
-        <label className="block text-sm text-[#222] font-medium mb-2">
+      <section className="mb-6">
+        <label className="block text-sm text-[#222] font-medium mb-4">
           Obtén un descuento inmediato seleccionando Estreno y Entrego
         </label>
-        <div className="flex gap-3 max-w-md">
+        <div className="flex gap-4 max-w-md">
           {/* Opción Sí */}
           <button
             onClick={() => onEstrenoChange(true)}

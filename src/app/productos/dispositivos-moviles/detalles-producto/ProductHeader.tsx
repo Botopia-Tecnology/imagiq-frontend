@@ -19,8 +19,8 @@ export default function ProductHeader({
   onToggleFavorite,
 }: ProductHeaderProps) {
   return (
-    <div className="mb-2">
-      <div className="flex items-start gap-3 mb-2 pr-4">
+    <div className="mb-6">
+      <div className="flex items-start gap-3 mb-3 pr-4">
         <h1
           className="text-[2.5rem] leading-[1.08] font-bold text-[#222] flex-1 max-w-[85%]"
           style={{ letterSpacing: "-1.5px" }}
@@ -45,14 +45,14 @@ export default function ProductHeader({
 
       {/* SKU del producto */}
       {sku && (
-        <div className="text-xs text-[#8A8A8A] mb-3">
+        <div className="text-xs text-[#8A8A8A] mb-4">
           {sku}
         </div>
       )}
 
       {/* Calificación del producto */}
       {rating && (
-        <div className="flex items-center gap-2 mb-4">
+        <div className="flex items-center gap-2 mb-6">
           <div className="flex items-center">
             {[...Array(5)].map((_, index) => (
               <svg
@@ -83,7 +83,7 @@ export default function ProductHeader({
       )}
 
       {/* Línea separadora minimalista */}
-      <div className="w-48 h-px bg-gray-200 mb-4"></div>
+      <div className="w-48 h-px bg-gray-200 mb-6"></div>
     </div>
   );
 }

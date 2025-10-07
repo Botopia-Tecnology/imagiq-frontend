@@ -29,12 +29,12 @@ export default function ProductSelectors({
   return (
     <>
       {/* Selector de color */}
-      <section className="mb-4">
-        <label className="block text-sm text-[#222] font-medium mb-2">
+      <section className="mb-6">
+        <label className="block text-sm text-[#222] font-medium mb-3">
           Elige tu Color
         </label>
         {selectedColor && (
-          <div className="text-xs text-[#8A8A8A] mb-3">
+          <div className="text-xs text-[#8A8A8A] mb-4">
             {selectedColor.color}
           </div>
         )}
@@ -49,11 +49,11 @@ export default function ProductSelectors({
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-4"></div>
+      <div className="w-48 h-px bg-gray-200 mb-6"></div>
 
       {/* Selector de almacenamiento */}
-      <section className="mb-4">
-        <label className="block text-sm text-[#222] font-medium mb-3">
+      <section className="mb-6">
+        <label className="block text-sm text-[#222] font-medium mb-4">
           Elige tu Almacenamiento
         </label>
         <div className="flex gap-3">
@@ -81,11 +81,11 @@ export default function ProductSelectors({
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-4"></div>
+      <div className="w-48 h-px bg-gray-200 mb-6"></div>
 
       {/* Selector de memoria RAM */}
-      <section className="mb-4">
-        <label className="block text-sm text-[#222] font-medium mb-3">
+      <section className="mb-6">
+        <label className="block text-sm text-[#222] font-medium mb-4">
           Elige tu Memoria RAM
         </label>
         <div className="flex gap-3">
@@ -108,7 +108,7 @@ export default function ProductSelectors({
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-4"></div>
+      <div className="w-48 h-px bg-gray-200 mb-6"></div>
     </>
   );
 }

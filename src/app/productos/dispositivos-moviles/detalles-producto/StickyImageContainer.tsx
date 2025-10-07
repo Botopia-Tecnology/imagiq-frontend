@@ -12,9 +12,8 @@ interface StickyImageContainerProps {
 }
 
 /**
- * Contenedor sticky para el carrusel de imágenes del producto
- * Se mantiene pegado en la parte superior mientras se hace scroll,
- * usando position: sticky nativo de CSS para mejor rendimiento
+ * Contenedor para el carrusel de imágenes del producto
+ * El sticky se maneja en el componente padre (col-span-5)
  */
 export default function StickyImageContainer({
   productName,
@@ -23,13 +22,11 @@ export default function StickyImageContainer({
   onImageClick,
 }: StickyImageContainerProps) {
   return (
-    <div className="sticky top-24 self-start">
-      <DeviceCarousel
-        alt={productName}
-        imagePreviewUrl={imagePreviewUrl}
-        imageDetailsUrls={imageDetailsUrls}
-        onImageClick={onImageClick}
-      />
-    </div>
+    <DeviceCarousel
+      alt={productName}
+      imagePreviewUrl={imagePreviewUrl}
+      imageDetailsUrls={imageDetailsUrls}
+      onImageClick={onImageClick}
+    />
   );
 }

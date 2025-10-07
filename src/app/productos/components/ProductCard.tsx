@@ -226,12 +226,13 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
-    // Navega usando el id del mock, no el nombre ni slug
-    router.push(`/productos/view/${id}`);
+    // Navega a la página de multimedia con contenido Flixmedia
+    router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,
       source: "product_card",
+      destination: "multimedia_page",
     });
   };
 

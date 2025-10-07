@@ -45,7 +45,7 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
 
         {/* Image Container with Hover Effects */}
-        <div className="relative flex-1 flex items-center justify-center px-8 pb-20 bg-transparent">
+        <div className="relative flex-1 flex items-center justify-center px-8 pb-6 bg-transparent">
           <div className="relative w-full aspect-square max-w-[280px] bg-transparent">
             <Image
               src={product.image}

@@ -28,7 +28,7 @@ export const PROMOS: readonly PromoItem[] = [
     imageAlt: "Productos Destacados"
   },
   {
-    title: "Descarga la App Samsung Shop",
+    title: "Incríbete a la lista de espera",
     href: "/ofertas?seccion=app-samsung-shop",
     imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773425/Descarga-app_fqwm3u.webp",
     imageAlt: "Descarga la App Samsung Shop"

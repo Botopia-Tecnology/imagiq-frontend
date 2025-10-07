@@ -141,7 +141,9 @@ export default function FavoritePage() {
             No se encontraron sugerencias.
           </div>
         ) : (
-          favoritesAPI.map((product) => (
+          favoritesAPI
+            .filter((product) => product.image && typeof product.image === 'string' && product.image.trim() !== '')
+            .map((product) => (
             <ProductCard
               key={product.id}
               id={product.id}

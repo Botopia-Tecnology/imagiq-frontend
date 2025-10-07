@@ -82,7 +82,7 @@ export const NAVIGATION = [
   { name: "Televisores y AV", href: "/tienda/televisores" },
   { name: "Electrodomésticos", href: "/tienda/electrodomesticos" },
   { name: "Tiendas", href: "/tiendas" },
-  { name: "Servicio Técnico", href: "/soporte" },
+  { name: "Servicio Técnico", href: "/soporte/inicio_de_soporte" },
   { name: "Ventas corporativas", href: "/ventas-corporativas" },
 ];
 

@@ -4,10 +4,10 @@
     {
       title: "AYUDA CON UN PRODUCTO",
       links: [
-        { name: "Inicio de soporte", href: "/soporte" },
-        { name: "Manual y Software", href: "/soporte/manual-software" },
+        { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
+        { name: "Manual y Software", href: "/soporte/manual_y_software" },
         { name: "Buscar soporte", href: "/soporte/buscar" },
-        { name: "FAQ sobre la compra", href: "/soporte/faq-compra" },
+        { name: "FAQ sobre la compra", href: "/soporte/faq_sobre_la_compra" },
       ],
     },
     {
@@ -45,6 +45,6 @@
       name: "Descarga manual",
       imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759842074/sim-descarga_zymuvb.webp",
       imageAlt: "Descarga manual",
-      href: "/soporte/manual-software",
+      href: "/soporte/manual_y_software",
     },
   ] as const;

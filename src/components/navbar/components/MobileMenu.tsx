@@ -25,7 +25,7 @@ const MENU_ITEMS: MenuItem[] = [
   { name: "Electrodomésticos", href: "/productos/Electrodomesticos", hasDropdown: true },
   { name: "Monitores", href: "/productos/monitores", hasDropdown: true },
   { name: "Accesorios", href: "/productos/accesorios", hasDropdown: true },
-  { name: "Soporte", href: "/soporte" },
+  { name: "Soporte", href: "/soporte/inicio_de_soporte" },
   { name: "Para Empresas", href: "/ventas-corporativas" },
 ];
 

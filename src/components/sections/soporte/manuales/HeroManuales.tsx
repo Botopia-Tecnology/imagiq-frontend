@@ -24,7 +24,7 @@ export function HeroManuales() {
           {/* Graphics */}
           <div className="relative h-64 flex items-center justify-end">
             <Image
-              src="/soporte/manuales-hero.jpg"
+              src="/soporte/manuales-descargas.svg"
               alt="Manuales y Descargas"
               width={400}
               height={300}

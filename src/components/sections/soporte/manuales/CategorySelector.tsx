@@ -6,27 +6,27 @@ import Link from "next/link";
 const categories = [
   {
     name: "Móvil",
-    image: "/soporte/categoria-movil.jpg",
+    image: "/soporte/icon-moviles.svg",
     href: "#",
   },
   {
     name: "TV & AV",
-    image: "/soporte/categoria-tv.jpg",
+    image: "/soporte/icon-smart-tv.svg",
     href: "#",
   },
   {
     name: "Electrodomésticos",
-    image: "/soporte/categoria-electrodomesticos.jpg",
+    image: "/soporte/guia-electrodomesticos.svg",
     href: "#",
   },
   {
     name: "Informática",
-    image: "/soporte/categoria-informatica.jpg",
+    image: "/soporte/dispositivos-moviles.svg",
     href: "#",
   },
   {
     name: "Pantallas",
-    image: "/soporte/categoria-pantallas.jpg",
+    image: "/soporte/icon-smart-tv.svg",
     href: "#",
   },
 ];
@@ -51,13 +51,13 @@ export function CategorySelector() {
                 href={category.href}
                 className="group flex flex-col items-center"
               >
-                <div className="w-full aspect-square bg-white border border-gray-200 rounded-lg overflow-hidden mb-2 hover:shadow-md transition-shadow">
+                <div className="w-full aspect-square bg-gray-100 border border-gray-200 rounded-lg overflow-hidden mb-2 hover:shadow-md transition-shadow">
                   <Image
                     src={category.image}
                     alt={category.name}
                     width={200}
                     height={200}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
                   />
                 </div>
                 <span className="text-sm font-medium text-center">

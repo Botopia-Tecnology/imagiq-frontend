@@ -10,14 +10,14 @@ export function HeroFAQ() {
       {/* Decorative Icons - Left side stacked */}
       <div className="absolute left-8 top-1/2 -translate-y-1/2 space-y-8 opacity-40">
         <Image
-          src="/soporte/faq-icon-1.jpg"
+          src="/soporte/icon-garantia.svg"
           alt=""
           width={60}
           height={60}
           className="object-contain"
         />
         <Image
-          src="/soporte/faq-icon-2.jpg"
+          src="/soporte/icon-servicio.svg"
           alt=""
           width={60}
           height={60}
@@ -28,14 +28,14 @@ export function HeroFAQ() {
       {/* Decorative Icons - Right side stacked */}
       <div className="absolute right-8 top-1/2 -translate-y-1/2 space-y-8 opacity-40">
         <Image
-          src="/soporte/faq-icon-3.jpg"
+          src="/soporte/icon-moviles.svg"
           alt=""
           width={60}
           height={60}
           className="object-contain"
         />
         <Image
-          src="/soporte/faq-icon-4.jpg"
+          src="/soporte/icon-smart-tv.svg"
           alt=""
           width={60}
           height={60}

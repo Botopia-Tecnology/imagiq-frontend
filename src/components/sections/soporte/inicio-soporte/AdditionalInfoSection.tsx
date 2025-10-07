@@ -10,7 +10,7 @@ const infoCards = [
       { text: "Registra tu producto aquí", href: "#" },
       { text: "Consulta aquí", href: "#" },
     ],
-    icon: "/soporte/icon-garantia.png",
+    icon: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759840839/Home_addInfo_Warranty_onoynl.jpg",
   },
   {
     title: "Servicio en Línea",
@@ -18,7 +18,7 @@ const infoCards = [
     buttons: [
       { text: "Regístrate aquí", href: "#" },
     ],
-    icon: "/soporte/icon-servicio.png",
+    icon: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759840864/your-service-icon_vhjmne.svg",
   },
   {
     title: "Contenido en Lengua de señas",
@@ -26,7 +26,7 @@ const infoCards = [
     buttons: [
       { text: "Conoce más", href: "#" },
     ],
-    icon: "/soporte/icon-lengua-senas.png",
+    icon: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759840869/LS36_pjui7q.jpg",
   },
   {
     title: 'Proyecto "Conscious Service"',
@@ -34,7 +34,7 @@ const infoCards = [
     buttons: [
       { text: "Conoce más", href: "#" },
     ],
-    icon: "/soporte/icon-conscious.png",
+    icon: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759840895/eco-conscious-service-icon-additional-information_36x36_jtyu9a.png",
   },
   {
     title: "Todo sobre Dispositivos móviles",
@@ -42,7 +42,7 @@ const infoCards = [
     buttons: [
       { text: "Conoce más", href: "#" },
     ],
-    icon: "/soporte/icon-moviles.png",
+    icon: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759841061/jp-addinfo-simulator_nrdtol.webp",
   },
   {
     title: "Todo sobre los Smart TV",
@@ -50,14 +50,14 @@ const infoCards = [
     buttons: [
       { text: "Conoce más", href: "#" },
     ],
-    icon: "/soporte/icon-smart-tv.png",
+    icon: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759841061/jp-addinfo-simulator_nrdtol.webp",
   },
 ];
 
 export function AdditionalInfoSection() {
   return (
     <div className="max-w-7xl mx-auto px-4 pb-16">
-      <h2 className="text-3xl md:text-4xl font-bold text-center mb-12">
+      <h2 className="text-3xl md:text-4xl font-black text-center mb-12">
         Encuentre información adicional
       </h2>
 
@@ -65,28 +65,28 @@ export function AdditionalInfoSection() {
         {infoCards.map((card, index) => (
           <div
             key={index}
-            className="border border-gray-300 rounded-3xl p-8 hover:shadow-lg transition-shadow flex flex-col h-full"
+            className="border border-gray-300 rounded-3xl p-6 hover:shadow-lg transition-shadow flex flex-col h-56"
           >
             {/* Header with title and icon */}
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-bold flex-1 pr-4">{card.title}</h3>
-              <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+            <div className="flex justify-between items-start mb-3">
+              <h3 className="text-base font-black flex-1 pr-3">{card.title}</h3>
+              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
                 <Image
                   src={card.icon}
                   alt={card.title}
-                  width={40}
-                  height={40}
+                  width={32}
+                  height={32}
                   className="object-contain"
                 />
               </div>
             </div>
 
             {/* Description */}
-            <p className="text-sm text-gray-700 mb-6 leading-relaxed flex-grow">
+            <p className="text-sm text-gray-700 mb-1 leading-relaxed flex-grow">
               {card.description}
             </p>
 
-            {/* Buttons - aligned to the left and smaller */}
+            {/* Buttons - left aligned */}
             <div className="flex flex-col gap-2.5 items-start">
               {card.buttons.map((button, btnIndex) => (
                 <a

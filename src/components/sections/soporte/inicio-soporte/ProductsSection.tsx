@@ -6,32 +6,32 @@ import Link from "next/link";
 const productCategories = [
   {
     name: "Móvil",
-    image: "/soporte/movil.png",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759802825/full_daily-removebg-preview_lm98i8.png",
     href: "/soporte/productos/movil",
   },
   {
     name: "Televisión y audiovisuales",
-    image: "/soporte/tv.png",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759803027/tele-removebg-preview_wbfjld.png",
     href: "/soporte/productos/tv",
   },
   {
     name: "Electrodomésticos",
-    image: "/soporte/electrodomesticos.png",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759803497/nevera-removebg-preview_yiibzg.png",
     href: "/soporte/productos/electrodomesticos",
   },
   {
     name: "Computación",
-    image: "/soporte/computacion.png",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759803836/co-odyssey-oled-g8-g85sb-ls34bg850snxza-534663632-removebg-preview_ajloex.png",
     href: "/soporte/productos/computacion",
   },
   {
     name: "Pantallas",
-    image: "/soporte/pantallas.png",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759812842/co-smart-signage-qb13r-t-b2c-lh13qbrtbgcxza-533631483-removebg-preview_is2skp.png",
     href: "/soporte/productos/pantallas",
   },
   {
     name: "APLICACIONES Y SERVICIOS",
-    image: "/soporte/apps.png",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759841847/pc-apps-icon-B_y6mq7p.webp",
     href: "/soporte/productos/apps",
   },
 ];

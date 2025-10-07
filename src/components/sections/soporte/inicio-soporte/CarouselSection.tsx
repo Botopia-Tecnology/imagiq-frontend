@@ -10,14 +10,16 @@ const slides = [
       "Conoce las promociones y como Samsung puede llevarte al siguiente nivel",
     buttonText: "Conoce más",
     buttonHref: "#",
-    image: "/soporte/carousel-1.jpg",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759816417/Banner-SMB-PC_oowh6x.webp",
+    textColor: "black",
   },
   {
     title: "Soluciones empresariales Samsung",
     subtitle: "Descubre cómo Samsung puede transformar tu negocio",
     buttonText: "Conoce más",
     buttonHref: "#",
-    image: "/soporte/carousel-2.jpg",
+    image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759840611/Prueba-Banner-SmartXperience-2_ys7dou.png",
+    textColor: "white",
   },
 ];
 
@@ -42,27 +44,30 @@ export function CarouselSection() {
               className="w-full flex-shrink-0 relative"
               style={{ transform: `translateX(-${currentSlide * 100}%)` }}
             >
-              <div className="grid md:grid-cols-2 gap-8 items-center p-6 md:p-12">
-                {/* Text Content */}
-                <div className="space-y-4 px-8 md:px-4">
-                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900">
-                    {slide.title}
-                  </h2>
-                  <p className="text-gray-700 text-sm md:text-base">{slide.subtitle}</p>
-                  <button className="bg-black hover:bg-gray-800 text-white px-6 py-2.5 rounded-full font-medium transition-colors text-sm">
-                    {slide.buttonText}
-                  </button>
-                </div>
-
-                {/* Image */}
-                <div className="relative h-48 md:h-56">
+              <div className="grid md:grid-cols-2 gap-8 items-center p-6 md:p-12 relative min-h-[280px] md:min-h-[320px]">
+                {/* Background Image */}
+                <div className="absolute inset-0 w-full h-full">
                   <Image
                     src={slide.image}
                     alt={slide.title}
                     fill
-                    className="object-contain"
+                    className="object-cover rounded-3xl"
                   />
                 </div>
+
+                {/* Text Content */}
+                <div className="relative z-10 space-y-4 px-8 md:px-4">
+                  <h2 className={`text-2xl md:text-3xl font-black ${slide.textColor === 'black' ? 'text-black' : 'text-white'}`}>
+                    {slide.title}
+                  </h2>
+                  <p className={`${slide.textColor === 'black' ? 'text-black' : 'text-white'} text-sm md:text-base opacity-90`}>{slide.subtitle}</p>
+                  <button className={`${slide.textColor === 'black' ? 'bg-black hover:bg-gray-800 text-white' : 'bg-white hover:bg-gray-100 text-black'} px-6 py-2.5 rounded-full font-medium transition-colors text-sm`}>
+                    {slide.buttonText}
+                  </button>
+                </div>
+
+                {/* Spacer for grid layout */}
+                <div className="relative z-10"></div>
               </div>
             </div>
           ))}

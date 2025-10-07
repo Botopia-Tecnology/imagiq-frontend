@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 const contactOptions = [
   {
     title: "WhatsApp",
@@ -49,14 +51,22 @@ export function ContactInfoSection() {
               className="border border-gray-300 rounded-3xl p-8 hover:shadow-lg transition-shadow flex flex-col"
             >
               <h3 className="text-xl font-bold mb-3">{option.title}</h3>
-              {option.description && (
+              {option.description ? (
                 <p className="text-sm text-gray-700 mb-6 flex-grow">{option.description}</p>
+              ) : (
+                <div className="flex-grow mb-6"></div>
               )}
               
               {option.hasQR && (
                 <div className="flex justify-center mb-4">
-                  <div className="w-32 h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                    <span className="text-xs text-gray-500">QR Code</span>
+                  <div className="w-32 h-32 rounded-lg overflow-hidden">
+                    <Image
+                      src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1759841463/Whatsapp_Contact_Info_nvowjp.png"
+                      alt="WhatsApp QR Code"
+                      width={128}
+                      height={128}
+                      className="object-cover w-full h-full"
+                    />
                   </div>
                 </div>
               )}

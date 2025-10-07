@@ -10,10 +10,10 @@ export function SupportBanner() {
         <div className="relative rounded-3xl overflow-hidden h-[400px]">
           {/* Background Image */}
           <Image
-            src="/soporte/faq-banner.jpg"
+            src="/soporte/expertos-2.svg"
             alt="Soporte para compras en línea"
             fill
-            className="object-cover"
+            className="object-contain bg-gray-200"
           />
 
           {/* Overlay */}

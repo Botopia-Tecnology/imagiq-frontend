@@ -11,7 +11,7 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
@@ -24,7 +24,7 @@ import watchImg from "@/img/categorias/galaxy_watch.png";
 interface Product {
   id: string;
   title: string;
-  image: any;
+  image: StaticImageData;
   href: string;
 }
 

@@ -15,21 +15,22 @@
 
 "use client";
 
-import React, { use } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
 import MultimediaBottomBar from "@/components/MultimediaBottomBar";
 import { motion } from "framer-motion";
+import { findAvailableSku, parseSkuString } from "@/lib/flixmedia";
 
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Skeleton del contenido principal */}
-      <div className="flex-1 px-6 md:px-8 lg:px-12">
+      <div className="flex-1">
         {/* Skeleton del iframe de Flixmedia */}
-        <div className="w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 rounded-lg relative overflow-hidden">
+        <div className="w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative overflow-hidden">
           {/* Efecto de brillo */}
           <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
           
@@ -89,9 +90,42 @@ export default function MultimediaPage({
   const { id } = resolvedParams;
 
   const { product, loading, error } = useProduct(id);
+  const [checkingFlixmedia, setCheckingFlixmedia] = useState(true);
+
+  // Verificar si hay contenido de Flixmedia disponible
+  useEffect(() => {
+    async function checkFlixmediaContent() {
+      if (!product || !product.sku) {
+        setCheckingFlixmedia(false);
+        return;
+      }
+
+      const skus = parseSkuString(product.sku);
+
+      if (skus.length === 0) {
+        console.log("📍 No hay SKUs disponibles, redirigiendo a vista de producto...");
+        router.replace(`/productos/view/${id}`);
+        return;
+      }
+
+      const availableSku = await findAvailableSku(skus);
+
+      if (!availableSku) {
+        console.log("📍 No se encontró contenido Flixmedia, redirigiendo a vista de producto...");
+        router.replace(`/productos/view/${id}`);
+        return;
+      }
+
+      setCheckingFlixmedia(false);
+    }
+
+    if (product && !loading) {
+      checkFlixmediaContent();
+    }
+  }, [product, loading, id, router]);
 
   // Loading state
-  if (loading) {
+  if (loading || checkingFlixmedia) {
     return <MultimediaPageSkeleton />;
   }
 
@@ -152,12 +186,12 @@ export default function MultimediaPage({
   
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Contenido principal - Flixmedia Player ocupa toda la página */}
+      {/* Contenido principal - Flixmedia Player ocupa toda la página sin márgenes */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex-1 px-6 md:px-8 lg:px-12"
+        className="flex-1"
       >
         <FlixmediaPlayer
           mpn={productSku}

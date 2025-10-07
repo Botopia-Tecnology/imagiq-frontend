@@ -98,13 +98,13 @@ function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
       return firstPreviewUrl;
     }
   }
-  
+
   // Si no hay imagePreviewUrl, usar urlImagenes como fallback
-  const firstImageUrl = apiProduct.urlImagenes.find(url => url && url.trim() !== '');
+  const firstImageUrl = apiProduct.urlImagenes?.find(url => url && url.trim() !== '');
   if (firstImageUrl) {
     return firstImageUrl;
   }
-    
+
   // Usar imagen por defecto cuando no hay imagen de la API
   return emptyImg;
 }

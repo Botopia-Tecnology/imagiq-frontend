@@ -135,9 +135,13 @@ export default function ProductCard({
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
   viewMode = "grid", // Modo de visualización por defecto
+  stock = 1, // Valor por defecto si no se proporciona
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Verificar si el producto está sin stock
+  const isOutOfStock = stock === 0;
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
@@ -268,6 +272,7 @@ export default function ProductCard({
         // Diseño vertical para todos los tamaños
         "bg-white rounded-2xl w-full overflow-hidden transition-all duration-300 cursor-pointer",
         viewMode === "list" && "flex flex-row",
+        isOutOfStock && "opacity-60 grayscale",
         className
       )}
     >
@@ -387,70 +392,93 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Precios */}
-        {currentPrice && (
-          <div className="mb-4">
-            {/* Precio con descuento */}
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-xl font-bold text-gray-900">
-                {currentPrice}
-              </span>
-              {currentOriginalPrice && (
-                <span className="text-sm text-gray-500 line-through">
-                  {currentOriginalPrice}
+        {/* Precios - Mantener espacio consistente */}
+        <div className="mb-4 min-h-[60px]">
+          {!isOutOfStock && currentPrice && (
+            <>
+              {/* Precio con descuento */}
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-xl font-bold text-gray-900">
+                  {currentPrice}
                 </span>
-              )}
-            </div>
-            {/* Ahorro calculado */}
-            {currentOriginalPrice && currentPrice !== currentOriginalPrice && (() => {
-              const priceNum = parseInt(currentPrice.replace(/[^\d]/g, ''));
-              const originalPriceNum = parseInt(currentOriginalPrice.replace(/[^\d]/g, ''));
-              const savings = originalPriceNum - priceNum;
-              if (savings > 0) {
-                return (
-                  <div className="text-sm">
-                    <span className="text-gray-700">Ahorra </span>
-                    <span className="font-bold text-[#1428A0]">
-                      $ {savings.toLocaleString('es-CO')}
-                    </span>
-                  </div>
-                );
-              }
-              return null;
-            })()}
-          </div>
-        )}
+                {currentOriginalPrice && (
+                  <span className="text-sm text-gray-500 line-through">
+                    {currentOriginalPrice}
+                  </span>
+                )}
+              </div>
+              {/* Ahorro calculado */}
+              {currentOriginalPrice && currentPrice !== currentOriginalPrice && (() => {
+                const priceNum = parseInt(currentPrice.replace(/[^\d]/g, ''));
+                const originalPriceNum = parseInt(currentOriginalPrice.replace(/[^\d]/g, ''));
+                const savings = originalPriceNum - priceNum;
+                if (savings > 0) {
+                  return (
+                    <div className="text-sm">
+                      <span className="text-gray-700">Ahorra </span>
+                      <span className="font-bold text-[#1428A0]">
+                        $ {savings.toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </>
+          )}
+        </div>
 
-        {/* Botones de acción */}
+        {/* Botones de acción - Mantener espacio consistente */}
         <div className="space-y-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAddToCart();
-            }}
-            disabled={isLoading}
-            className={cn(
-              "w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer",
-              "transition-all duration-200 flex items-center justify-center",
-              "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed",
-              isLoading && "animate-pulse"
-            )}
-          >
-            {isLoading ? (
-              <Loader className="w-4 h-4" />
-            ) : (
-              <span>Comprar ahora</span>
-            )}
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleMoreInfo();
-            }}
-            className="w-full bg-white text-black py-3 px-4 rounded-full text-sm font-semibold cursor-pointer border border-gray-300 hover:bg-gray-50 transition-all duration-200"
-          >
-            Más información
-          </button>
+          {isOutOfStock ? (
+            <>
+              {/* Botón "Notifícame" para productos sin stock - no debe estar en grayout */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO: Implementar funcionalidad de notificación
+                  alert("Te notificaremos cuando este producto esté disponible");
+                }}
+                className="w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center hover:bg-gray-800 grayscale-0 opacity-100"
+              >
+                Notifícame
+              </button>
+              {/* Espaciador invisible para mantener altura consistente */}
+              <div className="h-[48px]" aria-hidden="true" />
+            </>
+          ) : (
+            // Botones normales para productos con stock
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddToCart();
+                }}
+                disabled={isLoading}
+                className={cn(
+                  "w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer",
+                  "transition-all duration-200 flex items-center justify-center",
+                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                  isLoading && "animate-pulse"
+                )}
+              >
+                {isLoading ? (
+                  <Loader className="w-4 h-4" />
+                ) : (
+                  <span>Comprar ahora</span>
+                )}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMoreInfo();
+                }}
+                className="w-full bg-white text-black py-3 px-4 rounded-full text-sm font-semibold cursor-pointer border border-gray-300 hover:bg-gray-50 transition-all duration-200"
+              >
+                Más información
+              </button>
+            </>
+          )}
         </div>
       </div>
 

@@ -18,8 +18,10 @@ const heroSlides = [
     originalPrice: "",
     offerText: "",
     buttonText: "Descubre más",
-    gifSrc: "https://images.samsung.com/is/image/samsung/assets/co/home/HOME_TS11_Hero-KV_1920x1080_pc_1.jpg?$1920_N_JPG$",
-    gifSrcMobile: "https://images.samsung.com/is/image/samsung/assets/co/home/HOME_TS11_Hero-KV_720x1248_mo.jpg?$720_N_JPG$",
+    gifSrc:
+      "https://images.samsung.com/is/image/samsung/assets/co/home/HOME_TS11_Hero-KV_1920x1080_pc_1.jpg?$1920_N_JPG$",
+    gifSrcMobile:
+      "https://images.samsung.com/is/image/samsung/assets/co/home/HOME_TS11_Hero-KV_720x1248_mo.jpg?$720_N_JPG$",
     bgColor: "#000000",
     isFullImage: true,
   },
@@ -94,7 +96,7 @@ export default function HeroSection() {
       className="relative w-full h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 overflow-hidden transition-colors duration-1000 ease-in-out"
       style={{
         zIndex: 1,
-        backgroundColor: currentSlideData.bgColor
+        backgroundColor: currentSlideData.bgColor,
       }}
       data-hero="true"
     >
@@ -133,9 +135,7 @@ export default function HeroSection() {
       <div className="hidden md:flex relative z-10 w-full max-w-6xl mx-auto flex-row items-center justify-center py-8">
         {/* Layout para fullImage: solo botón */}
         <div className="w-full flex items-start justify-start pl-12 pt-20">
-          <button
-            className="bg-white hover:bg-gray-100 text-black px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl"
-          >
+          <button className="bg-white hover:bg-gray-100 text-black px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl">
             {currentSlideData.buttonText}
           </button>
         </div>

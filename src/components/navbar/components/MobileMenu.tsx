@@ -2,13 +2,15 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { X, ChevronRight, ChevronLeft, Search } from "lucide-react";
-import type { FC } from "react";
+import Image from "next/image";
+import { X, ChevronRight, ChevronLeft } from "lucide-react";
+import type { FC, FormEvent } from "react";
 import { DispositivosMovilesSubmenu } from "./DispositivosMovilesSubmenu";
 import { TelevisoresSubmenu } from "./TelevisoresSubmenu";
 import { ElectrodomesticosSubmenu } from "./ElectrodomesticosSubmenu";
 import { MonitoresSubmenu } from "./MonitoresSubmenu";
 import { AccesoriosSubmenu } from "./AccesoriosSubmenu";
+import { SearchBar } from "./SearchBar";
 
 type MenuItem = {
   name: string;
@@ -28,19 +30,37 @@ const MENU_ITEMS: MenuItem[] = [
 ];
 
 const FEATURED_PRODUCTS = [
-  { name: "Galaxy Z Fold7", image: "/img/menu/smartphones.png" },
-  { name: "Galaxy Z Flip7", image: "/img/menu/tablets.png" },
-  { name: "Galaxy S25 Ultra", image: "/img/menu/smartphones.png" },
-  { name: "Galaxy S25 | S25+", image: "/img/menu/smartphones.png" },
+  {
+    name: "Galaxy Z Fold7",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/galaxy-zflod7_hrd0oj.webp",  // 👈 Pon tu URL aquí
+    href: "/productos/dispositivos-moviles/galaxy-z-fold7"
+  },
+  {
+    name: "Galaxy Z Flip7",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp",  // 👈 Pon tu URL aquí
+    href: "/productos/dispositivos-moviles/galaxy-z-flip7"
+  },
+  {
+    name: "Galaxy S25 Ultra",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s-ultra_xfxhqt.webp",  // 👈 Pon tu URL aquí
+    href: "/productos/dispositivos-moviles/galaxy-s25-ultra"
+  },
+  {
+    name: "Galaxy S25 | S25+",
+    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s_skxtgm.webp",  // 👈 Pon tu URL aquí
+    href: "/productos/dispositivos-moviles/galaxy-s25"
+  },
 ];
 
 type Props = {
   isOpen: boolean;
   onClose: () => void;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  onSearchSubmit: (e: FormEvent) => void;
 };
 
-export const MobileMenu: FC<Props> = ({ isOpen, onClose }) => {
-  const [searchQuery, setSearchQuery] = useState("");
+export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchChange, onSearchSubmit }) => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -66,7 +86,7 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose }) => {
       />
 
       <div className="fixed inset-y-0 left-0 w-full max-w-md bg-white z-[101] overflow-y-auto">
-        <div className="sticky top-0 bg-white p-4" style={{ borderBottom: activeSubmenu ? 'none' : '1px solid rgb(229, 231, 235)' }}>
+        <div className="sticky top-0 bg-white p-4 z-20" style={{ borderBottom: activeSubmenu ? 'none' : '1px solid rgb(229, 231, 235)' }}>
           {activeSubmenu ? (
             <div className="flex items-center justify-between">
               <button
@@ -87,14 +107,11 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose }) => {
             </div>
           ) : (
             <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Búsqueda"
+              <div className="flex-1">
+                <SearchBar
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-full text-sm focus:outline-none focus:border-blue-500"
+                  onChange={onSearchChange}
+                  onSubmit={onSearchSubmit}
                 />
               </div>
               <button
@@ -106,6 +123,22 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose }) => {
               </button>
             </div>
           )}
+        </div>
+
+        <div className="sticky top-[73px] bg-black text-white p-4 text-center z-10">
+          <h2 className="text-base font-bold mb-1">
+            ¡Comenzó el festival de descuentos!
+          </h2>
+          <p className="text-sm mb-3">
+            Hasta 50% de descuento en tu producto favorito
+          </p>
+          <Link
+            href="/ofertas"
+            onClick={onClose}
+            className="inline-block bg-white text-black px-6 py-2 rounded-full text-sm font-semibold hover:bg-gray-100"
+          >
+            Ver Ofertas
+          </Link>
         </div>
 
         {activeSubmenu === "Dispositivos móviles" ? (
@@ -120,22 +153,6 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose }) => {
           <AccesoriosSubmenu onClose={onClose} />
         ) : (
           <>
-            <div className="bg-black text-white p-4 text-center">
-              <h2 className="text-base font-bold mb-1">
-                ¡Comenzó el festival de descuentos!
-              </h2>
-              <p className="text-sm mb-3">
-                Hasta 50% de descuento en tu producto favorito
-              </p>
-              <Link
-                href="/ofertas"
-                onClick={onClose}
-                className="inline-block bg-white text-black px-6 py-2 rounded-full text-sm font-semibold hover:bg-gray-100"
-              >
-                Ver Ofertas
-              </Link>
-            </div>
-
             <div className="p-4">
               <div className="mb-6">
                 <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">
@@ -145,12 +162,21 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose }) => {
                   {FEATURED_PRODUCTS.map((product) => (
                     <Link
                       key={product.name}
-                      href="/productos/dispositivos-moviles"
+                      href={product.href}
                       onClick={onClose}
                       className="text-center"
                     >
                       <div className="bg-gray-50 rounded-lg p-2 mb-1">
-                        <div className="w-full aspect-square bg-gray-200 rounded"></div>
+                        <div className="w-full aspect-square relative">
+                          <Image
+                            src={product.image}
+                            alt={product.name}
+                            width={80}
+                            height={80}
+                            className="object-contain w-full h-full"
+                            unoptimized
+                          />
+                        </div>
                       </div>
                       <p className="text-xs text-gray-900 leading-tight">
                         {product.name}

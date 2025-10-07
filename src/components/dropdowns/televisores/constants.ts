@@ -4,55 +4,55 @@ export const MAIN_ITEMS: readonly MainItem[] = [
   {
     name: "Neo QLED",
     href: "/productos/televisores?seccion=neo-qled",
-    imageSrc: "/CATEGORIAS/TV-AV/NEO_QLED.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773443/NEO_QLED_r1n0ew.webp",
     imageAlt: "Neo QLED",
   },
   {
     name: "OLED",
     href: "/productos/televisores?seccion=oled",
-    imageSrc: "/CATEGORIAS/TV-AV/OLED.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773443/OLED_fzt6n5.webp",
     imageAlt: "OLED",
   },
   {
     name: "QLED",
     href: "/productos/televisores?seccion=qled",
-    imageSrc: "/CATEGORIAS/TV-AV/Q_LED.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773451/Q_LED_zlnq9y.webp",
     imageAlt: "QLED",
   },
   {
     name: "Crystal UHD",
     href: "/productos/televisores?seccion=crystal-uhd",
-    imageSrc: "/CATEGORIAS/TV-AV/CRYSTAL_UHD.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773443/CRYSTAL_UHD_cri2ns.webp",
     imageAlt: "Crystal UHD",
   },
   {
     name: "The Frame",
     href: "/productos/televisores?seccion=the-frame",
-    imageSrc: "/CATEGORIAS/TV-AV/THE_FRAME.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773439/THE_FRAME_gflmei.webp",
     imageAlt: "The Frame",
   },
   {
     name: "Dispositivos de audio",
     href: "/productos/televisores?seccion=audio",
-    imageSrc: "/CATEGORIAS/TV-AV/DISPOSITIVOS_DE_AUDIO.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773435/DISPOSITIVOS_DE_AUDIO_hak34x.webp",
     imageAlt: "Dispositivos de audio",
   },
   {
     name: "Proyectores",
     href: "/productos/televisores?seccion=proyectores",
-    imageSrc: "/CATEGORIAS/TV-AV/PROYECTORES.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773435/PROYECTORES_mdrj8w.webp",
     imageAlt: "Proyectores",
   },
   {
     name: "Accesorios para televisor",
     href: "/productos/televisores?seccion=accesorios-tv",
-    imageSrc: "/CATEGORIAS/TV-AV/ACCESORIOS_PARA_TELEVISOR.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773439/ACCESORIOS_PARA_TELEVISOR_icsuyv.webp",
     imageAlt: "Accesorios para televisor",
   },
   {
     name: "Accesorios de audio",
     href: "/productos/televisores?seccion=accesorios-audio",
-    imageSrc: "/CATEGORIAS/TV-AV/ACCESORIOS_DE_AUDIO.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773434/ACCESORIOS_DE_AUDIO_xrmytj.webp",
     imageAlt: "Accesorios de audio",
   },
 ] as const;
@@ -61,37 +61,37 @@ export const PROMOS: readonly PromoItem[] = [
   {
     title: "¿Por qué elegir un TV Samsung?",
     href: "/productos/televisores?seccion=por-que-samsung",
-    imageSrc: "/CATEGORIAS/TV-AV/TV_SAMSUNG.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773451/TV_SAMSUNG_tvohw1.webp",
     imageAlt: "¿Por qué elegir un TV Samsung?"
   },
   {
     title: "¿Por qué elegir Samsung OLED?",
     href: "/productos/televisores?seccion=por-que-oled",
-    imageSrc: "/CATEGORIAS/TV-AV/PORQUE_OLED.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773439/PORQUE_OLED_vw0rjn.webp",
     imageAlt: "¿Por qué elegir Samsung OLED?"
   },
   {
     title: "¿Por qué elegir los televisores Neo QLED?",
     href: "/productos/televisores?seccion=por-que-neo-qled",
-    imageSrc: "/CATEGORIAS/TV-AV/PORQUE_NEOQLED.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773443/PORQUE_NEOQLED_rrpss3.webp",
     imageAlt: "¿Por qué elegir los televisores Neo QLED?"
   },
   {
     title: "¿Por qué elegir The Frame?",
     href: "/productos/televisores?seccion=por-que-the-frame",
-    imageSrc: "/CATEGORIAS/TV-AV/PORQUE_THEFRAME.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773439/PORQUE_THEFRAME_cnbgqq.webp",
     imageAlt: "¿Por qué elegir The Frame?"
   },
   {
     title: "Ayuda para elegir mi televisor",
     href: "/productos/televisores?seccion=ayuda",
-    imageSrc: "/CATEGORIAS/TV-AV/Ayuda.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773433/Ayuda_rjzowj.webp",
     imageAlt: "Ayuda para elegir mi televisor"
   },
   {
     title: "Elija mi dispositivo de audio",
     href: "/productos/televisores?seccion=elegir-audio",
-    imageSrc: "/CATEGORIAS/TV-AV/Elija-dispositivo.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773433/Elija-dispositivo_sqstcg.webp",
     imageAlt: "Elija mi dispositivo de audio"
   },
 ] as const;

@@ -226,13 +226,29 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
-    // Navega usando el id del mock, no el nombre ni slug
-    router.push(`/productos/view/${id}`);
+    // Navega a la página de multimedia con contenido Flixmedia
+    router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,
       source: "product_card",
+      destination: "multimedia_page",
     });
+  };
+
+  // Handler para el click en la card completa
+  // Navega a multimedia EXCEPTO si se hace click en botones interactivos
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Verificar si el click fue en un botón o dentro de un botón
+    const isButton = target.closest('button') !== null;
+    
+    // Si NO es un botón, navegar a multimedia
+    if (!isButton) {
+      handleMoreInfo();
+    }
+    // Si ES un botón, no hacer nada (el botón maneja su propio onClick con stopPropagation)
   };
 
   const cardReveal = useScrollReveal<HTMLDivElement>({
@@ -245,7 +261,7 @@ export default function ProductCard({
     <motion.div
       ref={cardReveal.ref}
       {...cardReveal.motionProps}
-      onClick={handleMoreInfo}
+      onClick={handleCardClick}
       className={cn(
         // Diseño vertical para todos los tamaños
         "bg-white rounded-2xl w-full overflow-hidden transition-all duration-300 cursor-pointer",

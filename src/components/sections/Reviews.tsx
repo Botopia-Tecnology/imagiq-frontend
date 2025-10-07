@@ -76,14 +76,15 @@ const Reviews = () => {
               <button
                 aria-label="Anterior"
                 onClick={handlePrev}
-                className="md:flex hidden items-center justify-center rounded-full shadow-lg hover:brightness-95 transition"
+                className="md:flex hidden items-center justify-center shadow-lg hover:brightness-95 transition"
                 style={{
                   zIndex: 30,
-                  boxShadow: "0 4px 16px rgba(37,99,235,0.15)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
                   width: 40,
                   height: 40,
-                  backgroundColor: "#b2e2f2",
+                  backgroundColor: "#ffffff",
                   color: "#222",
+                  border: "1px solid #e5e7eb",
                 }}
               >
                 <svg
@@ -144,13 +145,12 @@ const Reviews = () => {
                   <div
                     key={review.id}
                     className={cn(
-                      "relative rounded-2xl flex flex-col items-center transition-all duration-500",
+                      "relative flex flex-col items-center transition-all duration-500",
                       bg
                     )}
                     aria-current={active === review.id ? "true" : undefined}
                     style={{
                       boxShadow: shadow,
-                      borderRadius: "24px",
                       border,
                       display: "flex",
                       flexDirection: "column",
@@ -236,14 +236,15 @@ const Reviews = () => {
               <button
                 aria-label="Siguiente"
                 onClick={handleNext}
-                className="md:flex hidden items-center justify-center rounded-full shadow-lg hover:brightness-95 transition"
+                className="md:flex hidden items-center justify-center shadow-lg hover:brightness-95 transition"
                 style={{
                   zIndex: 30,
-                  boxShadow: "0 4px 16px rgba(37,99,235,0.15)",
+                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
                   width: 40,
                   height: 40,
-                  backgroundColor: "#b2e2f2",
+                  backgroundColor: "#ffffff",
                   color: "#222",
+                  border: "1px solid #e5e7eb",
                 }}
               >
                 <svg
@@ -281,13 +282,12 @@ const Reviews = () => {
                   <div
                     key={idx}
                     className={cn(
-                      "relative rounded-2xl flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg"
+                      "relative flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg"
                     )}
                     style={{
                       minHeight: "340px",
                       padding: "32px 16px",
-                      boxShadow: "0 12px 36px rgba(0,0,0,0.13)", // sombra suave abajo
-                      borderRadius: "24px",
+                      boxShadow: "0 12px 36px rgba(0,0,0,0.13)",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
@@ -393,9 +393,9 @@ const Reviews = () => {
               fontFamily: "Samsung Sharp Sans, sans-serif",
               minWidth: 240,
               fontSize: "1.15rem",
-              boxShadow: "0 4px 16px rgba(37,99,235,0.15)",
-              backgroundColor: "#b2e2f2",
-              color: "#222",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+              backgroundColor: "#000000",
+              color: "#ffffff",
             }}
             onClick={() =>
               window.open(

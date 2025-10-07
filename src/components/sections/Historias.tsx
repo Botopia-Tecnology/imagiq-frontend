@@ -75,13 +75,13 @@ export default function Historias() {
                 aria-label={historia.title}
                 role="listitem"
               >
-                <div className="w-full h-full flex items-center justify-center bg-transparent shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105 rounded-xl">
+                <div className="w-full h-full flex items-center justify-center bg-transparent shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105">
                   <Image
                     src={historia.image}
                     alt={historia.title}
                     width={120}
                     height={120}
-                    className="object-contain rounded-2xl"
+                    className="object-contain"
                     draggable={false}
                     priority={idx === 0}
                   />
@@ -103,13 +103,13 @@ export default function Historias() {
                 tabIndex={0}
                 aria-label={historia.title}
               >
-                <div className="w-full h-full flex items-center justify-center bg-transparent shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105 rounded-xl">
+                <div className="w-full h-full flex items-center justify-center bg-transparent shadow-[8px_16px_24px_-8px_rgba(0,0,0,0.18)] transition-transform duration-300 hover:scale-105">
                   <Image
                     src={historia.image}
                     alt={historia.title}
                     width={200}
                     height={200}
-                    className="object-contain rounded-3xl"
+                    className="object-contain"
                     draggable={false}
                     priority={idx === 0}
                   />

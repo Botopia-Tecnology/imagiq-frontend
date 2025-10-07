@@ -3,7 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, User, Menu, Heart } from "lucide-react";
+import { User, Menu, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -14,10 +14,11 @@ import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
 import TelevisoresDropdown from "./dropdowns/televisores";
 import MonitoresDropdown from "./dropdowns/monitores";
 import AccesoriosDropdown from "./dropdowns/accesorios";
+import SoporteDropdown from "./dropdowns/soporte";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import { MobileMenu, CartIcon, SearchBar, NavbarLogo } from "./navbar/components";
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
-import { DROPDOWNS, MENU_ORDER } from "./navbar/constants";
+import { MENU_ORDER } from "./navbar/constants";
 import type { DropdownName, NavItem } from "./navbar/types";
 import logoSamsungBlack from "@/img/Samsung_black.png";
 
@@ -36,6 +37,8 @@ const getDropdownComponent = (name: DropdownName) => {
       return <MonitoresDropdown {...props} />;
     case "Accesorios":
       return <AccesoriosDropdown {...props} />;
+    case "Soporte":
+      return <SoporteDropdown {...props} />;
   }
 };
 
@@ -45,14 +48,24 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
+      if (window.innerWidth >= 1536) {
         setMobileMenuOpen(false);
       }
     };
 
+    // Listener para cerrar dropdown cuando se dispara el evento personalizado
+    const handleCloseDropdown = () => {
+      navbar.setActiveDropdown(null);
+    };
+
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    window.addEventListener('close-dropdown', handleCloseDropdown as EventListener);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('close-dropdown', handleCloseDropdown as EventListener);
+    };
+  }, [navbar]);
 
   const getIconColorClasses = (forMobile = false): string => {
     if (navbar.isElectrodomesticos || navbar.isDispositivosMoviles || navbar.isMasInformacionProducto) {
@@ -93,8 +106,11 @@ export default function Navbar() {
         )}
         style={headerStyles}
       >
-        {/* Mobile Header */}
-        <div className={cn("lg:hidden px-4 py-3 flex items-center justify-between", mobileMenuOpen && "hidden")}>
+        {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1536px */}
+        <div className={cn(
+          "2xl:hidden px-4 py-3 flex items-center justify-between",
+          mobileMenuOpen && "hidden"
+        )}>
           <Link
             href="/"
             onClick={(e) => {
@@ -110,9 +126,6 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-2">
-            <button className="p-2" aria-label="Buscar">
-              <Search className="w-6 h-6 text-black" />
-            </button>
             <CartIcon
               count={navbar.itemCount}
               showBump={false}
@@ -129,13 +142,13 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Desktop Header */}
-        <div className="hidden lg:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-center justify-between gap-8">
+        {/* Desktop Header completo - Mostrar solo en pantallas >= 1536px */}
+        <div className="hidden 2xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-center justify-between gap-8">
           <div className="flex items-center gap-6 min-w-0 flex-1">
             <NavbarLogo showWhiteLogo={navbar.showWhiteLogo} onNavigate={() => navbar.router.push("/")} />
 
             <nav className="min-w-0 flex-1" style={{ marginTop: '4px' }}>
-              <ul className="flex items-center gap-4 md:gap-5 lg:gap-6 overflow-x-auto scrollbar-hide">
+              <ul className="flex items-center gap-4 md:gap-5 lg:gap-6">
                 {menuRoutes.map((item) => {
                   const isActive =
                     item.name === "Electrodomésticos"
@@ -183,15 +196,20 @@ export default function Navbar() {
 
           <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[380px]">
             <div className="flex items-center gap-6 leading-none">
-              <Link
-                href="/soporte"
-                className={cn(
-                  "text-[11.5px] md:text-[12px] font-bold",
-                  navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"
-                )}
+              <div
+                onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}
+                onMouseLeave={navbar.handleDropdownLeave}
               >
-                Soporte
-              </Link>
+                <Link
+                  href="/soporte"
+                  className={cn(
+                    "text-[11.5px] md:text-[12px] font-bold",
+                    navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"
+                  )}
+                >
+                  Soporte
+                </Link>
+              </div>
               <Link
                 href="/ventas-corporativas"
                 className={cn(
@@ -239,9 +257,30 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+
+        {/* Dropdown de Soporte - Full Width */}
+        {navbar.activeDropdown === "Soporte" && (
+          <div
+            className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
+            style={{ top: "104px" }}
+            onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}
+            onMouseLeave={navbar.handleDropdownLeave}
+          >
+            <div className="mx-auto max-w-screen-2xl">
+              <SoporteDropdown isMobile={false} onClose={() => navbar.setActiveDropdown(null)} />
+            </div>
+          </div>
+        )}
       </header>
 
-      <MobileMenu isOpen={mobileMenuOpen} onClose={() => setMobileMenuOpen(false)} />
+      <MobileMenu
+  isOpen={mobileMenuOpen}
+  onClose={() => setMobileMenuOpen(false)}
+  searchQuery={navbar.searchQuery}
+  onSearchChange={navbar.setSearchQuery}
+  onSearchSubmit={navbar.handleSearchSubmit}
+/>
+
     </>
   );
 }

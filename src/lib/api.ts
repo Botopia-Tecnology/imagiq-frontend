@@ -55,13 +55,24 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response?.json();
+      const responseData = await response.json();
 
+      // Si la respuesta tiene la estructura { success, data, message, errors }
+      if (responseData && typeof responseData === 'object' && 'success' in responseData) {
+        return {
+          data: responseData.data as T,
+          success: responseData.success && response.ok,
+          message: responseData.message,
+          errors: responseData.errors,
+        };
+      }
+
+      // Fallback para respuestas que no siguen el formato estándar
       return {
-        data: data as T,
+        data: responseData as T,
         success: response.ok,
-        message: data.message,
-        errors: data.errors,
+        message: responseData.message,
+        errors: responseData.errors,
       };
     } catch (error) {
       console.error("API request failed:", error);
@@ -130,8 +141,14 @@ export const productEndpoints = {
     apiClient.get<ProductApiResponse>(
       `/api/products/filtered?codigoMarket=${codigoMarket}`
     ),
-  search: (query: string) =>
-    apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
+  search: (query: string, params?: { precioMin?: number; page?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('query', query);
+    searchParams.append('precioMin', String(params?.precioMin ?? 1));
+    searchParams.append('page', String(params?.page ?? 1));
+    searchParams.append('limit', String(params?.limit ?? 15));
+    return apiClient.get<ProductApiResponse>(`/api/products/search/grouped?${searchParams.toString()}`);
+  },
   getOffers: () =>
     apiClient.get<ProductApiResponse>(
       "/api/products/filtered?conDescuento=true"

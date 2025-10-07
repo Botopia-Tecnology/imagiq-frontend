@@ -26,7 +26,7 @@ export const navbarRoutes = [
   },
   {
     name: "Accesorios",
-    href: "/productos/accesorios",
+    href: "/productos?q=accesorios",
     category: "accesorios",
   },
   {

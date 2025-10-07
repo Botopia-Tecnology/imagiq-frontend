@@ -174,11 +174,11 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Header completo - Mostrar en pantallas >= 1280px */}
-        <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-center justify-between gap-4 2xl:gap-8">
+        <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-end justify-between gap-4 2xl:gap-8">
           <div className="flex items-center gap-3 xl:gap-4 2xl:gap-6 min-w-0 flex-1">
             <NavbarLogo showWhiteLogo={navbar.showWhiteLogo} onNavigate={() => navbar.router.push("/")} />
 
-            <nav className="min-w-0 flex-1" style={{ marginTop: '4px' }}>
+            <nav className="min-w-0 flex-1">
               <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
                 {menuRoutes.map((item) => {
                   const isActive =
@@ -201,7 +201,7 @@ export default function Navbar() {
                         <Link
                           href={item.href}
                           className={cn(
-                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[11px] xl:text-[11.5px] 2xl:text-[13.5px] leading-6 font-black tracking-tight relative inline-block",
+                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-black tracking-tight relative inline-block",
                             navbar.showWhiteItems ? "text-white hover:opacity-90" : "text-black hover:text-blue-600",
                             !navbar.showWhiteItems && "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                           )}
@@ -234,7 +234,7 @@ export default function Navbar() {
                 <Link
                   href="/soporte"
                   className={cn(
-                    "text-[11.5px] md:text-[12px] font-bold",
+                    "text-[13px] md:text-[13.5px] font-bold",
                     navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"
                   )}
                 >
@@ -244,7 +244,7 @@ export default function Navbar() {
               <Link
                 href="/ventas-corporativas"
                 className={cn(
-                  "text-[11.5px] md:text-[12px] font-bold",
+                  "text-[13px] md:text-[13.5px] font-bold",
                   navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"
                 )}
                 title="Para Empresas"

@@ -5,7 +5,7 @@ export const DROPDOWNS: readonly DropdownName[] = [
   "Dispositivos móviles",
   "Televisores y AV",
   "Electrodomésticos",
-  "Monitores",
+  // "Monitores", // Comentado temporalmente - sección no disponible
   "Accesorios",
   "Soporte",
 ] as const;
@@ -15,7 +15,7 @@ export const MENU_ORDER: readonly string[] = [
   "Dispositivos móviles",
   "Televisores y AV",
   "Electrodomésticos",
-  "Monitores",
+  // "Monitores", // Comentado temporalmente - sección no disponible
   "Accesorios",
   "Soporte",
 ] as const;

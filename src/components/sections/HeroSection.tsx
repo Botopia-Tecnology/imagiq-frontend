@@ -58,9 +58,7 @@ const heroSlides = [
 ];
 
 export default function HeroSection() {
-  const [currentSlide, setCurrentSlide] = useState(() =>
-    Math.floor(Math.random() * heroSlides.length)
-  );
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [isAutoPlaying] = useState(true);
   const { isGifPlaying, imgRef, staticImageUrl, isTransitioning } = useGifOnce(
     gifAudifonos.src,

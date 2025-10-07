@@ -1,8 +1,19 @@
+"use client";
+
+import { HeroFAQ } from "@/components/sections/soporte/faq/HeroFAQ";
+import { FrequentQuestionsGrid } from "@/components/sections/soporte/faq/FrequentQuestionsGrid";
+import { SupportBanner } from "@/components/sections/soporte/faq/SupportBanner";
+import { ContactSectionFAQ } from "@/components/sections/soporte/faq/ContactSectionFAQ";
+import { FAQAccordion } from "@/components/sections/soporte/faq/FAQAccordion";
+
 export default function FaqSobreLaCompraPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">FAQ sobre la compra</h1>
-      <p className="text-gray-600">Esta página está vacía</p>
+    <div className="min-h-screen bg-white">
+      <HeroFAQ />
+      <FrequentQuestionsGrid />
+      <SupportBanner />
+      <ContactSectionFAQ />
+      <FAQAccordion />
     </div>
   );
 }

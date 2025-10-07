@@ -85,7 +85,7 @@ export const PROMOS: readonly PromoItem[] = [
   {
     title: "Guía de compra de neveras",
     href: "/productos/electrodomesticos?seccion=guia-neveras",
-    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773405/guia_neveras_aickik.webp",
+    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858881/guia-neveras_nntuab.avif",
     imageAlt: "Guía de compra de neveras"
   },
   {

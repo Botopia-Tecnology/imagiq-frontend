@@ -152,11 +152,8 @@ export function useNavbarLogic() {
   const showWhiteLogo = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
   const showWhiteItems = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
   const showWhiteItemsMobile =
-    isOfertas ||
-    (isMasInformacionProducto && !isScrolled && !isAppliance) ||
-    (!isScrolledNavbar &&
-      !isLogin &&
-      (isProductDetail || (isHome && !isScrolled)));
+    // Solo mostrar texto blanco en mobile en el home cuando está arriba
+    (isHome && !isScrolled && isAtTop);
 
   // Handlers para hover de dropdowns (animación y posición)
   const handleDropdownEnter = (dropdownName: string) => {

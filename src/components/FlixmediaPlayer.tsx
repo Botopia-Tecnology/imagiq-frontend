@@ -111,7 +111,7 @@ export default function FlixmediaPlayer({
         src={iframeUrl}
         title={`Multimedia Flixmedia - ${productName}`}
         loading="lazy"
-        className="w-full h-full min-h-[calc(100vh-80px)] border-0"
+        className="w-full h-screen border-0 m-0 p-0 block"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         onLoad={() => setIframeLoading(false)}

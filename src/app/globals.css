@@ -1,5 +1,12 @@
 @import url("sweetalert2/dist/sweetalert2.min.css");
 
+/* Soporte para Safari iOS - Safe Area Insets */
+@supports (padding: max(0px)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
 /* Animaciones de página */
 @keyframes fadeIn {
   from {
@@ -689,13 +696,19 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 
 /* Agrega esto en tu archivo global de estilos, por ejemplo src/app/globals.css */
 .chatbot-panel {
-  width: 370px;
+  width: min(420px, 100vw);
   max-width: 100vw;
-  background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  box-shadow: -4px 0 24px 0 rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: -6px 0 32px 0 rgba(0, 0, 0, 0.15);
   z-index: 99999;
+}
+
+@media (max-width: 640px) {
+  .chatbot-panel {
+    width: 100vw;
+  }
 }
 
 .step1-overlay {

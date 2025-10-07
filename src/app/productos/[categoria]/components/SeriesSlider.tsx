@@ -114,17 +114,28 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
               onMouseEnter={() => setHoveredSerie(serie.id)}
               onMouseLeave={() => setHoveredSerie(null)}
               className={cn(
-                "relative rounded-lg transition-all duration-300 flex-shrink-0",
-                "bg-[#F8F8F8] hover:bg-[#EFEFEF]",
+                "relative rounded-xl transition-all duration-300 flex-shrink-0",
                 "px-5 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6",
-                "border border-transparent hover:border-gray-300",
-                "hover:scale-[1.02] hover:shadow-md",
                 "flex items-center gap-4",
                 "w-[280px] sm:w-[320px] lg:w-[360px]",
                 "min-h-[100px] sm:min-h-[110px] lg:min-h-[120px]",
-                isActive && "border-black bg-white shadow-lg scale-[1.02]"
+                // Estilos cuando NO está activo
+                !isActive && [
+                  "bg-[#F8F8F8]",
+                  "border-2 border-gray-200",
+                  "hover:bg-[#EFEFEF]",
+                  "hover:border-gray-300",
+                  "hover:shadow-md"
+                ],
+                // Estilos cuando SÍ está activo - SIMPLIFICADO
+                isActive && [
+                  "bg-white",
+                  "border-2 border-black",
+                  "shadow-lg"
+                ]
               )}
               type="button"
+              aria-pressed={isActive}
             >
               {serie.image ? (
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 flex-shrink-0">
@@ -134,7 +145,7 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
                     fill
                     className={cn(
                       "object-contain transition-transform duration-300",
-                      hoveredSerie === serie.id && "scale-105"
+                      (hoveredSerie === serie.id || isActive) && "scale-105"
                     )}
                     sizes="(max-width: 640px) 64px, (max-width: 1024px) 80px, 96px"
                     priority
@@ -158,13 +169,6 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
               >
                 {serie.name}
               </h3>
-
-              <div
-                className={cn(
-                  "absolute bottom-0 left-0 right-0 h-0.5 bg-black transition-all",
-                  isActive ? "opacity-100" : "opacity-0"
-                )}
-              />
             </button>
           );
         })}

@@ -9,7 +9,6 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
-import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 
 import Pagination from "../../dispositivos-moviles/components/Pagination";
 import FilterSidebar from "../../components/FilterSidebar";
@@ -71,16 +70,6 @@ export default function CategorySection({
 
   useCategoryAnalytics(categoria, seccion, totalItems);
 
-  const stickyEnabled = device === "desktop" || device === "large";
-  const stickyState = useSticky({
-    enabled: stickyEnabled,
-    topOffset: 100,
-    bottomOffset: 50,
-    sidebarRef,
-    productsRef,
-  });
-  const stickyClasses = useStickyClasses(stickyState);
-
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const seriesConfig = getSeriesConfig(seccion);
 
@@ -129,9 +118,18 @@ export default function CategorySection({
         clearAllFiltersText={`Ver todos los ${sectionTitle.toLowerCase()}`}
       />
 
-      <div className={cn("flex gap-6", device === "mobile" || device === "tablet" ? "flex-col" : "flex-row")}>
+      <div className={cn("flex gap-6 items-start", device === "mobile" || device === "tablet" ? "flex-col" : "flex-row")}>
         {(device === "desktop" || device === "large") && (
-          <div ref={sidebarRef} className={cn("shrink-0 w-80", stickyClasses)}>
+          <aside
+            ref={sidebarRef}
+            className="shrink-0 w-80 sticky self-start"
+            style={{
+              top: '100px',
+              maxHeight: 'calc(100vh - 120px)',
+              overflowY: 'auto',
+              position: 'sticky',
+            }}
+          >
             <FilterSidebar
               filterConfig={filterConfig}
               filters={filters}
@@ -140,7 +138,7 @@ export default function CategorySection({
               onToggleFilter={handleToggleFilter}
               resultCount={totalItems || 0}
             />
-          </div>
+          </aside>
         )}
 
         <MobileFilterSidebar

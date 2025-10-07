@@ -127,7 +127,7 @@ function ProductCard({ product }: ProductCardProps) {
 
 export default function ProductShowcase() {
   return (
-    <section className="w-full flex justify-center bg-white py-8">
+    <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
       <div className="w-full" style={{ maxWidth: "1440px" }}>
         {/* Grid de 4 productos */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-[25px] px-4 md:px-0">

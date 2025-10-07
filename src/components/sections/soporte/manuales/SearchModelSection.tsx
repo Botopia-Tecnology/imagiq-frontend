@@ -11,9 +11,11 @@ export function SearchModelSection() {
   };
 
   return (
-    <div className="bg-white py-6 px-4">
+    <div className="bg-white py-8 px-4">
       <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-2xl md:text-3xl font-bold mb-3">
+
+        
+        <h2 className="text-3xl md:text-4xl font-bold mb-6">
           Ingresa tu código de modelo
         </h2>
 
@@ -46,7 +48,7 @@ export function SearchModelSection() {
           </button>
         </form>
 
-        <button className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1">
+        <button className="text-sm text-blue-600 hover:underline inline-flex items-center gap-1 font-medium">
           Cómo encontrar el código de modelo
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
             <path
@@ -56,6 +58,11 @@ export function SearchModelSection() {
             />
           </svg>
         </button>
+      </div>
+      
+      {/* Línea separadora inferior */}
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="w-full h-px bg-gray-200"></div>
       </div>
     </div>
   );

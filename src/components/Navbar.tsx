@@ -237,7 +237,7 @@ export default function Navbar() {
                 onMouseLeave={navbar.handleDropdownLeave}
               >
                 <Link
-                  href="/soporte"
+                  href="/soporte/inicio_de_soporte"
                   className={cn(
                     "text-[13px] md:text-[13.5px] font-bold",
                     navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"

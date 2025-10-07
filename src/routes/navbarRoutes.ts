@@ -36,7 +36,7 @@ export const navbarRoutes = [
   },
   {
     name: "Servicio Técnico",
-    href: "/soporte",
+    href: "/soporte/inicio_de_soporte",
     category: "servicio",
   },
   {

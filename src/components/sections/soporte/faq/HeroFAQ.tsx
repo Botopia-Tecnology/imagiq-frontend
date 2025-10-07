@@ -1,47 +1,19 @@
 "use client";
 
-import Image from "next/image";
-
 const quickTags = ["pago", "devoluciones", "cancelaciones", "entrega", "trade-in", "garantía"];
 
 export function HeroFAQ() {
   return (
-    <div className="relative bg-gradient-to-r from-blue-500 via-blue-600 to-purple-700 text-white py-16 px-4 overflow-hidden">
-      {/* Decorative Icons - Left side stacked */}
-      <div className="absolute left-8 top-1/2 -translate-y-1/2 space-y-8 opacity-40">
-        <Image
-          src="/soporte/icon-garantia.svg"
-          alt=""
-          width={60}
-          height={60}
-          className="object-contain"
-        />
-        <Image
-          src="/soporte/icon-servicio.svg"
-          alt=""
-          width={60}
-          height={60}
-          className="object-contain"
-        />
-      </div>
-
-      {/* Decorative Icons - Right side stacked */}
-      <div className="absolute right-8 top-1/2 -translate-y-1/2 space-y-8 opacity-40">
-        <Image
-          src="/soporte/icon-moviles.svg"
-          alt=""
-          width={60}
-          height={60}
-          className="object-contain"
-        />
-        <Image
-          src="/soporte/icon-smart-tv.svg"
-          alt=""
-          width={60}
-          height={60}
-          className="object-contain"
-        />
-      </div>
+    <div className="px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32 2xl:px-48 py-4">
+      <div 
+        className="relative text-white py-20 md:py-24 lg:py-28 px-8 overflow-hidden"
+        style={{
+          backgroundImage: "url('https://res.cloudinary.com/dcljjtnxr/image/upload/v1759860713/Captura_wdrzi1.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat"
+        }}
+      >
 
       <div className="max-w-4xl mx-auto text-center relative z-10">
         <p className="text-sm mb-2 opacity-90">Estamos aquí para ti</p>
@@ -76,13 +48,14 @@ export function HeroFAQ() {
           {quickTags.map((tag, index) => (
             <button
               key={index}
-              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-4 py-2 rounded-full text-sm transition-colors"
+              className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-6 py-2 text-sm rounded-full transition-all duration-300 font-medium"
             >
               {tag}
             </button>
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }

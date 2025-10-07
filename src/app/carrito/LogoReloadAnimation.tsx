@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useRef } from "react";
 import logoSamsung from "@/img/logo_Samsung.png";
 
@@ -55,13 +55,21 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
    * Inspirado en el efecto CodePen, la ola sube y "llena" el logo.
    */
   const AnimatedLogoWithWaveMask = () => (
-    <div className="relative flex flex-col items-center justify-center z-10 w-[1000px] h-[420px]">
+    <div
+      className="relative flex flex-col items-center justify-center z-10 w-full max-w-[1000px] h-[420px] md:w-[1000px] md:h-[420px] px-2"
+      style={{ minWidth: 0 }}
+    >
       <svg
         viewBox="0 0 1000 420"
-        width={980}
-        height={400}
+        width="100%"
+        height="auto"
         className="block logo-reload-animate-logoGrow"
-        style={{ display: "block" }}
+        style={{
+          display: "block",
+          maxWidth: "1000px",
+          width: "100%",
+          height: "auto",
+        }}
       >
         <defs>
           {/* Máscara SVG: la ola azul sube solo dentro del logo PNG */}
@@ -155,8 +163,14 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           />
         </image>
       </svg>
-      {/* Texto debajo del logo */}
-      <span className="block mt-20 text-white text-5xl md:text-7xl font-extrabold logo-reload-animate-fadeInText text-center tracking-tight z-40 drop-shadow-2xl">
+      {/* Texto debajo del logo, responsive y legible */}
+      <span
+        className="block mt-10 md:mt-20 text-white text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold logo-reload-animate-fadeInText text-center tracking-tight z-40 drop-shadow-2xl px-2"
+        style={{
+          wordBreak: "break-word",
+          lineHeight: 1.1,
+        }}
+      >
         Procesando la compra...
       </span>
     </div>
@@ -180,6 +194,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           "linear-gradient(135deg, #0057B7 0%, #0a2a5c 60%, #1e90ff 100%)",
         backgroundSize: "200% 200%",
         animation: "logo-reload-bgMove 16s ease-in-out infinite alternate",
+        padding: "0 0.5rem",
       }}
       role="dialog"
       aria-modal="true"

@@ -109,14 +109,19 @@ export default function Navbar() {
       <header
         data-navbar="true"
         className={cn(
-          "w-full z-50 transition-all duration-300 fixed top-0",
+          "w-full z-50 transition-all duration-300 fixed",
           !navbar.showNavbar ? "-translate-y-full" : "translate-y-0"
         )}
-        style={headerStyles}
+        style={{
+          ...headerStyles,
+          top: 0,
+          left: 0,
+          right: 0,
+        }}
       >
         {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1280px */}
         <div className={cn(
-          "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300",
+          "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 min-h-[64px]",
           mobileMenuOpen && "hidden"
         )}>
           <Link

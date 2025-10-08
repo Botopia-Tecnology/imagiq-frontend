@@ -130,7 +130,7 @@ export default function RefrigeradoresSection() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("precio-mayor");
 
   // Cargar información del usuario al montar el componente
   useEffect(() => {

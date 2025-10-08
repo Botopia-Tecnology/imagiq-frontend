@@ -114,7 +114,7 @@ export default function LavadorasSection() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(8);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("precio-mayor");
   const lastFiltersRef = useRef<string>("");
   const device = useDeviceType(); // Responsive global
 

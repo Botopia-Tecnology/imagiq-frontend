@@ -103,7 +103,7 @@ export default function HornosSection() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [resultCount] = useState(16);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("precio-mayor");
 
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);

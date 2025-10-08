@@ -117,7 +117,7 @@ export default function LavavajillasSection() {
   const [resultCount] = useState(8);
 
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("precio-mayor");
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);

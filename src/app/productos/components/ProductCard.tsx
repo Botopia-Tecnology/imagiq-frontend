@@ -29,6 +29,16 @@ export interface ProductColor {
   price?: string; // Precio específico para este color (opcional)
   originalPrice?: string; // Precio original antes de descuento (opcional)
   discount?: string; // Descuento específico para este color (opcional)
+  capacity?: string; // Capacidad asociada a esta variante
+}
+
+export interface ProductCapacity {
+  value: string; // Valor de capacidad (ej: "128GB", "256GB")
+  label: string; // Etiqueta mostrada (ej: "128 GB")
+  price?: string; // Precio para esta capacidad
+  originalPrice?: string; // Precio original
+  discount?: string; // Descuento
+  sku?: string; // SKU específico
 }
 
 export interface ProductCardProps {
@@ -36,6 +46,7 @@ export interface ProductCardProps {
   name: string;
   image: string | StaticImageData;
   colors: ProductColor[];
+  capacities?: ProductCapacity[]; // Capacidades disponibles
   rating?: number;
   reviewCount?: number;
   price?: string;
@@ -46,6 +57,7 @@ export interface ProductCardProps {
   onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
   className?: string;
+  viewMode?: "grid" | "list"; // Modo de visualización
   // Datos adicionales para la página de detalle
   description?: string | null;
   brand?: string;
@@ -58,6 +70,8 @@ export interface ProductCardProps {
   detailedDescription?: string | null;
   selectedColor?: ProductColor;
   setSelectedColor?: (color: ProductColor) => void;
+  selectedCapacity?: ProductCapacity;
+  setSelectedCapacity?: (capacity: ProductCapacity) => void;
   puntos_q?: number; // Puntos Q acumulables por producto (valor fijo por ahora)
 }
 
@@ -108,6 +122,7 @@ export default function ProductCard({
   name,
   image,
   colors,
+  capacities,
   price,
   originalPrice,
   discount,
@@ -117,24 +132,56 @@ export default function ProductCard({
   className,
   sku,
   selectedColor: selectedColorProp,
+  selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
+  viewMode = "grid", // Modo de visualización por defecto
+  stock = 1, // Valor por defecto si no se proporciona
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Verificar si el producto está sin stock
+  const isOutOfStock = stock === 0;
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
 
   // Si el estado viene de props, úsalo. Si no, usa local.
-  const [selectedColorLocal] = useState<ProductColor | null>(
+  const [selectedColorLocal, setSelectedColorLocal] = useState<ProductColor | null>(
     colors && colors.length > 0 ? colors[0] : null
   );
   const selectedColor = selectedColorProp ?? selectedColorLocal;
 
-  // Calcular precios dinámicos basados en el color seleccionado
-  const currentPrice = selectedColor?.price || price;
-  const currentOriginalPrice = selectedColor?.originalPrice || originalPrice;
-  const currentDiscount = selectedColor?.discount || discount;
+  const [selectedCapacityLocal, setSelectedCapacityLocal] = useState<ProductCapacity | null>(
+    capacities && capacities.length > 0 ? capacities[0] : null
+  );
+  const selectedCapacity = selectedCapacityProp ?? selectedCapacityLocal;
+
+  const handleColorSelect = (color: ProductColor) => {
+    setSelectedColorLocal(color);
+    posthogUtils.capture("product_color_selected", {
+      product_id: id,
+      product_name: name,
+      color_name: color.name,
+      color_label: color.label,
+      color_sku: color.sku,
+    });
+  };
+
+  const handleCapacitySelect = (capacity: ProductCapacity) => {
+    setSelectedCapacityLocal(capacity);
+    posthogUtils.capture("product_capacity_selected", {
+      product_id: id,
+      product_name: name,
+      capacity_value: capacity.value,
+      capacity_sku: capacity.sku,
+    });
+  };
+
+  // Calcular precios dinámicos basados en capacidad seleccionada (prioridad) o color
+  const currentPrice = selectedCapacity?.price || selectedColor?.price || price;
+  const currentOriginalPrice = selectedCapacity?.originalPrice || selectedColor?.originalPrice || originalPrice;
+  const currentDiscount = selectedCapacity?.discount || selectedColor?.discount || discount;
 
   const handleAddToCart = async () => {
     if (isLoading) {
@@ -185,13 +232,29 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
-    // Navega usando el id del mock, no el nombre ni slug
-    router.push(`/productos/view/${id}`);
+    // Navega a la página de multimedia con contenido Flixmedia
+    router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,
       source: "product_card",
+      destination: "multimedia_page",
     });
+  };
+
+  // Handler para el click en la card completa
+  // Navega a multimedia EXCEPTO si se hace click en botones interactivos
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    
+    // Verificar si el click fue en un botón o dentro de un botón
+    const isButton = target.closest('button') !== null;
+    
+    // Si NO es un botón, navegar a multimedia
+    if (!isButton) {
+      handleMoreInfo();
+    }
+    // Si ES un botón, no hacer nada (el botón maneja su propio onClick con stopPropagation)
   };
 
   const cardReveal = useScrollReveal<HTMLDivElement>({
@@ -204,17 +267,22 @@ export default function ProductCard({
     <motion.div
       ref={cardReveal.ref}
       {...cardReveal.motionProps}
-      onClick={handleMoreInfo}
+      onClick={handleCardClick}
       className={cn(
-        // Diseño estándar para desktop/tablet
-        "bg-[#D9D9D9] rounded-2xl max-w-72 shadow-sm border border-gray-300 overflow-hidden transition-all duration-300 cursor-pointer",
-        // Diseño horizontal para mobile (< 640px)
-        "max-[640px]:max-w-none max-[640px]:flex max-[640px]:h-36 max-[640px]:rounded-xl",
+        // Diseño vertical para todos los tamaños
+        "bg-white rounded-2xl w-full overflow-hidden transition-all duration-300 cursor-pointer",
+        viewMode === "list" && "flex flex-row",
+        isOutOfStock && "opacity-60 grayscale",
         className
       )}
     >
-      {/* Header con badges - Desktop */}
-      <div className="relative hidden min-[641px]:block">
+      {/* Imagen del producto */}
+      <div className={cn(
+        "relative bg-gray-100 overflow-hidden rounded-xl",
+        viewMode === "list" 
+          ? "w-48 h-48 flex-shrink-0 m-4" 
+          : "aspect-square mx-4"
+      )}>
         {/* Badges */}
         <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
           {isNew && (
@@ -244,75 +312,40 @@ export default function ProductCard({
           <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
         </button>
 
-        {/* Imagen del producto */}
-        <div className="relative bg-white aspect-square overflow-hidden">
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className={cn("object-cover p-4")}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-          />
-        </div>
+        <Image
+          src={image}
+          alt={name}
+          fill
+          className={cn("object-contain p-4")}
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+        />
       </div>
 
-      {/* Imagen del producto - Mobile */}
-      <div className="hidden max-[640px]:block relative bg-white w-2/5 overflow-hidden">
-        <div className="relative h-full">
-          <Image
-            src={image}
-            alt={name}
-            fill
-            className="object-cover p-2"
-            sizes="40vw"
-          />
-          {/* Badges en mobile - esquina superior izquierda de la imagen */}
-          <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-            {isNew && (
-              <span className="bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                NUEVO
-              </span>
-            )}
-            {discount && (
-              <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded-full">
-                {discount}
-              </span>
-            )}
-          </div>
-          {/* Botón favorito en mobile - esquina superior derecha de la imagen */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleToggleFavorite();
-            }}
-            className={cn(
-              "absolute top-2 right-2 z-10 w-6 h-6 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer",
-              "bg-white shadow-md hover:shadow-lg",
-              isFavorite ? "text-red-500" : "text-gray-400"
-            )}
-          >
-            <Heart className={cn("w-3 h-3", isFavorite && "fill-current")} />
-          </button>
-        </div>
-      </div>
-
-      {/* Contenido - Desktop */}
-      <div className="p-4 bg-[#D9D9D9] hidden min-[641px]:block">
+      {/* Contenido */}
+      <div className={cn(
+        "bg-white",
+        viewMode === "list" ? "flex-1 p-4" : "p-4"
+      )}>
         {/* Título del producto */}
-        <h3 className="font-semibold text-gray-900 text-base mb-3 line-clamp-2 leading-5 truncate">
+        <h3 className="font-extrabold text-gray-900 text-base mb-3 line-clamp-2 leading-5">
           {cleanProductName(name)}
         </h3>
 
         {/* Selector de colores */}
         {colors && colors.length > 0 && (
-          <div className="mb-4">
+          <div className="mb-3">
+            {selectedColor && (
+              <p className="text-sm text-gray-600 mb-2">
+                Color: <span className="font-semibold">{selectedColor.label}</span>
+              </p>
+            )}
             <div className="flex gap-2">
               {colors.map((color) => (
                 <button
                   key={color.name}
                   onClick={(e) => {
                     e.stopPropagation(); // Prevenir que se active el click de la card
-                    // handleColorSelect(color);
+                    handleColorSelect(color);
                   }}
                   className={cn(
                     "w-6 h-6 rounded-full border-2 transition-all duration-200 cursor-pointer",
@@ -328,131 +361,127 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Precios */}
-        {currentPrice && (
+        {/* Selector de capacidad */}
+        {capacities && capacities.length > 0 && (
           <div className="mb-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              {currentOriginalPrice && (
-                <span className="text-sm text-gray-600 line-through">
-                  {currentOriginalPrice}
-                </span>
-              )}
-              <span className="text-xl font-bold text-gray-900">
-                {currentPrice}
-              </span>
-              {currentDiscount && (
-                <span className="text-sm font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">
-                  {currentDiscount}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Botón de acción */}
-        <div>
-          <button
-            onClick={(e) => {
-              e.stopPropagation(); // Prevenir que se active el click de la card
-              handleAddToCart();
-            }}
-            disabled={isLoading}
-            className={cn(
-              "w-full bg-sky-600 text-white py-3 px-4 rounded-lg text-sm font-semibold cursor-pointer",
-              "transition-all duration-200 flex items-center justify-center gap-2",
-              "hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed",
-              isLoading && "animate-pulse"
+            {selectedCapacity && (
+              <p className="text-sm text-gray-600 mb-2">
+                Almacenamiento: <span className="font-semibold">{selectedCapacity.label}</span>
+              </p>
             )}
-          >
-            {isLoading ? (
-              <Loader className="w-4 h-4" />
-            ) : (
-              <ShoppingCart className="w-4 h-4" />
-            )}
-            <span>Añadir al carrito</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Contenido - Mobile */}
-      <div className="hidden max-[640px]:flex max-[640px]:flex-col max-[640px]:justify-between p-3 bg-[#D9D9D9] w-3/5">
-        {/* Título del producto */}
-        <div className="flex-shrink-0">
-          <h3 className="font-semibold text-gray-900 text-sm mb-2 line-clamp-2 leading-tight">
-            {cleanProductName(name)}
-          </h3>
-        </div>
-
-        {/* Selector de colores */}
-        {colors && colors.length > 0 && (
-          <div className="flex-shrink-0 mb-2">
-            <div className="flex gap-1.5">
-              {colors.map((color) => (
+            <div className="flex gap-2 flex-wrap">
+              {capacities.map((capacity) => (
                 <button
-                  key={color.name}
+                  key={capacity.value}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // handleColorSelect(color);
+                    handleCapacitySelect(capacity);
                   }}
                   className={cn(
-                    "w-4 h-4 rounded-full border transition-all duration-200 cursor-pointer",
-                    selectedColor?.name === color.name
-                      ? "border-blue-600 ring-1 ring-blue-200"
-                      : "border-gray-400 hover:border-gray-600"
+                    "px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 cursor-pointer",
+                    selectedCapacity?.value === capacity.value
+                      ? "border-blue-600 bg-blue-50 text-blue-700"
+                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
                   )}
-                  style={{ backgroundColor: color.hex }}
-                  title={`${color.label}`}
-                />
+                  title={capacity.label}
+                >
+                  {capacity.label}
+                </button>
               ))}
             </div>
           </div>
         )}
 
-        {/* Precios */}
-        {currentPrice && (
-          <div className="flex-shrink-0 mb-2">
-            <div className="flex items-center gap-1 flex-wrap">
-              {currentOriginalPrice && (
-                <span className="text-xs text-gray-600 line-through">
-                  {currentOriginalPrice}
+        {/* Precios - Mantener espacio consistente */}
+        <div className="mb-4 min-h-[60px]">
+          {!isOutOfStock && currentPrice && (
+            <>
+              {/* Precio con descuento */}
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="text-xl font-bold text-gray-900">
+                  {currentPrice}
                 </span>
-              )}
-              <span className="text-base font-bold text-gray-900">
-                {currentPrice}
-              </span>
-              {currentDiscount && (
-                <span className="text-xs font-semibold text-red-600 bg-red-50 px-1 py-0.5 rounded">
-                  {currentDiscount}
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+                {currentOriginalPrice && (
+                  <span className="text-sm text-gray-500 line-through">
+                    {currentOriginalPrice}
+                  </span>
+                )}
+              </div>
+              {/* Ahorro calculado */}
+              {currentOriginalPrice && currentPrice !== currentOriginalPrice && (() => {
+                const priceNum = parseInt(currentPrice.replace(/[^\d]/g, ''));
+                const originalPriceNum = parseInt(currentOriginalPrice.replace(/[^\d]/g, ''));
+                const savings = originalPriceNum - priceNum;
+                if (savings > 0) {
+                  return (
+                    <div className="text-sm">
+                      <span className="text-gray-700">Ahorra </span>
+                      <span className="font-bold text-[#1428A0]">
+                        $ {savings.toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </>
+          )}
+        </div>
 
-        {/* Botón de acción */}
-        <div className="flex-shrink-0 mt-auto">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAddToCart();
-            }}
-            disabled={isLoading}
-            className={cn(
-              "w-full bg-sky-600 text-white py-2 px-3 rounded-lg text-xs font-semibold cursor-pointer",
-              "transition-all duration-200 flex items-center justify-center gap-1.5",
-              "hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed",
-              isLoading && "animate-pulse"
-            )}
-          >
-            {isLoading ? (
-              <Loader className="w-3 h-3" />
-            ) : (
-              <ShoppingCart className="w-3 h-3" />
-            )}
-            <span>Añadir al carrito</span>
-          </button>
+        {/* Botones de acción - Mantener espacio consistente */}
+        <div className="space-y-2">
+          {isOutOfStock ? (
+            <>
+              {/* Botón "Notifícame" para productos sin stock - no debe estar en grayout */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO: Implementar funcionalidad de notificación
+                  alert("Te notificaremos cuando este producto esté disponible");
+                }}
+                className="w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center hover:bg-gray-800 grayscale-0 opacity-100"
+              >
+                Notifícame
+              </button>
+              {/* Espaciador invisible para mantener altura consistente */}
+              <div className="h-[48px]" aria-hidden="true" />
+            </>
+          ) : (
+            // Botones normales para productos con stock
+            <>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddToCart();
+                }}
+                disabled={isLoading}
+                className={cn(
+                  "w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer",
+                  "transition-all duration-200 flex items-center justify-center",
+                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed",
+                  isLoading && "animate-pulse"
+                )}
+              >
+                {isLoading ? (
+                  <Loader className="w-4 h-4" />
+                ) : (
+                  <span>Comprar ahora</span>
+                )}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMoreInfo();
+                }}
+                className="w-full bg-white text-black py-3 px-4 rounded-full text-sm font-semibold cursor-pointer border border-gray-300 hover:bg-gray-50 transition-all duration-200"
+              >
+                Más información
+              </button>
+            </>
+          )}
         </div>
       </div>
+
     </motion.div>
   );
 }

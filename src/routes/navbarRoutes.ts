@@ -20,13 +20,23 @@ export const navbarRoutes = [
     category: "hogar",
   },
   {
+    name: "Monitores",
+    href: "/productos/monitores",
+    category: "monitores",
+  },
+  {
+    name: "Accesorios",
+    href: "/productos?q=accesorios",
+    category: "accesorios",
+  },
+  {
     name: "Tiendas",
     href: "/tiendas",
     category: "ubicaciones",
   },
   {
     name: "Servicio Técnico",
-    href: "/soporte",
+    href: "/soporte/inicio_de_soporte",
     category: "servicio",
   },
   {

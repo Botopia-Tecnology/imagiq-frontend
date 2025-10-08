@@ -23,22 +23,16 @@ import {
   groupProductsByCategory,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
+import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
 
-interface ProductFilters {
-  category?: string;
-  subcategory?: string;
-  precioMin?: number;
-  precioMax?: number;
-  color?: string;
-  capacity?: string;
-  name?: string;
-  withDiscount?: boolean;
-  minStock?: number;
-  descriptionKeyword?: string; // Nuevo filtro para palabras clave en descripción
-  model?: string; 
-  filterMode?: "AND" | "OR"; // Modo de filtrado
-  page?: number; // Página actual para paginación
-  limit?: number; // Límite de productos por página
+type ProductFilters = FrontendFilterParams;
+
+interface SearchParams {
+  precioMin: number;
+  page: number;
+  limit: number;
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 type UserInfo = {
@@ -61,7 +55,7 @@ interface UseProductsReturn {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
-  searchProducts: (query: string) => Promise<void>;
+  searchProducts: (query: string, page?: number, sortBy?: string, sortOrder?: string) => Promise<void>;
   filterProducts: (filters: ProductFilters) => Promise<void>;
   loadMore: () => Promise<void>;
   goToPage: (page: number) => Promise<void>;
@@ -115,7 +109,7 @@ interface UseFavoritesReturn {
 }
 
 export const useProducts = (
-  initialFilters?: ProductFilters | (() => ProductFilters)
+  initialFilters?: ProductFilters | (() => ProductFilters) | null
 ): UseProductsReturn => {
   const [products, setProducts] = useState<ProductCardProps[]>([]);
   const [groupedProducts, setGroupedProducts] = useState<
@@ -133,6 +127,9 @@ export const useProducts = (
       ? initialFilters()
       : initialFilters || {}
   );
+  const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
+  const [currentSortBy, setCurrentSortBy] = useState<string>("");
+  const [currentSortOrder, setCurrentSortOrder] = useState<string>("");
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -168,6 +165,10 @@ export const useProducts = (
       }
       if (filters.model) params.modelo = filters.model;
       if (filters.filterMode) params.filterMode = filters.filterMode;
+
+      // Añadir parámetros de ordenamiento
+      if (filters.sortBy) params.sortBy = filters.sortBy;
+      if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
       return params;
     },
@@ -215,13 +216,57 @@ export const useProducts = (
 
   // Función para buscar productos
   const searchProducts = useCallback(
-    async (query: string) => {
-      const filters = { ...currentFilters, name: query };
-      setCurrentFilters(filters);
-      setCurrentPage(1);
-      await fetchProducts(filters, false);
+    async (query: string, page: number = 1, sortBy?: string, sortOrder?: string) => {
+      setLoading(true);
+      setError(null);
+      setCurrentSearchQuery(query);
+      setCurrentPage(page);
+
+      // Actualizar estados de ordenamiento si se proporcionan
+      if (sortBy !== undefined) {
+        setCurrentSortBy(sortBy);
+      }
+      if (sortOrder !== undefined) {
+        setCurrentSortOrder(sortOrder);
+      }
+
+      try {
+        // Usar los parámetros de ordenamiento actuales o los proporcionados
+        const finalSortBy = sortBy !== undefined ? sortBy : currentSortBy;
+        const finalSortOrder = sortOrder !== undefined ? sortOrder : currentSortOrder;
+
+        const searchParams: SearchParams = {
+          precioMin: 1,
+          page: page,
+          limit: 15,
+          ...(finalSortBy && { sortBy: finalSortBy }),
+          ...(finalSortOrder && { sortOrder: finalSortOrder }),
+        };
+
+        const response = await productEndpoints.search(query, searchParams);
+
+        if (response.success && response.data) {
+          const apiData = response.data as ProductApiResponse;
+          const mappedProducts = mapApiProductsToFrontend(apiData.products);
+
+          setProducts(mappedProducts);
+          setGroupedProducts(groupProductsByCategory(mappedProducts));
+          setTotalItems(apiData.totalItems);
+          setTotalPages(apiData.totalPages);
+          setCurrentPage(apiData.currentPage);
+          setHasNextPage(apiData.hasNextPage);
+          setHasPreviousPage(apiData.hasPreviousPage);
+        } else {
+          setError(response.message || "Error al buscar productos");
+        }
+      } catch (err) {
+        console.error("Error searching products:", err);
+        setError("Error de conexión al buscar productos");
+      } finally {
+        setLoading(false);
+      }
     },
-    [currentFilters, fetchProducts]
+    [currentSortBy, currentSortOrder]
   );
 
   // Función para filtrar productos
@@ -240,32 +285,56 @@ export const useProducts = (
   // Función para cargar más productos (paginación)
   const loadMore = useCallback(async () => {
     if (hasNextPage && !loading) {
-      setCurrentPage((prev) => prev + 1);
-      await fetchProducts(currentFilters, true);
+      const nextPage = currentPage + 1;
+      if (currentSearchQuery) {
+        // Si estamos en modo búsqueda, usar searchProducts
+        await searchProducts(currentSearchQuery, nextPage, undefined, undefined);
+      } else {
+        // Si no estamos en modo búsqueda, usar fetchProducts normal
+        setCurrentPage(nextPage);
+        await fetchProducts(currentFilters, true);
+      }
     }
-  }, [hasNextPage, loading, currentFilters, fetchProducts]);
+  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts, currentSortBy, currentSortOrder]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
     async (page: number) => {
       if (page >= 1 && page <= totalPages && !loading) {
-        const filtersWithPage = { ...currentFilters, page };
-        setCurrentFilters(filtersWithPage);
-        await fetchProducts(filtersWithPage, false);
+        if (currentSearchQuery) {
+          // Si estamos en modo búsqueda, usar searchProducts
+          await searchProducts(currentSearchQuery, page, undefined, undefined);
+        } else {
+          // Si no estamos en modo búsqueda, usar fetchProducts normal
+          const filtersWithPage = { ...currentFilters, page };
+          setCurrentFilters(filtersWithPage);
+          await fetchProducts(filtersWithPage, false);
+        }
       }
     },
-    [totalPages, loading, currentFilters, fetchProducts]
+    [totalPages, loading, currentSearchQuery, currentFilters, fetchProducts, searchProducts]
   );
 
   // Función para refrescar productos con filtros dinámicos
   const refreshProducts = useCallback(async () => {
-    const filtersToUse =
-      typeof initialFilters === "function" ? initialFilters() : currentFilters;
-    await fetchProducts(filtersToUse, false);
-  }, [initialFilters, currentFilters, fetchProducts]);
+    if (currentSearchQuery) {
+      // Si estamos en modo búsqueda, refrescar la búsqueda actual
+      await searchProducts(currentSearchQuery, currentPage, undefined, undefined);
+    } else {
+      // Si no estamos en modo búsqueda, usar fetchProducts normal
+      const filtersToUse =
+        typeof initialFilters === "function" ? initialFilters() : currentFilters;
+      await fetchProducts(filtersToUse, false);
+    }
+  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts, currentSortBy, currentSortOrder]);
 
   // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {
+    // Si initialFilters es null, no hacer fetch inicial
+    if (initialFilters === null) {
+      return;
+    }
+
     const filtersToUse =
       typeof initialFilters === "function"
         ? initialFilters()
@@ -492,8 +561,9 @@ export const useFavorites = (userId?: string,
 
       try {
         let payload;
-     
+     console.log('gess', guestUserData?.id)
         if (guestUserData?.id) {
+          console.log('si tengo')
           // 2. Si ya tenemos el id guardado
           payload = {
             productSKU: productId,
@@ -523,9 +593,10 @@ export const useFavorites = (userId?: string,
             return newFavorites;
           });
         }
-        const userIdFromResponse = response?.data?.userInfo?.id;
+        const userNombreFromResponse = response?.data?.userInfo?.nombre;
+        console.log(response.data)
         // 5. Si recibes un id lo guardo en el local, para que no cree de nuevo un user
-        if (userIdFromResponse) {
+        if (userNombreFromResponse) {
           
           const newUserInfo = response.data.userInfo;
           localStorage.setItem("imagiq_user", JSON.stringify(newUserInfo));

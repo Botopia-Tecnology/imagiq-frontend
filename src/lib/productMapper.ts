@@ -5,7 +5,7 @@
  */
 
 import { ProductApiData } from './api';
-import { ProductCardProps, ProductColor } from '@/app/productos/components/ProductCard';
+import { ProductCardProps, ProductColor, ProductCapacity } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
 
 // Importar imágenes mock para usar temporalmente
@@ -49,21 +49,25 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
 
   // Determinar imagen basada en categoría/subcategoría
   const image = getProductImage(apiProduct);
-  
+
   // Crear colores del producto (ahora maneja arrays)
   const colors: ProductColor[] = createProductColorsFromArray(apiProduct);
-  
+
+  // Crear capacidades del producto
+  const capacities: ProductCapacity[] = createProductCapacitiesFromArray(apiProduct);
+
   // Calcular precios y descuentos (usar el primer precio disponible)
   const { price, originalPrice, discount, isNew } = calculatePricingFromArray(apiProduct);
-  
+
   const id = apiProduct.codigoMarketBase;
 
-  
+
   return {
     id,
     name: apiProduct.nombreMarket,
     image,
     colors,
+    capacities: capacities.length > 0 ? capacities : undefined,
     price,
     originalPrice,
     discount,
@@ -94,13 +98,13 @@ function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
       return firstPreviewUrl;
     }
   }
-  
+
   // Si no hay imagePreviewUrl, usar urlImagenes como fallback
-  const firstImageUrl = apiProduct.urlImagenes.find(url => url && url.trim() !== '');
+  const firstImageUrl = apiProduct.urlImagenes?.find(url => url && url.trim() !== '');
   if (firstImageUrl) {
     return firstImageUrl;
   }
-    
+
   // Usar imagen por defecto cuando no hay imagen de la API
   return emptyImg;
 }
@@ -121,12 +125,13 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
   }>();
   
   // Agrupar precios por color
+  const MAX_PRICE = 100000000; // Filtrar precios corruptos
   apiProduct.color.forEach((color, index) => {
     const precioNormal = apiProduct.precioNormal[index] || 0;
     const precioDescto = apiProduct.precioDescto[index] || 0;
-    
-    // Solo incluir colores con precios válidos (mayores a 0)
-    if (precioNormal > 0 || precioDescto > 0) {
+
+    // Solo incluir colores con precios válidos (mayores a 0 y menores al máximo)
+    if ((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioDescto > 0 && precioDescto < MAX_PRICE)) {
       const key = color.toLowerCase();
       
       if (!colorPriceMap.has(key)) {
@@ -150,11 +155,16 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Normalizar el color para búsqueda consistente
     const normalizedColor = color.toLowerCase().trim();
     const colorInfo = colorMap[normalizedColor] || { hex: '#808080', label: color };
-    const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
-    
+    const formatPrice = (price: number) => {
+      if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
+      return `$ ${Math.round(price).toLocaleString('es-CO')}`;
+    };
+
     // Encontrar el precio más bajo entre todas las variantes de este color
-    const preciosNormalesValidos = preciosNormales.filter(p => p > 0);
-    const preciosDescuentoValidos = preciosDescuento.filter(p => p > 0);
+    // Filtrar precios corruptos (mayores a 100 millones)
+    const MAX_PRICE = 100000000;
+    const preciosNormalesValidos = preciosNormales.filter(p => p > 0 && p < MAX_PRICE);
+    const preciosDescuentoValidos = preciosDescuento.filter(p => p > 0 && p < MAX_PRICE);
     
     const precioNormalMin = preciosNormalesValidos.length > 0 
       ? Math.min(...preciosNormalesValidos) 
@@ -192,13 +202,111 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
 }
 
 /**
+ * Crea el array de capacidades para el producto desde el array de capacidades de la API
+ * Incluye información de precios específica por variante de capacidad
+ */
+function createProductCapacitiesFromArray(apiProduct: ProductApiData): ProductCapacity[] {
+  const capacitiesWithPrices: ProductCapacity[] = [];
+
+  // Crear un mapa de capacidades únicas con sus precios correspondientes
+  const capacityPriceMap = new Map<string, {
+    capacity: string;
+    preciosNormales: number[];
+    preciosDescuento: number[];
+    indices: number[]
+  }>();
+
+  // Agrupar precios por capacidad
+  const MAX_PRICE = 100000000; // Filtrar precios corruptos
+  apiProduct.capacidad.forEach((capacity, index) => {
+    const precioNormal = apiProduct.precioNormal[index] || 0;
+    const precioDescto = apiProduct.precioDescto[index] || 0;
+
+    // Solo incluir capacidades con precios válidos (mayores a 0 y menores al máximo)
+    if (((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioDescto > 0 && precioDescto < MAX_PRICE))
+        && capacity && capacity.trim() !== '' && capacity.toLowerCase() !== 'no aplica') {
+      const key = capacity.toLowerCase().trim();
+
+      if (!capacityPriceMap.has(key)) {
+        capacityPriceMap.set(key, {
+          capacity,
+          preciosNormales: [],
+          preciosDescuento: [],
+          indices: []
+        });
+      }
+
+      const capacityData = capacityPriceMap.get(key)!;
+      capacityData.preciosNormales.push(precioNormal);
+      capacityData.preciosDescuento.push(precioDescto);
+      capacityData.indices.push(index);
+    }
+  });
+
+  // Convertir el mapa a array de ProductCapacity
+  capacityPriceMap.forEach(({ capacity, preciosNormales, preciosDescuento, indices }) => {
+    const formatPrice = (price: number) => {
+      if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
+      return `$ ${Math.round(price).toLocaleString('es-CO')}`;
+    };
+
+    // Encontrar el precio más bajo entre todas las variantes de esta capacidad
+    // Filtrar precios corruptos (mayores a 100 millones)
+    const MAX_PRICE = 100000000;
+    const preciosNormalesValidos = preciosNormales.filter(p => p > 0 && p < MAX_PRICE);
+    const preciosDescuentoValidos = preciosDescuento.filter(p => p > 0 && p < MAX_PRICE);
+
+    const precioNormalMin = preciosNormalesValidos.length > 0
+      ? Math.min(...preciosNormalesValidos)
+      : 0;
+    const precioDesctoMin = preciosDescuentoValidos.length > 0
+      ? Math.min(...preciosDescuentoValidos)
+      : precioNormalMin;
+
+    const price = formatPrice(precioDesctoMin);
+    let originalPrice: string | undefined;
+    let discount: string | undefined;
+
+    // Si hay descuento real
+    if (precioDesctoMin > 0 && precioDesctoMin < precioNormalMin && precioNormalMin > 0) {
+      originalPrice = formatPrice(precioNormalMin);
+      const discountPercent = Math.round(((precioNormalMin - precioDesctoMin) / precioNormalMin) * 100);
+      discount = `-${discountPercent}%`;
+    }
+
+    // Formatear label para mostrar (ej: "128GB" -> "128 GB")
+    const label = capacity.replace(/(\d+)([A-Z]+)/gi, '$1 $2').toUpperCase();
+
+    // Usar el primer SKU disponible para esta capacidad
+    const firstIndex = indices[0];
+
+    capacitiesWithPrices.push({
+      value: capacity.toLowerCase().replace(/\s+/g, ''),
+      label,
+      price,
+      originalPrice,
+      discount,
+      sku: apiProduct.sku[firstIndex]
+    });
+  });
+
+  // Ordenar por capacidad numérica (128GB antes de 256GB)
+  return capacitiesWithPrices.sort((a, b) => {
+    const aNum = parseInt(a.value.match(/\d+/)?.[0] || '0');
+    const bNum = parseInt(b.value.match(/\d+/)?.[0] || '0');
+    return aNum - bNum;
+  });
+}
+
+/**
  * Calcula precios, descuentos y si es producto nuevo desde arrays
  * Retorna información completa de precios por variante de color
  */
 function calculatePricingFromArray(apiProduct: ProductApiData) {
-  // Filtrar precios válidos (mayores a 0)
-  const preciosNormalesValidos = apiProduct.precioNormal.filter(p => p > 0);
-  const preciosDescuentoValidos = apiProduct.precioDescto.filter(p => p > 0);
+  // Filtrar precios válidos (mayores a 0 y menores a 100 millones - filtrar datos corruptos)
+  const MAX_PRICE = 100000000; // 100 millones
+  const preciosNormalesValidos = apiProduct.precioNormal.filter(p => p > 0 && p < MAX_PRICE);
+  const preciosDescuentoValidos = apiProduct.precioDescto.filter(p => p > 0 && p < MAX_PRICE);
   
   // Si no hay precios válidos, usar valores por defecto
   if (preciosNormalesValidos.length === 0 && preciosDescuentoValidos.length === 0) {
@@ -218,9 +326,12 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
     ? Math.min(...preciosDescuentoValidos) 
     : precioNormal;
   
-  // Formatear precios a formato colombiano
-  const formatPrice = (price: number) => `$ ${price.toLocaleString('es-CO')}`;
-  
+  // Formatear precios a formato colombiano - asegurar números enteros
+  const formatPrice = (price: number) => {
+    if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
+    return `$ ${Math.round(price).toLocaleString('es-CO')}`;
+  };
+
   const price = formatPrice(precioDescto);
   let originalPrice: string | undefined;
   let discount: string | undefined;

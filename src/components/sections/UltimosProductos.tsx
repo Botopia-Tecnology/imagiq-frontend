@@ -28,7 +28,7 @@ export default function UltimosProductos() {
           ¡Explora nuestros ultimos productos!
         </h2>
         <div className="w-full flex justify-center">
-          <div className="bg-black rounded-[40px] shadow-2xl w-full max-w-[900px] min-h-[500px] flex items-center justify-center">
+          <div className="bg-black shadow-2xl w-full max-w-[900px] min-h-[500px] flex items-center justify-center">
             <video
               ref={videoRef}
               src={"/videoplayback.mp4"}
@@ -36,7 +36,7 @@ export default function UltimosProductos() {
               loop
               muted
               playsInline
-              className={`rounded-[40px] w-full h-[500px] object-cover transition-opacity duration-400 ${
+              className={`w-full h-[500px] object-cover transition-opacity duration-400 ${
                 fade ? "opacity-0" : "opacity-100"
               }`}
               style={{ background: "#000" }}

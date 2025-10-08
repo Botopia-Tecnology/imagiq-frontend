@@ -135,7 +135,8 @@ export default function CategorySlider({
       <div
         ref={sliderRef}
         className={cn(
-          "flex gap-12 overflow-x-auto scrollbar-hide scroll-smooth",
+          "flex overflow-x-auto scrollbar-hide scroll-smooth transition-all duration-300",
+          condensed ? "gap-6" : "gap-12",
           isDesktop ? "px-8" : "px-4",
           needsArrows ? "justify-start" : "justify-center"
         )}
@@ -155,9 +156,12 @@ export default function CategorySlider({
               {/* Category Circle */}
               <div
                 className={cn(
-                  "relative rounded-full border-2 transition-all duration-200 flex items-center justify-center",
-                  isDesktop ? "w-28 h-28" : "w-20 h-20",
-                  condensed ? "w-12 h-12" : "",
+                  "relative rounded-full border-2 transition-all duration-300 flex items-center justify-center",
+                  condensed
+                    ? "w-16 h-16"
+                    : isDesktop
+                    ? "w-28 h-28"
+                    : "w-20 h-20",
                   isActive
                     ? "border-blue-500 bg-blue-50 shadow-lg"
                     : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 scale-90"
@@ -166,15 +170,15 @@ export default function CategorySlider({
                 <Image
                   src={category.image}
                   alt={category.name}
-                  width={isDesktop ? 60 : 52}
-                  height={isDesktop ? 60 : 52}
+                  width={condensed ? 42 : isDesktop ? 60 : 52}
+                  height={condensed ? 42 : isDesktop ? 60 : 52}
                   className="object-contain"
                 />
               </div>
 
               {/* Category Text */}
               {!condensed && (
-                <div className="text-center mt-2 max-w-[100px]">
+                <div className="text-center mt-2 max-w-[100px] transition-opacity duration-300">
                   <div
                     className={cn(
                       "font-semibold text-xs leading-tight",

@@ -18,20 +18,9 @@ interface SEOProps {
   type?: "website" | "article" | "product";
 }
 
-export default function SEO({
-  title,
-  description,
-  keywords,
-  image,
-  url,
-  type = "website",
-}: SEOProps) {
+export default function SEO(_props: SEOProps) {
   // In Next.js 13+ App Router, SEO is handled by metadata in layout/page files
   // This component is for reference and could be used to generate metadata objects
-
-  const openGraphType = type === "product" ? "website" : type;
-
-  // Example usage - this would be used in generateMetadata functions
   // SEO metadata is handled by Next.js 13+ generateMetadata function
 
   return null;

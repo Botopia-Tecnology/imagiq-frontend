@@ -36,6 +36,7 @@ export function useNavbarLogic() {
     width: number;
   } | null>(null); // Coordenadas del dropdown
   const [isScrolled, setIsScrolled] = useState(false); // Estado de scroll
+  const [showNavbar] = useState(true); // Siempre mostrar navbar (sticky)
   const [isClient, setIsClient] = useState(false); // Detecta si es cliente
   const navItemRefs = useRef<{ [key: string]: HTMLDivElement | null }>({}); // Referencias a items del navbar
   const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Timeout para ocultar dropdown
@@ -128,6 +129,10 @@ export function useNavbarLogic() {
     return () => observer.disconnect();
   }, [pathname]);
 
+  // Efecto: El navbar siempre está visible (sticky behavior)
+  // Ya no se necesita controlar visibilidad basada en scroll
+  // useEffect eliminado para mantener navbar siempre visible
+
   // Efecto: Ejecuta búsqueda y actualiza resultados (mock) + analytics
   useEffect(() => {
     if (debouncedSearch.length > 2) {
@@ -165,14 +170,13 @@ export function useNavbarLogic() {
     pathname?.startsWith("/productos/view/") ||
     pathname?.startsWith("/productos/dispositivos-moviles/details");
   // Determina si mostrar logo blanco y estilos claros
-  const showWhiteLogo = isOfertas || (isHome && !isScrolled);
-  const showWhiteItems = showWhiteLogo;
+  // Solo mostrar logo blanco si estamos en la parte superior de la página (primeros 100px)
+  const isAtTop = typeof window !== 'undefined' ? window.scrollY < 100 : true;
+  const showWhiteLogo = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
+  const showWhiteItems = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
   const showWhiteItemsMobile =
-    isOfertas ||
-    (isMasInformacionProducto && !isScrolled && !isAppliance) ||
-    (!isScrolledNavbar &&
-      !isLogin &&
-      (isProductDetail || (isHome && !isScrolled)));
+    // Solo mostrar texto blanco en mobile en el home cuando está arriba
+    (isHome && !isScrolled && isAtTop);
 
   // Handlers para hover de dropdowns (animación y posición)
   const handleDropdownEnter = (dropdownName: string) => {
@@ -263,6 +267,7 @@ export function useNavbarLogic() {
     setDropdownCoords,
     isScrolled,
     setIsScrolled,
+    showNavbar,
     isClient,
     setIsClient,
     navItemRefs,

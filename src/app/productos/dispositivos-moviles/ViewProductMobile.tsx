@@ -15,9 +15,9 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
-import samsungLogo from "@/img/Samsung_black.png";
 import { AnimatePresence, motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
@@ -352,18 +352,20 @@ export default function ViewProduct({
                   }}
                   whileTap={{ scale: 0.99 }}
                 >
-                  <Image
-                    src={samsungLogo}
-                    alt="Samsung Logo"
-                    onClick={() => {
-                      window.location.href = "/";
-                    }}
-                    height={80}
-                    width={70}
-                    className="h-10 md:h-12 w-auto cursor-pointer"
-                    priority
-                    style={{ display: "block" }}
-                  />
+                  <Link
+                    href="/"
+                    aria-label="Ir a la página principal"
+                    className="block cursor-pointer"
+                  >
+                    <Image
+                      src="/img/Samsung_black.svg"
+                      alt="Samsung Logo"
+                      height={80}
+                      width={70}
+                      className="h-10 md:h-12 w-auto"
+                      style={{ display: "block" }}
+                    />
+                  </Link>
                 </motion.div>
                 <motion.span
                   initial={{ y: 12, opacity: 0 }}

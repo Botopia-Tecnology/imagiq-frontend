@@ -6,6 +6,8 @@ interface GuestUserData {
   apellido: string;
   email: string;
   telefono: string;
+  numero_documento: string;
+  tipo_documento: string;
 }
 
 interface GuestDataModalProps {
@@ -13,17 +15,24 @@ interface GuestDataModalProps {
   onCancel: () => void;
 }
 
-const GuestDataModal: React.FC<GuestDataModalProps> = ({ onSubmit, onCancel }) => {
+const GuestDataModal: React.FC<GuestDataModalProps> = ({
+  onSubmit,
+  onCancel,
+}) => {
   const [formData, setFormData] = useState<GuestUserData>({
     nombre: "",
     apellido: "",
     email: "",
     telefono: "",
+    tipo_documento: "CC",
+    numero_documento: "",
   });
 
   const [errors, setErrors] = useState<Partial<GuestUserData>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -36,8 +45,12 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({ onSubmit, onCancel }) =
     if (!formData.nombre) newErrors.nombre = "Requerido";
     if (!formData.apellido) newErrors.apellido = "Requerido";
     if (!formData.email) newErrors.email = "Requerido";
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = "Email inválido";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Email inválido";
     if (!formData.telefono) newErrors.telefono = "Requerido";
+    if (!/^\d{6,10}$/.test(formData.numero_documento))
+      newErrors.numero_documento =
+        "El número de documento solo debe de tener números y debe tener de 6 a 10 caracteres. No se admiten numeros consecutivos";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -50,80 +63,132 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({ onSubmit, onCancel }) =
   };
 
   return (
- <div className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50" onClick={onCancel}>
+    <button
+      className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50"
+      onClick={onCancel}
+    >
+      <div
+        className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl relative border border-gray-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">
+          Tus datos para guardar favoritos
+        </h2>
 
-
-    <div  className="bg-white p-4 rounded-md w-full max-w-sm shadow-md relative transform translate-y-25" onClick={(e) => e.stopPropagation()}>
-
-        <h2 className="text-xl font-semibold mb-4">Tus datos para guardar favoritos</h2>
-
-        <div className="space-y-3" >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium">Nombre</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Nombre
+            </label>
             <input
               type="text"
               name="nombre"
               value={formData.nombre}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 mt-1"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-200"
             />
-            {errors.nombre && <p className="text-red-500 text-sm">{errors.nombre}</p>}
+            {errors.nombre && (
+              <p className="text-red-500 text-sm mt-1">{errors.nombre}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Apellido</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Apellido
+            </label>
             <input
               type="text"
               name="apellido"
               value={formData.apellido}
               onChange={handleChange}
-              className="w-full border rounded px-2 py-1 mt-1 text-sm"
-
+              className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-200"
             />
-            {errors.apellido && <p className="text-red-500 text-sm">{errors.apellido}</p>}
+            {errors.apellido && (
+              <p className="text-red-500 text-sm mt-1">{errors.apellido}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 mt-1"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-200"
             />
-            {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
+            {errors.email && (
+              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium">Teléfono</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Teléfono
+            </label>
             <input
               type="tel"
               name="telefono"
               value={formData.telefono}
               onChange={handleChange}
-              className="w-full border rounded px-3 py-2 mt-1"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-200"
             />
-            {errors.telefono && <p className="text-red-500 text-sm">{errors.telefono}</p>}
+            {errors.telefono && (
+              <p className="text-red-500 text-sm mt-1">{errors.telefono}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Tipo de documento
+            </label>
+            <select
+              name="tipo_documento"
+              className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-200"
+              value={formData.tipo_documento}
+              onChange={handleChange}
+            >
+              <option value="CC">Cédula de ciudadanía</option>
+              <option value="PP">Pasaporte</option>
+              <option value="CE">Cédula de extranjería</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Número de documento
+            </label>
+            <input
+              type="text"
+              name="numero_documento"
+              value={formData.numero_documento}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 transition duration-200"
+            />
+            {errors.numero_documento && (
+              <p className="text-red-500 text-sm mt-1">
+                {errors.numero_documento}
+              </p>
+            )}
           </div>
         </div>
 
-        <div className="mt-6 flex justify-end space-x-3">
-       
+        <div className="mt-8 flex justify-end">
           <button
             onClick={handleSubmit}
             className={cn(
-                          "w-full bg-sky-600 text-white py-2 px-3 rounded-md text-sm font-medium cursor-pointer",
-                          "transition-all duration-200 flex items-center justify-center gap-2",
-                          "hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed",
-                       
-                        )}
+              "w-full bg-sky-600 text-white py-3 px-4 rounded-md text-sm font-medium cursor-pointer",
+              "transition-all duration-200 flex items-center justify-center gap-2",
+              "hover:bg-sky-700 active:bg-sky-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+            )}
           >
             Guardar
           </button>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 

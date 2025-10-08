@@ -1,203 +1,139 @@
-import Image from "next/image";
-import zflipImg from "@/img/hero/zflip_hero.png";
-import watchImg from "@/img/hero/watch_hero.png";
-import BespokeAiEjemploImg from "@/img/hero/BespokeAiEjemplo.png";
-import bespokeAiLogo from "@/img/hero/BespokeAi.png";
+/**
+ * 📱 PRODUCT SHOWCASE - 4 Product Cards
+ *
+ * Muestra 4 productos destacados en formato de grid
+ * - Galaxy S25 FE + Buds3 FE
+ * - Galaxy S25 Ultra 256 GB
+ * - Galaxy Tab S11 256GB + Adaptador
+ * - Galaxy Watch8 Classic de 40 mm
+ */
 
-const products = [
+"use client";
+
+import { useState } from "react";
+import Image, { StaticImageData } from "next/image";
+import Link from "next/link";
+import { posthogUtils } from "@/lib/posthogClient";
+
+// Importar imágenes
+import s25feImg from "@/img/dispositivosmoviles/cel1.png";
+import s25ultraImg from "@/img/dispositivosmoviles/cel2.png";
+import tabletImg from "@/img/tabletas/tableta1.png";
+import watchImg from "@/img/categorias/galaxy_watch.png";
+
+interface Product {
+  id: string;
+  title: string;
+  image: StaticImageData;
+  href: string;
+}
+
+const products: Product[] = [
   {
-    title: "Galaxy Z Flip7",
-    description: "Lleva el de 512 GB a precio de 256GB",
-    bgImage: zflipImg,
-    infoUrl: "#",
-    buyUrl: "#",
-    text: "text-[#1a2a3a]",
-    titleClass: "absolute top-10 right-10 text-right text-3xl font-bold",
-    descClass:
-      "absolute top-20 right-10 text-right text-base font-medium w-[260px]",
-    buttonGroupClass:
-      "absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4 justify-center w-full",
-    infoButtonBg: "bg-white border-2 border-[#183a5a]",
-    infoButtonText: "text-[#183a5a]",
-    buttonBg: "bg-[#183a5a] border-2 border-[#183a5a]",
-    buttonText: "text-white",
-    contentClass: "flex flex-col justify-end items-center h-full relative",
-    showTitle: true,
-    showDesc: true,
-    showButtons: true,
+    id: "s25-fe-buds",
+    title: "Galaxy S25 FE + Buds3 FE",
+    image: s25feImg,
+    href: "/productos/smartphones/galaxy-s25-fe",
   },
   {
-    bgImage: watchImg,
-    infoUrl: "#",
-    buyUrl: "#",
-    text: "text-white",
-    titleClass: "absolute top-10 right-10 text-right text-3xl font-bold",
-    descClass:
-      "absolute top-20 right-10 text-right text-base font-medium w-[260px]",
-    buttonGroupClass:
-      "absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-4 justify-center w-full",
-    infoButtonBg: "bg-white border-2 border-white",
-    infoButtonText: "text-[#1a2a3a]",
-    buttonBg: "bg-[#183a5a]",
-    buttonText: "text-white",
-    contentClass: "flex flex-col justify-end items-center h-full relative",
-    showTitle: false,
-    showDesc: false,
-    showButtons: true,
+    id: "s25-ultra",
+    title: "Galaxy S25 Ultra 256 GB",
+    image: s25ultraImg,
+    href: "/productos/smartphones/galaxy-s25-ultra",
+  },
+  {
+    id: "tab-s11",
+    title: "Galaxy Tab S11 256GB + Adaptador",
+    image: tabletImg,
+    href: "/productos/tablets/galaxy-tab-s11",
+  },
+  {
+    id: "watch8-classic",
+    title: "Galaxy Watch8 Classic de 40 mm",
+    image: watchImg,
+    href: "/productos/wearables/galaxy-watch8-classic",
   },
 ];
 
+interface ProductCardProps {
+  product: Product;
+}
+
+function ProductCard({ product }: ProductCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleClick = () => {
+    posthogUtils.capture("product_showcase_card_click", {
+      product_id: product.id,
+      product_title: product.title,
+      source: "product_showcase",
+    });
+  };
+
+  return (
+    <Link
+      href={product.href}
+      onClick={handleClick}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group block"
+    >
+      <div className="relative bg-gray-50 h-[400px] flex flex-col items-center justify-between p-6 hover:bg-gray-100 transition-colors duration-300">
+        {/* Título */}
+        <h3
+          className="text-base font-semibold text-gray-900 text-center leading-tight h-[48px] flex items-center justify-center w-full"
+          style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
+        >
+          {product.title}
+        </h3>
+
+        {/* Imagen del producto */}
+        <div className="relative w-full flex-1 flex items-center justify-center">
+          <div className="relative w-[200px] h-[200px]">
+            <Image
+              src={product.image}
+              alt={product.title}
+              fill
+              className={`object-contain transition-transform duration-500 ease-out ${
+                isHovered ? "scale-110" : "scale-100"
+              }`}
+              sizes="200px"
+            />
+          </div>
+        </div>
+
+        {/* Botón Comprar - Aparece en hover */}
+        <div
+          className={`absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 ${
+            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+        >
+          <button
+            className="bg-black text-white px-10 py-3 rounded-full font-semibold text-base transition-transform duration-300 transform hover:scale-105 shadow-xl whitespace-nowrap"
+            style={{
+              fontFamily: "'Samsung Sharp Sans', sans-serif",
+            }}
+          >
+            Comprar
+          </button>
+        </div>
+
+        {/* Espacio para mantener consistencia */}
+        <div className="h-[48px]"></div>
+      </div>
+    </Link>
+  );
+}
+
 export default function ProductShowcase() {
   return (
-    <section className="w-full flex flex-col items-center bg-transparent py-10 md:mr-20 md:ml-5">
-      <div
-        className="flex flex-col md:flex-row gap-6 md:gap-8 w-full mx-auto px-2 md:px-0"
-        style={{ maxWidth: "1800px" }}
-      >
-        {products.map((product) => (
-          <div
-            key={product.title || "watch"}
-            className="relative w-full mx-auto aspect-[4/3] h-auto rounded-2xl shadow-lg p-3 mb-6 md:mb-0 md:aspect-auto md:h-[340px] md:min-h-[340px] md:rounded-3xl md:shadow-xl md:p-0 md:flex-1 flex flex-col justify-between md:mr-10"
-          >
-            <Image
-              src={product.bgImage}
-              alt={
-                product.title ? product.title : "Galaxy Watch8 | Watch8 Classic"
-              }
-              fill
-              sizes="(max-width: 768px) 100vw, 700px"
-              className="absolute inset-0 w-full h-full object-cover rounded-2xl md:rounded-3xl z-0"
-              priority
-            />
-            <div
-              className={`relative z-10 ${product.contentClass} h-full`}
-              style={{ minHeight: 0 }}
-            >
-              {/* Título y descripción en la esquina superior derecha */}
-              {product.showTitle && (
-                <h2
-                  className={`${product.text} ${product.titleClass} hidden md:block`}
-                >
-                  {product.title}
-                </h2>
-              )}
-              {product.showDesc && (
-                <p
-                  className={`${product.text} ${product.descClass} hidden md:block`}
-                >
-                  {product.description}
-                </p>
-              )}
-              {/* Botones centrados en la parte inferior */}
-              {product.showButtons && (
-                <div className={product.buttonGroupClass}>
-                  <a
-                    href={product.infoUrl}
-                    className={`px-6 py-2 rounded-full font-semibold transition-all duration-200 ${product.infoButtonBg} ${product.infoButtonText} hover:scale-105`}
-                    style={{
-                      minWidth: 170,
-                      textAlign: "center",
-                      fontSize: "1.08rem",
-                      boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)",
-                      borderRadius: "999px",
-                      border:
-                        product.bgImage === watchImg
-                          ? "2px solid #fff"
-                          : "2px solid #183a5a",
-                      background:
-                        product.bgImage === watchImg ? "#fff" : "#fff",
-                      color:
-                        product.bgImage === watchImg ? "#1a2a3a" : undefined,
-                    }}
-                  >
-                    Más información
-                  </a>
-                  <a
-                    href={product.buyUrl}
-                    className={`px-6 py-2 rounded-full font-semibold transition-all duration-200 ${product.buttonBg} ${product.buttonText} hover:scale-105`}
-                    style={{
-                      minWidth: 170,
-                      textAlign: "center",
-                      fontSize: "1.08rem",
-                      boxShadow: "0 2px 8px 0 rgba(0,0,0,0.04)",
-                      borderRadius: "999px",
-                      border:
-                        product.bgImage === watchImg
-                          ? "2px solid #fff"
-                          : "2px solid #183a5a",
-                      background:
-                        product.bgImage === watchImg ? "#fff" : "#183a5a",
-                      color:
-                        product.bgImage === watchImg ? "#1a2a3a" : undefined,
-                    }}
-                  >
-                    Compra
-                  </a>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Card grande debajo de las otras */}
-      <div className="w-full flex flex-col md:flex-row justify-center items-center bg-transparent py-0 px-2 md:px-0">
-        <div
-          className="relative w-full rounded-2xl shadow-lg p-3 flex flex-col md:flex-row items-center min-h-[340px] md:min-h-[500px] mt-8 md:rounded-[32px] md:shadow-[0_4px_24px_0_rgba(0,0,0,0.08)] md:p-0"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            background: "#C4C2C2",
-            boxShadow: "0 4px 24px 0 rgba(0,0,0,0.08)",
-          }}
-        >
-          {/* Imágenes alineadas */}
-          <div className="flex flex-row items-end gap-0 flex-1 justify-center w-full md:w-auto">
-            <div className="flex flex-row items-center justify-center w-full">
-              <Image
-                src={BespokeAiEjemploImg}
-                alt="Bespoke AI Ejemplo"
-                width={700}
-                height={1200}
-                className="object-contain"
-                priority
-              />
-            </div>
-          </div>
-          {/* Texto y botones a la derecha */}
-          <div className="flex flex-col items-center md:items-end justify-center h-full pr-0 md:pr-24 min-w-0 md:min-w-[370px] w-full md:w-auto">
-            <div className="mb-8 w-full md:w-auto">
-              <p className="hidden md:block text-center md:text-right text-[1.3rem] md:text-[2.3rem] font-bold text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.18)]">
-                Simplifica tu vida,
-                <br />
-                disfruta tu hogar
-              </p>
-            </div>
-            <div className="mb-6 flex flex-col items-center md:items-end w-full md:w-auto">
-              <Image
-                src={bespokeAiLogo}
-                alt="Bespoke AI Logo"
-                width={120}
-                height={40}
-                className="mb-2 object-contain"
-                priority
-              />
-            </div>
-            <div className="flex flex-row md:flex-col gap-3 w-full max-w-[220px] mx-auto justify-center items-center md:items-end md:justify-end">
-              <a
-                href="#"
-                className="px-7 py-2 w-full text-center text-[1.12rem] rounded-full font-semibold transition-all duration-200 bg-gradient-to-r from-[#e2e2e2] to-white text-[#183a5a] border-2 border-[#183a5a] shadow-[0_2px_8px_0_rgba(0,0,0,0.08)] hover:scale-105"
-              >
-                Más información
-              </a>
-              <a
-                href="#"
-                className="px-7 py-2 w-full text-center text-[1.12rem] rounded-full font-semibold transition-all duration-200 bg-gradient-to-r from-[#183a5a] to-[#0a1a2a] text-white border-2 border-[#183a5a] shadow-[0_2px_8px_0_rgba(0,0,0,0.08)] hover:scale-105"
-              >
-                Compra
-              </a>
-            </div>
-          </div>
+    <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
+      <div className="w-full" style={{ maxWidth: "1440px" }}>
+        {/* Grid de 4 productos */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-[25px] px-4 md:px-0">
+          {products.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
         </div>
       </div>
     </section>

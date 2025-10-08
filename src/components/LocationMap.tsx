@@ -38,12 +38,16 @@ const MapController = dynamic(
       return function MapControllerInner({
         selectedCity,
         cityCoordinates,
+        scrollWheelEnabled,
+        onMapClick,
       }: {
         selectedCity: string;
         cityCoordinates: Record<
           string,
           { lat: number; lng: number; zoom: number }
         >;
+        scrollWheelEnabled: boolean;
+        onMapClick: () => void;
       }) {
         const map = mod.useMap();
 
@@ -57,6 +61,32 @@ const MapController = dynamic(
             }
           }
         }, [map, selectedCity, cityCoordinates]);
+
+        // Control scroll wheel zoom based on state
+        useEffect(() => {
+          if (map) {
+            if (scrollWheelEnabled) {
+              map.scrollWheelZoom.enable();
+            } else {
+              map.scrollWheelZoom.disable();
+            }
+          }
+        }, [map, scrollWheelEnabled]);
+
+        // Enable scroll wheel zoom when user clicks on map
+        useEffect(() => {
+          if (map) {
+            const handleClick = () => {
+              onMapClick();
+            };
+
+            map.on("click", handleClick);
+
+            return () => {
+              map.off("click", handleClick);
+            };
+          }
+        }, [map, onMapClick]);
 
         return null;
       };
@@ -84,6 +114,7 @@ export default function LocationMap() {
   const [isClient, setIsClient] = useState(false);
   const [leafletReady, setLeafletReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
+  const [scrollWheelEnabled, setScrollWheelEnabled] = useState(false);
 
   // Initialize Leaflet
   useEffect(() => {
@@ -157,6 +188,16 @@ export default function LocationMap() {
       });
     }
   }, []);
+
+  // Handle map click to enable scroll wheel zoom
+  const handleMapClick = useCallback(() => {
+    if (!scrollWheelEnabled) {
+      setScrollWheelEnabled(true);
+      posthogUtils.capture("map_scroll_enabled", {
+        enabled_by: "click",
+      });
+    }
+  }, [scrollWheelEnabled]);
 
   // If not ready, show loading state
   if (!isClient || !leafletReady) {
@@ -248,13 +289,21 @@ export default function LocationMap() {
       {/* Interactive Map Container - Responsive: móvil y desktop/tablet */}
       <div className="relative rounded-xl overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-1 md:mt-4 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
         <div className="relative h-[220px] xs:h-[260px] sm:h-[280px] md:h-[500px] lg:h-[600px] md:w-[1200px] lg:w-[1400px] w-full flex justify-center items-center">
+          {/* Mensaje para indicar al usuario que haga clic para interactuar */}
+          {!scrollWheelEnabled && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none">
+              <div className="bg-black/70 text-white px-4 py-2 rounded-lg text-sm md:text-base font-medium shadow-lg">
+                Haz clic para interactuar con el mapa
+              </div>
+            </div>
+          )}
           <MapContainer
             key={`map-${mapKey}`}
             center={center}
             zoom={6}
             style={{ height: "100%", width: "100%" }}
             className="rounded-xl focus:outline-none md:rounded-2xl"
-            scrollWheelZoom={true}
+            scrollWheelZoom={false}
             zoomControl={true}
             doubleClickZoom={true}
             dragging={true}
@@ -269,6 +318,8 @@ export default function LocationMap() {
             <MapController
               selectedCity={selectedCity}
               cityCoordinates={cityCoordinates}
+              scrollWheelEnabled={scrollWheelEnabled}
+              onMapClick={handleMapClick}
             />
 
             {filteredStores.map((store, index) => (

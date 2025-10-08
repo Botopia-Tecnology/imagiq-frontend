@@ -57,12 +57,12 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     });
   }, [categoria, activeSection, device]);
 
-  // Padding responsivo
-  let devicePaddingClass = "px-0 py-0";
+  // Padding responsivo (solo horizontal)
+  let devicePaddingClass = "px-0";
   if (device === "mobile") {
-    devicePaddingClass = "px-2 py-2";
+    devicePaddingClass = "px-2";
   } else if (device === "tablet") {
-    devicePaddingClass = "px-4 py-4";
+    devicePaddingClass = "px-4";
   }
 
   // Si es página de ofertas, mostrar componente especial
@@ -75,7 +75,7 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   }
 
   return (
-    <div className={`bg-white min-h-screen ${devicePaddingClass}`}>
+    <div className={`bg-white ${devicePaddingClass}`}>
       <CategorySection
         categoria={categoria}
         seccion={activeSection}

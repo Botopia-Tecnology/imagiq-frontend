@@ -8,6 +8,8 @@
  * - TypeScript interfaces para requests/responses
  */
 
+import type { ProductFilterParams } from "./sharedInterfaces";
+
 // API Client configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -53,13 +55,24 @@ export class ApiClient {
 
     try {
       const response = await fetch(url, config);
-      const data = await response?.json();
+      const responseData = await response.json();
 
+      // Si la respuesta tiene la estructura { success, data, message, errors }
+      if (responseData && typeof responseData === 'object' && 'success' in responseData) {
+        return {
+          data: responseData.data as T,
+          success: responseData.success && response.ok,
+          message: responseData.message,
+          errors: responseData.errors,
+        };
+      }
+
+      // Fallback para respuestas que no siguen el formato estándar
       return {
-        data: data as T,
+        data: responseData as T,
         success: response.ok,
-        message: data.message,
-        errors: data.errors,
+        message: responseData.message,
+        errors: responseData.errors,
       };
     } catch (error) {
       console.error("API request failed:", error);
@@ -98,6 +111,9 @@ export class ApiClient {
 // Export singleton instance
 export const apiClient = new ApiClient();
 
+// Re-export types used by this module
+export type { ProductFilterParams } from "./sharedInterfaces";
+
 // Product API endpoints
 export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
@@ -125,8 +141,23 @@ export const productEndpoints = {
     apiClient.get<ProductApiResponse>(
       `/api/products/filtered?codigoMarket=${codigoMarket}`
     ),
-  search: (query: string) =>
-    apiClient.get<ProductApiResponse>(`/api/products/filtered?nombre=${query}`),
+  search: (query: string, params?: { precioMin?: number; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) => {
+    const searchParams = new URLSearchParams();
+    searchParams.append('query', query);
+    searchParams.append('precioMin', String(params?.precioMin ?? 1));
+    searchParams.append('page', String(params?.page ?? 1));
+    searchParams.append('limit', String(params?.limit ?? 15));
+    
+    // Agregar parámetros de ordenamiento si están presentes
+    if (params?.sortBy) {
+      searchParams.append('sortBy', params.sortBy);
+    }
+    if (params?.sortOrder) {
+      searchParams.append('sortOrder', params.sortOrder);
+    }
+    
+    return apiClient.get<ProductApiResponse>(`/api/products/search/grouped?${searchParams.toString()}`);
+  },
   getOffers: () =>
     apiClient.get<ProductApiResponse>(
       "/api/products/filtered?conDescuento=true"
@@ -180,24 +211,6 @@ export const productEndpoints = {
     ),
 };
 
-// Product filter parameters interface
-export interface ProductFilterParams {
-  categoria?: string;
-  subcategoria?: string;
-  precioMin?: number;
-  precioMax?: number;
-  conDescuento?: boolean;
-  stockMinimo?: number;
-  color?: string;
-  capacidad?: string;
-  nombre?: string;
-  desDetallada?: string;
-  modelo?: string;
-  codigoMarket?: string;
-  filterMode?: "AND" | "OR";
-  page?: number;
-  limit?: number;
-}
 
 // Favorite filter
 export interface FavoriteFilterParams {

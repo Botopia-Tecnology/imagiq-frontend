@@ -118,7 +118,17 @@ export function useSticky({
 
   const handleScroll = useCallback(() => {
     const newState = calculateStickyState();
-    setStickyState(newState);
+    // Solo actualizar si hay cambios significativos
+    setStickyState(prevState => {
+      if (
+        prevState.isSticky !== newState.isSticky ||
+        prevState.showShadow !== newState.showShadow ||
+        Math.abs(prevState.maxHeight - newState.maxHeight) > 10
+      ) {
+        return newState;
+      }
+      return prevState;
+    });
   }, [calculateStickyState]);
 
   const handleResize = useCallback(() => {
@@ -141,15 +151,22 @@ export function useSticky({
     const initialState = calculateStickyState();
     setStickyState(initialState);
 
-    // Throttle function para optimizar performance
+    // Throttle más agresivo para evitar parpadeos
     let ticking = false;
+    let lastScrollTime = 0;
+    const THROTTLE_MS = 100; // Esperar 100ms entre actualizaciones
+
     const throttledHandleScroll = () => {
-      if (!ticking) {
+      const now = Date.now();
+
+      if (!ticking && (now - lastScrollTime) >= THROTTLE_MS) {
+        lastScrollTime = now;
+        ticking = true;
+
         requestAnimationFrame(() => {
           handleScroll();
           ticking = false;
         });
-        ticking = true;
       }
     };
 
@@ -180,23 +197,23 @@ export function useStickyClasses({
   wrapperClasses: string;
   style: React.CSSProperties;
 } {
+  // Usar clases CSS simples sin transiciones que causen parpadeo
   const containerClasses = `
-    transition-all duration-300 ease-in-out
-    ${isSticky ? 'sticky z-40' : 'static'}
-    ${showShadow ? 'shadow-sm' : ''}
+    ${isSticky ? 'sticky z-40' : ''}
+    ${showShadow ? 'shadow-lg' : ''}
   `.trim().replace(/\s+/g, ' ');
 
   const wrapperClasses = `
     ${isSticky ? '' : ''}
   `.trim().replace(/\s+/g, ' ');
 
-  const style: React.CSSProperties = isSticky
-    ? {
-        top: `${topOffset}px`,
-        maxHeight: `${maxHeight}px`,
-        overflowY: 'auto' as const,
-      }
-    : {};
+  // Siempre aplicar estilo para evitar cambios bruscos
+  const style: React.CSSProperties = {
+    top: isSticky ? `${topOffset}px` : 'auto',
+    maxHeight: isSticky ? `calc(100vh - ${topOffset}px - 40px)` : 'none',
+    overflowY: isSticky ? ('auto' as const) : ('visible' as const),
+    position: isSticky ? ('sticky' as const) : ('static' as const),
+  };
 
   return {
     containerClasses,

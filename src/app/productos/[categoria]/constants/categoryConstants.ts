@@ -531,6 +531,7 @@ export function isValidSectionForCategory(
 
 /**
  * Obtiene la configuración del CategorySlider para una categoría
+ * @deprecated Use getSliderConfig from slider-configs.ts instead
  */
 export function getCategorySliderConfig(
   categoria: CategoriaParams

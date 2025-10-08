@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import emptyImg from "@/img/empty.jpeg";
+import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 
 interface DeviceCarouselProps {
   alt: string;
@@ -21,23 +22,31 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   onImageClick,
 }) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+
   // Construir array de imágenes: imagePreviewUrl primero, luego imageDetailsUrls
   const images: (string | StaticImageData)[] = [];
-  
+
   // Agregar imagePreviewUrl como primera imagen si existe y no está vacío
   if (imagePreviewUrl && imagePreviewUrl.trim() !== '') {
     images.push(imagePreviewUrl);
   }
-  
+
   // Agregar imageDetailsUrls, filtrando URLs vacías
   const validDetailUrls = imageDetailsUrls.filter(url => url && url.trim() !== '');
   images.push(...validDetailUrls);
-  
+
   // Si no hay imágenes válidas del backend, usar empty.jpg
   if (images.length === 0) {
     images.push(emptyImg);
   }
+
+  // Obtener imagen actual optimizada con Cloudinary para detalles de producto
+  const currentImageSrc = images[currentImageIndex];
+  const cloudinaryImage = useCloudinaryImage({
+    src: typeof currentImageSrc === "string" ? currentImageSrc : currentImageSrc.src,
+    transformType: "product-detail",
+    responsive: true,
+  });
   
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
@@ -79,11 +88,12 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
         onClick={() => onImageClick?.(images, currentImageIndex)}
       >
         <Image
-          src={images[currentImageIndex] || emptyImg}
+          src={cloudinaryImage.src}
           alt={`${alt} - Imagen ${currentImageIndex + 1}`}
-          width={1000}
-          height={1600}
+          width={cloudinaryImage.width}
+          height={cloudinaryImage.height}
           className="object-contain transition-opacity duration-300 max-h-full w-auto group-hover:opacity-90"
+          sizes={cloudinaryImage.imageProps.sizes}
           priority={currentImageIndex === 0}
         />
       </div>

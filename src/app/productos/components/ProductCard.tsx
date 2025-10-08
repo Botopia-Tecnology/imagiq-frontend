@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -263,6 +264,13 @@ export default function ProductCard({
     direction: "up",
   });
 
+  // Obtener imagen optimizada de Cloudinary para catálogo
+  const cloudinaryImage = useCloudinaryImage({
+    src: typeof image === "string" ? image : image.src,
+    transformType: "catalog",
+    responsive: true,
+  });
+
   return (
     <motion.div
       ref={cardReveal.ref}
@@ -313,11 +321,12 @@ export default function ProductCard({
         </button>
 
         <Image
-          src={image}
+          src={cloudinaryImage.src}
           alt={name}
-          fill
-          className={cn("object-contain p-4")}
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          width={cloudinaryImage.width}
+          height={cloudinaryImage.height}
+          className={cn("object-contain p-4 w-full h-full")}
+          sizes={cloudinaryImage.imageProps.sizes}
         />
       </div>
 

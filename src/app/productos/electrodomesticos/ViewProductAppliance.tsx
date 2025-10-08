@@ -16,6 +16,10 @@ import dynamic from "next/dynamic";
 import { useCartContext } from "@/features/cart/CartContext";
 import Image, { StaticImageData } from "next/image";
 import { motion } from "framer-motion";
+import addiLogo from "@/img/iconos/addi_negro.png";
+import setingLogo from "@/img/iconos/Setting_line_negro.png";
+import packageCar from "@/img/iconos/package_car_negro.png";
+import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
@@ -25,6 +29,7 @@ import SizeProduct from "./components/SizeProduct";
 import { productsMock } from "../components/productsMock";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import CaracteristicasProduct from "./CaracteristicasProduct";
+import ExploreProducts from "./ExploreProducts";
 import SkeletonCard from "@/components/SkeletonCard";
 // Tipos para producto
 interface ProductColor {
@@ -49,7 +54,7 @@ export default function ViewProductAppliance({
   product: Readonly<ProductData>;
 }) {
   // Animación scroll reveal para hero principal
-  useScrollReveal<HTMLDivElement>({
+  const heroReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",
@@ -75,12 +80,13 @@ export default function ViewProductAppliance({
 
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
+  const [selectedColor] = useState(safeProduct?.colors?.[0]);
   const router = useRouter();
   const pathname = usePathname();
   const [showBar, setShowBar] = useState(false);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
-  const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
+  const isProductDetailView = pathname.startsWith("/productos/view/");
   useEffect(() => {
     /* Navbar que se bugea al hacer scroll */
     const handleScroll = () => {
@@ -162,8 +168,9 @@ export default function ViewProductAppliance({
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col pt-10 bg-gray-200/60"
+      className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
       style={{
+        background: "#D9D9D9",
         fontFamily: "SamsungSharpSans",
       }}
     >
@@ -173,8 +180,134 @@ export default function ViewProductAppliance({
           {cartFeedback}
         </div>
       )}
+      {/* Hero section */}
+      <motion.section
+        ref={heroReveal.ref}
+        {...heroReveal.motionProps}
+        className="flex flex-1 items-center justify-center px-4 py-8 md:py-0"
+      >
+        <div className="max-w-6xl w-full flex flex-col md:flex-row items-center justify-between gap-0">
+          {/* Columna izquierda: info y acciones */}
+          <div
+            className="flex-1 flex flex-col items-start justify-center gap-6"
+            style={{ fontFamily: "SamsungSharpSans" }}
+          >
+            {/* Nombre producto dinámico */}
+            <h1
+              className="text-gray text-3xl md:text-5xl font-bold mb-2 hover:text-gray-900 transition-all"
+              style={{ fontFamily: "SamsungSharpSans", letterSpacing: "-1px" }}
+            >
+              {safeProduct.name}
+            </h1>
+            {/* Logos y badges debajo del nombre */}
+            <div className="flex flex-col gap-3 mb-2">
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center border border-black bg-white/10"
+                  style={{
+                    minWidth: 80,
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Image
+                    src={addiLogo}
+                    alt="Addi Logo"
+                    width={58}
+                    height={58}
+                  />
+                </div>
+                <span
+                  className="text-gray text-lg"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Paga hasta en 24 cuotas
+                  <br />
+                  con Addi
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center border border-black bg-white/10"
+                  style={{
+                    minWidth: 80,
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Image src={packageCar} alt="Envío" width={58} height={58} />
+                </div>
+                <span
+                  className="text-gray text-lg"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Envío gratis a todo
+                  <br />
+                  Colombia. *Aplican TYC*
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <div
+                  className="flex items-center justify-center border border-black bg-white/10"
+                  style={{
+                    minWidth: 80,
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                  }}
+                >
+                  <Image
+                    src={setingLogo}
+                    alt="Setting Logo"
+                    width={58}
+                    height={58}
+                  />
+                </div>
+                <span
+                  className="text-gray text-lg"
+                  style={{ fontFamily: "SamsungSharpSans" }}
+                >
+                  Instalación gratis
+                </span>
+              </div>
+            </div>
+            {/* Botones de acción */}
+            <div className="flex gap-4 mt-4">
+              <button
+                className="bg-black text-white px-8 py-3 rounded-full font-bold text-lg shadow hover:bg-gray-900 transition-all border border-black"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleBuy}
+              >
+                ¡Compra aquí!
+              </button>
+              <button
+                className="bg-transparent text-black border border-black rounded-full px-4 py-2 font-semibold text-base shadow hover:bg-white/30  transition-all"
+                style={{ fontFamily: "SamsungSharpSans" }}
+                onClick={handleAddToCart}
+              >
+                Añadir al carrito
+              </button>
+            </div>
+          </div>
+
+          {/* Columna derecha: imagen producto dinámica */}
+          <div className="flex-1 flex items-center justify-center p-8">
+            <Image
+              src={safeProduct.image}
+              alt={safeProduct.name}
+              width={420}
+              height={420}
+              className="object-contain drop-shadow-2xl"
+              priority
+              style={{ background: "none" }}
+            />
+          </div>
+        </div>
+      </motion.section>
       <ARExperienceHandler
-        glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_nueva.glb"
+        glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
         usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"
       ></ARExperienceHandler>
 
@@ -205,41 +338,40 @@ export default function ViewProductAppliance({
           {/* DESKTOP/TABLET: diseño original */}
           <div className="hidden md:flex w-full items-center justify-between">
             {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-            <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
+            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
               <Image
-                src="/frame_black.png"
-                alt="Q Logo"
-                height={40}
-                style={{ display: "block", marginBottom: "5px" }}
-                width={40}
-                className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+                src="/frame_311_black.png"
+                alt="Frame"
+                width={32}
+                height={32}
+                className="object-contain"
                 priority
               />
-              <img
-                src="/img/Samsung_black.svg"
-                alt="Samsung Logo"
-                onClick={() => {
-                  window.location.href = "/";
-                }}
-                height={80}
-                width={70}
-                className="h-10 md:h-12 w-auto cursor-pointer"
-                style={{ display: "block" }}
-              />
-
-              <span
-                className={
-                  "text-xs font-bold tracking-wide text-black select-none"
-                }
-                style={{
-                  letterSpacing: "0.08em",
-                  marginBottom: "11px", // Ajusta este valor según sea necesario
-                  lineHeight: "normal", // O ajusta el line-height según lo necesites
-                  alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
-                }}
+              {/* Logo Samsung clickable */}
+              <button
+                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
+                title="Ir al inicio"
+                aria-label="Ir al inicio"
+                onClick={() => (window.location.href = "/")}
               >
-                Store
-              </span>
+                <Image
+                  src={samsungLogo}
+                  alt="Samsung Logo"
+                  width={110}
+                  height={32}
+                  style={{ objectFit: "contain" }}
+                  priority
+                />
+              </button>
+              {/* Imagen store_black */}
+              <Image
+                src="/store_black.png"
+                alt="Store"
+                width={32}
+                height={32}
+                className="object-contain"
+                priority
+              />
             </div>
             {/* Nombre centrado */}
             <div className="flex-1 flex justify-center">

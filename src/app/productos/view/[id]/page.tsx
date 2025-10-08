@@ -143,9 +143,14 @@ export default function ProductViewPage({ params }) {
       <DetailsProductSection product={product} /> 
       {/* Vista original de producto */}
       {isRefrigerador ? (
+        /* Para electrodomésticos solo renderizar ViewProductAppliance */
         <ViewProductAppliance product={convertedProduct} />
       ) : (
-        <ViewProduct product={convertedProduct} />
+        /* Para dispositivos móviles renderizar DetailsProductSection + ViewProduct */
+        <>
+          <DetailsProductSection product={product} />
+          <ViewProduct product={convertedProduct} />
+        </>
       )}
     </>
   );

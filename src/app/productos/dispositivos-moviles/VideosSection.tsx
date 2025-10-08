@@ -152,7 +152,7 @@ export default function VideosSection() {
               {/* Título centrado arriba del primer video */}
               {index === 0 && (
                 <div className="pb-4 text-center mb-12">
-                  <h2 className="text-4xl md:text-5xl font-bold text-white">
+                  <h2 className="text-4xl md:text-5xl font-bold text-black">
                     ¡Explora su potencial!
                   </h2>
                 </div>
@@ -182,7 +182,7 @@ export default function VideosSection() {
                     zIndex: 10,
                   }}
                 >
-                  <h3 className="text-4xl md:text-5xl -mt-20 font-bold text-white text-center">
+                  <h3 className="text-4xl md:text-5xl -mt-20 font-bold text-black text-center">
                     Galaxy AI ✨
                   </h3>
                 </div>

@@ -16,7 +16,12 @@ import MonitoresDropdown from "./dropdowns/monitores";
 import AccesoriosDropdown from "./dropdowns/accesorios";
 import SoporteDropdown from "./dropdowns/soporte";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
-import { MobileMenu, CartIcon, SearchBar, NavbarLogo } from "./navbar/components";
+import {
+  MobileMenu,
+  CartIcon,
+  SearchBar,
+  NavbarLogo,
+} from "./navbar/components";
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
 import { MENU_ORDER } from "./navbar/constants";
 import type { DropdownName, NavItem } from "./navbar/types";
@@ -65,17 +70,27 @@ export default function Navbar() {
     // Ejecutar una vez al montar
     handleResize();
 
-    window.addEventListener('resize', handleResize);
-    window.addEventListener('close-dropdown', handleCloseDropdown as EventListener);
+    window.addEventListener("resize", handleResize);
+    window.addEventListener(
+      "close-dropdown",
+      handleCloseDropdown as EventListener
+    );
 
     return () => {
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('close-dropdown', handleCloseDropdown as EventListener);
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener(
+        "close-dropdown",
+        handleCloseDropdown as EventListener
+      );
     };
   }, [navbar]);
 
   const getIconColorClasses = (forMobile = false): string => {
-    if (navbar.isElectrodomesticos || navbar.isDispositivosMoviles || navbar.isMasInformacionProducto) {
+    if (
+      navbar.isElectrodomesticos ||
+      navbar.isDispositivosMoviles ||
+      navbar.isMasInformacionProducto
+    ) {
       return "text-black";
     }
     if (forMobile) {
@@ -84,15 +99,19 @@ export default function Navbar() {
     return navbar.showWhiteItems ? "text-white" : "text-black";
   };
 
-  const menuRoutes: NavItem[] = MENU_ORDER
-    .map((name) => navbarRoutes.find((r) => r.name === name))
-    .filter((r): r is NavItem => Boolean(r?.name && r?.href && r?.category));
+  const menuRoutes: NavItem[] = MENU_ORDER.map((name) =>
+    navbarRoutes.find((r) => r.name === name)
+  ).filter((r): r is NavItem => Boolean(r?.name && r?.href && r?.category));
 
   // Determinar si debe mostrar fondo transparente o blanco
-  const showTransparentBg = (navbar.isOfertas || navbar.isHome) && !navbar.activeDropdown && !navbar.isScrolled;
+  const showTransparentBg =
+    (navbar.isOfertas || navbar.isHome) &&
+    !navbar.activeDropdown &&
+    !navbar.isScrolled;
 
   const headerStyles: CSSProperties = {
-    fontFamily: '"SamsungOne","Samsung Sharp Sans","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial',
+    fontFamily:
+      '"SamsungOne","Samsung Sharp Sans","Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial',
     boxShadow: navbar.isScrolled ? "0 2px 8px rgba(0,0,0,0.1)" : "none",
     background: showTransparentBg ? "transparent" : "white",
     transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -102,7 +121,14 @@ export default function Navbar() {
     <>
       <div
         ref={navbar.sentinelRef}
-        style={{ position: "absolute", top: 0, left: 0, width: 1, height: 1, pointerEvents: "none" }}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: 1,
+          height: 1,
+          pointerEvents: "none",
+        }}
         aria-hidden="true"
       />
 
@@ -120,10 +146,12 @@ export default function Navbar() {
         }}
       >
         {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1280px */}
-        <div className={cn(
-          "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 min-h-[64px]",
-          mobileMenuOpen && "hidden"
-        )}>
+        <div
+          className={cn(
+            "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 min-h-[64px]",
+            mobileMenuOpen && "hidden"
+          )}
+        >
           <Link
             href="/"
             onClick={(e) => {
@@ -135,7 +163,11 @@ export default function Navbar() {
             className="flex items-center gap-2"
           >
             <Image
-              src={navbar.showWhiteItemsMobile ? "/frame_white.png" : "/frame_black.png"}
+              src={
+                navbar.showWhiteItemsMobile
+                  ? "/frame_white.png"
+                  : "/frame_black.png"
+              }
               alt="Q Logo"
               height={40}
               width={40}
@@ -161,19 +193,29 @@ export default function Navbar() {
               showBump={false}
               isClient={navbar.isClient}
               onClick={navbar.handleCartClick}
-              colorClass={navbar.showWhiteItemsMobile ? "text-white" : "text-black"}
+              colorClass={
+                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+              }
             />
             <button className="p-2" aria-label="Usuario">
-              <User className={cn(
-                "w-6 h-6 transition-colors duration-300",
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
-              )} />
+              <User
+                className={cn(
+                  "w-6 h-6 transition-colors duration-300",
+                  navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                )}
+              />
             </button>
-            <button onClick={() => setMobileMenuOpen(true)} className="p-2" aria-label="Abrir menú">
-              <Menu className={cn(
-                "w-6 h-6 transition-colors duration-300",
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
-              )} />
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2"
+              aria-label="Abrir menú"
+            >
+              <Menu
+                className={cn(
+                  "w-6 h-6 transition-colors duration-300",
+                  navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                )}
+              />
             </button>
           </div>
         </div>
@@ -181,25 +223,36 @@ export default function Navbar() {
         {/* Desktop Header completo - Mostrar en pantallas >= 1280px */}
         <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-end justify-between gap-4 2xl:gap-8">
           <div className="flex items-center gap-3 xl:gap-4 2xl:gap-6 min-w-0 flex-1">
-            <NavbarLogo showWhiteLogo={navbar.showWhiteLogo} onNavigate={() => navbar.router.push("/")} />
+            <NavbarLogo
+              showWhiteLogo={navbar.showWhiteLogo}
+              onNavigate={() => navbar.router.push("/")}
+            />
 
             <nav className="min-w-0 flex-1">
               <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
                 {menuRoutes.map((item) => {
                   const isActive =
                     item.name === "Electrodomésticos"
-                      ? navbar.pathname?.startsWith("/productos/Electrodomesticos") ?? false
-                      : navbar.pathname === item.href || navbar.pathname?.startsWith(item.href + "/");
+                      ? navbar.pathname?.startsWith(
+                          "/productos/Electrodomesticos"
+                        ) ?? false
+                      : navbar.pathname === item.href ||
+                        navbar.pathname?.startsWith(item.href + "/");
 
                   const isDropdownOpen = navbar.activeDropdown === item.name;
-                  const textBase = navbar.showWhiteItems ? "text-white" : "text-black";
+                  const textBase = navbar.showWhiteItems
+                    ? "text-white"
+                    : "text-black";
 
                   return (
                     <li key={item.name} className="relative shrink-0">
                       <div
                         data-item-name={item.name}
                         ref={navbar.setNavItemRef}
-                        onMouseEnter={() => hasDropdownMenu(item.name) && navbar.handleDropdownEnter(item.name as DropdownName)}
+                        onMouseEnter={() =>
+                          hasDropdownMenu(item.name) &&
+                          navbar.handleDropdownEnter(item.name as DropdownName)
+                        }
                         onMouseLeave={navbar.handleDropdownLeave}
                         className="relative inline-block"
                       >
@@ -207,21 +260,34 @@ export default function Navbar() {
                           href={item.href}
                           className={cn(
                             "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-black tracking-tight relative inline-block",
-                            navbar.showWhiteItems ? "text-white hover:opacity-90" : "text-black hover:text-blue-600",
-                            !navbar.showWhiteItems && "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
+                            navbar.showWhiteItems
+                              ? "text-white hover:opacity-90"
+                              : "text-black hover:text-blue-600",
+                            !navbar.showWhiteItems &&
+                              "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                           )}
                         >
-                          {item.name === "Televisores y AV" && isIntermediateScreen ? "TV y AV" : item.name}
+                          {item.name === "Televisores y AV" &&
+                          isIntermediateScreen
+                            ? "TV y AV"
+                            : item.name}
                         </Link>
 
-                        {navbar.activeDropdown === item.name && hasDropdownMenu(item.name) && (
-                          <div
-                            className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
-                            style={{ top: `${getDropdownPosition(item.name).top}px` }}
-                          >
-                            <div className="mx-auto max-w-screen-2xl">{getDropdownComponent(item.name as DropdownName)}</div>
-                          </div>
-                        )}
+                        {navbar.activeDropdown === item.name &&
+                          hasDropdownMenu(item.name) && (
+                            <div
+                              className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
+                              style={{
+                                top: `${getDropdownPosition(item.name).top}px`,
+                              }}
+                            >
+                              <div className="mx-auto max-w-screen-2xl">
+                                {getDropdownComponent(
+                                  item.name as DropdownName
+                                )}
+                              </div>
+                            </div>
+                          )}
                       </div>
                     </li>
                   );
@@ -240,7 +306,9 @@ export default function Navbar() {
                   href="/soporte/inicio_de_soporte"
                   className={cn(
                     "text-[13px] md:text-[13.5px] font-bold",
-                    navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"
+                    navbar.showWhiteItems
+                      ? "text-white/90 hover:text-white"
+                      : "text-black"
                   )}
                 >
                   Soporte
@@ -250,7 +318,9 @@ export default function Navbar() {
                 href="/ventas-corporativas"
                 className={cn(
                   "text-[13px] md:text-[13.5px] font-bold",
-                  navbar.showWhiteItems ? "text-white/90 hover:text-white" : "text-black"
+                  navbar.showWhiteItems
+                    ? "text-white/90 hover:text-white"
+                    : "text-black"
                 )}
                 title="Para Empresas"
               >
@@ -273,7 +343,10 @@ export default function Navbar() {
               />
               <Link
                 href="/favoritos"
-                className={cn("flex items-center justify-center w-10 h-10", getIconColorClasses())}
+                className={cn(
+                  "flex items-center justify-center w-10 h-10",
+                  getIconColorClasses()
+                )}
                 aria-label="Favoritos"
               >
                 <Heart className={cn("w-5 h-5", getIconColorClasses())} />
@@ -283,7 +356,10 @@ export default function Navbar() {
               ) : (
                 <button
                   type="button"
-                  className={cn("flex items-center justify-center w-10 h-10", getIconColorClasses())}
+                  className={cn(
+                    "flex items-center justify-center w-10 h-10",
+                    getIconColorClasses()
+                  )}
                   onClick={() => window.location.replace("/login")}
                   aria-label="Ingresar"
                 >
@@ -303,20 +379,22 @@ export default function Navbar() {
             onMouseLeave={navbar.handleDropdownLeave}
           >
             <div className="mx-auto max-w-screen-2xl">
-              <SoporteDropdown isMobile={false} onClose={() => navbar.setActiveDropdown(null)} />
+              <SoporteDropdown
+                isMobile={false}
+                onClose={() => navbar.setActiveDropdown(null)}
+              />
             </div>
           </div>
         )}
       </header>
 
       <MobileMenu
-  isOpen={mobileMenuOpen}
-  onClose={() => setMobileMenuOpen(false)}
-  searchQuery={navbar.searchQuery}
-  onSearchChange={navbar.setSearchQuery}
-  onSearchSubmit={navbar.handleSearchSubmit}
-/>
-
+        isOpen={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        searchQuery={navbar.searchQuery}
+        onSearchChange={navbar.setSearchQuery}
+        onSearchSubmit={navbar.handleSearchSubmit}
+      />
     </>
   );
 }

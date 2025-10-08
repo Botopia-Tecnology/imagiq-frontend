@@ -66,12 +66,19 @@ export const CategoriesSection = () => {
   };
 
   return (
-    <section className="py-22 bg-transparent md:bg-white mt-[-75%] md:mt-0 relative z-[100] md:z-auto">
+    // Responsive optimizado eliminando porcentajes problemáticos:
+    // mt-[-280px]: iPhone SE, Galaxy S8+ (móviles pequeños)
+    // sm:mt-[-320px]: iPhone 6/7/8 Plus (móviles medianos)
+    // md:mt-[-200px]: Surface Duo, iPad Portrait (tablets pequeños)
+    // lg:mt-[-120px]: iPad Landscape (tablets grandes)
+    // xl:mt-0: Desktop (escritorio)
+    // Valores fijos más estables para mejor control visual
+    <section className="py-22 bg-transparent md:bg-white mt-[-280px] sm:mt-[-320px] md:mt-[-200px] lg:mt-[-120px] xl:mt-0 relative z-[100] md:z-auto">
       <div className="container mx-auto px-0 md:px-8 max-w-7xl">
-        {/* Grid/Carrusel de categorías */}
-        <div className="block md:hidden">
+        {/* Grid/Carrusel de categorías - Optimizado para móviles e iPad */}
+        <div className="block lg:hidden">
           <div
-            className="flex flex-row gap-3 overflow-x-auto pb-2 scrollbar-hide items-end w-full max-w-[375px] mx-auto"
+            className="flex flex-row gap-3 overflow-x-auto pb-2 scrollbar-hide items-end w-full max-w-[375px] sm:max-w-[420px] md:max-w-[640px] lg:max-w-[768px] mx-auto px-2"
             style={{ WebkitOverflowScrolling: "touch" }}
           >
             {categories.map((category) => (
@@ -79,7 +86,7 @@ export const CategoriesSection = () => {
                 key={category.id}
                 href={category.href}
                 onClick={() => handleCategoryClick(category)}
-                className="group min-w-[31%] max-w-[31%] flex-shrink-0 mx-0"
+                className="group min-w-[110px] max-w-[110px] sm:min-w-[120px] sm:max-w-[120px] md:min-w-[140px] md:max-w-[140px] flex-shrink-0 mx-0"
                 onMouseEnter={() => setHoveredCategory(category.id)}
                 onMouseLeave={() => setHoveredCategory(null)}
               >
@@ -90,17 +97,18 @@ export const CategoriesSection = () => {
                   )}
                   style={{ backgroundColor: "#D6E3F3" }}
                 >
-                  {/* Título de la categoría */}
-                  <div className="text-center mb-1">
+                  {/* Título de la categoría - Responsive overflow fix */}
+                  <div className="text-center mb-1 w-full max-w-full overflow-hidden">
                     <h3
-                      className="text-xs font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700"
+                      className="text-xs font-bold text-gray-800 transition-colors duration-300 group-hover:text-blue-700 truncate break-words leading-tight max-w-full"
                       style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
+                      title={category.title}
                     >
                       {category.title}
                     </h3>
                   </div>
                   {/* Imagen del producto real */}
-                  <div className="flex justify-center items-center h-14 mb-1">
+                  <div className="flex justify-center items-center h-12 sm:h-14 md:h-16 mb-1">
                     <div className="relative w-full h-full">
                       <Image
                         src={category.image}
@@ -110,7 +118,7 @@ export const CategoriesSection = () => {
                           "object-contain transition-transform duration-300",
                           hoveredCategory === category.id && "scale-110"
                         )}
-                        sizes="(max-width: 768px) 31vw"
+                        sizes="(max-width: 640px) 110px, (max-width: 768px) 140px, (max-width: 1024px) 31vw"
                         priority={category.id <= 2}
                       />
                     </div>
@@ -127,8 +135,8 @@ export const CategoriesSection = () => {
             ))}
           </div>
         </div>
-        {/* Desktop y tablet: grid original */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-12 justify-center">
+        {/* Desktop y tablet grande: grid original */}
+        <div className="hidden lg:grid grid-cols-2 xl:grid-cols-4 gap-8 xl:gap-12 justify-center">
           {categories.map((category) => (
             <Link
               key={category.id}

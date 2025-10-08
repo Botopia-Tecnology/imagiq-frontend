@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
+import logoSamsung from "@/img/logo_Samsung.png";
 
 /**
  * Animación tipo ola con el logo de Samsung creciendo sobre pantalla azul.
@@ -16,7 +17,7 @@ type LogoReloadAnimationProps = {
 };
 
 // Importa el logo desde el inicio para optimización y visibilidad
-const LOGO_SRC = "/img/Samsung_black.svg";
+const LOGO_SRC = logoSamsung;
 
 /**
  * LogoReloadAnimation
@@ -74,7 +75,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           {/* Máscara SVG: la ola azul sube solo dentro del logo PNG */}
           <mask id="wave-logo-mask">
             <image
-              href={LOGO_SRC}
+              href={typeof LOGO_SRC === "string" ? LOGO_SRC : LOGO_SRC.src}
               x="0"
               y="0"
               width="1000"
@@ -140,7 +141,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
         </g>
         {/* Logo Samsung PNG visible encima de la ola, con opacidad animada */}
         <image
-          href={LOGO_SRC}
+          href={typeof LOGO_SRC === "string" ? LOGO_SRC : LOGO_SRC.src}
           x="0"
           y="0"
           width="1000"

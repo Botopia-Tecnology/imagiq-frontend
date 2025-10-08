@@ -16,6 +16,10 @@ import dynamic from "next/dynamic";
 import { useCartContext } from "@/features/cart/CartContext";
 import Image, { StaticImageData } from "next/image";
 import { motion } from "framer-motion";
+import addiLogo from "@/img/iconos/addi_negro.png";
+import setingLogo from "@/img/iconos/Setting_line_negro.png";
+import packageCar from "@/img/iconos/package_car_negro.png";
+import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
@@ -25,8 +29,8 @@ import SizeProduct from "./components/SizeProduct";
 import { productsMock } from "../components/productsMock";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import CaracteristicasProduct from "./CaracteristicasProduct";
+import ExploreProducts from "./ExploreProducts";
 import SkeletonCard from "@/components/SkeletonCard";
-import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 // Tipos para producto
 interface ProductColor {
   name: string;
@@ -50,7 +54,7 @@ export default function ViewProductAppliance({
   product: Readonly<ProductData>;
 }) {
   // Animación scroll reveal para hero principal
-  useScrollReveal<HTMLDivElement>({
+  const heroReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",
@@ -76,41 +80,38 @@ export default function ViewProductAppliance({
 
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];
+  const [selectedColor] = useState(safeProduct?.colors?.[0]);
   const router = useRouter();
   const pathname = usePathname();
+  const [showBar, setShowBar] = useState(false);
   const { addProduct } = useCartContext();
   const [cartFeedback, setCartFeedback] = useState<string | null>(null);
-  const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
-
-  /**
-   * Hook personalizado para control avanzado del navbar fijo - ANTI-FLICKER
-   * Usa histeresis amplia con thresholdShow=150px y thresholdHide=50px
-   * Zona de amortiguación de 100px previene toggles constantes
-   * Solo activo en vistas de detalle de producto
-   */
-  const showNavbarFixed = useScrollNavbar(150, 50, isProductDetailView);
-
-  /**
-   * Efecto optimizado para control del navbar principal
-   * Aplica/quita clase global con timing perfecto para evitar parpadeos
-   */
+  const isProductDetailView = pathname.startsWith("/productos/view/");
   useEffect(() => {
-    if (typeof document === "undefined") return; // Protección SSR
-    if (showNavbarFixed) {
-      // Inmediatamente ocultar navbar principal cuando aparece el fijo
+    /* Navbar que se bugea al hacer scroll */
+    const handleScroll = () => {
+      // Solo muestra la barra si el scroll es mayor a 100px y la ruta es de detalles
+      setShowBar(window.scrollY > 100 && isProductDetailView);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    // Inicializa correctamente al montar y tras navegación
+    setTimeout(handleScroll, 0);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [isProductDetailView]);
+
+  // useEffect para ocultar el navbar principal (solo con showBar)
+  useEffect(() => {
+    if (showBar) {
       document.body.classList.add("hide-main-navbar");
     } else {
-      // Delay optimizado para permitir transición suave del navbar fijo
-      const timer = setTimeout(() => {
-        document.body.classList.remove("hide-main-navbar");
-      }, 250); // Sincronizado con nueva duración de animación exit más lenta
-      return () => clearTimeout(timer);
+      document.body.classList.remove("hide-main-navbar");
     }
-    // Cleanup: siempre remover la clase al desmontar
     return () => {
       document.body.classList.remove("hide-main-navbar");
     };
-  }, [showNavbarFixed]);
+  }, [showBar]);
 
   if (!safeProduct || !safeProduct.colors || safeProduct.colors.length === 0) {
     return (
@@ -128,12 +129,7 @@ export default function ViewProductAppliance({
   }
 
   // Handlers
-  /**
-   * Handler: Añadir al carrito
-   * Solo añade el producto al carrito y muestra feedback.
-   * No realiza ninguna navegación ni renderiza ningún componente adicional.
-   * Garantiza que DetailsProductSection NO se renderice en esta vista.
-   */
+  // Mejorado: Añadir al carrito igual que ProductCard
   const handleAddToCart = () => {
     addProduct({
       id: safeProduct.id,
@@ -152,15 +148,9 @@ export default function ViewProductAppliance({
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
   };
-  /**
-   * Handler: Comprar ahora
-   * Añade el producto al carrito y navega al carrito directamente.
-   * Usa la ruta de carrito en lugar de 'details' para evitar renderizar
-   * el componente DetailsProductSection que es exclusivo de dispositivos móviles.
-   */
+  // Mejorado: Comprar, navega a DetailsProduct
   const handleBuy = () => {
-    handleAddToCart(); // Primero añadimos el producto al carrito
-    setTimeout(() => router.push("/carrito"), 300); // Navegamos al carrito con pequeño delay para feedback
+    router.push("/productos/electrodomesticos/details");
   };
 
   const ExploreProducts = dynamic(() => import("./ExploreProducts"), {
@@ -178,12 +168,19 @@ export default function ViewProductAppliance({
 
   return (
     <div
-      className="min-h-screen w-full flex flex-col pt-10 bg-gray-200/60"
+      className="min-h-screen w-full flex flex-col mt-[-10%] pt-[15%]"
       style={{
+        background: "#D9D9D9",
         fontFamily: "SamsungSharpSans",
       }}
     >
-       {/* Hero section */}
+      {/* Feedback UX al añadir al carrito */}
+      {cartFeedback && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
+          {cartFeedback}
+        </div>
+      )}
+      {/* Hero section */}
       <motion.section
         ref={heroReveal.ref}
         {...heroReveal.motionProps}
@@ -309,19 +306,13 @@ export default function ViewProductAppliance({
           </div>
         </div>
       </motion.section>
-      {/* Feedback UX al añadir al carrito */}
-      {cartFeedback && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
-          {cartFeedback}
-        </div>
-      )}
       <ARExperienceHandler
-        glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_nueva.glb"
+        glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
         usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"
       ></ARExperienceHandler>
 
       {/* Barra superior solo si está en detalles y ha hecho scroll */}
-      {isProductDetailView && showNavbarFixed && (
+      {isProductDetailView && showBar && (
         <div
           className="w-full bg-white shadow-sm h-[72px] flex items-center px-4 fixed top-0 pt-2 left-0 z-40 animate-fadeInContent"
           style={{ fontFamily: "SamsungSharpSans" }}
@@ -347,41 +338,40 @@ export default function ViewProductAppliance({
           {/* DESKTOP/TABLET: diseño original */}
           <div className="hidden md:flex w-full items-center justify-between">
             {/* Parte izquierda: imagen frame_311_black + logo Samsung + imagen store_black */}
-            <div className="flex items-end flex-shrink-0 gap-2 md:gap-4">
+            <div className="flex items-center gap-2" style={{ minWidth: 110 }}>
               <Image
-                src="/frame_black.png"
-                alt="Q Logo"
-                height={40}
-                style={{ display: "block", marginBottom: "5px" }}
-                width={40}
-                className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
+                src="/frame_311_black.png"
+                alt="Frame"
+                width={32}
+                height={32}
+                className="object-contain"
                 priority
               />
-              <img
-                src="/img/Samsung_black.svg"
-                alt="Samsung Logo"
-                onClick={() => {
-                  window.location.href = "/";
-                }}
-                height={80}
-                width={70}
-                className="h-10 md:h-12 w-auto cursor-pointer"
-                style={{ display: "block" }}
-              />
-
-              <span
-                className={
-                  "text-xs font-bold tracking-wide text-black select-none"
-                }
-                style={{
-                  letterSpacing: "0.08em",
-                  marginBottom: "11px", // Ajusta este valor según sea necesario
-                  lineHeight: "normal", // O ajusta el line-height según lo necesites
-                  alignSelf: "flex-end", // Esto alinea el texto con el fondo de las imágenes
-                }}
+              {/* Logo Samsung clickable */}
+              <button
+                className="p-0 m-0 bg-transparent border-none cursor-pointer flex items-center"
+                title="Ir al inicio"
+                aria-label="Ir al inicio"
+                onClick={() => (window.location.href = "/")}
               >
-                Store
-              </span>
+                <Image
+                  src={samsungLogo}
+                  alt="Samsung Logo"
+                  width={110}
+                  height={32}
+                  style={{ objectFit: "contain" }}
+                  priority
+                />
+              </button>
+              {/* Imagen store_black */}
+              <Image
+                src="/store_black.png"
+                alt="Store"
+                width={32}
+                height={32}
+                className="object-contain"
+                priority
+              />
             </div>
             {/* Nombre centrado */}
             <div className="flex-1 flex justify-center">
@@ -415,45 +405,9 @@ export default function ViewProductAppliance({
         </div>
       )}
       {/* Oculta el navbar principal con una clase global */}
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-          body.hide-main-navbar header[data-navbar="true"] { 
-            transform: translateY(-100%) scale(0.97) !important;
-            opacity: 0 !important;
-            filter: blur(3px) !important;
-            transition: 
-              transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94), 
-              opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-              filter 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
-            pointer-events: none !important;
-          }
-          .fixed-navbar-container {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            z-index: 9999 !important;
-            will-change: transform, opacity, filter !important;
-          }
-          .fixed-navbar-container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
-            border-radius: inherit;
-            pointer-events: none;
-          }
-          .fixed-navbar-container * {
-            backface-visibility: hidden;
-            transform-style: preserve-3d;
-          }
-        `,
-        }}
-      />
+      <style>{`
+              body.hide-main-navbar header[data-navbar="true"] { display: none !important; }
+            `}</style>
       <div className="h-[56px] w-full" />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <motion.div ref={specsReveal.ref} {...specsReveal.motionProps}>

@@ -10,12 +10,12 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
 
-import Pagination from "../../dispositivos-moviles/components/Pagination";
+import Pagination from "@/components/ui/Pagination";
 import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
-import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
+import ItemsPerPageSelector from "@/components/ui/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
 import MobileFilterSidebar from "./MobileFilterSidebar";
 

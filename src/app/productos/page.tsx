@@ -9,8 +9,8 @@ import FilterSidebar, {
 } from "./components/FilterSidebar";
 import ProductCard, { ProductCardProps } from "./components/ProductCard";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import Pagination from "./dispositivos-moviles/components/Pagination";
-import ItemsPerPageSelector from "./dispositivos-moviles/components/ItemsPerPageSelector";
+import Pagination from "@/components/ui/Pagination";
+import ItemsPerPageSelector from "@/components/ui/ItemsPerPageSelector";
 import HeaderSection from "./[categoria]/components/HeaderSection";
 
 // Configuración de filtros (puedes personalizar según la categoría)
@@ -308,12 +308,12 @@ function ProductosContent() {
             </div>
           )}
 
-          <div className="flex gap-6">
+          <div className="flex gap-4">
             {/* Grid de productos usando ProductCard avanzado */}
             <div className="flex-1">
               {sortedProducts.length > 0 ? (
                 <>
-                  <div className={`grid gap-6 ${
+                  <div className={`grid gap-4 ${
                     viewMode === "list" 
                       ? "grid-cols-1" 
                       : searchQuery 

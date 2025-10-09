@@ -25,8 +25,8 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { Filter, Grid3X3, List } from "lucide-react";
 import { useSticky, useStickyClasses } from "@/hooks/useSticky";
 import { useDeviceType } from "@/components/responsive";
-import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
-import Pagination from "./components/Pagination";
+import ItemsPerPageSelector from "@/components/ui/ItemsPerPageSelector";
+import Pagination from "@/components/ui/Pagination";
 
 const applianceCategories: Category[] = [
   {

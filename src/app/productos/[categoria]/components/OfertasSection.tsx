@@ -7,8 +7,8 @@ import React, { useMemo, useState, useCallback } from "react";
 import ProductCard from "../../components/ProductCard";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
-import ItemsPerPageSelector from "../../electrodomesticos/components/ItemsPerPageSelector";
-import Pagination from "../../electrodomesticos/components/Pagination";
+import ItemsPerPageSelector from "@/components/ui/ItemsPerPageSelector";
+import Pagination from "@/components/ui/Pagination";
 
 // Mapeo de secciones a filtros de API
 const ofertasFiltersMap: Record<string, { category?: string; subcategory?: string }> = {

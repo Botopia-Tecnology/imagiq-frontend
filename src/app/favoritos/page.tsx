@@ -9,7 +9,7 @@ import { useDeviceType } from "@/components/responsive";
 import { posthogUtils } from "@/lib/posthogClient";
 import ProductCard from "../productos/components/ProductCard";
 import ItemsPerPageSelector from "./ItemsPerPageSelector";
-import Pagination from "./Pagination";
+import Pagination from "@/components/ui/Pagination";
 
 export default function FavoritePage() {
   const [currentPage, setCurrentPage] = useState(1);

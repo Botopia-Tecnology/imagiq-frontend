@@ -22,10 +22,10 @@ import { Filter, Grid3X3, List } from "lucide-react";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useProducts } from "@/features/products/useProducts";
 import { useDeviceType } from "@/components/responsive";
-import ItemsPerPageSelector from "./components/ItemsPerPageSelector";
+import ItemsPerPageSelector from "@/components/ui/ItemsPerPageSelector";
 import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
 
-import Pagination from "./components/Pagination";
+import Pagination from "@/components/ui/Pagination";
 import ProductCard from "../components/ProductCard";
 
 const applianceCategories: Category[] = [

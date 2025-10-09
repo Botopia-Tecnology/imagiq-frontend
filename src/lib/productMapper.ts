@@ -12,33 +12,192 @@ import { StaticImageData } from 'next/image';
 import emptyImg from '@/img/empty.jpeg';
 
 
-// Mapeo de colores de la API a colores del frontend
+// Mapeo robusto de colores de la API a colores del frontend
+// Incluye variaciones, sinónimos y colores específicos de Samsung
 const colorMap: Record<string, { hex: string; label: string }> = {
-  'azul': { hex: '#1E40AF', label: 'Azul' },
+  // ===== NEGROS =====
   'negro': { hex: '#000000', label: 'Negro' },
+  'black': { hex: '#000000', label: 'Negro' },
+  'negro medianoche': { hex: '#191970', label: 'Negro Medianoche' },
+  'midnight black': { hex: '#191970', label: 'Negro Medianoche' },
+  'negro titanio': { hex: '#2C2C2C', label: 'Negro Titanio' },
+  'titanium black': { hex: '#2C2C2C', label: 'Negro Titanio' },
+  'negro grafito': { hex: '#1C1C1C', label: 'Negro Grafito' },
+  'graphite black': { hex: '#1C1C1C', label: 'Negro Grafito' },
+  'negro phantom': { hex: '#1A1A1A', label: 'Negro Phantom' },
+  'phantom black': { hex: '#1A1A1A', label: 'Negro Phantom' },
+  'negro fantasma': { hex: '#1A1A1A', label: 'Negro Fantasma' },
+  'negro espacial': { hex: '#0A0A0A', label: 'Negro Espacial' },
+  'space black': { hex: '#0A0A0A', label: 'Negro Espacial' },
+  
+  // ===== BLANCOS =====
   'blanco': { hex: '#FFFFFF', label: 'Blanco' },
-  'verde': { hex: '#10B981', label: 'Verde' },
-  'rosado': { hex: '#EC4899', label: 'Rosa' },
-  'rosa': { hex: '#EC4899', label: 'Rosa' },
+  'white': { hex: '#FFFFFF', label: 'Blanco' },
+  'blanco perla': { hex: '#F8F8F8', label: 'Blanco Perla' },
+  'pearl white': { hex: '#F8F8F8', label: 'Blanco Perla' },
+  'blanco nube': { hex: '#F5F5F5', label: 'Blanco Nube' },
+  'cloud white': { hex: '#F5F5F5', label: 'Blanco Nube' },
+  'blanco phantom': { hex: '#F0F0F0', label: 'Blanco Phantom' },
+  'phantom white': { hex: '#F0F0F0', label: 'Blanco Phantom' },
+  'blanco lunar': { hex: '#FAFAFA', label: 'Blanco Lunar' },
+  'lunar white': { hex: '#FAFAFA', label: 'Blanco Lunar' },
+  'blanco crema': { hex: '#FFFDD0', label: 'Blanco Crema' },
+  'cream white': { hex: '#FFFDD0', label: 'Blanco Crema' },
+  
+  // ===== GRISES =====
   'gris': { hex: '#808080', label: 'Gris' },
-  'gris titanio': { hex: '#4B5563', label: 'Gris Titanio' },
-  'negro titanio': { hex: '#1F2937', label: 'Negro Titanio' },
-  'plateado': { hex: '#C0C0C0', label: 'Plateado' },
-  'dorado': { hex: '#D4AF37', label: 'Dorado' },
-  'rojo': { hex: '#DC2626', label: 'Rojo' },
-  'amarillo': { hex: '#F59E0B', label: 'Amarillo' },
-  'morado': { hex: '#7C3AED', label: 'Morado' },
-  'purpura': { hex: '#7C3AED', label: 'Morado' },
-  'beige': { hex: '#F5F5DC', label: 'Beige' },
-  'marron': { hex: '#8B4513', label: 'Marrón' },
-  'no aplica': { hex: '#F3F4F6', label: 'Estándar' },
-  // Variaciones comunes
-  'azul medianoche': { hex: '#1E40AF', label: 'Azul Medianoche' },
-  'negro medianoche': { hex: '#000000', label: 'Negro Medianoche' },
-  'blanco perla': { hex: '#FFFFFF', label: 'Blanco Perla' },
+  'gray': { hex: '#808080', label: 'Gris' },
+  'grey': { hex: '#808080', label: 'Gris' },
+  'gris titanio': { hex: '#5A6978', label: 'Gris Titanio' },
+  'titanium gray': { hex: '#5A6978', label: 'Gris Titanio' },
   'gris grafito': { hex: '#4B5563', label: 'Gris Grafito' },
+  'graphite gray': { hex: '#4B5563', label: 'Gris Grafito' },
+  'gris phantom': { hex: '#6B7280', label: 'Gris Phantom' },
+  'phantom gray': { hex: '#6B7280', label: 'Gris Phantom' },
+  'gris espacial': { hex: '#52575D', label: 'Gris Espacial' },
+  'space gray': { hex: '#52575D', label: 'Gris Espacial' },
+  'gris niebla': { hex: '#9CA3AF', label: 'Gris Niebla' },
+  'misty gray': { hex: '#9CA3AF', label: 'Gris Niebla' },
+  'gris plata': { hex: '#C0C0C0', label: 'Gris Plata' },
+  'silver gray': { hex: '#C0C0C0', label: 'Gris Plata' },
+  
+  // ===== PLATEADOS / PLATAS =====
+  'plateado': { hex: '#C0C0C0', label: 'Plateado' },
+  'silver': { hex: '#C0C0C0', label: 'Plateado' },
+  'plata': { hex: '#C0C0C0', label: 'Plata' },
+  'plateado titanio': { hex: '#B8C5D6', label: 'Plateado Titanio' },
+  'titanium silver': { hex: '#B8C5D6', label: 'Plateado Titanio' },
+  'plata phantom': { hex: '#D3D3D3', label: 'Plata Phantom' },
+  'phantom silver': { hex: '#D3D3D3', label: 'Plata Phantom' },
+  
+  // ===== AZULES =====
+  'azul': { hex: '#1E40AF', label: 'Azul' },
+  'blue': { hex: '#1E40AF', label: 'Azul' },
+  'azul medianoche': { hex: '#003366', label: 'Azul Medianoche' },
+  'midnight blue': { hex: '#003366', label: 'Azul Medianoche' },
+  'azul marino': { hex: '#000080', label: 'Azul Marino' },
+  'navy blue': { hex: '#000080', label: 'Azul Marino' },
+  'azul naval': { hex: '#1e3a8a', label: 'Azul Naval' },
+  'azul cielo': { hex: '#87CEEB', label: 'Azul Cielo' },
+  'sky blue': { hex: '#87CEEB', label: 'Azul Cielo' },
+  'azul hielo': { hex: '#B0E0E6', label: 'Azul Hielo' },
+  'ice blue': { hex: '#B0E0E6', label: 'Azul Hielo' },
+  'azul océano': { hex: '#006994', label: 'Azul Océano' },
+  'ocean blue': { hex: '#006994', label: 'Azul Océano' },
+  'azul cobalto': { hex: '#0047AB', label: 'Azul Cobalto' },
+  'cobalt blue': { hex: '#0047AB', label: 'Azul Cobalto' },
+  'azul phantom': { hex: '#2563EB', label: 'Azul Phantom' },
+  'phantom blue': { hex: '#2563EB', label: 'Azul Phantom' },
+  
+  // ===== VERDES =====
+  'verde': { hex: '#10B981', label: 'Verde' },
+  'green': { hex: '#10B981', label: 'Verde' },
+  'verde menta': { hex: '#86EFAC', label: 'Verde Menta' },
+  'mint green': { hex: '#86EFAC', label: 'Verde Menta' },
+  'menta': { hex: '#86EFAC', label: 'Menta' },
+  'mint': { hex: '#86EFAC', label: 'Menta' },
+  'verde oliva': { hex: '#6B8E23', label: 'Verde Oliva' },
+  'olive green': { hex: '#6B8E23', label: 'Verde Oliva' },
+  'verde bosque': { hex: '#228B22', label: 'Verde Bosque' },
+  'forest green': { hex: '#228B22', label: 'Verde Bosque' },
+  'verde esmeralda': { hex: '#50C878', label: 'Verde Esmeralda' },
+  'emerald green': { hex: '#50C878', label: 'Verde Esmeralda' },
+  'verde lima': { hex: '#32CD32', label: 'Verde Lima' },
+  'lime green': { hex: '#32CD32', label: 'Verde Lima' },
+  
+  // ===== ROSAS / ROSADOS =====
+  'rosa': { hex: '#EC4899', label: 'Rosa' },
+  'pink': { hex: '#EC4899', label: 'Rosa' },
+  'rosado': { hex: '#EC4899', label: 'Rosado' },
+  'rosa oro': { hex: '#E8B4B8', label: 'Rosa Oro' },
+  'rose gold': { hex: '#E8B4B8', label: 'Rosa Oro' },
   'oro rosa': { hex: '#E8B4B8', label: 'Oro Rosa' },
-  'morado lavanda': { hex: '#B19CD9', label: 'Morado Lavanda' }
+  'pink gold': { hex: '#E8B4B8', label: 'Oro Rosa' },
+  'rosa claro': { hex: '#FFB6C1', label: 'Rosa Claro' },
+  'light pink': { hex: '#FFB6C1', label: 'Rosa Claro' },
+  'rosa pastel': { hex: '#FFD1DC', label: 'Rosa Pastel' },
+  'pastel pink': { hex: '#FFD1DC', label: 'Rosa Pastel' },
+  
+  // ===== MORADOS / PÚRPURAS / VIOLETAS =====
+  'morado': { hex: '#9333EA', label: 'Morado' },
+  'purple': { hex: '#9333EA', label: 'Morado' },
+  'purpura': { hex: '#9333EA', label: 'Púrpura' },
+  'violeta': { hex: '#8B5CF6', label: 'Violeta' },
+  'violet': { hex: '#8B5CF6', label: 'Violeta' },
+  'morado lavanda': { hex: '#B19CD9', label: 'Morado Lavanda' },
+  'lavender purple': { hex: '#B19CD9', label: 'Morado Lavanda' },
+  'lavanda': { hex: '#E6E6FA', label: 'Lavanda' },
+  'lavender': { hex: '#E6E6FA', label: 'Lavanda' },
+  'lila': { hex: '#C8A2C8', label: 'Lila' },
+  'lilac': { hex: '#C8A2C8', label: 'Lila' },
+  'ciruela': { hex: '#8E4585', label: 'Ciruela' },
+  'plum': { hex: '#8E4585', label: 'Ciruela' },
+  
+  // ===== ROJOS =====
+  'rojo': { hex: '#DC2626', label: 'Rojo' },
+  'red': { hex: '#DC2626', label: 'Rojo' },
+  'rojo cereza': { hex: '#D2042D', label: 'Rojo Cereza' },
+  'cherry red': { hex: '#D2042D', label: 'Rojo Cereza' },
+  'rojo carmesí': { hex: '#DC143C', label: 'Rojo Carmesí' },
+  'crimson red': { hex: '#DC143C', label: 'Rojo Carmesí' },
+  'rojo vino': { hex: '#722F37', label: 'Rojo Vino' },
+  'wine red': { hex: '#722F37', label: 'Rojo Vino' },
+  'borgoña': { hex: '#800020', label: 'Borgoña' },
+  'burgundy': { hex: '#800020', label: 'Borgoña' },
+  
+  // ===== AMARILLOS / DORADOS =====
+  'amarillo': { hex: '#EAB308', label: 'Amarillo' },
+  'yellow': { hex: '#EAB308', label: 'Amarillo' },
+  'dorado': { hex: '#FFD700', label: 'Dorado' },
+  'gold': { hex: '#FFD700', label: 'Dorado' },
+  'oro': { hex: '#FFD700', label: 'Oro' },
+  'amarillo limón': { hex: '#FFF44F', label: 'Amarillo Limón' },
+  'lemon yellow': { hex: '#FFF44F', label: 'Amarillo Limón' },
+  'champagne': { hex: '#F7E7CE', label: 'Champagne' },
+  'champaña': { hex: '#F7E7CE', label: 'Champaña' },
+  
+  // ===== NARANJAS =====
+  'naranja': { hex: '#F97316', label: 'Naranja' },
+  'orange': { hex: '#F97316', label: 'Naranja' },
+  'coral': { hex: '#FF7F50', label: 'Coral' },
+  'durazno': { hex: '#FFE5B4', label: 'Durazno' },
+  'peach': { hex: '#FFE5B4', label: 'Durazno' },
+  
+  // ===== MARRONES / BEIGES =====
+  'marron': { hex: '#8B4513', label: 'Marrón' },
+  'brown': { hex: '#8B4513', label: 'Marrón' },
+  'café': { hex: '#6F4E37', label: 'Café' },
+  'coffee': { hex: '#6F4E37', label: 'Café' },
+  'beige': { hex: '#F5F5DC', label: 'Beige' },
+  'arena': { hex: '#C2B280', label: 'Arena' },
+  'sand': { hex: '#C2B280', label: 'Arena' },
+  'bronce': { hex: '#CD7F32', label: 'Bronce' },
+  'bronze': { hex: '#CD7F32', label: 'Bronce' },
+  'cobre': { hex: '#B87333', label: 'Cobre' },
+  'copper': { hex: '#B87333', label: 'Cobre' },
+  
+  // ===== ESPECIALES / OTROS =====
+  'transparente': { hex: '#F9FAFB', label: 'Transparente' },
+  'transparent': { hex: '#F9FAFB', label: 'Transparente' },
+  'cristal': { hex: '#E5E7EB', label: 'Cristal' },
+  'clear': { hex: '#E5E7EB', label: 'Cristal' },
+  'no aplica': { hex: '#F3F4F6', label: 'Estándar' },
+  'n/a': { hex: '#F3F4F6', label: 'Estándar' },
+  'sin color': { hex: '#F3F4F6', label: 'Estándar' },
+  'default': { hex: '#F3F4F6', label: 'Estándar' },
+  'multicolor': { hex: '#A855F7', label: 'Multicolor' },
+  'multi': { hex: '#A855F7', label: 'Multicolor' },
+  
+  // ===== COLORES SAMSUNG ESPECÍFICOS =====
+  'phantom violet': { hex: '#8B5CF6', label: 'Violeta Phantom' },
+  'violeta phantom': { hex: '#8B5CF6', label: 'Violeta Phantom' },
+  'burgundy red': { hex: '#800020', label: 'Rojo Borgoña' },
+  'bora purple': { hex: '#9333EA', label: 'Púrpura Bora' },
+  'purpura bora': { hex: '#9333EA', label: 'Púrpura Bora' },
+  'awesome black': { hex: '#000000', label: 'Negro Awesome' },
+  'awesome white': { hex: '#FFFFFF', label: 'Blanco Awesome' },
+  'awesome blue': { hex: '#1E40AF', label: 'Azul Awesome' },
+  'awesome violet': { hex: '#8B5CF6', label: 'Violeta Awesome' },
 };
 
 /**
@@ -59,6 +218,14 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   // Calcular precios y descuentos (usar el primer precio disponible)
   const { price, originalPrice, discount, isNew } = calculatePricingFromArray(apiProduct);
 
+  // Crear highlights desde desDetallada (tomar las primeras 3 líneas)
+  const highlights: string[] = apiProduct.desDetallada
+    ? apiProduct.desDetallada
+        .filter((desc) => desc && desc.trim() !== '')
+        .slice(0, 3)
+        .map((desc) => desc.trim().replace(/^-\s*/, '')) // Eliminar guiones iniciales
+    : [];
+
   const id = apiProduct.codigoMarketBase;
 
 
@@ -72,8 +239,9 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     originalPrice,
     discount,
     isNew,
-    rating: 4.5, // Valor por defecto, se puede obtener de reviews en el futuro
+    rating: 4.8, // Valor por defecto hasta que tengamos reviews reales
     reviewCount: Math.floor(Math.random() * 500) + 50, // Valor temporal
+    highlights, // Características destacadas
     // Datos adicionales para la página de detalle
     description: apiProduct.descGeneral || null,
     brand: "Samsung", // Por defecto, se puede obtener de la API en el futuro

@@ -33,21 +33,14 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
     { products, loading, error, refreshProducts, viewMode = "grid", categoryName },
     ref
   ) => {
-    const [, setUserInfo] = useState<UserInfo | null>(null);
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
-
-
    const handleAddToFavorites = (productId: string) => {
-    console.log('entreee')
     const rawUser = localStorage.getItem("imagiq_user");
-  
     const parsed = rawUser ? JSON.parse(rawUser) : null;
-    console.log(parsed,'sfsdfd')
-    setUserInfo(parsed);
 
     if (parsed?.id) {
       addToFavorites(productId, parsed);

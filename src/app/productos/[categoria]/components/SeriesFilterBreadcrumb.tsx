@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useRef, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";

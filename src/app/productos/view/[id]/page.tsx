@@ -4,7 +4,6 @@ import React, { use, useEffect } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
 import {
   ProductCardProps,

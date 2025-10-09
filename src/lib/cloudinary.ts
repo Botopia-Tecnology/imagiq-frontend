@@ -31,22 +31,22 @@ export type ImageTransformType =
  * - b_auto:predominant: Rellena espacios vacíos con color predominante
  */
 const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
-  // Catálogo - 400x400, crop fill, formato auto, calidad auto
-  catalog: 'f_auto,q_auto,c_fill,g_auto,w_400,h_400,b_auto:predominant',
+  // Catálogo - 400x400, fill_pad mantiene proporciones y rellena con color
+  catalog: 'f_auto,q_auto,c_fill_pad,g_auto,w_400,h_400,b_auto:predominant',
 
-  // Vista principal producto - 800x800, pad (mantiene proporciones, rellena espacios)
-  'product-main': 'f_auto,q_auto:good,c_pad,g_auto,w_800,h_800,b_auto:predominant',
+  // Vista principal producto - 800x800, fill_pad (mantiene proporciones, rellena espacios)
+  'product-main': 'f_auto,q_auto:good,c_fill_pad,g_auto,w_800,h_800,b_auto:predominant',
 
-  // Detalle producto - 1000x1000, fit (cabe completo, máxima calidad)
-  'product-detail': 'f_auto,q_auto:best,c_pad,g_auto,w_1000,h_1000,b_auto:predominant',
+  // Detalle producto - 1000x1000, fill_pad (mantiene proporciones completas, máxima calidad)
+  'product-detail': 'f_auto,q_auto:best,c_fill_pad,g_auto,w_1000,h_1000,b_auto:predominant',
 
-  // Thumbnail - 150x150, crop fill, calidad auto
-  thumbnail: 'f_auto,q_auto,c_fill,g_auto,w_150,h_150',
+  // Thumbnail - 150x150, fill_pad con relleno
+  thumbnail: 'f_auto,q_auto,c_fill_pad,g_auto,w_150,h_150,b_auto:predominant',
 
-  // Comparación - 300x300, pad
-  comparison: 'f_auto,q_auto,c_pad,g_auto,w_300,h_300,b_auto:predominant',
+  // Comparación - 300x300, fill_pad
+  comparison: 'f_auto,q_auto,c_fill_pad,g_auto,w_300,h_300,b_auto:predominant',
 
-  // Hero/Banner - 1200x600, crop fill
+  // Hero/Banner - 1200x600, fill (recorta para llenar completamente)
   hero: 'f_auto,q_auto,c_fill,g_auto,w_1200,h_600',
 
   // Original - solo formato y calidad automática
@@ -54,20 +54,35 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
 };
 
 /**
- * Extrae el public_id de una URL de Cloudinary existente
+ * Extrae información de una URL de Cloudinary existente
  * o determina si es una URL externa que necesita ser proxied
  */
-function extractPublicId(url: string): { publicId: string; isExternal: boolean } {
-  // Si la URL ya es de Cloudinary, extraer el public_id
-  const cloudinaryRegex = /cloudinary\.com\/[^\/]+\/image\/upload\/(?:v\d+\/)?(.+)$/;
+function extractCloudinaryInfo(url: string): {
+  publicId: string;
+  cloudName: string | null;
+  isExternal: boolean;
+  versionPrefix: string;
+} {
+  // Si la URL ya es de Cloudinary, extraer cloud name, version y public_id
+  const cloudinaryRegex = /cloudinary\.com\/([^\/]+)\/image\/upload\/(v\d+\/)?(.+)$/;
   const match = url.match(cloudinaryRegex);
 
   if (match) {
-    return { publicId: match[1], isExternal: false };
+    return {
+      cloudName: match[1],      // Ej: "dnglv0zqg"
+      versionPrefix: match[2] || '',  // Ej: "v1759796902/"
+      publicId: match[3],       // Ej: "botopia/audio_video/..."
+      isExternal: false
+    };
   }
 
   // Si es una URL externa, usar fetch para proxiar a través de Cloudinary
-  return { publicId: url, isExternal: true };
+  return {
+    publicId: url,
+    cloudName: null,
+    versionPrefix: '',
+    isExternal: true
+  };
 }
 
 /**
@@ -100,7 +115,7 @@ export function getCloudinaryUrl(
     return imageUrl;
   }
 
-  const { publicId, isExternal } = extractPublicId(imageUrl);
+  const { publicId, cloudName, versionPrefix, isExternal } = extractCloudinaryInfo(imageUrl);
   const transformation = TRANSFORM_CONFIGS[transformType];
 
   if (isExternal) {
@@ -108,8 +123,14 @@ export function getCloudinaryUrl(
     return `${CLOUDINARY_BASE_URL}/${transformation}/f_auto/fetch:${encodeURIComponent(publicId)}`;
   }
 
-  // URL de Cloudinary nativa
-  return `${CLOUDINARY_BASE_URL}/${transformation}/${publicId}`;
+  // Si la URL ya tenía un cloud name, usar ese en lugar del de .env
+  // Esto preserva las URLs completas que vienen del backend
+  const baseUrl = cloudName
+    ? `https://res.cloudinary.com/${cloudName}/image/upload`
+    : CLOUDINARY_BASE_URL;
+
+  // URL de Cloudinary nativa con transformaciones inyectadas
+  return `${baseUrl}/${transformation}/${versionPrefix}${publicId}`;
 }
 
 /**
@@ -126,10 +147,15 @@ export function getResponsiveSrcSet(
   if (!imageUrl) return '';
 
   const baseConfig = TRANSFORM_CONFIGS[transformType];
-  const { publicId, isExternal } = extractPublicId(imageUrl);
+  const { publicId, cloudName, versionPrefix, isExternal } = extractCloudinaryInfo(imageUrl);
 
   // Generar variantes: 1x, 1.5x, 2x para dispositivos de alta densidad
   const sizes = [1, 1.5, 2];
+
+  // Determinar el base URL (preservar cloud name de la URL original si existe)
+  const baseUrl = cloudName
+    ? `https://res.cloudinary.com/${cloudName}/image/upload`
+    : CLOUDINARY_BASE_URL;
 
   const srcset = sizes.map(multiplier => {
     // Extraer dimensiones del baseConfig
@@ -148,7 +174,7 @@ export function getResponsiveSrcSet(
 
     const url = isExternal
       ? `${CLOUDINARY_BASE_URL}/${scaledConfig}/f_auto/fetch:${encodeURIComponent(publicId)}`
-      : `${CLOUDINARY_BASE_URL}/${scaledConfig}/${publicId}`;
+      : `${baseUrl}/${scaledConfig}/${versionPrefix}${publicId}`;
 
     return `${url} ${multiplier}x`;
   }).filter(Boolean).join(', ');

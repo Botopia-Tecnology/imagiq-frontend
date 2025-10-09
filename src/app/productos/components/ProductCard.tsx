@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
-import { Heart, Loader, ShoppingCart } from "lucide-react";
+import { Heart, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { motion } from "framer-motion";

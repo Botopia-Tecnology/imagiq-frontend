@@ -186,7 +186,7 @@ const CreateAccountForm = () => {
   };
 
   // Mock para envío de código OTP
-  const handleSendVerificationCode = async (channel: 'whatsapp' | 'sms' | 'email') => {
+  const handleSendVerificationCode = async () => {
     await new Promise(resolve => setTimeout(resolve, 2000)); // Simular delay
   };
 
@@ -210,7 +210,7 @@ const CreateAccountForm = () => {
         puntoReferencia: placeDetailsData.shippingReferencePoint || undefined,
       };
 
-      const shippingResponse = await addressesService.createAddress(shippingAddressRequest);
+      await addressesService.createAddress(shippingAddressRequest);
 
       // Create billing address if different
       if (!formData.useSameForBilling && placeDetailsData.billingPlaceDetails) {
@@ -225,7 +225,7 @@ const CreateAccountForm = () => {
           puntoReferencia: placeDetailsData.billingReferencePoint || undefined,
         };
 
-        const billingResponse = await addressesService.createAddress(billingAddressRequest);
+        await addressesService.createAddress(billingAddressRequest);
       }
 
     } catch (error) {

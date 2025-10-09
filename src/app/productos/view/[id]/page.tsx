@@ -40,22 +40,12 @@ function convertProductForView(product: ProductCardProps) {
     originalPrice: product.originalPrice
       ? safeValue(product.originalPrice)
       : undefined,
-    discount: product.discount ? safeValue(product.discount) : undefined,
     colors:
       product.colors?.map((color: ProductColor) => ({
         name: safeValue(color.name || color.label, "None"),
         hex: safeValue(color.hex, "#808080"),
       })) || [],
-    description: safeValue(product.description, "None"),
-    specs: [
-      { label: "Marca", value: safeValue(product.brand, "None") },
-      { label: "Modelo", value: safeValue(product.model, "None") },
-      { label: "Categoría", value: safeValue(product.category, "None") },
-      { label: "Subcategoría", value: safeValue(product.subcategory, "None") },
-      { label: "Capacidad", value: safeValue(product.capacity, "None") },
-      { label: "Stock", value: safeValue(product.stock, "None") },
-      { label: "SKU", value: safeValue(product.sku, "None") },
-    ],
+    specs: [],
   };
 }
 
@@ -117,24 +107,7 @@ export default function ProductViewPage({ params }) {
     );
   }
   const convertedProduct = convertProductForView(product);
-  const categoriasAppliance = [
-    "neveras",
-    "nevecon",
-    "hornos microondas",
-    "lavavajillas",
-    "lavadora",
-    "secadora",
-    "aspiradoras",
-    "aire acondicionado",
-    "hornos",
-    "microondas",
-  ];
-  const subcategoria = convertedProduct.specs
-    .find((spec) => spec.label === "Subcategoría")
-    ?.value?.toLowerCase();
-  const isRefrigerador = subcategoria
-    ? categoriasAppliance.some((cat) => subcategoria.includes(cat))
-    : false;
+  const isRefrigerador = false;
   return (
     <>
       <SetApplianceFlag isRefrigerador={!!isRefrigerador} />

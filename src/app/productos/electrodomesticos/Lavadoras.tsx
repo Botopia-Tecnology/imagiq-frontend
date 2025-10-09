@@ -417,14 +417,7 @@ export default function LavadorasSection() {
                     reviewCount={product.reviewCount}
                     price={product.price}
                     originalPrice={product.originalPrice}
-                    discount={product.discount}
                     isNew={product.isNew}
-                    onAddToCart={(productId: string, color: string) => {
-                      console.log(`Añadir al carrito: ${productId} - ${color}`);
-                    }}
-                    onToggleFavorite={(productId: string) => {
-                      console.log(`Toggle favorito: ${productId}`);
-                    }}
                     className={viewMode === "list" ? "flex-row" : ""}
                   />
                 ))

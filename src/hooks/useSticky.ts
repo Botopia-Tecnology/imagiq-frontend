@@ -122,8 +122,7 @@ export function useSticky({
     setStickyState(prevState => {
       if (
         prevState.isSticky !== newState.isSticky ||
-        prevState.showShadow !== newState.showShadow ||
-        Math.abs(prevState.maxHeight - newState.maxHeight) > 10
+        prevState.showShadow !== newState.showShadow
       ) {
         return newState;
       }
@@ -191,7 +190,7 @@ export function useStickyClasses({
   isSticky,
   showShadow,
   topOffset,
-  maxHeight,
+  
 }: StickyState): {
   containerClasses: string;
   wrapperClasses: string;

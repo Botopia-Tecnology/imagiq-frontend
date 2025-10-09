@@ -329,10 +329,7 @@ function ProductosContent() {
                         colors={product.colors}
                         price={product.price}
                         originalPrice={product.originalPrice}
-                        discount={product.discount}
                         isNew={product.isNew}
-                        isFavorite={product.isFavorite}
-                        onToggleFavorite={product.onToggleFavorite}
                         sku={product.sku}
                         puntos_q={product.puntos_q}
                         viewMode={viewMode}

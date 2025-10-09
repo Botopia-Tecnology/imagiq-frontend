@@ -71,7 +71,7 @@ export function useProductCardState({
     if (isLoading) return;
 
     setIsLoading(true);
-    trackAddToCart(id, name, selectedColor, sku);
+    trackAddToCart(id, name, selectedColor, sku || null);
 
     try {
       addProduct({

@@ -237,21 +237,9 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     capacities: capacities.length > 0 ? capacities : undefined,
     price,
     originalPrice,
-    discount,
     isNew,
     rating: 4.8, // Valor por defecto hasta que tengamos reviews reales
     reviewCount: Math.floor(Math.random() * 500) + 50, // Valor temporal
-    highlights, // Características destacadas
-    // Datos adicionales para la página de detalle
-    description: apiProduct.descGeneral || null,
-    brand: "Samsung", // Por defecto, se puede obtener de la API en el futuro
-    model: apiProduct.modelo,
-    category: apiProduct.categoria,
-    subcategory: apiProduct.subcategoria,
-    capacity: apiProduct.capacidad?.join(', ') || null,
-    stock: apiProduct.stock?.reduce((sum, s) => sum + s, 0) || 0,
-    sku: apiProduct.sku?.join(', ') || null,
-    detailedDescription: apiProduct.desDetallada?.join(' ') || null,
   };
 }
 

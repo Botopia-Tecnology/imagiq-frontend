@@ -48,7 +48,7 @@ export default function ProductImage({
         </div>
       )}
 
-      {/* Imagen */}
+      {/* Imagen - Más pequeña solo en mobile, desktop igual que antes */}
       <button
         type="button"
         className="relative w-full h-full cursor-pointer bg-transparent border-0 p-0"
@@ -60,16 +60,16 @@ export default function ProductImage({
           alt={alt}
           width={width}
           height={height}
-          className="object-contain p-1 w-full h-full"
+          className="object-contain p-6 md:p-4 w-full h-full"
           sizes={sizes}
         />
       </button>
 
-      {/* Botón "Vistazo rápido" - Siempre visible en mobile, hover en desktop */}
-      <div className="absolute bottom-1 md:bottom-2 left-1/2 transform -translate-x-1/2 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
+      {/* Botón "Vistazo rápido" - Fondo negro, siempre visible en mobile, hover en desktop */}
+      <div className="absolute bottom-2 md:bottom-3 left-1/2 transform -translate-x-1/2 z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity duration-200">
         <button
           onClick={onQuickView}
-          className="bg-white border-2 border-black text-black px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[10px] md:text-xs font-semibold hover:bg-black hover:text-white transition-all duration-200 whitespace-nowrap shadow-lg"
+          className="bg-black text-white px-3 py-1 md:px-4 md:py-1.5 rounded-full text-[10px] md:text-xs font-semibold hover:bg-gray-800 transition-all duration-200 whitespace-nowrap shadow-lg"
         >
           Vistazo rápido
         </button>

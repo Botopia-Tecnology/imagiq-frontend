@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { MAIN_ITEMS, SIZES } from "./constants";
+import { MAIN_ITEMS } from "./constants";
 
 type Props = {
   onItemClick: (label: string, href: string) => void;

@@ -23,7 +23,6 @@ import React, { useEffect, useState } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 import { productsMock } from "../components/productsMock";
-import ComparationProduct from "./ComparationProduct";
 import Specifications from "@/app/productos/dispositivos-moviles/detalles-producto/Specifications";
 import VideosSection from "./VideosSection";
 import Destacados from "./detalles-producto/Destacados";
@@ -78,15 +77,6 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
     sku: product.sku || product.id || "SKU",
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
-    discount: product.discount,
-    description: product.description,
-    brand: product.brand,
-    model: product.model,
-    category: product.category,
-    subcategory: product.subcategory,
-    capacity: product.capacity,
-    stock: product.stock,
-    detailedDescription: product.detailedDescription,
     reviewCount: product.reviewCount,
     rating: product.rating,
   };
@@ -105,12 +95,6 @@ export default function ViewProduct({
   });
   // Animación scroll reveal para videos
   const videosReveal = useScrollReveal<HTMLDivElement>({
-    offset: 60,
-    duration: 500,
-    direction: "up",
-  });
-  // Animación scroll reveal para comparación
-  const comparationReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
     duration: 500,
     direction: "up",

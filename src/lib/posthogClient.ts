@@ -20,7 +20,7 @@
  */
 
 // Configuración de claves y host de PostHog
-const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || "";
+// const _POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY || "";
 const POSTHOG_HOST =
   process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://app.posthog.com";
 

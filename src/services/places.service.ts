@@ -256,7 +256,7 @@ export class PlacesService {
 
       const data = await response.json();
       return data.isInCoverage;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -282,7 +282,7 @@ export class PlacesService {
 
       const data = await response.json();
       return data.cities;
-    } catch (error) {
+    } catch {
       return [];
     }
   }

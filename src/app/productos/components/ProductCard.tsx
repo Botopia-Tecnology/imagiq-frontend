@@ -161,8 +161,8 @@ export default function ProductCard({
 
       {/* Contenido */}
       <div className={cn("bg-white p-2 md:p-3 flex flex-col flex-1", viewMode === "list" && "justify-between")}>
-        {/* Título */}
-        <h3 className="font-bold text-gray-900 text-sm md:text-lg mb-1.5 md:mb-2 line-clamp-2 leading-tight">
+        {/* Título - Más grande solo en mobile */}
+        <h3 className="font-bold text-gray-900 text-base md:text-lg mb-1.5 md:mb-2 line-clamp-2 leading-tight">
           {cleanProductName(name)}
         </h3>
 

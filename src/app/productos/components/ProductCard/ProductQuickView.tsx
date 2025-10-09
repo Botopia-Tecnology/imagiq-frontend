@@ -7,10 +7,12 @@
 
 import { Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
-import Image from "next/image";
 import { X } from "lucide-react";
 import { ProductColor, ProductCapacity } from "../ProductCard";
-import { cn } from "@/lib/utils";
+import ImageGallery from "./ImageGallery";
+import QuickViewDetails from "./QuickViewDetails";
+import QuickViewActions from "./QuickViewActions";
+import { useDeviceVariants } from "@/hooks/useDeviceVariants";
 
 interface ProductQuickViewProps {
   isOpen: boolean;
@@ -45,7 +47,22 @@ export default function ProductQuickView({
   onAddToCart,
   onViewDetails,
 }: ProductQuickViewProps) {
-  const imageSrc = typeof product.image === "string" ? product.image : product.image.src;
+  // Usar hook para obtener variantes e imágenes del backend
+  const { selectedVariant } = useDeviceVariants(product.id);
+
+  // Obtener imágenes del backend o usar imagen de fallback
+  let allImages: string[];
+  
+  if (selectedVariant?.imageDetailsUrls && selectedVariant.imageDetailsUrls.length > 0) {
+    allImages = selectedVariant.imageDetailsUrls;
+  } else if (selectedVariant?.imagePreviewUrl) {
+    allImages = [selectedVariant.imagePreviewUrl];
+  } else if (typeof product.image === "string") {
+    allImages = [product.image];
+  } else {
+    allImages = [product.image.src];
+  }
+
   const currentPrice = selectedCapacity?.price || selectedColor?.price || product.price;
   const currentOriginalPrice =
     selectedCapacity?.originalPrice || selectedColor?.originalPrice || product.originalPrice;
@@ -53,6 +70,7 @@ export default function ProductQuickView({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
+        {/* Overlay con fondo negro translúcido */}
         <Transition.Child
           as={Fragment}
           enter="ease-out duration-300"
@@ -62,159 +80,63 @@ export default function ProductQuickView({
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black bg-opacity-60" />
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
         </Transition.Child>
 
+        {/* Contenedor responsivo - widget desde abajo en mobile, modal en desktop */}
         <div className="fixed inset-0 overflow-y-auto">
-          <div className="flex min-h-full items-center justify-center p-4">
+          <div className="flex min-h-full items-end md:items-center justify-center md:p-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-300"
-              enterFrom="opacity-0 scale-95"
-              enterTo="opacity-100 scale-100"
+              enterFrom="opacity-0 translate-y-full md:translate-y-0 md:scale-95"
+              enterTo="opacity-100 translate-y-0 md:scale-100"
               leave="ease-in duration-200"
-              leaveFrom="opacity-100 scale-100"
-              leaveTo="opacity-0 scale-95"
+              leaveFrom="opacity-100 translate-y-0 md:scale-100"
+              leaveTo="opacity-0 translate-y-full md:translate-y-0 md:scale-95"
             >
-              <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white shadow-xl transition-all">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b p-4">
-                  <Dialog.Title className="text-lg font-bold text-gray-900">
+              {/* Panel con bordes superiores curvados y espacio arriba en mobile */}
+              <Dialog.Panel className="w-full md:max-w-2xl max-h-[92vh] md:h-auto transform overflow-hidden rounded-t-3xl md:rounded-2xl bg-white shadow-xl transition-all mt-auto">
+                {/* Header con X para cerrar */}
+                <div className="sticky top-0 z-10 flex items-center justify-between bg-white px-4 py-3 md:p-4 rounded-t-3xl md:rounded-t-2xl border-b">
+                  <Dialog.Title className="text-base md:text-lg font-bold text-gray-900">
                     Vista Rápida
                   </Dialog.Title>
                   <button
                     onClick={onClose}
-                    className="rounded-full p-2 hover:bg-gray-100 transition-colors"
+                    className="rounded-full p-1.5 hover:bg-gray-100 transition-colors"
+                    aria-label="Cerrar"
                   >
-                    <X className="w-5 h-5" />
+                    <X className="w-6 h-6 md:w-5 md:h-5 stroke-[2.5]" />
                   </button>
                 </div>
 
-                {/* Content */}
-                <div className="grid md:grid-cols-2 gap-6 p-6">
-                  {/* Imagen */}
-                  <div className="relative aspect-square bg-gray-50 rounded-lg overflow-hidden">
-                    <Image
-                      src={imageSrc}
-                      alt={product.name}
-                      fill
-                      className="object-contain p-4"
+                {/* Content - scroll interno */}
+                <div className="overflow-y-auto max-h-[calc(92vh-60px)] md:max-h-none">
+                  <div className="flex flex-col md:grid md:grid-cols-2 gap-4 md:gap-6 p-4 md:p-6">
+                    {/* Galería de imágenes */}
+                    <ImageGallery 
+                      images={allImages} 
+                      productName={product.name}
                     />
-                  </div>
 
-                  {/* Detalles */}
-                  <div className="flex flex-col">
-                    {/* Título */}
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                      {product.name}
-                    </h2>
+                    {/* Detalles del producto */}
+                    <div className="flex flex-col">
+                      <QuickViewDetails
+                        product={product}
+                        selectedColor={selectedColor}
+                        selectedCapacity={selectedCapacity}
+                        currentPrice={currentPrice}
+                        currentOriginalPrice={currentOriginalPrice}
+                        onColorSelect={onColorSelect}
+                        onCapacitySelect={onCapacitySelect}
+                      />
 
-                    {/* Rating */}
-                    {product.rating && (
-                      <div className="flex items-center gap-2 mb-4">
-                        <div className="flex items-center gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={`quickview-star-${i}-${product.rating}`}
-                              className="w-4 h-4 fill-current text-yellow-500"
-                              viewBox="0 0 20 20"
-                            >
-                              <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                            </svg>
-                          ))}
-                        </div>
-                        <span className="text-sm font-bold text-gray-900">{product.rating}</span>
-                        <span className="text-sm text-gray-500">({product.reviewCount})</span>
-                      </div>
-                    )}
-
-                    {/* Precio */}
-                    <div className="mb-6">
-                      {currentOriginalPrice && currentOriginalPrice !== currentPrice && (
-                        <div className="flex flex-col gap-1 mb-2">
-                          <span className="text-lg text-gray-500 line-through">
-                            ${parseInt(currentOriginalPrice.replace(/[^\d]/g, "")).toLocaleString("es-CO")}
-                          </span>
-                          <span className="text-base font-bold text-blue-600">
-                            Ahorra $
-                            {(
-                              parseInt(currentOriginalPrice.replace(/[^\d]/g, "")) -
-                              parseInt(currentPrice?.replace(/[^\d]/g, "") || "0")
-                            ).toLocaleString("es-CO")}
-                          </span>
-                        </div>
-                      )}
-                      <p className="text-3xl font-bold text-gray-900">
-                        ${parseInt(currentPrice?.replace(/[^\d]/g, "") || "0").toLocaleString("es-CO")}
-                      </p>
-                    </div>
-
-                    {/* Selector de color */}
-                    {product.colors && product.colors.length > 0 && (
-                      <div className="mb-6">
-                        <p className="text-base font-medium text-gray-900 mb-3">
-                          Color: <span className="font-normal">{selectedColor?.label}</span>
-                        </p>
-                        <div className="flex gap-2">
-                          {product.colors.map((color) => (
-                            <button
-                              key={color.sku}
-                              onClick={() => onColorSelect(color)}
-                              className={cn(
-                                "w-10 h-10 rounded-full border-2 transition-all duration-200",
-                                selectedColor?.name === color.name
-                                  ? "border-black ring-2 ring-offset-2 ring-black"
-                                  : "border-gray-300 hover:border-gray-600"
-                              )}
-                              style={{ backgroundColor: color.hex }}
-                              title={color.label}
-                            >
-                              {color.hex.toLowerCase() === "#ffffff" && (
-                                <span className="block w-full h-full rounded-full border border-gray-300" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Selector de capacidad */}
-                    {product.capacities && product.capacities.length > 0 && (
-                      <div className="mb-6">
-                        <p className="text-base font-medium text-gray-900 mb-3">Capacidad:</p>
-                        <div className="flex gap-2 flex-wrap">
-                          {product.capacities.map((capacity) => (
-                            <button
-                              key={capacity.value}
-                              onClick={() => onCapacitySelect(capacity)}
-                              className={cn(
-                                "px-4 py-2 text-sm font-medium rounded-full border-2 transition-all",
-                                selectedCapacity?.value === capacity.value
-                                  ? "border-black bg-black text-white"
-                                  : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                              )}
-                            >
-                              {capacity.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Botones */}
-                    <div className="mt-auto space-y-3">
-                      <button
-                        onClick={onAddToCart}
-                        className="w-full bg-black text-white py-3.5 px-6 rounded-full text-base font-semibold hover:bg-gray-800 transition-all"
-                      >
-                        Agregar al carrito
-                      </button>
-                      <button
-                        onClick={onViewDetails}
-                        className="w-full bg-white text-black py-3.5 px-6 rounded-full text-base font-semibold border-2 border-gray-300 hover:bg-gray-50 transition-all"
-                      >
-                        Ver detalles completos
-                      </button>
+                      {/* Botones de acción */}
+                      <QuickViewActions
+                        onAddToCart={onAddToCart}
+                        onViewDetails={onViewDetails}
+                      />
                     </div>
                   </div>
                 </div>

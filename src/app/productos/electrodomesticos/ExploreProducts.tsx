@@ -119,9 +119,6 @@ export default function ExploreProducts({
               name={product.name}
               image={product.image}
               className={viewMode === "list" ? "flex-row" : ""}
-              onAddToCart={(productId: string, color: string) =>
-                console.log(`Añadir al carrito: ${productId} - ${color}`)
-              }
             />
           ))
         )}

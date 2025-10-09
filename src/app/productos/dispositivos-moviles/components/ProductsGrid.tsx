@@ -36,7 +36,7 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
-    const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+    const { addToFavorites, removeFromFavorites } = useFavorites();
 
    const handleAddToFavorites = (productId: string) => {
     const rawUser = localStorage.getItem("imagiq_user");
@@ -54,7 +54,6 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
      const handleRemoveToFavorites = (productId: string) => {
     const rawUser = localStorage.getItem("imagiq_user");
     const parsed = rawUser ? JSON.parse(rawUser) : null;
-    setUserInfo(parsed);
 
     if (parsed?.id) {
       removeFromFavorites(productId, parsed);
@@ -70,10 +69,7 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
       setShowGuestModal(false);
 
       if (pendingFavorite) {
-        const newUserInfo = await addToFavorites(pendingFavorite, guestUserData);
-        if (newUserInfo) {
-          setUserInfo(newUserInfo);
-        }
+        await addToFavorites(pendingFavorite, guestUserData);
         setPendingFavorite(null);
       }
     };
@@ -119,17 +115,6 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
             >
               <ProductCard
                 {...product}
-                isFavorite={isFavorite(product.id)}
-                onAddToCart={() => {
-                  // TODO: Implementar lógica de añadir al carrito
-                }}
-                onToggleFavorite={(productId: string) => {
-                  if (isFavorite(productId)) {
-                    handleRemoveToFavorites(productId);
-                  } else {
-                    handleAddToFavorites(productId);
-                  }
-                }}
                 className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
               />
             </div>

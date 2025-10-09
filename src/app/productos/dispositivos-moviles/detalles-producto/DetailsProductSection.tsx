@@ -121,23 +121,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     return parsedOriginalPrice;
   }, [selectedVariant, product.originalPrice]);
 
-  const parsedProductDiscount = React.useMemo(() => {
-    if (!product.discount) {
-      return undefined;
-    }
-    if (typeof product.discount === "number") {
-      return product.discount;
-    }
-    const parsedValue = parseInt(String(product.discount).replace(/[^\d]/g, ""), 10);
-    return parsedValue || 0;
-  }, [product.discount]);
-
   const discountAmount = React.useMemo(() => {
     if (originalPrice && currentPrice) {
       return originalPrice - currentPrice;
     }
-    return parsedProductDiscount;
-  }, [originalPrice, currentPrice, parsedProductDiscount]);
+    return undefined;
+  }, [originalPrice, currentPrice]);
 
   return (
     <>
@@ -189,7 +178,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     estrenoYEntrego={estrenoYEntrego}
                     onEstrenoChange={setEstrenoYEntrego}
                   />
-                  <p className="text-base text-[#222] font-light leading-relaxed mb-8">{product.description || ""}</p>
+                  {/* <p className="text-base text-[#222] font-light leading-relaxed mb-8">{product.description || ""}</p> */}
                 </header>
 
                 <AddiFinancing 
@@ -224,7 +213,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
             />
             <header className="mb-4 text-center mt-6">
               <h1 className="text-2xl font-bold text-[#222] mb-2">{product.name}</h1>
-              <p className="text-base text-[#222] mb-4 font-light leading-snug">{product.description || ""}</p>
+              {/* <p className="text-base text-[#222] mb-4 font-light leading-snug">{product.description || ""}</p> */}
             </header>
             <PriceAndActions
               currentPrice={currentPrice || 0}

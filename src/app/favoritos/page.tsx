@@ -8,7 +8,7 @@ import SkeletonCard from "@/components/SkeletonCard";
 import { useDeviceType } from "@/components/responsive";
 import { posthogUtils } from "@/lib/posthogClient";
 import ProductCard from "../productos/components/ProductCard";
-import ItemsPerPageSelector from "./ItemsPerPageSelector";
+import ItemsPerPageSelector from "@/components/ui/ItemsPerPageSelector";
 import Pagination from "@/components/ui/Pagination";
 
 export default function FavoritePage() {
@@ -17,8 +17,6 @@ export default function FavoritePage() {
   const device = useDeviceType();
    const [userId, setUserId] = useState<string | undefined>(undefined); // 👈 estado local para el userId
   const lastFiltersRef = useRef<string>("");
-    const { addToFavorites, removeFromFavorites, isFavorite } =
-    useFavorites();
   const [viewMode] = useState<"grid" | "list">("grid");
   const apiFilters = useMemo(
     () => ({
@@ -154,19 +152,7 @@ export default function FavoritePage() {
               reviewCount={product.reviewCount}
               price={product.price}
               originalPrice={product.originalPrice}
-              discount={product.discount}
               isNew={product.isNew}
-              isFavorite={isFavorite(product.id)}
-              onAddToCart={(productId: string, color: string) => {
-                console.log(`Añadir al carrito: ${productId} - ${color}`);
-              }}
-              onToggleFavorite={(productId: string) => {
-                if (isFavorite(productId)) {
-                  removeFromFavorites(productId);
-                } else {
-                  addToFavorites(productId);
-                }
-              }}
               className={viewMode === "list" ? "flex-row" : ""}
             />
           ))

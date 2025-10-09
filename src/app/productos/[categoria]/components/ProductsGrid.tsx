@@ -11,8 +11,6 @@ import ProductCard, {
 } from "../../components/ProductCard";
 import { useFavorites } from "@/features/products/useProducts";
 import GuestDataModal from "../../components/GuestDataModal";
-import { useCartContext } from "@/features/cart/CartContext";
-import { posthogUtils } from "@/lib/posthogClient";
 
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
@@ -44,30 +42,9 @@ const CategoryProductsGrid = forwardRef<
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
-    const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-    const { addProduct } = useCartContext();
+    const { addToFavorites } = useFavorites();
 
-    const handleAddToFavorites = (productId: string) => {
-      const rawUser = localStorage.getItem("imagiq_user");
-      const parsed = rawUser ? JSON.parse(rawUser) : null;
 
-      if (parsed?.id) {
-        addToFavorites(productId, parsed);
-      } else {
-        // Mostrar modal y guardar el producto pendiente
-        setPendingFavorite(productId);
-        setShowGuestModal(true);
-      }
-    };
-
-    const handleRemoveToFavorites = (productId: string) => {
-      const rawUser = localStorage.getItem("imagiq_user");
-      const parsed = rawUser ? JSON.parse(rawUser) : null;
-
-      if (parsed?.id) {
-        removeFromFavorites(productId, parsed);
-      }
-    };
 
     const handleGuestSubmit = async (guestUserData: {
       nombre: string;
@@ -205,33 +182,6 @@ const CategoryProductsGrid = forwardRef<
                 >
                   <ProductCard
                     {...product}
-                    isFavorite={isFavorite(product.id)}
-                    onAddToCart={() => {
-                      posthogUtils.capture("add_to_cart", {
-                        product_id: product.id,
-                        product_name: product.name,
-                        source: "category_grid",
-                        category: categoryName
-                      });
-                      addProduct({
-                        id: product.id,
-                        name: product.name,
-                        image: typeof product.image === "string" ? product.image : product.image.src ?? "",
-                        price: typeof product.price === "string"
-                          ? parseInt(product.price.replace(/[^\d]/g, ""))
-                          : product.price || 0,
-                        quantity: 1,
-                        sku: product.sku || product.id,
-                        puntos_q: product.puntos_q || 0,
-                      });
-                    }}
-                    onToggleFavorite={(productId: string) => {
-                      if (isFavorite(productId)) {
-                        handleRemoveToFavorites(productId);
-                      } else {
-                        handleAddToFavorites(productId);
-                      }
-                    }}
                     className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
                   />
                 </div>

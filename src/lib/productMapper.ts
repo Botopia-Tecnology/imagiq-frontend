@@ -216,15 +216,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   const capacities: ProductCapacity[] = createProductCapacitiesFromArray(apiProduct);
 
   // Calcular precios y descuentos (usar el primer precio disponible)
-  const { price, originalPrice, discount, isNew } = calculatePricingFromArray(apiProduct);
-
-  // Crear highlights desde desDetallada (tomar las primeras 3 líneas)
-  const highlights: string[] = apiProduct.desDetallada
-    ? apiProduct.desDetallada
-        .filter((desc) => desc && desc.trim() !== '')
-        .slice(0, 3)
-        .map((desc) => desc.trim().replace(/^-\s*/, '')) // Eliminar guiones iniciales
-    : [];
+  const { price, originalPrice, isNew } = calculatePricingFromArray(apiProduct);
 
   const id = apiProduct.codigoMarketBase;
 

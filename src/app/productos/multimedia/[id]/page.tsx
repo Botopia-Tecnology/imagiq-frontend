@@ -103,7 +103,6 @@ export default function MultimediaPage({
       const skus = parseSkuString(product.sku);
 
       if (skus.length === 0) {
-        console.log("📍 No hay SKUs disponibles, redirigiendo a vista de producto...");
         router.replace(`/productos/view/${id}`);
         return;
       }
@@ -111,7 +110,6 @@ export default function MultimediaPage({
       const availableSku = await findAvailableSku(skus);
 
       if (!availableSku) {
-        console.log("📍 No se encontró contenido Flixmedia, redirigiendo a vista de producto...");
         router.replace(`/productos/view/${id}`);
         return;
       }

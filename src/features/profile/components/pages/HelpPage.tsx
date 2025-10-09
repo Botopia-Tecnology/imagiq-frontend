@@ -251,22 +251,18 @@ export const HelpPage: React.FC<HelpPageProps> = ({
 
   const handleCategoryClick = (categoryId: string) => {
     setSelectedCategory(categoryId);
-    console.log('Navigate to category:', categoryId);
     // TODO: Navigate to detailed category page
   };
 
   const handleContactChat = () => {
-    console.log('Open chat support');
     // TODO: Open chat widget
   };
 
   const handleContactPhone = () => {
-    console.log('Call support');
     // TODO: Initiate phone call
   };
 
   const handleContactEmail = () => {
-    console.log('Email support');
     // TODO: Open email composer
   };
 

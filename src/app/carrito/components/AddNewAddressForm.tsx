@@ -86,7 +86,6 @@ export default function AddNewAddressForm({
         throw new Error('No se ha seleccionado una dirección válida');
       }
 
-      console.log('📍 Selected address object:', selectedAddress);
 
       // Obtener coordenadas de manera segura - manejar diferentes estructuras posibles
       let latitude: number;
@@ -127,13 +126,10 @@ export default function AddNewAddressForm({
         puntoReferencia: formData.puntoReferencia || undefined,
       };
 
-      console.log('📤 Creando dirección de envío en checkout:', shippingAddressRequest);
       const shippingResponse = await addressesService.createAddress(shippingAddressRequest);
-      console.log('✅ Dirección de envío creada:', shippingResponse);
 
       // Si no usa la misma dirección, crear dirección de facturación separada
       if (!formData.usarMismaParaFacturacion && selectedBillingAddress) {
-        console.log('📍 Selected billing address object:', selectedBillingAddress);
 
         // Obtener coordenadas de la dirección de facturación de manera segura
         let billingLatitude: number;
@@ -173,9 +169,7 @@ export default function AddNewAddressForm({
           puntoReferencia: formData.puntoReferenciaFacturacion || undefined,
         };
 
-        console.log('📤 Creando dirección de facturación en checkout:', billingAddressRequest);
         const billingResponse = await addressesService.createAddress(billingAddressRequest);
-        console.log('✅ Dirección de facturación creada:', billingResponse);
       }
 
       // Convert AddressResponse to Direccion format for compatibility
@@ -225,7 +219,6 @@ export default function AddNewAddressForm({
   };
 
   const handleAddressSelect = (place: PlaceDetails) => {
-    console.log('✅ Dirección de envío seleccionada en checkout:', place);
     setSelectedAddress(place as ExtendedPlaceDetails);
     // Clear address error when address is selected
     if (errors.address) {
@@ -234,7 +227,6 @@ export default function AddNewAddressForm({
   };
 
   const handleBillingAddressSelect = (place: PlaceDetails) => {
-    console.log('✅ Dirección de facturación seleccionada en checkout:', place);
     setSelectedBillingAddress(place as ExtendedPlaceDetails);
     // Clear billing address error when address is selected
     if (errors.billingAddress) {

@@ -133,7 +133,6 @@ export const useProfile = (): UseProfileReturn => {
 
       // TODO: In a real app, this would call an API to update user data
       // For now, just simulate the update
-      console.log('Profile update data:', data);
 
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update profile');

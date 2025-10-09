@@ -46,7 +46,6 @@ export default function FlixmediaPlayer({
 
       setIsSearching(true);
       console.group(`🎬 Flixmedia - Búsqueda inteligente de SKU`);
-      console.log(`📦 Producto: "${productName}"`);
 
       const skus = parseSkuString(mpn);
       
@@ -63,10 +62,7 @@ export default function FlixmediaPlayer({
         setActualMpn(availableSku);
         const url = buildFlixmediaUrl(availableSku);
         setIframeUrl(url);
-        console.log(`✅ Usando SKU: ${availableSku}`);
-        console.log(`🔗 URL del iframe:`, url);
       } else {
-        console.log(`❌ No se encontró contenido multimedia`);
       }
 
       setIsSearching(false);

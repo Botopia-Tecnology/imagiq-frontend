@@ -44,8 +44,6 @@ export default function CardExplore({
 
 
   const handleMoreInfo = () => {
-    console.log(`🔗 Navegando a producto con ID: ${id}`);
-    console.log(`📝 Nombre del producto: ${name}`);
     // Navega usando el id del mock, no el nombre ni slug
     router.push(`/productos/view/${id}`);
     posthogUtils.capture("product_more_info_click", {

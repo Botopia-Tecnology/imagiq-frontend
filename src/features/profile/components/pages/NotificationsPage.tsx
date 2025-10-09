@@ -317,7 +317,6 @@ export const NotificationsPage: React.FC<NotificationsPageProps> = ({
   };
 
   const handleSaveSettings = () => {
-    console.log('Save notification settings:', notificationSettings);
     // TODO: Implement API call to save settings
   };
 

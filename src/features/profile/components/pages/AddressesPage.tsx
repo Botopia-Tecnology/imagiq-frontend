@@ -139,22 +139,18 @@ export const AddressesPage: React.FC<AddressesPageProps> = ({
   };
 
   const handleAddAddress = () => {
-    console.log('Add new address');
     // TODO: Open add address modal/form
   };
 
   const handleEditAddress = (address: ProfileAddress) => {
-    console.log('Edit address:', address.id);
     // TODO: Open edit address modal/form
   };
 
   const handleDeleteAddress = (addressId: string) => {
-    console.log('Delete address:', addressId);
     // TODO: Implement delete confirmation and API call
   };
 
   const handleSetDefaultAddress = (addressId: string) => {
-    console.log('Set default address:', addressId);
     // TODO: Implement set default API call
   };
 

@@ -36,7 +36,6 @@ type RawProduct = {
   price: string | number;
   colors: Array<{ name: string; hex: string; label?: string; sku?: string }>;
   originalPrice?: string;
-  discount?: string;
   description?: string;
   brand?: string;
   model?: string;

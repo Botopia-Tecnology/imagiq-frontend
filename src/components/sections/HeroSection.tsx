@@ -41,7 +41,7 @@ export default function HeroSection() {
   };
 
   // Handler para el botón
-  const _handleAddiPayment = async () => {
+  const handleAddiPayment = async () => {
     try {
       const token = localStorage.getItem("imagiq_token");
       if (!token) {

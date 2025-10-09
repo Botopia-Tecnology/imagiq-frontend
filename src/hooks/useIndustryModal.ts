@@ -37,10 +37,7 @@ export function useIndustryModal(
       setIsSubmitting(true);
 
       try {
-        console.log(
-          `Formulario ${industryName || "corporativo"} enviado:`,
-          data
-        );
+        // Datos del formulario listos para enviar
 
         // Simular delay de envío
         await new Promise((resolve) => setTimeout(resolve, 2000));

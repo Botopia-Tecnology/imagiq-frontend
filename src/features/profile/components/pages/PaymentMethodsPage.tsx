@@ -210,22 +210,18 @@ export const PaymentMethodsPage: React.FC<PaymentMethodsPageProps> = ({
   const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
 
   const handleAddPaymentMethod = () => {
-    console.log('Add new payment method');
     // TODO: Open add payment method modal/form
   };
 
   const handleEditPaymentMethod = (method: PaymentMethod) => {
-    console.log('Edit payment method:', method.id);
     // TODO: Open edit payment method modal/form
   };
 
   const handleDeletePaymentMethod = (methodId: string) => {
-    console.log('Delete payment method:', methodId);
     // TODO: Implement delete confirmation and API call
   };
 
   const handleSetDefaultPaymentMethod = (methodId: string) => {
-    console.log('Set default payment method:', methodId);
     // TODO: Implement set default API call
   };
 

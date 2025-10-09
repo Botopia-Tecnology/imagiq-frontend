@@ -113,7 +113,6 @@ const DocumentViewer: React.FC<{
 }> = ({ document, onBack }) => {
 
   const handleDownload = () => {
-    console.log('Download document:', document.id);
     // TODO: Generate and download PDF
   };
 

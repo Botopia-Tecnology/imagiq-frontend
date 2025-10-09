@@ -55,7 +55,6 @@ export function useCorporateSales(): UseCorporateSalesReturn {
           }, 2000);
         });
 
-        console.log("Formulario enviado exitosamente:", requestData);
         setFormSubmissionStatus("success");
       } catch (error) {
         console.error("Error al enviar formulario:", error);

@@ -5,7 +5,7 @@
 
 "use client";
 
-import { Fragment } from "react";
+import { Fragment, useMemo, useEffect, useState } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { X } from "lucide-react";
 import { ProductColor, ProductCapacity } from "../ProductCard";
@@ -47,25 +47,36 @@ export default function ProductQuickView({
   onAddToCart,
   onViewDetails,
 }: ProductQuickViewProps) {
-  // Usar hook para obtener variantes e imágenes del backend
-  const { selectedVariant } = useDeviceVariants(product.id);
-
-  // Obtener imágenes del backend o usar imagen de fallback
-  let allImages: string[];
+  // Solo cargar variantes cuando el modal esté abierto
+  const [shouldLoadVariants, setShouldLoadVariants] = useState(false);
   
-  if (selectedVariant?.imageDetailsUrls && selectedVariant.imageDetailsUrls.length > 0) {
-    allImages = selectedVariant.imageDetailsUrls;
-  } else if (selectedVariant?.imagePreviewUrl) {
-    allImages = [selectedVariant.imagePreviewUrl];
-  } else if (typeof product.image === "string") {
-    allImages = [product.image];
-  } else {
-    allImages = [product.image.src];
-  }
+  useEffect(() => {
+    if (isOpen) {
+      setShouldLoadVariants(true);
+    }
+  }, [isOpen]);
+
+  const { selectedVariant } = useDeviceVariants(shouldLoadVariants ? product.id : "");
+
+  // Memoizar las imágenes para evitar recálculos
+  const allImages = useMemo(() => {
+    if (selectedVariant?.imageDetailsUrls && selectedVariant.imageDetailsUrls.length > 0) {
+      return selectedVariant.imageDetailsUrls;
+    } else if (selectedVariant?.imagePreviewUrl) {
+      return [selectedVariant.imagePreviewUrl];
+    } else if (typeof product.image === "string") {
+      return [product.image];
+    } else {
+      return [product.image.src];
+    }
+  }, [selectedVariant?.imageDetailsUrls, selectedVariant?.imagePreviewUrl, product.image]);
 
   const currentPrice = selectedCapacity?.price || selectedColor?.price || product.price;
   const currentOriginalPrice =
     selectedCapacity?.originalPrice || selectedColor?.originalPrice || product.originalPrice;
+  
+  // No renderizar nada si el modal no está abierto
+  if (!isOpen) return null;
 
   return (
     <Transition appear show={isOpen} as={Fragment}>

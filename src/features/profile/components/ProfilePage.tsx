@@ -66,7 +66,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   };
 
   const handleEditProfile = () => {
-    console.log('Edit profile clicked');
     // note: profile editing modal to be implemented later
   };
 
@@ -111,7 +110,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   };
 
   const handleOrderDetails = (orderId: string) => {
-    console.log('Order details clicked:', orderId);
     // note: navigation to order details will be handled in the orders flow
   };
 
@@ -275,7 +273,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
               icon={Star}
               label="Programa de Lealtad"
               badge={`${state.loyaltyProgram.points} pts`}
-              onClick={() => console.log('Loyalty clicked')}
+              onClick={() => {
+                // TODO: Implementar navegación a página de loyalty/puntos
+              }}
             />
           )}
         </div>
@@ -302,7 +302,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
           <MenuItem
             icon={FileText}
             label="Información de Facturación"
-            onClick={() => console.log('Billing clicked')}
+            onClick={() => {
+              // TODO: Implementar navegación a página de facturación
+            }}
           />
         </div>
       </div>
@@ -368,7 +370,9 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
           </Button>
           <Button
             variant="outline"
-            onClick={() => console.log('Logout all sessions')}
+            onClick={() => {
+              // TODO: Implementar cierre de sesión en todos los dispositivos
+            }}
             className="w-full text-red-600 hover:bg-red-50"
           >
             Cerrar Sesión en Todos los Dispositivos

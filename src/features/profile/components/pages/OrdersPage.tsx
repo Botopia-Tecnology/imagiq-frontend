@@ -82,12 +82,10 @@ export const OrdersPage: React.FC<OrdersPageProps> = ({
   }));
 
   const handleOrderDetails = (orderId: string) => {
-    console.log('Navigate to order details:', orderId);
     // TODO: Implement order details navigation
   };
 
   const handleDownloadReceipt = () => {
-    console.log('Download orders receipt');
     // TODO: Implement receipt download
   };
 

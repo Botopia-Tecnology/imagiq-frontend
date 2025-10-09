@@ -25,16 +25,13 @@ export async function checkFlixmediaAvailability(
 ): Promise<FlixmediaAvailability> {
   try {
     const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/mpn/${mpn}`;
-    console.log(`🔍 Verificando disponibilidad en Flixmedia: ${mpn}`);
 
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {
-      console.log(`✅ SKU encontrado en Flixmedia: ${mpn} (Product ID: ${data.product_id})`);
       return { available: true, productId: data.product_id };
     } else {
-      console.log(`❌ SKU no encontrado en Flixmedia: ${mpn}`);
       return { available: false };
     }
   } catch (error) {
@@ -47,7 +44,6 @@ export async function checkFlixmediaAvailability(
  * Busca el primer SKU disponible en una lista de SKUs
  */
 export async function findAvailableSku(skus: string[]): Promise<string | null> {
-  console.log(`🔢 SKUs a verificar:`, skus);
 
   for (const sku of skus) {
     const result = await checkFlixmediaAvailability(sku);

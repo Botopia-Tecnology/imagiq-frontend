@@ -125,16 +125,6 @@ export const AddressMap3D: React.FC<AddressMap3DProps> = ({
 
   // Actualizar marcador cuando cambia la dirección
   useEffect(() => {
-    // Debug: Logging para verificar sincronización
-    console.log('🗺️ AddressMap3D - Nueva dirección recibida:', {
-      address,
-      formattedAddress: address?.formattedAddress,
-      latitude: address?.latitude,
-      longitude: address?.longitude,
-      name: address?.name,
-      placeId: address?.placeId
-    });
-
     if (!map.current || !isMapLoaded || !address) return;
 
     // Limpiar marcador anterior y cerrar InfoWindow

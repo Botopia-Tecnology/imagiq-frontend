@@ -7,7 +7,6 @@ export function SearchModelSection() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Buscando:", searchTerm);
   };
 
   return (

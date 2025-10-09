@@ -41,7 +41,6 @@ export const PostHogProvider = ({
   useEffect(() => {
     // Initialize PostHog when component mounts
     if (typeof window !== "undefined") {
-      console.log("PostHog Provider initialized on client");
 
       // Track initial page load
       posthogUtils.capturePageView(window.location.pathname);

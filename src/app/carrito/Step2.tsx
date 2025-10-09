@@ -45,7 +45,6 @@ export default function Step2({
 
   // Handler para cuando se selecciona una dirección
   const handleAddressSelect = (place: PlaceDetails) => {
-    console.log('🏠 Dirección seleccionada en checkout:', place);
     setSelectedAddress(place);
 
     // Actualizar los campos del formulario automáticamente
@@ -250,7 +249,6 @@ export default function Step2({
   };
   useEffect(() => {
     const haveAccount = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-    console.log(haveAccount)
     if (haveAccount.email){
       router.push('/carrito/step3')
     }

@@ -152,7 +152,6 @@ export const RegistrationAddressFormWithPlaceDetails: React.FC<RegistrationAddre
   };
 
   const handleShippingAddressSelect = (place: PlaceDetails) => {
-    console.log('✅ Dirección de envío seleccionada:', place);
 
     const updatedData = {
       shippingAddress: place,
@@ -164,7 +163,6 @@ export const RegistrationAddressFormWithPlaceDetails: React.FC<RegistrationAddre
   };
 
   const handleBillingAddressSelect = (place: PlaceDetails) => {
-    console.log('✅ Dirección de facturación seleccionada:', place);
 
     const updatedData = { billingAddress: place };
     setAddressData(prev => ({ ...prev, ...updatedData }));

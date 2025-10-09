@@ -36,7 +36,6 @@ export default function VentasCorporativasPage() {
   const handleFormSubmit = async (data: SpecializedConsultationFormData) => {
     setIsSubmitting(true);
     try {
-      console.log("Formulario enviado:", data);
       await new Promise((resolve) => setTimeout(resolve, 2000));
       alert(
         "¡Gracias por tu interés! Nos pondremos en contacto contigo pronto."

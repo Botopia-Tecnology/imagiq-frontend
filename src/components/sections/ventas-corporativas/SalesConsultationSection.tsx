@@ -24,7 +24,6 @@ export default function SalesConsultationSection() {
 
     try {
       // Aquí iría la lógica para enviar el formulario
-      console.log("Consulta especializada:", data);
 
       // Simular delay de envío
       await new Promise((resolve) => setTimeout(resolve, 2000));

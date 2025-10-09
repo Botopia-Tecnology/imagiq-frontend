@@ -7,7 +7,6 @@ const MySwal = typeof window !== "undefined" ? withReactContent(Swal) : null;
 
 // Notificación para registro exitoso
 export async function notifyRegisterSuccess(email: string) {
-  console.log("[SweetAlert2] notifyRegisterSuccess called");
   if (!MySwal) {
     console.warn("SweetAlert2 not available (SSR or import error)");
     return Promise.resolve();
@@ -25,7 +24,6 @@ export async function notifyRegisterSuccess(email: string) {
         confirmButton: "swal2-confirm",
       },
     });
-    console.log("notifyRegisterSuccess resolved", result);
     return result;
   } catch (err) {
     console.error("SweetAlert2 error:", err);
@@ -35,7 +33,6 @@ export async function notifyRegisterSuccess(email: string) {
 
 // Notificación para login exitoso
 export async function notifyLoginSuccess(name?: string) {
-  console.log("[SweetAlert2] notifyLoginSuccess called");
   if (!MySwal) {
     console.warn("SweetAlert2 not available (SSR or import error)");
     return Promise.resolve();
@@ -52,7 +49,6 @@ export async function notifyLoginSuccess(name?: string) {
       showClass: { popup: "swal2-show" },
       hideClass: { popup: "swal2-hide" },
     });
-    console.log("notifyLoginSuccess resolved", result);
     return result;
   } catch (err) {
     console.error("SweetAlert2 error:", err);
@@ -62,7 +58,6 @@ export async function notifyLoginSuccess(name?: string) {
 
 // Notificación de error genérica
 export async function notifyError(message: string, title = "Error") {
-  console.log("[SweetAlert2] notifyError called");
   if (!MySwal) {
     console.warn("SweetAlert2 not available (SSR or import error)");
     return Promise.resolve();
@@ -77,7 +72,6 @@ export async function notifyError(message: string, title = "Error") {
       showClass: { popup: "swal2-show" },
       hideClass: { popup: "swal2-hide" },
     });
-    console.log("notifyError resolved", result);
     return result;
   } catch (err) {
     console.error("SweetAlert2 error:", err);

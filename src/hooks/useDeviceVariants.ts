@@ -282,12 +282,8 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
         };
 
         // Solo agregar variantes con SKU válido (stock puede ser 0)
-        console.log('🔍 processApiData - variant:', variant);
         if (variant.sku) {
           variants.push(variant);
-          console.log('✅ processApiData - variant added:', variant);
-        } else {
-          console.log('❌ processApiData - variant filtered out:', variant, 'sku:', variant.sku);
         }
       }
     });
@@ -410,11 +406,8 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
 
       if (response.success && response.data) {
         const apiData = response.data;
-        console.log('🔍 useDeviceVariants - apiData.products:', apiData.products);
         const variants = processApiData(apiData.products);
-        console.log('🔍 useDeviceVariants - processed variants:', variants);
         const devices = groupByDevice(variants);
-        console.log('🔍 useDeviceVariants - grouped devices:', devices);
 
         setDeviceOptions(devices);
 

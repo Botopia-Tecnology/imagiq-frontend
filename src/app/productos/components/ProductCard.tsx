@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
-import { useState } from "react";
+import { useState, memo } from "react";
 import ProductImage from "./ProductCard/ProductImage";
 import ProductSelectors from "./ProductCard/ProductSelectors";
 import ProductPricing from "./ProductCard/ProductPricing";
@@ -64,7 +64,7 @@ export interface ProductCardProps {
   monthlyInstallments?: number;
 }
 
-export default function ProductCard({
+const ProductCard = memo(function ProductCard({
   id,
   name,
   image,
@@ -229,4 +229,8 @@ export default function ProductCard({
       />
     </motion.div>
   );
-}
+});
+
+ProductCard.displayName = 'ProductCard';
+
+export default ProductCard;

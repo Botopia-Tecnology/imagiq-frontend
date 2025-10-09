@@ -53,7 +53,6 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
   React.useEffect(() => {
     if (videoRef.current) {
       videoRef.current.play().catch((error) => {
-        console.log("Autoplay was prevented:", error);
         setIsPlaying(false);
       });
     }

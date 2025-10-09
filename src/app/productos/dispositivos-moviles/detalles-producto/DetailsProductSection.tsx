@@ -122,6 +122,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   }, [selectedVariant, product.originalPrice]);
 
   const discountAmount = React.useMemo(() => {
+    
     if (originalPrice && currentPrice) {
       return originalPrice - currentPrice;
     }

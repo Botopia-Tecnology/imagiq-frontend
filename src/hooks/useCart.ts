@@ -170,7 +170,7 @@ export function useCart(): UseCartReturn {
   }, []);
 
   // Función para guardar productos en localStorage
-  const _saveProducts = useCallback(
+  const saveProducts = useCallback(
     (newProducts: CartProduct[], skipStorageEvent = false) => {
       try {
         // Si el carrito está vacío, mejor eliminar el ítem completamente

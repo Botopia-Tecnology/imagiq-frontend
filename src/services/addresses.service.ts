@@ -123,11 +123,6 @@ export class AddressesService {
         throw new Error('No se encontró información del usuario. Por favor, inicia sesión nuevamente.');
       }
 
-      console.log('📤 Enviando datos de dirección:', {
-        ...requestData,
-        placeDetails: requestData.placeDetails ? 'PlaceDetails object' : 'null'
-      });
-
       const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses`, {
         method: 'POST',
         headers: this.getHeaders(),
@@ -147,7 +142,6 @@ export class AddressesService {
       }
 
       const result = await response.json();
-      console.log('✅ Dirección creada exitosamente:', result);
       return result;
     } catch (error: unknown) {
       console.error('❌ Error creando dirección:', error);

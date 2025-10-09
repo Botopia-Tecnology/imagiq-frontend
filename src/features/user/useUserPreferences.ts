@@ -27,7 +27,6 @@ export const useUserPreferences = () => {
       theme: "light",
     },
     updatePreferences: (newPreferences: UserPreferences) => {
-      console.log("Updating preferences:", newPreferences);
     },
     loading: false,
   };
@@ -35,7 +34,6 @@ export const useUserPreferences = () => {
 
 export const useConsumptionPatterns = (userId?: string) => {
   // Analysis of user consumption patterns
-  console.log("Loading consumption patterns for user:", userId);
   return {
     patterns: {
       mostViewedCategories: [],
@@ -46,7 +44,6 @@ export const useConsumptionPatterns = (userId?: string) => {
     },
     loading: false,
     refreshPatterns: () => {
-      console.log("Refreshing patterns");
     },
   };
 };

@@ -223,7 +223,6 @@ export const CouponsPage: React.FC<CouponsPageProps> = ({
   };
 
   const handleUseCoupon = (couponId: string) => {
-    console.log('Use coupon:', couponId);
     // TODO: Navigate to products page with coupon applied
   };
 

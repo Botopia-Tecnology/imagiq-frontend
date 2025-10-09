@@ -61,7 +61,6 @@ export const CheckoutFlow: React.FC<CheckoutFlowProps> = ({
 
   const handleAddressSelected = (address: PlaceDetails | null) => {
     setSelectedAddress(address);
-    console.log('✅ Dirección seleccionada para checkout:', address);
   };
 
   const handleContinueToPayment = (address: PlaceDetails) => {

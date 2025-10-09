@@ -38,11 +38,7 @@ export default function Step3({
 
   // UX: Navegación al siguiente paso
   const handleContinue = () => {
-    console.log("Step3: handleContinue called", {
-      deliveryMethod,
-      address,
-      selectedStore,
-    });
+    // Datos de entrega seleccionados listos para el siguiente paso
     if (typeof onContinue === "function") {
       onContinue();
     }

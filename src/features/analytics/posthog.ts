@@ -21,7 +21,6 @@ export interface AnalyticsEvent {
 // Analytics functions
 export const trackEvent = (event: AnalyticsEvent) => {
   // PostHog event tracking implementation
-  console.log("Tracking event:", event);
 };
 
 export const identifyUser = (
@@ -29,7 +28,6 @@ export const identifyUser = (
   userProperties?: Record<string, unknown>
 ) => {
   // PostHog user identification
-  console.log("Identifying user:", userId, userProperties);
 };
 
 export const trackPageView = (
@@ -37,7 +35,6 @@ export const trackPageView = (
   properties?: Record<string, unknown>
 ) => {
   // PostHog page view tracking
-  console.log("Page view:", page, properties);
 };
 
 export const trackConversion = (
@@ -46,12 +43,10 @@ export const trackConversion = (
   properties?: Record<string, unknown>
 ) => {
   // Conversion tracking for sales and goals
-  console.log("Conversion:", conversionType, value, properties);
 };
 
 export const startSessionReplay = () => {
   // Enable session replay for current session
-  console.log("Starting session replay");
 };
 
 export const trackHeatmapData = (
@@ -60,11 +55,9 @@ export const trackHeatmapData = (
   coordinates?: { x: number; y: number }
 ) => {
   // Heat map data collection
-  console.log("Heatmap data:", element, action, coordinates);
 };
 
 export const getFeatureFlag = (flagName: string): boolean => {
   // Feature flag evaluation
-  console.log("Feature flag:", flagName);
   return false;
 };

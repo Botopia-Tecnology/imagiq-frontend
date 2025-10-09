@@ -116,7 +116,6 @@ export const UserPreferencesProvider = ({
 
   const trackEvent = (event: string, properties?: Record<string, unknown>) => {
     // Mock tracking function - will be replaced with actual analytics
-    console.log("User Preferences Event:", event, properties);
   };
 
   const updatePreferences = (newPrefs: Partial<UserPreferences>) => {

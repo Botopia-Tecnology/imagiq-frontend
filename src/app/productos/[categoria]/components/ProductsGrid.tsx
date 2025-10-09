@@ -97,6 +97,7 @@ const CategoryProductsGrid = forwardRef<
             {/* Banner promocional 1 - Grid position: fila 2, columna 1 */}
             {showBanner && viewMode === "grid" && products.length >= 4 && (
               <div
+                key="banner-1"
                 style={{ gridRow: "2", gridColumn: "1" }}
               >
                 <div className="relative rounded-xl overflow-hidden shadow-lg h-full">
@@ -119,6 +120,7 @@ const CategoryProductsGrid = forwardRef<
             {/* Banner promocional 2 - Grid position: fila 4, columna 2 */}
             {showBanner && viewMode === "grid" && products.length >= 7 && (
               <div
+                key="banner-2"
                 style={{ gridRow: "4", gridColumn: "2" }}
               >
                 <div className="relative rounded-xl overflow-hidden shadow-lg h-full">
@@ -170,7 +172,7 @@ const CategoryProductsGrid = forwardRef<
 
               return (
                 <div
-                  key={product.sku}
+                  key={product.id}
                   className={
                     viewMode === "grid"
                       ? showBanner

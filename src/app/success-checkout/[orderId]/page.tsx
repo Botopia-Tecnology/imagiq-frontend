@@ -14,14 +14,21 @@
  */
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import CheckoutSuccessOverlay from "../carrito/CheckoutSuccessOverlay";
+import { use, useEffect, useState } from "react";
+import CheckoutSuccessOverlay from "../../carrito/CheckoutSuccessOverlay";
 import { useCart } from "@/hooks/useCart";
 
-export default function SuccessCheckoutPage() {
+export default function SuccessCheckoutPage({
+  params,
+}: Readonly<{ params: Promise<{ orderId: string }> }>) {
+  const pathParams = use(params);
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const { clearCart } = useCart();
+  
+  useEffect(() => {
+    console.log(pathParams)
+  }, [pathParams])
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {
@@ -55,7 +62,7 @@ export default function SuccessCheckoutPage() {
       }
 
       // Redirigir al tracking service
-      router.push("/tracking-service");
+      router.push(`/tracking-service/${pathParams.orderId}`);
     }, 300);
   };
 

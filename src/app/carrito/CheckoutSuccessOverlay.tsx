@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -35,7 +37,7 @@ function CheckoutSuccessOverlay({
   testId = "checkout-success-overlay",
   locale = "es",
   triggerPosition,
-}: CheckoutSuccessOverlayProps) {
+}: Readonly<CheckoutSuccessOverlayProps>) {
   const router = useRouter();
   const overlayRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
@@ -108,7 +110,6 @@ function CheckoutSuccessOverlay({
         transitionTimingFunction: "cubic-bezier(0.77,0,0.175,1)",
       }}
     >
-      {/* Expansión radial premium desde el botón de finalizar pago */}
       <div
         className={`absolute w-24 h-12 rounded-full bg-[#009047] shadow-2xl ${
           expand
@@ -124,6 +125,7 @@ function CheckoutSuccessOverlay({
           boxShadow: "0 8px 64px #00904799",
         }}
         aria-hidden="true"
+        suppressHydrationWarning={true}
       />
       {/* Contenido central animado */}
       {showContent && (
@@ -159,10 +161,7 @@ function CheckoutSuccessOverlay({
           <button
             ref={closeBtnRef}
             type="button"
-            onClick={() => {
-              if (onClose) onClose();
-              router.push("/tracking-service");
-            }}
+            onClick={onClose}
             className="mt-8 px-8 py-3 rounded-xl bg-white text-[#009047] text-lg font-bold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#009047] transition-all hover:bg-[#e6ffe6]"
             data-testid="checkout-success-continue"
             style={{ boxShadow: "0 2px 16px #00904733" }}

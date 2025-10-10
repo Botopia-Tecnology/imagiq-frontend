@@ -14,7 +14,7 @@ import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 const HIDDEN_NAVBAR_ROUTES = [
   "/carrito",
   "/charging-result",
-  "/success-checkout",
+  "/success-checkout/",
   "/error-checkout",
   "/verify-purchase/",
 ];

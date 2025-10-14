@@ -181,12 +181,12 @@ export default function ViewProduct({
   // Mejorado: Añadir al carrito igual que ProductCard
   const handleAddToCart = () => {
     // Validación estricta: debe existir un SKU válido del color seleccionado
-    if (!selectedColor?.sku) {
+    if (!productCard.selectedColor?.sku) {
       console.error('Error al agregar al carrito:', {
         product_id: safeProduct.id,
         product_name: safeProduct.name,
-        selectedColor,
-        available_colors: safeProduct.colors,
+        selectedColor: productCard.selectedColor,
+        available_colors: productCard.colors,
         error: 'No se ha seleccionado un color válido con SKU'
       });
       alert('Por favor selecciona un color antes de agregar al carrito');
@@ -205,7 +205,7 @@ export default function ViewProduct({
           ? parseInt(safeProduct.price.replace(/[^\d]/g, ""))
           : safeProduct.price || 0,
       quantity: 1,
-      sku: selectedColor.sku, // SKU estricto del color seleccionado
+      sku: productCard.selectedColor.sku, // SKU estricto del color seleccionado
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);

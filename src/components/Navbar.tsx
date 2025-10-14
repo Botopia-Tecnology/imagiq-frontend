@@ -221,7 +221,7 @@ export default function Navbar() {
         </div>
 
         {/* Desktop Header completo - Mostrar en pantallas >= 1280px */}
-        <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-6 min-h-[104px] items-end justify-between gap-4 2xl:gap-8">
+        <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-4 min-h-[100px] items-end justify-between gap-4 2xl:gap-8">
           <div className="flex items-center gap-3 xl:gap-4 2xl:gap-6 min-w-0 flex-1">
             <NavbarLogo
               showWhiteLogo={navbar.showWhiteLogo}

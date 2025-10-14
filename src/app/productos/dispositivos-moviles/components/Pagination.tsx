@@ -66,7 +66,7 @@ export default function Pagination({
   return (
     <div
       className={cn(
-        "w-full px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6",
+        "w-full px-4 sm:px-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-6 relative z-10",
         className
       )}
     >

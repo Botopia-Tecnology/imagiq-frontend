@@ -86,8 +86,8 @@ export default function UniversalSeriesFilter({
   const hasSeries = config.series && config.series.length > 0;
 
   return (
-    <section className="bg-white border-b border-gray-200">
-      <div className="px-3 py-2 sm:px-6 sm:py-6 lg:px-8 lg:py-12">
+    <section>
+      <div className="">
         <SeriesFilterBreadcrumb
           config={config}
           activeFilters={activeFilters}
@@ -103,7 +103,7 @@ export default function UniversalSeriesFilter({
         />
 
         <h1
-          className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-black mb-2 sm:mb-6 md:mb-8 lg:mb-10"
+          className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-black py-4 sm:mb-6 md:mb-8 lg:mb-10"
           style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
         >
           {config.title}

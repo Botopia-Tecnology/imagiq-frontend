@@ -11,16 +11,17 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
-import { Heart, Loader } from "lucide-react";
+import { Heart, Loader, ChevronLeft, ChevronRight, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -132,6 +133,8 @@ export default function ProductCard({
   onToggleFavorite,
   className,
   sku,
+  rating,
+  reviewCount,
   selectedColor: selectedColorProp,
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
@@ -140,6 +143,8 @@ export default function ProductCard({
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isCompareSelected, setIsCompareSelected] = useState(false);
 
   // Verificar si el producto está sin stock
   const isOutOfStock = stock === 0;
@@ -157,6 +162,29 @@ export default function ProductCard({
     capacities && capacities.length > 0 ? capacities[0] : null
   );
   const selectedCapacity = selectedCapacityProp ?? selectedCapacityLocal;
+
+  // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
+  const productImages = [image, image, image, image, image, image];
+
+  // Aplicar transformación de Cloudinary a todas las imágenes del carrusel
+  const transformedImages = useMemo(() => {
+    const originalImg = typeof image === "string" ? image : image?.src;
+    console.log("🖼️ ProductCard - Imagen original:", originalImg);
+
+    const transformed = productImages.map((img, index) => {
+      const imgSrc = typeof img === "string" ? img : img?.src;
+      const transformedUrl = getCloudinaryUrl(imgSrc, "catalog");
+
+      if (index === 0) {
+        console.log("🎨 ProductCard - Imagen transformada:", transformedUrl);
+        console.log("📐 ProductCard - Tipo de transformación:", "catalog (1000x1000, c_fill)");
+      }
+
+      return transformedUrl;
+    });
+
+    return transformed;
+  }, [productImages, image]);
 
   const handleColorSelect = (color: ProductColor) => {
     setSelectedColorLocal(color);
@@ -183,6 +211,11 @@ export default function ProductCard({
   const currentPrice = selectedCapacity?.price || selectedColor?.price || price;
   const currentOriginalPrice = selectedCapacity?.originalPrice || selectedColor?.originalPrice || originalPrice;
   const currentDiscount = selectedCapacity?.discount || selectedColor?.discount || discount;
+
+  // Calcular cuotas mensuales (simulado - 12 cuotas sin interés)
+  const monthlyPayment = currentPrice 
+    ? Math.round(parseInt(currentPrice.replace(/[^\d]/g, '')) / 12).toLocaleString('es-CO')
+    : null;
 
   const handleAddToCart = async () => {
     if (isLoading) {
@@ -250,12 +283,12 @@ export default function ProductCard({
     
     // Verificar si el click fue en un botón o dentro de un botón
     const isButton = target.closest('button') !== null;
+    const isCheckbox = target.closest('input[type="checkbox"]') !== null;
     
-    // Si NO es un botón, navegar a multimedia
-    if (!isButton) {
+    // Si NO es un botón ni checkbox, navegar a multimedia
+    if (!isButton && !isCheckbox) {
       handleMoreInfo();
     }
-    // Si ES un botón, no hacer nada (el botón maneja su propio onClick con stopPropagation)
   };
 
   const cardReveal = useScrollReveal<HTMLDivElement>({
@@ -271,226 +304,256 @@ export default function ProductCard({
     responsive: true,
   });
 
+  const nextImage = () => {
+    setCurrentImageIndex((prev) => (prev + 1) % productImages.length);
+  };
+
+  const prevImage = () => {
+    setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+  };
+
   return (
     <motion.div
       ref={cardReveal.ref}
       {...cardReveal.motionProps}
       onClick={handleCardClick}
       className={cn(
-        // Diseño vertical para todos los tamaños
-        "bg-white rounded-2xl w-full overflow-hidden transition-all duration-300 cursor-pointer",
-        viewMode === "list" && "flex flex-row",
-        isOutOfStock && "opacity-60 grayscale",
+        "transition-all duration-300 cursor-pointer",
+        isOutOfStock && "opacity-60",
         className
       )}
     >
-      {/* Imagen del producto */}
-      <div className={cn(
-        "relative bg-gray-100 overflow-hidden rounded-xl",
-        viewMode === "list" 
-          ? "w-48 h-48 flex-shrink-0 m-4" 
-          : "aspect-square mx-4"
-      )}>
-        {/* Badges */}
-        <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-          {isNew && (
-            <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              NUEVO
-            </span>
-          )}
-          {discount && (
-            <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-              {discount}
-            </span>
-          )}
+      {/* Sección de imagen con carrusel */}
+      <div className="relative max-h-[350px] bg-gray-100 rounded-lg">
+        {/* Carrusel de imágenes */}
+        <div className="relative w-full h-full">
+          {transformedImages.map((transformedSrc, index) => {
+            return (
+              <div
+                key={index}
+                className={cn(
+                  "relative w-full aspect-square",
+                  index === currentImageIndex ? "opacity-100" : "opacity-0"
+                )}
+              >
+                <Image
+                  src={transformedSrc}
+                  alt={`${name} - imagen ${index + 1}`}
+                  fill
+                  className="object-cover"
+                  sizes={cloudinaryImage.imageProps.sizes}
+                />
+              </div>
+            );
+          })}
         </div>
 
-        {/* Botón favorito */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevenir que se active el click de la card
-            handleToggleFavorite();
-          }}
-          className={cn(
-            "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer",
-            "bg-white shadow-md hover:shadow-lg",
-            isFavorite ? "text-red-500" : "text-gray-400"
-          )}
-        >
-          <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
-        </button>
-
-        <Image
-          src={cloudinaryImage.src}
-          alt={name}
-          width={cloudinaryImage.width}
-          height={cloudinaryImage.height}
-          className={cn("object-contain p-4 w-full h-full")}
-          sizes={cloudinaryImage.imageProps.sizes}
-        />
+        {/* Indicadores del carrusel */}
+        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          {productImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentImageIndex(index);
+              }}
+              className={cn(
+                "w-1.5 h-1.5 rounded-full transition-all duration-200",
+                index === currentImageIndex ? "bg-black w-4" : "bg-gray-300"
+              )}
+              aria-label={`Ir a imagen ${index + 1}`}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Contenido */}
-      <div className={cn(
-        "bg-white",
-        viewMode === "list" ? "flex-1 p-4" : "p-4"
-      )}>
+      {/* Contenido del producto */}
+      <div className="py-3 px-2  space-y-2">
         {/* Título del producto */}
-        <h3 className="font-extrabold text-gray-900 text-base mb-3 line-clamp-2 leading-5">
+        <h3
+          onClick={handleCardClick}
+          className={cn(
+            "text-base font-bold hover:underline cursor-pointer line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap",
+            isOutOfStock ? "text-gray-500" : "text-black"
+          )}
+        >
           {cleanProductName(name)}
         </h3>
 
         {/* Selector de colores */}
-        {colors && colors.length > 0 && (
-          <div className="mb-3">
-            {selectedColor && (
-              <p className="text-sm text-gray-600 mb-2">
-                Color: <span className="font-semibold">{selectedColor.label}</span>
+        <div className="min-h-[66px]">
+          {colors && colors.length > 0 && (
+            <div>
+              <p className={cn(
+                "text-xs py-1.5",
+                isOutOfStock ? "text-gray-400" : "text-gray-600"
+              )}>
+                <span className="font-medium">Color:</span> {selectedColor?.label}
               </p>
-            )}
-            <div className="flex gap-2">
-              {colors.map((color) => (
-                <button
-                  key={color.name}
-                  onClick={(e) => {
-                    e.stopPropagation(); // Prevenir que se active el click de la card
-                    handleColorSelect(color);
-                  }}
-                  className={cn(
-                    "w-6 h-6 rounded-full border-2 transition-all duration-200 cursor-pointer",
-                    selectedColor?.name === color.name
-                      ? "border-blue-600 ring-2 ring-blue-200"
-                      : "border-gray-400 hover:border-gray-600"
-                  )}
-                  style={{ backgroundColor: color.hex }}
-                  title={`${color.label} (SKU: ${color.sku})`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Selector de capacidad */}
-        {capacities && capacities.length > 0 && (
-          <div className="mb-4">
-            {selectedCapacity && (
-              <p className="text-sm text-gray-600 mb-2">
-                Almacenamiento: <span className="font-semibold">{selectedCapacity.label}</span>
-              </p>
-            )}
-            <div className="flex gap-2 flex-wrap">
-              {capacities.map((capacity) => (
-                <button
-                  key={capacity.value}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCapacitySelect(capacity);
-                  }}
-                  className={cn(
-                    "px-3 py-1.5 text-xs font-semibold rounded-md border-2 transition-all duration-200 cursor-pointer",
-                    selectedCapacity?.value === capacity.value
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                  )}
-                  title={capacity.label}
-                >
-                  {capacity.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Precios - Mantener espacio consistente */}
-        <div className="mb-4 min-h-[60px]">
-          {!isOutOfStock && currentPrice && (
-            <>
-              {/* Precio con descuento */}
-              <div className="flex items-baseline gap-2 mb-1">
-                <span className="text-xl font-bold text-gray-900">
-                  {currentPrice}
-                </span>
-                {currentOriginalPrice && (
-                  <span className="text-sm text-gray-500 line-through">
-                    {currentOriginalPrice}
-                  </span>
+              <div className="flex gap-2 flex-wrap">
+                {colors.slice(0, 4).map((color) => (
+                  <button
+                    key={color.name}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isOutOfStock) {
+                        handleColorSelect(color);
+                      }
+                    }}
+                    className={cn(
+                      "w-6.5 h-6.5 rounded-full border transition-all duration-200 relative",
+                      isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+                      selectedColor?.name === color.name
+                        ? "border-black p-0.5"
+                        : "border-gray-300 hover:border-gray-400"
+                    )}
+                    title={color.label}
+                  >
+                    <div
+                      className="w-full h-full rounded-full"
+                      style={{ backgroundColor: color.hex }}
+                    />
+                    {selectedColor?.name === color.name && (
+                      <div className="absolute inset-0 rounded-full border-2 border-white" />
+                    )}
+                  </button>
+                ))}
+                {colors.length > 4 && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isOutOfStock) {
+                        handleCardClick(e);
+                      }
+                    }}
+                    className={cn(
+                      "w-6.5 h-6.5 rounded-full border-2 border-gray-300 flex items-center justify-center text-[10px] font-medium text-gray-600 hover:border-gray-400",
+                      isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                    )}
+                  >
+                    +{colors.length - 4}
+                  </button>
                 )}
               </div>
-              {/* Ahorro calculado */}
+            </div>
+          )}
+        </div>
+
+        {/* Selector de capacidad */}
+        <div className="min-h-[44px]">
+          {capacities && capacities.length > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex gap-2 flex-wrap">
+                {capacities.map((capacity) => (
+                  <button
+                    key={capacity.value}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isOutOfStock) {
+                        handleCapacitySelect(capacity);
+                      }
+                    }}
+                    className={cn(
+                      "px-3.5 py-2 text-sm font-medium rounded-md border transition-all duration-200",
+                      isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+                      selectedCapacity?.value === capacity.value
+                        ? "border-black bg-black text-white"
+                        : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                    )}
+                  >
+                    {capacity.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Precio */}
+        <div className="min-h-[70px]">
+          {currentPrice && (
+            <div className="space-y-1">
+              {/* Precio principal */}
+              <div className={cn(
+                "text-xl font-bold",
+                isOutOfStock ? "text-gray-400" : "text-black"
+              )}>
+                {currentPrice}
+              </div>
+
+              {/* Precio original y ahorro (solo si hay descuento) */}
               {currentOriginalPrice && currentPrice !== currentOriginalPrice && (() => {
                 const priceNum = parseInt(currentPrice.replace(/[^\d]/g, ''));
                 const originalPriceNum = parseInt(currentOriginalPrice.replace(/[^\d]/g, ''));
                 const savings = originalPriceNum - priceNum;
                 if (savings > 0) {
                   return (
-                    <div className="text-sm">
-                      <span className="text-gray-700">Ahorra </span>
-                      <span className="font-bold text-[#1428A0]">
-                        $ {savings.toLocaleString('es-CO')}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className={cn(
+                        "text-sm line-through",
+                        isOutOfStock ? "text-gray-300" : "text-gray-500"
+                      )}>
+                        {currentOriginalPrice}
+                      </span>
+                      <span className={cn(
+                        "text-sm font-semibold",
+                        isOutOfStock ? "text-gray-400" : "text-blue-600"
+                      )}>
+                        Ahorra $ {savings.toLocaleString('es-CO')}
                       </span>
                     </div>
                   );
                 }
                 return null;
               })()}
-            </>
+            </div>
           )}
         </div>
 
-        {/* Botones de acción - Mantener espacio consistente */}
+        {/* Botones de acción */}
         <div className="space-y-2">
           {isOutOfStock ? (
-            <>
-              {/* Botón "Notifícame" para productos sin stock - no debe estar en grayout */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Implementar funcionalidad de notificación
-                  alert("Te notificaremos cuando este producto esté disponible");
-                }}
-                className="w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 flex items-center justify-center hover:bg-gray-800 grayscale-0 opacity-100"
-              >
-                Notifícame
-              </button>
-              {/* Espaciador invisible para mantener altura consistente */}
-              <div className="h-[48px]" aria-hidden="true" />
-            </>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                alert("Te notificaremos cuando este producto esté disponible");
+              }}
+              className="w-full bg-black text-white py-2.5 px-4 rounded-full text-sm font-bold hover:bg-gray-800 transition-colors"
+            >
+              Notifícame
+            </button>
           ) : (
-            // Botones normales para productos con stock
-            <>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAddToCart();
-                }}
-                disabled={isLoading}
-                className={cn(
-                  "w-full bg-black text-white py-3 px-4 rounded-full text-sm font-semibold cursor-pointer",
-                  "transition-all duration-200 flex items-center justify-center",
-                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed",
-                  isLoading && "animate-pulse"
-                )}
-              >
-                {isLoading ? (
-                  <Loader className="w-4 h-4" />
-                ) : (
-                  <span>Comprar ahora</span>
-                )}
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMoreInfo();
-                }}
-                className="w-full bg-white text-black py-3 px-4 rounded-full text-sm font-semibold cursor-pointer border border-gray-300 hover:bg-gray-50 transition-all duration-200"
-              >
-                Más información
-              </button>
-            </>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleAddToCart();
+              }}
+              disabled={isLoading}
+              className={cn(
+                "w-full bg-black text-white py-2.5 px-4 rounded-full text-sm font-bold",
+                "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                isLoading && "animate-pulse"
+              )}
+            >
+              {isLoading ? (
+                <Loader className="w-4 h-4 mx-auto" />
+              ) : (
+                "Comprar ahora"
+              )}
+            </button>
           )}
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoreInfo();
+            }}
+            className="w-full text-black py-2.5 px-4 text-sm font-bold hover:underline transition-all border border-gray-300 rounded-full"
+          >
+            Más información
+          </button>
         </div>
       </div>
-
     </motion.div>
   );
 }

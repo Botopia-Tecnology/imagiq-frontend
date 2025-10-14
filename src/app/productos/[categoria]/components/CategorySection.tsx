@@ -79,7 +79,7 @@ export default function CategorySection({
 
   if (error) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center">
         <h2 className="text-xl font-semibold text-red-600 mb-2">Error al cargar productos</h2>
         <p className="text-gray-600 mb-4">{error}</p>
         <button
@@ -94,7 +94,7 @@ export default function CategorySection({
   }
 
   return (
-    <div>
+    <div className="px-4 md:px-10">
       {seriesConfig && (
         <UniversalSeriesFilter
           config={seriesConfig}

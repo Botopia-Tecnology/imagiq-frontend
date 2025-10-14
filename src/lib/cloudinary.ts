@@ -37,7 +37,7 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
   // b_white necesario para imágenes WebP con transparencia
   // g_auto centra el producto en el frame
   // Solo las MUY verticales (como Z Fold)
-  catalog: 'f_auto,q_auto:best,c_pad,w_2000,h_2000',
+  catalog: 'f_auto,q_auto:best,c_pad,w_3000,h_3000',
 
   // Vista principal producto - 1000x1000, fill_pad (mantiene proporciones, rellena espacios)
   // q_auto:best para máxima calidad

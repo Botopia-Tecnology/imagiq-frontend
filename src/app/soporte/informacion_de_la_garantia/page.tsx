@@ -1,8 +1,15 @@
+"use client";
+
+import { HeroSection } from "@/components/sections/soporte/garantia/HeroSection";
+import { WarrantyCategoriesSection } from "@/components/sections/soporte/garantia/WarrantyCategoriesSection";
+import { WarrantyPolicySection } from "@/components/sections/soporte/garantia/WarrantyPolicySection";
+
 export default function InformacionDeLaGarantiaPage() {
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Información de la garantía</h1>
-      <p className="text-gray-600">Esta página está vacía</p>
+    <div className="min-h-screen bg-white">
+      <HeroSection />
+      <WarrantyCategoriesSection />
+      <WarrantyPolicySection />
     </div>
   );
 }

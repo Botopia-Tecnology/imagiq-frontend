@@ -86,7 +86,7 @@ export default function TrackingService({
       .catch((error) => {
         console.error("Error fetching order data:", error);
         setError(
-          "No se pudo cargar la información del pedido. Por favor, intenta nuevamente."
+          "No se pudo cargar la información del pedido. Por favor, intenta nuevamente.."
         );
         setIsLoading(false);
       });

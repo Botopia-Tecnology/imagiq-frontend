@@ -23,7 +23,7 @@ interface ApiResponse<T> {
 
 // API Client class
 export class ApiClient {
-  private baseURL: string;
+  private readonly baseURL: string;
   private headers: Record<string, string>;
 
   constructor(baseURL: string = API_BASE_URL) {

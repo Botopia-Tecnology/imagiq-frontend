@@ -324,7 +324,7 @@ export default function ProductCard({
       )}
     >
       {/* Sección de imagen con carrusel */}
-      <div className="relative max-h-[350px] bg-gray-100 rounded-lg">
+      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden max-h-[350px]">
         {/* Carrusel de imágenes */}
         <div className="relative w-full h-full">
           {transformedImages.map((transformedSrc, index) => {
@@ -332,43 +332,27 @@ export default function ProductCard({
               <div
                 key={index}
                 className={cn(
-                  "relative w-full aspect-square",
+                  "absolute inset-0 flex items-center justify-center p-4",
                   index === currentImageIndex ? "opacity-100" : "opacity-0"
                 )}
               >
-                <Image
-                  src={transformedSrc}
-                  alt={`${name} - imagen ${index + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes={cloudinaryImage.imageProps.sizes}
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={transformedSrc}
+                    alt={`${name} - imagen ${index + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes={cloudinaryImage.imageProps.sizes}
+                  />
+                </div>
               </div>
             );
           })}
         </div>
-
-        {/* Indicadores del carrusel */}
-        <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-          {productImages.map((_, index) => (
-            <button
-              key={index}
-              onClick={(e) => {
-                e.stopPropagation();
-                setCurrentImageIndex(index);
-              }}
-              className={cn(
-                "w-1.5 h-1.5 rounded-full transition-all duration-200",
-                index === currentImageIndex ? "bg-black w-4" : "bg-gray-300"
-              )}
-              aria-label={`Ir a imagen ${index + 1}`}
-            />
-          ))}
-        </div>
       </div>
 
       {/* Contenido del producto */}
-      <div className="py-3 px-2  space-y-2">
+      <div className="py-3 px-3 space-y-2">
         {/* Título del producto */}
         <h3
           onClick={handleCardClick}

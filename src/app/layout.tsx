@@ -3,7 +3,9 @@
  */
 
 import type { Metadata } from "next";
+
 import { Inter } from "next/font/google";
+import { samsungSharpSans } from "./fonts";
 import "./globals.css";
 
 import { AuthProvider } from "@/features/auth/context";
@@ -14,6 +16,9 @@ import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 import ChatbotWidget from "@/components/chatbotWidget";
 import { Toaster } from "@/components/ui/sonner";
 import ClientLayout from "./ClientLayout";
+import ClarityScript from "@/components/analytics/ClarityScript";
+import GTMScript from "@/components/analytics/GTMScript";
+import MetaPixelScript from "@/components/analytics/MetaPixelScript";
 import { ResponsiveProvider } from "@/components/responsive"; // Importa el provider
 import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 import { ProductProvider } from "@/features/products/ProductContext";
@@ -93,11 +98,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport = {
-  width: 'device-width',
+  width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  viewportFit: 'cover', // Importante para iOS safe-area
+  viewportFit: "cover", // Importante para iOS safe-area
 };
 
 export default function RootLayout({
@@ -116,8 +121,16 @@ export default function RootLayout({
     safeChildren = <></>;
   }
   return (
-    <html lang="es" className={inter.variable}>
-      <body className="font-samsung antialiased">
+    <html
+      lang="es"
+      className={`${inter.variable} ${samsungSharpSans.variable}`}
+    >
+      <head>
+        <ClarityScript />
+        <GTMScript />
+        <MetaPixelScript />
+      </head>
+      <body className="antialiased">
         <ResponsiveProvider>
           <ProductProvider>
             <NavbarVisibilityProvider>

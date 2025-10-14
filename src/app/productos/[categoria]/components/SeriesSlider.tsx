@@ -116,8 +116,8 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
               className={cn(
                 "relative rounded-xl transition-all duration-300 flex-shrink-0",
                 "flex items-center gap-3 sm:gap-4",
-                "px-6 sm:px-4 py-3 sm:py-4",
-                "min-w-[180px] max-w-fit",
+                "px-4 md:px-6 md:py-2",
+                "min-w-[220px] max-w-[450px]",
                 "min-h-[100px] sm:min-h-[110px] lg:min-h-[120px]",
                 // Estilos cuando NO está activo
                 !isActive && [
@@ -160,8 +160,8 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
 
               <h3
                 className={cn(
-                  "text-base sm:text-lg lg:text-xl font-bold",
-                  "whitespace-nowrap",
+                  "text-sm sm:text-base lg:text-lg font-bold",
+                  "text-left leading-tight break-words",
                   isActive ? "text-black" : "text-gray-900"
                 )}
                 style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}

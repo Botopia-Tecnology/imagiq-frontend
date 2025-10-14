@@ -95,11 +95,15 @@ export function ShippingOrderView({
                 </div>
                 {/* PDF preview */}
                 <div className="w-full h-[380px] sm:h-[480px] md:h-[600px] bg-white overflow-hidden">
-                  <embed
+                  <iframe
                     title="Vista previa guía"
-                    type="application/pdf"
                     src={`data:application/pdf;base64,${pdfBase64}#toolbar=0&navpanes=0&scrollbar=0&view=Fit&page=1`}
-                    className="w-full h-full"
+                    className="w-full h-full border-0"
+                    style={{ border: 'none' }}
+                    onError={() => {
+                      // Fallback: si el iframe falla, mostrar mensaje
+                      console.log('PDF preview not supported on this device');
+                    }}
                   />
                 </div>
                 <div className="px-5 pt-3 pb-4 flex justify-center">

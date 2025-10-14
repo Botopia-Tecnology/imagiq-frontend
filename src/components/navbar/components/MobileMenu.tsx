@@ -28,7 +28,13 @@ const SUBMENU_COMPONENTS: Record<string, FC<{ onClose: () => void }>> = {
   Accesorios: AccesoriosSubmenu,
 };
 
-export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchChange, onSearchSubmit }) => {
+export const MobileMenu: FC<Props> = ({
+  isOpen,
+  onClose,
+  searchQuery,
+  onSearchChange,
+  onSearchSubmit,
+}) => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
   if (!isOpen) return null;
@@ -41,13 +47,19 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
     }
   };
 
-  const SubmenuComponent = activeSubmenu ? SUBMENU_COMPONENTS[activeSubmenu] : null;
+  const SubmenuComponent = activeSubmenu
+    ? SUBMENU_COMPONENTS[activeSubmenu]
+    : null;
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-[100]" onClick={onClose} aria-hidden="true" />
+      <div
+        className="fixed inset-0 bg-black/50 z-[100]"
+        onClick={onClose}
+        aria-hidden="true"
+      />
 
-      <div className="fixed inset-y-0 left-0 w-full max-w-md bg-white z-[101] overflow-y-auto">
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white z-[101] overflow-y-auto">
         <MobileMenuHeader
           activeSubmenu={activeSubmenu}
           onClose={onClose}
@@ -62,7 +74,10 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
         {SubmenuComponent ? (
           <SubmenuComponent onClose={onClose} />
         ) : (
-          <MobileMenuContent onClose={onClose} onMenuItemClick={handleMenuItemClick} />
+          <MobileMenuContent
+            onClose={onClose}
+            onMenuItemClick={handleMenuItemClick}
+          />
         )}
       </div>
     </>

@@ -5,11 +5,8 @@ import { useCallback, useEffect, useState } from "react";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-export default function VerifyPurchase({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promise<{ id: string }>>; }>) {
+  const { params } = props;
   const [orderId, setOrderId] = useState<string | null>(null);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
@@ -31,7 +28,7 @@ export default function VerifyPurchase({
       const data: { message: string; status: number } = await response.json();
 
       if (data.status === 200) {
-        router.push("/success-checkout");
+        router.push(`/success-checkout/${orderId}`);
       } else {
         router.push("/error-checkout");
       }

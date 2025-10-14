@@ -160,7 +160,7 @@ export function useCheckoutLogic() {
               quantity: String(p.quantity),
               unitPrice: String(p.price),
             })),
-            metodo_envio: 2,
+            metodo_envio: 1,
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
@@ -189,7 +189,7 @@ export function useCheckoutLogic() {
               quantity: String(p.quantity),
               unitPrice: String(p.price),
             })),
-            metodo_envio: 2,
+            metodo_envio: 1,
             shippingAmount: String(envio),
             totalAmount: "20000",
             currency: "COP",
@@ -216,7 +216,7 @@ export function useCheckoutLogic() {
               quantity: String(p.quantity),
               unitPrice: String(p.price),
             })),
-            metodo_envio: 2,
+            metodo_envio: 1,
             shippingAmount: String(envio),
             totalAmount: total > 200_000 ? String(200_000) : String(total),
             userInfo: {

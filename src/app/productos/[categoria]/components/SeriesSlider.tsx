@@ -16,13 +16,13 @@ interface Props {
   readonly onSerieClick: (serieId: string) => void;
 }
 
-const ScrollButton = ({ 
-  direction, 
-  onClick, 
-  visible 
-}: { 
-  direction: "left" | "right"; 
-  onClick: () => void; 
+const ScrollButton = ({
+  direction,
+  onClick,
+  visible
+}: {
+  direction: "left" | "right";
+  onClick: () => void;
   visible: boolean;
 }) => {
   if (!visible) return null;
@@ -30,17 +30,17 @@ const ScrollButton = ({
   return (
     <button
       onClick={onClick}
-      className="absolute top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
+      className="hidden md:block absolute top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
       style={{ [direction]: 0 }}
       type="button"
       aria-label={`Scroll ${direction}`}
     >
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-          strokeWidth={2} 
-          d={direction === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"} 
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d={direction === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
         />
       </svg>
     </button>
@@ -115,17 +115,16 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
               onMouseLeave={() => setHoveredSerie(null)}
               className={cn(
                 "relative rounded-xl transition-all duration-300 flex-shrink-0",
-                "px-5 py-4 sm:px-6 sm:py-5 lg:px-8 lg:py-6",
-                "flex items-center gap-4",
-                "w-[280px] sm:w-[320px] lg:w-[360px]",
+                "flex items-center gap-3 sm:gap-4",
+                "px-4 md:px-6 md:py-2",
+                "min-w-[220px] max-w-[450px]",
                 "min-h-[100px] sm:min-h-[110px] lg:min-h-[120px]",
                 // Estilos cuando NO está activo
                 !isActive && [
-                  "bg-[#F8F8F8]",
-                  "border-2 border-gray-200",
+                  "bg-gray-100",
                   "hover:bg-[#EFEFEF]",
                   "hover:border-gray-300",
-                  "hover:shadow-md"
+                  "hover:shadow-sm"
                 ],
                 // Estilos cuando SÍ está activo - SIMPLIFICADO
                 isActive && [
@@ -161,8 +160,8 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
 
               <h3
                 className={cn(
-                  "text-base sm:text-lg lg:text-xl font-bold flex-1 min-w-0",
-                  "break-words leading-tight",
+                  "text-sm sm:text-base lg:text-lg font-bold",
+                  "text-left leading-tight break-words",
                   isActive ? "text-black" : "text-gray-900"
                 )}
                 style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}

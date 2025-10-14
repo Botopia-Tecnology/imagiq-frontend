@@ -1,12 +1,5 @@
 @import url("sweetalert2/dist/sweetalert2.min.css");
 
-/* Soporte para Safari iOS - Safe Area Insets */
-@supports (padding: max(0px)) {
-  body {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-}
-
 /* Animaciones de página */
 @keyframes fadeIn {
   from {
@@ -121,19 +114,11 @@
   animation: logo-reload-bgMove 16s ease-in-out infinite alternate;
 }
 /* Samsung Sharp Sans font-face for web (variable weight) */
-@font-face {
-  font-family: "SamsungSharpSans";
-  src: url("/fonts/SamsungSharpSans.woff2") format("woff2"),
-    url("/fonts/SamsungSharpSans.woff") format("woff");
-  font-weight: 400 700;
-  font-style: normal;
-  font-display: swap;
-}
 
 html,
 body,
 * {
-  font-family: "SamsungSharpSans", "Montserrat", Arial, sans-serif !important;
+  font-family: var(--font-samsung-sharp-sans), "Montserrat", Arial, sans-serif !important;
 }
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -438,16 +423,6 @@ Purpose: Custom styling for interactive map and store cards
   transform: none !important;
 }
 
-/* Ocultar scrollbars personalizadas */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
 /* Animaciones personalizadas para filtros */
 @keyframes fadeInUp {
   from {
@@ -563,16 +538,6 @@ body::after {
   z-index: 99998;
 }
 
-/* SIMPLE scrollbar hiding ONLY for specific elements */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
 /* 
 =================================================================
 GIF PAUSE CONTROL
@@ -591,47 +556,7 @@ GIF PAUSE CONTROL
   -webkit-animation-play-state: paused !important;
 }
 
-/* 
-=================================================================
-GIF PAUSE CONTROL - ENHANCED VERSION
-=================================================================
-*/
-
-/* Contenedor para la imagen estática */
-.static-image-container {
-  position: relative;
-}
-
-.static-image-container img {
-  /* Asegura que la imagen estática no se anime */
-  animation: none !important;
-  -webkit-animation: none !important;
-}
-
-/* Asegura que el GIF no se reproduzca en Firefox */
-@-moz-document url-prefix() {
-  .static-image-container img {
-    visibility: visible !important;
-  }
-}
-
-/* Ajuste para Safari */
-@media not all and (min-resolution: 0.001dpcm) {
-  @supports (-webkit-appearance: none) {
-    .static-image-container img {
-      -webkit-animation: none !important;
-    }
-  }
-}
-
-/* Ajuste para Chrome */
-@media screen and (-webkit-min-device-pixel-ratio: 0) {
-  .static-image-container img {
-    animation: none !important;
-  }
-}
-
-/* 
+/*
 =================================================================
 GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 =================================================================
@@ -643,7 +568,6 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 }
 
 .static-image-container img {
-  /* Asegura que la imagen estática no se anime */
   animation: none !important;
   -webkit-animation: none !important;
 }
@@ -685,10 +609,6 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
   animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* Clase para transición suave al finalizar GIF */
-.gif-transition {
-  transition: opacity 0.3s ease-out;
-}
 /* Clase para transición suave al finalizar GIF */
 .gif-transition {
   transition: opacity 0.3s ease-out;
@@ -818,12 +738,13 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
     transform: translateX(100%);
   }
 }
+
 /* Hide scrollbar for horizontal scroll sections */
 .scrollbar-hide {
-  -ms-overflow-style: none;  /* IE and Edge */
-  scrollbar-width: none;  /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
 .scrollbar-hide::-webkit-scrollbar {
-  display: none;  /* Chrome, Safari and Opera */
+  display: none; /* Chrome, Safari and Opera */
 }

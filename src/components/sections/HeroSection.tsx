@@ -93,7 +93,8 @@ export default function HeroSection() {
 
   return (
     <section
-      className="relative w-full h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 overflow-hidden transition-colors duration-1000 ease-in-out"
+      className="relative w-full h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 overflow-hidden transition-colors duration-1000 ease-in-out
+        pb-16 sm:pb-20 md:pb-24 lg:pb-0"
       style={{
         zIndex: 1,
         backgroundColor: currentSlideData.bgColor,

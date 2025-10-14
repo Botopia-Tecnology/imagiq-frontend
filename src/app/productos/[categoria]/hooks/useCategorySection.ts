@@ -48,7 +48,7 @@ export function useCategoryPagination() {
 }
 
 export function useCategorySorting() {
-  const [sortBy, setSortBy] = useState("");
+  const [sortBy, setSortBy] = useState("precio-mayor");
 
   return { sortBy, setSortBy };
 }

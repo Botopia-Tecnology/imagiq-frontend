@@ -4,7 +4,7 @@
 
 "use client";
 
-import { useRef, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -54,19 +54,19 @@ export default function SeriesFilterBreadcrumb({
   const hasSeries = config.series && config.series.length > 0;
 
   return (
-    <nav className="flex items-center gap-1 sm:gap-2 mb-1.5 sm:mb-4 text-[10px] sm:text-sm text-gray-600">
-      <span className="hover:text-gray-900 cursor-pointer truncate">{config.breadcrumbCategory}</span>
-      <span>/</span>
+    <nav className="flex items-center gap-2 mb-1.5 sm:mb-4 text-[10px] sm:text-sm text-gray-600 overflow-hidden max-w-full">
+      <span className="hover:text-gray-900 cursor-pointer flex-shrink-0 truncate max-w-[100px] sm:max-w-[150px]">{config.breadcrumbCategory}</span>
+      <span className="flex-shrink-0 mx-0.5">/</span>
 
       {/* Section Dropdown */}
-      <div ref={sectionDropdownRef} className="relative">
+      <div ref={sectionDropdownRef} className="relative flex-shrink min-w-0 max-w-[150px] sm:max-w-[200px]">
         <button
           onClick={onToggleSectionDropdown}
-          className="hover:text-gray-900 font-medium flex items-center gap-0.5 sm:gap-1 truncate"
+          className="hover:text-gray-900 font-medium flex items-center gap-1 w-full min-w-0"
           type="button"
         >
-          <span className="truncate">{config.breadcrumbSection}</span>
-          <ChevronDownIcon />
+          <span className="truncate block overflow-hidden text-ellipsis whitespace-nowrap">{config.breadcrumbSection}</span>
+          <span className="flex-shrink-0"><ChevronDownIcon /></span>
         </button>
 
         {showSectionDropdown && (
@@ -91,18 +91,18 @@ export default function SeriesFilterBreadcrumb({
         )}
       </div>
 
-      <span>/</span>
+      <span className="flex-shrink-0 mx-0.5">/</span>
 
       {/* Series Dropdown o solo título */}
       {hasSeries ? (
-        <div ref={seriesDropdownRef} className="relative">
+        <div ref={seriesDropdownRef} className="relative flex-shrink min-w-0 max-w-[150px] sm:max-w-[250px]">
           <button
             onClick={onToggleSeriesDropdown}
-            className="text-gray-900 font-medium flex items-center gap-1 hover:text-gray-700"
+            className="text-gray-900 font-medium flex items-center gap-1 hover:text-gray-700 w-full min-w-0"
             type="button"
           >
-            {config.title}
-            <ChevronDownIcon />
+            <span className="truncate block overflow-hidden text-ellipsis whitespace-nowrap">{config.title}</span>
+            <span className="flex-shrink-0"><ChevronDownIcon /></span>
           </button>
 
           {showSeriesDropdown && (
@@ -148,7 +148,7 @@ export default function SeriesFilterBreadcrumb({
           )}
         </div>
       ) : (
-        <span className="text-gray-900 font-medium">{config.title}</span>
+        <span className="text-gray-900 font-medium truncate block overflow-hidden text-ellipsis whitespace-nowrap flex-shrink min-w-0 max-w-[150px] sm:max-w-[250px]">{config.title}</span>
       )}
     </nav>
   );

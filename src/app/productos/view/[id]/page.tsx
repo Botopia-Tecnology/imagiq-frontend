@@ -4,7 +4,6 @@ import React, { use, useEffect } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
 import {
   ProductCardProps,
@@ -139,13 +138,16 @@ export default function ProductViewPage({ params }) {
   return (
     <>
       <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
-      {/* Detalles de producto refactorizado */}
-      <DetailsProductSection product={product} /> 
-      {/* Vista original de producto */}
+      {/* Vista de producto según categoría */}
       {isRefrigerador ? (
+        /* Para electrodomésticos solo renderizar ViewProductAppliance */
         <ViewProductAppliance product={convertedProduct} />
       ) : (
-        <ViewProduct product={convertedProduct} />
+        /* Para dispositivos móviles renderizar DetailsProductSection + ViewProduct */
+        <>
+          <DetailsProductSection product={product} />
+          <ViewProduct product={convertedProduct} />
+        </>
       )}
     </>
   );

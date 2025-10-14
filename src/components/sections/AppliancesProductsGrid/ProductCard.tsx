@@ -55,19 +55,19 @@ export function ProductCard({ product }: ProductCardProps) {
                 isHovered ? "scale-110" : "scale-100"
               }`}
               style={{
-                mixBlendMode: 'multiply',
-                filter: 'brightness(1.05)'
+                mixBlendMode: "multiply",
+                filter: "brightness(1.05)",
               }}
               sizes="(max-width: 768px) 50vw, 360px"
               unoptimized
             />
           </div>
 
-          {/* Botón Comprar - Aparece en la parte inferior en hover */}
+          {/* Botón Comprar - Visible siempre en mobile, aparece en hover en desktop */}
           <div
-            className={`absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 ${
-              isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
+            className={`absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 md:opacity-0 md:translate-y-4 ${
+              isHovered ? "md:opacity-100 md:translate-y-0" : ""
+            } opacity-100 translate-y-0`}
           >
             <button
               className="bg-black text-white px-10 py-3 rounded-full font-semibold text-base transition-transform duration-300 transform hover:scale-105 shadow-xl whitespace-nowrap"

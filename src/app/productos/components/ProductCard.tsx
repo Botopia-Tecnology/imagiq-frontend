@@ -225,11 +225,25 @@ export default function ProductCard({
     setIsLoading(true);
 
     try {
+      // Validación estricta: debe existir un SKU válido del color seleccionado
+      if (!selectedColor?.sku) {
+        console.error('Error al agregar al carrito:', {
+          product_id: id,
+          product_name: name,
+          selectedColor,
+          available_colors: colors,
+          error: 'No se ha seleccionado un color válido con SKU'
+        });
+        alert('Por favor selecciona un color antes de agregar al carrito');
+        setIsLoading(false);
+        return;
+      }
+
       posthogUtils.capture("add_to_cart_click", {
         product_id: id,
         product_name: name,
-        selected_color: selectedColor?.name || "Sin color",
-        selected_color_sku: selectedColor?.sku || sku || id,
+        selected_color: selectedColor.name,
+        selected_color_sku: selectedColor.sku,
         source: "product_card",
       });
 
@@ -243,7 +257,7 @@ export default function ProductCard({
             ? parseInt(currentPrice.replace(/[^\d]/g, ""))
             : currentPrice || 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
-        sku: selectedColor?.sku || sku || id,
+        sku: selectedColor.sku, // SKU estricto del color seleccionado
         puntos_q,
       });
     } finally {

@@ -85,7 +85,26 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   };
 
   const handleAddToCart = async () => {
-    if (!selectedStorage || !selectedColor || !selectedDevice) return alert("Por favor selecciona todas las opciones del producto");
+    if (!selectedStorage || !selectedColor || !selectedDevice) {
+      alert("Por favor selecciona todas las opciones del producto");
+      return;
+    }
+
+    // Validación estricta: debe existir un SKU válido del variant seleccionado
+    if (!selectedVariant?.sku) {
+      console.error('Error al agregar al carrito:', {
+        product_id: product.id,
+        product_name: product.name,
+        selectedColor,
+        selectedStorage,
+        selectedDevice,
+        selectedVariant,
+        error: 'No se encontró un SKU válido para la variante seleccionada'
+      });
+      alert('Error: No se encontró el SKU del producto seleccionado. Por favor intenta con otra combinación.');
+      return;
+    }
+
     setLoading(true);
     try {
       addProduct({
@@ -93,8 +112,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         name: `${product.name} - ${selectedColor.color} - ${selectedStorage.capacidad}`,
         price: currentPrice || 0,
         quantity: 1,
-        image: selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
-        sku: product.sku || `SKU-${product.id}`,
+        image: selectedVariant.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
+        sku: selectedVariant.sku, // SKU estricto de la variante seleccionada
         puntos_q: product.puntos_q ?? 4,
       });
       alert("Producto añadido al carrito");

@@ -31,26 +31,33 @@ export type ImageTransformType =
  * - b_auto:predominant: Rellena espacios vacíos con color predominante
  */
 const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
-  // Catálogo - 400x400, fill_pad mantiene proporciones y rellena con color
-  catalog: 'f_auto,q_auto,c_fill_pad,g_auto,w_400,h_400,b_auto:predominant',
+  // Catálogo - 1000x1000, pad para mantener producto completo sin recortes
+  // q_auto:best para máxima calidad en catálogo
+  // c_pad NO recorta, mantiene producto completo con fondo blanco
+  // b_white necesario para imágenes WebP con transparencia
+  // g_auto centra el producto en el frame
+  // Solo las MUY verticales (como Z Fold)
+  catalog: 'f_auto,q_auto:best,c_pad,w_2000,h_2000',
 
-  // Vista principal producto - 800x800, fill_pad (mantiene proporciones, rellena espacios)
-  'product-main': 'f_auto,q_auto:good,c_fill_pad,g_auto,w_800,h_800,b_auto:predominant',
+  // Vista principal producto - 1000x1000, fill_pad (mantiene proporciones, rellena espacios)
+  // q_auto:best para máxima calidad
+  'product-main': 'f_auto,q_auto:best,c_fill,g_auto,w_1000,h_1000',
 
   // Detalle producto - 1000x1000, fill_pad (mantiene proporciones completas, máxima calidad)
+  // q_auto:best para máxima calidad
   'product-detail': 'f_auto,q_auto:best,c_fill_pad,g_auto,w_1000,h_1000,b_auto:predominant',
 
   // Thumbnail - 150x150, fill_pad con relleno
-  thumbnail: 'f_auto,q_auto,c_fill_pad,g_auto,w_150,h_150,b_auto:predominant',
+  thumbnail: 'f_auto,q_auto:best,c_fill_pad,g_auto,w_150,h_150,b_auto:predominant',
 
   // Comparación - 300x300, fill_pad
-  comparison: 'f_auto,q_auto,c_fill_pad,g_auto,w_300,h_300,b_auto:predominant',
+  comparison: 'f_auto,q_auto:best,c_fill_pad,g_auto,w_300,h_300,b_auto:predominant',
 
   // Hero/Banner - 1200x600, fill (recorta para llenar completamente)
-  hero: 'f_auto,q_auto,c_fill,g_auto,w_1200,h_600',
+  hero: 'f_auto,q_auto:best,c_fill,g_auto,w_1200,h_600',
 
-  // Original - solo formato y calidad automática
-  original: 'f_auto,q_auto',
+  // Original - solo formato y calidad automática (máxima calidad)
+  original: 'f_auto,q_auto:best',
 };
 
 /**
@@ -187,7 +194,7 @@ export function getResponsiveSrcSet(
  * Para usar con Next.js Image component
  */
 export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; height: number }> = {
-  catalog: { width: 400, height: 400 },
+  catalog: { width: 1000, height: 1000 },
   'product-main': { width: 800, height: 800 },
   'product-detail': { width: 1000, height: 1000 },
   thumbnail: { width: 150, height: 150 },

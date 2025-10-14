@@ -129,15 +129,19 @@ export const MobileMenu: FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const hasDropdownSubmenu = (itemName: string): boolean => {
+    const dropdownItems = [
+      "Dispositivos móviles",
+      "Televisores y AV", 
+      "Electrodomésticos",
+      "Monitores",
+      "Accesorios"
+    ];
+    return dropdownItems.includes(itemName);
+  };
+
   const handleMenuItemClick = (item: MenuItem) => {
-    if (
-      item.hasDropdown &&
-      (item.name === "Dispositivos móviles" ||
-        item.name === "Televisores y AV" ||
-        item.name === "Electrodomésticos" ||
-        item.name === "Monitores" ||
-        item.name === "Accesorios")
-    ) {
+    if (item.hasDropdown && hasDropdownSubmenu(item.name)) {
       setActiveSubmenu(item.name);
     } else {
       onClose();
@@ -146,6 +150,17 @@ export const MobileMenu: FC<Props> = ({
 
   const handleBackToMain = () => {
     setActiveSubmenu(null);
+  };
+
+  const renderSubmenu = () => {
+    const submenuMap = {
+      "Dispositivos móviles": <DispositivosMovilesSubmenu onClose={onClose} />,
+      "Televisores y AV": <TelevisoresSubmenu onClose={onClose} />,
+      "Electrodomésticos": <ElectrodomesticosSubmenu onClose={onClose} />,
+      "Monitores": <MonitoresSubmenu onClose={onClose} />,
+      "Accesorios": <AccesoriosSubmenu onClose={onClose} />,
+    };
+    return submenuMap[activeSubmenu as keyof typeof submenuMap] || null;
   };
 
   return (
@@ -221,19 +236,10 @@ export const MobileMenu: FC<Props> = ({
           </Link>
         </div>
 
-        {activeSubmenu === "Dispositivos móviles" ? (
-          <DispositivosMovilesSubmenu onClose={onClose} />
-        ) : activeSubmenu === "Televisores y AV" ? (
-          <TelevisoresSubmenu onClose={onClose} />
-        ) : activeSubmenu === "Electrodomésticos" ? (
-          <ElectrodomesticosSubmenu onClose={onClose} />
-        ) : activeSubmenu === "Monitores" ? (
-          <MonitoresSubmenu onClose={onClose} />
-        ) : activeSubmenu === "Accesorios" ? (
-          <AccesoriosSubmenu onClose={onClose} />
+        {activeSubmenu ? (
+          renderSubmenu()
         ) : (
-          <>
-            <div className="p-4">
+          <div className="p-4">
               <div className="mb-6">
                 <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">
                   NOVEDADES
@@ -278,11 +284,13 @@ export const MobileMenu: FC<Props> = ({
                   {MENU_ITEMS.map((item) => (
                     <button
                       key={item.name}
-                      onClick={() =>
-                        item.hasDropdown
-                          ? handleMenuItemClick(item)
-                          : (window.location.href = item.href)
-                      }
+                      onClick={() => {
+                        if (item.hasDropdown) {
+                          handleMenuItemClick(item);
+                        } else {
+                          window.location.href = item.href;
+                        }
+                      }}
                       className="w-full flex items-center justify-between py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 rounded-lg px-2 -mx-2"
                     >
                       <span>{item.name}</span>
@@ -318,7 +326,6 @@ export const MobileMenu: FC<Props> = ({
                 </Link>
               </div>
             </div>
-          </>
         )}
       </div>
     </>

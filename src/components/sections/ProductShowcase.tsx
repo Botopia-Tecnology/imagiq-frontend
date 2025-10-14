@@ -76,9 +76,9 @@ function ProductCard({ product }: ProductCardProps) {
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group block"
+      className="group block h-full"
     >
-      <div className="relative bg-gray-50 h-[400px] flex flex-col items-center justify-between p-6 hover:bg-gray-100 transition-colors duration-300">
+      <div className="relative bg-gray-50 h-full flex flex-col items-center justify-between p-6 hover:bg-gray-100 transition-colors duration-300">
         {/* Título */}
         <h3
           className="text-base font-semibold text-gray-900 text-center leading-tight h-[48px] flex items-center justify-center w-full"
@@ -102,11 +102,11 @@ function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
 
-        {/* Botón Comprar - Aparece en hover */}
+        {/* Botón Comprar - Visible siempre en mobile, aparece en hover en desktop */}
         <div
-          className={`absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 ${
-            isHovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-          }`}
+          className={`absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 md:opacity-0 md:translate-y-4 ${
+            isHovered ? "md:opacity-100 md:translate-y-0" : ""
+          } opacity-100 translate-y-0`}
         >
           <button
             className="bg-black text-white px-10 py-3 rounded-full font-semibold text-base transition-transform duration-300 transform hover:scale-105 shadow-xl whitespace-nowrap"
@@ -129,11 +129,27 @@ export default function ProductShowcase() {
   return (
     <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
       <div className="w-full" style={{ maxWidth: "1440px" }}>
-        {/* Grid de 4 productos */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-[25px] px-4 md:px-0">
+        {/* Desktop: Grid 4 columnas */}
+        <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
           {products.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <div key={product.id} className="w-full h-[420px]">
+              <ProductCard product={product} />
+            </div>
           ))}
+        </div>
+
+        {/* Mobile: Scroll horizontal */}
+        <div className="md:hidden overflow-x-auto scrollbar-hide">
+          <div className="flex gap-[25px] px-4">
+            {products.map((product) => (
+              <div
+                key={product.id}
+                className="flex-shrink-0 w-[280px] h-[420px]"
+              >
+                <ProductCard product={product} />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

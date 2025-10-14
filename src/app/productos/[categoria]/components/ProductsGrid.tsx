@@ -109,42 +109,44 @@ const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-3 gap-x-2 gap-y-2" : "flex flex-wrap"}>
+      <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" : "flex flex-wrap"}>
         {products.length === 0 ? (
-          <div className="col-span-3 w-full text-center py-12 text-gray-500">
+          <div className="col-span-full w-full text-center py-12 text-gray-500">
             No se encontraron {categoryName.toLowerCase()} con los filtros
             seleccionados.
           </div>
         ) : (
           <>
-            {/* Banner promocional 1 - Grid position: fila 2, columna 1 */}
+            {/* Banner promocional 1 - Grid position: fila 2, columna 1 - Solo en desktop */}
             {showBanner && viewMode === "grid" && products.length >= 4 && (
               <div
+                className="hidden lg:block"
                 style={{ gridRow: "2", gridColumn: "1" }}
               >
-                <div className="relative rounded-xl overflow-hidden shadow-lg h-full">
+                <div className="relative h-full bg-sky-50 rounded-xl">
                   <Image
                     src="https://images.samsung.com/is/image/samsung/assets/co/pf/20250929/24038_PC_MX_Offer-deals_s25fe-launch_PD19_Content-Card-1_312x1012_OP02.jpg?$ORIGIN_JPG$"
                     alt="Promoción especial"
                     fill
-                    className="object-cover"
+                    className="object-contain rounded-xl"
                     sizes="(max-width: 768px) 100vw, 33vw"
                     priority
                   />
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-5 z-10">
-                    <h3 className="text-white text-xl font-bold mb-2">¿Aún lo estás pensando?</h3>
-                    <p className="text-white text-sm">Usa cupones especiales y termina tu compra con descuento</p>
+                  <div className="absolute top-0 left-0 right-0 bg-sky-50 p-5 z-10">
+                    <h3 className="text-black text-xl font-bold mb-2">¿Aún lo estás pensando?</h3>
+                    <p className="text-balck text-sm">Usa cupones especiales y termina tu compra con descuento</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Banner promocional 2 - Grid position: fila 4, columna 2 */}
+            {/* Banner promocional 2 - Grid position: fila 4, columna 2 - Solo en desktop */}
             {showBanner && viewMode === "grid" && products.length >= 7 && (
               <div
+                className="hidden lg:block"
                 style={{ gridRow: "4", gridColumn: "2" }}
               >
-                <div className="relative rounded-xl overflow-hidden shadow-lg h-full">
+                <div className="relative rounded-xl overflow-hidden h-full bg-gray-300">
                   <Image
                     src="https://images.samsung.com/is/image/samsung/assets/co/smartphones/23086_01_VD_BANNER_PF_VISA_330x1012.jpg?$ORIGIN_JPG$"
                     alt="10% descuento Visa"

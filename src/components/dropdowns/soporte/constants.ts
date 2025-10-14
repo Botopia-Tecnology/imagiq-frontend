@@ -29,7 +29,7 @@
       title: "CONTACTO",
       links: [
         { name: "WhatsApp", href: "/soporte/whatsapp" },
-        { name: "Correo electrónico", href: "/soporte/email"},
+        { name: "Correo electrónico", href: "/soporte/correo_electronico"},
       ],
     },
   ] as const;

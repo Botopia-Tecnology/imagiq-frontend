@@ -116,8 +116,8 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
               className={cn(
                 "relative rounded-xl transition-all duration-300 flex-shrink-0",
                 "flex items-center gap-3 sm:gap-4",
-                "px-4 sm:px-5 py-3 sm:py-4",
-                "min-w-[280px] max-w-[450px]",
+                "px-4 md:px-6 md:py-2",
+                "min-w-[220px] max-w-[450px]",
                 "min-h-[100px] sm:min-h-[110px] lg:min-h-[120px]",
                 // Estilos cuando NO está activo
                 !isActive && [

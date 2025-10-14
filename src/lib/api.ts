@@ -211,6 +211,10 @@ export const productEndpoints = {
     ),
 };
 
+// Categories API endpoints
+export const categoriesEndpoints = {
+  getVisibleCategories: () => apiClient.get<VisibleCategory[]>('/api/categorias/visibles')
+};
 
 // Favorite filter
 export interface FavoriteFilterParams {
@@ -258,4 +262,30 @@ export interface FavoriteApiResponse {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+}
+
+// Visible Categories types
+export interface Subcategoria {
+  uuid: string;
+  nombre: string;
+  nombreVisible: string;
+  descripcion: string;
+  imagen: string;
+  activo: boolean;
+  categoriasVisiblesId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface VisibleCategory {
+  uuid: string;
+  nombre: string;
+  nombreVisible: string;
+  descripcion: string;
+  imagen: string;
+  activo: boolean;
+  createdAt: string;
+  updatedAt: string;
+  subcategorias: Subcategoria[];
+  totalProducts: number;
 }

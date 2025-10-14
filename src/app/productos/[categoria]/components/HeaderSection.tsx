@@ -55,23 +55,6 @@ export default function HeaderSection({
       <div className="max-w-7xl">
         {/* Header principal */}
         <div className="flex items-center justify-between gap-4 mb-6">
-          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-              {title}
-            </h1>
-            <span className="text-sm text-gray-500 font-medium">
-              {totalItems} resultados
-            </span>
-            {hasActiveFilters && setFilters && (
-              <button
-                onClick={clearAllFilters}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium underline underline-offset-2 hover:underline-offset-4 transition-all duration-200"
-              >
-                {clearAllFiltersText}
-              </button>
-            )}
-          </div>
-
           {/* Botón de filtros móvil - ahora a la derecha del título */}
           <button
             onClick={onShowMobileFilters}

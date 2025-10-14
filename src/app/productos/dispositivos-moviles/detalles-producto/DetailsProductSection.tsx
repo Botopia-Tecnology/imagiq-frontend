@@ -10,6 +10,7 @@ import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
+import { getProductSeries, getSeriesHref } from "./utils/productSeriesUtils";
 
 // Components
 import FloatingEntregoEstrenoButton from "./FloatingEntregoEstrenoButton";
@@ -42,6 +43,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   const { addProduct } = useCartContext();
   const router = useRouter();
   const { addToFavorites, removeFromFavorites, isFavorite: checkIsFavorite } = useFavorites();
+
+  // Detectar serie dinámica del producto
+  const productSeries = React.useMemo(() => getProductSeries(product.name), [product.name]);
+  const seriesHref = React.useMemo(() => getSeriesHref(productSeries), [productSeries]);
 
   // State
   const [loading, setLoading] = React.useState(false);
@@ -161,9 +166,27 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
       <main className="w-full bg-white min-h-screen" style={{ fontFamily: "SamsungSharpSans" }}>
         <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
-          <div className="max-w-[1280px] mx-auto px-12 py-20">
-            <div className="grid grid-cols-12 gap-8 items-start">
-              <div className="col-span-7 flex flex-col justify-start gap-6 min-h-full pb-12">
+          <div className="max-w-[1400px] mx-auto px-8 py-12">
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-2 mb-8 text-sm text-gray-600">
+              <a href={seriesHref} className="hover:text-gray-900">{productSeries}</a>
+              <span>/</span>
+              <span className="text-gray-900">Detalles del producto</span>
+            </nav>
+
+            <div className="grid grid-cols-12 gap-16 items-start">
+              {/* Imagen a la izquierda */}
+              <div className="col-span-6 sticky top-20 self-start">
+                <StickyImageContainer
+                  productName={product.name}
+                  imagePreviewUrl={selectedVariant?.imagePreviewUrl}
+                  imageDetailsUrls={selectedVariant?.imageDetailsUrls}
+                  onImageClick={handleImageClick}
+                />
+              </div>
+
+              {/* Información del producto a la derecha */}
+              <div className="col-span-6 flex flex-col justify-start gap-4 min-h-full pb-12 pt-4">
                 <header className="">
                   <ProductHeader
                     name={product.name}
@@ -192,21 +215,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                   <p className="text-base text-[#222] font-light leading-relaxed mb-8">{product.description || ""}</p>
                 </header>
 
-                <AddiFinancing 
+                <AddiFinancing
                   productName={product.name}
                   selectedColor={selectedColor?.color}
                   selectedStorage={selectedStorage?.capacidad}
                   currentPrice={currentPrice || undefined}
                   originalPrice={originalPrice || undefined}
-                />
-              </div>
-
-              <div className="col-span-5 sticky top-16 self-start">
-                <StickyImageContainer
-                  productName={product.name}
-                  imagePreviewUrl={selectedVariant?.imagePreviewUrl}
-                  imageDetailsUrls={selectedVariant?.imageDetailsUrls}
-                  onImageClick={handleImageClick}
                 />
               </div>
             </div>

@@ -29,13 +29,13 @@ export default function ProductSelectors({
   return (
     <>
       {/* Selector de color */}
-      <section className="mb-6">
-        <label className="block text-sm text-[#222] font-medium mb-3">
+      <section className="mb-8">
+        <label className="block text-base text-[#222] font-semibold mb-4">
           Elige tu Color
         </label>
         {selectedColor && (
-          <div className="text-xs text-[#8A8A8A] mb-4">
-            {selectedColor.color}
+          <div className="text-sm text-[#222] mb-4">
+            Color : <span className="font-normal">{selectedColor.color}</span>
           </div>
         )}
         <div className="flex gap-3 items-center">
@@ -49,57 +49,68 @@ export default function ProductSelectors({
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-6"></div>
+      <div className="h-px bg-gray-200 mb-8"></div>
 
       {/* Selector de almacenamiento */}
-      <section className="mb-6">
-        <label className="block text-sm text-[#222] font-medium mb-4">
+      <section className="mb-8">
+        <label className="block text-base text-[#222] font-semibold mb-5">
           Elige tu Almacenamiento
         </label>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {variantsLoading ? (
-            <div className="flex gap-3 animate-pulse">
-              <div className="h-10 bg-gray-200 rounded-full w-24"></div>
-              <div className="h-10 bg-gray-200 rounded-full w-24"></div>
-            </div>
+            <>
+              <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+            </>
           ) : storageOptions && storageOptions.length > 0 ? (
-            storageOptions.map((storage) => (
-              <button
-                key={storage.capacidad}
-                className={`rounded-full border px-6 py-2 font-semibold text-sm transition-all duration-200 ease-in-out focus:outline-none ${
-                  selectedStorage?.capacidad === storage.capacidad
-                    ? "border-[#0099FF] bg-[#0099FF] text-white"
-                    : "border-[#0099FF] text-[#0099FF] bg-white hover:bg-[#F2F6FA]"
-                }`}
-                onClick={() => onStorageChange(storage)}
-              >
-                {storage.capacidad}
-              </button>
-            ))
+            storageOptions.map((storage) => {
+              // Calcular el precio de esta opción de almacenamiento
+              const storagePrice = storage.variants[0]?.precioDescto > 0
+                ? storage.variants[0].precioDescto
+                : storage.variants[0]?.precioNormal;
+
+              return (
+                <button
+                  key={storage.capacidad}
+                  className={`rounded-xl border-2 px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none flex flex-col items-center justify-center ${
+                    selectedStorage?.capacidad === storage.capacidad
+                      ? "border-[#222] bg-white text-[#222]"
+                      : "border-gray-300 text-[#222] bg-white hover:border-[#222]"
+                  }`}
+                  onClick={() => onStorageChange(storage)}
+                >
+                  <span className="font-semibold text-base mb-1">{storage.capacidad}</span>
+                  {storagePrice && (
+                    <span className="text-sm text-[#222] font-normal">
+                      ${storagePrice.toLocaleString('es-CO')}
+                    </span>
+                  )}
+                </button>
+              );
+            })
           ) : null}
         </div>
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-6"></div>
+      <div className="h-px bg-gray-200 mb-8"></div>
 
       {/* Selector de memoria RAM */}
-      <section className="mb-6">
-        <label className="block text-sm text-[#222] font-medium mb-4">
-          Elige tu Memoria RAM
+      <section className="mb-8">
+        <label className="block text-base text-[#222] font-semibold mb-5">
+          Elige tu Memoria Ram
         </label>
-        <div className="flex gap-3">
+        <div className="grid grid-cols-2 gap-4">
           {variantsLoading ? (
-            <div className="flex gap-3 animate-pulse">
-              <div className="h-10 bg-gray-200 rounded-full w-20"></div>
-              <div className="h-10 bg-gray-200 rounded-full w-20"></div>
-            </div>
+            <>
+              
+              <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+            </>
           ) : (
             <>
-              <button className="rounded-full border border-[#0099FF] bg-[#0099FF] text-white px-6 py-2 font-semibold text-sm transition-all duration-200 ease-in-out focus:outline-none">
+              <button className="rounded-xl border-2 border-[#222] bg-white text-[#222] px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none">
                 8 GB
               </button>
-              <button className="rounded-full border border-[#0099FF] text-[#0099FF] bg-white hover:bg-[#F2F6FA] px-6 py-2 font-semibold text-sm transition-all duration-200 ease-in-out focus:outline-none">
+              <button className="rounded-xl border-2 border-gray-300 text-[#222] bg-white hover:border-[#222] px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none">
                 12 GB
               </button>
             </>
@@ -108,7 +119,7 @@ export default function ProductSelectors({
       </section>
 
       {/* Línea separadora */}
-      <div className="w-48 h-px bg-gray-200 mb-6"></div>
+      <div className="h-px bg-gray-200 mb-8"></div>
     </>
   );
 }

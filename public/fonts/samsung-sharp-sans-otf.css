@@ -1,0 +1,18 @@
+@font-face {
+  font-family: "SamsungSharpSansOTF";
+  src: url("/fonts/samsungsharpsans.otf") format("opentype");
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: "SamsungSharpSansOTF";
+  src: url("/fonts/samsungsharpsans-medium.otf") format("opentype");
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: "SamsungSharpSansOTF";
+  src: url("/fonts/samsungsharpsans-bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+}

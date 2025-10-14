@@ -20,9 +20,21 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
   { name: "Tienda Online", href: "/" },
-  { name: "Dispositivos móviles", href: "/productos/dispositivos-moviles", hasDropdown: true },
-  { name: "Televisores y AV", href: "/productos/televisores-y-av", hasDropdown: true },
-  { name: "Electrodomésticos", href: "/productos/Electrodomesticos", hasDropdown: true },
+  {
+    name: "Dispositivos móviles",
+    href: "/productos/dispositivos-moviles",
+    hasDropdown: true,
+  },
+  {
+    name: "Televisores y AV",
+    href: "/productos/televisores-y-av",
+    hasDropdown: true,
+  },
+  {
+    name: "Electrodomésticos",
+    href: "/productos/Electrodomesticos",
+    hasDropdown: true,
+  },
   { name: "Monitores", href: "/productos/monitores", hasDropdown: true },
   { name: "Accesorios", href: "/productos/accesorios", hasDropdown: true },
   { name: "Soporte", href: "/soporte/inicio_de_soporte" },
@@ -32,58 +44,69 @@ const MENU_ITEMS: MenuItem[] = [
 const FEATURED_PRODUCTS = [
   {
     name: "Galaxy Z Fold7",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/galaxy-zflod7_hrd0oj.webp",
-    href: "/productos/multimedia/BSM-F966BE"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/galaxy-zflod7_hrd0oj.webp",
+    href: "/productos/multimedia/BSM-F966BE",
   },
   {
     name: "Galaxy Z Flip7",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp",
-    href: "/productos/multimedia/BSM-F766BE"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp",
+    href: "/productos/multimedia/BSM-F766BE",
   },
   {
     name: "Galaxy S25 Ultra",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s-ultra_xfxhqt.webp",
-    href: "/productos/multimedia/BSM-S938BE"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s-ultra_xfxhqt.webp",
+    href: "/productos/multimedia/BSM-S938BE",
   },
   {
     name: "Galaxy S25 | S25+",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s_skxtgm.webp",
-    href: "/productos/multimedia/BSM-S936BE"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759849936/25s_skxtgm.webp",
+    href: "/productos/multimedia/BSM-S936BE",
   },
   {
     name: "Galaxy Tab S10 Series",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858346/Tab-s10_e5pn9f.avif",
-    href: "/productos/multimedia/BSM-X920"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858346/Tab-s10_e5pn9f.avif",
+    href: "/productos/multimedia/BSM-X920",
   },
   {
     name: "Galaxy Buds3 Pro",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858345/Buds-3pro_nrortn.avif",
-    href: "/productos/multimedia/BSM-R630"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858345/Buds-3pro_nrortn.avif",
+    href: "/productos/multimedia/BSM-R630",
   },
   {
     name: "Neo QLED 8K TV",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858336/Neo-qled-8k_izy66o.avif",
-    href: "/productos/multimedia/QN65QN900FKXZL"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858336/Neo-qled-8k_izy66o.avif",
+    href: "/productos/multimedia/QN65QN900FKXZL",
   },
   {
     name: "The Frame Pro",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/The-frame-pro_hwn86v.png",
-    href: "/productos/multimedia/QN65LS03FAKXZL"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/The-frame-pro_hwn86v.png",
+    href: "/productos/multimedia/QN65LS03FAKXZL",
   },
   {
     name: "Odyssey OLED G8",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/odyssey-g8_lnte4i.avif",
-    href: "/productos/multimedia/LS55BG970NNXGO"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/odyssey-g8_lnte4i.avif",
+    href: "/productos/multimedia/LS55BG970NNXGO",
   },
   {
     name: "Neveras",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/neveras-ofer_lxsxgb.avif",
-    href: "/productos/view/RF26J7500SL"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858335/neveras-ofer_lxsxgb.avif",
+    href: "/productos/view/RF26J7500SL",
   },
   {
     name: "Lavadoras y Secadoras",
-    image: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858349/lavadoras-ofer_jzdngu.avif",
-    href: "/productos/multimedia/DVG22C6370P"
+    image:
+      "https://res.cloudinary.com/dqay3uml6/image/upload/v1759858349/lavadoras-ofer_jzdngu.avif",
+    href: "/productos/multimedia/DVG22C6370P",
   },
 ];
 
@@ -95,13 +118,26 @@ type Props = {
   onSearchSubmit: (e: FormEvent) => void;
 };
 
-export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchChange, onSearchSubmit }) => {
+export const MobileMenu: FC<Props> = ({
+  isOpen,
+  onClose,
+  searchQuery,
+  onSearchChange,
+  onSearchSubmit,
+}) => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleMenuItemClick = (item: MenuItem) => {
-    if (item.hasDropdown && (item.name === "Dispositivos móviles" || item.name === "Televisores y AV" || item.name === "Electrodomésticos" || item.name === "Monitores" || item.name === "Accesorios")) {
+    if (
+      item.hasDropdown &&
+      (item.name === "Dispositivos móviles" ||
+        item.name === "Televisores y AV" ||
+        item.name === "Electrodomésticos" ||
+        item.name === "Monitores" ||
+        item.name === "Accesorios")
+    ) {
       setActiveSubmenu(item.name);
     } else {
       onClose();
@@ -121,7 +157,14 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
       />
 
       <div className="fixed inset-y-0 left-0 w-full max-w-md bg-white z-[101] overflow-y-auto">
-        <div className="sticky top-0 bg-white p-4 z-20" style={{ borderBottom: activeSubmenu ? 'none' : '1px solid rgb(229, 231, 235)' }}>
+        <div
+          className="sticky top-0 bg-white p-4 z-20"
+          style={{
+            borderBottom: activeSubmenu
+              ? "none"
+              : "1px solid rgb(229, 231, 235)",
+          }}
+        >
           {activeSubmenu ? (
             <div className="flex items-center justify-between">
               <button
@@ -131,7 +174,9 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
               >
                 <ChevronLeft className="w-6 h-6" />
               </button>
-              <h1 className="text-lg font-bold flex-1 text-center">{activeSubmenu}</h1>
+              <h1 className="text-lg font-bold flex-1 text-center">
+                {activeSubmenu}
+              </h1>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-full"
@@ -200,7 +245,7 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
                       href={product.href}
                       onClick={onClose}
                       className="flex-shrink-0 text-center"
-                      style={{ width: '100px' }}
+                      style={{ width: "100px" }}
                     >
                       <div className="mb-1">
                         <div className="w-full aspect-square relative">
@@ -214,7 +259,10 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
                           />
                         </div>
                       </div>
-                      <p className="text-xs text-gray-900 leading-tight">
+                      <p
+                        className="text-xs text-gray-900 leading-tight"
+                        style={{ fontWeight: 900 }}
+                      >
                         {product.name}
                       </p>
                     </Link>
@@ -230,7 +278,11 @@ export const MobileMenu: FC<Props> = ({ isOpen, onClose, searchQuery, onSearchCh
                   {MENU_ITEMS.map((item) => (
                     <button
                       key={item.name}
-                      onClick={() => item.hasDropdown ? handleMenuItemClick(item) : (window.location.href = item.href)}
+                      onClick={() =>
+                        item.hasDropdown
+                          ? handleMenuItemClick(item)
+                          : (window.location.href = item.href)
+                      }
                       className="w-full flex items-center justify-between py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 rounded-lg px-2 -mx-2"
                     >
                       <span>{item.name}</span>

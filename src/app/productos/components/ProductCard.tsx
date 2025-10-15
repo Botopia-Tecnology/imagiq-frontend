@@ -153,14 +153,16 @@ export default function ProductCard({
   const { addProduct } = useCartContext();
 
   // Si el estado viene de props, úsalo. Si no, usa local.
-  const [selectedColorLocal, setSelectedColorLocal] = useState<ProductColor | null>(
-    colors && colors.length > 0 ? colors[0] : null
-  );
+  const [selectedColorLocal, setSelectedColorLocal] =
+    useState<ProductColor | null>(
+      colors && colors.length > 0 ? colors[0] : null
+    );
   const selectedColor = selectedColorProp ?? selectedColorLocal;
 
-  const [selectedCapacityLocal, setSelectedCapacityLocal] = useState<ProductCapacity | null>(
-    capacities && capacities.length > 0 ? capacities[0] : null
-  );
+  const [selectedCapacityLocal, setSelectedCapacityLocal] =
+    useState<ProductCapacity | null>(
+      capacities && capacities.length > 0 ? capacities[0] : null
+    );
   const selectedCapacity = selectedCapacityProp ?? selectedCapacityLocal;
 
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
@@ -177,7 +179,10 @@ export default function ProductCard({
 
       if (index === 0) {
         console.log("🎨 ProductCard - Imagen transformada:", transformedUrl);
-        console.log("📐 ProductCard - Tipo de transformación:", "catalog (1000x1000, c_fill)");
+        console.log(
+          "📐 ProductCard - Tipo de transformación:",
+          "catalog (1000x1000, c_fill)"
+        );
       }
 
       return transformedUrl;
@@ -209,12 +214,18 @@ export default function ProductCard({
 
   // Calcular precios dinámicos basados en capacidad seleccionada (prioridad) o color
   const currentPrice = selectedCapacity?.price || selectedColor?.price || price;
-  const currentOriginalPrice = selectedCapacity?.originalPrice || selectedColor?.originalPrice || originalPrice;
-  const currentDiscount = selectedCapacity?.discount || selectedColor?.discount || discount;
+  const currentOriginalPrice =
+    selectedCapacity?.originalPrice ||
+    selectedColor?.originalPrice ||
+    originalPrice;
+  const currentDiscount =
+    selectedCapacity?.discount || selectedColor?.discount || discount;
 
   // Calcular cuotas mensuales (simulado - 12 cuotas sin interés)
-  const monthlyPayment = currentPrice 
-    ? Math.round(parseInt(currentPrice.replace(/[^\d]/g, '')) / 12).toLocaleString('es-CO')
+  const monthlyPayment = currentPrice
+    ? Math.round(
+        parseInt(currentPrice.replace(/[^\d]/g, "")) / 12
+      ).toLocaleString("es-CO")
     : null;
 
   const handleAddToCart = async () => {
@@ -227,14 +238,14 @@ export default function ProductCard({
     try {
       // Validación estricta: debe existir un SKU válido del color seleccionado
       if (!selectedColor?.sku) {
-        console.error('Error al agregar al carrito:', {
+        console.error("Error al agregar al carrito:", {
           product_id: id,
           product_name: name,
           selectedColor,
           available_colors: colors,
-          error: 'No se ha seleccionado un color válido con SKU'
+          error: "No se ha seleccionado un color válido con SKU",
         });
-        alert('Por favor selecciona un color antes de agregar al carrito');
+        alert("Por favor selecciona un color antes de agregar al carrito");
         setIsLoading(false);
         return;
       }
@@ -294,11 +305,11 @@ export default function ProductCard({
   // Navega a multimedia EXCEPTO si se hace click en botones interactivos
   const handleCardClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    
+
     // Verificar si el click fue en un botón o dentro de un botón
-    const isButton = target.closest('button') !== null;
+    const isButton = target.closest("button") !== null;
     const isCheckbox = target.closest('input[type="checkbox"]') !== null;
-    
+
     // Si NO es un botón ni checkbox, navegar a multimedia
     if (!isButton && !isCheckbox) {
       handleMoreInfo();
@@ -323,7 +334,9 @@ export default function ProductCard({
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + productImages.length) % productImages.length);
+    setCurrentImageIndex(
+      (prev) => (prev - 1 + productImages.length) % productImages.length
+    );
   };
 
   return (
@@ -339,6 +352,19 @@ export default function ProductCard({
     >
       {/* Sección de imagen con carrusel */}
       <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden max-h-[350px]">
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // Prevenir que se active el click de la card
+            handleToggleFavorite();
+          }}
+          className={cn(
+            "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer",
+            "bg-white shadow-md hover:shadow-lg",
+            isFavorite ? "text-red-500" : "text-gray-400"
+          )}
+        >
+          <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+        </button>
         {/* Carrusel de imágenes */}
         <div className="relative w-full h-full">
           {transformedImages.map((transformedSrc, index) => {
@@ -382,11 +408,14 @@ export default function ProductCard({
         <div className="min-h-[66px]">
           {colors && colors.length > 0 && (
             <div>
-              <p className={cn(
-                "text-xs py-1.5",
-                isOutOfStock ? "text-gray-400" : "text-gray-600"
-              )}>
-                <span className="font-medium">Color:</span> {selectedColor?.label}
+              <p
+                className={cn(
+                  "text-xs py-1.5",
+                  isOutOfStock ? "text-gray-400" : "text-gray-600"
+                )}
+              >
+                <span className="font-medium">Color:</span>{" "}
+                {selectedColor?.label}
               </p>
               <div className="flex gap-2 flex-wrap">
                 {colors.slice(0, 4).map((color) => (
@@ -400,7 +429,9 @@ export default function ProductCard({
                     }}
                     className={cn(
                       "w-6.5 h-6.5 rounded-full border transition-all duration-200 relative",
-                      isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+                      isOutOfStock
+                        ? "opacity-40 cursor-not-allowed"
+                        : "cursor-pointer",
                       selectedColor?.name === color.name
                         ? "border-black p-0.5"
                         : "border-gray-300 hover:border-gray-400"
@@ -426,7 +457,9 @@ export default function ProductCard({
                     }}
                     className={cn(
                       "w-6.5 h-6.5 rounded-full border-2 border-gray-300 flex items-center justify-center text-[10px] font-medium text-gray-600 hover:border-gray-400",
-                      isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                      isOutOfStock
+                        ? "opacity-40 cursor-not-allowed"
+                        : "cursor-pointer"
                     )}
                   >
                     +{colors.length - 4}
@@ -453,7 +486,9 @@ export default function ProductCard({
                     }}
                     className={cn(
                       "px-3.5 py-2 text-sm font-medium rounded-md border transition-all duration-200",
-                      isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+                      isOutOfStock
+                        ? "opacity-40 cursor-not-allowed"
+                        : "cursor-pointer",
                       selectedCapacity?.value === capacity.value
                         ? "border-black bg-black text-white"
                         : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
@@ -472,38 +507,48 @@ export default function ProductCard({
           {currentPrice && (
             <div className="space-y-1">
               {/* Precio principal */}
-              <div className={cn(
-                "text-xl font-bold",
-                isOutOfStock ? "text-gray-400" : "text-black"
-              )}>
+              <div
+                className={cn(
+                  "text-xl font-bold",
+                  isOutOfStock ? "text-gray-400" : "text-black"
+                )}
+              >
                 {currentPrice}
               </div>
 
               {/* Precio original y ahorro (solo si hay descuento) */}
-              {currentOriginalPrice && currentPrice !== currentOriginalPrice && (() => {
-                const priceNum = parseInt(currentPrice.replace(/[^\d]/g, ''));
-                const originalPriceNum = parseInt(currentOriginalPrice.replace(/[^\d]/g, ''));
-                const savings = originalPriceNum - priceNum;
-                if (savings > 0) {
-                  return (
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className={cn(
-                        "text-sm line-through",
-                        isOutOfStock ? "text-gray-300" : "text-gray-500"
-                      )}>
-                        {currentOriginalPrice}
-                      </span>
-                      <span className={cn(
-                        "text-sm font-semibold",
-                        isOutOfStock ? "text-gray-400" : "text-blue-600"
-                      )}>
-                        Ahorra $ {savings.toLocaleString('es-CO')}
-                      </span>
-                    </div>
+              {currentOriginalPrice &&
+                currentPrice !== currentOriginalPrice &&
+                (() => {
+                  const priceNum = parseInt(currentPrice.replace(/[^\d]/g, ""));
+                  const originalPriceNum = parseInt(
+                    currentOriginalPrice.replace(/[^\d]/g, "")
                   );
-                }
-                return null;
-              })()}
+                  const savings = originalPriceNum - priceNum;
+                  if (savings > 0) {
+                    return (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={cn(
+                            "text-sm line-through",
+                            isOutOfStock ? "text-gray-300" : "text-gray-500"
+                          )}
+                        >
+                          {currentOriginalPrice}
+                        </span>
+                        <span
+                          className={cn(
+                            "text-sm font-semibold",
+                            isOutOfStock ? "text-gray-400" : "text-blue-600"
+                          )}
+                        >
+                          Ahorra $ {savings.toLocaleString("es-CO")}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
             </div>
           )}
         </div>
@@ -540,7 +585,7 @@ export default function ProductCard({
               )}
             </button>
           )}
-          
+
           <button
             onClick={(e) => {
               e.stopPropagation();

@@ -103,14 +103,11 @@ export default function TrackingService({
   }
 
   return (
-    <div className="min-h-screen bg-gray-200 flex items-center justify-center py-6 md:py-12">
+    <div className="bg-white pt-4 md:pt-5">
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-2 sm:px-4">
-        {/* Tracking Card */}
-        <div
-          className="bg-white rounded-2xl shadow-sm max-w-7xl mx-auto overflow-hidden"
-          style={{ minHeight: "500px" }}
-        >
+        {/* Tracking Content - full-bleed white, no card border */}
+        <div className="bg-white max-w-7xl mx-auto" style={{ minHeight: "500px" }}>
           {isPickupOrder(metodoEnvio) ? (
             <PickupOrderView
               orderNumber={orderNumber}

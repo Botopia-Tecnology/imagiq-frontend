@@ -55,11 +55,6 @@ export const smartphonesSeriesConfig: SeriesFilterConfig = {
       image: "https://res.cloudinary.com/dnglv0zqg/image/upload/v1759818165/samsung-galaxy-a16-gray-img-2_ktfuit.webp",
     },
     {
-      id: "Galaxy M",
-      name: "Galaxy M",
-      image: "https://res.cloudinary.com/dnglv0zqg/image/upload/v1759852826/SM-M556_Galaxy-M55-5G_Back_Light-Green_hjr6dn.webp",
-    },
-    {
       id: "Galaxy Note",
       name: "Galaxy Note",
       image: "https://res.cloudinary.com/dnglv0zqg/image/upload/v1759817588/Samsung-71282880-co-galaxy-note20-ultra-n985-sm-n985fznucoo-devicebackmysticbronze-274165961-zoom_iktjqi.webp",

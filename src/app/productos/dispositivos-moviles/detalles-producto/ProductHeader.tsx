@@ -19,18 +19,18 @@ export default function ProductHeader({
   onToggleFavorite,
 }: ProductHeaderProps) {
   return (
-    <div className="mb-6">
-      <div className="flex items-start gap-3 mb-3 pr-4">
+    <div className="mb-8">
+      <div className="flex items-start gap-4 mb-4 pr-4">
         <h1
-          className="text-[2.5rem] leading-[1.08] font-bold text-[#222] flex-1 max-w-[85%]"
-          style={{ letterSpacing: "-1.5px" }}
+          className="text-[2rem] leading-tight font-bold text-[#222] flex-1"
+          style={{ letterSpacing: "-0.5px" }}
         >
           {name}
         </h1>
         {/* Botón de favoritos */}
         <button
           onClick={onToggleFavorite}
-          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-all duration-200 relative z-10 mt-1"
+          className="flex-shrink-0 p-1 rounded-full hover:bg-gray-100 transition-all duration-200 relative z-10"
           aria-label={isFavorite ? "Quitar de favoritos" : "Agregar a favoritos"}
         >
           <Heart
@@ -45,23 +45,23 @@ export default function ProductHeader({
 
       {/* SKU del producto */}
       {sku && (
-        <div className="text-xs text-[#8A8A8A] mb-4">
+        <div className="text-sm text-gray-500 mb-3">
           {sku}
         </div>
       )}
 
       {/* Calificación del producto */}
       {rating && (
-        <div className="flex items-center gap-2 mb-6">
+        <div className="flex items-center gap-2 mb-8">
           <div className="flex items-center">
             {[...Array(5)].map((_, index) => (
               <svg
                 key={index}
-                className={`w-4 h-4 ${
+                className={`w-3.5 h-3.5 ${
                   index < Math.floor(rating)
-                    ? "text-yellow-400 fill-yellow-400"
+                    ? "text-black fill-black"
                     : index < rating
-                    ? "text-yellow-400 fill-yellow-400"
+                    ? "text-black fill-black"
                     : "text-gray-300 fill-gray-300"
                 }`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -71,19 +71,19 @@ export default function ProductHeader({
               </svg>
             ))}
           </div>
-          <span className="text-sm text-[#222] font-medium">
+          <span className="text-sm text-[#222] font-semibold">
             {rating.toFixed(1)}
           </span>
           {reviewCount && (
-            <span className="text-xs text-[#8A8A8A]">
-              ({reviewCount} {reviewCount === 1 ? 'reseña' : 'reseñas'})
+            <span className="text-sm text-[#222]">
+              ({reviewCount})
             </span>
           )}
         </div>
       )}
 
-      {/* Línea separadora minimalista */}
-      <div className="w-48 h-px bg-gray-200 mb-6"></div>
+      {/* Línea separadora */}
+      <div className="h-px bg-gray-200 mb-8"></div>
     </div>
   );
 }

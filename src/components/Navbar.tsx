@@ -247,7 +247,7 @@ export default function Navbar() {
                         <Link
                           href={item.href}
                           className={cn(
-                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-black tracking-tight relative inline-block",
+                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block",
                             navbar.showWhiteItems
                               ? "text-white hover:opacity-90"
                               : "text-black hover:text-blue-600",

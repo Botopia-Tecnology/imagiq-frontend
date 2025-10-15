@@ -22,14 +22,14 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({
   showStockMessage = true,
 }) => (
   <div>
-    <div className="flex gap-6">
+    <div className="flex gap-3">
       {colorOptions.map((colorOption) => (
         <button
           key={colorOption.color}
-          className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-all duration-200 ${
+          className={`relative w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 ${
             selectedColor?.color === colorOption.color
-              ? "border-[#17407A] scale-110"
-              : "border-[#BFD7F2]"
+              ? "ring-2 ring-[#222] ring-offset-2"
+              : "ring-1 ring-gray-300"
           }`}
           style={{ backgroundColor: colorOption.hex }}
           onClick={() => handleColorSelection(colorOption)}

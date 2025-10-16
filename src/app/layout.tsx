@@ -24,6 +24,7 @@ import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityCont
 import { ProductProvider } from "@/features/products/ProductContext";
 import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { FlixmediaSpecsProvider } from "@/contexts/FlixmediaSpecsContext";
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -141,7 +142,9 @@ export default function RootLayout({
                       <CartProvider>
                         <SelectedColorProvider>
                           <PointsProvider>
-                            <ClientLayout>{safeChildren}</ClientLayout>
+                            <FlixmediaSpecsProvider>
+                              <ClientLayout>{safeChildren}</ClientLayout>
+                            </FlixmediaSpecsProvider>
                           </PointsProvider>
                           {/* Widget del chatbot */}
                           <ChatbotWidget />

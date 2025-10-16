@@ -539,7 +539,7 @@ export default function ViewProduct({
       </motion.div>
 
       {/* Características destacadas (nuevo componente) */}
-      <Destacados />
+      {/* <Destacados /> */}
 
       {/* Sección de beneficios (responsive) */}
       <BenefitsSection />

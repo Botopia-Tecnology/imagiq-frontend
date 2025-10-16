@@ -202,13 +202,13 @@ export default function MultimediaPage({
       </motion.div>
 
       {/* Bottom Bar Sticky con info del producto y CTA */}
-      {/* <MultimediaBottomBar
+      <MultimediaBottomBar
         productName={product.name}
         price={numericPrice}
         originalPrice={numericOriginalPrice}
         onViewDetailsClick={() => router.push(`/productos/view/${id}`)}
         isVisible={true}
-      /> */}
+      />
     </div>
   );
 }

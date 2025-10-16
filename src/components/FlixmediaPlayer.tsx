@@ -129,12 +129,17 @@ export default function FlixmediaPlayer({
     // Limpiar recursos anteriores de FlixMedia
     cleanupFlixMedia();
 
-    // Esperar a que el DOM esté listo antes de cargar el script
-    setTimeout(() => {
+    // Función para intentar cargar el script
+    const attemptToLoadScript = (retryCount = 0, maxRetries = 10) => {
       // Verificar que el contenedor existe
       const container = document.getElementById('flix-inpage');
       if (!container) {
-        console.error("❌ Contenedor #flix-inpage no encontrado");
+        if (retryCount < maxRetries) {
+          console.log(`⏳ Esperando contenedor #flix-inpage... intento ${retryCount + 1}/${maxRetries}`);
+          setTimeout(() => attemptToLoadScript(retryCount + 1, maxRetries), 300);
+        } else {
+          console.error("❌ Contenedor #flix-inpage no encontrado después de múltiples intentos");
+        }
         return;
       }
 
@@ -154,7 +159,6 @@ export default function FlixmediaPlayer({
       flixScript.setAttribute("data-flix-ean", ean || "");
       flixScript.setAttribute("data-flix-sku", "");
       flixScript.setAttribute("data-flix-inpage", "flix-inpage");
-      flixScript.setAttribute("data-flix-button", "flix-minisite");
       flixScript.setAttribute("data-flix-price", "");
 
       // Agregar al head según documentación
@@ -194,13 +198,16 @@ export default function FlixmediaPlayer({
         console.error("❌ Error al cargar el script de Flixmedia");
         setScriptLoaded(true);
       };
-    }, 300);
+    };
+
+    // Iniciar el intento de carga con un pequeño delay inicial
+    setTimeout(() => attemptToLoadScript(), 100);
 
     return () => {
       // Cleanup al desmontar componente
       cleanupFlixMedia();
     };
-  }, [actualMpn, ean]);
+  }, [actualMpn, ean, scriptLoaded]);
 
   // Agregar estilos después de que el script cargue para mostrar solo especificaciones
   useEffect(() => {
@@ -254,8 +261,8 @@ export default function FlixmediaPlayer({
         */
 
           #flix-inpage [flixtemplate-key="features"] {
-          display: none !important;
-          visibility: hidden !important;
+          display: block !important;
+          visibility: visible !important;
         }
 
         /* Ocultar imágenes de características/features */
@@ -276,10 +283,10 @@ export default function FlixmediaPlayer({
           visibility: hidden !important;
         }
 
-        /* Mostrar SOLO especificaciones */
+        /* Ocultar especificaciones - se muestran en componente Specifications */
         #flix-inpage [flixtemplate-key="specifications"] {
-          display: block !important;
-          visibility: visible !important;
+          display: none !important;
+          visibility: hidden !important;
         }
 
         /* ===== PERSONALIZACIÓN DE ESTILOS ===== */
@@ -363,12 +370,12 @@ export default function FlixmediaPlayer({
           console.log(`  🚫 Ocultando: footnotes`);
         }
 
-        // Asegurarse de que specifications esté visible
+        // Ocultar specifications - se muestran en componente Specifications
         const specifications = container.querySelector('[flixtemplate-key="specifications"]');
         if (specifications) {
-          (specifications as HTMLElement).style.display = 'block';
-          (specifications as HTMLElement).style.visibility = 'visible';
-          console.log(`  ✅ Mostrando: specifications`);
+          (specifications as HTMLElement).style.display = 'none';
+          (specifications as HTMLElement).style.visibility = 'hidden';
+          console.log(`  🚫 Ocultando: specifications (se mostrarán en componente Specifications)`);
         }
       }, 100);
     }, 500);
@@ -380,6 +387,8 @@ export default function FlixmediaPlayer({
       }
     };
   }, [scriptLoaded]);
+
+
 
   // Estado 1: Sin MPN/EAN
   if (!mpn && !ean) {
@@ -399,6 +408,8 @@ export default function FlixmediaPlayer({
   // Estado 4: Contenido de Flixmedia
   return (
     <div className={`${className} w-full h-full relative min-h-screen ${backgroundColor}`}>
+      {/* Contenedor para el botón de Flixmedia minisite */}
+
       {/* Contenedor para el contenido de Flixmedia */}
       <div
         id="flix-inpage"

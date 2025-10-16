@@ -62,7 +62,7 @@ const Specifications: React.FC<SpecificationsProps> = ({ product }) => {
 
       {/* Botón grande con feedback visual y animación */}
       <div className="flex flex-col items-center w-full mt-2 px-0 sm:px-0">
-        <button
+        <button 
           type="button"
           className="w-full max-w-xs sm:max-w-md bg-[#0099FF] hover:bg-[#007ACC] active:scale-95 text-white font-bold py-3 sm:py-4 rounded-full shadow-lg text-base sm:text-lg lg:text-xl transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 mb-2"
           onClick={handleAddToCart}

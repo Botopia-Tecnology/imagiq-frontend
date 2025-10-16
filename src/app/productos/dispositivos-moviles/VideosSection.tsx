@@ -13,6 +13,8 @@
  */
 
 import React, { useState, useRef } from "react";
+import { ProductCardProps } from "../components/ProductCard";
+import FlixmediaDetails from "@/components/FlixmediaDetails";
 
 // Tipos para los datos de video
 interface VideoData {
@@ -21,6 +23,10 @@ interface VideoData {
   title: string;
   subtitle: string;
   description?: string;
+}
+
+interface DetailsProps {
+  product: ProductCardProps;
 }
 
 // Datos de los videos
@@ -134,7 +140,9 @@ const VideoPlayer = ({ video, index }: { video: VideoData; index: number }) => {
 /**
  * Componente principal de la sección de videos
  */
-export default function VideosSection() {
+const VideosSection: React.FC<DetailsProps> = ({ product }) => {
+  const [showFlixmedia, setShowFlixmedia] = useState(true);
+
   return (
     <section
       className="w-full py-16 px-4"
@@ -144,6 +152,13 @@ export default function VideosSection() {
       }}
       aria-label="Sección de videos promocionales"
     >
+      {showFlixmedia && product.sku && (
+              <FlixmediaDetails
+                mpn={product.sku}
+                ean={null}
+                className="mb-8"
+              />
+            ) }
       <div className="max-w-6xl mx-auto">
         {/* Grid vertical de videos - uno encima del otro */}
         <div className="space-y-24 relative">
@@ -203,3 +218,5 @@ export default function VideosSection() {
     </section>
   );
 }
+
+export default VideosSection

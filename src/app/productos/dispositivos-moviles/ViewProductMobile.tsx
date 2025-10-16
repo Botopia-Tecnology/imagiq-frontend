@@ -550,7 +550,7 @@ export default function ViewProduct({
         {...videosReveal.motionProps}
         className="mt-0"
       >
-        <VideosSection />
+        <VideosSection product={productCard} />
       </motion.div>
       {/* Componente de comparación justo debajo de VideosSection */}
       {/* <motion.div

@@ -1,25 +1,26 @@
 /**
- * FlixmediaSpecifications Component
+ * FlixmediaDetails Component
  *
- * Componente que carga el script de Flixmedia y muestra SOLO las especificaciones.
- * Basado en FlixmediaPlayer pero optimizado para mostrar únicamente specs.
+ * Componente que carga el script de Flixmedia y muestra SOLO la galería de imágenes.
+ * Basado en FlixmediaPlayer pero optimizado para mostrar únicamente gallery.
  */
 
 "use client";
 
 import { useEffect, useState, useRef } from "react";
 
-interface FlixmediaSpecificationsProps {
+interface FlixmediaDetailsProps {
   mpn?: string | null;
   ean?: string | null;
   className?: string;
 }
 
-export default function FlixmediaSpecifications({
+export default function FlixmediaDetails({
   mpn,
   ean,
   className = "",
-}: FlixmediaSpecificationsProps) {
+}: FlixmediaDetailsProps) {
+  console.log('siiiiii')
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const [hasContent, setHasContent] = useState(false);
   const loadedMpnRef = useRef<string | null>(null); // Trackear qué MPN ya se cargó
@@ -51,12 +52,12 @@ export default function FlixmediaSpecifications({
     }
 
     // Limpiar contenedor inpage
-    const flixInpage = document.getElementById("flix-specifications-inpage");
+    const flixInpage = document.getElementById("flix-gallery-inpage");
     if (flixInpage) {
       flixInpage.innerHTML = "";
     }
 
-    console.log("🧹 FlixMedia specifications cleanup completado");
+    console.log("🧹 FlixMedia gallery cleanup completado");
   };
 
   // Cargar el script de Flixmedia
@@ -69,7 +70,7 @@ export default function FlixmediaSpecifications({
       return;
     }
 
-    console.log("📋 Cargando especificaciones de Flixmedia con MPN:", mpn);
+    console.log("🖼️ Cargando galería de imágenes de Flixmedia con MPN:", mpn);
     loadedMpnRef.current = mpn;
 
     // Reset de FlixMedia callbacks según documentación
@@ -86,13 +87,13 @@ export default function FlixmediaSpecifications({
     // Esperar a que el DOM esté listo antes de cargar el script
     setTimeout(() => {
       // Verificar que el contenedor existe
-      const container = document.getElementById('flix-specifications-inpage');
+      const container = document.getElementById('flix-gallery-inpage');
       if (!container) {
-        console.error("❌ Contenedor #flix-specifications-inpage no encontrado");
+        console.error("❌ Contenedor #flix-gallery-inpage no encontrado");
         return;
       }
 
-      console.log("📦 Contenedor #flix-specifications-inpage encontrado, cargando script...");
+      console.log("📦 Contenedor #flix-gallery-inpage encontrado, cargando script...");
 
       const headID = document.getElementsByTagName("head")[0];
       const flixScript = document.createElement("script");
@@ -107,20 +108,20 @@ export default function FlixmediaSpecifications({
       flixScript.setAttribute("data-flix-mpn", mpn);
       flixScript.setAttribute("data-flix-ean", ean || "");
       flixScript.setAttribute("data-flix-sku", "");
-      flixScript.setAttribute("data-flix-inpage", "flix-specifications-inpage");
+      flixScript.setAttribute("data-flix-inpage", "flix-gallery-inpage");
       flixScript.setAttribute("data-flix-price", "");
 
       // Agregar al head según documentación
       headID.appendChild(flixScript);
 
       flixScript.onload = () => {
-        console.log("✅ Script de Flixmedia para especificaciones cargado");
+        console.log("✅ Script de Flixmedia para galería cargado");
 
         // Callback de carga según documentación
         if (typeof (window as any).flixJsCallbacks === "object") {
           (window as any).flixJsCallbacks.setLoadCallback(() => {
             try {
-              console.log("✅ Especificaciones de Flixmedia renderizadas");
+              console.log("✅ Galería de Flixmedia renderizada");
               setScriptLoaded(true);
               setHasContent(true);
             } catch (e) {
@@ -131,12 +132,12 @@ export default function FlixmediaSpecifications({
 
         // Fallback si no hay callbacks
         setTimeout(() => {
-          const inpageContent = document.getElementById('flix-specifications-inpage');
+          const inpageContent = document.getElementById('flix-gallery-inpage');
           if (inpageContent && inpageContent.children.length > 0) {
-            console.log("✅ Especificaciones de Flixmedia renderizadas:", inpageContent.children.length, "elementos");
+            console.log("✅ Galería de Flixmedia renderizada:", inpageContent.children.length, "elementos");
             setHasContent(true);
           } else {
-            console.warn("⚠️ No se encontraron especificaciones de Flixmedia");
+            console.warn("⚠️ No se encontró galería de Flixmedia");
             setHasContent(false);
           }
           setScriptLoaded(true);
@@ -160,112 +161,70 @@ export default function FlixmediaSpecifications({
     };
   }, [mpn, ean]);
 
-  // Agregar estilos después de que el script cargue para mostrar solo especificaciones
+  // Agregar estilos después de que el script cargue para mostrar solo galería
   useEffect(() => {
     if (!scriptLoaded) return;
 
     setTimeout(() => {
       const style = document.createElement('style');
-      style.id = 'flixmedia-specifications-styles';
+      style.id = 'flixmedia-gallery-styles';
       style.textContent = `
-        /* Ocultar TODO excepto especificaciones */
-        #flix-specifications-inpage [flixtemplate-key="features"],
-        #flix-specifications-inpage [flixtemplate-key="background_image"],
-        #flix-specifications-inpage [flixtemplate-key="image_gallery"],
-        #flix-specifications-inpage [flixtemplate-key="footnotes"] {
+        /* Ocultar TODO excepto galería de imágenes */
+        #flix-gallery-inpage [flixtemplate-key="features"],
+        #flix-gallery-inpage [flixtemplate-key="background_image"],
+        #flix-gallery-inpage [flixtemplate-key="specifications"],
+        #flix-gallery-inpage [flixtemplate-key="footnotes"] {
           display: none !important;
           visibility: hidden !important;
         }
 
-        /* Mostrar SOLO especificaciones */
-        #flix-specifications-inpage [flixtemplate-key="specifications"] {
+        /* Mostrar SOLO galería de imágenes */
+        #flix-gallery-inpage [flixtemplate-key="gallery"] {
           display: block !important;
           visibility: visible !important;
         }
 
         /* Estilos para integrar con el diseño existente */
-        #flix-specifications-inpage {
+        #flix-gallery-inpage {
           width: 100%;
           background: transparent;
         }
 
-        /* Personalizar especificaciones para que se vean bien */
-        #flix-specifications-inpage [flixtemplate-key="specifications"] {
+        /* Personalizar galería para que se vea bien */
+        #flix-gallery-inpage [flixtemplate-key="gallery"] {
           background-color: transparent !important;
           padding: 0 !important;
         }
 
-        #flix-specifications-inpage [flixtemplate-key="specifications"] h2,
-        #flix-specifications-inpage [flixtemplate-key="specifications"] h3 {
-          display: none !important; /* Ocultar títulos de Flixmedia, usamos los nuestros */
+        /* Ocultar títulos de Flixmedia si existen */
+        #flix-gallery-inpage [flixtemplate-key="gallery"] h2,
+        #flix-gallery-inpage [flixtemplate-key="gallery"] h3 {
+          display: none !important;
         }
 
-        #flix-specifications-inpage [flixtemplate-key="specifications"] .inpage_spec-list {
-          margin-bottom: 0 !important;
-          border: none !important;
-          padding: 0 !important;
-        }
-
-         /* ===== PERSONALIZACIÓN DE ESTILOS ===== */
-
-        /* Personalizar títulos de especificaciones */
-        #flix-inpage [flixtemplate-key="specifications"] h2,
-        #flix-inpage [flixtemplate-key="specifications"] h3,
-        #flix-inpage [flixtemplate-key="specifications"] .flix-heading {
-          color: #0066CC !important;
-          font-weight: bold !important;
-        }
-
-        /* Personalizar texto de especificaciones */
-        #flix-inpage [flixtemplate-key="specifications"] p,
-        #flix-inpage [flixtemplate-key="specifications"] li,
-        #flix-inpage [flixtemplate-key="specifications"] span {
-          color: #333333 !important;
-        }
-
-        /* Personalizar nombres de especificaciones (labels) */
-        #flix-inpage [flixtemplate-key="specifications"] .inpage_spec-list strong,
-        #flix-inpage [flixtemplate-key="specifications"] .spec-label {
-          color: #1a1a1a !important;
-          font-weight: 600 !important;
-        }
-
-        /* Personalizar valores de especificaciones */
-        #flix-inpage [flixtemplate-key="specifications"] .spec-value {
-          color: #666666 !important;
-        }
-
-        /* Personalizar fondo de la sección de especificaciones */
-        #flix-inpage [flixtemplate-key="specifications"] {
-          background-color: #ffffff !important;
-          padding: 20px !important;
-          border-radius: 8px !important;
-        }
- 
-        /* Opcional: Agregar bordes a cada grupo de especificaciones */
-        #flix-inpage [flixtemplate-key="specifications"] .inpage_spec-list {
-          border-left: 3px solid #0066CC !important;
-          padding-left: 15px !important;
-          margin-bottom: 20px !important;
+        /* Asegurar que las imágenes sean responsivas */
+        #flix-gallery-inpage [flixtemplate-key="gallery"] img {
+          max-width: 100% !important;
+          height: auto !important;
         }
       `;
 
       // Remover estilo anterior si existe
-      const oldStyle = document.getElementById('flixmedia-specifications-styles');
+      const oldStyle = document.getElementById('flixmedia-gallery-styles');
       if (oldStyle) {
         oldStyle.remove();
       }
 
       document.head.appendChild(style);
-      console.log('✅ Estilos de especificaciones aplicados');
+      console.log('✅ Estilos de galería aplicados');
 
       // Forzar ocultar elementos manualmente con JavaScript
       setTimeout(() => {
-        const container = document.getElementById('flix-specifications-inpage');
+        const container = document.getElementById('flix-gallery-inpage');
         if (!container) return;
 
-        // Ocultar todo excepto specifications
-        const toHide = ['features', 'background_image', 'image_gallery', 'footnotes'];
+        // Ocultar todo excepto gallery
+        const toHide = ['features', 'background_image', 'specifications', 'footnotes'];
         toHide.forEach(key => {
           const elements = container.querySelectorAll(`[flixtemplate-key="${key}"]`);
           elements.forEach((el) => {
@@ -274,22 +233,22 @@ export default function FlixmediaSpecifications({
           });
         });
 
-        // Asegurarse de que specifications esté visible
-        const specifications = container.querySelector('[flixtemplate-key="specifications"]');
-        if (specifications) {
-          (specifications as HTMLElement).style.display = 'block';
-          (specifications as HTMLElement).style.visibility = 'visible';
-          console.log('✅ Especificaciones visibles');
+        // Asegurarse de que gallery esté visible
+        const gallery = container.querySelector('[flixtemplate-key="gallery"]');
+        if (gallery) {
+          (gallery as HTMLElement).style.display = 'block';
+          (gallery as HTMLElement).style.visibility = 'visible';
+          console.log('✅ Galería visible');
           setHasContent(true);
         } else {
-          console.log('⚠️ No se encontró template de especificaciones');
+          console.log('⚠️ No se encontró template de galería');
           setHasContent(false);
         }
       }, 100);
     }, 500);
 
     return () => {
-      const style = document.getElementById('flixmedia-specifications-styles');
+      const style = document.getElementById('flixmedia-gallery-styles');
       if (style) {
         style.remove();
       }
@@ -303,9 +262,9 @@ export default function FlixmediaSpecifications({
 
   return (
     <div className={className}>
-      {/* Contenedor para las especificaciones de Flixmedia */}
+      {/* Contenedor para la galería de imágenes de Flixmedia */}
       <div
-        id="flix-specifications-inpage"
+        id="flix-gallery-inpage"
         className="w-full"
         style={{
           minHeight: hasContent ? 'auto' : '0',
@@ -319,7 +278,7 @@ export default function FlixmediaSpecifications({
         <div className="flex items-center justify-center py-8">
           <div className="flex flex-col items-center gap-3">
             <div className="w-8 h-8 border-4 border-gray-200 border-t-[#0099FF] rounded-full animate-spin" />
-            <p className="text-sm text-gray-500">Cargando especificaciones...</p>
+            <p className="text-sm text-gray-500">Cargando galería...</p>
           </div>
         </div>
       )}

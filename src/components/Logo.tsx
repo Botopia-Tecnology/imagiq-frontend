@@ -26,7 +26,7 @@ export default function Logo({
       onClick={onClick}
     >
       <img
-        src="/img/Samsung_black.svg"
+        src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
         alt="Imagiq Store"
         width={width}
         height={height}

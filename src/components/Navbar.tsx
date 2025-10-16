@@ -173,16 +173,13 @@ export default function Navbar() {
               className="h-10 w-10 transition-all duration-300"
               priority
             />
-            <Image
-              src="/img/Samsung_black.svg"
+            <img
+              src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
               alt="Samsung"
-              height={32}
-              width={90}
               className={cn(
                 "h-8 w-auto transition-all duration-300",
                 navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
               )}
-              priority
             />
           </Link>
 

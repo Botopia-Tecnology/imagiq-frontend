@@ -33,46 +33,42 @@ const filterConfig: FilterConfig = {
 };
 
 function filterProducts(products: ProductCardProps[], filters: FilterState) {
+  const matchesColor = (product: ProductCardProps, colorValue: string) => {
+    return Array.isArray(product.colors) &&
+      product.colors.some((c: { label: string }) =>
+        c.label.trim().toLowerCase() === colorValue.trim().toLowerCase()
+      );
+  };
+
+  const matchesStringValue = (value: string, searchValue: string) => {
+    return value.toLowerCase().includes(searchValue.toLowerCase());
+  };
+
+  const matchesArrayValue = (value: string[], searchValue: string) => {
+    return value.some((item) =>
+      typeof item === "string" && item.toLowerCase() === searchValue.toLowerCase()
+    );
+  };
+
   return products.filter((product) => {
     return Object.entries(filters).every(([filterKey, values]) => {
       if (!values.length) return true;
       // Filtrado por color
       if (filterKey === "color") {
-        return (
-          Array.isArray(product.colors) &&
-          values.some((v) =>
-            product.colors!.some(
-              (c: { label: string }) =>
-                c.label.trim().toLowerCase() === v.trim().toLowerCase()
-            )
-          )
-        );
+        return values.some((v) => matchesColor(product, v));
       }
       // Filtrado por nombre
       if (filterKey === "nombre" || filterKey === "name") {
-        return values.some((v) =>
-          product.name.toLowerCase().includes(v.toLowerCase())
-        );
+        return values.some((v) => matchesStringValue(product.name, v));
       }
       // Filtrado genérico por cualquier campo string o array de strings
       if (Object.hasOwn(product, filterKey)) {
-        const value = (product as unknown as Record<string, unknown>)[
-          filterKey
-        ];
+        const value = (product as unknown as Record<string, unknown>)[filterKey];
         if (typeof value === "string") {
-          return values.some((v) =>
-            value.toLowerCase().includes(v.toLowerCase())
-          );
+          return values.some((v) => matchesStringValue(value, v));
         }
         if (Array.isArray(value)) {
-          // Array de strings
-          return values.some((v) =>
-            (value as string[]).some(
-              (item) =>
-                typeof item === "string" &&
-                item.toLowerCase() === v.toLowerCase()
-            )
-          );
+          return values.some((v) => matchesArrayValue(value as string[], v));
         }
       }
       return true;
@@ -313,13 +309,17 @@ function ProductosContent() {
             <div className="flex-1">
               {sortedProducts.length > 0 ? (
                 <>
-                  <div className={`grid gap-6 ${
-                    viewMode === "list" 
-                      ? "grid-cols-1" 
-                      : searchQuery 
-                        ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
-                        : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-                  }`}>
+                  {(() => {
+                    let gridClasses = "grid gap-6 ";
+                    if (viewMode === "list") {
+                      gridClasses += "grid-cols-1";
+                    } else if (searchQuery) {
+                      gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
+                    } else {
+                      gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
+                    }
+                    return (
+                      <div className={gridClasses}>
                     {sortedProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -340,7 +340,9 @@ function ProductosContent() {
                         stock={product.stock}
                       />
                     ))}
-                  </div>
+                      </div>
+                    );
+                  })()}
               
                   {/* Paginación */}
                   {!error && products.length > 0 && (

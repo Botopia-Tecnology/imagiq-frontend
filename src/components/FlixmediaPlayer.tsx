@@ -7,16 +7,13 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   FlixmediaEmptyState,
   FlixmediaLoadingState,
   FlixmediaNotFoundState,
 } from "./FlixmediaStates";
-import {
-  findAvailableSku,
-  parseSkuString,
-} from "@/lib/flixmedia";
+import { findAvailableSku, parseSkuString } from "@/lib/flixmedia";
 
 interface FlixmediaPlayerProps {
   mpn?: string | null;
@@ -40,6 +37,7 @@ export default function FlixmediaPlayer({
   const [actualMpn, setActualMpn] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     async function searchAvailableSku() {
@@ -84,7 +82,9 @@ export default function FlixmediaPlayer({
     // Remover todos los scripts de Flix
     const flixScripts = document.getElementsByTagName("script");
     for (let i = flixScripts.length - 1; i >= 0; i--) {
-      if (flixResourceDomain.some(domain => flixScripts[i].src.includes(domain))) {
+      if (
+        flixResourceDomain.some((domain) => flixScripts[i].src.includes(domain))
+      ) {
         flixScripts[i].parentNode?.removeChild(flixScripts[i]);
       }
     }
@@ -92,15 +92,11 @@ export default function FlixmediaPlayer({
     // Remover todos los links CSS de Flix
     const flixLinks = document.getElementsByTagName("link");
     for (let i = flixLinks.length - 1; i >= 0; i--) {
-      if (flixResourceDomain.some(domain => flixLinks[i].href.includes(domain))) {
+      if (
+        flixResourceDomain.some((domain) => flixLinks[i].href.includes(domain))
+      ) {
         flixLinks[i].parentNode?.removeChild(flixLinks[i]);
       }
-    }
-
-    // Remover hotspot div
-    const hotspotDiv = document.getElementById("flix_hotspots");
-    if (hotspotDiv) {
-      hotspotDiv.remove();
     }
 
     // Limpiar contenedor inpage
@@ -118,9 +114,11 @@ export default function FlixmediaPlayer({
 
     console.log("🎬 Cargando script de Flixmedia con MPN:", actualMpn);
 
+    let isMounted = true;
+
     // Reset de FlixMedia callbacks según documentación
-    if (typeof window !== 'undefined' && (window as any).flixJsCallbacks) {
-      if (typeof (window as any).flixJsCallbacks.reset !== 'undefined') {
+    if (typeof window !== "undefined" && (window as any).flixJsCallbacks) {
+      if (typeof (window as any).flixJsCallbacks.reset !== "undefined") {
         (window as any).flixJsCallbacks.reset();
         console.log("🔄 flixJsCallbacks.reset() ejecutado");
       }
@@ -130,15 +128,39 @@ export default function FlixmediaPlayer({
     cleanupFlixMedia();
 
     // Función para intentar cargar el script
-    const attemptToLoadScript = (retryCount = 0, maxRetries = 10) => {
-      // Verificar que el contenedor existe
-      const container = document.getElementById('flix-inpage');
+    const attemptToLoadScript = (retryCount = 0, maxRetries = 15) => {
+      // Verificar que el componente sigue montado
+      if (!isMounted) {
+        console.log("⚠️ Componente desmontado, cancelando carga del script");
+        return;
+      }
+
+      // Verificar que el contenedor existe usando el ref (más confiable que getElementById)
+      const container = containerRef.current;
       if (!container) {
         if (retryCount < maxRetries) {
-          console.log(`⏳ Esperando contenedor #flix-inpage... intento ${retryCount + 1}/${maxRetries}`);
-          setTimeout(() => attemptToLoadScript(retryCount + 1, maxRetries), 300);
+          // Solo mostrar log cada 3 intentos para no saturar la consola
+          if (retryCount % 3 === 0) {
+            console.log(
+              `⏳ Esperando contenedor #flix-inpage... intento ${
+                retryCount + 1
+              }/${maxRetries}`
+            );
+          }
+          setTimeout(
+            () => attemptToLoadScript(retryCount + 1, maxRetries),
+            100
+          );
         } else {
-          console.error("❌ Contenedor #flix-inpage no encontrado después de múltiples intentos");
+          // Solo mostrar error si el componente sigue montado
+          if (isMounted) {
+            console.error(
+              "❌ Contenedor #flix-inpage no encontrado después de múltiples intentos"
+            );
+            console.error(
+              "   Esto puede indicar que el componente está desmontado o en un estado incorrecto"
+            );
+          }
         }
         return;
       }
@@ -171,24 +193,36 @@ export default function FlixmediaPlayer({
         if (typeof (window as any).flixJsCallbacks === "object") {
           (window as any).flixJsCallbacks.setLoadCallback(() => {
             try {
-              console.log("✅ Contenido de Flixmedia renderizado completamente");
+              console.log(
+                "✅ Contenido de Flixmedia renderizado completamente"
+              );
               setScriptLoaded(true);
             } catch (e) {
               console.error("Error en callback de carga:", e);
             }
-          }, 'inpage');
+          }, "inpage");
         }
 
         // Fallback si no hay callbacks
         setTimeout(() => {
-          const inpageContent = document.getElementById('flix-inpage');
+          const inpageContent = document.getElementById("flix-inpage");
           if (inpageContent && inpageContent.children.length > 0) {
-            console.log("✅ Contenido de Flixmedia renderizado:", inpageContent.children.length, "elementos");
+            console.log(
+              "✅ Contenido de Flixmedia renderizado:",
+              inpageContent.children.length,
+              "elementos"
+            );
           } else {
-            console.warn("⚠️ El script cargó pero no se renderizó contenido. Posibles razones:");
+            console.warn(
+              "⚠️ El script cargó pero no se renderizó contenido. Posibles razones:"
+            );
             console.warn("   - Localhost no está autorizado en Flixmedia");
-            console.warn("   - El SKU no tiene contenido multimedia disponible");
-            console.warn("   - Se requiere configuración adicional del dominio");
+            console.warn(
+              "   - El SKU no tiene contenido multimedia disponible"
+            );
+            console.warn(
+              "   - Se requiere configuración adicional del dominio"
+            );
           }
           setScriptLoaded(true);
         }, 3000);
@@ -200,10 +234,12 @@ export default function FlixmediaPlayer({
       };
     };
 
-    // Iniciar el intento de carga con delay suficiente para que React renderice el DOM
-    setTimeout(() => attemptToLoadScript(), 300);
+    // Iniciar el intento de carga con un pequeño delay para dar tiempo al ref
+    setTimeout(() => attemptToLoadScript(), 100);
 
     return () => {
+      // Marcar componente como desmontado
+      isMounted = false;
       // Cleanup al desmontar componente
       cleanupFlixMedia();
     };
@@ -216,41 +252,63 @@ export default function FlixmediaPlayer({
     // Esperar un poco para que FlixMedia renderice el contenido
     setTimeout(() => {
       // Primero, verificar qué templates hay en el DOM
-      const container = document.getElementById('flix-inpage');
+      const container = document.getElementById("flix-inpage");
       if (container) {
-        console.log('🔍 Investigando estructura del DOM...');
-        console.log('Contenedor innerHTML (primeros 500 chars):', container.innerHTML.substring(0, 500));
+        console.log("🔍 Investigando estructura del DOM...");
+        console.log(
+          "Contenedor innerHTML (primeros 500 chars):",
+          container.innerHTML.substring(0, 500)
+        );
 
-        const templates = container.querySelectorAll('[flidata-type="template"]');
-        console.log('📋 Templates con [flidata-type="template"]:', templates.length);
+        const templates = container.querySelectorAll(
+          '[flidata-type="template"]'
+        );
+        console.log(
+          '📋 Templates con [flidata-type="template"]:',
+          templates.length
+        );
 
         // Buscar por flixtemplate-key directamente
-        const templatesWithKey = container.querySelectorAll('[flixtemplate-key]');
-        console.log('📋 Elementos con [flixtemplate-key]:', templatesWithKey.length);
+        const templatesWithKey =
+          container.querySelectorAll("[flixtemplate-key]");
+        console.log(
+          "📋 Elementos con [flixtemplate-key]:",
+          templatesWithKey.length
+        );
         templatesWithKey.forEach((template) => {
-          const key = template.getAttribute('flixtemplate-key');
+          const key = template.getAttribute("flixtemplate-key");
           console.log(`  - Template key: ${key}`, template);
         });
 
         // Buscar todos los elementos con atributos flix*
-        const allFlixElements = container.querySelectorAll('[class*="flix"], [id*="flix"]');
-        console.log('📋 Elementos con flix en class/id:', allFlixElements.length);
+        const allFlixElements = container.querySelectorAll(
+          '[class*="flix"], [id*="flix"]'
+        );
+        console.log(
+          "📋 Elementos con flix en class/id:",
+          allFlixElements.length
+        );
 
         // Buscar elementos de nivel superior dentro del contenedor
         const topLevelChildren = container.children;
-        console.log('📋 Elementos hijos directos de #flix-inpage:', topLevelChildren.length);
+        console.log(
+          "📋 Elementos hijos directos de #flix-inpage:",
+          topLevelChildren.length
+        );
         Array.from(topLevelChildren).forEach((child, index) => {
           console.log(`  Hijo ${index}:`, {
             tagName: child.tagName,
             classes: child.className,
             id: child.id,
-            attributes: Array.from(child.attributes).map(attr => `${attr.name}="${attr.value}"`).slice(0, 5)
+            attributes: Array.from(child.attributes)
+              .map((attr) => `${attr.name}="${attr.value}"`)
+              .slice(0, 5),
           });
         });
       }
 
-      const style = document.createElement('style');
-      style.id = 'flixmedia-custom-styles';
+      const style = document.createElement("style");
+      style.id = "flixmedia-custom-styles";
       style.textContent = `
         /*
           Templates de FlixMedia encontrados:
@@ -305,24 +363,22 @@ export default function FlixmediaPlayer({
       `;
 
       // Remover estilo anterior si existe
-      const oldStyle = document.getElementById('flixmedia-custom-styles');
+      const oldStyle = document.getElementById("flixmedia-custom-styles");
       if (oldStyle) {
         oldStyle.remove();
       }
 
       document.head.appendChild(style);
-      console.log('✅ Estilos de FlixMedia aplicados');
+      console.log("✅ Estilos de FlixMedia aplicados");
     }, 500);
 
     return () => {
-      const style = document.getElementById('flixmedia-custom-styles');
+      const style = document.getElementById("flixmedia-custom-styles");
       if (style) {
         style.remove();
       }
     };
   }, [scriptLoaded]);
-
-
 
   // Estado 1: Sin MPN/EAN
   if (!mpn && !ean) {
@@ -341,11 +397,14 @@ export default function FlixmediaPlayer({
 
   // Estado 4: Contenido de Flixmedia
   return (
-    <div className={`${className} w-full h-full relative min-h-screen ${backgroundColor}`}>
+    <div
+      className={`${className} w-full h-full relative min-h-screen ${backgroundColor}`}
+    >
       {/* Contenedor para el botón de Flixmedia minisite */}
 
       {/* Contenedor para el contenido de Flixmedia */}
-      <div
+      {/* <div
+        ref={containerRef}
         id="flix-inpage"
         className={`w-full min-h-screen ${containerPadding}`}
         style={{
@@ -357,7 +416,20 @@ export default function FlixmediaPlayer({
           transform: 'translateZ(0)',
           WebkitFontSmoothing: 'antialiased',
         }}
-      />
+      /> */}
+      <div
+        className={`flixmedia-container ${backgroundColor} ${containerPadding} ${className}`}
+      >
+        {isSearching && <FlixmediaLoadingState />}
+        {!isSearching && !actualMpn && <FlixmediaEmptyState />}
+        {!isSearching && actualMpn && (
+          <div
+            id="flix-inpage"
+            ref={containerRef}
+            className="min-h-[200px] w-full"
+          />
+        )}
+      </div>
 
       {/* Mostrar loading si el script no ha cargado */}
       {!scriptLoaded && (

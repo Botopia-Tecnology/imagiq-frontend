@@ -274,7 +274,7 @@ export default function ProductCard({
       tabIndex={0}
       aria-label={`Ver detalles de ${cleanProductName(name)}`}
       className={cn(
-        "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg max-w-[350px] mx-auto",
+        "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
         isOutOfStock && "opacity-60",
         className
       )}

@@ -7,7 +7,7 @@ import { User, Menu, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
-import { navbarRoutes } from "../routes/navbarRoutes";
+import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import OfertasDropdown from "./dropdowns/ofertas";
 import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
@@ -23,7 +23,6 @@ import {
   NavbarLogo,
 } from "./navbar/components";
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
-import { MENU_ORDER } from "./navbar/constants";
 import type { DropdownName, NavItem } from "./navbar/types";
 
 const getDropdownComponent = (name: DropdownName) => {
@@ -49,6 +48,7 @@ const getDropdownComponent = (name: DropdownName) => {
 export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { getNavbarRoutes } = useVisibleCategories();
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
@@ -99,9 +99,8 @@ export default function Navbar() {
     return navbar.showWhiteItems ? "text-white" : "text-black";
   };
 
-  const menuRoutes: NavItem[] = MENU_ORDER.map((name) =>
-    navbarRoutes.find((r) => r.name === name)
-  ).filter((r): r is NavItem => Boolean(r?.name && r?.href && r?.category));
+  // Obtener las rutas dinámicas desde el hook
+  const menuRoutes: NavItem[] = getNavbarRoutes();
 
   // Determinar si debe mostrar fondo transparente o blanco
   const showTransparentBg =
@@ -231,27 +230,16 @@ export default function Navbar() {
             <nav className="min-w-0 flex-1">
               <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
                 {menuRoutes.map((item) => {
-                  const isActive =
-                    item.name === "Electrodomésticos"
-                      ? navbar.pathname?.startsWith(
-                          "/productos/Electrodomesticos"
-                        ) ?? false
-                      : navbar.pathname === item.href ||
-                        navbar.pathname?.startsWith(item.href + "/");
-
-                  const isDropdownOpen = navbar.activeDropdown === item.name;
-                  const textBase = navbar.showWhiteItems
-                    ? "text-white"
-                    : "text-black";
+                  const dropdownKey = item.dropdownName || item.name;
 
                   return (
                     <li key={item.name} className="relative shrink-0">
                       <div
-                        data-item-name={item.name}
+                        data-item-name={dropdownKey}
                         ref={navbar.setNavItemRef}
                         onMouseEnter={() =>
-                          hasDropdownMenu(item.name) &&
-                          navbar.handleDropdownEnter(item.name as DropdownName)
+                          hasDropdownMenu(dropdownKey) &&
+                          navbar.handleDropdownEnter(dropdownKey as DropdownName)
                         }
                         onMouseLeave={navbar.handleDropdownLeave}
                         className="relative inline-block"
@@ -267,23 +255,23 @@ export default function Navbar() {
                               "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                           )}
                         >
-                          {item.name === "Televisores y AV" &&
+                          {dropdownKey === "Televisores y AV" &&
                           isIntermediateScreen
                             ? "TV y AV"
                             : item.name}
                         </Link>
 
-                        {navbar.activeDropdown === item.name &&
-                          hasDropdownMenu(item.name) && (
+                        {navbar.activeDropdown === dropdownKey &&
+                          hasDropdownMenu(dropdownKey) && (
                             <div
                               className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
                               style={{
-                                top: `${getDropdownPosition(item.name).top}px`,
+                                top: `${getDropdownPosition(dropdownKey).top}px`,
                               }}
                             >
                               <div className="mx-auto max-w-screen-2xl">
                                 {getDropdownComponent(
-                                  item.name as DropdownName
+                                  dropdownKey as DropdownName
                                 )}
                               </div>
                             </div>

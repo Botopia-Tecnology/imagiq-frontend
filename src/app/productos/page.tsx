@@ -132,20 +132,17 @@ function ProductosContent() {
   // Ejecutar búsqueda cuando hay searchQuery
   useEffect(() => {
     if (searchQuery) {
-      // Aplicar ordenamiento por defecto en la búsqueda inicial
-      const sortParams = getSortParams(sortBy);
-      searchProducts(searchQuery, 1, sortParams.sortBy, sortParams.sortOrder);
+      searchProducts(searchQuery, 1);
     }
-  }, [searchQuery, searchProducts, sortBy]);
+  }, [searchQuery, searchProducts]);
 
   // Handler para cambio de ordenamiento
   const handleSortChange = useCallback((newSortBy: string) => {
     setSortBy(newSortBy);
     
     if (searchQuery) {
-      // Si estamos en modo búsqueda, hacer nueva búsqueda con ordenamiento
-      const sortParams = getSortParams(newSortBy);
-      searchProducts(searchQuery, 1, sortParams.sortBy, sortParams.sortOrder);
+      // Si estamos en modo búsqueda, hacer nueva búsqueda sin ordenamiento
+      searchProducts(searchQuery, 1);
     }
     // Si no estamos en modo búsqueda, el ordenamiento se aplica localmente
     window.scrollTo({ top: 0, behavior: "smooth" });

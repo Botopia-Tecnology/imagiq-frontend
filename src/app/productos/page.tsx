@@ -327,6 +327,7 @@ function ProductosContent() {
                         name={product.name}
                         image={product.image}
                         colors={product.colors}
+                        capacities={product.capacities}
                         price={product.price}
                         originalPrice={product.originalPrice}
                         discount={product.discount}

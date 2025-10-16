@@ -265,7 +265,7 @@ function ProductosContent() {
   }
 
   return (
-    <div className="container mx-auto px-6 py-8">
+    <div className={searchQuery ? "w-full px-6 py-8" : "container mx-auto px-6 py-8"}>
       {/* HeaderSection con controles de ordenamiento y vista */}
       <HeaderSection
         title={searchQuery ? `Resultados para "${searchQuery}"` : "Productos Samsung"}
@@ -280,7 +280,7 @@ function ProductosContent() {
         clearAllFiltersText="Ver todos los productos"
       />
 
-      <div className="flex gap-8">
+      <div className={searchQuery ? "" : "flex gap-8"}>
         {/* Panel de filtros - solo mostrar cuando NO hay búsqueda */}
         {!searchQuery && (
           <aside className="hidden lg:block w-80 flex-shrink-0">
@@ -294,29 +294,25 @@ function ProductosContent() {
             />
           </aside>
         )}
-        <main className={searchQuery ? "w-full max-w-7xl mx-auto" : "flex-1"}>
+        <main className={searchQuery ? "w-full" : "flex-1"}>
           {loading && products.length > 0 && (
             <div className="mb-4 flex justify-center">
               <LoadingSpinner />
             </div>
           )}
 
-          <div className="flex gap-6">
+          <div className={searchQuery ? "" : "flex gap-6"}>
             {/* Grid de productos usando ProductCard avanzado */}
-            <div className="flex-1">
+            <div className={searchQuery ? "w-full" : "flex-1"}>
               {sortedProducts.length > 0 ? (
                 <>
-                  {(() => {
-                    let gridClasses = "grid gap-6 ";
-                    if (viewMode === "list") {
-                      gridClasses += "grid-cols-1";
-                    } else if (searchQuery) {
-                      gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
-                    } else {
-                      gridClasses += "grid-cols-1 md:grid-cols-2 lg:grid-cols-3";
-                    }
-                    return (
-                      <div className={gridClasses}>
+                  <div className={`grid gap-4 md:gap-5 lg:gap-6 justify-items-center ${
+                    viewMode === "list"
+                      ? "grid-cols-1"
+                      : searchQuery
+                        ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
+                        : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
+                  }`}>
                     {sortedProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -337,9 +333,7 @@ function ProductosContent() {
                         stock={product.stock}
                       />
                     ))}
-                      </div>
-                    );
-                  })()}
+                  </div>
               
                   {/* Paginación */}
                   {!error && products.length > 0 && (

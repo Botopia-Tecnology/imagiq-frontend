@@ -370,13 +370,10 @@ export default function ViewProduct({
                     aria-label="Ir a la página principal"
                     className="block cursor-pointer"
                   >
-                    <Image
-                      src="/img/Samsung_black.svg"
+                    <img
+                      src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
                       alt="Samsung Logo"
-                      height={80}
-                      width={70}
-                      className="h-10 md:h-12 w-auto"
-                      style={{ display: "block" }}
+                      className="h-10 md:h-12 w-auto block"
                     />
                   </Link>
                 </motion.div>

@@ -146,12 +146,15 @@ export default function HeroSection() {
         {/* Logo Samsung */}
         <div className="flex items-center justify-center">
           <img
-            src="/img/Samsung_black.svg"
+            src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
             alt="Samsung"
             width={110}
             height={32}
             className="h-7 w-auto opacity-80"
-            style={{ filter: isHome ? "invert(1) brightness(2)" : "none" }}
+            style={{
+              filter: isHome ? "invert(1) brightness(2)" : "none",
+              width: "auto"
+            }}
           />
         </div>
       </div>

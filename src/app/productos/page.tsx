@@ -278,6 +278,7 @@ function ProductosContent() {
         filters={filters}
         setFilters={setFilters}
         clearAllFiltersText="Ver todos los productos"
+        isSearchMode={!!searchQuery}
       />
 
       <div className={searchQuery ? "" : "flex gap-8"}>

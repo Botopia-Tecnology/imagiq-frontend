@@ -163,7 +163,7 @@ export default function FlixmediaSpecifications({
   // Agregar estilos después de que el script cargue para mostrar solo especificaciones
   useEffect(() => {
     if (!scriptLoaded) return;
-
+// #flix-specifications-inpage [flixtemplate-key="image_gallery"],
     setTimeout(() => {
       const style = document.createElement('style');
       style.id = 'flixmedia-specifications-styles';
@@ -171,7 +171,7 @@ export default function FlixmediaSpecifications({
         /* Ocultar TODO excepto especificaciones */
         #flix-specifications-inpage [flixtemplate-key="features"],
         #flix-specifications-inpage [flixtemplate-key="background_image"],
-        #flix-specifications-inpage [flixtemplate-key="image_gallery"],
+        
         #flix-specifications-inpage [flixtemplate-key="footnotes"] {
           display: none !important;
           visibility: hidden !important;
@@ -263,9 +263,9 @@ export default function FlixmediaSpecifications({
       setTimeout(() => {
         const container = document.getElementById('flix-specifications-inpage');
         if (!container) return;
-
+//'image_gallery',
         // Ocultar todo excepto specifications
-        const toHide = ['features', 'background_image', 'image_gallery', 'footnotes'];
+        const toHide = ['features', 'background_image',  'footnotes'];
         toHide.forEach(key => {
           const elements = container.querySelectorAll(`[flixtemplate-key="${key}"]`);
           elements.forEach((el) => {

@@ -545,13 +545,13 @@ export default function ViewProduct({
       <BenefitsSection />
 
       {/* Componente de videos */}
-      <motion.div
+      {/* <motion.div
         ref={videosReveal.ref}
         {...videosReveal.motionProps}
         className="mt-0"
       >
         <VideosSection product={productCard} />
-      </motion.div>
+      </motion.div> */}
       {/* Componente de comparación justo debajo de VideosSection */}
       {/* <motion.div
         ref={comparationReveal.ref}

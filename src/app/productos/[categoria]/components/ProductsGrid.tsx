@@ -109,7 +109,7 @@ const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4" : "flex flex-wrap"}>
+      <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
         {products.length === 0 ? (
           <div className="col-span-full w-full text-center py-12 text-gray-500">
             No se encontraron {categoryName.toLowerCase()} con los filtros
@@ -200,7 +200,7 @@ const CategoryProductsGrid = forwardRef<
                     viewMode === "grid"
                       ? showBanner
                         ? "" // En grid con banner usamos style para posicionar
-                        : "w-full sm:w-1/3 lg:w-1/4 mx-auto"
+                        : "w-full"
                       : "w-full"
                   }
                   style={showBanner && viewMode === "grid" ? gridPosition : undefined}

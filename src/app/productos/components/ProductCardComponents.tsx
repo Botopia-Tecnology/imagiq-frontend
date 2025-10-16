@@ -1,0 +1,145 @@
+/**
+ * PRODUCT CARD COMPONENTS - IMAGIQ ECOMMERCE
+ *
+ * Componentes auxiliares reutilizables para ProductCard:
+ * - ColorSelector: Selector de colores con círculos de color
+ * - CapacitySelector: Selector de capacidades con botones
+ */
+
+"use client";
+
+import { cn } from "@/lib/utils";
+import type { ProductColor, ProductCapacity } from "./ProductCard";
+
+/**
+ * Props para ColorSelector
+ */
+export interface ColorSelectorProps {
+  colors: ProductColor[];
+  selectedColor: ProductColor | null;
+  isOutOfStock: boolean;
+  onColorSelect: (color: ProductColor) => void;
+  onShowMore: (e: React.MouseEvent) => void;
+}
+
+/**
+ * Componente para seleccionar colores del producto
+ */
+export const ColorSelector = ({
+  colors,
+  selectedColor,
+  isOutOfStock,
+  onColorSelect,
+  onShowMore,
+}: ColorSelectorProps) => {
+  if (!colors || colors.length === 0) return null;
+
+  return (
+    <div>
+      <p
+        className={cn(
+          "text-xs py-1.5",
+          isOutOfStock ? "text-gray-400" : "text-gray-600"
+        )}
+      >
+        <span className="font-medium">Color:</span> {selectedColor?.label}
+      </p>
+      <div className="flex gap-2 flex-wrap">
+        {colors.slice(0, 4).map((color) => (
+          <button
+            key={color.name}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isOutOfStock) {
+                onColorSelect(color);
+              }
+            }}
+            className={cn(
+              "w-6.5 h-6.5 rounded-full border transition-all duration-200 relative",
+              isOutOfStock
+                ? "opacity-40 cursor-not-allowed"
+                : "cursor-pointer",
+              selectedColor?.name === color.name
+                ? "border-black p-0.5"
+                : "border-gray-300 hover:border-gray-400"
+            )}
+            title={color.label}
+          >
+            <div
+              className="w-full h-full rounded-full"
+              style={{ backgroundColor: color.hex }}
+            />
+            {selectedColor?.name === color.name && (
+              <div className="absolute inset-0 rounded-full border-2 border-white" />
+            )}
+          </button>
+        ))}
+        {colors.length > 4 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isOutOfStock) {
+                onShowMore(e);
+              }
+            }}
+            className={cn(
+              "w-6.5 h-6.5 rounded-full border-2 border-gray-300 flex items-center justify-center text-[10px] font-medium text-gray-600 hover:border-gray-400",
+              isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+            )}
+          >
+            +{colors.length - 4}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * Props para CapacitySelector
+ */
+export interface CapacitySelectorProps {
+  capacities: ProductCapacity[];
+  selectedCapacity: ProductCapacity | null;
+  isOutOfStock: boolean;
+  onCapacitySelect: (capacity: ProductCapacity) => void;
+}
+
+/**
+ * Componente para seleccionar capacidades del producto
+ */
+export const CapacitySelector = ({
+  capacities,
+  selectedCapacity,
+  isOutOfStock,
+  onCapacitySelect,
+}: CapacitySelectorProps) => {
+  if (!capacities || capacities.length === 0) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex gap-2 flex-wrap">
+        {capacities.map((capacity) => (
+          <button
+            key={capacity.value}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isOutOfStock) {
+                onCapacitySelect(capacity);
+              }
+            }}
+            className={cn(
+              "px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200",
+              isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+              selectedCapacity?.value === capacity.value
+                ? "border-black bg-black text-white"
+                : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+            )}
+          >
+            {capacity.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};

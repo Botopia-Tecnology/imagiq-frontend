@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
-import FlixmediaSpecifications from "@/components/FlixmediaSpecifications";
+
 
 interface SpecificationsProps {
   product: ProductCardProps;
@@ -12,7 +12,7 @@ interface SpecificationsProps {
 const Specifications: React.FC<SpecificationsProps> = ({ product }) => {
   const { addProduct } = useCartContext();
   const { recalculatePoints } = usePointsContext();
-  const [showFlixmedia, setShowFlixmedia] = useState(true);
+
 
   // --- VISUAL: Precio formateado y mostrado dentro del botón ---
   // Usar el precio real del producto, formateado
@@ -51,14 +51,6 @@ const Specifications: React.FC<SpecificationsProps> = ({ product }) => {
       className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-8 md:py-12 mt-36  "
       aria-label="Especificaciones técnicas"
     >
-      {/* Intentar cargar especificaciones de Flixmedia */}
-      {showFlixmedia && product.sku && (
-        <FlixmediaSpecifications
-          mpn={product.sku}
-          ean={null}
-          className="mb-8"
-        />
-      ) }
 
       {/* Botón grande con feedback visual y animación */}
       <div className="flex flex-col items-center w-full mt-2 px-0 sm:px-0">

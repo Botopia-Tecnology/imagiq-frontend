@@ -14,7 +14,7 @@
 
 import React, { useState, useRef } from "react";
 import { ProductCardProps } from "../components/ProductCard";
-import FlixmediaDetails from "@/components/FlixmediaDetails";
+
 
 // Tipos para los datos de video
 interface VideoData {
@@ -152,13 +152,7 @@ const VideosSection: React.FC<DetailsProps> = ({ product }) => {
       }}
       aria-label="Sección de videos promocionales"
     >
-      {showFlixmedia && product.sku && (
-              <FlixmediaDetails
-                mpn={product.sku}
-                ean={null}
-                className="mb-8"
-              />
-            ) }
+
       <div className="max-w-6xl mx-auto">
         {/* Grid vertical de videos - uno encima del otro */}
         <div className="space-y-24 relative">

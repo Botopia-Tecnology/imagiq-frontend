@@ -534,15 +534,17 @@ export default function ViewProduct({
         {...specsReveal.motionProps}
         className="relative flex items-center justify-center w-full min-h-[100px] py-0 md:-mt-40"
       >
-        {/* Especificaciones técnicas dinámicas del producto */}
+        {/*  */}
         <Specifications product={productCard} />
       </motion.div>
+
+      {/* Sección de beneficios (responsive) */}
+      <BenefitsSection />
 
       {/* Características destacadas (nuevo componente) */}
       {/* <Destacados /> */}
 
-      {/* Sección de beneficios (responsive) */}
-      <BenefitsSection />
+      
 
       {/* Componente de videos */}
       {/* <motion.div

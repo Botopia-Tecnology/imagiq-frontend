@@ -200,8 +200,8 @@ export default function FlixmediaPlayer({
       };
     };
 
-    // Iniciar el intento de carga con un pequeño delay inicial
-    setTimeout(() => attemptToLoadScript(), 100);
+    // Iniciar el intento de carga con delay suficiente para que React renderice el DOM
+    setTimeout(() => attemptToLoadScript(), 300);
 
     return () => {
       // Cleanup al desmontar componente
@@ -260,35 +260,6 @@ export default function FlixmediaPlayer({
           - footnotes: Notas al pie / disclaimers
         */
 
-          #flix-inpage [flixtemplate-key="features"] {
-          display: block !important;
-          visibility: visible !important;
-        }
-
-        /* Ocultar imágenes de características/features */
-        #flix-inpage [flixtemplate-key="background_image"] {
-          display: block !important;
-          visibility: visible !important;
-        }
-
-        /* Ocultar galería de imágenes */
-        #flix-inpage [flixtemplate-key="image_gallery"] {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
-        /* Ocultar footnotes */
-        #flix-inpage [flixtemplate-key="footnotes"] {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
-        /* Ocultar especificaciones - se muestran en componente Specifications */
-        #flix-inpage [flixtemplate-key="specifications"] {
-          display: none !important;
-          visibility: hidden !important;
-        }
-
         /* ===== PERSONALIZACIÓN DE ESTILOS ===== */
 
         /* Personalizar títulos de especificaciones */
@@ -340,44 +311,7 @@ export default function FlixmediaPlayer({
       }
 
       document.head.appendChild(style);
-      console.log('✅ Estilos de FlixMedia aplicados - Mostrando solo especificaciones');
-
-      // Forzar ocultar elementos manualmente con JavaScript
-      setTimeout(() => {
-        const container = document.getElementById('flix-inpage');
-        if (!container) return;
-
-        // Ocultar imágenes de fondo (features/características)
-        const backgroundImages = container.querySelectorAll('[flixtemplate-key="background_image"]');
-        backgroundImages.forEach((img) => {
-          (img as HTMLElement).style.display = 'none';
-        });
-        if (backgroundImages.length > 0) {
-          console.log(`  🚫 Ocultando ${backgroundImages.length} imágenes de características`);
-        }
-
-        // Ocultar image_gallery
-        const gallery = container.querySelector('[flixtemplate-key="image_gallery"]');
-        if (gallery) {
-          (gallery as HTMLElement).style.display = 'none';
-          console.log(`  🚫 Ocultando: image_gallery`);
-        }
-
-        // Ocultar footnotes
-        const footnotes = container.querySelector('[flixtemplate-key="footnotes"]');
-        if (footnotes) {
-          (footnotes as HTMLElement).style.display = 'none';
-          console.log(`  🚫 Ocultando: footnotes`);
-        }
-
-        // Ocultar specifications - se muestran en componente Specifications
-        const specifications = container.querySelector('[flixtemplate-key="specifications"]');
-        if (specifications) {
-          (specifications as HTMLElement).style.display = 'none';
-          (specifications as HTMLElement).style.visibility = 'hidden';
-          console.log(`  🚫 Ocultando: specifications (se mostrarán en componente Specifications)`);
-        }
-      }, 100);
+      console.log('✅ Estilos de FlixMedia aplicados');
     }, 500);
 
     return () => {

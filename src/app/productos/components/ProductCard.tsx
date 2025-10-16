@@ -54,31 +54,16 @@ export interface ProductCardProps {
   image: string | StaticImageData;
   colors: ProductColor[];
   capacities?: ProductCapacity[]; // Capacidades disponibles
-  rating?: number;
-  reviewCount?: number;
   price?: string;
   originalPrice?: string;
   discount?: string;
-  isNew?: boolean;
   isFavorite?: boolean;
-  onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
   className?: string;
-  viewMode?: "grid" | "list"; // Modo de visualización
   // Datos adicionales para la página de detalle
-  description?: string | null;
-  brand?: string;
-  model?: string;
-  category?: string;
-  subcategory?: string;
-  capacity?: string | null;
   stock?: number;
-  sku?: string | null;
-  detailedDescription?: string | null;
   selectedColor?: ProductColor;
-  setSelectedColor?: (color: ProductColor) => void;
   selectedCapacity?: ProductCapacity;
-  setSelectedCapacity?: (capacity: ProductCapacity) => void;
   puntos_q?: number; // Puntos Q acumulables por producto (valor fijo por ahora)
 }
 
@@ -299,7 +284,7 @@ export default function ProductCard({
           {transformedImages.map((transformedSrc, index) => {
             return (
               <div
-                key={index}
+                key={`${id}-image-${index}`}
                 className={cn(
                   "absolute inset-0 flex items-center justify-center p-4",
                   index === currentImageIndex ? "opacity-100" : "opacity-0"

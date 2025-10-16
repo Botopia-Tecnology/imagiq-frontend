@@ -12,17 +12,17 @@ interface FilterState {
 }
 
 interface HeaderSectionProps {
-  title: string;
-  totalItems: number;
-  sortBy: string;
-  setSortBy: (value: string) => void;
-  viewMode: "grid" | "list";
-  setViewMode: (mode: "grid" | "list") => void;
-  onShowMobileFilters: () => void;
-  filters?: FilterState;
-  setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
-  clearAllFiltersText: string; // Texto completo para el botón de limpiar filtros
-  isSearchMode?: boolean; // Indica si estamos en modo búsqueda
+  readonly title: string;
+  readonly totalItems: number;
+  readonly sortBy: string;
+  readonly setSortBy: (value: string) => void;
+  readonly viewMode: "grid" | "list";
+  readonly setViewMode: (mode: "grid" | "list") => void;
+  readonly onShowMobileFilters: () => void;
+  readonly filters?: FilterState;
+  readonly setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
+  readonly clearAllFiltersText: string; // Texto completo para el botón de limpiar filtros
+  readonly isSearchMode?: boolean; // Indica si estamos en modo búsqueda
 }
 
 export default function HeaderSection({
@@ -45,9 +45,9 @@ export default function HeaderSection({
   const clearAllFilters = () => {
     if (setFilters && filters) {
       const clearedFilters: FilterState = {};
-      Object.keys(filters).forEach((key) => {
+      for (const key of Object.keys(filters)) {
         clearedFilters[key] = [];
-      });
+      }
       setFilters(clearedFilters);
     }
   };

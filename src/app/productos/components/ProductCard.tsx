@@ -38,6 +38,7 @@ export interface ProductColor {
   originalPrice?: string; // Precio original antes de descuento (opcional)
   discount?: string; // Descuento específico para este color (opcional)
   capacity?: string; // Capacidad asociada a esta variante
+  imagePreviewUrl?: string; // URL de imagen específica para este color
 }
 
 export interface ProductCapacity {
@@ -128,10 +129,18 @@ export default function ProductCard({
     );
   const selectedCapacity = selectedCapacityProp ?? selectedCapacityLocal;
 
+  // Obtener la imagen del color seleccionado o usar la imagen por defecto
+  const currentImage = useMemo(() => {
+    if (selectedColor?.imagePreviewUrl) {
+      return selectedColor.imagePreviewUrl;
+    }
+    return image;
+  }, [selectedColor, image]);
+
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
   const productImages = useMemo(
-    () => [image, image, image, image, image, image],
-    [image]
+    () => [currentImage, currentImage, currentImage, currentImage, currentImage, currentImage],
+    [currentImage]
   );
 
   // Aplicar transformación de Cloudinary a todas las imágenes del carrusel
@@ -269,7 +278,7 @@ export default function ProductCard({
 
   // Obtener imagen optimizada de Cloudinary para catálogo
   const cloudinaryImage = useCloudinaryImage({
-    src: typeof image === "string" ? image : image.src,
+    src: typeof currentImage === "string" ? currentImage : currentImage.src,
     transformType: "catalog",
     responsive: true,
   });

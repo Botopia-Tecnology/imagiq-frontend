@@ -35,7 +35,7 @@ type RawProduct = {
   name: string;
   image: string | StaticImageData;
   price: string | number;
-  colors: Array<{ name: string; hex: string; label?: string; sku?: string }>;
+  colors: Array<{ name: string; hex: string; label?: string; sku?: string,ean?: string  }>;
   originalPrice?: string;
   discount?: string;
   description?: string;
@@ -46,6 +46,7 @@ type RawProduct = {
   capacity?: string;
   stock?: number;
   sku?: string;
+  ean?: string;
   puntos_q?: number;
   detailedDescription?: string;
   reviewCount?: number;
@@ -65,6 +66,7 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
           ...color,
           label: color.label || color.name,
           sku: color.sku || color.name || "SKU",
+          ean: color.ean || color.name || "EAN",
         }))
       : [],
     selectedColor:
@@ -73,9 +75,11 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
             ...product.colors[0],
             label: product.colors[0].label || product.colors[0].name,
             sku: product.colors[0].sku || product.colors[0].name || "SKU",
+            ean: product.colors[0].ean || product.colors[0].name || "EAN",
           }
         : undefined,
     sku: product.sku || product.id || "SKU",
+    ean: product.ean || product.id || "EAN",
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
     discount: product.discount,
@@ -97,6 +101,7 @@ export default function ViewProduct({
 }: Readonly<{
   product: RawProduct;
 }>) {
+  console.log(product)
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
@@ -123,6 +128,7 @@ export default function ViewProduct({
     () => convertToProductCardProps(safeProduct),
     [safeProduct]
   );
+  console.log(product)
   const router = useRouter();
   const pathname = usePathname();
   const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
@@ -206,6 +212,7 @@ export default function ViewProduct({
           : safeProduct.price || 0,
       quantity: 1,
       sku: productCard.selectedColor.sku, // SKU estricto del color seleccionado
+      ean: productCard.selectedColor.ean,
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);

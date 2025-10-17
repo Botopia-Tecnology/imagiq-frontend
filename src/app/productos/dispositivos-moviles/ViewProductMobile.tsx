@@ -560,19 +560,19 @@ export default function ViewProduct({
       </motion.div>
 
       {/* Características destacadas (nuevo componente) */}
-      <Destacados />
+      {/* <Destacados /> */}
 
       {/* Sección de beneficios (responsive) */}
       <BenefitsSection />
 
       {/* Componente de videos */}
-      <motion.div
+      {/* <motion.div
         ref={videosReveal.ref}
         {...videosReveal.motionProps}
         className="mt-0"
       >
         <VideosSection />
-      </motion.div>
+      </motion.div> */}
       {/* Componente de comparación justo debajo de VideosSection */}
       {/* <motion.div
         ref={comparationReveal.ref}

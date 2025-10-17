@@ -47,6 +47,8 @@ type RawProduct = {
   stock?: number;
   sku?: string;
   ean?: string;
+  skuArray?: string[];
+  eanArray?: string[];
   puntos_q?: number;
   detailedDescription?: string;
   reviewCount?: number;
@@ -55,6 +57,19 @@ type RawProduct = {
 
 // Utilidad para convertir RawProduct a ProductCardProps compatible
 function convertToProductCardProps(product: RawProduct): ProductCardProps {
+  // Convertir sku y ean a arrays si son strings
+  const skuArray = typeof product.sku === 'string'
+    ? product.sku.split(',').map(s => s.trim()).filter(Boolean)
+    : Array.isArray(product.skuArray)
+      ? product.skuArray
+      : [];
+
+  const eanArray = typeof product.ean === 'string'
+    ? product.ean.split(',').map(e => e.trim()).filter(Boolean)
+    : Array.isArray(product.eanArray)
+      ? product.eanArray
+      : [];
+
   return {
     id: String(product.id ?? ""),
     name: String(product.name ?? ""),
@@ -80,6 +95,8 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
         : undefined,
     sku: product.sku || product.id || "SKU",
     ean: product.ean || product.id || "EAN",
+    skuArray: skuArray,
+    eanArray: eanArray,
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
     discount: product.discount,
@@ -98,10 +115,11 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
 
 export default function ViewProduct({
   product,
+  flix,
 }: Readonly<{
   product: RawProduct;
+  flix?: ProductCardProps;
 }>) {
-  console.log(product)
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
     offset: 60,
@@ -128,7 +146,6 @@ export default function ViewProduct({
     () => convertToProductCardProps(safeProduct),
     [safeProduct]
   );
-  console.log(product)
   const router = useRouter();
   const pathname = usePathname();
   const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
@@ -539,7 +556,7 @@ export default function ViewProduct({
         className="relative flex items-center justify-center w-full min-h-[100px] py-0 md:-mt-40"
       >
         {/* Especificaciones técnicas dinámicas del producto */}
-        <Specifications product={productCard} />
+        <Specifications product={productCard} flix={flix} />
       </motion.div>
 
       {/* Características destacadas (nuevo componente) */}

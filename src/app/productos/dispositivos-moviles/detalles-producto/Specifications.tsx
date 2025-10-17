@@ -6,6 +6,7 @@ import FlixmediaDetails from "@/components/FlixmediaDetails";
 
 interface SpecificationsProps {
   product: ProductCardProps;
+  flix?: ProductCardProps;
 }
 
 // --- DATOS MOCK para visualización UX ---
@@ -57,10 +58,16 @@ const SPEC_CATEGORIES = [
   { key: "Diseño y Características" },
 ];
 
-const Specifications: React.FC<SpecificationsProps> = ({ product }) => {
+const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
   const { addProduct } = useCartContext();
   const { recalculatePoints } = usePointsContext();
   const [activeTab, setActiveTab] = useState(0);
+
+  // Usar los arrays de flix si están disponibles, sino usar los del producto
+  const skuToUse = flix?.sku || product.sku;
+  const eanToUse = flix?.ean || product.ean;
+  const skuArrayToUse = flix?.skuArray || product.skuArray;
+  const eanArrayToUse = flix?.eanArray || product.eanArray;
 
   // --- VISUAL: Precio formateado y mostrado dentro del botón ---
   // Usar el precio real del producto, formateado
@@ -101,8 +108,8 @@ const Specifications: React.FC<SpecificationsProps> = ({ product }) => {
       aria-label="Especificaciones técnicas"
     >
       <FlixmediaDetails
-          mpn={product.sku}
-          ean={product.ean}
+          mpn={skuArrayToUse?.join(', ') || skuToUse}
+          ean={eanArrayToUse?.join(', ') || eanToUse}
           productName={product.name}
           className="w-full mb-8"
         />

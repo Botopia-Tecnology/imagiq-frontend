@@ -74,6 +74,7 @@ export interface ProductCardProps {
   capacity?: string | null;
   stock?: number;
   sku?: string | null;
+  ean?: string | null;
   detailedDescription?: string | null;
   selectedColor?: ProductColor;
   setSelectedColor?: (color: ProductColor) => void;

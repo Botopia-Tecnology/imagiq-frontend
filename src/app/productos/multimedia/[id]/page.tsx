@@ -15,13 +15,12 @@
 
 "use client";
 
-import React, { use, useEffect, useState } from "react";
+import React, { use } from "react";
 import { useRouter } from "next/navigation";
 import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
 import MultimediaBottomBar from "@/components/MultimediaBottomBar";
 import { motion } from "framer-motion";
-import { findAvailableSku, parseSkuString } from "@/lib/flixmedia";
 
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
@@ -90,42 +89,15 @@ export default function MultimediaPage({
   const { id } = resolvedParams;
 
   const { product, loading, error } = useProduct(id);
-  const [checkingFlixmedia, setCheckingFlixmedia] = useState(true);
 
-  // Verificar si hay contenido de Flixmedia disponible
-  useEffect(() => {
-    async function checkFlixmediaContent() {
-      if (!product || !product.sku) {
-        setCheckingFlixmedia(false);
-        return;
-      }
-
-      const skus = parseSkuString(product.sku);
-
-      if (skus.length === 0) {
-        console.log("📍 No hay SKUs disponibles, redirigiendo a vista de producto...");
-        router.replace(`/productos/view/${id}`);
-        return;
-      }
-
-      const availableSku = await findAvailableSku(skus);
-
-      if (!availableSku) {
-        console.log("📍 No se encontró contenido Flixmedia, redirigiendo a vista de producto...");
-        router.replace(`/productos/view/${id}`);
-        return;
-      }
-
-      setCheckingFlixmedia(false);
-    }
-
-    if (product && !loading) {
-      checkFlixmediaContent();
-    }
-  }, [product, loading, id, router]);
+  // Callback para cuando no se encuentra contenido en Flixmedia
+  const handleContentNotFound = () => {
+    console.log("📍 No se encontró contenido Flixmedia, redirigiendo a vista de producto...");
+    router.replace(`/productos/view/${id}`);
+  };
 
   // Loading state
-  if (loading || checkingFlixmedia) {
+  if (loading) {
     return <MultimediaPageSkeleton />;
   }
 
@@ -166,11 +138,9 @@ export default function MultimediaPage({
     );
   }
 
-  // Extraer TODOS los SKUs del producto para que FlixmediaPlayer intente con cada uno
-  // FlixmediaPlayer tiene lógica inteligente para probar múltiples SKUs hasta encontrar uno disponible
-  const productSku = product.sku; // Mantener todos los SKUs separados por comas
-  // Por ahora no usamos EAN, solo MPN/SKU - Flixmedia buscará por SKU únicamente
-  const productEan = null;
+  // Extraer SKU y EAN del producto
+  const productSku = product.sku;
+  const productEan = product.ean || null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {
@@ -197,6 +167,8 @@ export default function MultimediaPage({
           mpn={productSku}
           ean={productEan}
           productName={product.name}
+          productId={id}
+          onContentNotFound={handleContentNotFound}
           className=""
         />
       </motion.div>

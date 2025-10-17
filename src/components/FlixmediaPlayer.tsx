@@ -161,10 +161,6 @@ export default function FlixmediaPlayer({
     }
   }, [actualMpn, actualEan, scriptLoaded]);
 
-  // Estado 1: Sin MPN/EAN
-  // if (!mpn && !ean) {
-  //   return <FlixmediaEmptyState className={className} />;
-  // }
 
   // Estado 2: Buscando SKU disponible
   if (isSearching) {

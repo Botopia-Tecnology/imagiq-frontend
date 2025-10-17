@@ -235,6 +235,7 @@ export interface ProductApiData {
   capacidad: string[];
   descGeneral: string | null;
   sku: string[];
+  ean:string[];
   desDetallada: string[];
   stock: number[];
   urlImagenes: string[];
@@ -242,7 +243,7 @@ export interface ProductApiData {
   imagePreviewUrl: string[];
   imageDetailsUrls: string[][];
   precioNormal: number[];
-  precioDescto: number[];
+  precioeccommerce: number[];
   fechaInicioVigencia: string[];
   fechaFinalVigencia: string[];
 }

@@ -106,6 +106,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         price: prod.precio,
         image: prod.imagen,
         sku: prod.id,
+        ean: prod.id,
       },
       1
     );

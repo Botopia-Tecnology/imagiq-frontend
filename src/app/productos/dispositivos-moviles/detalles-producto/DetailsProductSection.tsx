@@ -114,6 +114,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         quantity: 1,
         image: selectedVariant.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
         sku: selectedVariant.sku, // SKU estricto de la variante seleccionada
+        ean: selectedVariant.ean,
         puntos_q: product.puntos_q ?? 4,
       });
       alert("Producto añadido al carrito");
@@ -132,7 +133,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
-    if (selectedVariant?.precioNormal && selectedVariant?.precioDescto) {
+    if (selectedVariant?.precioNormal && selectedVariant?.precioeccommerce) {
       return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, ''), 10) || 0;
     }
     if (!product.originalPrice) {

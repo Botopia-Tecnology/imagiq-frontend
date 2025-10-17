@@ -224,6 +224,7 @@ const CategoryProductsGrid = forwardRef<
                           : product.price || 0,
                         quantity: 1,
                         sku: product.sku || product.id,
+                        ean: product.ean || product.id,
                         puntos_q: product.puntos_q || 0,
                       });
                     }}

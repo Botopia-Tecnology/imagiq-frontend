@@ -10,6 +10,7 @@ import { productEndpoints, ProductApiData } from '@/lib/api';
 
 export interface DeviceVariant {
   sku: string;
+  ean: string;
   nombreMarket: string;
   color: string;
   capacidad: string;
@@ -99,6 +100,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
       for (let i = 0; i < maxVariants; i++) {
         const variant: DeviceVariant = {
           sku: product.sku[i] || '',
+          ean: product.ean[i] || '',
           nombreMarket: product.nombreMarket,
           color: product.color[i] || product.color[0] || '',
           capacidad: product.capacidad[i] || product.capacidad[0] || '',

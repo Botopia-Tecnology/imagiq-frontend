@@ -35,7 +35,7 @@ type RawProduct = {
   name: string;
   image: string | StaticImageData;
   price: string | number;
-  colors: Array<{ name: string; hex: string; label?: string; sku?: string }>;
+  colors: Array<{ name: string; hex: string; label?: string; sku?: string,ean?: string  }>;
   originalPrice?: string;
   discount?: string;
   description?: string;
@@ -46,6 +46,9 @@ type RawProduct = {
   capacity?: string;
   stock?: number;
   sku?: string;
+  ean?: string;
+  skuArray?: string[];
+  eanArray?: string[];
   puntos_q?: number;
   detailedDescription?: string;
   reviewCount?: number;
@@ -54,6 +57,19 @@ type RawProduct = {
 
 // Utilidad para convertir RawProduct a ProductCardProps compatible
 function convertToProductCardProps(product: RawProduct): ProductCardProps {
+  // Convertir sku y ean a arrays si son strings
+  const skuArray = typeof product.sku === 'string'
+    ? product.sku.split(',').map(s => s.trim()).filter(Boolean)
+    : Array.isArray(product.skuArray)
+      ? product.skuArray
+      : [];
+
+  const eanArray = typeof product.ean === 'string'
+    ? product.ean.split(',').map(e => e.trim()).filter(Boolean)
+    : Array.isArray(product.eanArray)
+      ? product.eanArray
+      : [];
+
   return {
     id: String(product.id ?? ""),
     name: String(product.name ?? ""),
@@ -65,6 +81,7 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
           ...color,
           label: color.label || color.name,
           sku: color.sku || color.name || "SKU",
+          ean: color.ean || color.name || "EAN",
         }))
       : [],
     selectedColor:
@@ -73,9 +90,13 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
             ...product.colors[0],
             label: product.colors[0].label || product.colors[0].name,
             sku: product.colors[0].sku || product.colors[0].name || "SKU",
+            ean: product.colors[0].ean || product.colors[0].name || "EAN",
           }
         : undefined,
     sku: product.sku || product.id || "SKU",
+    ean: product.ean || product.id || "EAN",
+    skuArray: skuArray,
+    eanArray: eanArray,
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
     discount: product.discount,
@@ -94,8 +115,10 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
 
 export default function ViewProduct({
   product,
+  flix,
 }: Readonly<{
   product: RawProduct;
+  flix?: ProductCardProps;
 }>) {
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
@@ -206,6 +229,7 @@ export default function ViewProduct({
           : safeProduct.price || 0,
       quantity: 1,
       sku: productCard.selectedColor.sku, // SKU estricto del color seleccionado
+      ean: productCard.selectedColor.ean,
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
@@ -532,23 +556,23 @@ export default function ViewProduct({
         className="relative flex items-center justify-center w-full min-h-[100px] py-0 md:-mt-40"
       >
         {/* Especificaciones técnicas dinámicas del producto */}
-        <Specifications product={productCard} />
+        <Specifications product={productCard} flix={flix} />
       </motion.div>
 
       {/* Características destacadas (nuevo componente) */}
-      <Destacados />
+      {/* <Destacados /> */}
 
       {/* Sección de beneficios (responsive) */}
       <BenefitsSection />
 
       {/* Componente de videos */}
-      <motion.div
+      {/* <motion.div
         ref={videosReveal.ref}
         {...videosReveal.motionProps}
         className="mt-0"
       >
         <VideosSection />
-      </motion.div>
+      </motion.div> */}
       {/* Componente de comparación justo debajo de VideosSection */}
       {/* <motion.div
         ref={comparationReveal.ref}

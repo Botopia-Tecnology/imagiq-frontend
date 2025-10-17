@@ -243,6 +243,7 @@ export interface ProductApiData {
   capacidad: string[];
   descGeneral: string | null;
   sku: string[];
+  ean:string[];
   desDetallada: string[];
   stock: number[];
   urlImagenes: string[];

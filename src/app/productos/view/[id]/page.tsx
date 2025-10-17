@@ -117,6 +117,7 @@ export default function ProductViewPage({ params }) {
     );
   }
   const convertedProduct = convertProductForView(product);
+
   const categoriasAppliance = [
     "neveras",
     "nevecon",
@@ -146,7 +147,7 @@ export default function ProductViewPage({ params }) {
         /* Para dispositivos móviles renderizar DetailsProductSection + ViewProduct */
         <>
           <DetailsProductSection product={product} />
-          <ViewProduct product={convertedProduct} />
+          <ViewProduct product={convertedProduct} flix={product} />
         </>
       )}
     </>

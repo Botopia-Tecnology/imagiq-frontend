@@ -144,6 +144,7 @@ export default function ViewProductAppliance({
           : safeProduct.price || 0,
       quantity: 1,
       sku: safeProduct.id, // Add required sku property
+      ean: safeProduct.id, 
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);

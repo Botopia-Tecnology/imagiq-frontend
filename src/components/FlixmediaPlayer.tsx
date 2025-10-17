@@ -15,6 +15,7 @@ import {
 } from "./FlixmediaStates";
 import {
   findAvailableSku,
+  findAvailableEan,
   parseSkuString,
 } from "@/lib/flixmedia";
 
@@ -24,7 +25,6 @@ interface FlixmediaPlayerProps {
   productName?: string;
   className?: string;
   productId?: string;
-  onContentNotFound?: () => void;
 }
 import { useRouter } from "next/navigation";
 
@@ -34,7 +34,6 @@ export default function FlixmediaPlayer({
   productName = "Producto",
   className = "",
   productId,
-  onContentNotFound,
 }: FlixmediaPlayerProps) {
   const [actualMpn, setActualMpn] = useState<string | null>(null);
   const [actualEan, setActualEan] = useState<string | null>(null);
@@ -59,6 +58,7 @@ export default function FlixmediaPlayer({
       console.log(`🏷️ EAN recibido: ${ean}`);
 
       let foundMpn = false;
+      let foundEan = false;
 
       // Si tenemos MPN, buscamos el SKU disponible
       if (mpn) {
@@ -72,31 +72,38 @@ export default function FlixmediaPlayer({
           if (availableSku) {
             setActualMpn(availableSku);
             foundMpn = true;
-            console.log(`✅ Usando SKU: ${availableSku}`);
+            console.log(`✅ Usando MPN: ${availableSku}`);
           } else {
             console.log(`❌ No se encontró contenido multimedia para MPN`);
           }
         }
       }
 
-      // Procesar EAN (puede ser string o arreglo)
-      if (ean) {
+      // Si no encontramos MPN o no había MPN, buscamos por EAN
+      if (!foundMpn && ean) {
         const eans = parseSkuString(ean);
-        if (eans.length > 0) {
-          // Usar el primer EAN disponible
-          setActualEan(eans[0]);
-          console.log(`✅ Usando EAN: ${eans[0]}`);
+
+        if (eans.length === 0) {
+          console.warn("⚠️ No hay EANs válidos para verificar");
+        } else {
+          console.log(`🔍 Buscando contenido por EAN...`);
+          const availableEan = await findAvailableEan(eans);
+
+          if (availableEan) {
+            setActualEan(availableEan);
+            foundEan = true;
+            console.log(`✅ Usando EAN: ${availableEan}`);
+          } else {
+            console.log(`❌ No se encontró contenido multimedia para EAN`);
+          }
         }
       }
 
       // Si no se encontró ni MPN ni EAN, ejecutar callback
-      if (!foundMpn && !ean) {
+      if (!foundMpn && !foundEan) {
         console.log(`❌ No hay contenido disponible en Flixmedia`);
+        router.replace(`/productos/view/${productId}`);
         setContentFound(false);
-        if (onContentNotFound) {
-          router.replace(`/productos/view/${productId}`);
-          //onContentNotFound();
-        }
       } else {
         setContentFound(true);
       }
@@ -106,7 +113,7 @@ export default function FlixmediaPlayer({
     }
 
     searchAvailableSku();
-  }, [mpn, ean, productName, onContentNotFound]);
+  }, [mpn, ean, productName]);
 
   useEffect(() => {
     // Cargar el script de Flixmedia solo cuando tengamos MPN o EAN
@@ -165,10 +172,6 @@ export default function FlixmediaPlayer({
     return <FlixmediaLoadingState className={className} />;
   }
 
-  // Estado 3: No se encontró contenido
-  // if (!actualMpn && !actualEan) {
-  //   return <FlixmediaNotFoundState className={className} />;
-  // }
 
   // Estado 4: Contenedor para Flixmedia
   return (

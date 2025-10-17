@@ -239,6 +239,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     capacity: apiProduct.capacidad?.join(', ') || null,
     stock: apiProduct.stock?.reduce((sum, s) => sum + s, 0) || 0,
     sku: apiProduct.sku?.join(', ') || null,
+    ean: apiProduct.ean?.join(', ') || null,
     detailedDescription: apiProduct.desDetallada?.join(' ') || null,
   };
 }
@@ -350,7 +351,8 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       price,
       originalPrice,
       discount,
-      sku: apiProduct.sku[firstIndex]
+      sku: apiProduct.sku[firstIndex],
+      ean: apiProduct.ean[firstIndex]
     });
   });
   
@@ -442,7 +444,8 @@ function createProductCapacitiesFromArray(apiProduct: ProductApiData): ProductCa
       price,
       originalPrice,
       discount,
-      sku: apiProduct.sku[firstIndex]
+      sku: apiProduct.sku[firstIndex],
+      ean: apiProduct.ean[firstIndex]
     });
   });
 

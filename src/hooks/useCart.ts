@@ -9,6 +9,7 @@ export interface CartProduct {
   price: number;
   quantity: number;
   sku: string;
+  ean: string;
   /**
    * Puntos Q acumulables por producto (valor fijo por ahora)
    * Si no se especifica, se asume 4 por defecto.
@@ -96,13 +97,21 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
             ? p.id
             : Math.random().toString(36).slice(2, 10)
         }`;
+      let ean = "";
+      if (typeof p.ean === "string") ean = p.ean;
+      else
+        ean = `EAN-${
+          typeof p.id === "string"
+            ? p.id
+            : Math.random().toString(36).slice(2, 10)
+        }`;
       // puntos_q - valor por defecto 4 como especificado
       const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 4;
       // price
       const price = Number(p.precio || p.price || 0);
       // quantity
       const quantity = Number(p.cantidad || p.quantity || 1);
-      return { id, name, image, price, quantity, sku, puntos_q };
+      return { id, name, image, price, quantity, sku, ean,puntos_q };
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }

@@ -90,11 +90,6 @@ export default function MultimediaPage({
 
   const { product, loading, error } = useProduct(id);
 
-  // Callback para cuando no se encuentra contenido en Flixmedia
-  const handleContentNotFound = () => {
-    console.log("📍 No se encontró contenido Flixmedia, redirigiendo a vista de producto...");
-    router.replace(`/productos/view/${id}`);
-  };
 
   // Loading state
   if (loading) {
@@ -168,7 +163,6 @@ export default function MultimediaPage({
           ean={productEan}
           productName={product.name}
           productId={id}
-          onContentNotFound={handleContentNotFound}
           className=""
         />
       </motion.div>

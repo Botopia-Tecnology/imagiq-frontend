@@ -33,6 +33,7 @@ export interface ProductColor {
   hex: string; // Código hexadecimal del color (ej: "#000000")
   label: string; // Nombre mostrado al usuario (ej: "Negro Medianoche")
   sku: string; // SKU específico para esta variante de color
+  ean: string; // SKU específico para esta variante de color
   price?: string; // Precio específico para este color (opcional)
   originalPrice?: string; // Precio original antes de descuento (opcional)
   discount?: string; // Descuento específico para este color (opcional)
@@ -46,6 +47,7 @@ export interface ProductCapacity {
   originalPrice?: string; // Precio original
   discount?: string; // Descuento
   sku?: string; // SKU específico
+  ean?: string; // SKU específico
 }
 
 export interface ProductCardProps {
@@ -148,6 +150,7 @@ export default function ProductCard({
       color_name: color.name,
       color_label: color.label,
       color_sku: color.sku,
+      color_ean: color.ean,
     });
   };
 
@@ -158,6 +161,7 @@ export default function ProductCard({
       product_name: name,
       capacity_value: capacity.value,
       capacity_sku: capacity.sku,
+      capacity_ean: capacity.ean,
     });
   };
 
@@ -190,6 +194,7 @@ export default function ProductCard({
         product_name: name,
         selected_color: selectedColor.name,
         selected_color_sku: selectedColor.sku,
+        selected_color_ean: selectedColor.ean,
         source: "product_card",
       });
 
@@ -204,6 +209,7 @@ export default function ProductCard({
             : currentPrice ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: selectedColor.sku, // SKU estricto del color seleccionado
+        ean: selectedColor.ean, // SKU estricto del color seleccionado
         puntos_q,
       });
     } finally {

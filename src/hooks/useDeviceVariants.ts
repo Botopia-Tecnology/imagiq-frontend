@@ -14,7 +14,7 @@ export interface DeviceVariant {
   color: string;
   capacidad: string;
   precioNormal: number;
-  precioDescto: number;
+  precioeccommerce: number;
   stock: number;
   urlImagen?: string;
   urlRender3D?: string;
@@ -103,7 +103,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
           color: product.color[i] || product.color[0] || '',
           capacidad: product.capacidad[i] || product.capacidad[0] || '',
           precioNormal: product.precioNormal[i] || 0,
-          precioDescto: product.precioDescto[i] || 0,
+          precioeccommerce: product.precioeccommerce[i] || 0,
           stock: product.stock[i] || 0,
           urlImagen: product.urlImagenes[i],
           urlRender3D: product.urlRender3D[i],
@@ -339,7 +339,7 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
   // Función para obtener el precio actual basado en la variante seleccionada
   const getCurrentPrice = useCallback(() => {
     if (!selectedVariant) return null;
-    return selectedVariant.precioDescto > 0 ? selectedVariant.precioDescto : selectedVariant.precioNormal;
+    return selectedVariant.precioeccommerce > 0 ? selectedVariant.precioeccommerce : selectedVariant.precioNormal;
   }, [selectedVariant]);
 
   return {

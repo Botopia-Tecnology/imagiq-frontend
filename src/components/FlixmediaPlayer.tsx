@@ -134,7 +134,6 @@ export default function FlixmediaPlayer({
       script.setAttribute('data-flix-mpn', actualMpn || '');
       script.setAttribute('data-flix-ean', actualEan || '');
       script.setAttribute('data-flix-sku', '');
-      script.setAttribute('data-flix-button', 'flix-minisite');
       script.setAttribute('data-flix-inpage', 'flix-inpage');
       script.setAttribute('data-flix-button-image', '');
       script.setAttribute('data-flix-price', '');
@@ -163,9 +162,9 @@ export default function FlixmediaPlayer({
   }, [actualMpn, actualEan, scriptLoaded]);
 
   // Estado 1: Sin MPN/EAN
-  if (!mpn && !ean) {
-    return <FlixmediaEmptyState className={className} />;
-  }
+  // if (!mpn && !ean) {
+  //   return <FlixmediaEmptyState className={className} />;
+  // }
 
   // Estado 2: Buscando SKU disponible
   if (isSearching) {

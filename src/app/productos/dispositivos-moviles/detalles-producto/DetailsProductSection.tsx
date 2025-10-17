@@ -132,7 +132,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
-    if (selectedVariant?.precioNormal && selectedVariant?.precioDescto) {
+    if (selectedVariant?.precioNormal && selectedVariant?.precioeccommerce) {
       return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, ''), 10) || 0;
     }
     if (!product.originalPrice) {

@@ -20,8 +20,8 @@ export default function PriceAndActions({
   onAddToCart,
 }: PriceAndActionsProps) {
   const discountText = React.useMemo(() => {
-    if (selectedVariant && selectedVariant.precioDescto > 0 && selectedVariant.precioDescto < selectedVariant.precioNormal) {
-      return `Descuento: $${(selectedVariant.precioNormal - selectedVariant.precioDescto).toLocaleString()}`;
+    if (selectedVariant && selectedVariant.precioeccommerce > 0 && selectedVariant.precioeccommerce < selectedVariant.precioNormal) {
+      return `Descuento: $${(selectedVariant.precioNormal - selectedVariant.precioeccommerce).toLocaleString()}`;
     }
     return discount ? `Descuento: ${discount}` : "";
   }, [selectedVariant, discount]);

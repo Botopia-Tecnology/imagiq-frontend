@@ -285,10 +285,10 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
   const MAX_PRICE = 100000000; // Filtrar precios corruptos
   apiProduct.color.forEach((color, index) => {
     const precioNormal = apiProduct.precioNormal[index] || 0;
-    const precioDescto = apiProduct.precioDescto[index] || 0;
+    const precioeccommerce = apiProduct.precioeccommerce[index] || 0;
 
     // Solo incluir colores con precios válidos (mayores a 0 y menores al máximo)
-    if ((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioDescto > 0 && precioDescto < MAX_PRICE)) {
+    if ((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioeccommerce > 0 && precioeccommerce < MAX_PRICE)) {
       const key = color.toLowerCase();
       
       if (!colorPriceMap.has(key)) {
@@ -302,7 +302,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       
       const colorData = colorPriceMap.get(key)!;
       colorData.preciosNormales.push(precioNormal);
-      colorData.preciosDescuento.push(precioDescto);
+      colorData.preciosDescuento.push(precioeccommerce);
       colorData.indices.push(index);
     }
   });
@@ -378,10 +378,10 @@ function createProductCapacitiesFromArray(apiProduct: ProductApiData): ProductCa
   const MAX_PRICE = 100000000; // Filtrar precios corruptos
   apiProduct.capacidad.forEach((capacity, index) => {
     const precioNormal = apiProduct.precioNormal[index] || 0;
-    const precioDescto = apiProduct.precioDescto[index] || 0;
+    const precioeccommerce = apiProduct.precioeccommerce[index] || 0;
 
     // Solo incluir capacidades con precios válidos (mayores a 0 y menores al máximo)
-    if (((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioDescto > 0 && precioDescto < MAX_PRICE))
+    if (((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioeccommerce > 0 && precioeccommerce < MAX_PRICE))
         && capacity && capacity.trim() !== '' && capacity.toLowerCase() !== 'no aplica') {
       const key = capacity.toLowerCase().trim();
 
@@ -396,7 +396,7 @@ function createProductCapacitiesFromArray(apiProduct: ProductApiData): ProductCa
 
       const capacityData = capacityPriceMap.get(key)!;
       capacityData.preciosNormales.push(precioNormal);
-      capacityData.preciosDescuento.push(precioDescto);
+      capacityData.preciosDescuento.push(precioeccommerce);
       capacityData.indices.push(index);
     }
   });
@@ -465,7 +465,7 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   // Filtrar precios válidos (mayores a 0 y menores a 100 millones - filtrar datos corruptos)
   const MAX_PRICE = 100000000; // 100 millones
   const preciosNormalesValidos = apiProduct.precioNormal.filter(p => p > 0 && p < MAX_PRICE);
-  const preciosDescuentoValidos = apiProduct.precioDescto.filter(p => p > 0 && p < MAX_PRICE);
+  const preciosDescuentoValidos = apiProduct.precioeccommerce.filter(p => p > 0 && p < MAX_PRICE);
   
   // Si no hay precios válidos, usar valores por defecto
   if (preciosNormalesValidos.length === 0 && preciosDescuentoValidos.length === 0) {
@@ -481,7 +481,7 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   const precioNormal = preciosNormalesValidos.length > 0 
     ? Math.min(...preciosNormalesValidos) 
     : 0;
-  const precioDescto = preciosDescuentoValidos.length > 0 
+  const precioeccommerce = preciosDescuentoValidos.length > 0 
     ? Math.min(...preciosDescuentoValidos) 
     : precioNormal;
   
@@ -491,14 +491,14 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
     return `$ ${Math.round(price).toLocaleString('es-CO')}`;
   };
 
-  const price = formatPrice(precioDescto);
+  const price = formatPrice(precioeccommerce);
   let originalPrice: string | undefined;
   let discount: string | undefined;
   
   // Si hay descuento real
-  if (precioDescto < precioNormal && precioNormal > 0) {
+  if (precioeccommerce < precioNormal && precioNormal > 0) {
     originalPrice = formatPrice(precioNormal);
-    const discountPercent = Math.round(((precioNormal - precioDescto) / precioNormal) * 100);
+    const discountPercent = Math.round(((precioNormal - precioeccommerce) / precioNormal) * 100);
     discount = `-${discountPercent}%`;
   }
   

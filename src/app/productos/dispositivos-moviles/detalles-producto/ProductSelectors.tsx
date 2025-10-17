@@ -64,8 +64,8 @@ export default function ProductSelectors({
           ) : storageOptions && storageOptions.length > 0 ? (
             storageOptions.map((storage) => {
               // Calcular el precio de esta opción de almacenamiento
-              const storagePrice = storage.variants[0]?.precioDescto > 0
-                ? storage.variants[0].precioDescto
+              const storagePrice = storage.variants[0]?.precioeccommerce > 0
+                ? storage.variants[0].precioeccommerce
                 : storage.variants[0]?.precioNormal;
 
               return (

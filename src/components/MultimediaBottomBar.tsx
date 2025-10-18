@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 
 interface MultimediaBottomBarProps {
-  productName: string; // Kept for future use, not displayed
+  productName: string;
   price: number;
   originalPrice?: number;
   onViewDetailsClick?: () => void;
@@ -54,31 +54,44 @@ export default function MultimediaBottomBar({
           }}
         >
           <div className="max-w-7xl mx-auto px-4 md:px-6">
-            <div className="flex items-center justify-between gap-3 py-2 md:py-2.5">
-              {/* CENTRO: Precio simplificado */}
+            <div className="flex items-center justify-between gap-3 md:gap-4 py-2 md:py-2.5">
+              {/* IZQUIERDA: Nombre del producto (oculto en móvil) */}
+              <div className="hidden lg:block flex-shrink-0 max-w-[200px] xl:max-w-[250px]">
+                <h3 className="text-sm font-semibold text-[#222] leading-tight line-clamp-2">
+                  {productName}
+                </h3>
+              </div>
+
+              {/* CENTRO: Precio completo pero minimalista */}
               <div className="flex-1 flex justify-center items-center">
-                <div className="flex items-center gap-3">
-                  {/* Precio de contado */}
-                  <div className="flex items-baseline gap-2">
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center">
+                  {/* Precio de contado con descuento */}
+                  <div className="flex items-baseline gap-2 flex-wrap">
                     <span className="text-lg md:text-xl font-bold text-[#222]">
                       {formatPrice(price)}
                     </span>
                     {originalPrice && originalPrice > price && (
-                      <span className="text-sm text-gray-400 line-through">
-                        {formatPrice(originalPrice)}
-                      </span>
+                      <>
+                        <span className="text-sm text-gray-400 line-through">
+                          {formatPrice(originalPrice)}
+                        </span>
+                        <span className="text-sm text-green-600 font-semibold">
+                          Ahorra {formatPrice(savings)}
+                        </span>
+                      </>
                     )}
                   </div>
 
                   {/* Separador minimalista */}
                   <span className="hidden sm:block text-gray-200">•</span>
 
-                  {/* Cuotas simplificadas */}
+                  {/* Cuotas Addi simplificadas */}
                   <div className="hidden sm:flex items-baseline gap-1">
                     <span className="text-sm text-gray-600">desde</span>
                     <span className="text-sm font-semibold text-[#0066CC]">
                       {formatPrice(monthlyPayment)}/mes
                     </span>
+                    <span className="text-xs text-gray-500">con Addi</span>
                   </div>
                 </div>
               </div>

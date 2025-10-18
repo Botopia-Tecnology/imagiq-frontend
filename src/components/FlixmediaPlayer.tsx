@@ -141,15 +141,63 @@ export default function FlixmediaPlayer({
 
       script.onload = () => {
         console.log('✅ Script de Flixmedia cargado');
+        console.log('📋 Config:', { distributor: '9329', language: 'f5', brand: 'Samsung', mpn: actualMpn, ean: actualEan });
+        console.log('🌍 Entorno:', { hostname: window.location.hostname, href: window.location.href });
+
+        // Interceptar errores de scripts
+        window.addEventListener('error', (e) => {
+          if (e.filename && e.filename.includes('flixcar.com')) {
+            console.error('🚨 Error en script de Flixmedia:', e.message, e.filename);
+          }
+        }, true);
+
         setScriptLoaded(true);
+
+        // Monitorear cada segundo durante 10 segundos
+        let checkCount = 0;
+        const checkInterval = setInterval(() => {
+          checkCount++;
+          const inpageDiv = document.getElementById('flix-inpage');
+
+          if (inpageDiv) {
+            const children = inpageDiv.children.length;
+            const height = inpageDiv.offsetHeight;
+
+            console.log(`🔍 [${checkCount}/10]`, {
+              children,
+              height,
+              firstTag: inpageDiv.children[0]?.tagName || 'none',
+              scriptSrc: inpageDiv.querySelector('script')?.src || 'no script'
+            });
+
+            if (children > 1 || height > 100) {
+              console.log('✅ Contenido cargado!', { children, height });
+              clearInterval(checkInterval);
+            }
+          }
+
+          if (checkCount >= 10) {
+            clearInterval(checkInterval);
+            const div = document.getElementById('flix-inpage');
+            if (div && (div.children.length <= 1 || div.offsetHeight === 0)) {
+              console.error('❌ FALLO: Sin contenido después de 10s');
+              console.error('🔍 Debug:', { hostname: window.location.hostname, children: div.children.length, height: div.offsetHeight });
+              console.error('📄 HTML:', div.innerHTML.substring(0, 200));
+            }
+          }
+        }, 1000);
       };
 
       script.onerror = () => {
         console.error('❌ Error al cargar script de Flixmedia');
       };
 
+      console.log('🚀 Agregando script de Flixmedia...', { mpn: actualMpn, ean: actualEan, hasContainer: !!containerRef.current });
+
       if (containerRef.current) {
         containerRef.current.appendChild(script);
+      } else {
+        console.error('❌ containerRef.current no existe!');
       }
 
       // Cleanup al desmontar

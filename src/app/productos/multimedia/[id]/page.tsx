@@ -151,12 +151,21 @@ export default function MultimediaPage({
   
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Contenido principal - Flixmedia Player ocupa toda la página sin márgenes */}
+      {/* Top Bar con info del producto y CTA - Fixed debajo del Navbar */}
+      <MultimediaBottomBar
+        productName={product.name}
+        price={numericPrice}
+        originalPrice={numericOriginalPrice}
+        onViewDetailsClick={() => router.push(`/productos/view/${id}`)}
+        isVisible={true}
+      />
+
+      {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex-1"
+        className="flex-1 pt-[50px] xl:pt-[150px]"
       >
         <FlixmediaPlayer
           mpn={productSku}
@@ -166,15 +175,6 @@ export default function MultimediaPage({
           className=""
         />
       </motion.div>
-
-      {/* Bottom Bar Sticky con info del producto y CTA */}
-      <MultimediaBottomBar
-        productName={product.name}
-        price={numericPrice}
-        originalPrice={numericOriginalPrice}
-        onViewDetailsClick={() => router.push(`/productos/view/${id}`)}
-        isVisible={true}
-      />
     </div>
   );
 }

@@ -141,20 +141,12 @@ export const productEndpoints = {
     apiClient.get<ProductApiResponse>(
       `/api/products/filtered?codigoMarket=${codigoMarket}`
     ),
-  search: (query: string, params?: { precioMin?: number; page?: number; limit?: number; sortBy?: string; sortOrder?: string }) => {
+  search: (query: string, params?: { precioMin?: number; page?: number; limit?: number }) => {
     const searchParams = new URLSearchParams();
     searchParams.append('query', query);
     searchParams.append('precioMin', String(params?.precioMin ?? 1));
     searchParams.append('page', String(params?.page ?? 1));
     searchParams.append('limit', String(params?.limit ?? 15));
-    
-    // Agregar parámetros de ordenamiento si están presentes
-    if (params?.sortBy) {
-      searchParams.append('sortBy', params.sortBy);
-    }
-    if (params?.sortOrder) {
-      searchParams.append('sortOrder', params.sortOrder);
-    }
     
     return apiClient.get<ProductApiResponse>(`/api/products/search/grouped?${searchParams.toString()}`);
   },

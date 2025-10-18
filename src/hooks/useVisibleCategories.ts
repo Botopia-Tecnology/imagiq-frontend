@@ -81,7 +81,19 @@ export function useVisibleCategories() {
       }
     ];
 
-    return [...fixedRoutes, ...mappedCategories];
+    // Agregar Tiendas al final de todas las opciones
+    const tiendasRoute = {
+      name: "Tiendas",
+      href: "/tiendas",
+      category: "ubicaciones",
+      categoryCode: "tiendas",
+      dropdownName: undefined, // No tiene dropdown
+      uuid: "tiendas",
+      totalProducts: 0,
+      subcategorias: []
+    };
+
+    return [...fixedRoutes, ...mappedCategories, tiendasRoute];
   };
 
   // Función para obtener la URL href basada en el nombre de la categoría

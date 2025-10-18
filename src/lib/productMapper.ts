@@ -352,7 +352,8 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       originalPrice,
       discount,
       sku: apiProduct.sku[firstIndex],
-      ean: apiProduct.ean[firstIndex]
+      ean: apiProduct.ean[firstIndex],
+      imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined
     });
   });
   

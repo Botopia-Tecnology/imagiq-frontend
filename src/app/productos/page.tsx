@@ -33,46 +33,42 @@ const filterConfig: FilterConfig = {
 };
 
 function filterProducts(products: ProductCardProps[], filters: FilterState) {
+  const matchesColor = (product: ProductCardProps, colorValue: string) => {
+    return Array.isArray(product.colors) &&
+      product.colors.some((c: { label: string }) =>
+        c.label.trim().toLowerCase() === colorValue.trim().toLowerCase()
+      );
+  };
+
+  const matchesStringValue = (value: string, searchValue: string) => {
+    return value.toLowerCase().includes(searchValue.toLowerCase());
+  };
+
+  const matchesArrayValue = (value: string[], searchValue: string) => {
+    return value.some((item) =>
+      typeof item === "string" && item.toLowerCase() === searchValue.toLowerCase()
+    );
+  };
+
   return products.filter((product) => {
     return Object.entries(filters).every(([filterKey, values]) => {
       if (!values.length) return true;
       // Filtrado por color
       if (filterKey === "color") {
-        return (
-          Array.isArray(product.colors) &&
-          values.some((v) =>
-            product.colors!.some(
-              (c: { label: string }) =>
-                c.label.trim().toLowerCase() === v.trim().toLowerCase()
-            )
-          )
-        );
+        return values.some((v) => matchesColor(product, v));
       }
       // Filtrado por nombre
       if (filterKey === "nombre" || filterKey === "name") {
-        return values.some((v) =>
-          product.name.toLowerCase().includes(v.toLowerCase())
-        );
+        return values.some((v) => matchesStringValue(product.name, v));
       }
       // Filtrado genérico por cualquier campo string o array de strings
       if (Object.hasOwn(product, filterKey)) {
-        const value = (product as unknown as Record<string, unknown>)[
-          filterKey
-        ];
+        const value = (product as unknown as Record<string, unknown>)[filterKey];
         if (typeof value === "string") {
-          return values.some((v) =>
-            value.toLowerCase().includes(v.toLowerCase())
-          );
+          return values.some((v) => matchesStringValue(value, v));
         }
         if (Array.isArray(value)) {
-          // Array de strings
-          return values.some((v) =>
-            (value as string[]).some(
-              (item) =>
-                typeof item === "string" &&
-                item.toLowerCase() === v.toLowerCase()
-            )
-          );
+          return values.some((v) => matchesArrayValue(value as string[], v));
         }
       }
       return true;
@@ -136,20 +132,17 @@ function ProductosContent() {
   // Ejecutar búsqueda cuando hay searchQuery
   useEffect(() => {
     if (searchQuery) {
-      // Aplicar ordenamiento por defecto en la búsqueda inicial
-      const sortParams = getSortParams(sortBy);
-      searchProducts(searchQuery, 1, sortParams.sortBy, sortParams.sortOrder);
+      searchProducts(searchQuery, 1);
     }
-  }, [searchQuery, searchProducts, sortBy]);
+  }, [searchQuery, searchProducts]);
 
   // Handler para cambio de ordenamiento
   const handleSortChange = useCallback((newSortBy: string) => {
     setSortBy(newSortBy);
     
     if (searchQuery) {
-      // Si estamos en modo búsqueda, hacer nueva búsqueda con ordenamiento
-      const sortParams = getSortParams(newSortBy);
-      searchProducts(searchQuery, 1, sortParams.sortBy, sortParams.sortOrder);
+      // Si estamos en modo búsqueda, hacer nueva búsqueda sin ordenamiento
+      searchProducts(searchQuery, 1);
     }
     // Si no estamos en modo búsqueda, el ordenamiento se aplica localmente
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -327,6 +320,7 @@ function ProductosContent() {
                         name={product.name}
                         image={product.image}
                         colors={product.colors}
+                        capacities={product.capacities}
                         price={product.price}
                         originalPrice={product.originalPrice}
                         discount={product.discount}

@@ -48,7 +48,7 @@ export default function MultimediaBottomBar({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="fixed left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-md top-[64px] xl:top-[100px]"
+          className="fixed left-0 right-0 z-40 bg-white  top-[64px] xl:top-[100px]"
           style={{
             fontFamily: "SamsungSharpSans"
           }}

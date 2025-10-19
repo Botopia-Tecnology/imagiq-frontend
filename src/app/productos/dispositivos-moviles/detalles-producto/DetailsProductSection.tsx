@@ -184,7 +184,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         productName={product.name}
       />
 
-      <main className="w-full bg-white min-h-screen" style={{ fontFamily: "SamsungSharpSans" }}>
+      <main className="w-full bg-white min-h-screen pt-32" style={{ fontFamily: "SamsungSharpSans" }}>
         <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}
@@ -249,7 +249,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
         {/* MOBILE: Stack vertical */}
         <motion.section className="lg:hidden">
-          <div className="px-4 py-8 max-w-md mx-auto">
+          <div className="px-4 pt-32 pb-8 max-w-md mx-auto">
             <DeviceCarousel
               alt={product.name}
               imagePreviewUrl={selectedVariant?.imagePreviewUrl}

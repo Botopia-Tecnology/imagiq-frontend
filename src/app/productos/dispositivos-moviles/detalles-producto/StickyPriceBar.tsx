@@ -13,13 +13,12 @@ interface StickyPriceBarProps {
   selectedColor?: string;
   hasAddiFinancing?: boolean;
   onBuyClick?: () => void;
-  isVisible?: boolean;
 }
 
 /**
  * Componente StickyPriceBar
  *
- * Barra sticky inferior que muestra:
+ * Barra sticky superior que muestra:
  * - Nombre del dispositivo (izquierda)
  * - Información de precio con financiación Addi (centro)
  * - CTA "Comprar ahora" (derecha)
@@ -33,10 +32,9 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
   selectedColor,
   hasAddiFinancing = true,
   onBuyClick,
-  isVisible = true,
 }) => {
-  // Mostrar siempre que isVisible sea true
-  const shouldShow = isVisible;
+  // Mostrar siempre
+  const shouldShow = true;
 
   // Cálculos de financiación Addi
   const monthlyPayment = basePrice / 12;
@@ -61,8 +59,8 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
         <motion.div
           initial={{ y: 0, opacity: 1 }}
           animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
-          className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-gray-200 shadow-2xl"
+          exit={{ y: -100, opacity: 0 }}
+          className="fixed top-[64px] xl:top-[85px] left-0 right-0 z-[1500] bg-white border-b border-gray-200 shadow-2xl"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           <div className="max-w-[1680px] mx-auto px-6 lg:px-12">

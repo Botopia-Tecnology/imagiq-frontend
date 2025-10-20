@@ -1,5 +1,6 @@
 import { TrackingHeader } from "./TrackingHeader";
 import { TrackingTimeline } from "./TrackingTimeline";
+import { PDFViewer } from "./PDFViewer";
 
 interface ShippingOrderViewProps {
   orderNumber: string;
@@ -88,37 +89,11 @@ export function ShippingOrderView({
                 </div>
               </div>
             ) : (
-              <div className="w-full bg-white rounded-xl p-5">
-                <div className="mb-3">
-                  <h3 className="text-base font-semibold text-gray-900 mb-2">Guía de envío</h3>
-                  <p className="text-sm text-gray-700">Vista previa del documento.</p>
-                </div>
-                {/* PDF preview as object - renders as static image-like */}
-                <div className="w-full flex items-center justify-center bg-white mb-4 overflow-hidden">
-                  <object
-                    data={`data:application/pdf;base64,${pdfBase64}#toolbar=0&navpanes=0&scrollbar=0&view=FitV&zoom=85`}
-                    type="application/pdf"
-                    className="w-full max-w-[660px] h-[500px] sm:max-w-[750px] sm:h-[540px] md:max-w-[860px] md:h-[580px] border border-gray-200 rounded-lg"
-                    style={{ overflow: 'hidden' }}
-                  >
-                    <embed
-                      src={`data:application/pdf;base64,${pdfBase64}#toolbar=0&navpanes=0&scrollbar=0&view=FitV&zoom=85`}
-                      type="application/pdf"
-                      className="w-full h-full"
-                      style={{ overflow: 'hidden' }}
-                    />
-                  </object>
-                </div>
-                <div className="flex justify-center">
-                  <button
-                    onClick={handleDownload}
-                    className="px-5 py-2 rounded-full bg-[#17407A] text-white hover:brightness-110 transition shadow-md"
-                    aria-label="Descargar guía"
-                  >
-                    Descargar PDF
-                  </button>
-                </div>
-              </div>
+              <PDFViewer 
+                pdfBase64={pdfBase64} 
+                orderNumber={orderNumber}
+                onDownload={handleDownload}
+              />
             )}
           </div>
         ) : (

@@ -30,7 +30,7 @@ export function PDFViewer({
         // Dynamically import pdfjs-dist only on client side
         const pdfjsLib = await import("pdfjs-dist");
 
-        // Set worker source from public folder
+        // Set worker source from local public folder
         pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
 
         // Convert base64 to Uint8Array

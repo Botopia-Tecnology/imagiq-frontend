@@ -55,10 +55,10 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
   const BarContent = () => (
     <>
       <div className="mx-auto px-4 lg:px-8">
-        <div className="flex items-center justify-between gap-4 py-2.5">
+        <div className="flex items-center justify-between gap-2 md:gap-4 py-2.5">
           {/* IZQUIERDA: Nombre del dispositivo */}
-          <div className="flex-shrink-0 hidden md:block max-w-[240px]">
-            <h3 className="text-sm font-semibold text-[#222] leading-snug line-clamp-2">
+          <div className="flex-shrink-0 max-w-[140px] md:max-w-[240px]">
+            <h3 className="text-xs md:text-sm font-semibold text-[#222] leading-snug line-clamp-2">
               {fullDeviceName}
             </h3>
           </div>
@@ -67,24 +67,34 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
           <div className="flex-1 flex justify-center items-center min-w-0">
             {hasAddiFinancing ? (
               <div className="text-center">
-                {/* Primera línea: Precio mensual con cuotas */}
-                <div className="flex items-baseline justify-center gap-1 flex-wrap text-xs">
-                  <span className="text-gray-600">Desde</span>
-                  <span className="text-base md:text-lg font-bold text-[#222]">
-                    {formatPrice(monthlyPayment)}
-                  </span>
-                  <span className="text-gray-600">al mes en 12 cuotas sin intereses*</span>
-                </div>
-
-                {/* Segunda línea: Precio de contado y condiciones */}
-                <div className="flex items-center justify-center gap-1 flex-wrap text-xs">
-                  <span className="text-gray-600">o</span>
-                  <span className="font-semibold text-[#222]">
+                {/* Móvil: Solo precio de contado */}
+                <div className="md:hidden">
+                  <span className="text-base font-bold text-[#222]">
                     {formatPrice(basePrice)}
                   </span>
-                  <span className="text-gray-500">
-                    *Aplican condiciones. Sujeto a aprobación crediticia.
-                  </span>
+                </div>
+
+                {/* Desktop: Información completa */}
+                <div className="hidden md:block">
+                  {/* Primera línea: Precio mensual con cuotas */}
+                  <div className="flex items-baseline justify-center gap-1 flex-wrap text-xs">
+                    <span className="text-gray-600">Desde</span>
+                    <span className="text-base md:text-lg font-bold text-[#222]">
+                      {formatPrice(monthlyPayment)}
+                    </span>
+                    <span className="text-gray-600">al mes en 12 cuotas sin intereses*</span>
+                  </div>
+
+                  {/* Segunda línea: Precio de contado y condiciones */}
+                  <div className="flex items-center justify-center gap-1 flex-wrap text-xs">
+                    <span className="text-gray-600">o</span>
+                    <span className="font-semibold text-[#222]">
+                      {formatPrice(basePrice)}
+                    </span>
+                    <span className="text-gray-500">
+                      *Aplican condiciones. Sujeto a aprobación crediticia.
+                    </span>
+                  </div>
                 </div>
               </div>
             ) : (

@@ -53,7 +53,7 @@ export default function MultimediaBottomBar({
             fontFamily: "SamsungSharpSans"
           }}
         >
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className=" mx-auto px-4 md:px-6">
             <div className="flex items-center justify-between gap-3 md:gap-4 py-2 md:py-2.5">
               {/* IZQUIERDA: Nombre del producto (oculto en móvil) */}
               <div className=" flex-shrink-0 max-w-[200px] xl:max-w-[250px]">

@@ -211,7 +211,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         productName={product.name}
       />
 
-      <main className="w-full bg-white min-h-screen pt-[150px] xl:pt-[170px]" style={{ fontFamily: "SamsungSharpSans" }}>
+      <main className="w-full bg-white min-h-screen pt-[100px] xl:pt-[100px]" style={{ fontFamily: "SamsungSharpSans" }}>
         <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}

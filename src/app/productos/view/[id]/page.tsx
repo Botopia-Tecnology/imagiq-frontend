@@ -138,18 +138,16 @@ export default function ProductViewPage({ params }) {
     : false;
   return (
     <>
-      <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
+      {/* <SetApplianceFlag isRefrigerador={!!isRefrigerador} /> */}
       {/* Vista de producto según categoría */}
-      {isRefrigerador ? (
-        /* Para electrodomésticos solo renderizar ViewProductAppliance */
+      {/* {isRefrigerador ? (
         <ViewProductAppliance product={convertedProduct} />
-      ) : (
-        /* Para dispositivos móviles renderizar DetailsProductSection + ViewProduct */
+      ) : ( */}
         <>
           <DetailsProductSection product={product} />
           <ViewProduct product={convertedProduct} flix={product} />
         </>
-      )}
+      {/* )} */}
     </>
   );
 }

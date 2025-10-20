@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type { PDFDocumentProxy } from "pdfjs-dist";
 
 interface PDFViewerProps {
   pdfBase64: string;
@@ -16,7 +17,7 @@ export function PDFViewer({
   const [error, setError] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [numPages, setNumPages] = useState(0);
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
   const [pageRendering, setPageRendering] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -86,6 +87,7 @@ export function PDFViewer({
         const renderContext = {
           canvasContext: context,
           viewport: scaledViewport,
+          canvas: canvas,
         };
 
         await page.render(renderContext).promise;

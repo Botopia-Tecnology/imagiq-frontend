@@ -54,30 +54,30 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
   // Contenido compartido
   const BarContent = () => (
     <>
-      <div className="max-w-[1680px] mx-auto px-6 lg:px-12">
-        <div className="flex items-center justify-between gap-6 py-4">
-          {/* IZQUIERDA: Nombre del dispositivo - Permite 2 líneas */}
-          <div className="flex-shrink-0 hidden md:block max-w-[280px]">
-            <h3 className="text-base font-bold text-[#222] leading-tight line-clamp-2">
+      <div className="mx-auto px-4 lg:px-8">
+        <div className="flex items-center justify-between gap-4 py-2.5">
+          {/* IZQUIERDA: Nombre del dispositivo */}
+          <div className="flex-shrink-0 hidden md:block max-w-[240px]">
+            <h3 className="text-sm font-semibold text-[#222] leading-snug line-clamp-2">
               {fullDeviceName}
             </h3>
           </div>
 
-          {/* CENTRO: Información de precio - Centrado y compacto */}
+          {/* CENTRO: Información de precio */}
           <div className="flex-1 flex justify-center items-center min-w-0">
             {hasAddiFinancing ? (
-              <div className="text-center max-w-3xl">
+              <div className="text-center">
                 {/* Primera línea: Precio mensual con cuotas */}
-                <div className="flex items-baseline justify-center gap-1.5 flex-wrap text-xs">
+                <div className="flex items-baseline justify-center gap-1 flex-wrap text-xs">
                   <span className="text-gray-600">Desde</span>
-                  <span className="text-lg md:text-xl font-bold text-[#222]">
+                  <span className="text-base md:text-lg font-bold text-[#222]">
                     {formatPrice(monthlyPayment)}
                   </span>
                   <span className="text-gray-600">al mes en 12 cuotas sin intereses*</span>
                 </div>
 
                 {/* Segunda línea: Precio de contado y condiciones */}
-                <div className="flex items-center justify-center gap-1.5 flex-wrap text-xs mt-0.5">
+                <div className="flex items-center justify-center gap-1 flex-wrap text-xs">
                   <span className="text-gray-600">o</span>
                   <span className="font-semibold text-[#222]">
                     {formatPrice(basePrice)}
@@ -89,16 +89,16 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
               </div>
             ) : (
               // Si no hay financiación Addi, mostrar solo precio normal
-              <div className="flex items-baseline gap-3 flex-wrap justify-center">
-                <span className="text-2xl md:text-3xl font-bold text-[#222]">
+              <div className="flex items-baseline gap-2 flex-wrap justify-center">
+                <span className="text-xl md:text-2xl font-bold text-[#222]">
                   {formatPrice(basePrice)}
                 </span>
                 {originalPrice && originalPrice > basePrice && (
                   <>
-                    <span className="text-lg text-gray-400 line-through">
+                    <span className="text-base text-gray-400 line-through">
                       {formatPrice(originalPrice)}
                     </span>
-                    <span className="text-green-600 font-semibold">
+                    <span className="text-green-600 font-semibold text-sm">
                       Ahorra {formatPrice(savings)}
                     </span>
                   </>
@@ -114,18 +114,17 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="
-                flex items-center gap-3
+                flex items-center gap-2
                 bg-[#0066CC] hover:bg-[#0052A3]
                 text-white
-                px-6 md:px-8 py-3 md:py-4
+                px-5 md:px-6 py-2 md:py-2.5
                 rounded-full
-                font-semibold text-sm md:text-base
-                transition-all duration-200
-                shadow-lg hover:shadow-xl
+                font-semibold text-sm
+                transition-colors duration-200
                 whitespace-nowrap
               "
             >
-              <FiShoppingCart className="text-xl" />
+              <FiShoppingCart className="text-lg" />
               <span className="hidden sm:inline">Comprar ahora</span>
               <span className="sm:hidden">Comprar</span>
             </motion.button>
@@ -135,7 +134,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
 
       {/* Línea decorativa superior con gradiente Samsung */}
       <div
-        className="h-1 w-full"
+        className="h-0.5 w-full"
         style={{
           background: "linear-gradient(90deg, #0066CC 0%, #00A3E0 100%)",
         }}
@@ -148,7 +147,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       {/* Versión inicial: siempre visible debajo del navbar principal */}
       {!isVisible && (
         <div
-          className="fixed top-[70px] xl:top-[85px] left-0 right-0 z-[1500] bg-white border-b border-gray-200 shadow-2xl"
+          className="fixed top-[70px] xl:top-[95px] left-0 right-0 z-[1500] bg-white border-b border-gray-200 shadow-sm"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           <BarContent />
@@ -163,46 +162,26 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
             initial={{
               y: -100,
               opacity: 0,
-              scale: 0.95,
-              filter: "blur(4px)",
             }}
             animate={{
               y: 0,
               opacity: 1,
-              scale: 1,
-              filter: "blur(0px)",
             }}
             exit={{
               y: -100,
               opacity: 0,
-              scale: 0.98,
-              filter: "blur(2px)",
             }}
             transition={{
               type: "spring",
-              stiffness: 280,
-              damping: 35,
-              mass: 1.2,
+              stiffness: 300,
+              damping: 30,
               opacity: {
-                duration: 0.6,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              },
-              scale: {
-                duration: 0.5,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              },
-              filter: {
-                duration: 0.45,
-                ease: [0.25, 0.1, 0.25, 1],
+                duration: 0.3,
               },
             }}
-            className="fixed top-0 left-0 right-0 z-[9999] bg-white/92 backdrop-blur-xl border-b border-gray-200/30 shadow-2xl"
+            className="fixed top-0 left-0 right-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-md"
             style={{
               fontFamily: "SamsungSharpSans",
-              backdropFilter: "blur(20px) saturate(1.1)",
-              WebkitBackdropFilter: "blur(20px) saturate(1.1)",
-              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05)",
-              willChange: "transform, opacity, filter",
             }}
           >
             <BarContent />

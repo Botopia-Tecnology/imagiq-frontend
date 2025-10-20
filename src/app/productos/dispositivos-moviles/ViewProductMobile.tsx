@@ -35,7 +35,7 @@ type RawProduct = {
   name: string;
   image: string | StaticImageData;
   price: string | number;
-  colors: Array<{ name: string; hex: string; label?: string; sku?: string }>;
+  colors: Array<{ name: string; hex: string; label?: string; sku?: string,ean?: string  }>;
   originalPrice?: string;
   discount?: string;
   description?: string;
@@ -46,6 +46,9 @@ type RawProduct = {
   capacity?: string;
   stock?: number;
   sku?: string;
+  ean?: string;
+  skuArray?: string[];
+  eanArray?: string[];
   puntos_q?: number;
   detailedDescription?: string;
   reviewCount?: number;
@@ -54,6 +57,19 @@ type RawProduct = {
 
 // Utilidad para convertir RawProduct a ProductCardProps compatible
 function convertToProductCardProps(product: RawProduct): ProductCardProps {
+  // Convertir sku y ean a arrays si son strings
+  const skuArray = typeof product.sku === 'string'
+    ? product.sku.split(',').map(s => s.trim()).filter(Boolean)
+    : Array.isArray(product.skuArray)
+      ? product.skuArray
+      : [];
+
+  const eanArray = typeof product.ean === 'string'
+    ? product.ean.split(',').map(e => e.trim()).filter(Boolean)
+    : Array.isArray(product.eanArray)
+      ? product.eanArray
+      : [];
+
   return {
     id: String(product.id ?? ""),
     name: String(product.name ?? ""),
@@ -65,6 +81,7 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
           ...color,
           label: color.label || color.name,
           sku: color.sku || color.name || "SKU",
+          ean: color.ean || color.name || "EAN",
         }))
       : [],
     selectedColor:
@@ -73,9 +90,13 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
             ...product.colors[0],
             label: product.colors[0].label || product.colors[0].name,
             sku: product.colors[0].sku || product.colors[0].name || "SKU",
+            ean: product.colors[0].ean || product.colors[0].name || "EAN",
           }
         : undefined,
     sku: product.sku || product.id || "SKU",
+    ean: product.ean || product.id || "EAN",
+    skuArray: skuArray,
+    eanArray: eanArray,
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
     discount: product.discount,
@@ -94,8 +115,10 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
 
 export default function ViewProduct({
   product,
+  flix,
 }: Readonly<{
   product: RawProduct;
+  flix?: ProductCardProps;
 }>) {
   // Animación scroll reveal para especificaciones
   const specsReveal = useScrollReveal<HTMLDivElement>({
@@ -206,6 +229,7 @@ export default function ViewProduct({
           : safeProduct.price || 0,
       quantity: 1,
       sku: productCard.selectedColor.sku, // SKU estricto del color seleccionado
+      ean: productCard.selectedColor.ean,
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
@@ -223,260 +247,7 @@ export default function ViewProduct({
           {cartFeedback}
         </div>
       )}
-
-      {/* Navbar fijo con animación ELEGANTE y suave - Entrada cinematográfica */}
-      <AnimatePresence mode="wait">
-        {showNavbarFixed && (
-          <motion.div
-            key="fixed-navbar"
-            initial={{
-              y: -100,
-              opacity: 0,
-              scale: 0.95,
-              filter: "blur(4px)",
-            }}
-            animate={{
-              y: 0,
-              opacity: 1,
-              scale: 1,
-              filter: "blur(0px)",
-            }}
-            exit={{
-              y: -100,
-              opacity: 0,
-              scale: 0.98,
-              filter: "blur(2px)",
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 280,
-              damping: 35,
-              mass: 1.2,
-              opacity: {
-                duration: 0.6,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              },
-              scale: {
-                duration: 0.5,
-                ease: [0.25, 0.46, 0.45, 0.94],
-              },
-              filter: {
-                duration: 0.45,
-                ease: [0.25, 0.1, 0.25, 1],
-              },
-            }}
-            className="fixed-navbar-container w-full bg-white/92 backdrop-blur-xl shadow-2xl h-[72px] flex items-center px-4 pt-2 border-b border-gray-200/30"
-            style={{
-              fontFamily: "SamsungSharpSans",
-              zIndex: 9999,
-              backdropFilter: "blur(20px) saturate(1.1)",
-              WebkitBackdropFilter: "blur(20px) saturate(1.1)",
-              boxShadow:
-                "0 8px 32px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.05)",
-            }}
-          >
-            {/* MOBILE: solo nombre y botón comprar con animación escalonada */}
-            <div className="flex w-full items-center justify-between md:hidden">
-              {/* Nombre a la izquierda */}
-              <motion.span
-                initial={{ x: -25, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{
-                  delay: 0.25,
-                  duration: 0.6,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                className="font-bold text-base text-black text-left truncate"
-                style={{ fontFamily: "SamsungSharpSans", maxWidth: "60vw" }}
-              >
-                {safeProduct.name}
-              </motion.span>
-              {/* Botón comprar a la derecha */}
-              <motion.button
-                initial={{ x: 25, opacity: 0, scale: 0.92 }}
-                animate={{ x: 0, opacity: 1, scale: 1 }}
-                whileHover={{
-                  scale: 1.03,
-                  boxShadow: "0 6px 25px rgba(0, 0, 0, 0.12)",
-                  transition: { duration: 0.25 },
-                }}
-                whileTap={{ scale: 0.99 }}
-                transition={{
-                  delay: 0.35,
-                  duration: 0.6,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                className="bg-black text-white rounded-full px-4 py-2 h-10 font-semibold text-sm shadow-lg hover:bg-gray-900 transition-all min-w-[90px]"
-                style={{ fontFamily: "SamsungSharpSans" }}
-                onClick={handleBuy}
-              >
-                Comprar
-              </motion.button>
-            </div>
-            {/* DESKTOP/TABLET: diseño con animaciones elegantes escalonadas */}
-            <div className="hidden md:flex w-full items-center justify-between">
-              {/* Parte izquierda: logos con entrada desde la izquierda */}
-              <motion.div
-                initial={{ x: -35, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{
-                  delay: 0.2,
-                  duration: 0.7,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                className="flex items-end flex-shrink-0 gap-2 md:gap-4"
-              >
-                <motion.div
-                  initial={{ scale: 0.85, opacity: 0, y: 8 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  transition={{
-                    delay: 0.3,
-                    duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                  whileHover={{
-                    scale: 1.03,
-                    y: -2,
-                    transition: { duration: 0.3 },
-                  }}
-                >
-                  <Image
-                    src="/frame_black.png"
-                    alt="Q Logo"
-                    height={40}
-                    style={{ display: "block", marginBottom: "5px" }}
-                    width={40}
-                    className="h-[40px] w-[40px] min-w-[40px] md:h-[48px] md:w-[48px] md:min-w-[40px]"
-                    priority
-                  />
-                </motion.div>
-                <motion.div
-                  initial={{ scale: 0.85, opacity: 0, y: 8 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  transition={{
-                    delay: 0.4,
-                    duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                  whileHover={{
-                    scale: 1.03,
-                    y: -2,
-                    transition: { duration: 0.3 },
-                  }}
-                  whileTap={{ scale: 0.99 }}
-                >
-                  <Link
-                    href="/"
-                    aria-label="Ir a la página principal"
-                    className="block cursor-pointer"
-                  >
-                    <img
-                      src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-                      alt="Samsung Logo"
-                      className="h-10 md:h-12 w-auto block"
-                    />
-                  </Link>
-                </motion.div>
-                <motion.span
-                  initial={{ y: 12, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{
-                    delay: 0.5,
-                    duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                  className="text-xs font-bold tracking-wide text-black select-none"
-                  style={{
-                    letterSpacing: "0.08em",
-                    marginBottom: "11px",
-                    lineHeight: "normal",
-                    alignSelf: "flex-end",
-                  }}
-                >
-                  Store
-                </motion.span>
-              </motion.div>
-
-              {/* Nombre centrado con entrada desde arriba */}
-              <motion.div
-                initial={{ y: -15, opacity: 0, scale: 0.96 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                transition={{
-                  delay: 0.6,
-                  duration: 0.6,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                className="flex-1 flex justify-center"
-              >
-                <span
-                  className="font-bold text-base md:text-lg text-center"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                >
-                  {safeProduct.name}
-                </span>
-              </motion.div>
-
-              {/* Parte derecha: botones con entrada desde la derecha */}
-              <motion.div
-                initial={{ x: 35, opacity: 0 }}
-                animate={{ x: 0, opacity: 1 }}
-                transition={{
-                  delay: 0.7,
-                  duration: 0.7,
-                  ease: [0.25, 0.46, 0.45, 0.94],
-                }}
-                className="flex items-center gap-2"
-                style={{ minWidth: 110 }}
-              >
-                {/* Botón añadir al carrito */}
-                <motion.button
-                  initial={{ scale: 0.92, opacity: 0, y: 8 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  whileHover={{
-                    scale: 1.015,
-                    y: -1,
-                    boxShadow: "0 6px 25px rgba(0, 0, 0, 0.08)",
-                    transition: { duration: 0.3 },
-                  }}
-                  whileTap={{ scale: 0.995, y: 0 }}
-                  transition={{
-                    delay: 0.8,
-                    duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                  className="bg-transparent text-black border border-black rounded-full px-8 py-2 h-12 font-semibold text-base shadow-md hover:bg-black hover:text-white transition-all mb-3 mt-3 min-w-[130px]"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                  onClick={handleAddToCart}
-                >
-                  Añadir al carrito
-                </motion.button>
-                {/* Botón comprar */}
-                <motion.button
-                  initial={{ scale: 0.92, opacity: 0, y: 8 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  whileHover={{
-                    scale: 1.015,
-                    y: -1,
-                    boxShadow: "0 8px 30px rgba(0, 0, 0, 0.15)",
-                    transition: { duration: 0.3 },
-                  }}
-                  whileTap={{ scale: 0.995, y: 0 }}
-                  transition={{
-                    delay: 0.9,
-                    duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94],
-                  }}
-                  className="bg-black text-white rounded-full px-6 py-2 h-12 font-semibold text-base shadow-lg hover:bg-gray-900 transition-all mb-3 mt-3 min-w-[110px]"
-                  style={{ fontFamily: "SamsungSharpSans" }}
-                  onClick={handleBuy}
-                >
-                  Comprar
-                </motion.button>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+{/*  */}
 
       {/* Estilos CSS globales optimizados para transiciones cinematográficas */}
       <style
@@ -532,23 +303,23 @@ export default function ViewProduct({
         className="relative flex items-center justify-center w-full min-h-[100px] py-0 md:-mt-40"
       >
         {/* Especificaciones técnicas dinámicas del producto */}
-        <Specifications product={productCard} />
+        <Specifications product={productCard} flix={flix} />
       </motion.div>
 
       {/* Características destacadas (nuevo componente) */}
-      <Destacados />
+      {/* <Destacados /> */}
 
       {/* Sección de beneficios (responsive) */}
       <BenefitsSection />
 
       {/* Componente de videos */}
-      <motion.div
+      {/* <motion.div
         ref={videosReveal.ref}
         {...videosReveal.motionProps}
         className="mt-0"
       >
         <VideosSection />
-      </motion.div>
+      </motion.div> */}
       {/* Componente de comparación justo debajo de VideosSection */}
       {/* <motion.div
         ref={comparationReveal.ref}

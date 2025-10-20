@@ -15,39 +15,19 @@
 
 "use client";
 
-import React, { use, useEffect, useState } from "react";
+import React, { use } from "react";
 import { useRouter } from "next/navigation";
 import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
 import MultimediaBottomBar from "@/components/MultimediaBottomBar";
 import { motion } from "framer-motion";
-import { findAvailableSku, parseSkuString } from "@/lib/flixmedia";
 
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
   return (
+    
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Skeleton del contenido principal */}
-      <div className="flex-1">
-        {/* Skeleton del iframe de Flixmedia */}
-        <div className="w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative overflow-hidden">
-          {/* Efecto de brillo */}
-          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-          
-          {/* Icono central de carga */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-16 h-16 mx-auto mb-4 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
-              <div className="space-y-3">
-                <div className="h-3 bg-gray-200 rounded w-48 mx-auto animate-pulse" />
-                <div className="h-2 bg-gray-200 rounded w-32 mx-auto animate-pulse" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Skeleton del bottom bar */}
+        {/* Skeleton del bottom bar */}
       <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-gray-200 shadow-2xl">
         <div className="max-w-[1680px] mx-auto px-4 md:px-6 lg:px-12">
           <div className="flex items-center justify-between gap-4 md:gap-6 py-3 md:py-4">
@@ -75,6 +55,27 @@ function MultimediaPageSkeleton() {
         {/* Línea decorativa */}
         <div className="h-1 w-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse" />
       </div>
+      {/* Skeleton del contenido principal */}
+      <div className="flex-1">
+        {/* Skeleton del iframe de Flixmedia */}
+        <div className="w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative overflow-hidden">
+          {/* Efecto de brillo */}
+          <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+          
+          {/* Icono central de carga */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 border-4 border-gray-200 border-t-[#0066CC] rounded-full animate-spin" />
+              <div className="space-y-3">
+                <div className="h-3 bg-gray-200 rounded w-48 mx-auto animate-pulse" />
+                <div className="h-2 bg-gray-200 rounded w-32 mx-auto animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    
     </div>
   );
 }
@@ -90,42 +91,10 @@ export default function MultimediaPage({
   const { id } = resolvedParams;
 
   const { product, loading, error } = useProduct(id);
-  const [checkingFlixmedia, setCheckingFlixmedia] = useState(true);
 
-  // Verificar si hay contenido de Flixmedia disponible
-  useEffect(() => {
-    async function checkFlixmediaContent() {
-      if (!product || !product.sku) {
-        setCheckingFlixmedia(false);
-        return;
-      }
-
-      const skus = parseSkuString(product.sku);
-
-      if (skus.length === 0) {
-        console.log("📍 No hay SKUs disponibles, redirigiendo a vista de producto...");
-        router.replace(`/productos/view/${id}`);
-        return;
-      }
-
-      const availableSku = await findAvailableSku(skus);
-
-      if (!availableSku) {
-        console.log("📍 No se encontró contenido Flixmedia, redirigiendo a vista de producto...");
-        router.replace(`/productos/view/${id}`);
-        return;
-      }
-
-      setCheckingFlixmedia(false);
-    }
-
-    if (product && !loading) {
-      checkFlixmediaContent();
-    }
-  }, [product, loading, id, router]);
 
   // Loading state
-  if (loading || checkingFlixmedia) {
+  if (loading) {
     return <MultimediaPageSkeleton />;
   }
 
@@ -166,11 +135,9 @@ export default function MultimediaPage({
     );
   }
 
-  // Extraer TODOS los SKUs del producto para que FlixmediaPlayer intente con cada uno
-  // FlixmediaPlayer tiene lógica inteligente para probar múltiples SKUs hasta encontrar uno disponible
-  const productSku = product.sku; // Mantener todos los SKUs separados por comas
-  // Por ahora no usamos EAN, solo MPN/SKU - Flixmedia buscará por SKU únicamente
-  const productEan = null;
+  // Extraer SKU y EAN del producto
+  const productSku = product.sku;
+  const productEan = product.ean || null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {
@@ -186,22 +153,7 @@ export default function MultimediaPage({
   
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Contenido principal - Flixmedia Player ocupa toda la página sin márgenes */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex-1"
-      >
-        <FlixmediaPlayer
-          mpn={productSku}
-          ean={productEan}
-          productName={product.name}
-          className=""
-        />
-      </motion.div>
-
-      {/* Bottom Bar Sticky con info del producto y CTA */}
+      {/* Top Bar con info del producto y CTA - Fixed debajo del Navbar */}
       <MultimediaBottomBar
         productName={product.name}
         price={numericPrice}
@@ -209,6 +161,22 @@ export default function MultimediaPage({
         onViewDetailsClick={() => router.push(`/productos/view/${id}`)}
         isVisible={true}
       />
+
+      {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="flex-1 pt-[70px] xl:pt-[50px]"
+      >
+        <FlixmediaPlayer
+          mpn={productSku}
+          ean={productEan}
+          productName={product.name}
+          productId={id}
+          className=""
+        />
+      </motion.div>
     </div>
   );
 }

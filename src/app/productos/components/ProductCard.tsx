@@ -33,10 +33,12 @@ export interface ProductColor {
   hex: string; // Código hexadecimal del color (ej: "#000000")
   label: string; // Nombre mostrado al usuario (ej: "Negro Medianoche")
   sku: string; // SKU específico para esta variante de color
+  ean: string; // SKU específico para esta variante de color
   price?: string; // Precio específico para este color (opcional)
   originalPrice?: string; // Precio original antes de descuento (opcional)
   discount?: string; // Descuento específico para este color (opcional)
   capacity?: string; // Capacidad asociada a esta variante
+  imagePreviewUrl?: string; // URL de imagen específica para este color
 }
 
 export interface ProductCapacity {
@@ -46,6 +48,7 @@ export interface ProductCapacity {
   originalPrice?: string; // Precio original
   discount?: string; // Descuento
   sku?: string; // SKU específico
+  ean?: string; // SKU específico
 }
 
 export interface ProductCardProps {
@@ -74,6 +77,9 @@ export interface ProductCardProps {
   capacity?: string | null;
   stock?: number;
   sku?: string | null;
+  ean?: string | null;
+  skuArray?: string[];
+  eanArray?: string[];
   detailedDescription?: string | null;
   selectedColor?: ProductColor;
   setSelectedColor?: (color: ProductColor) => void;
@@ -123,10 +129,18 @@ export default function ProductCard({
     );
   const selectedCapacity = selectedCapacityProp ?? selectedCapacityLocal;
 
+  // Obtener la imagen del color seleccionado o usar la imagen por defecto
+  const currentImage = useMemo(() => {
+    if (selectedColor?.imagePreviewUrl) {
+      return selectedColor.imagePreviewUrl;
+    }
+    return image;
+  }, [selectedColor, image]);
+
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
   const productImages = useMemo(
-    () => [image, image, image, image, image, image],
-    [image]
+    () => [currentImage, currentImage, currentImage, currentImage, currentImage, currentImage],
+    [currentImage]
   );
 
   // Aplicar transformación de Cloudinary a todas las imágenes del carrusel
@@ -147,6 +161,7 @@ export default function ProductCard({
       color_name: color.name,
       color_label: color.label,
       color_sku: color.sku,
+      color_ean: color.ean,
     });
   };
 
@@ -157,6 +172,7 @@ export default function ProductCard({
       product_name: name,
       capacity_value: capacity.value,
       capacity_sku: capacity.sku,
+      capacity_ean: capacity.ean,
     });
   };
 
@@ -189,6 +205,7 @@ export default function ProductCard({
         product_name: name,
         selected_color: selectedColor.name,
         selected_color_sku: selectedColor.sku,
+        selected_color_ean: selectedColor.ean,
         source: "product_card",
       });
 
@@ -203,6 +220,7 @@ export default function ProductCard({
             : currentPrice ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: selectedColor.sku, // SKU estricto del color seleccionado
+        ean: selectedColor.ean, // SKU estricto del color seleccionado
         puntos_q,
       });
     } finally {
@@ -260,7 +278,7 @@ export default function ProductCard({
 
   // Obtener imagen optimizada de Cloudinary para catálogo
   const cloudinaryImage = useCloudinaryImage({
-    src: typeof image === "string" ? image : image.src,
+    src: typeof currentImage === "string" ? currentImage : currentImage.src,
     transformType: "catalog",
     responsive: true,
   });

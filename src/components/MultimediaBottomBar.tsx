@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 
 interface MultimediaBottomBarProps {
-  productName: string; // Kept for future use, not displayed
+  productName: string;
   price: number;
   originalPrice?: number;
   onViewDetailsClick?: () => void;
@@ -44,90 +44,82 @@ export default function MultimediaBottomBar({
     <AnimatePresence>
       {isVisible && (
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-gray-200 shadow-2xl"
-          style={{ fontFamily: "SamsungSharpSans" }}
+          className="fixed left-0 right-0 z-40 bg-white  top-[64px] xl:top-[100px]"
+          style={{
+            fontFamily: "SamsungSharpSans"
+          }}
         >
-          <div className="max-w-[1680px] mx-auto px-4 md:px-6 lg:px-12">
-            <div className="flex items-center justify-between gap-4 md:gap-6 py-3 md:py-4">
-              {/* IZQUIERDA: Nombre del producto */}
-              <div className="flex-shrink-0 hidden md:block max-w-[280px]">
-                <h3 className="text-base font-bold text-[#222] leading-tight line-clamp-2">
+          <div className=" mx-auto px-4 md:px-6">
+            <div className="flex items-center justify-between gap-3 md:gap-4 py-2 md:py-2.5">
+              {/* IZQUIERDA: Nombre del producto (oculto en móvil) */}
+              <div className=" flex-shrink-0 max-w-[200px] xl:max-w-[250px]">
+                <h3 className="text-sm font-semibold text-[#222] leading-tight line-clamp-2">
                   {productName}
                 </h3>
               </div>
 
-              {/* CENTRO: Precio con financiación */}
-              <div className="flex-1 flex justify-center items-center min-w-0">
-                <div className="text-center max-w-3xl">
-                  <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 justify-center">
-                    {/* Precio de contado */}
-                    <div className="flex items-baseline gap-2 flex-wrap justify-center">
-                      <span className="text-xl md:text-2xl lg:text-3xl font-bold text-[#222]">
-                        {formatPrice(price)}
-                      </span>
-                      {originalPrice && originalPrice > price && (
-                        <>
-                          <span className="text-sm md:text-base text-gray-400 line-through">
-                            {formatPrice(originalPrice)}
-                          </span>
-                          <span className="text-sm md:text-base text-green-600 font-semibold">
-                            Ahorra {formatPrice(savings)}
-                          </span>
-                        </>
-                      )}
-                    </div>
+              {/* CENTRO: Precio completo pero minimalista */}
+              <div className="flex-1 flex justify-center items-center">
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center">
+                  {/* Precio de contado con descuento */}
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="text-lg md:text-xl font-bold text-[#222]">
+                      {formatPrice(price)}
+                    </span>
+                    {originalPrice && originalPrice > price && (
+                      <>
+                        <span className="text-sm text-gray-400 line-through">
+                          {formatPrice(originalPrice)}
+                        </span>
+                        <span className="text-sm text-green-600 font-semibold">
+                          Ahorra {formatPrice(savings)}
+                        </span>
+                      </>
+                    )}
+                  </div>
 
-                    {/* Separador */}
-                    <span className="hidden sm:block text-gray-300">|</span>
+                  {/* Separador minimalista */}
+                  <span className="hidden sm:block text-gray-200">•</span>
 
-                    {/* Cuotas Addi */}
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-base md:text-lg text-gray-600">o desde</span>
-                      <span className="text-lg md:text-xl font-bold text-[#0066CC]">
-                        {formatPrice(monthlyPayment)}
-                      </span>
-                      <span className="text-sm md:text-base text-gray-500">/mes con Addi</span>
-                    </div>
+                  {/* Cuotas Addi simplificadas */}
+                  <div className="hidden sm:flex items-baseline gap-1">
+                    <span className="text-sm text-gray-600">desde</span>
+                    <span className="text-sm font-semibold text-[#0066CC]">
+                      {formatPrice(monthlyPayment)}/mes
+                    </span>
+                    <span className="text-xs text-gray-500">con Addi</span>
                   </div>
                 </div>
               </div>
 
-              {/* DERECHA: CTA */}
+              {/* DERECHA: CTA minimalista */}
               <div className="flex-shrink-0">
                 <motion.button
                   onClick={onViewDetailsClick}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                   className="
-                    flex items-center gap-2 md:gap-3
+                    flex items-center gap-2
                     bg-[#0066CC] hover:bg-[#0052A3]
                     text-white
-                    px-4 md:px-6 lg:px-8 py-2.5 md:py-3 lg:py-4
+                    px-4 md:px-5 py-2
                     rounded-full
-                    font-semibold text-sm md:text-base
+                    font-medium text-sm
                     transition-all duration-200
-                    shadow-lg hover:shadow-xl
+                    shadow-sm hover:shadow-md
                     whitespace-nowrap
                   "
                 >
-                  <FiShoppingCart className="text-lg md:text-xl" />
+                  <FiShoppingCart className="text-base" />
                   <span>Comprar</span>
                 </motion.button>
               </div>
             </div>
           </div>
-
-          {/* Línea decorativa superior con gradiente Samsung */}
-          <div
-            className="h-1 w-full"
-            style={{
-              background: "linear-gradient(90deg, #0066CC 0%, #00A3E0 100%)",
-            }}
-          />
         </motion.div>
       )}
     </AnimatePresence>

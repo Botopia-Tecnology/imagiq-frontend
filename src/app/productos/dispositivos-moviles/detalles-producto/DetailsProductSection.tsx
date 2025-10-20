@@ -63,7 +63,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
   );
 
   // Control de scroll para StickyPriceBar
-  const showStickyBar = useScrollNavbar(150, 50, true);
+  const showStickyBar = useScrollNavbar(50, 50, true); //150
 
   // State
   const [loading, setLoading] = React.useState(false);
@@ -189,7 +189,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
 
   // Animations and effects
   const desktopReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
+    offset: 80, //80
     duration: 600,
     direction: "up",
   });
@@ -258,7 +258,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
       />
 
       <main
-        className="w-full bg-white min-h-screen pt-[100px] xl:pt-[100px]"
+        className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
         style={{ fontFamily: "SamsungSharpSans" }}
       >
         <motion.section

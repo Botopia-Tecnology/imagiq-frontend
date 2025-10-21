@@ -81,7 +81,7 @@ const BenefitItem: React.FC<Benefit> = ({ icon, title, subtitle }) => (
  */
 const BenefitsSection: React.FC = () => (
   <section
-    className="w-full pt-12 md:pt-20 bg-[#fafbfc]"
+    className="w-full pt-12 md:pt-20 pb-8 md:pb-12 bg-[#fafbfc]"
     aria-labelledby="benefits-title"
   >
     <div className="max-w-6xl mx-auto px-4 md:px-0">

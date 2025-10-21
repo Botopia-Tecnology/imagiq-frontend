@@ -1,7 +1,7 @@
 import React from "react";
 import ColorSelector from "./ColorSelector";
 import { TradeInSelector } from "./estreno-y-entrego";
-import type { ColorOption, StorageOption } from "@/hooks/useDeviceVariants";
+import type { ColorOption, StorageOption } from "@/hooks/useProductSelection";
 
 interface ProductSelectorsProps {
   // Color
@@ -16,6 +16,11 @@ interface ProductSelectorsProps {
   onStorageChange: (storage: StorageOption) => void;
   variantsLoading: boolean;
 
+  // Memory RAM
+  memoriaramOptions: string[];
+  selectedMemoriaram: string | null;
+  onMemoriaramChange: (memoriaram: string) => void;
+
   // Trade-in modal
   onOpenTradeInModal: () => void;
 }
@@ -29,6 +34,9 @@ export default function ProductSelectors({
   selectedStorage,
   onStorageChange,
   variantsLoading,
+  memoriaramOptions,
+  selectedMemoriaram,
+  onMemoriaramChange,
   onOpenTradeInModal,
 }: Readonly<ProductSelectorsProps>) {
   const renderStorageOptions = () => {
@@ -113,16 +121,23 @@ export default function ProductSelectors({
         <div className="grid grid-cols-2 gap-4">
           {variantsLoading ? (
             <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
-          ) : (
-            <>
-              <button className="rounded-xl border-2 border-[#222] bg-white text-[#222] px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none">
-                8 GB
-              </button>
-              <button className="rounded-xl border-2 border-gray-300 text-[#222] bg-white hover:border-[#222] px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none">
-                12 GB
-              </button>
-            </>
-          )}
+          ) : memoriaramOptions && memoriaramOptions.length > 0 ? (
+            memoriaramOptions.map((memoriaram) => {
+              return (
+                <button
+                  key={memoriaram}
+                  className={`rounded-xl border-2 px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none flex flex-col items-center justify-center ${
+                    selectedMemoriaram === memoriaram
+                      ? "border-[#222] bg-white text-[#222]"
+                      : "border-gray-300 text-[#222] bg-white hover:border-[#222]"
+                  }`}
+                  onClick={() => onMemoriaramChange(memoriaram)}
+                >
+                  <span className="font-semibold text-base mb-1">{memoriaram}</span>
+                </button>
+              );
+            })
+          ) : null}
         </div>
       </section>
 

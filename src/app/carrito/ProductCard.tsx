@@ -43,58 +43,55 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   return (
     <>
-      {/* Mobile: Layout vertical */}
-      <div className="md:hidden bg-white rounded-lg p-4 shadow-sm">
-        <div className="flex gap-4">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-24 h-24 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
-              <Image src={imagen} alt={nombre} fill className="object-contain p-2" sizes="96px" />
-            </div>
+      {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
+      <div className="md:hidden bg-white border-b border-gray-200 p-3">
+        <div className="flex gap-3">
+          {/* Imagen */}
+          <div className="w-20 h-20 relative flex-shrink-0 bg-gray-100 rounded p-1">
+            <Image src={imagen} alt={nombre} fill className="object-contain p-1" sizes="80px" />
+          </div>
+
+          {/* Contenido derecha */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            {/* Nombre truncado */}
+            <h3 className="text-sm text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
+
+            {/* Botón Eliminar */}
             <button
               onClick={onRemove}
-              className="text-xs text-sky-600 hover:text-sky-700 font-medium transition"
+              className="text-xs text-sky-600 hover:text-sky-700 font-medium self-start mb-2"
               aria-label="Eliminar producto"
             >
               Eliminar
             </button>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
-            <p className="text-xs text-gray-500">Enviado desde {ubicacionEnvio}</p>
 
-            <div className="mt-2 flex items-baseline gap-2">
-              <span className="text-lg font-bold text-gray-900">${precio.toLocaleString()}</span>
+            {/* Cantidad */}
+            <div className="flex items-center gap-2 mb-2">
+              <select
+                value={cantidad}
+                onChange={(e) => onQuantityChange(Number(e.target.value))}
+                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+              >
+                {Array.from({ length: limiteMax }, (_, i) => i + 1).map((num) => (
+                  <option key={num} value={num}>
+                    {num} u.
+                  </option>
+                ))}
+              </select>
+              <span className="text-xs text-gray-500">Disponibles: {disponible}</span>
+            </div>
+
+            {/* Precios */}
+            <div className="flex flex-col">
               {descuento && (
-                <>
-                  <span className="text-xs text-gray-400 line-through">${precioOriginal?.toLocaleString()}</span>
+                <div className="flex items-center gap-1 mb-0.5">
                   <span className="text-xs font-semibold text-green-600">-{descuento}%</span>
-                </>
+                  <span className="text-xs text-gray-400 line-through">${precioOriginal?.toLocaleString()}</span>
+                </div>
               )}
+              <span className="text-lg font-bold text-gray-900">${precio.toLocaleString()}</span>
             </div>
           </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
-            <button
-              onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
-              className="p-2 hover:bg-gray-100 transition disabled:opacity-50"
-              disabled={cantidad <= 1}
-              aria-label="Disminuir cantidad"
-            >
-              <Minus className="w-4 h-4" />
-            </button>
-            <span className="w-8 text-center font-semibold text-sm">{cantidad}</span>
-            <button
-              onClick={() => onQuantityChange(Math.min(limiteMax, cantidad + 1))}
-              className="p-2 hover:bg-gray-100 transition disabled:opacity-50"
-              disabled={cantidad >= limiteMax}
-              aria-label="Aumentar cantidad"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-          <span className="text-xs text-gray-500">Disponibles: {disponible}</span>
         </div>
       </div>
 

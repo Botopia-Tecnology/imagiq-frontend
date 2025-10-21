@@ -104,19 +104,19 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
   return (
     <section
       id="especificaciones-section"
-      className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-8 md:py-12 mt-36  "
+      className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-8 md:py-12 mt-8 md:mt-12"
       aria-label="Especificaciones técnicas"
     >
       <FlixmediaDetails
           mpn={skuArrayToUse?.join(', ') || skuToUse}
           ean={eanArrayToUse?.join(', ') || eanToUse}
           productName={product.name}
-          className="w-full mb-8"
+          className="w-full "
         />
      
 
       {/* Botón grande con feedback visual y animación */}
-      <div className="flex flex-col items-center w-full mt-2 px-0 sm:px-0">
+      <div className="flex flex-col items-center w-full px-0 sm:px-0">
         <button
           type="button"
           className="w-full max-w-xs sm:max-w-md bg-[#0099FF] hover:bg-[#007ACC] active:scale-95 text-white font-bold py-3 sm:py-4 rounded-full shadow-lg text-base sm:text-lg lg:text-xl transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 mb-2"

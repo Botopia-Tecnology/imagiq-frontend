@@ -48,7 +48,7 @@ const getDropdownComponent = (name: DropdownName) => {
 export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { getNavbarRoutes } = useVisibleCategories();
+  const { getNavbarRoutes, loading } = useVisibleCategories();
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
@@ -226,7 +226,17 @@ export default function Navbar() {
 
             <nav className="min-w-0 flex-1">
               <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
-                {menuRoutes.map((item) => {
+                {loading ? (
+                  // Skeleton loader
+                  <>
+                    {[1, 2, 3, 4, 5, 6].map((i) => (
+                      <li key={i} className="shrink-0">
+                        <div className="h-6 w-20 xl:w-24 2xl:w-28 bg-gray-200 rounded animate-pulse" />
+                      </li>
+                    ))}
+                  </>
+                ) : (
+                  menuRoutes.map((item) => {
                   const dropdownKey = item.dropdownName || item.name;
 
                   return (
@@ -276,7 +286,8 @@ export default function Navbar() {
                       </div>
                     </li>
                   );
-                })}
+                })
+                )}
               </ul>
             </nav>
           </div>

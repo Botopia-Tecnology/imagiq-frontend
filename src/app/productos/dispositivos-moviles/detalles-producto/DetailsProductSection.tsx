@@ -2,6 +2,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useDeviceVariants, type ColorOption } from "@/hooks/useDeviceVariants";
 import { useCartContext } from "@/features/cart/CartContext";
@@ -24,8 +25,11 @@ import StickyImageContainer from "./StickyImageContainer";
 import PriceAndActions from "./PriceAndActions";
 import DeviceCarousel from "./DeviceCarousel";
 import AddiFinancing from "./AddiFinancing";
+import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 
-const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ product }) => {
+const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
+  product,
+}) => {
   // Hooks
   const {
     colorOptions,
@@ -40,22 +44,41 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     setSelectedStorage,
   } = useDeviceVariants(product.id);
 
+  console.log("Selected Variant:", selectedVariant);
+
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
   const router = useRouter();
-  const { addToFavorites, removeFromFavorites, isFavorite: checkIsFavorite } = useFavorites();
+  const {
+    addToFavorites,
+    removeFromFavorites,
+    isFavorite: checkIsFavorite,
+  } = useFavorites();
 
   // Detectar serie dinámica del producto
-  const productSeries = React.useMemo(() => getProductSeries(product.name), [product.name]);
-  const seriesHref = React.useMemo(() => getSeriesHref(productSeries), [productSeries]);
+  const productSeries = React.useMemo(
+    () => getProductSeries(product.name),
+    [product.name]
+  );
+  const seriesHref = React.useMemo(
+    () => getSeriesHref(productSeries),
+    [productSeries]
+  );
+
+  // Control de scroll para StickyPriceBar
+  const showStickyBar = useScrollNavbar(50, 50, true); //150
 
   // State
   const [loading, setLoading] = React.useState(false);
   const isFavorite = checkIsFavorite(product.id);
-  const [deliveryOption, setDeliveryOption] = React.useState<"standard" | "express">("standard");
+  const [deliveryOption, setDeliveryOption] = React.useState<
+    "standard" | "express"
+  >("standard");
   const [estrenoYEntrego, setEstrenoYEntrego] = React.useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
-  const [galleryImages, setGalleryImages] = React.useState<(string | StaticImageData)[]>([]);
+  const [galleryImages, setGalleryImages] = React.useState<
+    (string | StaticImageData)[]
+  >([]);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const [isTradeInModalOpen, setIsTradeInModalOpen] = React.useState(false);
 
@@ -73,7 +96,14 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     if (colorOption?.hex) setGlobalSelectedColor(colorOption.hex);
   };
 
-  const handleImageClick = (images: (string | StaticImageData)[], index: number) => { setGalleryImages(images); setGalleryIndex(index); setIsGalleryOpen(true); };
+  const handleImageClick = (
+    images: (string | StaticImageData)[],
+    index: number
+  ) => {
+    setGalleryImages(images);
+    setGalleryIndex(index);
+    setIsGalleryOpen(true);
+  };
 
   const handleOpenTradeInModal = () => {
     setIsTradeInModalOpen(true);
@@ -106,16 +136,18 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
     // Validación estricta: debe existir un SKU válido del variant seleccionado
     if (!selectedVariant?.sku) {
-      console.error('Error al agregar al carrito:', {
+      console.error("Error al agregar al carrito:", {
         product_id: product.id,
         product_name: product.name,
         selectedColor,
         selectedStorage,
         selectedDevice,
         selectedVariant,
-        error: 'No se encontró un SKU válido para la variante seleccionada'
+        error: "No se encontró un SKU válido para la variante seleccionada",
       });
-      alert('Error: No se encontró el SKU del producto seleccionado. Por favor intenta con otra combinación.');
+      alert(
+        "Error: No se encontró el SKU del producto seleccionado. Por favor intenta con otra combinación."
+      );
       return;
     }
 
@@ -125,8 +157,15 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         id: product.id,
         name: `${product.name} - ${selectedColor.color} - ${selectedStorage.capacidad}`,
         price: currentPrice || 0,
+        originalPrice: selectedVariant.precioNormal,
+        stock: selectedVariant.stock,
+        shippingFrom: "Bogotá",
         quantity: 1,
-        image: selectedVariant.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
+        image:
+          selectedVariant.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : fallbackImage.src),
         sku: selectedVariant.sku, // SKU estricto de la variante seleccionada
         ean: selectedVariant.ean,
         puntos_q: product.puntos_q ?? 4,
@@ -140,23 +179,58 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     }
   };
 
-  const handleBuyNow = async () => { await handleAddToCart(); router.push("/cart"); };
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    router.push("/cart");
+  };
+
+  // Efecto para controlar el navbar principal cuando aparece el StickyPriceBar
+  React.useEffect(() => {
+    if (typeof document === "undefined") return; // Protección SSR
+
+    if (showStickyBar) {
+      // Inmediatamente ocultar navbar principal cuando aparece el sticky bar
+      document.body.classList.add("hide-main-navbar");
+    } else {
+      // Delay optimizado para permitir transición suave
+      const timer = setTimeout(() => {
+        document.body.classList.remove("hide-main-navbar");
+      }, 250);
+
+      return () => clearTimeout(timer);
+    }
+
+    // Cleanup: siempre remover la clase al desmontar
+    return () => {
+      document.body.classList.remove("hide-main-navbar");
+    };
+  }, [showStickyBar]);
 
   // Animations and effects
-  const desktopReveal = useScrollReveal<HTMLDivElement>({ offset: 80, duration: 600, direction: "up" });
+  const desktopReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80, //80
+    duration: 600,
+    direction: "up",
+  });
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
     if (selectedVariant?.precioNormal && selectedVariant?.precioeccommerce) {
-      return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, ''), 10) || 0;
+      return typeof selectedVariant.precioNormal === "number"
+        ? selectedVariant.precioNormal
+        : parseInt(
+            String(selectedVariant.precioNormal).replace(/[^\d]/g, ""),
+            10
+          ) || 0;
     }
     if (!product.originalPrice) {
       return undefined;
     }
     const parsedOriginalPrice =
-      typeof product.originalPrice === 'number'
+      typeof product.originalPrice === "number"
         ? product.originalPrice
-        : parseInt(String(product.originalPrice).replace(/[^\d]/g, ''), 10) || 0;
+        : parseInt(String(product.originalPrice).replace(/[^\d]/g, ""), 10) ||
+          0;
     return parsedOriginalPrice;
   }, [selectedVariant, product.originalPrice]);
 
@@ -167,7 +241,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     if (typeof product.discount === "number") {
       return product.discount;
     }
-    const parsedValue = parseInt(String(product.discount).replace(/[^\d]/g, ""), 10);
+    const parsedValue = parseInt(
+      String(product.discount).replace(/[^\d]/g, ""),
+      10
+    );
     return parsedValue || 0;
   }, [product.discount]);
 
@@ -180,7 +257,6 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
   return (
     <>
-      <FloatingEntregoEstrenoButton />
       <StickyPriceBar
         deviceName={product.name}
         basePrice={currentPrice || 0}
@@ -189,6 +265,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         selectedStorage={selectedStorage?.capacidad}
         onBuyClick={handleBuyNow}
         hasAddiFinancing={true}
+        isVisible={showStickyBar}
       />
       <ImageGalleryModal
         isOpen={isGalleryOpen}
@@ -203,12 +280,21 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         onContinue={handleTradeInContinue}
       />
 
-      <main className="w-full bg-white min-h-screen" style={{ fontFamily: "SamsungSharpSans" }}>
-        <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
+      <main
+        className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
+        style={{ fontFamily: "SamsungSharpSans" }}
+      >
+        <motion.section
+          ref={desktopReveal.ref}
+          {...desktopReveal.motionProps}
+          className="hidden lg:block"
+        >
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 mb-8 text-sm text-gray-600">
-              <a href={seriesHref} className="hover:text-gray-900">{productSeries}</a>
+              <a href={seriesHref} className="hover:text-gray-900">
+                {productSeries}
+              </a>
               <span>/</span>
               <span className="text-gray-900">Detalles del producto</span>
             </nav>
@@ -222,6 +308,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                   imageDetailsUrls={selectedVariant?.imageDetailsUrls}
                   onImageClick={handleImageClick}
                 />
+                {selectedVariant?.urlRender3D && selectedVariant.urlRender3D.trim() != "" && (
+                  <ARExperienceHandler
+                    glbUrl={selectedVariant.urlRender3D}
+                    usdzUrl={selectedVariant.urlRender3D}
+                  />
+                )}
               </div>
 
               {/* Información del producto a la derecha */}
@@ -246,13 +338,16 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     variantsLoading={variantsLoading}
                     onOpenTradeInModal={handleOpenTradeInModal}
                   />
+
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
                     onDeliveryChange={setDeliveryOption}
                     estrenoYEntrego={estrenoYEntrego}
                     onEstrenoChange={setEstrenoYEntrego}
                   />
-                  <p className="text-base text-[#222] font-light leading-relaxed mb-8">{product.description || ""}</p>
+                  <p className="text-base text-[#222] font-light leading-relaxed mb-8">
+                    {product.description || ""}
+                  </p>
                 </header>
 
                 <AddiFinancing
@@ -269,7 +364,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
         {/* MOBILE: Stack vertical */}
         <motion.section className="lg:hidden">
-          <div className="px-4 py-8 max-w-md mx-auto">
+          <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
             <DeviceCarousel
               alt={product.name}
               imagePreviewUrl={selectedVariant?.imagePreviewUrl}
@@ -277,9 +372,20 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               onImageClick={handleImageClick}
             />
             <header className="mb-4 text-center mt-6">
-              <h1 className="text-2xl font-bold text-[#222] mb-2">{product.name}</h1>
-              <p className="text-base text-[#222] mb-4 font-light leading-snug">{product.description || ""}</p>
+              <h1 className="text-2xl font-bold text-[#222] mb-2">
+                {product.name}
+              </h1>
+              <p className="text-base text-[#222] mb-4 font-light leading-snug">
+                {product.description || ""}
+              </p>
+              {selectedVariant?.urlRender3D && selectedVariant.urlRender3D.trim() != "" && (
+                <ARExperienceHandler
+                  glbUrl={selectedVariant.urlRender3D}
+                  usdzUrl={selectedVariant.urlRender3D}
+                />
+              )}
             </header>
+
             <PriceAndActions
               currentPrice={currentPrice || 0}
               originalPrice={originalPrice}
@@ -303,6 +409,53 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
           </div>
         </motion.section>
       </main>
+
+      {/* Estilos CSS globales optimizados para transiciones cinematográficas */}
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+          body.hide-main-navbar header[data-navbar="true"] {
+            transform: translateY(-100%) scale(0.97) !important;
+            opacity: 0 !important;
+            filter: blur(3px) !important;
+            transition:
+              transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              filter 0.4s cubic-bezier(0.25, 0.1, 0.25, 1) !important;
+            pointer-events: none !important;
+          }
+
+          /* Asegurar que el navbar fijo tenga prioridad visual absoluta */
+          .fixed-navbar-container {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            z-index: 9999 !important;
+            will-change: transform, opacity, filter !important;
+          }
+
+          /* Efecto de cristal mejorado para el navbar fijo */
+          .fixed-navbar-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+            border-radius: inherit;
+            pointer-events: none;
+          }
+
+          /* Animación de entrada más suave para elementos internos */
+          .fixed-navbar-container * {
+            backface-visibility: hidden;
+            transform-style: preserve-3d;
+          }
+        `,
+        }}
+      />
     </>
   );
 };

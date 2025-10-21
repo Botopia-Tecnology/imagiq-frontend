@@ -16,6 +16,7 @@ import { getProductSeries, getSeriesHref } from "./utils/productSeriesUtils";
 // Components
 import StickyPriceBar from "./StickyPriceBar";
 import ImageGalleryModal from "./ImageGalleryModal";
+import { TradeInModal } from "./estreno-y-entrego";
 import ProductHeader from "./ProductHeader";
 import ProductSelectors from "./ProductSelectors";
 import DeliveryTradeInOptions from "./DeliveryTradeInOptions";
@@ -100,6 +101,7 @@ const DetailsProductSection: React.FC<{
     (string | StaticImageData)[]
   >([]);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const [isTradeInModalOpen, setIsTradeInModalOpen] = React.useState(false);
 
   // Handlers
   const handleToggleFavorite = () => {
@@ -133,6 +135,14 @@ const DetailsProductSection: React.FC<{
     setGalleryImages(images);
     setGalleryIndex(index);
     setIsGalleryOpen(true);
+  };
+
+  const handleOpenTradeInModal = () => {
+    setIsTradeInModalOpen(true);
+  };
+
+  const handleCloseTradeInModal = () => {
+    setIsTradeInModalOpen(false);
   };
 
   const hasStock = () => {
@@ -268,6 +278,10 @@ const DetailsProductSection: React.FC<{
         currentIndex={galleryIndex}
         productName={product.name}
       />
+      <TradeInModal
+        isOpen={isTradeInModalOpen}
+        onClose={handleCloseTradeInModal}
+      />
 
       <main
         className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
@@ -331,6 +345,7 @@ const DetailsProductSection: React.FC<{
                     memoriaramOptions={productSelection.availableMemoriaram}
                     selectedMemoriaram={productSelection.selection.selectedMemoriaram}
                     onMemoriaramChange={handleMemoriaramSelection}
+                    onOpenTradeInModal={handleOpenTradeInModal}
                   />
 
                   <DeliveryTradeInOptions
@@ -401,6 +416,7 @@ const DetailsProductSection: React.FC<{
               memoriaramOptions={productSelection.availableMemoriaram}
               selectedMemoriaram={productSelection.selection.selectedMemoriaram}
               onMemoriaramChange={handleMemoriaramSelection}
+              onOpenTradeInModal={handleOpenTradeInModal}
             />
           </div>
         </motion.section>

@@ -118,7 +118,7 @@ export default function FlixmediaDetails({
     script.async = true;
 
     // Configurar atributos data según la guía de Flixmedia
-    script.setAttribute('data-flix-distributor', '9329');
+    script.setAttribute('data-flix-distributor', '17257');
     script.setAttribute('data-flix-language', 'f5');
     script.setAttribute('data-flix-brand', 'Samsung');
     script.setAttribute('data-flix-mpn', actualMpn || '');

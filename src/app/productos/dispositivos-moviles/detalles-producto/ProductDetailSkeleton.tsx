@@ -6,7 +6,7 @@
 export default function ProductDetailSkeleton() {
   return (
     <main
-      className="w-full bg-white min-h-screen"
+      className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
       style={{ fontFamily: "SamsungSharpSans" }}
     >
       {/* DESKTOP: Grid principal */}

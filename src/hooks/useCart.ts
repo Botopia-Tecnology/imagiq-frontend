@@ -15,6 +15,12 @@ export interface CartProduct {
    * Si no se especifica, se asume 4 por defecto.
    */
   puntos_q?: number;
+  /** Stock disponible del producto (desde backend) */
+  stock?: number;
+  /** Precio original sin descuento */
+  originalPrice?: number;
+  /** Ubicación de envío (ej: "Bogotá") */
+  shippingFrom?: string;
 }
 
 interface CartCalculations {

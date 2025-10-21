@@ -95,27 +95,35 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               No hay productos en el carrito.
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {cartProducts.map((product, idx) => (
-                <div
-                  key={product.id}
-                  className={`p-3 transition-all duration-300 ${
-                    addedName === product.name ? "ring-2 ring-blue-400 rounded-lg" : ""
-                  }`}
-                >
+            <>
+              <div className="flex flex-col gap-4">
+                {cartProducts.map((product, idx) => (
                   <ProductCard
+                    key={product.id}
                     nombre={product.name}
                     imagen={product.image}
                     precio={product.price}
+                    precioOriginal={product.originalPrice}
                     cantidad={product.quantity}
+                    stock={product.stock}
+                    ubicacionEnvio={product.shippingFrom}
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
                     }
                     onRemove={() => handleRemove(idx)}
                   />
+                ))}
+              </div>
+
+              {/* Barra de envío gratis */}
+              <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="h-2 flex-1 bg-green-500 rounded-full"></div>
+                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">Envío GRATIS</span>
                 </div>
-              ))}
-            </div>
+                <p className="text-xs text-gray-600">Tu compra califica para envío gratuito</p>
+              </div>
+            </>
           )}
         </section>
         {/* Resumen de compra */}

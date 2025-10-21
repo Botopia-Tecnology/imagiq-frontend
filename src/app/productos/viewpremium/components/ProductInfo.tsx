@@ -31,26 +31,30 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           </div>
           <p className="text-xs text-gray-600 mb-1.5">Selecciona tu dispositivo</p>
           <div className="border-2 border-blue-600 rounded-lg p-2">
-            <div className="font-semibold text-gray-900 mb-0.5 text-xs">{product.name}</div>
-            <div className="text-xs font-semibold text-gray-900">
-              {(() => {
-                const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-                const priceStr = selectedCapacity?.price || product.price || "0";
-                const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
-                const monthlyPrice = Math.round(priceNumber / 24);
-                return `Desde $ ${monthlyPrice.toLocaleString('es-CO')} al mes o`;
-              })()}
+            <div className="flex items-center justify-between">
+              <div className="font-semibold text-gray-900 text-xs">{product.name}</div>
+              <div className="text-right">
+                <div className="text-xs font-semibold text-gray-900">
+                  {(() => {
+                    const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
+                    const priceStr = selectedCapacity?.price || product.price || "0";
+                    const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
+                    const monthlyPrice = Math.round(priceNumber / 24);
+                    return `Desde $ ${monthlyPrice.toLocaleString('es-CO')} al mes o`;
+                  })()}
+                </div>
+                <div className="text-base font-bold text-gray-900">
+                  {(() => {
+                    const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
+                    return selectedCapacity?.price || product.price || "Precio no disponible";
+                  })()}
+                </div>
+              </div>
             </div>
-            <div className="text-base font-bold text-gray-900 mb-0.5">
-              {(() => {
-                const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-                return selectedCapacity?.price || product.price || "Precio no disponible";
-              })()}
-            </div>
-            <p className="text-xs text-blue-600 leading-tight">
-              24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
-            </p>
           </div>
+          <p className="text-xs text-blue-600 leading-tight mt-2">
+            24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
+          </p>
         </div>
 
         {/* Almacenamiento */}
@@ -69,28 +73,33 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
                 const monthlyPrice = Math.round(priceNumber / 24);
                 const formattedLabel = String(capacity.label || "")
-                  .replace(/(\d+)\s*gb\b/i, '$1 GB');
+                  .replace(/(\d+)\s*gb\b/i, '$1 GB') + ' | 12GB';
                 
                 return (
-                  <div
-                    key={index}
-                    onClick={() => setSelectedStorage(capacity.value)}
-                    className={`border-2 rounded-lg p-2 cursor-pointer transition-colors ${
-                      isSelected
-                        ? "border-blue-600 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    <div className="font-semibold text-gray-900 mb-0.5 text-xs">
-                      {formattedLabel}
+                  <div key={index}>
+                    <div
+                      onClick={() => setSelectedStorage(capacity.value)}
+                      className={`border-2 rounded-lg p-2 cursor-pointer transition-colors ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-50"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="font-semibold text-gray-900 text-xs">
+                          {formattedLabel}
+                        </div>
+                        <div className="text-right">
+                          <div className="text-xs font-semibold text-gray-900">
+                            $ {monthlyPrice.toLocaleString('es-CO')} al mes o
+                          </div>
+                          <div className="text-base font-bold text-gray-900">
+                            {capacity.price || "Precio no disponible"}
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs font-semibold text-gray-900">
-                      $ {monthlyPrice.toLocaleString('es-CO')} al mes o
-                    </div>
-                    <div className="text-base font-bold text-gray-900 mb-0.5">
-                      {capacity.price || "Precio no disponible"}
-                    </div>
-                    <p className="text-xs text-blue-600 leading-tight">
+                    <p className="text-xs text-blue-600 leading-tight mt-2">
                       Acumula puntos al comprar + 24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
                     </p>
                   </div>
@@ -99,7 +108,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
 
             {/* Información importante */}
-            <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="mt-2">
               <p className="text-xs font-semibold text-gray-900 mb-0.5">
                 Información importante: Memoria ROM
               </p>
@@ -118,7 +127,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
             <p className="text-xs text-gray-600 mb-1.5">Selecciona el color de tu dispositivo.</p>
             
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-center">
               {product.colors.map((color, index) => {
                 const isSelected = color.name === selectedColor;
                 
@@ -132,9 +141,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     className="flex flex-col items-center cursor-pointer transition-all"
                   >
                     <div 
-                      className={`w-12 h-12 rounded-full border-3 transition-all ${
+                      className={`w-10 h-10 rounded-full border-2 transition-all ${
                         isSelected
-                          ? "border-blue-600 ring-2 ring-blue-600 ring-offset-2 scale-110"
+                          ? "border-blue-600 ring-1 ring-blue-600 ring-offset-1 scale-105"
                           : "border-gray-300 hover:border-gray-400 hover:scale-105"
                       }`}
                       style={{ backgroundColor: color.hex }}
@@ -154,16 +163,6 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         {/* Entregas */}
         <div className="mb-3">
           <p className="text-xs text-gray-600">Entregas: en 1-3 días laborables</p>
-        </div>
-
-        {/* Botones de acción */}
-        <div className="space-y-2">
-          <button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-3 rounded-lg transition-colors text-xs">
-            Comprar ahora
-          </button>
-          <button className="w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold py-2.5 px-3 rounded-lg border-2 border-gray-300 transition-colors text-xs">
-            Agregar al carrito
-          </button>
         </div>
       </div>
     </div>

@@ -19,14 +19,15 @@ import { Heart, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
+import { useProductSelection } from "@/hooks/useProductSelection";
 import {
   cleanProductName,
   calculateDynamicPrices,
   calculateSavings,
-  validateCartSku,
 } from "./utils/productCardHelpers";
 import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
+import { ProductApiData } from "@/lib/api";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -86,6 +87,8 @@ export interface ProductCardProps {
   selectedCapacity?: ProductCapacity;
   setSelectedCapacity?: (capacity: ProductCapacity) => void;
   puntos_q?: number; // Puntos Q acumulables por producto (valor fijo por ahora)
+  // Datos de la API para el nuevo sistema de selección
+  apiProduct?: ProductApiData;
 }
 
 
@@ -105,18 +108,44 @@ export default function ProductCard({
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
   stock = 1, // Valor por defecto si no se proporciona
+  apiProduct, // Nuevo prop para el sistema de selección inteligente
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageIndex] = useState(0);
 
+  // Hook para manejo inteligente de selección de productos
+  const productSelection = useProductSelection(apiProduct || {
+    codigoMarketBase: id,
+    codigoMarket: [],
+    nombreMarket: name,
+    categoria: '',
+    subcategoria: '',
+    modelo: '',
+    color: [],
+    capacidad: [],
+    descGeneral: null,
+    sku: [],
+    ean: [],
+    desDetallada: [],
+    stock: [],
+    urlImagenes: [],
+    urlRender3D: [],
+    imagePreviewUrl: [],
+    imageDetailsUrls: [],
+    precioNormal: [],
+    precioeccommerce: [],
+    fechaInicioVigencia: [],
+    fechaFinalVigencia: []
+  });
+
   // Verificar si el producto está sin stock
-  const isOutOfStock = stock === 0;
+  const isOutOfStock = productSelection.selectedStock === 0 || stock === 0;
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
 
-  // Si el estado viene de props, úsalo. Si no, usa local.
+  // Sistema de selección: usar el nuevo hook si está disponible, sino usar el sistema legacy
   const [selectedColorLocal, setSelectedColorLocal] =
     useState<ProductColor | null>(
       colors && colors.length > 0 ? colors[0] : null
@@ -128,6 +157,12 @@ export default function ProductCard({
       capacities && capacities.length > 0 ? capacities[0] : null
     );
   const selectedCapacity = selectedCapacityProp ?? selectedCapacityLocal;
+
+  // Usar datos del nuevo sistema si está disponible
+  const currentSku = productSelection.selectedSku || selectedColor?.sku;
+  const currentCodigoMarket = productSelection.selectedCodigoMarket || null;
+  const currentPrice = productSelection.selectedPrice || null;
+  const currentOriginalPrice = productSelection.selectedOriginalPrice || null;
 
   // Obtener la imagen del color seleccionado o usar la imagen por defecto
   const currentImage = useMemo(() => {
@@ -154,7 +189,14 @@ export default function ProductCard({
   }, [productImages]);
 
   const handleColorSelect = (color: ProductColor) => {
-    setSelectedColorLocal(color);
+    if (apiProduct) {
+      // Usar el nuevo sistema de selección
+      productSelection.selectColor(color.label);
+    } else {
+      // Usar el sistema legacy
+      setSelectedColorLocal(color);
+    }
+    
     posthogUtils.capture("product_color_selected", {
       product_id: id,
       product_name: name,
@@ -166,7 +208,14 @@ export default function ProductCard({
   };
 
   const handleCapacitySelect = (capacity: ProductCapacity) => {
-    setSelectedCapacityLocal(capacity);
+    if (apiProduct) {
+      // Usar el nuevo sistema de selección
+      productSelection.selectCapacity(capacity.label);
+    } else {
+      // Usar el sistema legacy
+      setSelectedCapacityLocal(capacity);
+    }
+    
     posthogUtils.capture("product_capacity_selected", {
       product_id: id,
       product_name: name,
@@ -176,8 +225,8 @@ export default function ProductCard({
     });
   };
 
-  // Calcular precios dinámicos basados en capacidad seleccionada (prioridad) o color
-  const { currentPrice, currentOriginalPrice } =
+  // Calcular precios dinámicos: usar el nuevo sistema si está disponible, sino usar el legacy
+  const { currentPrice: legacyPrice, currentOriginalPrice: legacyOriginalPrice } =
     calculateDynamicPrices(
       selectedCapacity,
       selectedColor,
@@ -185,6 +234,10 @@ export default function ProductCard({
       originalPrice,
       discount
     );
+
+  // Usar precios del nuevo sistema si están disponibles
+  const finalCurrentPrice = currentPrice ? `$ ${Math.round(currentPrice).toLocaleString('es-CO')}` : legacyPrice;
+  const finalCurrentOriginalPrice = currentOriginalPrice ? `$ ${Math.round(currentOriginalPrice).toLocaleString('es-CO')}` : legacyOriginalPrice;
 
   const handleAddToCart = async () => {
     if (isLoading) {
@@ -194,8 +247,11 @@ export default function ProductCard({
     setIsLoading(true);
 
     try {
-      // Validación estricta: debe existir un SKU válido del color seleccionado
-      if (!validateCartSku(selectedColor, id, name, colors) || !selectedColor) {
+      // Validación estricta: debe existir un SKU válido
+      const skuToUse = currentSku || selectedColor?.sku;
+      const eanToUse = productSelection.selectedVariant?.ean || selectedColor?.ean || '';
+      
+      if (!skuToUse) {
         setIsLoading(false);
         return;
       }
@@ -203,9 +259,9 @@ export default function ProductCard({
       posthogUtils.capture("add_to_cart_click", {
         product_id: id,
         product_name: name,
-        selected_color: selectedColor.name,
-        selected_color_sku: selectedColor.sku,
-        selected_color_ean: selectedColor.ean,
+        selected_color: selectedColor?.name || productSelection.selection.selectedColor,
+        selected_color_sku: skuToUse,
+        selected_color_ean: eanToUse,
         source: "product_card",
       });
 
@@ -215,12 +271,12 @@ export default function ProductCard({
         name,
         image: typeof image === "string" ? image : image.src ?? "",
         price:
-          typeof currentPrice === "string"
-            ? Number.parseInt(currentPrice.replaceAll(/[^\d]/g, ""))
-            : currentPrice ?? 0,
+          typeof finalCurrentPrice === "string"
+            ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
+            : finalCurrentPrice ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
-        sku: selectedColor.sku, // SKU estricto del color seleccionado
-        ean: selectedColor.ean, // SKU estricto del color seleccionado
+        sku: skuToUse, // SKU del sistema seleccionado
+        ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
       });
     } finally {
@@ -342,7 +398,7 @@ export default function ProductCard({
       {/* Contenido del producto */}
       <div className="py-3 space-y-2">
         {/* Título del producto */}
-        <div className="h-[32px] px-3">
+        <div className="px-3">
           <h3
             className={cn(
               "text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap",
@@ -363,13 +419,40 @@ export default function ProductCard({
               {cleanProductName(name)}
             </button>
           </h3>
+          
+          {/* SKU y CodigoMarket dinámicos */}
+          {(currentSku || currentCodigoMarket) && (
+            <div className="mt-1 space-y-0.5">
+              {currentSku && (
+                <p className="text-xs text-gray-500 font-medium">
+                  SKU: {currentSku}
+                </p>
+              )}
+              {currentCodigoMarket && (
+                <p className="text-xs text-gray-500 font-medium">
+                  Código: {currentCodigoMarket}
+                </p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Selector de colores */}
         <div className="h-[66px] px-3">
           <ColorSelector
-            colors={colors}
-            selectedColor={selectedColor}
+            colors={apiProduct ? 
+              productSelection.availableColors.map(colorName => {
+                // Crear un ProductColor basado en el nombre del color
+                const normalizedColor = colorName.toLowerCase().trim();
+                const colorInfo = colors.find(c => c.label.toLowerCase() === normalizedColor) || 
+                  { name: normalizedColor.replaceAll(/\s+/g, '-'), hex: '#808080', label: colorName, sku: '', ean: '' };
+                return colorInfo;
+              }) : colors
+            }
+            selectedColor={apiProduct ? 
+              colors.find(c => c.label === productSelection.selection.selectedColor) || null : 
+              selectedColor
+            }
             isOutOfStock={isOutOfStock}
             onColorSelect={handleColorSelect}
             onShowMore={handleCardClick}
@@ -379,8 +462,22 @@ export default function ProductCard({
         {/* Selector de capacidad */}
         <div className="h-[60px] px-3">
           <CapacitySelector
-            capacities={capacities || []}
-            selectedCapacity={selectedCapacity}
+            capacities={apiProduct ? 
+              productSelection.availableCapacities.map(capacityName => {
+                // Crear un ProductCapacity basado en el nombre de la capacidad
+                const capacityInfo = capacities?.find(c => c.label === capacityName) || 
+                  { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
+                return capacityInfo;
+              }) : (capacities || [])
+            }
+            selectedCapacity={apiProduct ? 
+              productSelection.availableCapacities.map(capacityName => {
+                const capacityInfo = capacities?.find(c => c.label === capacityName) || 
+                  { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
+                return capacityInfo;
+              }).find(c => c.label === productSelection.selection.selectedCapacity) || null : 
+              selectedCapacity
+            }
             isOutOfStock={isOutOfStock}
             onCapacitySelect={handleCapacitySelect}
           />
@@ -388,7 +485,7 @@ export default function ProductCard({
 
         {/* Precio */}
         <div className="h-[150px] px-3 flex flex-col justify-between">
-          {currentPrice && (
+          {finalCurrentPrice && (
             <div className="space-y-1">
               {/* Precio principal */}
               <div
@@ -397,14 +494,14 @@ export default function ProductCard({
                   isOutOfStock ? "text-gray-400" : "text-black"
                 )}
               >
-                {currentPrice}
+                {finalCurrentPrice}
               </div>
 
               {/* Precio original y ahorro (solo si hay descuento) */}
               {(() => {
                 const { hasSavings, savings } = calculateSavings(
-                  currentPrice,
-                  currentOriginalPrice
+                  finalCurrentPrice,
+                  finalCurrentOriginalPrice
                 );
 
                 if (!hasSavings) return null;
@@ -417,7 +514,7 @@ export default function ProductCard({
                         isOutOfStock ? "text-gray-300" : "text-gray-500"
                       )}
                     >
-                      {currentOriginalPrice}
+                      {finalCurrentOriginalPrice}
                     </span>
                     <span
                       className={cn(

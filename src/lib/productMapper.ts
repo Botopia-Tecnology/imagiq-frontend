@@ -241,6 +241,8 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     sku: apiProduct.sku?.join(', ') || null,
     ean: apiProduct.ean?.join(', ') || null,
     detailedDescription: apiProduct.desDetallada?.join(' ') || null,
+    // Pasar los datos de la API para el nuevo sistema de selección
+    apiProduct,
   };
 }
 

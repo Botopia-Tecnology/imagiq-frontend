@@ -239,6 +239,7 @@ export interface ProductApiData {
   ean:string[];
   desDetallada: string[];
   stock: number[];
+  stockTotal: number[];
   urlImagenes: string[];
   urlRender3D: string[];
   imagePreviewUrl: string[];

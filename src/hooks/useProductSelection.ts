@@ -19,6 +19,7 @@ export interface ProductVariant {
   precioNormal: number;
   precioeccommerce: number;
   stock: number;
+  stockTotal: number;
   imagePreviewUrl?: string;
 }
 
@@ -45,6 +46,7 @@ export interface UseProductSelectionReturn {
   selectedOriginalPrice: number | null;
   selectedDiscount: number | null;
   selectedStock: number | null;
+  selectedStockTotal: number | null;
   selectedVariant: ProductVariant | null;
   
   // Funciones de selección
@@ -72,7 +74,8 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
       apiProduct.codigoMarket.length,
       apiProduct.precioNormal.length,
       apiProduct.precioeccommerce.length,
-      apiProduct.stock.length
+      apiProduct.stock.length,
+      apiProduct.stockTotal.length
     );
     
     for (let i = 0; i < maxLength; i++) {
@@ -87,6 +90,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
         precioNormal: apiProduct.precioNormal[i] || 0,
         precioeccommerce: apiProduct.precioeccommerce[i] || 0,
         stock: apiProduct.stock[i] || 0,
+        stockTotal: apiProduct.stockTotal[i] || 0,
         imagePreviewUrl: apiProduct.imagePreviewUrl?.[i]
       });
     }
@@ -248,6 +252,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     ? Math.round(((selectedOriginalPrice - selectedPrice) / selectedOriginalPrice) * 100)
     : null;
   const selectedStock = selectedVariant?.stock || null;
+  const selectedStockTotal = selectedVariant?.stockTotal || null;
 
   // Funciones de selección
   const selectColor = useCallback((color: string) => {
@@ -360,6 +365,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     selectedOriginalPrice,
     selectedDiscount,
     selectedStock,
+    selectedStockTotal,
     selectedVariant,
     selectColor,
     selectCapacity,

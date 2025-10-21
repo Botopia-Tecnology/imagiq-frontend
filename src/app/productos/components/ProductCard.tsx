@@ -124,11 +124,13 @@ export default function ProductCard({
     modelo: '',
     color: [],
     capacidad: [],
+    memoriaram: [],
     descGeneral: null,
     sku: [],
     ean: [],
     desDetallada: [],
     stock: [],
+    stockTotal: [],
     urlImagenes: [],
     urlRender3D: [],
     imagePreviewUrl: [],
@@ -140,7 +142,7 @@ export default function ProductCard({
   });
 
   // Verificar si el producto está sin stock
-  const isOutOfStock = productSelection.selectedStock === 0 || stock === 0;
+  const isOutOfStock = productSelection.selectedStockTotal === 0 || stock === 0;
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();

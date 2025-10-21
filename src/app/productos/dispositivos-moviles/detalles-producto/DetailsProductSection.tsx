@@ -42,6 +42,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     ean: [],
     desDetallada: [],
     stock: [],
+    stockTotal: [],
     urlImagenes: [],
     urlRender3D: [],
     imagePreviewUrl: [],
@@ -101,7 +102,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   const handleImageClick = (images: (string | StaticImageData)[], index: number) => { setGalleryImages(images); setGalleryIndex(index); setIsGalleryOpen(true); };
 
   const hasStock = () => {
-    return productSelection.selectedStock !== null && productSelection.selectedStock > 0;
+    return productSelection.selectedStockTotal !== null && productSelection.selectedStockTotal > 0;
   };
 
   const handleAddToCart = async () => {

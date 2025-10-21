@@ -285,7 +285,8 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
   
   // Agrupar precios por color
   const MAX_PRICE = 100000000; // Filtrar precios corruptos
-  apiProduct.color.forEach((color, index) => {
+  for (let index = 0; index < apiProduct.color.length; index++) {
+    const color = apiProduct.color[index];
     const precioNormal = apiProduct.precioNormal[index] || 0;
     const precioeccommerce = apiProduct.precioeccommerce[index] || 0;
 
@@ -307,10 +308,10 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       colorData.preciosDescuento.push(precioeccommerce);
       colorData.indices.push(index);
     }
-  });
+  }
   
   // Convertir el mapa a array de ProductColor
-  colorPriceMap.forEach(({ color, preciosNormales, preciosDescuento, indices }) => {
+  for (const { color, preciosNormales, preciosDescuento, indices } of colorPriceMap.values()) {
     // Normalizar el color para búsqueda consistente
     const normalizedColor = color.toLowerCase().trim();
     const colorInfo = colorMap[normalizedColor] || { hex: '#808080', label: color };
@@ -347,7 +348,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     const firstIndex = indices[0];
     
     colorsWithPrices.push({
-      name: normalizedColor.replace(/\s+/g, '-'),
+      name: normalizedColor.replaceAll(/\s+/g, '-'),
       hex: colorInfo.hex,
       label: colorInfo.label,
       price,
@@ -357,7 +358,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       ean: apiProduct.ean[firstIndex],
       imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined
     });
-  });
+  }
   
   return colorsWithPrices;
 }

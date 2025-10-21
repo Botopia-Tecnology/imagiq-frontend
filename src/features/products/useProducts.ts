@@ -14,9 +14,7 @@ import { useState, useEffect, useCallback } from "react";
 import {
   productEndpoints,
   ProductFilterParams,
-  ProductApiResponse,
   FavoriteFilterParams,
-  FavoriteApiResponse,
 } from "@/lib/api";
 import {
   mapApiProductsToFrontend,
@@ -177,7 +175,7 @@ export const useProducts = (
         const response = await productEndpoints.getFiltered(apiParams);
 
         if (response.success && response.data) {
-          const apiData = response.data as ProductApiResponse;
+          const apiData = response.data;
           const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
           if (append) {
@@ -223,7 +221,7 @@ export const useProducts = (
         const response = await productEndpoints.search(query, searchParams);
 
         if (response.success && response.data) {
-          const apiData = response.data as ProductApiResponse;
+          const apiData = response.data;
           const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
           setProducts(mappedProducts);
@@ -358,7 +356,7 @@ export const useProduct = (productId: string) => {
         const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
 
         if (response.success && response.data) {
-          const apiData = response.data as ProductApiResponse;
+          const apiData = response.data;
           const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
           if (mappedProducts.length > 0) {
@@ -459,7 +457,7 @@ export const useFavorites = (userId?: string,
 
           if (response.success && response.data) {
            
-            const apiData = response.data as FavoriteApiResponse;
+            const apiData = response.data;
             const mapped = mapApiProductsToFrontend(apiData.products);
 
             if (append) {
@@ -672,7 +670,7 @@ export const useRecommendations = () => {
       // Por ahora obtener productos con descuento como recomendaciones
       const response = await productEndpoints.getOffers();
       if (response.success && response.data) {
-        const apiData = response.data as ProductApiResponse;
+        const apiData = response.data;
         const mappedProducts = mapApiProductsToFrontend(apiData.products);
         setRecommendations(mappedProducts.slice(0, 8)); // Limitar a 8 recomendaciones
       }

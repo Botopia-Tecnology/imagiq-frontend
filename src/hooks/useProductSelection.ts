@@ -133,67 +133,20 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     }
   }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
 
-  // Colores únicos disponibles
-  const availableColors = useMemo(() => {
-    const colors = new Set<string>();
-    
-    allVariants.forEach(variant => {
-      if (variant.color && variant.color.trim() !== '') {
-        colors.add(variant.color);
-      }
-    });
-    
-    return Array.from(colors);
-  }, [allVariants]);
 
-  // Capacidades únicas disponibles
-  const availableCapacities = useMemo(() => {
-    const capacities = new Set<string>();
-    
-    allVariants.forEach(variant => {
-      if (variant.capacity && variant.capacity.trim() !== '' && variant.capacity.toLowerCase() !== 'no aplica') {
-        capacities.add(variant.capacity);
-      }
-    });
-    
-    return Array.from(capacities);
-  }, [allVariants]);
-
-  // Memoria RAM única disponible
-  const availableMemoriaram = useMemo(() => {
-    const memoriaram = new Set<string>();
-    
-    allVariants.forEach(variant => {
-      if (variant.memoriaram && variant.memoriaram.trim() !== '' && variant.memoriaram.toLowerCase() !== 'no aplica') {
-        memoriaram.add(variant.memoriaram);
-      }
-    });
-    
-    return Array.from(memoriaram);
-  }, [allVariants]);
-
-  // Filtrar variantes basado en las selecciones actuales
-  const filteredVariants = useMemo(() => {
-    return allVariants.filter(variant => {
-      const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
-      const capacityMatch = !selection.selectedCapacity || variant.capacity === selection.selectedCapacity;
-      const memoriaramMatch = !selection.selectedMemoriaram || variant.memoriaram === selection.selectedMemoriaram;
-      return colorMatch && capacityMatch && memoriaramMatch;
-    });
-  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
 
   // Colores disponibles basado en la capacidad y memoria RAM seleccionadas
   const availableColorsFiltered = useMemo(() => {
     const colors = new Set<string>();
     
-    allVariants.forEach(variant => {
+    for (const variant of allVariants) {
       const capacityMatch = !selection.selectedCapacity || variant.capacity === selection.selectedCapacity;
       const memoriaramMatch = !selection.selectedMemoriaram || variant.memoriaram === selection.selectedMemoriaram;
       
       if (capacityMatch && memoriaramMatch && variant.color && variant.color.trim() !== '') {
         colors.add(variant.color);
       }
-    });
+    }
     
     return Array.from(colors);
   }, [allVariants, selection.selectedCapacity, selection.selectedMemoriaram]);
@@ -202,14 +155,14 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
   const availableCapacitiesFiltered = useMemo(() => {
     const capacities = new Set<string>();
     
-    allVariants.forEach(variant => {
+    for (const variant of allVariants) {
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const memoriaramMatch = !selection.selectedMemoriaram || variant.memoriaram === selection.selectedMemoriaram;
       
       if (colorMatch && memoriaramMatch && variant.capacity && variant.capacity.trim() !== '' && variant.capacity.toLowerCase() !== 'no aplica') {
         capacities.add(variant.capacity);
       }
-    });
+    }
     
     return Array.from(capacities);
   }, [allVariants, selection.selectedColor, selection.selectedMemoriaram]);
@@ -218,14 +171,14 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
   const availableMemoriaramFiltered = useMemo(() => {
     const memoriaram = new Set<string>();
     
-    allVariants.forEach(variant => {
+    for (const variant of allVariants) {
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const capacityMatch = !selection.selectedCapacity || variant.capacity === selection.selectedCapacity;
       
       if (colorMatch && capacityMatch && variant.memoriaram && variant.memoriaram.trim() !== '' && variant.memoriaram.toLowerCase() !== 'no aplica') {
         memoriaram.add(variant.memoriaram);
       }
-    });
+    }
     
     return Array.from(memoriaram);
   }, [allVariants, selection.selectedColor, selection.selectedCapacity]);

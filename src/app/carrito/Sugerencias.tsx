@@ -19,10 +19,14 @@ export default function Sugerencias({
       try {
         const response = await productEndpoints.getFiltered({
           subcategoria: "Accesorios",
-          limit: 3,
+          limit: 10, // Traer más para filtrar
         });
         if (response.success && response.data?.products) {
-          setSugerencias(response.data.products);
+          // Filtrar solo productos con imagen y tomar los primeros 3
+          const productosConImagen = response.data.products
+            .filter(p => p.imagePreviewUrl?.[0] && p.imagePreviewUrl[0].trim() !== '')
+            .slice(0, 3);
+          setSugerencias(productosConImagen);
         }
       } catch (error) {
         console.error("Error fetching accessories:", error);
@@ -45,6 +49,11 @@ export default function Sugerencias({
     );
   }
 
+  // No mostrar la sección si no hay sugerencias con imágenes
+  if (sugerencias.length === 0) {
+    return null;
+  }
+
   return (
     <section className="bg-[#F4F4F4] rounded-2xl p-8 shadow-md mt-8">
       <h2 className="font-bold text-xl mb-6">Agrega a tu compra</h2>
@@ -56,19 +65,13 @@ export default function Sugerencias({
           >
             <div className="relative w-28 h-28 mb-2 flex items-center justify-center">
               <div className="w-full h-full rounded-xl bg-white flex items-center justify-center overflow-hidden">
-                {producto.imagePreviewUrl?.[0] ? (
-                  <Image
-                    src={getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog")}
-                    alt={producto.desDetallada[0] || producto.nombreMarket}
-                    width={112}
-                    height={112}
-                    className="object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <span className="text-gray-400 text-xs">Sin imagen</span>
-                  </div>
-                )}
+                <Image
+                  src={getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog")}
+                  alt={producto.desDetallada[0] || producto.nombreMarket}
+                  width={112}
+                  height={112}
+                  className="object-contain"
+                />
               </div>
               <button
                 className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-blue-600 transition"

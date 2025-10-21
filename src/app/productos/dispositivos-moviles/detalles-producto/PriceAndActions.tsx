@@ -1,11 +1,11 @@
 import React from "react";
-import type { DeviceVariant } from "@/hooks/useDeviceVariants";
+import type { ProductVariant } from "@/hooks/useProductSelection";
 
 interface PriceAndActionsProps {
   currentPrice: number;
   originalPrice?: number;
   discount?: number;
-  selectedVariant?: DeviceVariant | null;
+  selectedVariant?: ProductVariant | null;
   loading: boolean;
   onBuyNow: () => void;
   onAddToCart: () => void;

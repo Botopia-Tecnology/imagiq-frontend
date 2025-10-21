@@ -168,11 +168,18 @@ export default function ProductCard({
 
   // Obtener la imagen del color seleccionado o usar la imagen por defecto
   const currentImage = useMemo(() => {
-    if (selectedColor?.imagePreviewUrl) {
+    
+    // Si hay datos de API, usar la imagen de la variante seleccionada
+    if (apiProduct && productSelection.selectedVariant?.imagePreviewUrl) {
+      return productSelection.selectedVariant.imagePreviewUrl;
+    }
+    // Si no hay datos de API, usar el sistema legacy
+    if (!apiProduct && selectedColor?.imagePreviewUrl) {
       return selectedColor.imagePreviewUrl;
     }
+    // Fallback a la imagen por defecto
     return image;
-  }, [selectedColor, image]);
+  }, [apiProduct, productSelection.selectedVariant, selectedColor, image]);
 
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
   const productImages = useMemo(

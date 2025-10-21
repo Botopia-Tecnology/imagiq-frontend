@@ -7,6 +7,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ProductApiData } from '@/lib/api';
+import { colorMap } from '@/lib/productMapper';
 
 export interface ProductVariant {
   index: number;
@@ -29,6 +30,18 @@ export interface SelectionState {
   selectedCapacity: string | null;
   selectedMemoriaram: string | null;
   selectedVariant: ProductVariant | null;
+}
+
+// Interfaces compatibles para componentes legacy
+export interface ColorOption {
+  color: string;
+  hex: string;
+  variants: ProductVariant[];
+}
+
+export interface StorageOption {
+  capacidad: string;
+  variants: ProductVariant[];
 }
 
 export interface UseProductSelectionReturn {
@@ -56,11 +69,17 @@ export interface UseProductSelectionReturn {
   selectMemoriaram: (memoriaram: string) => void;
   resetSelection: () => void;
   
+  // Funciones helper para compatibilidad con componentes legacy
+  getColorOptions: () => ColorOption[];
+  getStorageOptions: () => StorageOption[];
+  getSelectedColorOption: () => ColorOption | null;
+  getSelectedStorageOption: () => StorageOption | null;
+  
   // Información de debug
   allVariants: ProductVariant[];
 }
 
-export function useProductSelection(apiProduct: ProductApiData): UseProductSelectionReturn {  
+export function useProductSelection(apiProduct: ProductApiData, productColors?: Array<{label: string, hex: string}>): UseProductSelectionReturn {  
   // Crear todas las variantes del producto basadas en los arrays indexados
   const allVariants = useMemo((): ProductVariant[] => {
     const variants: ProductVariant[] = [];
@@ -309,6 +328,46 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     });
   }, []);
 
+  //START
+  // Funciones helper para compatibilidad con componentes legacy
+  const getColorOptions = useCallback((): ColorOption[] => {
+  
+    
+    return availableColorsFiltered.map(color => {
+      // Usar el colorMap de productMapper para obtener el hex correcto
+      const colorInfo = colorMap[color.toLowerCase()];
+      const hex = colorInfo?.hex || '#808080';
+      
+      console.log(`Color mapping: "${color}" -> hex: "${hex}" (found: ${!!colorInfo})`);
+      
+      return {
+        color,
+        hex,
+        variants: allVariants.filter(v => v.color === color)
+      };
+    });
+  }, [availableColorsFiltered, allVariants]);
+
+  const getStorageOptions = useCallback((): StorageOption[] => {
+    return availableCapacitiesFiltered.map(capacity => ({
+      capacidad: capacity,
+      variants: allVariants.filter(v => v.capacity === capacity)
+    }));
+  }, [availableCapacitiesFiltered, allVariants]);
+
+  const getSelectedColorOption = useCallback((): ColorOption | null => {
+    if (!selection.selectedColor) return null;
+    const colorOptions = getColorOptions();
+    return colorOptions.find(option => option.color === selection.selectedColor) || null;
+  }, [selection.selectedColor, getColorOptions]);
+
+  const getSelectedStorageOption = useCallback((): StorageOption | null => {
+    if (!selection.selectedCapacity) return null;
+    const storageOptions = getStorageOptions();
+    return storageOptions.find(option => option.capacidad === selection.selectedCapacity) || null;
+  }, [selection.selectedCapacity, getStorageOptions]);
+
+  //END
   return {
     selection,
     availableColors: availableColorsFiltered,
@@ -326,6 +385,10 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     selectCapacity,
     selectMemoriaram,
     resetSelection,
+    getColorOptions,
+    getStorageOptions,
+    getSelectedColorOption,
+    getSelectedStorageOption,
     allVariants
   };
 }

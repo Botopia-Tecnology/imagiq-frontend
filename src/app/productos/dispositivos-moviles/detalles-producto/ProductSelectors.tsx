@@ -1,6 +1,6 @@
 import React from "react";
 import ColorSelector from "./ColorSelector";
-import type { ColorOption, StorageOption } from "@/hooks/useDeviceVariants";
+import type { ColorOption, StorageOption } from "@/hooks/useProductSelection";
 
 interface ProductSelectorsProps {
   // Color

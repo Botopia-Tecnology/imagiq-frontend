@@ -309,26 +309,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     onToggleFavorite={handleToggleFavorite}
                   />
                   <ProductSelectors
-                    colorOptions={productSelection.availableColors.map(colorName => ({
-                      color: colorName,
-                      hex: product.colors?.find(c => c.label === colorName)?.hex || '#000000',
-                      variants: []
-                    }))}
-                    selectedColor={productSelection.selection.selectedColor ? {
-                      color: productSelection.selection.selectedColor,
-                      hex: product.colors?.find(c => c.label === productSelection.selection.selectedColor)?.hex || '#000000',
-                      variants: []
-                    } : null}
+                    colorOptions={productSelection.getColorOptions()}
+                    selectedColor={productSelection.getSelectedColorOption()}
                     onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
                     hasStock={hasStock}
-                    storageOptions={productSelection.availableCapacities.map(capacityName => ({
-                      capacidad: capacityName,
-                      variants: []
-                    }))}
-                    selectedStorage={productSelection.selection.selectedCapacity ? {
-                      capacidad: productSelection.selection.selectedCapacity,
-                      variants: []
-                    } : null}
+                    storageOptions={productSelection.getStorageOptions()}
+                    selectedStorage={productSelection.getSelectedStorageOption()}
                     onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
                     variantsLoading={false}
                     memoriaramOptions={productSelection.availableMemoriaram}
@@ -387,32 +373,18 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               currentPrice={getCurrentPrice()}
               originalPrice={originalPrice}
               discount={discountAmount}
-              selectedVariant={productSelection.selectedVariant as any}
+              selectedVariant={productSelection.selectedVariant}
               loading={loading}
               onBuyNow={handleBuyNow}
               onAddToCart={handleAddToCart}
             />
             <ProductSelectors
-              colorOptions={productSelection.availableColors.map(colorName => ({
-                color: colorName,
-                hex: product.colors?.find(c => c.label === colorName)?.hex || '#000000',
-                variants: []
-              }))}
-              selectedColor={productSelection.selection.selectedColor ? {
-                color: productSelection.selection.selectedColor,
-                hex: product.colors?.find(c => c.label === productSelection.selection.selectedColor)?.hex || '#000000',
-                variants: []
-              } : null}
+              colorOptions={productSelection.getColorOptions()}
+              selectedColor={productSelection.getSelectedColorOption()}
               onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
               hasStock={hasStock}
-              storageOptions={productSelection.availableCapacities.map(capacityName => ({
-                capacidad: capacityName,
-                variants: []
-              }))}
-              selectedStorage={productSelection.selection.selectedCapacity ? {
-                capacidad: productSelection.selection.selectedCapacity,
-                variants: []
-              } : null}
+              storageOptions={productSelection.getStorageOptions()}
+              selectedStorage={productSelection.getSelectedStorageOption()}
               onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
               variantsLoading={false}
               memoriaramOptions={productSelection.availableMemoriaram}

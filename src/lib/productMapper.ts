@@ -13,7 +13,7 @@ import emptyImg from '@/img/empty.jpeg';
 
 
 // Mapeo de colores robusto basado en colores reales de Samsung y otros fabricantes
-const colorMap: Record<string, { hex: string; label: string }> = {
+export const colorMap: Record<string, { hex: string; label: string }> = {
   // === NEGROS Y GRISES ===
   'negro': { hex: '#000000', label: 'Negro' },
   'black': { hex: '#000000', label: 'Negro' },

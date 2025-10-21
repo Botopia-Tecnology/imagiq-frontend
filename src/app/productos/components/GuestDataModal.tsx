@@ -64,7 +64,7 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({
 
   return (
     <button
-      className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50"
+      className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-start justify-center z-50 mt-50"
       onClick={onCancel}
     >
       <div

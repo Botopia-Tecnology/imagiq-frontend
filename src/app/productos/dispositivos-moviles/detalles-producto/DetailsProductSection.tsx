@@ -12,6 +12,7 @@ import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import { getProductSeries, getSeriesHref } from "./utils/productSeriesUtils";
+import { posthogUtils } from "@/lib/posthogClient";
 
 // Components
 import StickyPriceBar from "./StickyPriceBar";
@@ -25,6 +26,7 @@ import PriceAndActions from "./PriceAndActions";
 import DeviceCarousel from "./DeviceCarousel";
 import AddiFinancing from "./AddiFinancing";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
+import GuestDataModal from "../../components/GuestDataModal";
 
 const DetailsProductSection: React.FC<{
   product: ProductCardProps;
@@ -103,13 +105,84 @@ const DetailsProductSection: React.FC<{
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const [isTradeInModalOpen, setIsTradeInModalOpen] = React.useState(false);
 
+  // Estados para modal de usuario invitado
+  const [showGuestModal, setShowGuestModal] = React.useState(false);
+  const [pendingFavoriteAction, setPendingFavoriteAction] = React.useState<'add' | 'remove' | null>(null);
+  const [userInfo, setUserInfo] = React.useState<{
+    id?: string;
+    nombre?: string;
+    apellido?: string;
+    email?: string;
+    telefono?: string;
+    numero_documento?: string | null;
+    rol?: number;
+  } | null>(null);
+
   // Handlers
   const handleToggleFavorite = () => {
+    const rawUser = localStorage.getItem("imagiq_user");
+    const parsed = rawUser ? JSON.parse(rawUser) : null;
+    setUserInfo(parsed);
+
     if (isFavorite) {
-      removeFromFavorites(product.id);
+      // Remover de favoritos
+      if (parsed?.id) {
+        removeFromFavorites(product.id, parsed);
+
+        // Tracking de evento
+        posthogUtils.capture("toggle_favorite", {
+          product_id: product.id,
+          product_name: product.name,
+          action: "remove",
+          source: "details_product_section",
+        });
+      }
     } else {
-      addToFavorites(product.id);
+      // Agregar a favoritos
+      if (parsed?.id) {
+        addToFavorites(product.id, parsed);
+
+        // Tracking de evento
+        posthogUtils.capture("toggle_favorite", {
+          product_id: product.id,
+          product_name: product.name,
+          action: "add",
+          source: "details_product_section",
+        });
+      } else {
+        // Mostrar modal y guardar la acción pendiente
+        setPendingFavoriteAction('add');
+        setShowGuestModal(true);
+      }
     }
+  };
+
+  // Handler para cuando el usuario invitado completa el formulario
+  const handleGuestSubmit = async (guestUserData: {
+    nombre: string;
+    apellido: string;
+    email: string;
+    telefono: string;
+  }) => {
+    setShowGuestModal(false);
+
+    if (pendingFavoriteAction === 'add') {
+      const newUserInfo = await addToFavorites(product.id, guestUserData);
+      if (newUserInfo) {
+        setUserInfo(newUserInfo);
+      }
+
+      // Tracking de evento
+      posthogUtils.capture("toggle_favorite", {
+        product_id: product.id,
+        product_name: product.name,
+        action: "add",
+        source: "details_product_section",
+        is_guest: true,
+      });
+    }
+
+    setPendingFavoriteAction(null);
   };
 
   // Funciones de manejo de selección compatibles con el diseño actual
@@ -282,6 +355,17 @@ const DetailsProductSection: React.FC<{
         isOpen={isTradeInModalOpen}
         onClose={handleCloseTradeInModal}
       />
+
+      {/* Modal para datos de usuario invitado */}
+      {showGuestModal && (
+        <GuestDataModal
+          onSubmit={handleGuestSubmit}
+          onCancel={() => {
+            setShowGuestModal(false);
+            setPendingFavoriteAction(null);
+          }}
+        />
+      )}
 
       <main
         className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"

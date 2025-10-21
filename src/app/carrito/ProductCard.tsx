@@ -54,7 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           {/* Contenido derecha */}
           <div className="flex-1 min-w-0 flex flex-col">
             {/* Nombre truncado */}
-            <h3 className="text-sm text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
+            <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
 
             {/* Botón Eliminar */}
             <button

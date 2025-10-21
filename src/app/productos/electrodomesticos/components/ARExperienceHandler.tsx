@@ -20,7 +20,7 @@ export default  function ARExperienceHandler({glbUrl,
   return (
     <>
       {/* Botón House (solo en desktop) */}
-      <div className="hidden md:block w-fit ml-auto mr-4 mt-4">
+      <div className="hidden md:block w-fit ml-4 mt-4">
         <ButtonLabel onClick={() => setModalOpen(true)} title='Mira el objeto en tu espacio' Icon={BsFillHouseDoorFill}/>
       </div>
 

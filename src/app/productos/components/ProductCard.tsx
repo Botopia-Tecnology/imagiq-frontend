@@ -276,6 +276,12 @@ export default function ProductCard({
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentPrice ?? 0,
+        originalPrice:
+          typeof finalCurrentOriginalPrice === "string"
+            ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
+            : finalCurrentOriginalPrice,
+        stock,
+        shippingFrom: "Bogotá",
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: skuToUse, // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado

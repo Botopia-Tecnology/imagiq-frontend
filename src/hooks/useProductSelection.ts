@@ -21,6 +21,7 @@ export interface ProductVariant {
   stock: number;
   stockTotal: number;
   imagePreviewUrl?: string;
+  urlRender3D?: string;
 }
 
 export interface SelectionState {
@@ -91,7 +92,8 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
         precioeccommerce: apiProduct.precioeccommerce[i] || 0,
         stock: apiProduct.stock[i] || 0,
         stockTotal: apiProduct.stockTotal[i] || 0,
-        imagePreviewUrl: apiProduct.imagePreviewUrl?.[i]
+        imagePreviewUrl: apiProduct.imagePreviewUrl?.[i],
+        urlRender3D: apiProduct.urlRender3D?.[i]
       });
     }
     

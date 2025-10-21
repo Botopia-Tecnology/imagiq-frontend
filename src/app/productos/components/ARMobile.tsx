@@ -35,6 +35,12 @@ export default function ARMobile({
   const finalUrl = isAndroid ? sceneViewerUrl : isIOS ? quickLookUrl : "#";
   return (
     <div className="relative flex items-center">
+      
+      <a href={finalUrl} rel="ar" target="_blank">
+        <button className="inline-flex items-center justify-center bg-black text-white p-4 rounded-full shadow hover:bg-gray-900 transition-all border border-black mr-3">
+          <BsFillHouseDoorFill size={20} />
+        </button>
+      </a>
       {showLabel && (
         <div
           className="flex items-center bg-white text-black border border-gray-300 rounded-md shadow px-4 py-2 mr-3"
@@ -49,11 +55,6 @@ export default function ARMobile({
           </button>
         </div>
       )}
-      <a href={finalUrl} rel="ar" target="_blank">
-        <button className="inline-flex items-center justify-center bg-black text-white p-4 rounded-full shadow hover:bg-gray-900 transition-all border border-black">
-          <BsFillHouseDoorFill size={20} />
-        </button>
-      </a>
     </div>
   );
 }

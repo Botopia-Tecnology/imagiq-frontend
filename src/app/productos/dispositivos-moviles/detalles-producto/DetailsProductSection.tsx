@@ -25,7 +25,10 @@ import DeviceCarousel from "./DeviceCarousel";
 import AddiFinancing from "./AddiFinancing";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 
-const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ product }) => {
+const DetailsProductSection: React.FC<{
+  product: ProductCardProps;
+  onVariantsReady?: (ready: boolean) => void;
+}> = ({ product, onVariantsReady }) => {
   // Hooks - Usar el mismo sistema que ProductCard
   const productSelection = useProductSelection(product.apiProduct || {
     codigoMarketBase: product.id,
@@ -52,6 +55,14 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     fechaInicioVigencia: [],
     fechaFinalVigencia: []
   });
+
+  // Notificar cuando las variantes estén listas (usando productSelection)
+  // No dependemos de loading porque productSelection siempre tiene una variante seleccionada
+  React.useEffect(() => {
+    if (productSelection.selectedVariant && onVariantsReady) {
+      onVariantsReady(true);
+    }
+  }, [productSelection.selectedVariant, onVariantsReady]);
 
   console.log("Selected Variant:", productSelection.selectedVariant);
 

@@ -145,10 +145,6 @@ const DetailsProductSection: React.FC<{
     setIsTradeInModalOpen(false);
   };
 
-  const handleTradeInContinue = () => {
-    console.log("Usuario continuó con el trade-in");
-  };
-
   const hasStock = () => {
     return productSelection.selectedStockTotal !== null && productSelection.selectedStockTotal > 0;
   };
@@ -285,7 +281,6 @@ const DetailsProductSection: React.FC<{
       <TradeInModal
         isOpen={isTradeInModalOpen}
         onClose={handleCloseTradeInModal}
-        onContinue={handleTradeInContinue}
       />
 
       <main

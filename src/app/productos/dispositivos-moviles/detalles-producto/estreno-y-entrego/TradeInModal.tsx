@@ -20,7 +20,7 @@ import { mockTradeInData } from "./mockData";
 interface TradeInModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onContinue: () => void;
+  onContinue?: () => void;
   tradeInData?: TradeInData;
 }
 
@@ -91,7 +91,7 @@ export default function TradeInModal({
     };
 
     console.log("Trade-in selection:", tradeInSelection);
-    onContinue();
+    onContinue?.();
     handleClose();
   };
 

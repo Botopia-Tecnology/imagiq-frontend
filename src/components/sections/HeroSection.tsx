@@ -4,160 +4,172 @@
 
 "use client";
 
-import { usePathname } from "next/navigation";
-import Image from "next/image";
+import { useState, useRef, useEffect } from "react";
 
-// hero slides data matching Samsung style
-const heroSlides = [
-  {
-    id: 1,
-    title: "",
-    subtitle: "",
-    description: "",
-    price: "",
-    originalPrice: "",
-    offerText: "",
-    buttonText: "Descubre más",
-    gifSrc:
-      "https://images.samsung.com/is/image/samsung/assets/co/home/HOME_TS11_Hero-KV_1920x1080_pc_1.jpg?$1920_N_JPG$",
-    gifSrcMobile:
-      "https://images.samsung.com/is/image/samsung/assets/co/home/HOME_TS11_Hero-KV_720x1248_mo.jpg?$720_N_JPG$",
-    bgColor: "#000000",
-    isFullImage: true,
-  },
-];
+// hero video data
+const heroData = {
+  id: 1,
+  title: "",
+  subtitle: "",
+  description: "",
+  buttonText: "Descubre más",
+  videoSrc:
+    "https://res.cloudinary.com/dnglv0zqg/video/upload/v1761051112/videohero.mp4",
+  videoSrcMobile:
+    "https://res.cloudinary.com/dnglv0zqg/video/upload/v1761051478/24565_MO_Home_ai-just-for-you_HD08_HeroKV-1_720x1248_oh4svc.mp4",
+  posterSrc:
+    "https://res.cloudinary.com/dnglv0zqg/image/upload/v1761051213/24565_PC_Home_ai-just-for-you_HD08_HeroKV-1_1920x1080_lypipf.webp",
+  posterSrcMobile:
+    "https://res.cloudinary.com/dnglv0zqg/image/upload/v1761051497/24565_MO_Home_ai-just-for-you_HD08_HeroKV-1_720x1248_s068hd.webp",
+  bgColor: "#000000",
+};
 
 export default function HeroSection() {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
-  const currentSlideData = heroSlides[0]; // Solo hay un slide ahora
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoMobileRef = useRef<HTMLVideoElement>(null);
+  const [videoEnded, setVideoEnded] = useState(false);
 
-  // Producto actual mostrado en el hero
-  const productoActual = {
-    sku: `SKU${currentSlideData.id}`,
-    name: currentSlideData.title,
-    quantity: "1",
-    unitPrice: currentSlideData.price.replace(/[^\d]/g, ""), // Solo números
-  };
+  useEffect(() => {
+    const desktop = videoRef.current;
+    const mobile = videoMobileRef.current;
 
-  // Handler para el botón
-  const handleAddiPayment = async () => {
-    try {
-      const token = localStorage.getItem("imagiq_token");
-      if (!token) {
-        alert("No se encontró el token");
-        return;
+    if (desktop) {
+      desktop.muted = true;
+      desktop.playsInline = true;
+      desktop.load();
+      
+      if (desktop.readyState >= 3) {
+        desktop.play().catch(() => {});
       }
-      // Body con el producto actual
-      const body = {
-        totalAmount: productoActual.unitPrice,
-        shippingAmount: "0",
-        currency: "COP",
-        item: [productoActual],
-        userInfo: {
-          email: "aristizabalsantiago482@gmail.com",
-          nombre: "Santiago",
-          apellido: "Aristizabal",
-          direccion_linea_uno: "Calle 123 #45-67",
-          direccion_ciudad: "Bogotá",
-          direccion_pais: "CO",
-          numero_documento: "1001812664",
-          tipo_documento: "CC",
-        },
-      };
-      const response = await fetch(
-        "https://imagiq-backend-production.up.railway.app/api/payments/addi/apply",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(body),
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Error en la petición");
-      }
-      const data = await response.json();
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
-      } else {
-        alert("No se recibió la URL de redirección");
-      }
-    } catch (error) {
-      alert("Hubo un error al procesar el pago");
-      console.error(error);
     }
+
+    if (mobile) {
+      mobile.muted = true;
+      mobile.playsInline = true;
+      mobile.load();
+      
+      if (mobile.readyState >= 3) {
+        mobile.play().catch(() => {});
+      }
+    }
+  }, []);
+
+  const handleVideoEnd = () => {
+    setVideoEnded(true);
   };
 
   return (
     <section
-      className="relative w-full h-screen flex items-center justify-center mt-[-34%] md:mt-[-17%] md:pt-64 overflow-hidden transition-colors duration-1000 ease-in-out
-        pb-16 sm:pb-20 md:pb-24 lg:pb-0"
+      className="relative w-full h-screen flex items-center justify-center overflow-hidden transition-colors duration-1000 ease-in-out -mt-[64px] xl:-mt-[100px] pt-[64px] xl:pt-[100px]"
       style={{
         zIndex: 1,
-        backgroundColor: currentSlideData.bgColor,
+        backgroundColor: heroData.bgColor,
       }}
       data-hero="true"
     >
-      {/* Imagen de fondo para slides con isFullImage */}
+      {/* Video de fondo */}
       <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
-        {/* Desktop image */}
-        <Image
-          src={currentSlideData.gifSrc}
-          alt={currentSlideData.title || "Banner"}
-          fill
-          className="object-cover hidden md:block transition-opacity duration-1000 ease-in-out"
-          sizes="100vw"
-          priority
+        {/* Desktop video */}
+        <video
+          ref={videoRef}
+          className="hidden md:block w-full h-full object-cover"
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+          onEnded={handleVideoEnd}
+          poster={heroData.posterSrc}
+          style={{
+            opacity: videoEnded ? 0 : 1,
+            transition: "opacity 0.5s ease-in-out",
+          }}
+        >
+          <source src={heroData.videoSrc} type="video/mp4" />
+        </video>
+
+        {/* Desktop poster image - shown when video ends */}
+        <div
+          className="hidden md:block absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${heroData.posterSrc})`,
+            opacity: videoEnded ? 1 : 0,
+            transition: "opacity 0.5s ease-in-out",
+          }}
         />
-        {/* Mobile image */}
-        {currentSlideData.gifSrcMobile && (
-          <Image
-            src={currentSlideData.gifSrcMobile}
-            alt={currentSlideData.title || "Banner"}
-            fill
-            className="object-contain md:hidden transition-opacity duration-1000 ease-in-out"
-            sizes="100vw"
-            priority
-          />
-        )}
-        <div className="absolute inset-0 bg-black/20 transition-opacity duration-1000 ease-in-out" />
+
+        {/* Mobile video */}
+        <video
+          ref={videoMobileRef}
+          className="md:hidden w-full h-full object-cover"
+          autoPlay
+          muted
+          playsInline
+          preload="metadata"
+          onEnded={handleVideoEnd}
+          poster={heroData.posterSrcMobile}
+          style={{
+            opacity: videoEnded ? 0 : 1,
+            transition: "opacity 0.5s ease-in-out",
+          }}
+        >
+          <source src={heroData.videoSrcMobile} type="video/mp4" />
+        </video>
+
+        {/* Mobile poster image - shown when video ends */}
+        <div
+          className="md:hidden absolute inset-0 bg-cover bg-center"
+          style={{
+            backgroundImage: `url(${heroData.posterSrcMobile})`,
+            opacity: videoEnded ? 1 : 0,
+            transition: "opacity 0.5s ease-in-out",
+          }}
+        />
       </div>
-      {/* MOBILE: layout vertical, centrado, sin margen derecho, igual a la imagen */}
-      <div className="md:hidden w-full flex flex-col items-center justify-center py-12 px-4 transition-opacity duration-1000 ease-in-out">
-        {/* Botón para fullImage en mobile */}
-        <button className="bg-white hover:bg-gray-100 text-black px-7 py-3 rounded-xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-xl w-full max-w-xs mb-2">
-          {currentSlideData.buttonText}
+
+      {/* Contenido que aparece cuando el video termina - Solo Desktop */}
+      <div
+        className="hidden md:flex relative z-10 flex-col items-start justify-center w-full"
+        style={{
+          opacity: videoEnded ? 1 : 0,
+          transform: videoEnded ? "translateY(0)" : "translateY(20px)",
+          transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s",
+          pointerEvents: videoEnded ? "auto" : "none",
+          paddingLeft: "8%",
+        }}
+      >
+        <h1 className="text-5xl xl:text-6xl font-bold text-black mb-3 tracking-tight">
+          AI, just for you
+        </h1>
+        <p className="text-xl xl:text-2xl text-gray-700 mb-6 font-normal">
+          0% de interés a 3, 6 o 12 cuotas
+        </p>
+        <button className="bg-transparent hover:bg-black/5 text-black border-2 border-black px-7 py-2.5 rounded-full font-semibold text-sm transition-all duration-300 transform hover:scale-105">
+          Más información
         </button>
       </div>
-      {/* DESKTOP: layout horizontal original restaurado */}
-      <div className="hidden md:flex relative z-10 w-full max-w-6xl mx-auto flex-row items-center justify-center py-8">
-        {/* Layout para fullImage: solo botón */}
-        <div className="w-full flex items-start justify-start pl-12 pt-20">
-          <button className="bg-white hover:bg-gray-100 text-black px-10 py-4 rounded-xl font-semibold text-lg transition-all duration-300 transform hover:scale-105 shadow-2xl">
-            {currentSlideData.buttonText}
-          </button>
-        </div>
+
+      {/* Contenido Mobile - aparece cuando termina el video */}
+      <div
+        className="md:hidden absolute top-32 left-0 right-0 z-10 flex flex-col items-center px-6 w-full"
+        style={{
+          opacity: videoEnded ? 1 : 0,
+          transform: videoEnded ? "translateY(0)" : "translateY(20px)",
+          transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s",
+          pointerEvents: videoEnded ? "auto" : "none",
+        }}
+      >
+        <h1 className="text-4xl font-bold text-black mb-3 tracking-tight text-center">
+          AI, just for you
+        </h1>
+        <p className="text-lg text-black/80 mb-6 font-medium text-center">
+          0% de interés a 3, 6 o 12 cuotas
+        </p>
+        <button className="bg-transparent hover:bg-black/5 text-black border-2 border-black px-7 py-3 rounded-full font-semibold text-base transition-all duration-300 transform hover:scale-105 w-full max-w-xs">
+          Más información
+        </button>
       </div>
-      {/* Navegación y logo Samsung */}
-      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center">
-        {/* Logo Samsung */}
-        <div className="flex items-center justify-center">
-          <img
-            src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-            alt="Samsung"
-            width={110}
-            height={32}
-            className="h-7 w-auto opacity-80"
-            style={{
-              filter: isHome ? "invert(1) brightness(2)" : "none",
-              width: "auto"
-            }}
-          />
-        </div>
-      </div>
+
+  
     </section>
   );
 }

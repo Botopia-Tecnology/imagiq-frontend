@@ -83,15 +83,15 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <main className="min-h-screen py-8 px-2 md:px-0 pb-32 md:pb-8">
+    <main className="min-h-screen py-2 md:py-8 px-2 md:px-0 pb-32 md:pb-8">
       {/* Grid principal: productos y resumen de compra */}
-      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {/* Productos */}
         <section
           id="carrito-productos"
-          className="p-4"
+          className="p-0 md:p-4"
         >
-          <h2 className="font-bold text-lg mb-6">Productos</h2>
+          <h2 className="font-bold text-lg mb-3 md:mb-6 px-2 md:px-0">Productos</h2>
           {cartProducts.length === 0 ? (
             <div className="text-gray-500 text-center py-16 text-lg">
               No hay productos en el carrito.

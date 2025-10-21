@@ -296,6 +296,7 @@ export default function ViewProduct({
         }}
       />
       <div className="h-[1px] w-full" />
+      <BenefitsSection />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
       <motion.div
         ref={specsReveal.ref}
@@ -310,7 +311,7 @@ export default function ViewProduct({
       {/* <Destacados /> */}
 
       {/* Sección de beneficios (responsive) */}
-      <BenefitsSection />
+      
 
       {/* Componente de videos */}
       {/* <motion.div

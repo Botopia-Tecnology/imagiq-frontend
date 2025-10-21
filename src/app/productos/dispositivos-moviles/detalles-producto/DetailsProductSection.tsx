@@ -238,7 +238,6 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
 
   return (
     <>
-      <FloatingEntregoEstrenoButton />
       <StickyPriceBar
         deviceName={product.name}
         basePrice={currentPrice || 0}

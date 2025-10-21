@@ -59,7 +59,7 @@ export interface UseProductSelectionReturn {
   allVariants: ProductVariant[];
 }
 
-export function useProductSelection(apiProduct: ProductApiData): UseProductSelectionReturn {
+export function useProductSelection(apiProduct: ProductApiData): UseProductSelectionReturn {  
   // Crear todas las variantes del producto basadas en los arrays indexados
   const allVariants = useMemo((): ProductVariant[] => {
     const variants: ProductVariant[] = [];

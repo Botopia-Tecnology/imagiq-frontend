@@ -254,6 +254,9 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                   <ProductHeader
                     name={product.name}
                     sku={productSelection.selectedSku ?? product.sku ?? undefined}
+                    codigoMarket={productSelection.selectedCodigoMarket ?? undefined}
+                    stock={productSelection.selectedStock ?? undefined}
+                    stockTotal={productSelection.selectedStockTotal ?? undefined}
                     rating={product.rating}
                     reviewCount={product.reviewCount}
                     isFavorite={isFavorite}

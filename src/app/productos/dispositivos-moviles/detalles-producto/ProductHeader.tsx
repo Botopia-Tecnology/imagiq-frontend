@@ -4,6 +4,9 @@ import { Heart } from "lucide-react";
 interface ProductHeaderProps {
   name: string;
   sku?: string;
+  codigoMarket?: string;
+  stock?: number;
+  stockTotal?: number;
   rating?: number;
   reviewCount?: number;
   isFavorite: boolean;
@@ -13,6 +16,9 @@ interface ProductHeaderProps {
 export default function ProductHeader({
   name,
   sku,
+  codigoMarket,
+  stock,
+  stockTotal,
   rating,
   reviewCount,
   isFavorite,
@@ -43,10 +49,29 @@ export default function ProductHeader({
         </button>
       </div>
 
-      {/* SKU del producto */}
-      {sku && (
-        <div className="text-sm text-gray-500 mb-3">
-          {sku}
+      {/* Información del producto */}
+      {(sku || codigoMarket || stock !== undefined || stockTotal !== undefined) && (
+        <div className="text-sm text-gray-500 mb-3 space-y-1">
+          {sku && (
+            <div>
+              <span className="font-medium">SKU:</span> {sku}
+            </div>
+          )}
+          {codigoMarket && (
+            <div>
+              <span className="font-medium">Código:</span> {codigoMarket}
+            </div>
+          )}
+          {stock !== undefined && (
+            <div>
+              <span className="font-medium">Stock:</span> {stock}
+            </div>
+          )}
+          {stockTotal !== undefined && (
+            <div>
+              <span className="font-medium">Stock Total:</span> {stockTotal}
+            </div>
+          )}
         </div>
       )}
 

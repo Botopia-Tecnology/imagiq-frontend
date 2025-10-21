@@ -19,6 +19,8 @@ import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import ProductCarousel from "../components/ProductCarousel";
 import ProductInfo from "../components/ProductInfo";
 import ImageModal from "../components/ImageModal";
+import TradeInSection from "../components/sections/TradeInSection";
+import BenefitsSection from "../components/sections/BenefitsSection";
 import { useProductLogic } from "../hooks/useProductLogic";
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
@@ -252,6 +254,12 @@ export default function ProductViewPage({ params }) {
               </div>
             </div>
           </div>
+
+          {/* Sección de Estreno y Entrego */}
+          <TradeInSection />
+
+          {/* Sección de Beneficios */}
+          <BenefitsSection />
 
           {/* Solo Flixmedia al final */}
           <ViewProduct product={convertedProduct} flix={product} />

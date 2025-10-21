@@ -222,6 +222,11 @@ const CategoryProductsGrid = forwardRef<
                         price: typeof product.price === "string"
                           ? parseInt(product.price.replace(/[^\d]/g, ""))
                           : product.price || 0,
+                        originalPrice: typeof product.originalPrice === "string"
+                          ? parseInt(product.originalPrice.replace(/[^\d]/g, ""))
+                          : product.originalPrice,
+                        stock: product.stock,
+                        shippingFrom: "Bogotá",
                         quantity: 1,
                         sku: product.sku || product.id,
                         ean: product.ean || product.id,

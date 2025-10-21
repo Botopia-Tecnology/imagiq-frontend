@@ -68,6 +68,24 @@ function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
   return null;
 }
 
+// Wrapper para manejar el estado de carga de variantes
+function ProductContentWithVariants({
+  product,
+  onVariantsReady
+}: {
+  product: ProductCardProps;
+  onVariantsReady: (ready: boolean) => void;
+}) {
+  const convertedProduct = convertProductForView(product);
+
+  return (
+    <>
+      <DetailsProductSection product={product} onVariantsReady={onVariantsReady} />
+      <ViewProduct product={convertedProduct} flix={product} />
+    </>
+  );
+}
+
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
   const resolvedParams = use(params);
@@ -80,16 +98,22 @@ export default function ProductViewPage({ params }) {
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
   const [showContent, setShowContent] = React.useState(false);
+  const [variantsReady, setVariantsReady] = React.useState(false);
 
   // Delay para asegurar transición suave
   React.useEffect(() => {
-    if (!loading && product) {
-      const timer = setTimeout(() => setShowContent(true), 150);
+    if (!loading && product && variantsReady) {
+      const timer = setTimeout(() => setShowContent(true), 100);
       return () => clearTimeout(timer);
     } else {
       setShowContent(false);
     }
-  }, [loading, product]);
+  }, [loading, product, variantsReady]);
+
+  // Reset variants ready cuando cambia el producto
+  React.useEffect(() => {
+    setVariantsReady(false);
+  }, [id]);
 
   if (!id) {
     return notFound();
@@ -116,38 +140,11 @@ export default function ProductViewPage({ params }) {
       </div>
     );
   }
-  const convertedProduct = convertProductForView(product);
 
-  const categoriasAppliance = [
-    "neveras",
-    "nevecon",
-    "hornos microondas",
-    "lavavajillas",
-    "lavadora",
-    "secadora",
-    "aspiradoras",
-    "aire acondicionado",
-    "hornos",
-    "microondas",
-  ];
-  const subcategoria = convertedProduct.specs
-    .find((spec) => spec.label === "Subcategoría")
-    ?.value?.toLowerCase();
-  const isRefrigerador = subcategoria
-    ? categoriasAppliance.some((cat) => subcategoria.includes(cat))
-    : false;
   return (
-    <>
-      {/* <SetApplianceFlag isRefrigerador={!!isRefrigerador} /> */}
-      {/* Vista de producto según categoría */}
-      {/* {isRefrigerador ? (
-        <ViewProductAppliance product={convertedProduct} />
-      ) : ( */}
-        <>
-          <DetailsProductSection product={product} />
-          <ViewProduct product={convertedProduct} flix={product} />
-        </>
-      {/* )} */}
-    </>
+    <ProductContentWithVariants
+      product={product}
+      onVariantsReady={setVariantsReady}
+    />
   );
 }

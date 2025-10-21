@@ -2,15 +2,15 @@ import React from "react";
 import { Heart } from "lucide-react";
 
 interface ProductHeaderProps {
-  name: string;
-  sku?: string;
-  codigoMarket?: string;
-  stock?: number;
-  stockTotal?: number;
-  rating?: number;
-  reviewCount?: number;
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
+  readonly name: string;
+  readonly sku?: string;
+  readonly codigoMarket?: string;
+  readonly stock?: number;
+  readonly stockTotal?: number;
+  readonly rating?: number;
+  readonly reviewCount?: number;
+  readonly isFavorite: boolean;
+  readonly onToggleFavorite: () => void;
 }
 
 export default function ProductHeader({
@@ -24,6 +24,15 @@ export default function ProductHeader({
   isFavorite,
   onToggleFavorite,
 }: ProductHeaderProps) {
+  const getStarClassName = (index: number, rating: number) => {
+    if (index < Math.floor(rating)) {
+      return "text-black fill-black";
+    }
+    if (index < rating) {
+      return "text-black fill-black";
+    }
+    return "text-gray-300 fill-gray-300";
+  };
   return (
     <div className="mb-8">
       <div className="flex items-start gap-4 mb-4 pr-4">
@@ -79,16 +88,10 @@ export default function ProductHeader({
       {rating && (
         <div className="flex items-center gap-2 mb-8">
           <div className="flex items-center">
-            {[...Array(5)].map((_, index) => (
+            {Array.from({ length: 5 }, (_, index) => (
               <svg
-                key={index}
-                className={`w-3.5 h-3.5 ${
-                  index < Math.floor(rating)
-                    ? "text-black fill-black"
-                    : index < rating
-                    ? "text-black fill-black"
-                    : "text-gray-300 fill-gray-300"
-                }`}
+                key={`star-${index + 1}`}
+                className={`w-3.5 h-3.5 ${getStarClassName(index, rating)}`}
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
               >

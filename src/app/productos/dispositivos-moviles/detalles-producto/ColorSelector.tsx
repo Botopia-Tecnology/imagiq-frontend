@@ -1,7 +1,7 @@
 // Selector de color
 // Componente reutilizable para mostrar las opciones de color y seleccionar una
 import React from "react";
-import { ColorOption } from "@/hooks/useDeviceVariants";
+import { ColorOption } from "@/hooks/useProductSelection";
 
 interface ColorSelectorProps {
   colorOptions: ColorOption[];

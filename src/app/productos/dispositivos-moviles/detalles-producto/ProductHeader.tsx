@@ -2,22 +2,37 @@ import React from "react";
 import { Heart } from "lucide-react";
 
 interface ProductHeaderProps {
-  name: string;
-  sku?: string;
-  rating?: number;
-  reviewCount?: number;
-  isFavorite: boolean;
-  onToggleFavorite: () => void;
+  readonly name: string;
+  readonly sku?: string;
+  readonly codigoMarket?: string;
+  readonly stock?: number;
+  readonly stockTotal?: number;
+  readonly rating?: number;
+  readonly reviewCount?: number;
+  readonly isFavorite: boolean;
+  readonly onToggleFavorite: () => void;
 }
 
 export default function ProductHeader({
   name,
   sku,
+  codigoMarket,
+  stock,
+  stockTotal,
   rating,
   reviewCount,
   isFavorite,
   onToggleFavorite,
 }: ProductHeaderProps) {
+  const getStarClassName = (index: number, rating: number) => {
+    if (index < Math.floor(rating)) {
+      return "text-black fill-black";
+    }
+    if (index < rating) {
+      return "text-black fill-black";
+    }
+    return "text-gray-300 fill-gray-300";
+  };
   return (
     <div className="mb-8">
       <div className="flex items-start gap-4 mb-4 pr-4">
@@ -43,10 +58,29 @@ export default function ProductHeader({
         </button>
       </div>
 
-      {/* SKU del producto */}
-      {sku && (
-        <div className="text-sm text-gray-500 mb-3">
-          {sku}
+      {/* Información del producto */}
+      {(sku || codigoMarket || stock !== undefined || stockTotal !== undefined) && (
+        <div className="text-sm text-gray-500 mb-3 space-y-1">
+          {sku && (
+            <div>
+              <span className="font-medium">SKU:</span> {sku}
+            </div>
+          )}
+          {codigoMarket && (
+            <div>
+              <span className="font-medium">Código:</span> {codigoMarket}
+            </div>
+          )}
+          {stock !== undefined && (
+            <div>
+              <span className="font-medium">Stock:</span> {stock}
+            </div>
+          )}
+          {stockTotal !== undefined && (
+            <div>
+              <span className="font-medium">Stock Total:</span> {stockTotal}
+            </div>
+          )}
         </div>
       )}
 
@@ -54,16 +88,10 @@ export default function ProductHeader({
       {rating && (
         <div className="flex items-center gap-2 mb-8">
           <div className="flex items-center">
-            {[...Array(5)].map((_, index) => (
+            {Array.from({ length: 5 }, (_, index) => (
               <svg
-                key={index}
-                className={`w-3.5 h-3.5 ${
-                  index < Math.floor(rating)
-                    ? "text-black fill-black"
-                    : index < rating
-                    ? "text-black fill-black"
-                    : "text-gray-300 fill-gray-300"
-                }`}
+                key={`star-${index + 1}`}
+                className={`w-3.5 h-3.5 ${getStarClassName(index, rating)}`}
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
               >

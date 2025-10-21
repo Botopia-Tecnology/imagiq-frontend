@@ -44,7 +44,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
-      <div className="md:hidden bg-white border-b border-gray-200 p-3">
+      <div className="md:hidden bg-white border-b border-gray-200 p-4">
         <div className="flex gap-3">
           {/* Imagen */}
           <div className="w-20 h-20 relative flex-shrink-0 bg-gray-100 rounded p-1">
@@ -96,7 +96,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Desktop: Layout horizontal */}
-      <div className="hidden md:flex bg-white rounded-lg p-6 shadow-sm gap-6 items-start">
+      <div className="hidden md:flex bg-white p-6 gap-6 items-start border-b border-gray-200">
         {/* Imagen + Eliminar */}
         <div className="flex flex-col items-center gap-2">
           <div className="w-40 h-40 relative flex-shrink-0 bg-gray-100 rounded-xl p-3">

@@ -96,7 +96,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             </div>
           ) : (
             <>
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
                 {cartProducts.map((product, idx) => (
                   <ProductCard
                     key={product.id}
@@ -116,7 +116,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               </div>
 
               {/* Barra de envío gratis */}
-              <div className="mt-6 bg-white rounded-lg p-4 shadow-sm">
+              <div className="mt-6 bg-white rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="h-2 flex-1 bg-green-500 rounded-full"></div>
                   <span className="text-xs font-semibold text-green-600 whitespace-nowrap">Envío GRATIS</span>

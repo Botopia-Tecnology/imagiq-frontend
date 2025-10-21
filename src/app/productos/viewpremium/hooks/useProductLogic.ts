@@ -31,7 +31,14 @@ export const useProductLogic = (product: ProductCardProps | null) => {
 
   // Obtener imágenes premium y videos premium (carrusel inicial)
   const getPremiumImages = () => {
-    if (!product || !selectedColor) return [];
+    if (!product || !selectedColor) {
+      // Si no hay producto o color seleccionado, devolver contenido por defecto
+      return [
+        "https://res.cloudinary.com/dcljjtnxr/video/upload/v1761056337/B7_Animated_KV_PC_1600x864_zlmmor.webm",
+        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060262/B7_Global_Color_Group_KV_No-text_PC_1600x864_1_hq9awr.png",
+        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060268/Q7B7_S.com_only_color_combo_KV_No-text_PC_1600x864_1_jyf2be.png"
+      ];
+    }
     
     const selectedColorData = product.colors?.find(c => c.name === selectedColor);
     const premiumImages: string[] = [];
@@ -46,15 +53,16 @@ export const useProductLogic = (product: ProductCardProps | null) => {
       premiumImages.push(...selectedColorData.imagen_premium.filter(url => url && url.trim() !== ""));
     }
     
-    // 3. Si no hay contenido premium, agregar 3 imágenes de mockup por defecto
+    // 3. Si no hay contenido premium, agregar video y imágenes por defecto
     if (premiumImages.length === 0) {
       premiumImages.push(
-        "https://res.cloudinary.com/dqsdl9bwv/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp",
-        "https://res.cloudinary.com/dqsdl9bwv/image/upload/v1759849936/25s-ultra_xfxhqt.webp",
-        "https://res.cloudinary.com/dqsdl9bwv/image/upload/v1759849937/galaxy-zflip7_spfhq7.webp"
+        "https://res.cloudinary.com/dcljjtnxr/video/upload/v1761056337/B7_Animated_KV_PC_1600x864_zlmmor.webm",
+        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060262/B7_Global_Color_Group_KV_No-text_PC_1600x864_1_hq9awr.png",
+        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060268/Q7B7_S.com_only_color_combo_KV_No-text_PC_1600x864_1_jyf2be.png"
       );
     }
     
+    console.log('Premium images loaded:', premiumImages);
     return premiumImages;
   };
 
@@ -111,17 +119,6 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Auto-play del carrusel premium (cambia cada 4 segundos)
-  React.useEffect(() => {
-    if (premiumImages.length > 1) {
-      const autoPlayInterval = setInterval(() => {
-        setCurrentImageIndex((prev) => (prev + 1) % premiumImages.length);
-      }, 4000);
-
-      return () => clearInterval(autoPlayInterval);
-    }
-  }, [premiumImages.length]);
 
   // Resetear índice de imagen cuando cambie el color seleccionado
   React.useEffect(() => {

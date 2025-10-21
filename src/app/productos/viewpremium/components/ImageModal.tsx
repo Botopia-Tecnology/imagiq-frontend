@@ -65,12 +65,12 @@ const ImageModal: React.FC<ImageModalProps> = ({
         }
       `}</style>
       
-      <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
-        <div className="relative w-full h-full flex items-center justify-center">
+      <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-8">
+        <div className="relative w-full h-full max-w-6xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
           {/* Botón cerrar */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-800 text-xl transition-all"
+            className="absolute top-4 right-4 z-[10000] w-10 h-10 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center text-gray-800 text-xl transition-all"
           >
             ×
           </button>

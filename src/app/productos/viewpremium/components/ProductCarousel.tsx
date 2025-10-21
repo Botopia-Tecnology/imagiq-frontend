@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef } from "react";
+import React, { forwardRef, useState } from "react";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 interface ProductCarouselProps {
@@ -14,6 +14,93 @@ interface ProductCarouselProps {
   onOpenModal: () => void;
 }
 
+// Componente para manejar videos con control de reproducción
+const VideoPlayer: React.FC<{ 
+  src: string; 
+  alt: string; 
+  onVideoEnd?: () => void;
+  onVideoStart?: () => void;
+}> = ({ src, alt, onVideoEnd, onVideoStart }) => {
+  const [videoError, setVideoError] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
+  
+  // Si es el video animado KV PC, usar el archivo local
+  if (src.includes('B7_Animated_KV_PC_1600x864.webm') || src.includes('animated') || src.includes('kv')) {
+    return (
+      <video
+        src="/B7_Animated_KV_PC_1600x864.webm"
+        autoPlay
+        loop
+        muted
+        playsInline
+        controls={false}
+        className="w-full h-full object-contain"
+        onEnded={onVideoEnd}
+        onPlay={onVideoStart}
+        onError={(e) => {
+          console.error('Error loading video:', e);
+          setVideoError(true);
+        }}
+        onLoadStart={() => console.log('Video loading started')}
+        onCanPlay={() => console.log('Video can play')}
+      />
+    );
+  }
+  const publicId = src.includes('video/upload/') 
+    ? src.split('video/upload/')[1].split('.')[0]
+    : src.split('/').pop()?.split('.')[0];
+
+  // Si el iframe falla, intentar con video nativo
+  if (iframeError && !videoError) {
+    return (
+      <video
+        src={src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        controls={false}
+        className="w-full h-full object-contain"
+        onEnded={onVideoEnd}
+        onPlay={onVideoStart}
+        onError={() => setVideoError(true)}
+      />
+    );
+  }
+
+  // Si ambos fallan, mostrar imagen de error
+  if (iframeError && videoError) {
+    return (
+      <div className="w-full h-full flex items-center justify-center bg-gray-100">
+        <div className="text-center text-gray-500">
+          <div className="text-4xl mb-2">🎥</div>
+          <div>Video no disponible</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Intentar primero con iframe de Cloudinary
+  return (
+    <iframe
+      src={`https://player.cloudinary.com/embed/?cloud_name=dcljjtnxr&public_id=${publicId}&profile=cld-adaptive-stream`}
+      width="640"
+      height="360"
+      style={{ 
+        height: 'auto', 
+        width: '100%', 
+        aspectRatio: '640 / 360',
+        maxHeight: '600px',
+        maxWidth: '100%'
+      }}
+      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+      allowFullScreen
+      frameBorder="0"
+      onError={() => setIframeError(true)}
+    />
+  );
+};
+
 const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   product,
   selectedColor,
@@ -24,24 +111,74 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   productImages,
   onOpenModal,
 }, ref) => {
+  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+
+  const handleVideoStart = () => {
+    setIsVideoPlaying(true);
+  };
+
+  const handleVideoEnd = () => {
+    setIsVideoPlaying(false);
+  };
+
   return (
     <div ref={ref} className="w-full lg:col-span-9 lg:sticky lg:top-20 relative">
       {/* Carrusel de imágenes reales */}
       <div className={`relative w-full transition-opacity duration-500 ease-in-out ${showStickyCarousel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {(() => {
           // Determinar qué imágenes usar según el estado del scroll
-          const currentImages = showStickyCarousel ? premiumImages : productImages;
+          // Para el carrusel premium, siempre incluir el video animado KV PC como primera imagen
+          // Filtrar videos del array premiumImages para evitar duplicación
+          const filteredPremiumImages = premiumImages.filter(img => 
+            !img.includes('.webm') && 
+            !img.includes('.mp4') && 
+            !img.includes('.mov') &&
+            !img.includes('video/upload')
+          );
+          const currentImages = showStickyCarousel 
+            ? ['/B7_Animated_KV_PC_1600x864.webm', ...filteredPremiumImages]
+            : productImages;
           const currentImageSet = showStickyCarousel ? 'premium' : 'product';
           
           return currentImages.length > 0 ? (
             <>
               {/* Imagen principal - estilo Samsung */}
               <div className="relative w-full h-[600px] bg-white flex items-center justify-center">
-                <img
-                  src={currentImages[currentImageIndex]}
-                  alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
-                  className="w-full h-full object-contain"
-                />
+                {(() => {
+                  const currentSrc = currentImages[currentImageIndex];
+                  const isVideo = currentSrc && (
+                    currentSrc.includes('B7_Animated_KV_PC_1600x864.webm') ||
+                    currentSrc.includes('.webm') || 
+                    currentSrc.includes('.mp4') || 
+                    currentSrc.includes('.mov') ||
+                    currentSrc.includes('video/upload')
+                  );
+                  
+                  if (isVideo) {
+                    return (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <VideoPlayer 
+                          src={currentSrc} 
+                          alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
+                          onVideoStart={handleVideoStart}
+                          onVideoEnd={handleVideoEnd}
+                        />
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <img
+                        key={currentSrc}
+                        src={currentSrc}
+                        alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
+                        className="w-full h-full object-contain"
+                        onError={(e) => {
+                          console.error('Error loading image:', currentSrc, e);
+                        }}
+                      />
+                    );
+                  }
+                })()}
                 
                 {/* Flechas de navegación - estilo Samsung */}
                 {currentImages.length > 1 && (
@@ -96,11 +233,21 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
           <>
             {/* Imagen del producto - estilo Samsung */}
             <div className="relative w-full h-[600px] bg-white flex items-center justify-center">
-              <img
-                src={productImages[currentImageIndex % productImages.length]}
-                alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
-                className="w-full h-full object-contain"
-              />
+               {(() => {
+                 const currentSrc = productImages[currentImageIndex % productImages.length];
+                 
+                 return (
+                   <img
+                     key={currentSrc}
+                     src={currentSrc}
+                     alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
+                     className="w-full h-full object-contain"
+                     onError={(e) => {
+                       console.error('Error loading image:', currentSrc, e);
+                     }}
+                   />
+                 );
+               })()}
             </div>
             {/* Botón pegado a la primera foto */}
             <div className="flex justify-center mt-2">

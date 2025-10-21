@@ -83,7 +83,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <main className="min-h-screen py-2 md:py-8 px-2 md:px-0 pb-32 md:pb-8">
+    <main className="min-h-screen py-2 md:py-8 px-2 md:px-0 pb-40 md:pb-8">
       {/* Grid principal: productos y resumen de compra */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {/* Productos */}
@@ -208,7 +208,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
-      <div className="max-w-6xl mx-auto mt-8">
+      <div className="max-w-6xl mx-auto mt-8 mb-4 md:mb-0">
         <Sugerencias onAdd={handleAddSugerencia} />
       </div>
 

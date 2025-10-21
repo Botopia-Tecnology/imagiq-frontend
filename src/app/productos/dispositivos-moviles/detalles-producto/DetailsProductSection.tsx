@@ -24,8 +24,11 @@ import StickyImageContainer from "./StickyImageContainer";
 import PriceAndActions from "./PriceAndActions";
 import DeviceCarousel from "./DeviceCarousel";
 import AddiFinancing from "./AddiFinancing";
+import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 
-const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ product }) => {
+const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
+  product,
+}) => {
   // Hooks
   const {
     colorOptions,
@@ -40,25 +43,41 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     setSelectedStorage,
   } = useDeviceVariants(product.id);
 
+  console.log("Selected Variant:", selectedVariant);
+
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
   const router = useRouter();
-  const { addToFavorites, removeFromFavorites, isFavorite: checkIsFavorite } = useFavorites();
+  const {
+    addToFavorites,
+    removeFromFavorites,
+    isFavorite: checkIsFavorite,
+  } = useFavorites();
 
   // Detectar serie dinámica del producto
-  const productSeries = React.useMemo(() => getProductSeries(product.name), [product.name]);
-  const seriesHref = React.useMemo(() => getSeriesHref(productSeries), [productSeries]);
+  const productSeries = React.useMemo(
+    () => getProductSeries(product.name),
+    [product.name]
+  );
+  const seriesHref = React.useMemo(
+    () => getSeriesHref(productSeries),
+    [productSeries]
+  );
 
   // Control de scroll para StickyPriceBar
-  const showStickyBar = useScrollNavbar(150, 50, true);
+  const showStickyBar = useScrollNavbar(50, 50, true); //150
 
   // State
   const [loading, setLoading] = React.useState(false);
   const isFavorite = checkIsFavorite(product.id);
-  const [deliveryOption, setDeliveryOption] = React.useState<"standard" | "express">("standard");
+  const [deliveryOption, setDeliveryOption] = React.useState<
+    "standard" | "express"
+  >("standard");
   const [estrenoYEntrego, setEstrenoYEntrego] = React.useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
-  const [galleryImages, setGalleryImages] = React.useState<(string | StaticImageData)[]>([]);
+  const [galleryImages, setGalleryImages] = React.useState<
+    (string | StaticImageData)[]
+  >([]);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
 
   // Handlers
@@ -75,7 +94,14 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     if (colorOption?.hex) setGlobalSelectedColor(colorOption.hex);
   };
 
-  const handleImageClick = (images: (string | StaticImageData)[], index: number) => { setGalleryImages(images); setGalleryIndex(index); setIsGalleryOpen(true); };
+  const handleImageClick = (
+    images: (string | StaticImageData)[],
+    index: number
+  ) => {
+    setGalleryImages(images);
+    setGalleryIndex(index);
+    setIsGalleryOpen(true);
+  };
 
   const hasStock = () => {
     if (!selectedDevice || !selectedStorage || !selectedColor) return true;
@@ -96,16 +122,18 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
     // Validación estricta: debe existir un SKU válido del variant seleccionado
     if (!selectedVariant?.sku) {
-      console.error('Error al agregar al carrito:', {
+      console.error("Error al agregar al carrito:", {
         product_id: product.id,
         product_name: product.name,
         selectedColor,
         selectedStorage,
         selectedDevice,
         selectedVariant,
-        error: 'No se encontró un SKU válido para la variante seleccionada'
+        error: "No se encontró un SKU válido para la variante seleccionada",
       });
-      alert('Error: No se encontró el SKU del producto seleccionado. Por favor intenta con otra combinación.');
+      alert(
+        "Error: No se encontró el SKU del producto seleccionado. Por favor intenta con otra combinación."
+      );
       return;
     }
 
@@ -119,7 +147,11 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         stock: selectedVariant.stock,
         shippingFrom: "Bogotá",
         quantity: 1,
-        image: selectedVariant.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
+        image:
+          selectedVariant.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : fallbackImage.src),
         sku: selectedVariant.sku, // SKU estricto de la variante seleccionada
         ean: selectedVariant.ean,
         puntos_q: product.puntos_q ?? 4,
@@ -133,7 +165,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     }
   };
 
-  const handleBuyNow = async () => { await handleAddToCart(); router.push("/cart"); };
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    router.push("/cart");
+  };
 
   // Efecto para controlar el navbar principal cuando aparece el StickyPriceBar
   React.useEffect(() => {
@@ -158,20 +193,30 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   }, [showStickyBar]);
 
   // Animations and effects
-  const desktopReveal = useScrollReveal<HTMLDivElement>({ offset: 80, duration: 600, direction: "up" });
+  const desktopReveal = useScrollReveal<HTMLDivElement>({
+    offset: 80, //80
+    duration: 600,
+    direction: "up",
+  });
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
     if (selectedVariant?.precioNormal && selectedVariant?.precioeccommerce) {
-      return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, ''), 10) || 0;
+      return typeof selectedVariant.precioNormal === "number"
+        ? selectedVariant.precioNormal
+        : parseInt(
+            String(selectedVariant.precioNormal).replace(/[^\d]/g, ""),
+            10
+          ) || 0;
     }
     if (!product.originalPrice) {
       return undefined;
     }
     const parsedOriginalPrice =
-      typeof product.originalPrice === 'number'
+      typeof product.originalPrice === "number"
         ? product.originalPrice
-        : parseInt(String(product.originalPrice).replace(/[^\d]/g, ''), 10) || 0;
+        : parseInt(String(product.originalPrice).replace(/[^\d]/g, ""), 10) ||
+          0;
     return parsedOriginalPrice;
   }, [selectedVariant, product.originalPrice]);
 
@@ -182,7 +227,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     if (typeof product.discount === "number") {
       return product.discount;
     }
-    const parsedValue = parseInt(String(product.discount).replace(/[^\d]/g, ""), 10);
+    const parsedValue = parseInt(
+      String(product.discount).replace(/[^\d]/g, ""),
+      10
+    );
     return parsedValue || 0;
   }, [product.discount]);
 
@@ -195,7 +243,6 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
   return (
     <>
-      <FloatingEntregoEstrenoButton />
       <StickyPriceBar
         deviceName={product.name}
         basePrice={currentPrice || 0}
@@ -214,12 +261,21 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         productName={product.name}
       />
 
-      <main className="w-full bg-white min-h-screen pt-[150px] xl:pt-[170px]" style={{ fontFamily: "SamsungSharpSans" }}>
-        <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
+      <main
+        className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
+        style={{ fontFamily: "SamsungSharpSans" }}
+      >
+        <motion.section
+          ref={desktopReveal.ref}
+          {...desktopReveal.motionProps}
+          className="hidden lg:block"
+        >
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}
             <nav className="flex items-center gap-2 mb-8 text-sm text-gray-600">
-              <a href={seriesHref} className="hover:text-gray-900">{productSeries}</a>
+              <a href={seriesHref} className="hover:text-gray-900">
+                {productSeries}
+              </a>
               <span>/</span>
               <span className="text-gray-900">Detalles del producto</span>
             </nav>
@@ -233,6 +289,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                   imageDetailsUrls={selectedVariant?.imageDetailsUrls}
                   onImageClick={handleImageClick}
                 />
+                {selectedVariant?.urlRender3D && selectedVariant.urlRender3D.trim() != "" && (
+                  <ARExperienceHandler
+                    glbUrl={selectedVariant.urlRender3D}
+                    usdzUrl={selectedVariant.urlRender3D}
+                  />
+                )}
               </div>
 
               {/* Información del producto a la derecha */}
@@ -256,13 +318,16 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     onStorageChange={setSelectedStorage}
                     variantsLoading={variantsLoading}
                   />
+
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
                     onDeliveryChange={setDeliveryOption}
                     estrenoYEntrego={estrenoYEntrego}
                     onEstrenoChange={setEstrenoYEntrego}
                   />
-                  <p className="text-base text-[#222] font-light leading-relaxed mb-8">{product.description || ""}</p>
+                  <p className="text-base text-[#222] font-light leading-relaxed mb-8">
+                    {product.description || ""}
+                  </p>
                 </header>
 
                 <AddiFinancing
@@ -287,9 +352,20 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               onImageClick={handleImageClick}
             />
             <header className="mb-4 text-center mt-6">
-              <h1 className="text-2xl font-bold text-[#222] mb-2">{product.name}</h1>
-              <p className="text-base text-[#222] mb-4 font-light leading-snug">{product.description || ""}</p>
+              <h1 className="text-2xl font-bold text-[#222] mb-2">
+                {product.name}
+              </h1>
+              <p className="text-base text-[#222] mb-4 font-light leading-snug">
+                {product.description || ""}
+              </p>
+              {selectedVariant?.urlRender3D && selectedVariant.urlRender3D.trim() != "" && (
+                <ARExperienceHandler
+                  glbUrl={selectedVariant.urlRender3D}
+                  usdzUrl={selectedVariant.urlRender3D}
+                />
+              )}
             </header>
+
             <PriceAndActions
               currentPrice={currentPrice || 0}
               originalPrice={originalPrice}

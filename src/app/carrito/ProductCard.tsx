@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import { Minus, Plus, X } from "lucide-react";
+import { Minus, Plus } from "lucide-react";
 
 export interface ProductCardProps {
   nombre: string;
@@ -44,18 +44,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       {/* Mobile: Layout vertical */}
-      <div className="md:hidden relative group bg-white rounded-lg p-4 shadow-sm">
-        <button
-          className="absolute top-2 right-2 z-10 w-7 h-7 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition"
-          onClick={onRemove}
-          aria-label="Eliminar producto"
-        >
-          <X className="w-4 h-4" />
-        </button>
-
+      <div className="md:hidden bg-white rounded-lg p-4 shadow-sm">
         <div className="flex gap-4">
-          <div className="w-20 h-20 relative flex-shrink-0">
-            <Image src={imagen} alt={nombre} fill className="object-contain" sizes="80px" />
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-24 h-24 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
+              <Image src={imagen} alt={nombre} fill className="object-contain p-2" sizes="96px" />
+            </div>
+            <button
+              onClick={onRemove}
+              className="text-xs text-red-600 hover:text-red-700 font-medium transition"
+              aria-label="Eliminar producto"
+            >
+              Eliminar
+            </button>
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
@@ -98,26 +99,26 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Desktop: Layout horizontal */}
-      <div className="hidden md:flex relative group bg-white rounded-lg p-6 shadow-sm gap-6 items-start">
-        {/* Imagen - 20% */}
-        <div className="w-32 h-32 relative flex-shrink-0">
-          <Image src={imagen} alt={nombre} fill className="object-contain" sizes="128px" />
+      <div className="hidden md:flex bg-white rounded-lg p-6 shadow-sm gap-6 items-start">
+        {/* Imagen + Eliminar */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-40 h-40 relative flex-shrink-0 bg-gray-100 rounded-xl p-3">
+            <Image src={imagen} alt={nombre} fill className="object-contain p-3" sizes="160px" />
+          </div>
+          <button
+            onClick={onRemove}
+            className="text-sm text-red-600 hover:text-red-700 font-medium transition"
+            aria-label="Eliminar producto"
+          >
+            Eliminar
+          </button>
         </div>
 
         {/* Detalles - 80% */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-4 mb-2">
-            <div className="flex-1">
-              <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
-              <p className="text-sm text-gray-500">Enviado desde {ubicacionEnvio}</p>
-            </div>
-            <button
-              className="w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition flex-shrink-0"
-              onClick={onRemove}
-              aria-label="Eliminar producto"
-            >
-              <X className="w-4 h-4" />
-            </button>
+          <div className="mb-2">
+            <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
+            <p className="text-sm text-gray-500">Enviado desde {ubicacionEnvio}</p>
           </div>
 
           <div className="flex items-center gap-6 mt-4">

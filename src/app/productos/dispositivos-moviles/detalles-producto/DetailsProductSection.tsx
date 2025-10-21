@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
-import { useDeviceVariants, type ColorOption } from "@/hooks/useDeviceVariants";
+import { useProductSelection } from "@/hooks/useProductSelection";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
@@ -26,19 +26,30 @@ import DeviceCarousel from "./DeviceCarousel";
 import AddiFinancing from "./AddiFinancing";
 
 const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ product }) => {
-  // Hooks
-  const {
-    colorOptions,
-    storageOptions,
-    selectedDevice,
-    selectedStorage,
-    selectedColor,
-    selectedVariant,
-    currentPrice,
-    loading: variantsLoading,
-    setSelectedColor,
-    setSelectedStorage,
-  } = useDeviceVariants(product.id);
+  // Hooks - Usar el mismo sistema que ProductCard
+  const productSelection = useProductSelection(product.apiProduct || {
+    codigoMarketBase: '',
+    codigoMarket: [],
+    nombreMarket: '',
+    categoria: '',
+    subcategoria: '',
+    modelo: '',
+    color: [],
+    capacidad: [],
+    descGeneral: null,
+    sku: [],
+    ean: [],
+    desDetallada: [],
+    stock: [],
+    urlImagenes: [],
+    urlRender3D: [],
+    imagePreviewUrl: [],
+    imageDetailsUrls: [],
+    precioNormal: [],
+    precioeccommerce: [],
+    fechaInicioVigencia: [],
+    fechaFinalVigencia: []
+  });
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
@@ -70,42 +81,27 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     }
   };
 
-  const handleColorSelection = (colorOption: ColorOption) => {
-    setSelectedColor(colorOption);
-    if (colorOption?.hex) setGlobalSelectedColor(colorOption.hex);
+  // Funciones de manejo de selección compatibles con el diseño actual
+  const handleColorSelection = (colorName: string) => {
+    productSelection.selectColor(colorName);
+    // Buscar el hex del color para el contexto global
+    const colorInfo = product.colors?.find(c => c.label === colorName);
+    if (colorInfo?.hex) setGlobalSelectedColor(colorInfo.hex);
+  };
+
+  const handleStorageSelection = (capacityName: string) => {
+    productSelection.selectCapacity(capacityName);
   };
 
   const handleImageClick = (images: (string | StaticImageData)[], index: number) => { setGalleryImages(images); setGalleryIndex(index); setIsGalleryOpen(true); };
 
   const hasStock = () => {
-    if (!selectedDevice || !selectedStorage || !selectedColor) return true;
-    const variant = selectedColor.variants.find(
-      (v) =>
-        v.nombreMarket === selectedDevice.nombreMarket &&
-        v.capacidad === selectedStorage.capacidad &&
-        v.color.toLowerCase() === selectedColor.color.toLowerCase()
-    );
-    return variant ? variant.stock > 0 : false;
+    return productSelection.selectedStock !== null && productSelection.selectedStock > 0;
   };
 
   const handleAddToCart = async () => {
-    if (!selectedStorage || !selectedColor || !selectedDevice) {
+    if (!productSelection.selectedSku) {
       alert("Por favor selecciona todas las opciones del producto");
-      return;
-    }
-
-    // Validación estricta: debe existir un SKU válido del variant seleccionado
-    if (!selectedVariant?.sku) {
-      console.error('Error al agregar al carrito:', {
-        product_id: product.id,
-        product_name: product.name,
-        selectedColor,
-        selectedStorage,
-        selectedDevice,
-        selectedVariant,
-        error: 'No se encontró un SKU válido para la variante seleccionada'
-      });
-      alert('Error: No se encontró el SKU del producto seleccionado. Por favor intenta con otra combinación.');
       return;
     }
 
@@ -113,12 +109,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     try {
       addProduct({
         id: product.id,
-        name: `${product.name} - ${selectedColor.color} - ${selectedStorage.capacidad}`,
-        price: currentPrice || 0,
+        name: `${product.name} - ${productSelection.selection.selectedColor} - ${productSelection.selection.selectedCapacity}`,
+        price: productSelection.selectedPrice || 0,
         quantity: 1,
-        image: selectedVariant.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
-        sku: selectedVariant.sku, // SKU estricto de la variante seleccionada
-        ean: selectedVariant.ean,
+        image: productSelection.selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
+        sku: productSelection.selectedSku,
+        ean: productSelection.selectedVariant?.ean || '',
         puntos_q: product.puntos_q ?? 4,
       });
       alert("Producto añadido al carrito");
@@ -131,6 +127,17 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   };
 
   const handleBuyNow = async () => { await handleAddToCart(); router.push("/cart"); };
+
+  // Helper functions for price calculations
+  const getCurrentPrice = () => {
+    if (typeof productSelection.selectedPrice === 'number') {
+      return productSelection.selectedPrice;
+    }
+    if (typeof product.price === 'number') {
+      return product.price;
+    }
+    return 0;
+  };
 
   // Efecto para controlar el navbar principal cuando aparece el StickyPriceBar
   React.useEffect(() => {
@@ -159,8 +166,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
-    if (selectedVariant?.precioNormal && selectedVariant?.precioeccommerce) {
-      return typeof selectedVariant.precioNormal === 'number' ? selectedVariant.precioNormal : parseInt(String(selectedVariant.precioNormal).replace(/[^\d]/g, ''), 10) || 0;
+    if (productSelection.selectedOriginalPrice) {
+      return productSelection.selectedOriginalPrice;
     }
     if (!product.originalPrice) {
       return undefined;
@@ -168,37 +175,40 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     const parsedOriginalPrice =
       typeof product.originalPrice === 'number'
         ? product.originalPrice
-        : parseInt(String(product.originalPrice).replace(/[^\d]/g, ''), 10) || 0;
+        : Number.parseInt(String(product.originalPrice).replaceAll(/[^\d]/g, ''), 10) || 0;
     return parsedOriginalPrice;
-  }, [selectedVariant, product.originalPrice]);
+  }, [productSelection.selectedOriginalPrice, product.originalPrice]);
 
   const parsedProductDiscount = React.useMemo(() => {
+    if (productSelection.selectedDiscount) {
+      return productSelection.selectedDiscount;
+    }
     if (!product.discount) {
       return undefined;
     }
     if (typeof product.discount === "number") {
       return product.discount;
     }
-    const parsedValue = parseInt(String(product.discount).replace(/[^\d]/g, ""), 10);
+    const parsedValue = Number.parseInt(String(product.discount).replaceAll(/[^\d]/g, ""), 10);
     return parsedValue || 0;
-  }, [product.discount]);
+  }, [productSelection.selectedDiscount, product.discount]);
 
   const discountAmount = React.useMemo(() => {
-    if (originalPrice && currentPrice) {
-      return originalPrice - currentPrice;
+    if (originalPrice && productSelection.selectedPrice) {
+      return originalPrice - productSelection.selectedPrice;
     }
     return parsedProductDiscount;
-  }, [originalPrice, currentPrice, parsedProductDiscount]);
+  }, [originalPrice, productSelection.selectedPrice, parsedProductDiscount]);
 
   return (
     <>
       <FloatingEntregoEstrenoButton />
       <StickyPriceBar
         deviceName={product.name}
-        basePrice={currentPrice || 0}
+        basePrice={getCurrentPrice()}
         originalPrice={originalPrice}
-        selectedColor={selectedColor?.color}
-        selectedStorage={selectedStorage?.capacidad}
+        selectedColor={productSelection.selection.selectedColor || undefined}
+        selectedStorage={productSelection.selection.selectedCapacity || undefined}
         onBuyClick={handleBuyNow}
         hasAddiFinancing={true}
         isVisible={showStickyBar}
@@ -226,8 +236,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               <div className="col-span-6 sticky top-20 self-start">
                 <StickyImageContainer
                   productName={product.name}
-                  imagePreviewUrl={selectedVariant?.imagePreviewUrl}
-                  imageDetailsUrls={selectedVariant?.imageDetailsUrls}
+                  imagePreviewUrl={productSelection.selectedVariant?.imagePreviewUrl}
+                  imageDetailsUrls={product.apiProduct?.imageDetailsUrls?.[productSelection.selectedVariant?.index || 0] || []}
                   onImageClick={handleImageClick}
                 />
               </div>
@@ -237,21 +247,35 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                 <header className="">
                   <ProductHeader
                     name={product.name}
-                    sku={selectedVariant?.sku ?? product.sku ?? undefined}
+                    sku={productSelection.selectedSku ?? product.sku ?? undefined}
                     rating={product.rating}
                     reviewCount={product.reviewCount}
                     isFavorite={isFavorite}
                     onToggleFavorite={handleToggleFavorite}
                   />
                   <ProductSelectors
-                    colorOptions={colorOptions}
-                    selectedColor={selectedColor}
-                    onColorChange={handleColorSelection}
+                    colorOptions={productSelection.availableColors.map(colorName => ({
+                      color: colorName,
+                      hex: product.colors?.find(c => c.label === colorName)?.hex || '#000000',
+                      variants: []
+                    }))}
+                    selectedColor={productSelection.selection.selectedColor ? {
+                      color: productSelection.selection.selectedColor,
+                      hex: product.colors?.find(c => c.label === productSelection.selection.selectedColor)?.hex || '#000000',
+                      variants: []
+                    } : null}
+                    onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
                     hasStock={hasStock}
-                    storageOptions={storageOptions}
-                    selectedStorage={selectedStorage}
-                    onStorageChange={setSelectedStorage}
-                    variantsLoading={variantsLoading}
+                    storageOptions={productSelection.availableCapacities.map(capacityName => ({
+                      capacidad: capacityName,
+                      variants: []
+                    }))}
+                    selectedStorage={productSelection.selection.selectedCapacity ? {
+                      capacidad: productSelection.selection.selectedCapacity,
+                      variants: []
+                    } : null}
+                    onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
+                    variantsLoading={false}
                   />
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
@@ -264,10 +288,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
 
                 <AddiFinancing
                   productName={product.name}
-                  selectedColor={selectedColor?.color}
-                  selectedStorage={selectedStorage?.capacidad}
-                  currentPrice={currentPrice || undefined}
-                  originalPrice={originalPrice || undefined}
+                  selectedColor={productSelection.selection.selectedColor || undefined}
+                  selectedStorage={productSelection.selection.selectedCapacity || undefined}
+                  currentPrice={getCurrentPrice()}
+                  originalPrice={originalPrice}
                 />
               </div>
             </div>
@@ -279,8 +303,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
           <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
             <DeviceCarousel
               alt={product.name}
-              imagePreviewUrl={selectedVariant?.imagePreviewUrl}
-              imageDetailsUrls={selectedVariant?.imageDetailsUrls}
+              imagePreviewUrl={productSelection.selectedVariant?.imagePreviewUrl}
+              imageDetailsUrls={product.apiProduct?.imageDetailsUrls?.[productSelection.selectedVariant?.index || 0] || []}
               onImageClick={handleImageClick}
             />
             <header className="mb-4 text-center mt-6">
@@ -288,23 +312,37 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               <p className="text-base text-[#222] mb-4 font-light leading-snug">{product.description || ""}</p>
             </header>
             <PriceAndActions
-              currentPrice={currentPrice || 0}
+              currentPrice={getCurrentPrice()}
               originalPrice={originalPrice}
               discount={discountAmount}
-              selectedVariant={selectedVariant}
+              selectedVariant={productSelection.selectedVariant as any}
               loading={loading}
               onBuyNow={handleBuyNow}
               onAddToCart={handleAddToCart}
             />
             <ProductSelectors
-              colorOptions={colorOptions}
-              selectedColor={selectedColor}
-              onColorChange={handleColorSelection}
+              colorOptions={productSelection.availableColors.map(colorName => ({
+                color: colorName,
+                hex: product.colors?.find(c => c.label === colorName)?.hex || '#000000',
+                variants: []
+              }))}
+              selectedColor={productSelection.selection.selectedColor ? {
+                color: productSelection.selection.selectedColor,
+                hex: product.colors?.find(c => c.label === productSelection.selection.selectedColor)?.hex || '#000000',
+                variants: []
+              } : null}
+              onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
               hasStock={hasStock}
-              storageOptions={storageOptions}
-              selectedStorage={selectedStorage}
-              onStorageChange={setSelectedStorage}
-              variantsLoading={variantsLoading}
+              storageOptions={productSelection.availableCapacities.map(capacityName => ({
+                capacidad: capacityName,
+                variants: []
+              }))}
+              selectedStorage={productSelection.selection.selectedCapacity ? {
+                capacidad: productSelection.selection.selectedCapacity,
+                variants: []
+              } : null}
+              onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
+              variantsLoading={false}
             />
           </div>
         </motion.section>

@@ -43,6 +43,8 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
     setSelectedStorage,
   } = useDeviceVariants(product.id);
 
+  console.log("Selected Variant:", selectedVariant);
+
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
   const router = useRouter();
@@ -284,11 +286,11 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
                   imageDetailsUrls={selectedVariant?.imageDetailsUrls}
                   onImageClick={handleImageClick}
                 />
-                {true && (
+                {selectedVariant?.urlRender3D && selectedVariant.urlRender3D.trim() != "" && (
                   <ARExperienceHandler
-                    glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
-                    usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"
-                  ></ARExperienceHandler>
+                    glbUrl={selectedVariant.urlRender3D}
+                    usdzUrl={selectedVariant.urlRender3D}
+                  />
                 )}
               </div>
 
@@ -353,10 +355,12 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
               <p className="text-base text-[#222] mb-4 font-light leading-snug">
                 {product.description || ""}
               </p>
-              {true && <ARExperienceHandler
-                glbUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera1_5.glb"
-                usdzUrl="https://modelado3d.s3.us-east-2.amazonaws.com/Nevera_(1).usdz"
-              ></ARExperienceHandler>}
+              {selectedVariant?.urlRender3D && selectedVariant.urlRender3D.trim() != "" && (
+                <ARExperienceHandler
+                  glbUrl={selectedVariant.urlRender3D}
+                  usdzUrl={selectedVariant.urlRender3D}
+                />
+              )}
             </header>
 
             <PriceAndActions

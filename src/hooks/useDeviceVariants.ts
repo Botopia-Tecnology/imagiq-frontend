@@ -21,6 +21,8 @@ export interface DeviceVariant {
   urlRender3D?: string;
   imagePreviewUrl?: string;
   imageDetailsUrls?: string[];
+  imagen_premium?: string[]; // URLs de imágenes premium
+  video_premium?: string[]; // URLs de videos premium
 }
 
 export interface DeviceOption {
@@ -111,6 +113,8 @@ export const useDeviceVariants = (productId: string): UseDeviceVariantsReturn =>
           urlRender3D: product.urlRender3D[i],
           imagePreviewUrl: product.imagePreviewUrl?.[i],
           imageDetailsUrls: product.imageDetailsUrls?.[i] || [],
+          imagen_premium: product.imagen_premium || [], // URLs de imágenes premium
+          video_premium: product.video_premium || [], // URLs de videos premium
         };
 
         // Solo agregar variantes con SKU válido (stock puede ser 0)

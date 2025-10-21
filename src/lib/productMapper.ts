@@ -218,6 +218,19 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   const id = apiProduct.codigoMarketBase;
 
 
+  // Procesar imageDetailsUrls: aplanar array de arrays a array simple
+  const processedImageDetailsUrls = apiProduct.imageDetailsUrls?.flat().filter((url) => {
+    if (Array.isArray(url)) {
+      return url[0] && typeof url[0] === 'string' && url[0].trim() !== "";
+    }
+    return url && typeof url === 'string' && url.trim() !== "";
+  }).map((url) => {
+    if (Array.isArray(url)) {
+      return url[0];
+    }
+    return url;
+  }) || [];
+
   return {
     id,
     name: apiProduct.nombreMarket,
@@ -236,11 +249,15 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     model: apiProduct.modelo,
     category: apiProduct.categoria,
     subcategory: apiProduct.subcategoria,
+    segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
     capacity: apiProduct.capacidad?.join(', ') || null,
     stock: apiProduct.stock?.reduce((sum, s) => sum + s, 0) || 0,
     sku: apiProduct.sku?.join(', ') || null,
     ean: apiProduct.ean?.join(', ') || null,
     detailedDescription: apiProduct.desDetallada?.join(' ') || null,
+    imageDetailsUrls: processedImageDetailsUrls, // URLs de imágenes adicionales procesadas
+    imagen_premium: apiProduct.imagen_premium || [], // URLs de imágenes premium
+    video_premium: apiProduct.video_premium || [], // URLs de videos premium
   };
 }
 
@@ -353,7 +370,9 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       discount,
       sku: apiProduct.sku[firstIndex],
       ean: apiProduct.ean[firstIndex],
-      imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined
+      imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined,
+      imagen_premium: apiProduct.imagen_premium || [], // Imágenes premium para este color
+      video_premium: apiProduct.video_premium || [] // Videos premium para este color
     });
   });
   

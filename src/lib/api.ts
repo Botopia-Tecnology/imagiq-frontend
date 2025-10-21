@@ -231,6 +231,7 @@ export interface ProductApiData {
   categoria: string;
   subcategoria: string;
   modelo: string;
+  segmento?: string[]; // Campo para identificar productos premium (array)
   color: string[];
   capacidad: string[];
   descGeneral: string | null;
@@ -242,6 +243,8 @@ export interface ProductApiData {
   urlRender3D: string[];
   imagePreviewUrl: string[];
   imageDetailsUrls: string[][];
+  imagen_premium?: string[]; // Campo para imágenes premium
+  video_premium?: string[]; // Campo para videos premium
   precioNormal: number[];
   precioeccommerce: number[];
   fechaInicioVigencia: string[];

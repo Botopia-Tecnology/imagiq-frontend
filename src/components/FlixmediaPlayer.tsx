@@ -128,7 +128,7 @@ export default function FlixmediaPlayer({
       script.async = true;
 
       // Configurar atributos data según la guía de Flixmedia
-      script.setAttribute('data-flix-distributor', '9329');
+      script.setAttribute('data-flix-distributor', '17257');
       script.setAttribute('data-flix-language', 'f5');
       script.setAttribute('data-flix-brand', 'Samsung');
       script.setAttribute('data-flix-mpn', actualMpn || '');
@@ -141,7 +141,7 @@ export default function FlixmediaPlayer({
 
       script.onload = () => {
         console.log('✅ Script de Flixmedia cargado');
-        console.log('📋 Config:', { distributor: '9329', language: 'f5', brand: 'Samsung', mpn: actualMpn, ean: actualEan });
+        console.log('📋 Config:', { distributor: '17257', language: 'f5', brand: 'Samsung', mpn: actualMpn, ean: actualEan });
         console.log('🌍 Entorno:', { hostname: window.location.hostname, href: window.location.href });
 
         // Interceptar errores de scripts

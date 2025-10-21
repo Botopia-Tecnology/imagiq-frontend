@@ -228,26 +228,26 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
       </div>
 
       {/* Segundo carrusel - Solo imágenes del color seleccionado */}
-      <div className={`absolute inset-0 w-full transition-opacity duration-500 ease-in-out ${!showStickyCarousel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      <div className={`absolute top-[5%] left-0 right-0 bottom-0 w-full transition-opacity duration-500 ease-in-out ${!showStickyCarousel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {productImages.length > 0 ? (
           <>
             {/* Imagen del producto - estilo Samsung */}
             <div className="relative w-full h-[600px] bg-white flex items-center justify-center">
-               {(() => {
-                 const currentSrc = productImages[currentImageIndex % productImages.length];
+              {(() => {
+                const currentSrc = productImages[currentImageIndex % productImages.length];
                  
-                 return (
-                   <img
-                     key={currentSrc}
-                     src={currentSrc}
-                     alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
-                     className="w-full h-full object-contain"
-                     onError={(e) => {
-                       console.error('Error loading image:', currentSrc, e);
-                     }}
-                   />
-                 );
-               })()}
+                return (
+                  <img
+                    key={currentSrc}
+                    src={currentSrc}
+                    alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      console.error('Error loading image:', currentSrc, e);
+                    }}
+                  />
+                );
+              })()}
             </div>
             {/* Botón pegado a la primera foto */}
             <div className="flex justify-center mt-2">

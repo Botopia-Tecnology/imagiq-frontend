@@ -123,14 +123,6 @@ const ImageModal: React.FC<ImageModalProps> = ({
               ))}
             </div>
           )}
-
-          {/* Información del color */}
-          <div className="absolute bottom-8 left-8 text-gray-800">
-            <div className="text-lg font-semibold">{selectedColor}</div>
-            <div className="text-sm opacity-75">
-              {modalImageIndex + 1} de {productImages.length}
-            </div>
-          </div>
         </div>
       </div>
     </>

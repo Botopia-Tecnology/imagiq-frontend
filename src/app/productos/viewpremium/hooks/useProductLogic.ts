@@ -73,11 +73,6 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     const selectedColorData = product.colors?.find(c => c.name === selectedColor);
     const productImages: string[] = [];
     
-    // SOLO imágenes específicas del color seleccionado
-    if (selectedColorData?.imagePreviewUrl) {
-      productImages.push(selectedColorData.imagePreviewUrl);
-    }
-    
     // Si el color tiene imágenes adicionales específicas, agregarlas
     // Buscar en imageDetailsUrls si hay imágenes específicas para este color
     if (product.imageDetailsUrls && product.imageDetailsUrls.length > 0) {
@@ -94,7 +89,15 @@ export const useProductLogic = (product: ProductCardProps | null) => {
       }
     }
     
-    return productImages;
+    // Si no hay imágenes específicas del color, usar la imagen principal del color
+    if (productImages.length === 0 && selectedColorData?.imagePreviewUrl) {
+      productImages.push(selectedColorData.imagePreviewUrl);
+    }
+    
+    // Eliminar duplicados usando Set
+    const uniqueImages = [...new Set(productImages)];
+    
+    return uniqueImages;
   };
 
   const premiumImages = getPremiumImages();

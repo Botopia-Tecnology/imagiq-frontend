@@ -36,6 +36,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     modelo: '',
     color: [],
     capacidad: [],
+    memoriaram: [],
     descGeneral: null,
     sku: [],
     ean: [],
@@ -93,6 +94,10 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     productSelection.selectCapacity(capacityName);
   };
 
+  const handleMemoriaramSelection = (memoriaramName: string) => {
+    productSelection.selectMemoriaram(memoriaramName);
+  };
+
   const handleImageClick = (images: (string | StaticImageData)[], index: number) => { setGalleryImages(images); setGalleryIndex(index); setIsGalleryOpen(true); };
 
   const hasStock = () => {
@@ -109,7 +114,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
     try {
       addProduct({
         id: product.id,
-        name: `${product.name} - ${productSelection.selection.selectedColor} - ${productSelection.selection.selectedCapacity}`,
+        name: `${product.name} - ${productSelection.selection.selectedColor} - ${productSelection.selection.selectedCapacity} - ${productSelection.selection.selectedMemoriaram}`,
         price: productSelection.selectedPrice || 0,
         quantity: 1,
         image: productSelection.selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
@@ -276,6 +281,9 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     } : null}
                     onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
                     variantsLoading={false}
+                    memoriaramOptions={productSelection.availableMemoriaram}
+                    selectedMemoriaram={productSelection.selection.selectedMemoriaram}
+                    onMemoriaramChange={handleMemoriaramSelection}
                   />
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
@@ -343,6 +351,9 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               } : null}
               onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
               variantsLoading={false}
+              memoriaramOptions={productSelection.availableMemoriaram}
+              selectedMemoriaram={productSelection.selection.selectedMemoriaram}
+              onMemoriaramChange={handleMemoriaramSelection}
             />
           </div>
         </motion.section>

@@ -12,6 +12,7 @@ export interface ProductVariant {
   index: number;
   color: string;
   capacity: string;
+  memoriaram: string;
   sku: string;
   ean: string;
   codigoMarket: string;
@@ -24,6 +25,7 @@ export interface ProductVariant {
 export interface SelectionState {
   selectedColor: string | null;
   selectedCapacity: string | null;
+  selectedMemoriaram: string | null;
   selectedVariant: ProductVariant | null;
 }
 
@@ -34,6 +36,7 @@ export interface UseProductSelectionReturn {
   // Opciones disponibles filtradas
   availableColors: string[];
   availableCapacities: string[];
+  availableMemoriaram: string[];
   
   // Información del producto seleccionado
   selectedSku: string | null;
@@ -47,6 +50,7 @@ export interface UseProductSelectionReturn {
   // Funciones de selección
   selectColor: (color: string) => void;
   selectCapacity: (capacity: string) => void;
+  selectMemoriaram: (memoriaram: string) => void;
   resetSelection: () => void;
   
   // Información de debug
@@ -62,6 +66,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     const maxLength = Math.max(
       apiProduct.color.length,
       apiProduct.capacidad.length,
+      apiProduct.memoriaram.length,
       apiProduct.sku.length,
       apiProduct.ean.length,
       apiProduct.codigoMarket.length,
@@ -75,6 +80,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
         index: i,
         color: apiProduct.color[i] || '',
         capacity: apiProduct.capacidad[i] || '',
+        memoriaram: apiProduct.memoriaram[i] || '',
         sku: apiProduct.sku[i] || '',
         ean: apiProduct.ean[i] || '',
         codigoMarket: apiProduct.codigoMarket[i] || '',
@@ -96,6 +102,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
       return {
         selectedColor: firstVariant.color,
         selectedCapacity: firstVariant.capacity,
+        selectedMemoriaram: firstVariant.memoriaram,
         selectedVariant: firstVariant
       };
     }
@@ -103,6 +110,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     return {
       selectedColor: null,
       selectedCapacity: null,
+      selectedMemoriaram: null,
       selectedVariant: null
     };
   });
@@ -110,15 +118,16 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
   // Actualizar la selección cuando cambien las variantes disponibles
   useEffect(() => {
     // Si no hay selección actual y hay variantes disponibles, seleccionar la primera
-    if (!selection.selectedColor && !selection.selectedCapacity && allVariants.length > 0) {
+    if (!selection.selectedColor && !selection.selectedCapacity && !selection.selectedMemoriaram && allVariants.length > 0) {
       const firstVariant = allVariants[0];
       setSelection({
         selectedColor: firstVariant.color,
         selectedCapacity: firstVariant.capacity,
+        selectedMemoriaram: firstVariant.memoriaram,
         selectedVariant: firstVariant
       });
     }
-  }, [allVariants, selection.selectedColor, selection.selectedCapacity]);
+  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
 
   // Colores únicos disponibles
   const availableColors = useMemo(() => {
@@ -146,58 +155,89 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     return Array.from(capacities);
   }, [allVariants]);
 
+  // Memoria RAM única disponible
+  const availableMemoriaram = useMemo(() => {
+    const memoriaram = new Set<string>();
+    
+    allVariants.forEach(variant => {
+      if (variant.memoriaram && variant.memoriaram.trim() !== '' && variant.memoriaram.toLowerCase() !== 'no aplica') {
+        memoriaram.add(variant.memoriaram);
+      }
+    });
+    
+    return Array.from(memoriaram);
+  }, [allVariants]);
+
   // Filtrar variantes basado en las selecciones actuales
   const filteredVariants = useMemo(() => {
     return allVariants.filter(variant => {
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const capacityMatch = !selection.selectedCapacity || variant.capacity === selection.selectedCapacity;
-      return colorMatch && capacityMatch;
+      const memoriaramMatch = !selection.selectedMemoriaram || variant.memoriaram === selection.selectedMemoriaram;
+      return colorMatch && capacityMatch && memoriaramMatch;
     });
-  }, [allVariants, selection.selectedColor, selection.selectedCapacity]);
+  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
 
-  // Colores disponibles basado en la capacidad seleccionada
+  // Colores disponibles basado en la capacidad y memoria RAM seleccionadas
   const availableColorsFiltered = useMemo(() => {
-    if (!selection.selectedCapacity) {
-      return availableColors;
-    }
-    
     const colors = new Set<string>();
+    
     allVariants.forEach(variant => {
-      if (variant.capacity === selection.selectedCapacity && variant.color && variant.color.trim() !== '') {
+      const capacityMatch = !selection.selectedCapacity || variant.capacity === selection.selectedCapacity;
+      const memoriaramMatch = !selection.selectedMemoriaram || variant.memoriaram === selection.selectedMemoriaram;
+      
+      if (capacityMatch && memoriaramMatch && variant.color && variant.color.trim() !== '') {
         colors.add(variant.color);
       }
     });
     
     return Array.from(colors);
-  }, [allVariants, selection.selectedCapacity, availableColors]);
+  }, [allVariants, selection.selectedCapacity, selection.selectedMemoriaram]);
 
-  // Capacidades disponibles basado en el color seleccionado
+  // Capacidades disponibles basado en el color y memoria RAM seleccionados
   const availableCapacitiesFiltered = useMemo(() => {
-    if (!selection.selectedColor) {
-      return availableCapacities;
-    }
-    
     const capacities = new Set<string>();
+    
     allVariants.forEach(variant => {
-      if (variant.color === selection.selectedColor && variant.capacity && variant.capacity.trim() !== '' && variant.capacity.toLowerCase() !== 'no aplica') {
+      const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
+      const memoriaramMatch = !selection.selectedMemoriaram || variant.memoriaram === selection.selectedMemoriaram;
+      
+      if (colorMatch && memoriaramMatch && variant.capacity && variant.capacity.trim() !== '' && variant.capacity.toLowerCase() !== 'no aplica') {
         capacities.add(variant.capacity);
       }
     });
     
     return Array.from(capacities);
-  }, [allVariants, selection.selectedColor, availableCapacities]);
+  }, [allVariants, selection.selectedColor, selection.selectedMemoriaram]);
+
+  // Memoria RAM disponible basado en el color y capacidad seleccionados
+  const availableMemoriaramFiltered = useMemo(() => {
+    const memoriaram = new Set<string>();
+    
+    allVariants.forEach(variant => {
+      const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
+      const capacityMatch = !selection.selectedCapacity || variant.capacity === selection.selectedCapacity;
+      
+      if (colorMatch && capacityMatch && variant.memoriaram && variant.memoriaram.trim() !== '' && variant.memoriaram.toLowerCase() !== 'no aplica') {
+        memoriaram.add(variant.memoriaram);
+      }
+    });
+    
+    return Array.from(memoriaram);
+  }, [allVariants, selection.selectedColor, selection.selectedCapacity]);
 
   // Variante seleccionada actualmente
   const selectedVariant = useMemo(() => {
-    if (!selection.selectedColor || !selection.selectedCapacity) {
+    if (!selection.selectedColor || !selection.selectedCapacity || !selection.selectedMemoriaram) {
       return null;
     }
     
     return allVariants.find(variant => 
       variant.color === selection.selectedColor && 
-      variant.capacity === selection.selectedCapacity
+      variant.capacity === selection.selectedCapacity &&
+      variant.memoriaram === selection.selectedMemoriaram
     ) || null;
-  }, [allVariants, selection.selectedColor, selection.selectedCapacity]);
+  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
 
   // Información del producto seleccionado
   const selectedSku = selectedVariant?.sku || null;
@@ -217,11 +257,22 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
       // Si la capacidad actual no es compatible con el nuevo color, resetear capacidad
       if (prev.selectedCapacity) {
         const compatibleCapacity = allVariants.some(variant => 
-          variant.color === color && variant.capacity === prev.selectedCapacity
+          variant.color === color && variant.capacity === prev.selectedCapacity && variant.memoriaram === prev.selectedMemoriaram
         );
         
         if (!compatibleCapacity) {
           newSelection.selectedCapacity = null;
+        }
+      }
+      
+      // Si la memoria RAM actual no es compatible con el nuevo color, resetear memoria RAM
+      if (prev.selectedMemoriaram) {
+        const compatibleMemoriaram = allVariants.some(variant => 
+          variant.color === color && variant.capacity === prev.selectedCapacity && variant.memoriaram === prev.selectedMemoriaram
+        );
+        
+        if (!compatibleMemoriaram) {
+          newSelection.selectedMemoriaram = null;
         }
       }
       
@@ -236,11 +287,52 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
       // Si el color actual no es compatible con la nueva capacidad, resetear color
       if (prev.selectedColor) {
         const compatibleColor = allVariants.some(variant => 
-          variant.capacity === capacity && variant.color === prev.selectedColor
+          variant.capacity === capacity && variant.color === prev.selectedColor && variant.memoriaram === prev.selectedMemoriaram
         );
         
         if (!compatibleColor) {
           newSelection.selectedColor = null;
+        }
+      }
+      
+      // Si la memoria RAM actual no es compatible con la nueva capacidad, resetear memoria RAM
+      if (prev.selectedMemoriaram) {
+        const compatibleMemoriaram = allVariants.some(variant => 
+          variant.capacity === capacity && variant.color === prev.selectedColor && variant.memoriaram === prev.selectedMemoriaram
+        );
+        
+        if (!compatibleMemoriaram) {
+          newSelection.selectedMemoriaram = null;
+        }
+      }
+      
+      return newSelection;
+    });
+  }, [allVariants]);
+
+  const selectMemoriaram = useCallback((memoriaram: string) => {
+    setSelection(prev => {
+      const newSelection = { ...prev, selectedMemoriaram: memoriaram };
+      
+      // Si el color actual no es compatible con la nueva memoria RAM, resetear color
+      if (prev.selectedColor) {
+        const compatibleColor = allVariants.some(variant => 
+          variant.memoriaram === memoriaram && variant.color === prev.selectedColor && variant.capacity === prev.selectedCapacity
+        );
+        
+        if (!compatibleColor) {
+          newSelection.selectedColor = null;
+        }
+      }
+      
+      // Si la capacidad actual no es compatible con la nueva memoria RAM, resetear capacidad
+      if (prev.selectedCapacity) {
+        const compatibleCapacity = allVariants.some(variant => 
+          variant.memoriaram === memoriaram && variant.color === prev.selectedColor && variant.capacity === prev.selectedCapacity
+        );
+        
+        if (!compatibleCapacity) {
+          newSelection.selectedCapacity = null;
         }
       }
       
@@ -252,6 +344,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     setSelection({
       selectedColor: null,
       selectedCapacity: null,
+      selectedMemoriaram: null,
       selectedVariant: null
     });
   }, []);
@@ -260,6 +353,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     selection,
     availableColors: availableColorsFiltered,
     availableCapacities: availableCapacitiesFiltered,
+    availableMemoriaram: availableMemoriaramFiltered,
     selectedSku,
     selectedCodigoMarket,
     selectedPrice,
@@ -269,6 +363,7 @@ export function useProductSelection(apiProduct: ProductApiData): UseProductSelec
     selectedVariant,
     selectColor,
     selectCapacity,
+    selectMemoriaram,
     resetSelection,
     allVariants
   };

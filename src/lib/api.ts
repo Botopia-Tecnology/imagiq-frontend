@@ -233,6 +233,7 @@ export interface ProductApiData {
   modelo: string;
   color: string[];
   capacidad: string[];
+  memoriaram: string[];
   descGeneral: string | null;
   sku: string[];
   ean:string[];

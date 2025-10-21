@@ -102,6 +102,116 @@ const TradeInSection: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Separator line */}
+        <div className="border-t border-gray-200 my-8"></div>
+
+        {/* Beneficios section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-6 text-left">Beneficios</h2>
+          
+          {/* Benefits grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            {/* Estreno y Entrego */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-xs text-gray-500 mb-1">Beneficio Samsung.com</p>
+                  <h3 className="text-lg font-bold text-black mb-1">Estreno y Entrego</h3>
+                  <p className="text-black text-sm">Selecciona Estreno y Entrego y obtén hasta $700.000 de descuento. Aplican TyC</p>
+                </div>
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img 
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056515/offers_tradeIn_c022s6.webp" 
+                    alt="Estreno y Entrego" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Cuotas sin interés */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-xs text-gray-500 mb-1">Beneficio Samsung.com</p>
+                  <h3 className="text-lg font-bold text-black mb-1">3, 6, 12 o 24 cuotas sin interés con bancos aliados*</h3>
+                  <p className="text-black text-sm">Beneficio de lanzamiento</p>
+                </div>
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img 
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761059888/01_ICONOS_PARADIGMA_0_INTERES_1_z6a2tz.webp" 
+                    alt="Cuotas sin interés" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Puntos Rewards */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-xs text-gray-500 mb-1">Beneficio Samsung.com</p>
+                  <h3 className="text-lg font-bold text-black mb-1">Acumula puntos Rewards</h3>
+                  <p className="text-black text-sm">¡Usa tus Puntos Rewards como parte de pago multiplicados X10!</p>
+                </div>
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img 
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056582/offers_rewards_v2_uurjxh.webp" 
+                    alt="Puntos Rewards" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Google AI Pro */}
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-xs text-gray-500 mb-1">Google AI Pro Offer</p>
+                  <h3 className="text-lg font-bold text-black mb-1">Obtén Google AI Pro por 6 meses ($79.000 al mes una vez finalizado)</h3>
+                  <p className="text-blue-600 text-sm cursor-pointer">Ver más</p>
+                </div>
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img 
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056609/Q7_Gifts_and_Savings_Thumbnail_Google_ai_pro_PC_80x80_w5zlxv.webp" 
+                    alt="Google AI Pro" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Fifth card - same width as others */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div className="flex-1 mr-4">
+                  <p className="text-xs text-gray-500 mb-1">Beneficio exclusivo Shop App</p>
+                  <h3 className="text-lg font-bold text-black mb-1">¡Usa tus Puntos Rewards como parte de pago!</h3>
+                  <p className="text-black text-sm mb-2">Ahora los multiplicamos X10: Redime 25.000 puntos y recibe $250.000 Dto. Puedes pagar hasta el 20% de tu compra con puntos.</p>
+                  <div className="flex gap-4">
+                    <p className="text-blue-600 text-sm cursor-pointer">Descarga Shop App</p>
+                    <p className="text-gray-500 text-xs">Aplican Términos y condiciones</p>
+                  </div>
+                </div>
+                <div className="w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
+                  <img 
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056719/COMPRA_REWARDS_MULTIPLICA_X10_2670X2670_cbcgej.webp" 
+                    alt="Puntos Rewards X10" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Separator line */}
+        <div className="border-t border-gray-200 my-8"></div>
       </div>
     </div>
   );

@@ -17,6 +17,8 @@ import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 export default function Step1({ onContinue }: { onContinue: () => void }) {
   const [addedName, setAddedName] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string>("");
+  const [showCouponModal, setShowCouponModal] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
 
   // Usar el hook centralizado useCart
   const {
@@ -81,7 +83,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   };
 
   return (
-    <main className="min-h-screen py-8 px-2 md:px-0">
+    <main className="min-h-screen py-8 px-2 md:px-0 pb-32 md:pb-8">
       {/* Grid principal: productos y resumen de compra */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Productos */}
@@ -126,8 +128,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             </>
           )}
         </section>
-        {/* Resumen de compra */}
-        <aside className="rounded-2xl p-6 flex flex-col gap-6">
+        {/* Resumen de compra - Solo Desktop */}
+        <aside className="hidden md:flex rounded-2xl p-6 flex-col gap-6">
           <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-sm">
@@ -209,6 +211,75 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       <div className="max-w-6xl mx-auto mt-8">
         <Sugerencias onAdd={handleAddSugerencia} />
       </div>
+
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      {cartProducts.length > 0 && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+          <div className="p-4">
+            {/* Resumen compacto */}
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <p className="text-xs text-gray-500">Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)} productos)</p>
+                <p className="text-2xl font-bold text-gray-900">$ {Number(total).toLocaleString()}</p>
+              </div>
+              <button
+                onClick={() => setShowCouponModal(true)}
+                className="text-sm text-sky-600 hover:text-sky-700 font-medium underline"
+              >
+                Cupón
+              </button>
+            </div>
+
+            {/* Botón continuar */}
+            <button
+              className="w-full font-bold py-3 rounded-lg text-base transition bg-sky-500 hover:bg-sky-600 text-white"
+              onClick={handleContinue}
+            >
+              Continuar pago
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Cupón */}
+      {showCouponModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end md:items-center justify-center">
+          <div className="bg-white w-full md:max-w-md md:rounded-lg rounded-t-2xl overflow-hidden animate-slide-up">
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-bold">Agregar cupón</h3>
+              <button
+                onClick={() => setShowCouponModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-4">
+              <input
+                type="text"
+                placeholder="Código de cupón"
+                value={couponCode}
+                onChange={(e) => setCouponCode(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-4 py-3 text-base focus:outline-none focus:border-sky-500"
+              />
+              <button
+                onClick={() => {
+                  // Aquí iría la lógica para aplicar el cupón
+                  alert(`Cupón "${couponCode}" aplicado`);
+                  setShowCouponModal(false);
+                  setCouponCode("");
+                }}
+                className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition"
+              >
+                Aplicar cupón
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

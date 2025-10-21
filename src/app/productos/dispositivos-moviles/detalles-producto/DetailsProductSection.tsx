@@ -16,6 +16,7 @@ import { getProductSeries, getSeriesHref } from "./utils/productSeriesUtils";
 import FloatingEntregoEstrenoButton from "./FloatingEntregoEstrenoButton";
 import StickyPriceBar from "./StickyPriceBar";
 import ImageGalleryModal from "./ImageGalleryModal";
+import { TradeInModal } from "./estreno-y-entrego";
 import ProductHeader from "./ProductHeader";
 import ProductSelectors from "./ProductSelectors";
 import DeliveryTradeInOptions from "./DeliveryTradeInOptions";
@@ -56,6 +57,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
   const [galleryImages, setGalleryImages] = React.useState<(string | StaticImageData)[]>([]);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
+  const [isTradeInModalOpen, setIsTradeInModalOpen] = React.useState(false);
 
   // Handlers
   const handleToggleFavorite = () => {
@@ -72,6 +74,18 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
   };
 
   const handleImageClick = (images: (string | StaticImageData)[], index: number) => { setGalleryImages(images); setGalleryIndex(index); setIsGalleryOpen(true); };
+
+  const handleOpenTradeInModal = () => {
+    setIsTradeInModalOpen(true);
+  };
+
+  const handleCloseTradeInModal = () => {
+    setIsTradeInModalOpen(false);
+  };
+
+  const handleTradeInContinue = () => {
+    console.log("Usuario continuó con el trade-in");
+  };
 
   const hasStock = () => {
     if (!selectedDevice || !selectedStorage || !selectedColor) return true;
@@ -183,6 +197,11 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         currentIndex={galleryIndex}
         productName={product.name}
       />
+      <TradeInModal
+        isOpen={isTradeInModalOpen}
+        onClose={handleCloseTradeInModal}
+        onContinue={handleTradeInContinue}
+      />
 
       <main className="w-full bg-white min-h-screen" style={{ fontFamily: "SamsungSharpSans" }}>
         <motion.section ref={desktopReveal.ref} {...desktopReveal.motionProps} className="hidden lg:block">
@@ -225,6 +244,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
                     selectedStorage={selectedStorage}
                     onStorageChange={setSelectedStorage}
                     variantsLoading={variantsLoading}
+                    onOpenTradeInModal={handleOpenTradeInModal}
                   />
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
@@ -278,6 +298,7 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
               selectedStorage={selectedStorage}
               onStorageChange={setSelectedStorage}
               variantsLoading={variantsLoading}
+              onOpenTradeInModal={handleOpenTradeInModal}
             />
           </div>
         </motion.section>

@@ -74,51 +74,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // UX: feedback visual al agregar sugerencia usando el hook centralizado
   const handleAddSugerencia = (nombre: string) => {
-    // Buscar sugerencia por nombre
-    const sugerencias = [
-      {
-        nombre: "Samsung Galaxy Watch7",
-        precio: 1099900,
-        imagen: "/img/categorias/galaxy_watch7.png",
-        id: "watch7",
-      },
-      {
-        nombre: "Galaxy Buds3 Pro",
-        precio: 629900,
-        imagen: "/img/categorias/galaxy_buds.png",
-        id: "buds3pro",
-      },
-      {
-        nombre: "Cargador Adaptador de carga rápida - Cable tipo-C (15W)",
-        precio: 74900,
-        imagen: "/img/categorias/cargador_tipo_c.png",
-        id: "cargador15w",
-      },
-    ];
-    const prod = sugerencias.find((s) => s.nombre === nombre);
-    if (!prod) return;
-
-    // Usar el hook centralizado para añadir productos
-    addProduct(
-      {
-        id: prod.id,
-        name: prod.nombre,
-        price: prod.precio,
-        image: prod.imagen,
-        sku: prod.id,
-        ean: prod.id,
-      },
-      1
-    );
-
-    setAddedName(nombre);
-    setTimeout(() => setAddedName(null), 1200);
-    // UX: scroll al carrito
-    setTimeout(() => {
-      document
-        .getElementById("carrito-productos")
-        ?.scrollIntoView({ behavior: "smooth" });
-    }, 400);
+    // Nota: La función onAdd del componente Sugerencias ahora pasa el nombre del producto real
+    // Por ahora solo mostramos un alert, más adelante se puede integrar con el carrito
+    console.log("Producto agregado:", nombre);
+    alert(`"${nombre}" agregado a tu compra`);
   };
 
   return (

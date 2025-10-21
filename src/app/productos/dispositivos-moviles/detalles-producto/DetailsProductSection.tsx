@@ -371,9 +371,9 @@ const DetailsProductSection: React.FC<{
         className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
         style={{ fontFamily: "SamsungSharpSans" }}
       >
-        <motion.section
-          ref={desktopReveal.ref}
-          {...desktopReveal.motionProps}
+        <div
+          // ref={desktopReveal.ref}
+          // {...desktopReveal.motionProps}
           className="hidden lg:block"
         >
           <div className="max-w-[1400px] mx-auto px-8 py-12">
@@ -453,7 +453,7 @@ const DetailsProductSection: React.FC<{
               </div>
             </div>
           </div>
-        </motion.section>
+        </div>
 
         {/* MOBILE: Stack vertical */}
         <motion.section className="lg:hidden">

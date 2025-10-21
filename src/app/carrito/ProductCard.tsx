@@ -151,18 +151,18 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <div className="flex items-baseline gap-2 flex-wrap">
                 <span className="text-2xl font-bold text-gray-900">${precio.toLocaleString()}</span>
                 {descuento && (
-                  <span className="text-sm text-gray-400 line-through">${precioOriginal?.toLocaleString()}</span>
+                  <>
+                    <span className="text-sm text-gray-400 line-through">${precioOriginal?.toLocaleString()}</span>
+                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded whitespace-nowrap">
+                      {descuento}%
+                    </span>
+                  </>
                 )}
               </div>
               {descuento && precioOriginal && (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded whitespace-nowrap">
-                    Ahorras {descuento}%
-                  </span>
-                  <span className="text-sm text-green-600 font-medium">
-                    ${(precioOriginal - precio).toLocaleString()}
-                  </span>
-                </div>
+                <span className="text-sm text-green-600 font-medium">
+                  Ahorras ${(precioOriginal - precio).toLocaleString()}
+                </span>
               )}
             </div>
           </div>

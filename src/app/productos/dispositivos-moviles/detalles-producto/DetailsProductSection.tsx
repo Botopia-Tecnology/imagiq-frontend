@@ -143,6 +143,9 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({
         id: product.id,
         name: `${product.name} - ${selectedColor.color} - ${selectedStorage.capacidad}`,
         price: currentPrice || 0,
+        originalPrice: selectedVariant.precioNormal,
+        stock: selectedVariant.stock,
+        shippingFrom: "Bogotá",
         quantity: 1,
         image:
           selectedVariant.imagePreviewUrl ||

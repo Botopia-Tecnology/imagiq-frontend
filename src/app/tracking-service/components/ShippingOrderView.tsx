@@ -1,5 +1,6 @@
 import { TrackingHeader } from "./TrackingHeader";
 import { TrackingTimeline } from "./TrackingTimeline";
+import { PDFViewer } from "./PDFViewer";
 
 interface ShippingOrderViewProps {
   orderNumber: string;
@@ -63,7 +64,7 @@ export function ShippingOrderView({
       <div className="md:w-1/2 w-full px-0">
         {orderNumber !== "..." && pdfBase64 ? (
           <div className="w-full mx-auto max-w-[400px] sm:max-w-[580px] md:max-w-none">
-            {/* Vista limpia: si es imagen, la mostramos; si es PDF, evitamos el visor */}
+            {/* Vista limpia: si es imagen, la mostramos; si es PDF, usamos el nuevo visor */}
             {isLikelyImage(pdfBase64) ? (
               <div className="w-full rounded-xl bg-white overflow-hidden">
                 <div className="px-5 pt-5">
@@ -88,34 +89,11 @@ export function ShippingOrderView({
                 </div>
               </div>
             ) : (
-              <div className="w-full rounded-xl bg-white overflow-hidden">
-                <div className="px-5 pt-5">
-                  <h3 className="text-base font-semibold text-gray-900 mb-2">Guía de envío</h3>
-                  <p className="text-sm text-gray-700 mb-3">Vista previa del documento.</p>
-                </div>
-                {/* PDF preview */}
-                <div className="w-full h-[380px] sm:h-[480px] md:h-[600px] bg-white overflow-hidden">
-                  <iframe
-                    title="Vista previa guía"
-                    src={`data:application/pdf;base64,${pdfBase64}#toolbar=0&navpanes=0&scrollbar=0&view=Fit&page=1`}
-                    className="w-full h-full border-0"
-                    style={{ border: 'none' }}
-                    onError={() => {
-                      // Fallback: si el iframe falla, mostrar mensaje
-                      console.log('PDF preview not supported on this device');
-                    }}
-                  />
-                </div>
-                <div className="px-5 pt-3 pb-4 flex justify-center">
-                  <button
-                    onClick={handleDownload}
-                    className="px-5 py-2 rounded-full bg-[#17407A] text-white hover:brightness-110 transition shadow-md"
-                    aria-label="Descargar guía"
-                  >
-                    Descargar PDF
-                  </button>
-                </div>
-              </div>
+              <PDFViewer 
+                pdfBase64={pdfBase64} 
+                orderNumber={orderNumber}
+                onDownload={handleDownload}
+              />
             )}
           </div>
         ) : (

@@ -11,7 +11,7 @@
 import type { ProductFilterParams } from "./sharedInterfaces";
 
 // API Client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Generic API response type
 interface ApiResponse<T> {

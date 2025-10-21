@@ -218,6 +218,12 @@ export default function ProductCard({
           typeof currentPrice === "string"
             ? Number.parseInt(currentPrice.replaceAll(/[^\d]/g, ""))
             : currentPrice ?? 0,
+        originalPrice:
+          typeof currentOriginalPrice === "string"
+            ? Number.parseInt(currentOriginalPrice.replaceAll(/[^\d]/g, ""))
+            : currentOriginalPrice,
+        stock,
+        shippingFrom: "Bogotá",
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: selectedColor.sku, // SKU estricto del color seleccionado
         ean: selectedColor.ean, // SKU estricto del color seleccionado

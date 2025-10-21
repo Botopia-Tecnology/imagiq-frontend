@@ -115,6 +115,9 @@ const DetailsProductSection: React.FC<{ product: ProductCardProps }> = ({ produc
         id: product.id,
         name: `${product.name} - ${selectedColor.color} - ${selectedStorage.capacidad}`,
         price: currentPrice || 0,
+        originalPrice: selectedVariant.precioNormal,
+        stock: selectedVariant.stock,
+        shippingFrom: "Bogotá",
         quantity: 1,
         image: selectedVariant.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
         sku: selectedVariant.sku, // SKU estricto de la variante seleccionada

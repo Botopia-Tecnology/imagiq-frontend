@@ -52,7 +52,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </div>
             <button
               onClick={onRemove}
-              className="text-xs text-red-600 hover:text-red-700 font-medium transition"
+              className="text-xs text-sky-600 hover:text-sky-700 font-medium transition"
               aria-label="Eliminar producto"
             >
               Eliminar
@@ -107,7 +107,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
           <button
             onClick={onRemove}
-            className="text-sm text-red-600 hover:text-red-700 font-medium transition"
+            className="text-sm text-sky-600 hover:text-sky-700 font-medium transition"
             aria-label="Eliminar producto"
           >
             Eliminar

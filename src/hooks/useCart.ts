@@ -117,7 +117,14 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       const price = Number(p.precio || p.price || 0);
       // quantity
       const quantity = Number(p.cantidad || p.quantity || 1);
-      return { id, name, image, price, quantity, sku, ean,puntos_q };
+      // stock - del backend
+      const stock = typeof p.stock === "number" ? p.stock : undefined;
+      // originalPrice - del backend
+      const originalPrice = typeof p.originalPrice === "number" ? p.originalPrice : undefined;
+      // shippingFrom
+      const shippingFrom = typeof p.shippingFrom === "string" ? p.shippingFrom : undefined;
+
+      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom };
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }

@@ -12,9 +12,16 @@ export default function ProductDetailSkeleton() {
       {/* DESKTOP: Grid principal */}
       <section className="hidden lg:block animate-pulse">
         <div className="max-w-[1400px] mx-auto px-8 py-12">
+          {/* Breadcrumb skeleton */}
+          <nav className="flex items-center gap-2 mb-8">
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+            <div className="h-4 bg-gray-200 rounded w-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-40"></div>
+          </nav>
+
           <div className="grid grid-cols-12 gap-16 items-start">
             {/* Columna izquierda: Imagen */}
-            <div className="col-span-6 sticky top-20">
+            <div className="col-span-6 sticky top-20 self-start">
               <div className="w-full flex flex-col items-center">
                 {/* Placeholder de imagen principal */}
                 <div className="flex justify-center h-[500px] items-center w-full">
@@ -31,7 +38,7 @@ export default function ProductDetailSkeleton() {
             </div>
 
             {/* Columna derecha: Info y acciones */}
-            <div className="col-span-6 flex flex-col justify-start gap-4 pt-4">
+            <div className="col-span-6 flex flex-col justify-start gap-4">
               {/* Nombre del producto */}
               <div className="h-10 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
 

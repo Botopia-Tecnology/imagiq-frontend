@@ -97,18 +97,7 @@ export default function ProductViewPage({ params }) {
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
-  const [showContent, setShowContent] = React.useState(false);
   const [variantsReady, setVariantsReady] = React.useState(false);
-
-  // Delay para asegurar transición suave
-  React.useEffect(() => {
-    if (!loading && product && variantsReady) {
-      const timer = setTimeout(() => setShowContent(true), 100);
-      return () => clearTimeout(timer);
-    } else {
-      setShowContent(false);
-    }
-  }, [loading, product, variantsReady]);
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
@@ -118,12 +107,15 @@ export default function ProductViewPage({ params }) {
   if (!id) {
     return notFound();
   }
-  if (loading || !showContent) {
-    return <ProductDetailSkeleton />;
-  }
+
   if (error) {
     return notFound();
   }
+
+  if (!product && loading) {
+    return <ProductDetailSkeleton />;
+  }
+
   if (!product) {
     return (
       <div className="container mx-auto px-6 py-8">
@@ -141,10 +133,20 @@ export default function ProductViewPage({ params }) {
     );
   }
 
+  const isFullyLoaded = !loading && variantsReady;
+
   return (
-    <ProductContentWithVariants
-      product={product}
-      onVariantsReady={setVariantsReady}
-    />
+    <>
+      {/* Mostrar skeleton mientras carga */}
+      {!isFullyLoaded && <ProductDetailSkeleton />}
+
+      {/* Renderizar contenido (oculto o visible según estado) */}
+      <div style={{ display: isFullyLoaded ? 'block' : 'none' }}>
+        <ProductContentWithVariants
+          product={product}
+          onVariantsReady={setVariantsReady}
+        />
+      </div>
+    </>
   );
 }

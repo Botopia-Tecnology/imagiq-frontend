@@ -57,6 +57,7 @@ const DetailsProductSection: React.FC<{
   });
 
   // Notificar cuando las variantes estén listas (usando productSelection)
+  // No dependemos de loading porque productSelection siempre tiene una variante seleccionada
   React.useEffect(() => {
     if (productSelection.selectedVariant && onVariantsReady) {
       onVariantsReady(true);

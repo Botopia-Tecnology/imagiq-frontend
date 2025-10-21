@@ -5,7 +5,6 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { useDebounce } from "@/hooks/useDebounce";
 import { posthogUtils } from "@/lib/posthogClient";
-import { useProductContext } from "@/features/products/ProductContext";
 import { navbarRoutes } from "@/routes/navbarRoutes";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -47,7 +46,6 @@ export function useNavbarLogic() {
   const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
   const debouncedSearch = useDebounce(searchQuery, 300); // Query de búsqueda con debounce
   const { cart: cartItems, itemCount } = useCartContext();
-  const { isAppliance } = useProductContext();
   // Derivar cartCount con useMemo para evitar stale closures
   // Usa itemCount como fuente de verdad para garantizar sincronización con el estado global del carrito
   const cartCount = useMemo(() => {
@@ -170,13 +168,13 @@ export function useNavbarLogic() {
     pathname?.startsWith("/productos/view/") ||
     pathname?.startsWith("/productos/dispositivos-moviles/details");
   // Determina si mostrar logo blanco y estilos claros
-  // Solo mostrar logo blanco si estamos en la parte superior de la página (primeros 100px)
+  // CAMBIO: En home siempre usar logo NEGRO para que se vea sobre el video oscuro
+  // Solo en ofertas mantener el logo blanco cuando está arriba
   const isAtTop = typeof window !== 'undefined' ? window.scrollY < 100 : true;
-  const showWhiteLogo = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
-  const showWhiteItems = (isOfertas || isHome) && !activeDropdown && isAtTop && !isScrolled;
-  const showWhiteItemsMobile =
-    // Solo mostrar texto blanco en mobile en el home cuando está arriba
-    (isHome && !isScrolled && isAtTop);
+  const showWhiteLogo = isOfertas && !activeDropdown && isAtTop && !isScrolled;
+  // Forzar texto blanco en ofertas cuando está arriba, negro en home
+  const showWhiteItems = isOfertas && !activeDropdown && isAtTop && !isScrolled;
+  const showWhiteItemsMobile = false; // Siempre texto negro en mobile
 
   // Handlers para hover de dropdowns (animación y posición)
   const handleDropdownEnter = (dropdownName: string) => {

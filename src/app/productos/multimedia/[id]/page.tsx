@@ -151,6 +151,19 @@ export default function MultimediaPage({
     ? parsePrice(product.originalPrice)
     : undefined;
   
+  // Función helper para verificar si el producto es premium
+  const isPremiumProduct = (segmento?: string | string[]): boolean => {
+    if (!segmento) return false;
+    const segmentoValue = Array.isArray(segmento) ? segmento[0] : segmento;
+    return segmentoValue?.toLowerCase() === 'premium';
+  };
+
+  // Determinar la ruta según el segmento del producto
+  const isPremium = isPremiumProduct(product.segmento);
+  const viewRoute = isPremium 
+    ? `/productos/viewpremium/${id}` 
+    : `/productos/view/${id}`;
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
       {/* Top Bar con info del producto y CTA - Fixed debajo del Navbar */}
@@ -158,7 +171,7 @@ export default function MultimediaPage({
         productName={product.name}
         price={numericPrice}
         originalPrice={numericOriginalPrice}
-        onViewDetailsClick={() => router.push(`/productos/view/${id}`)}
+        onViewDetailsClick={() => router.push(viewRoute)}
         isVisible={true}
       />
 
@@ -174,6 +187,7 @@ export default function MultimediaPage({
           ean={productEan}
           productName={product.name}
           productId={id}
+          segmento={product.segmento}
           className=""
         />
       </motion.div>

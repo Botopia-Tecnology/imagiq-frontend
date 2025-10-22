@@ -25,6 +25,7 @@ interface FlixmediaPlayerProps {
   productName?: string;
   className?: string;
   productId?: string;
+  segmento?: string | string[]; // Segmento del producto (Premium, etc.) - puede ser string o array
 }
 import { useRouter } from "next/navigation";
 
@@ -34,6 +35,7 @@ export default function FlixmediaPlayer({
   productName = "Producto",
   className = "",
   productId,
+  segmento,
 }: FlixmediaPlayerProps) {
   const [actualMpn, setActualMpn] = useState<string | null>(null);
   const [actualEan, setActualEan] = useState<string | null>(null);
@@ -99,10 +101,22 @@ export default function FlixmediaPlayer({
         }
       }
 
+      // Función helper para verificar si el producto es premium
+      const isPremiumProduct = (segmento?: string | string[]): boolean => {
+        if (!segmento) return false;
+        const segmentoValue = Array.isArray(segmento) ? segmento[0] : segmento;
+        return segmentoValue?.toLowerCase() === 'premium';
+      };
+
       // Si no se encontró ni MPN ni EAN, ejecutar callback
       if (!foundMpn && !foundEan) {
         console.log(`❌ No hay contenido disponible en Flixmedia`);
-        router.replace(`/productos/view/${productId}`);
+        // Determinar la ruta según el segmento del producto
+        const isPremium = isPremiumProduct(segmento);
+        const route = isPremium 
+          ? `/productos/viewpremium/${productId}` 
+          : `/productos/view/${productId}`;
+        router.replace(route);
         setContentFound(false);
       } else {
         setContentFound(true);

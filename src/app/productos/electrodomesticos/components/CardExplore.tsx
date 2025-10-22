@@ -30,6 +30,7 @@ export interface ExploreProductProps {
   image: string | StaticImageData;
   onAddToCart?: (productId: string, color: string) => void;
   sku?: string | null;
+  segmento?: string | string[]; // Segmento del producto (Premium, etc.) - puede ser string o array
   className?: string;
 }
 
@@ -37,6 +38,7 @@ export default function CardExplore({
   id,
   name,
   image,
+  segmento,
   className,
 }: ExploreProductProps) {
   const router = useRouter();
@@ -46,12 +48,14 @@ export default function CardExplore({
   const handleMoreInfo = () => {
     console.log(`🔗 Navegando a producto con ID: ${id}`);
     console.log(`📝 Nombre del producto: ${name}`);
-    // Navega usando el id del mock, no el nombre ni slug
-    router.push(`/productos/view/${id}`);
+    // Navega a la página de multimedia
+    router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
       product_id: id,
       product_name: name,
       source: "product_card",
+      destination: "multimedia_page",
+      segment: segmento,
     });
   };
 

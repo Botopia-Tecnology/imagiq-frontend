@@ -331,14 +331,14 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   //START
   // Funciones helper para compatibilidad con componentes legacy
   const getColorOptions = useCallback((): ColorOption[] => {
-  
-    
     return availableColorsFiltered.map(color => {
+      // Normalizar el color: trim y lowercase
+      const normalizedColor = color.toLowerCase().trim();
       // Usar el colorMap de productMapper para obtener el hex correcto
-      const colorInfo = colorMap[color.toLowerCase()];
+      const colorInfo = colorMap[normalizedColor];
       const hex = colorInfo?.hex || '#808080';
       
-      console.log(`Color mapping: "${color}" -> hex: "${hex}" (found: ${!!colorInfo})`);
+      console.log(`Color mapping: "${color}" (normalized: "${normalizedColor}") -> hex: "${hex}" (found: ${!!colorInfo})`);
       
       return {
         color,

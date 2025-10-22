@@ -31,7 +31,11 @@ export function useVisibleCategories() {
             uuid: 'mock-im',
             nombre: 'IM',
             nombreVisible: 'Dispositivos móviles',
+            descripcion: 'Dispositivos móviles',
+            imagen: '',
             activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             totalProducts: 0,
             subcategorias: []
           },
@@ -39,7 +43,11 @@ export function useVisibleCategories() {
             uuid: 'mock-av',
             nombre: 'AV',
             nombreVisible: 'Televisores y AV',
+            descripcion: 'Televisores y Audio/Video',
+            imagen: '',
             activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             totalProducts: 0,
             subcategorias: []
           },
@@ -47,7 +55,11 @@ export function useVisibleCategories() {
             uuid: 'mock-da',
             nombre: 'DA',
             nombreVisible: 'Electrodomésticos',
+            descripcion: 'Electrodomésticos',
+            imagen: '',
             activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             totalProducts: 0,
             subcategorias: []
           },
@@ -55,7 +67,11 @@ export function useVisibleCategories() {
             uuid: 'mock-it',
             nombre: 'IT',
             nombreVisible: 'Monitores',
+            descripcion: 'Monitores',
+            imagen: '',
             activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
             totalProducts: 0,
             subcategorias: []
           }

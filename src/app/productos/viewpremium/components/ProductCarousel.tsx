@@ -22,54 +22,9 @@ const VideoPlayer: React.FC<{
   onVideoStart?: () => void;
 }> = ({ src, alt, onVideoEnd, onVideoStart }) => {
   const [videoError, setVideoError] = useState(false);
-  const [iframeError, setIframeError] = useState(false);
   
-  // Si es el video animado KV PC, usar el archivo local
-  if (src.includes('B7_Animated_KV_PC_1600x864.webm') || src.includes('animated') || src.includes('kv')) {
-    return (
-      <video
-        src="/B7_Animated_KV_PC_1600x864.webm"
-        autoPlay
-        loop
-        muted
-        playsInline
-        controls={false}
-        className="w-full h-full object-contain"
-        onEnded={onVideoEnd}
-        onPlay={onVideoStart}
-        onError={(e) => {
-          console.error('Error loading video:', e);
-          setVideoError(true);
-        }}
-        onLoadStart={() => console.log('Video loading started')}
-        onCanPlay={() => console.log('Video can play')}
-      />
-    );
-  }
-  const publicId = src.includes('video/upload/') 
-    ? src.split('video/upload/')[1].split('.')[0]
-    : src.split('/').pop()?.split('.')[0];
-
-  // Si el iframe falla, intentar con video nativo
-  if (iframeError && !videoError) {
-    return (
-      <video
-        src={src}
-        autoPlay
-        loop
-        muted
-        playsInline
-        controls={false}
-        className="w-full h-full object-contain"
-        onEnded={onVideoEnd}
-        onPlay={onVideoStart}
-        onError={() => setVideoError(true)}
-      />
-    );
-  }
-
-  // Si ambos fallan, mostrar imagen de error
-  if (iframeError && videoError) {
+  // Usar directamente el tag video HTML5 para mejor compatibilidad
+  if (videoError) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-gray-100">
         <div className="text-center text-gray-500">
@@ -80,23 +35,23 @@ const VideoPlayer: React.FC<{
     );
   }
 
-  // Intentar primero con iframe de Cloudinary
   return (
-    <iframe
-      src={`https://player.cloudinary.com/embed/?cloud_name=dcljjtnxr&public_id=${publicId}&profile=cld-adaptive-stream`}
-      width="640"
-      height="360"
-      style={{ 
-        height: 'auto', 
-        width: '100%', 
-        aspectRatio: '640 / 360',
-        maxHeight: '600px',
-        maxWidth: '100%'
+    <video
+      src={src}
+      autoPlay
+      loop
+      muted
+      playsInline
+      controls={false}
+      className="w-full h-full object-contain"
+      onEnded={onVideoEnd}
+      onPlay={onVideoStart}
+      onError={(e) => {
+        console.error('Error loading video:', src, e);
+        setVideoError(true);
       }}
-      allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-      allowFullScreen
-      frameBorder="0"
-      onError={() => setIframeError(true)}
+      onLoadStart={() => console.log('Video loading started:', src)}
+      onCanPlay={() => console.log('Video can play:', src)}
     />
   );
 };
@@ -127,16 +82,9 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
       <div className={`relative w-full transition-opacity duration-500 ease-in-out ${showStickyCarousel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {(() => {
           // Determinar qué imágenes usar según el estado del scroll
-          // Para el carrusel premium, siempre incluir el video animado KV PC como primera imagen
-          // Filtrar videos del array premiumImages para evitar duplicación
-          const filteredPremiumImages = premiumImages.filter(img => 
-            !img.includes('.webm') && 
-            !img.includes('.mp4') && 
-            !img.includes('.mov') &&
-            !img.includes('video/upload')
-          );
+          // Para el carrusel premium, usar SOLO las imágenes del API (sin contenido mockeado)
           const currentImages = showStickyCarousel 
-            ? ['/B7_Animated_KV_PC_1600x864.webm', ...filteredPremiumImages]
+            ? premiumImages
             : productImages;
           const currentImageSet = showStickyCarousel ? 'premium' : 'product';
           
@@ -147,7 +95,6 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                 {(() => {
                   const currentSrc = currentImages[currentImageIndex];
                   const isVideo = currentSrc && (
-                    currentSrc.includes('B7_Animated_KV_PC_1600x864.webm') ||
                     currentSrc.includes('.webm') || 
                     currentSrc.includes('.mp4') || 
                     currentSrc.includes('.mov') ||

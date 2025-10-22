@@ -86,8 +86,7 @@ export interface ProductCardProps {
   eanArray?: string[];
   detailedDescription?: string | null;
   imageDetailsUrls?: string[]; // URLs de imágenes adicionales para la galería
-  imagen_premium?: string[]; // URLs de imágenes premium
-  video_premium?: string[]; // URLs de videos premium
+  // imagen_premium y video_premium ahora están a nivel de ProductColor
   selectedColor?: ProductColor;
   setSelectedColor?: (color: ProductColor) => void;
   selectedCapacity?: ProductCapacity;

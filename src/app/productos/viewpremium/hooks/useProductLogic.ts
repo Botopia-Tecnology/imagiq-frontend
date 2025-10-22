@@ -30,39 +30,61 @@ export const useProductLogic = (product: ProductCardProps | null) => {
   }, [product]);
 
   // Obtener imágenes premium y videos premium (carrusel inicial)
+  // IMPORTANTE: Este carrusel NO depende del color seleccionado
+  // Muestra contenido premium general del producto
+  // Si no hay contenido premium, devuelve array vacío (NO usa imágenes mockeadas)
   const getPremiumImages = () => {
-    if (!product || !selectedColor) {
-      // Si no hay producto o color seleccionado, devolver contenido por defecto
-      return [
-        "https://res.cloudinary.com/dcljjtnxr/video/upload/v1761056337/B7_Animated_KV_PC_1600x864_zlmmor.webm",
-        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060262/B7_Global_Color_Group_KV_No-text_PC_1600x864_1_hq9awr.png",
-        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060268/Q7B7_S.com_only_color_combo_KV_No-text_PC_1600x864_1_jyf2be.png"
-      ];
+    if (!product) {
+      return [];
     }
     
-    const selectedColorData = product.colors?.find(c => c.name === selectedColor);
     const premiumImages: string[] = [];
     
-    // 1. Videos premium del color seleccionado
-    if (selectedColorData?.video_premium && selectedColorData.video_premium.length > 0) {
-      premiumImages.push(...selectedColorData.video_premium.filter(url => url && url.trim() !== ""));
+    console.log('📦 Buscando contenido premium general del producto (independiente del color)');
+    
+    // Recolectar TODOS los videos e imágenes premium de TODOS los colores
+    // y eliminar duplicados para tener contenido premium general
+    const allVideos = new Set<string>();
+    const allImages = new Set<string>();
+    
+    product.colors?.forEach((color) => {
+      // Videos premium
+      if (color.video_premium && Array.isArray(color.video_premium)) {
+        color.video_premium.forEach(url => {
+          if (url && typeof url === 'string' && url.trim() !== '') {
+            allVideos.add(url);
+          }
+        });
+      }
+      
+      // Imágenes premium
+      if (color.imagen_premium && Array.isArray(color.imagen_premium)) {
+        color.imagen_premium.forEach(url => {
+          if (url && typeof url === 'string' && url.trim() !== '') {
+            allImages.add(url);
+          }
+        });
+      }
+    });
+    
+    // Agregar primero los videos, luego las imágenes
+    if (allVideos.size > 0) {
+      console.log('🎥 Videos premium encontrados:', allVideos.size);
+      premiumImages.push(...Array.from(allVideos));
     }
     
-    // 2. Imágenes premium del color seleccionado
-    if (selectedColorData?.imagen_premium && selectedColorData.imagen_premium.length > 0) {
-      premiumImages.push(...selectedColorData.imagen_premium.filter(url => url && url.trim() !== ""));
+    if (allImages.size > 0) {
+      console.log('🖼️ Imágenes premium encontradas:', allImages.size);
+      premiumImages.push(...Array.from(allImages));
     }
     
-    // 3. Si no hay contenido premium, agregar video y imágenes por defecto
+    // Si no hay contenido premium, devolver array vacío
     if (premiumImages.length === 0) {
-      premiumImages.push(
-        "https://res.cloudinary.com/dcljjtnxr/video/upload/v1761056337/B7_Animated_KV_PC_1600x864_zlmmor.webm",
-        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060262/B7_Global_Color_Group_KV_No-text_PC_1600x864_1_hq9awr.png",
-        "https://res.cloudinary.com/dcljjtnxr/image/upload/v1761060268/Q7B7_S.com_only_color_combo_KV_No-text_PC_1600x864_1_jyf2be.png"
-      );
+      console.log('⚠️ No hay contenido premium disponible en el API');
+    } else {
+      console.log('✅ Premium images loaded (general del producto):', premiumImages.length);
     }
     
-    console.log('Premium images loaded:', premiumImages);
     return premiumImages;
   };
 
@@ -73,30 +95,50 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     const selectedColorData = product.colors?.find(c => c.name === selectedColor);
     const productImages: string[] = [];
     
+    console.log('🎨 Buscando imágenes para color:', selectedColor);
+    console.log('📦 imageDetailsUrls disponibles:', product.imageDetailsUrls);
+    
     // Si el color tiene imágenes adicionales específicas, agregarlas
     // Buscar en imageDetailsUrls si hay imágenes específicas para este color
-    if (product.imageDetailsUrls && product.imageDetailsUrls.length > 0) {
+    if (product.imageDetailsUrls && Array.isArray(product.imageDetailsUrls) && product.imageDetailsUrls.length > 0) {
       // Filtrar solo imágenes que contengan el nombre del color en la URL
       const colorSpecificImages = product.imageDetailsUrls.filter(url => {
         if (!url || typeof url !== 'string') return false;
+        const urlLower = url.toLowerCase();
         const colorName = selectedColor.toLowerCase();
-        return url.toLowerCase().includes(colorName) || 
-               url.toLowerCase().includes(selectedColorData?.label?.toLowerCase() || '');
+        const colorLabel = selectedColorData?.label?.toLowerCase() || '';
+        
+        // Buscar coincidencias en la URL
+        return urlLower.includes(colorName) || 
+               urlLower.includes(colorLabel) ||
+               // También buscar por palabras clave del color (ej: "negro", "azul", etc)
+               colorLabel.split(' ').some(word => word.length > 3 && urlLower.includes(word));
       });
       
       if (colorSpecificImages.length > 0) {
+        console.log('✅ Imágenes específicas del color encontradas:', colorSpecificImages.length);
         productImages.push(...colorSpecificImages);
+      } else {
+        console.log('⚠️ No se encontraron imágenes específicas del color en imageDetailsUrls');
+        // Si no hay imágenes específicas, usar todas las imageDetailsUrls disponibles
+        const validImages = product.imageDetailsUrls.filter(url => url && typeof url === 'string' && url.trim() !== '');
+        if (validImages.length > 0) {
+          console.log('📸 Usando todas las imágenes disponibles:', validImages.length);
+          productImages.push(...validImages);
+        }
       }
     }
     
     // Si no hay imágenes específicas del color, usar la imagen principal del color
     if (productImages.length === 0 && selectedColorData?.imagePreviewUrl) {
+      console.log('📸 Usando imagen preview del color');
       productImages.push(selectedColorData.imagePreviewUrl);
     }
     
     // Eliminar duplicados usando Set
     const uniqueImages = [...new Set(productImages)];
     
+    console.log('✅ Total de imágenes del producto:', uniqueImages.length);
     return uniqueImages;
   };
 
@@ -124,9 +166,12 @@ export const useProductLogic = (product: ProductCardProps | null) => {
   }, []);
 
   // Resetear índice de imagen cuando cambie el color seleccionado
+  // SOLO si estamos en el carrusel de producto (no en el premium)
   React.useEffect(() => {
-    setCurrentImageIndex(0);
-  }, [selectedColor]);
+    if (!showStickyCarousel) {
+      setCurrentImageIndex(0);
+    }
+  }, [selectedColor, showStickyCarousel]);
 
   // Funciones para el modal
   const openModal = () => {

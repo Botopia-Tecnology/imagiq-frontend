@@ -256,8 +256,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     ean: apiProduct.ean?.join(', ') || null,
     detailedDescription: apiProduct.desDetallada?.join(' ') || null,
     imageDetailsUrls: processedImageDetailsUrls, // URLs de imágenes adicionales procesadas
-    imagen_premium: apiProduct.imagen_premium || [], // URLs de imágenes premium
-    video_premium: apiProduct.video_premium || [], // URLs de videos premium
+    // imagen_premium y video_premium se asignan a nivel de color en createProductColorsFromArray
     // Pasar los datos de la API para el nuevo sistema de selección
     apiProduct,
   };
@@ -364,6 +363,20 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Usar el primer SKU disponible para este color
     const firstIndex = indices[0];
     
+    // Obtener imágenes y videos premium específicos para este color
+    // imagenPremium y videoPremium vienen como arrays de arrays desde el API
+    // Intentar primero con el nombre sin guión bajo (imagenPremium), luego con guión bajo (imagen_premium)
+    const imagenesPremiumColor = ((apiProduct.imagenPremium?.[firstIndex] || apiProduct.imagen_premium?.[firstIndex]) || []) as string[];
+    const videosPremiumColor = ((apiProduct.videoPremium?.[firstIndex] || apiProduct.video_premium?.[firstIndex]) || []) as string[];
+    
+    // Filtrar URLs vacías o inválidas
+    const imagenesPremiumValidas = Array.isArray(imagenesPremiumColor) 
+      ? imagenesPremiumColor.filter((url: string) => url && typeof url === 'string' && url.trim() !== '')
+      : [];
+    const videosPremiumValidos = Array.isArray(videosPremiumColor)
+      ? videosPremiumColor.filter((url: string) => url && typeof url === 'string' && url.trim() !== '')
+      : [];
+    
     colorsWithPrices.push({
       name: normalizedColor.replaceAll(/\s+/g, '-'),
       hex: colorInfo.hex,
@@ -374,8 +387,8 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       sku: apiProduct.sku[firstIndex],
       ean: apiProduct.ean[firstIndex],
       imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined,
-      imagen_premium: apiProduct.imagen_premium || [], // Imágenes premium para este color
-      video_premium: apiProduct.video_premium || [] // Videos premium para este color
+      imagen_premium: imagenesPremiumValidas, // Imágenes premium para este color específico
+      video_premium: videosPremiumValidos // Videos premium para este color específico
     });
   }
   

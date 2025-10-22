@@ -65,7 +65,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               <span className="text-gray-400 cursor-help text-sm">?</span>
             </div>
             <p className="text-xs text-gray-600 mb-1.5">Compra tu smartphone de mayor capacidad a menor precio</p>
-            
+
             <div className="space-y-1.5">
               {product.capacities.map((capacity, index) => {
                 const isSelected = capacity.value === selectedStorage;
@@ -74,16 +74,15 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 const monthlyPrice = Math.round(priceNumber / 24);
                 const formattedLabel = String(capacity.label || "")
                   .replace(/(\d+)\s*gb\b/i, '$1 GB') + ' | 12GB';
-                
+
                 return (
                   <div key={index}>
                     <div
                       onClick={() => setSelectedStorage(capacity.value)}
-                      className={`border-2 rounded-lg p-2 cursor-pointer transition-colors ${
-                        isSelected
-                          ? "border-blue-600 bg-blue-50"
-                          : "border-gray-300 hover:border-gray-400"
-                      }`}
+                      className={`border-2 rounded-lg p-2 cursor-pointer transition-colors ${isSelected
+                        ? "border-blue-600 bg-blue-50"
+                        : "border-gray-300 hover:border-gray-400"
+                        }`}
                     >
                       <div className="flex items-center justify-between">
                         <div className="font-semibold text-gray-900 text-xs">
@@ -126,11 +125,11 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               <h3 className="text-base font-bold text-gray-900">Color</h3>
             </div>
             <p className="text-xs text-gray-600 mb-1.5">Selecciona el color de tu dispositivo.</p>
-            
+
             <div className="flex gap-3 justify-center">
               {product.colors.map((color, index) => {
                 const isSelected = color.name === selectedColor;
-                
+
                 return (
                   <div
                     key={index}
@@ -140,17 +139,15 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     }}
                     className="flex flex-col items-center cursor-pointer transition-all"
                   >
-                    <div 
-                      className={`w-10 h-10 rounded-full border-2 transition-all ${
-                        isSelected
-                          ? "border-blue-600 ring-1 ring-blue-600 ring-offset-1 scale-105"
-                          : "border-gray-300 hover:border-gray-400 hover:scale-105"
-                      }`}
+                    <div
+                      className={`w-10 h-10 rounded-full border-2 transition-all ${isSelected
+                        ? "border-blue-600 ring-1 ring-blue-600 ring-offset-1 scale-105"
+                        : "border-gray-300 hover:border-gray-400 hover:scale-105"
+                        }`}
                       style={{ backgroundColor: color.hex }}
                     ></div>
-                    <div className={`font-semibold text-center text-xs mt-1 ${
-                      isSelected ? "text-blue-600" : "text-gray-700"
-                    }`}>
+                    <div className={`font-semibold text-center text-xs mt-1 ${isSelected ? "text-blue-600" : "text-gray-700"
+                      }`}>
                       {color.label}
                     </div>
                   </div>

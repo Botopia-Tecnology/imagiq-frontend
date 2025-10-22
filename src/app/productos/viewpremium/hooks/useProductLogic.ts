@@ -40,8 +40,6 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     
     const premiumImages: string[] = [];
     
-    console.log('📦 Buscando contenido premium general del producto (independiente del color)');
-    
     // Recolectar TODOS los videos e imágenes premium de TODOS los colores
     // y eliminar duplicados para tener contenido premium general
     const allVideos = new Set<string>();
@@ -69,77 +67,71 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     
     // Agregar primero los videos, luego las imágenes
     if (allVideos.size > 0) {
-      console.log('🎥 Videos premium encontrados:', allVideos.size);
       premiumImages.push(...Array.from(allVideos));
     }
     
     if (allImages.size > 0) {
-      console.log('🖼️ Imágenes premium encontradas:', allImages.size);
       premiumImages.push(...Array.from(allImages));
-    }
-    
-    // Si no hay contenido premium, devolver array vacío
-    if (premiumImages.length === 0) {
-      console.log('⚠️ No hay contenido premium disponible en el API');
-    } else {
-      console.log('✅ Premium images loaded (general del producto):', premiumImages.length);
     }
     
     return premiumImages;
   };
 
   // Obtener imágenes del producto del color seleccionado (carrusel secundario)
+  // Usa el mismo sistema que la vista normal: imageDetailsUrls del apiProduct con el índice de la variante
   const getProductImages = () => {
     if (!product || !selectedColor) return [];
     
-    const selectedColorData = product.colors?.find(c => c.name === selectedColor);
-    const productImages: string[] = [];
-    
-    console.log('🎨 Buscando imágenes para color:', selectedColor);
-    console.log('📦 imageDetailsUrls disponibles:', product.imageDetailsUrls);
-    
-    // Si el color tiene imágenes adicionales específicas, agregarlas
-    // Buscar en imageDetailsUrls si hay imágenes específicas para este color
-    if (product.imageDetailsUrls && Array.isArray(product.imageDetailsUrls) && product.imageDetailsUrls.length > 0) {
-      // Filtrar solo imágenes que contengan el nombre del color en la URL
-      const colorSpecificImages = product.imageDetailsUrls.filter(url => {
-        if (!url || typeof url !== 'string') return false;
-        const urlLower = url.toLowerCase();
-        const colorName = selectedColor.toLowerCase();
-        const colorLabel = selectedColorData?.label?.toLowerCase() || '';
-        
-        // Buscar coincidencias en la URL
-        return urlLower.includes(colorName) || 
-               urlLower.includes(colorLabel) ||
-               // También buscar por palabras clave del color (ej: "negro", "azul", etc)
-               colorLabel.split(' ').some(word => word.length > 3 && urlLower.includes(word));
-      });
+    // Buscar la variante correspondiente al color seleccionado en el apiProduct
+    if (product.apiProduct) {
+      const variantIndex = product.apiProduct.color.findIndex(
+        (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
+      );
       
-      if (colorSpecificImages.length > 0) {
-        console.log('✅ Imágenes específicas del color encontradas:', colorSpecificImages.length);
-        productImages.push(...colorSpecificImages);
-      } else {
-        console.log('⚠️ No se encontraron imágenes específicas del color en imageDetailsUrls');
-        // Si no hay imágenes específicas, usar todas las imageDetailsUrls disponibles
-        const validImages = product.imageDetailsUrls.filter(url => url && typeof url === 'string' && url.trim() !== '');
-        if (validImages.length > 0) {
-          console.log('📸 Usando todas las imágenes disponibles:', validImages.length);
-          productImages.push(...validImages);
+      if (variantIndex !== -1 && product.apiProduct.imageDetailsUrls) {
+        // Obtener las imágenes específicas de esta variante
+        const variantImages = product.apiProduct.imageDetailsUrls[variantIndex];
+        
+        if (Array.isArray(variantImages) && variantImages.length > 0) {
+          const validImages = variantImages.filter(
+            (url: string) => url && typeof url === 'string' && url.trim() !== ''
+          );
+          
+          return validImages;
         }
       }
     }
     
-    // Si no hay imágenes específicas del color, usar la imagen principal del color
-    if (productImages.length === 0 && selectedColorData?.imagePreviewUrl) {
-      console.log('📸 Usando imagen preview del color');
-      productImages.push(selectedColorData.imagePreviewUrl);
+    // Fallback: buscar en imageDetailsUrls plano (formato antiguo)
+    if (product.imageDetailsUrls && Array.isArray(product.imageDetailsUrls) && product.imageDetailsUrls.length > 0) {
+      const selectedColorData = product.colors?.find(c => c.name === selectedColor);
+      const validImages = product.imageDetailsUrls.filter(url => url && typeof url === 'string' && url.trim() !== '');
+      
+      // Intentar filtrar por color en la URL
+      const colorName = selectedColor.toLowerCase().trim();
+      const colorLabel = selectedColorData?.label?.toLowerCase().trim() || '';
+      
+      const colorSpecificImages = validImages.filter(url => {
+        const urlLower = url.toLowerCase();
+        // Buscar el nombre del color o su label en la URL
+        return urlLower.includes(colorName) || 
+               urlLower.includes(colorLabel) ||
+               // Buscar palabras individuales del label (ej: "azul fantasma" -> buscar "azul" y "fantasma")
+               colorLabel.split(' ').some(word => word.length > 3 && urlLower.includes(word));
+      });
+      
+      if (colorSpecificImages.length > 0) {
+        return colorSpecificImages;
+      }
     }
     
-    // Eliminar duplicados usando Set
-    const uniqueImages = [...new Set(productImages)];
+    // Último fallback: usar la imagen preview del color
+    const selectedColorData = product.colors?.find(c => c.name === selectedColor);
+    if (selectedColorData?.imagePreviewUrl) {
+      return [selectedColorData.imagePreviewUrl];
+    }
     
-    console.log('✅ Total de imágenes del producto:', uniqueImages.length);
-    return uniqueImages;
+    return [];
   };
 
   const premiumImages = getPremiumImages();
@@ -153,9 +145,6 @@ export const useProductLogic = (product: ProductCardProps | null) => {
       
       // Calcular el porcentaje de scroll (0-100)
       const scrollPercentage = (scrollY / documentHeight) * 100;
-      
-      // TEMPORAL: Mostrar el porcentaje en consola para debugging
-      console.log('📊 Scroll percentage:', scrollPercentage.toFixed(2) + '%');
       
       // Cambiar al segundo carrusel cuando el scroll llegue al 20%
       const shouldHideCarousel = scrollPercentage > 20;

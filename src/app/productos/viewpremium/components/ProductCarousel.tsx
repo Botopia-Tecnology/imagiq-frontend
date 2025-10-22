@@ -51,8 +51,6 @@ const VideoPlayer: React.FC<{
         console.error('Error loading video:', src, e);
         setVideoError(true);
       }}
-      onLoadStart={() => console.log('Video loading started:', src)}
-      onCanPlay={() => console.log('Video can play:', src)}
     />
   );
 };

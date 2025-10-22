@@ -188,11 +188,19 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     className="flex flex-col items-center cursor-pointer transition-all"
                   >
                     <div
-                      className={`w-12 h-12 rounded-full border-2 transition-all ${isSelected
-                        ? "border-black ring-2 ring-black ring-offset-2 scale-110"
-                        : "border-gray-300 hover:border-gray-400 hover:scale-105"
+                      className={`w-12 h-12 rounded-full border-2 transition-all ${
+                        isSelected
+                          ? "border-black ring-2 ring-black ring-offset-2 scale-110"
+                          : color.hex === '#000000' || color.hex.toLowerCase() === '#000000'
+                            ? "border-gray-400 hover:border-gray-600 hover:scale-105"
+                            : "border-gray-300 hover:border-gray-400 hover:scale-105"
                         }`}
-                      style={{ backgroundColor: color.hex }}
+                      style={{ 
+                        backgroundColor: color.hex,
+                        boxShadow: (color.hex === '#000000' || color.hex.toLowerCase() === '#000000') && !isSelected
+                          ? 'inset 0 0 0 1px rgba(255,255,255,0.1)'
+                          : undefined
+                      }}
                     ></div>
                     <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
                       }`}>

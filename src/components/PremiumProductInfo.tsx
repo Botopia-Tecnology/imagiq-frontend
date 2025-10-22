@@ -199,8 +199,8 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
                 key={colorOption.color}
                 onClick={() => handleColorSelection(colorOption)}
                 className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedColor?.color === colorOption.color
-                    ? "border-blue-500 bg-blue-50"
-                    : "border-gray-200 hover:border-gray-400"
+                  ? "border-blue-500 bg-blue-50"
+                  : "border-gray-200 hover:border-gray-400"
                   }`}
               >
                 <div
@@ -228,8 +228,8 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
                 key={storage.capacidad}
                 onClick={() => handleStorageSelection(storage)}
                 className={`px-6 py-3 rounded-lg border-2 font-medium transition-all ${selectedStorage?.capacidad === storage.capacidad
-                    ? "border-black bg-black text-white"
-                    : "border-gray-300 hover:border-gray-500"
+                  ? "border-black bg-black text-white"
+                  : "border-gray-300 hover:border-gray-500"
                   }`}
               >
                 {storage.capacidad}

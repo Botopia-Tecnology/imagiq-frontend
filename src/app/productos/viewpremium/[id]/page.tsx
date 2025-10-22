@@ -243,7 +243,7 @@ export default function ProductViewPage({ params }) {
               </div>
 
               {/* Columna derecha: Información del producto con márgenes normales - SCROLLEABLE */}
-              <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-0 lg:mt-0 min-h-[200vh]">
+              <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-0 lg:mt-0 lg:min-h-[200vh]">
                 <div className="max-w-7xl mx-auto">
                   <ProductInfo
                     ref={specsRef}
@@ -263,7 +263,7 @@ export default function ProductViewPage({ params }) {
           </div>
 
           {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
-          <div className="bg-white pb-8 -mt-72">
+          <div className="bg-white pb-8 mt-0 md:mt-8 lg:-mt-72">
             <div className="container mx-auto px-4 md:px-6 lg:px-12">
               <div className="max-w-7xl mx-auto">
                 <TradeInSection />

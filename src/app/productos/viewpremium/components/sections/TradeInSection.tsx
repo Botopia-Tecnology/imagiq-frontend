@@ -29,14 +29,20 @@ const TradeInSection: React.FC = () => {
               }`}
               onClick={() => setSelectedOption('yes')}
             >
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <span className="font-semibold text-gray-900 mb-2 md:mb-0">Sí, por favor</span>
-                <div className="text-left md:text-right">
-                  <p className="text-sm text-gray-600">Ahorra hasta</p>
-                  <p className="text-lg font-bold text-blue-600">$ 599.992</p>
+              <div className="flex items-start justify-between">
+                <span className="font-semibold text-gray-900">Sí, por favor</span>
+                <div className="text-right">
+                  <p className="text-sm text-gray-600 mb-0">Ahorra hasta</p>
+                  <p className="text-xl md:text-lg text-blue-600">$ 599.992</p>
                 </div>
               </div>
             </div>
+
+            {/* Blue text - shown between cards on mobile */}
+            <p className="text-sm text-blue-600 md:hidden px-1">
+              Descuento inmediato seleccionando Estreno y Entrego. Aplican T&C
+            </p>
+
             <div 
               className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors flex items-center ${
                 selectedOption === 'no' 
@@ -49,7 +55,8 @@ const TradeInSection: React.FC = () => {
             </div>
           </div>
 
-          <p className="text-sm text-blue-600 mb-6">
+          {/* Blue text - shown below cards on desktop */}
+          <p className="text-sm text-blue-600 mb-6 hidden md:block">
             Descuento inmediato seleccionando Estreno y Entrego. Aplican T&C
           </p>
 
@@ -63,9 +70,10 @@ const TradeInSection: React.FC = () => {
         {/* Te presentamos Estreno y entrego & Pasarte de iOS a Galaxy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Te presentamos Estreno y entrego */}
-          <div className="bg-gray-100 p-3 rounded-lg shadow-sm border border-gray-100 relative">
+          <div className="bg-gray-100 p-3 rounded-lg shadow-sm border border-gray-100">
             <div className="flex items-center">
               <div className="w-20 h-20 flex-shrink-0 mr-4 rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056386/Trade-in_DM_Buying_How-to_Buy_page_Thumbnail_eulzhe.webp" 
                   alt="Trade-in video thumbnail" 
@@ -77,17 +85,13 @@ const TradeInSection: React.FC = () => {
                 <p className="text-black">Entrega tu teléfono antiguo y si aceptas nuestra oferta, recibirás el valor en tu cuenta</p>
               </div>
             </div>
-            <div className="absolute top-4 right-4">
-              <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center">
-                <span className="text-white text-xs">i</span>
-              </div>
-            </div>
           </div>
 
           {/* ¡Pasarte de iOS a Galaxy es muy fácil! */}
           <div className="bg-gray-100 p-3 rounded-lg shadow-sm border border-gray-100">
             <div className="flex items-center">
               <div className="w-20 h-20 flex-shrink-0 mr-4 rounded-lg overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img 
                   src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056415/smart_switch_PC_mrtvom.webp" 
                   alt="Smart Switch iOS to Galaxy" 
@@ -121,6 +125,7 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm">Selecciona Estreno y Entrego y obtén hasta $700.000 de descuento. Aplican TyC</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056515/offers_tradeIn_c022s6.webp" 
                     alt="Estreno y Entrego" 
@@ -139,6 +144,7 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm">Beneficio de lanzamiento</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761059888/01_ICONOS_PARADIGMA_0_INTERES_1_z6a2tz.webp" 
                     alt="Cuotas sin interés" 
@@ -157,6 +163,7 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm">¡Usa tus Puntos Rewards como parte de pago multiplicados X10!</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056582/offers_rewards_v2_uurjxh.webp" 
                     alt="Puntos Rewards" 
@@ -175,6 +182,7 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm cursor-pointer">Ver más</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056609/Q7_Gifts_and_Savings_Thumbnail_Google_ai_pro_PC_80x80_w5zlxv.webp" 
                     alt="Google AI Pro" 
@@ -199,6 +207,7 @@ const TradeInSection: React.FC = () => {
                   </div>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056719/COMPRA_REWARDS_MULTIPLICA_X10_2670X2670_cbcgej.webp" 
                     alt="Puntos Rewards X10" 
@@ -217,26 +226,28 @@ const TradeInSection: React.FC = () => {
         <div className="bg-white py-8 mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-left">Compra en línea. Ahorra más.</h2>
           
-          {/* Benefits grid - aligned to left with reduced width */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl">
-            {/* Precios exclusivos de Shop App */}
-            <div className="bg-gray-100 p-6 rounded flex flex-col">
-              <h3 className="text-lg font-bold text-black mb-2">Precios exclusivos de Shop App</h3>
-              <p className="text-black text-sm mb-4 flex-grow">Descárgala, regístrate, loguéate y compra.</p>
-              <a href="#" className="text-black text-sm font-medium underline">Descárgala</a>
-            </div>
+          {/* Benefits - horizontal scroll on mobile, grid on desktop */}
+          <div className="overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0">
+            <div className="flex md:grid md:grid-cols-3 gap-6 md:max-w-4xl min-w-max md:min-w-0">
+              {/* Precios exclusivos de Shop App */}
+              <div className="bg-gray-100 p-6 rounded flex flex-col w-80 md:w-auto flex-shrink-0">
+                <h3 className="text-lg font-bold text-black mb-2">Precios exclusivos de Shop App</h3>
+                <p className="text-black text-sm mb-4 flex-grow">Descárgala, regístrate, loguéate y compra.</p>
+                <a href="#" className="text-black text-sm font-medium underline">Descárgala</a>
+              </div>
 
-            {/* 0% de interés */}
-            <div className="bg-gray-100 p-6 rounded flex flex-col">
-              <h3 className="text-lg font-bold text-black mb-2">0% de interés</h3>
-              <p className="text-black text-sm mb-4 flex-grow">3, 6 12 o 24* cuotas sin intereses pagando con tarjetas de crédito de bancos aliados</p>
-              <a href="#" className="text-black text-sm font-medium underline">Más información</a>
-            </div>
+              {/* 0% de interés */}
+              <div className="bg-gray-100 p-6 rounded flex flex-col w-80 md:w-auto flex-shrink-0">
+                <h3 className="text-lg font-bold text-black mb-2">0% de interés</h3>
+                <p className="text-black text-sm mb-4 flex-grow">3, 6 12 o 24* cuotas sin intereses pagando con tarjetas de crédito de bancos aliados</p>
+                <a href="#" className="text-black text-sm font-medium underline">Más información</a>
+              </div>
 
-            {/* Samsung Rewards */}
-            <div className="bg-gray-100 p-6 rounded flex flex-col">
-              <h3 className="text-lg font-bold text-black mb-2">Samsung Rewards</h3>
-              <p className="text-black text-sm flex-grow">Llévate tu nuevo Galaxy acumulando el 4% de tu compra en puntos Samsung Rewards y canjéalos X4</p>
+              {/* Samsung Rewards */}
+              <div className="bg-gray-100 p-6 rounded flex flex-col w-80 md:w-auto flex-shrink-0">
+                <h3 className="text-lg font-bold text-black mb-2">Samsung Rewards</h3>
+                <p className="text-black text-sm flex-grow">Llévate tu nuevo Galaxy acumulando el 4% de tu compra en puntos Samsung Rewards y canjéalos X4</p>
+              </div>
             </div>
           </div>
         </div>

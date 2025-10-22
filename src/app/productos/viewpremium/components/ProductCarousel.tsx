@@ -21,7 +21,7 @@ const VideoPlayer: React.FC<{
   alt: string;
   onVideoEnd?: () => void;
   onVideoStart?: () => void;
-}> = ({ src, alt, onVideoEnd, onVideoStart }) => {
+}> = ({ src, onVideoEnd, onVideoStart }) => {
   const [videoError, setVideoError] = useState(false);
 
   // Usar directamente el tag video HTML5 para mejor compatibilidad
@@ -66,7 +66,6 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   premiumImages,
   productImages,
   onOpenModal,
-  setSelectedColor,
 }, ref) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
@@ -142,6 +141,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                     );
                   } else {
                     return (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         key={currentSrc}
                         src={currentSrc}
@@ -215,6 +215,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                 const currentSrc = productImages[currentImageIndex % productImages.length];
 
                 return (
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     key={currentSrc}
                     src={currentSrc}

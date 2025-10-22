@@ -77,6 +77,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
 
           {/* Imagen principal con efecto slide */}
           <div className="relative w-full h-full flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               key={modalImageIndex}
               src={productImages[modalImageIndex]}

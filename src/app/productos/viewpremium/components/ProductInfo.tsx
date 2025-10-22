@@ -207,6 +207,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             {productImages.length > 0 && (
               <div className="mt-6 lg:hidden">
                 <div className="relative w-full h-[220px] flex items-center justify-center overflow-hidden bg-white">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     key={productImages[currentImageIndex % productImages.length]}
                     src={productImages[currentImageIndex % productImages.length]}

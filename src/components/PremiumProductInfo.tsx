@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
-import { useDeviceVariants, type ColorOption } from "@/hooks/useDeviceVariants";
+import { useDeviceVariants, type ColorOption, type StorageOption } from "@/hooks/useDeviceVariants";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useFavorites } from "@/features/products/useProducts";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -44,7 +44,7 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
     });
   };
 
-  const handleStorageSelection = (storage: any) => {
+  const handleStorageSelection = (storage: StorageOption) => {
     setSelectedStorage(storage);
     posthogUtils.capture("product_storage_selected", {
       product_id: product.id,
@@ -66,14 +66,21 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
     }
 
     try {
+      let priceValue = 0;
+      const price = currentPrice as string | number | null;
+
+      if (typeof price === "string") {
+        priceValue = Number.parseInt(price.replace(/[^\d]/g, ""));
+      } else if (typeof price === "number") {
+        priceValue = price;
+      }
+
       addProduct({
         id: product.id,
         name: product.name,
         image:
           typeof product.image === "string" ? product.image : product.image.src,
-        price: typeof currentPrice === "string"
-          ? Number.parseInt(currentPrice.replaceAll(/[^\d]/g, ""))
-          : currentPrice ?? 0,
+        price: priceValue,
         quantity: 1,
         sku: selectedVariant.sku,
         ean: selectedVariant.ean || "",
@@ -114,20 +121,17 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
   };
 
   const hasStock = () => {
-    if (!selectedDevice || !selectedStorage || !selectedColor) return true;
-    const variant = selectedColor.variants.find(
-      (v) =>
-        v.nombreMarket === selectedDevice.nombreMarket &&
-        v.capacidad === selectedStorage.capacidad &&
-        v.color.toLowerCase() === selectedColor.color.toLowerCase()
-    );
-    return variant ? variant.stock > 0 : false;
+    if (!selectedVariant) return true;
+    return selectedVariant.stock > 0;
   };
 
-  const parsePrice = (price: string | number | undefined): number => {
+  const parsePrice = (price: string | number | null | undefined): number => {
     if (typeof price === "number") return price;
     if (!price) return 0;
-    return parseInt(price.replace(/[^\d]/g, "")) || 0;
+    if (typeof price === "string") {
+      return parseInt(price.replace(/[^\d]/g, "")) || 0;
+    }
+    return 0;
   };
 
   const numericPrice = parsePrice(currentPrice);
@@ -151,9 +155,8 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
             {[...Array(5)].map((_, i) => (
               <span
                 key={i}
-                className={`text-lg ${
-                  i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"
-                }`}
+                className={`text-lg ${i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"
+                  }`}
               >
                 ★
               </span>
@@ -195,11 +198,10 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
               <button
                 key={colorOption.color}
                 onClick={() => handleColorSelection(colorOption)}
-                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${
-                  selectedColor?.color === colorOption.color
+                className={`flex flex-col items-center p-3 rounded-lg border-2 transition-all ${selectedColor?.color === colorOption.color
                     ? "border-blue-500 bg-blue-50"
                     : "border-gray-200 hover:border-gray-400"
-                }`}
+                  }`}
               >
                 <div
                   className="w-12 h-12 rounded-full mb-2"
@@ -225,11 +227,10 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
               <button
                 key={storage.capacidad}
                 onClick={() => handleStorageSelection(storage)}
-                className={`px-6 py-3 rounded-lg border-2 font-medium transition-all ${
-                  selectedStorage?.capacidad === storage.capacidad
+                className={`px-6 py-3 rounded-lg border-2 font-medium transition-all ${selectedStorage?.capacidad === storage.capacidad
                     ? "border-black bg-black text-white"
                     : "border-gray-300 hover:border-gray-500"
-                }`}
+                  }`}
               >
                 {storage.capacidad}
               </button>
@@ -266,9 +267,8 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
           className="p-4 border-2 border-gray-300 rounded-lg hover:border-red-500 transition-colors"
         >
           <span
-            className={`text-2xl ${
-              isFavorite ? "text-red-500" : "text-gray-400"
-            }`}
+            className={`text-2xl ${isFavorite ? "text-red-500" : "text-gray-400"
+              }`}
           >
             ♥
           </span>

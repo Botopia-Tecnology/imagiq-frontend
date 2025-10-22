@@ -4,7 +4,7 @@
  */
 
 const FLIXMEDIA_CONFIG = {
-  distributorId: "9329",
+  distributorId: "17257",
   language: "f5",
   matchApiUrl: "https://media.flixcar.com/delivery/webcall/match",
   contentUrl: "https://media.flixcar.com/delivery/webcall/content",

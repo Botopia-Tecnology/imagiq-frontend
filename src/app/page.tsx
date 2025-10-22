@@ -99,10 +99,10 @@ export default function HomePage() {
         description="Descubre productos de calidad: Outlet con hasta 70% OFF, Novedades, Recomendados y Ventas Corporativas. Envío gratis +$999"
         keywords="ecommerce, outlet, novedades, recomendados, ventas corporativas, soporte"
       />
-      {/* pt-16 en móvil si hay scroll y navbar sticky, pt-0 en desktop */}
+      {/* Sin padding top para que el video empiece desde arriba y el navbar quede encima */}
       <div
         id="main-page"
-        className="min-h-screen md:mr-0 pt-20 md:pt-0 md:overflow-x-clip"
+        className="min-h-screen md:mr-0 md:overflow-x-clip"
       >
         <motion.div ref={heroReveal.ref} {...heroReveal.motionProps}>
           <HeroSection />

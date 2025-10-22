@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,15 +28,16 @@ export default function ModalWithoutBackground({
   };
 
   if (!isOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+
+  const modalContent = (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center pointer-events-auto">
       <div
-        className="fixed inset-0 backdrop-blur-sm bg-white/10"
+        className="fixed inset-0 backdrop-blur-sm bg-white/10 pointer-events-auto"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative bg-white rounded-lg shadow-xl w-full mx-4", // w-full + mx-4 para móviles
+          "relative bg-white rounded-lg shadow-xl w-full mx-4 pointer-events-auto", // w-full + mx-4 para móviles
           sizes[size]
         )}
       >
@@ -52,4 +54,9 @@ export default function ModalWithoutBackground({
       </div>
     </div>
   );
+
+  // Renderizar el modal usando un portal en el body
+  return typeof document !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : null;
 }

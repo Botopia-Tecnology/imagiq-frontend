@@ -68,6 +68,24 @@ function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
   return null;
 }
 
+// Wrapper para manejar el estado de carga de variantes
+function ProductContentWithVariants({
+  product,
+  onVariantsReady
+}: {
+  product: ProductCardProps;
+  onVariantsReady: (ready: boolean) => void;
+}) {
+  const convertedProduct = convertProductForView(product);
+
+  return (
+    <>
+      <DetailsProductSection product={product} onVariantsReady={onVariantsReady} />
+      <ViewProduct product={convertedProduct} flix={product} />
+    </>
+  );
+}
+
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
   const resolvedParams = use(params);
@@ -79,27 +97,25 @@ export default function ProductViewPage({ params }) {
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
-  const [showContent, setShowContent] = React.useState(false);
+  const [variantsReady, setVariantsReady] = React.useState(false);
 
-  // Delay para asegurar transición suave
+  // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
-    if (!loading && product) {
-      const timer = setTimeout(() => setShowContent(true), 150);
-      return () => clearTimeout(timer);
-    } else {
-      setShowContent(false);
-    }
-  }, [loading, product]);
+    setVariantsReady(false);
+  }, [id]);
 
   if (!id) {
     return notFound();
   }
-  if (loading || !showContent) {
-    return <ProductDetailSkeleton />;
-  }
+
   if (error) {
     return notFound();
   }
+
+  if (!product && loading) {
+    return <ProductDetailSkeleton />;
+  }
+
   if (!product) {
     return (
       <div className="container mx-auto px-6 py-8">
@@ -116,40 +132,21 @@ export default function ProductViewPage({ params }) {
       </div>
     );
   }
-  const convertedProduct = convertProductForView(product);
 
-  const categoriasAppliance = [
-    "neveras",
-    "nevecon",
-    "hornos microondas",
-    "lavavajillas",
-    "lavadora",
-    "secadora",
-    "aspiradoras",
-    "aire acondicionado",
-    "hornos",
-    "microondas",
-  ];
-  const subcategoria = convertedProduct.specs
-    .find((spec) => spec.label === "Subcategoría")
-    ?.value?.toLowerCase();
-  const isRefrigerador = subcategoria
-    ? categoriasAppliance.some((cat) => subcategoria.includes(cat))
-    : false;
+  const isFullyLoaded = !loading && variantsReady;
+
   return (
     <>
-      <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
-      {/* Vista de producto según categoría */}
-      {isRefrigerador ? (
-        /* Para electrodomésticos solo renderizar ViewProductAppliance */
-        <ViewProductAppliance product={convertedProduct} />
-      ) : (
-        /* Para dispositivos móviles renderizar DetailsProductSection + ViewProduct */
-        <>
-          <DetailsProductSection product={product} />
-          <ViewProduct product={convertedProduct} flix={product} />
-        </>
-      )}
+      {/* Mostrar skeleton mientras carga */}
+      {!isFullyLoaded && <ProductDetailSkeleton />}
+
+      {/* Renderizar contenido (oculto o visible según estado) */}
+      <div style={{ display: isFullyLoaded ? 'block' : 'none' }}>
+        <ProductContentWithVariants
+          product={product}
+          onVariantsReady={setVariantsReady}
+        />
+      </div>
     </>
   );
 }

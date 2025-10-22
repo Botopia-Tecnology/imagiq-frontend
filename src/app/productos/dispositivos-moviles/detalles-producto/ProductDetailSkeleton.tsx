@@ -6,17 +6,41 @@
 export default function ProductDetailSkeleton() {
   return (
     <main
-      className="w-full bg-white min-h-screen"
+      className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
       style={{ fontFamily: "SamsungSharpSans" }}
     >
       {/* DESKTOP: Grid principal */}
       <section className="hidden lg:block animate-pulse">
-        <div className="max-w-[1280px] mx-auto px-12 py-16">
-          <div className="grid grid-cols-12 gap-2 items-start">
-            {/* Columna izquierda: Info y acciones */}
-            <div className="col-span-7 flex flex-col justify-start gap-2">
+        <div className="max-w-[1400px] mx-auto px-8 py-12">
+          {/* Breadcrumb skeleton */}
+          <nav className="flex items-center gap-2 mb-8">
+            <div className="h-4 bg-gray-200 rounded w-32"></div>
+            <div className="h-4 bg-gray-200 rounded w-4"></div>
+            <div className="h-4 bg-gray-200 rounded w-40"></div>
+          </nav>
+
+          <div className="grid grid-cols-12 gap-16 items-start">
+            {/* Columna izquierda: Imagen */}
+            <div className="col-span-6 sticky top-20 self-start">
+              <div className="w-full flex flex-col items-center">
+                {/* Placeholder de imagen principal */}
+                <div className="flex justify-center h-[500px] items-center w-full">
+                  <div className="w-full aspect-square bg-gray-200 rounded-2xl"></div>
+                </div>
+
+                {/* Puntos indicadores */}
+                <div className="flex justify-center space-x-2 mt-6">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="w-2 h-2 rounded-full bg-gray-300"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Columna derecha: Info y acciones */}
+            <div className="col-span-6 flex flex-col justify-start gap-4">
               {/* Nombre del producto */}
-              <div className="h-12 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
+              <div className="h-10 bg-gray-200 rounded-lg w-3/4 mb-2"></div>
 
               {/* SKU */}
               <div className="h-3 bg-gray-200 rounded w-32 mb-3"></div>
@@ -32,9 +56,6 @@ export default function ProductDetailSkeleton() {
                 <div className="h-3 bg-gray-200 rounded w-20"></div>
               </div>
 
-              {/* Línea separadora */}
-              <div className="w-48 h-px bg-gray-200 mb-4"></div>
-
               {/* Selector de color */}
               <div className="mb-4">
                 <div className="h-4 bg-gray-200 rounded w-32 mb-2"></div>
@@ -46,9 +67,6 @@ export default function ProductDetailSkeleton() {
                 </div>
               </div>
 
-              {/* Línea separadora */}
-              <div className="w-48 h-px bg-gray-200 mb-4"></div>
-
               {/* Selector de almacenamiento */}
               <div className="mb-4">
                 <div className="h-4 bg-gray-200 rounded w-40 mb-3"></div>
@@ -59,15 +77,12 @@ export default function ProductDetailSkeleton() {
                 </div>
               </div>
 
-              {/* Línea separadora */}
-              <div className="w-48 h-px bg-gray-200 mb-4"></div>
-
-              {/* Selector de RAM */}
-              <div className="mb-4">
-                <div className="h-4 bg-gray-200 rounded w-40 mb-3"></div>
-                <div className="flex gap-3">
+              {/* Delivery Options */}
+              <div className="space-y-3 mb-4">
+                <div className="h-5 bg-gray-200 rounded w-40"></div>
+                <div className="space-y-2">
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} className="h-10 bg-gray-200 rounded-full w-20"></div>
+                    <div key={i} className="h-16 bg-gray-200 rounded-lg w-full"></div>
                   ))}
                 </div>
               </div>
@@ -79,36 +94,10 @@ export default function ProductDetailSkeleton() {
                 <div className="h-4 bg-gray-200 rounded w-4/6"></div>
               </div>
 
-              {/* Precio */}
-              <div className="mb-6">
-                <div className="h-10 bg-gray-200 rounded w-48 mb-1"></div>
-                <div className="h-3 bg-gray-200 rounded w-32 mb-4"></div>
-
-                {/* Botones */}
-                <div className="flex flex-row gap-4">
-                  <div className="h-10 bg-gray-200 rounded-full w-40"></div>
-                  <div className="h-10 bg-gray-200 rounded-full w-40"></div>
-                </div>
-              </div>
-            </div>
-
-            {/* Columna derecha: Imagen */}
-            <div className="col-span-5 flex flex-col items-center justify-start relative mt-[1.5rem]">
-              <div className="w-full flex flex-col items-center scale-110">
-                {/* Contenedor gris de la imagen */}
-                <div className="relative rounded-2xl px-2 py-2 w-full max-w-2xl bg-gray-100">
-                  {/* Placeholder de imagen */}
-                  <div className="flex justify-center h-[500px] items-center">
-                    <div className="w-64 h-96 bg-gray-200 rounded-lg"></div>
-                  </div>
-
-                  {/* Puntos indicadores */}
-                  <div className="flex justify-center space-x-2 mt-6">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="w-2 h-2 rounded-full bg-gray-300"></div>
-                    ))}
-                  </div>
-                </div>
+              {/* Financing Section */}
+              <div className="space-y-2">
+                <div className="h-6 bg-gray-200 rounded w-56"></div>
+                <div className="h-4 bg-gray-200 rounded w-48"></div>
               </div>
             </div>
           </div>

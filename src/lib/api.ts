@@ -11,7 +11,7 @@
 import type { ProductFilterParams } from "./sharedInterfaces";
 
 // API Client configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Generic API response type
 interface ApiResponse<T> {
@@ -234,11 +234,13 @@ export interface ProductApiData {
   segmento?: string[]; // Campo para identificar productos premium (array)
   color: string[];
   capacidad: string[];
+  memoriaram: string[];
   descGeneral: string | null;
   sku: string[];
   ean:string[];
   desDetallada: string[];
   stock: number[];
+  stockTotal: number[];
   urlImagenes: string[];
   urlRender3D: string[];
   imagePreviewUrl: string[];

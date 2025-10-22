@@ -128,6 +128,27 @@ export default function ImageGalleryModal({
     }
   }, [isOpen]);
 
+  // Pre-cargar TODAS las imágenes cuando se abre el modal
+  useEffect(() => {
+    if (!isOpen || images.length <= 1) return;
+
+    const preloadImage = (src: string | StaticImageData) => {
+      const img = new window.Image();
+      const imgSrc = typeof src === 'string' ? src : src.src;
+      img.src = imgSrc;
+
+      // Forzar el decode para que esté lista más rápido
+      if ('decode' in img) {
+        img.decode().catch(() => {});
+      }
+    };
+
+    // Pre-cargar TODAS las imágenes inmediatamente al abrir el modal
+    images.forEach((img) => {
+      preloadImage(img);
+    });
+  }, [isOpen, images]); // Solo depende de isOpen e images, no de currentIndex
+
   if (!isOpen || !mounted) return null;
 
   // Determinar cursor basado en el estado
@@ -218,10 +239,10 @@ export default function ImageGalleryModal({
               {/* Contenedor de imagen con zoom */}
               <motion.div
                 key={currentIndex}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15, ease: "easeOut" }}
                 className="relative w-full h-full"
                 onWheel={handleWheel}
                 onDoubleClick={handleDoubleClick}
@@ -236,20 +257,26 @@ export default function ImageGalleryModal({
                 <div
                   style={{
                     transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-                    transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+                    transition: isDragging ? 'none' : 'transform 0.15s ease-out',
                     width: '100%',
                     height: '100%',
                     position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <Image
-                    src={images[currentIndex]}
+                  <img
+                    src={typeof images[currentIndex] === 'string' ? images[currentIndex] as string : (images[currentIndex] as StaticImageData).src}
                     alt={`${productName} - Imagen ${currentIndex + 1}`}
-                    fill
-                    className="object-contain select-none"
-                    priority
-                    sizes="(max-width: 768px) 100vw, 70vw"
+                    className="max-w-full max-h-full object-contain select-none"
                     draggable={false}
+                    style={{
+                      width: 'auto',
+                      height: 'auto',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                    }}
                   />
                 </div>
               </motion.div>
@@ -319,6 +346,23 @@ export default function ImageGalleryModal({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Imágenes ocultas para pre-carga forzada en el DOM */}
+          <div className="hidden">
+            {images.map((image, index) => (
+              index !== currentIndex && (
+                <Image
+                  key={`preload-${index}`}
+                  src={image}
+                  alt=""
+                  width={1}
+                  height={1}
+                  priority
+                  loading="eager"
+                />
+              )
+            ))}
           </div>
         </motion.div>
       )}

@@ -13,7 +13,16 @@ export default function ButtonLabel({ onClick , title, Icon}: HouseButtonProps) 
 
   return (
     <div className="relative flex items-center">
-      {/* Etiqueta a la izquierda */}
+  
+
+      {/* Botón principal */}
+      <button
+        onClick={onClick}
+        className="inline-flex items-center justify-center bg-black text-white p-4 rounded-full shadow hover:bg-gray-900 transition-all border border-black cursor-pointer mr-3"
+      >
+        <Icon size={20} />
+      </button>
+          {/* Etiqueta a la izquierda */}
       {showLabel && (
         <div className="flex items-center bg-white text-black border border-gray-300 rounded-md shadow px-4 py-2 mr-3"
              style={{ fontFamily: "SamsungSharpSans" }}>
@@ -23,14 +32,6 @@ export default function ButtonLabel({ onClick , title, Icon}: HouseButtonProps) 
           </button>
         </div>
       )}
-
-      {/* Botón principal */}
-      <button
-        onClick={onClick}
-        className="inline-flex items-center justify-center bg-black text-white p-4 rounded-full shadow hover:bg-gray-900 transition-all border border-black cursor-pointer"
-      >
-        <Icon size={20} />
-      </button>
     </div>
   );
 }

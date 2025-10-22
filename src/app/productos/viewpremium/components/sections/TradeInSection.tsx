@@ -20,25 +20,25 @@ const TradeInSection: React.FC = () => {
           </p>
           
           {/* Option cards */}
-          <div className="flex gap-4 mb-4">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4">
             <div 
-              className={`flex-1 border rounded-lg p-4 cursor-pointer transition-colors ${
+              className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors ${
                 selectedOption === 'yes' 
                   ? 'border-blue-500' 
                   : 'border-gray-300 hover:border-blue-500'
               }`}
               onClick={() => setSelectedOption('yes')}
             >
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-900">Sí, por favor</span>
-                <div className="text-right">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <span className="font-semibold text-gray-900 mb-2 md:mb-0">Sí, por favor</span>
+                <div className="text-left md:text-right">
                   <p className="text-sm text-gray-600">Ahorra hasta</p>
                   <p className="text-lg font-bold text-blue-600">$ 599.992</p>
                 </div>
               </div>
             </div>
             <div 
-              className={`flex-1 border rounded-lg p-4 cursor-pointer transition-colors flex items-center ${
+              className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors flex items-center ${
                 selectedOption === 'no' 
                   ? 'border-blue-500' 
                   : 'border-gray-300 hover:border-blue-500'

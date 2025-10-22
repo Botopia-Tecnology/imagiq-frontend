@@ -10,6 +10,9 @@ interface ProductInfoProps {
   setSelectedColor: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedStorage: React.Dispatch<React.SetStateAction<string | null>>;
   setCurrentImageIndex: React.Dispatch<React.SetStateAction<number>>;
+  currentImageIndex: number;
+  productImages: string[];
+  onOpenModal: () => void;
 }
 
 const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
@@ -19,10 +22,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   setSelectedColor,
   setSelectedStorage,
   setCurrentImageIndex,
+  currentImageIndex,
+  productImages,
+  onOpenModal,
 }, ref) => {
   return (
     <div ref={ref} className="w-full lg:col-span-3">
-      <div className="sticky top-20">
+      <div className="lg:sticky lg:top-20">
         {/* Espacio en blanco superior */}
         <div className="h-8"></div>
 
@@ -167,7 +173,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
             <p className="text-xs text-gray-500 mb-3">Selecciona el color de tu dispositivo.</p>
 
-            <div className="flex gap-4 justify-center">
+            {/* Selectores de color - SOLO DESKTOP */}
+            <div className="hidden lg:flex gap-4 justify-center">
               {product.colors.map((color, index) => {
                 const isSelected = color.name === selectedColor;
 
@@ -176,7 +183,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     key={index}
                     onClick={() => {
                       setSelectedColor(color.name);
-                      setCurrentImageIndex(0); // Resetear imagen al cambiar color
+                      setCurrentImageIndex(0);
                     }}
                     className="flex flex-col items-center cursor-pointer transition-all"
                   >
@@ -195,11 +202,68 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 );
               })}
             </div>
+
+            {/* Carrusel de imágenes del color - SOLO MOBILE */}
+            {productImages.length > 0 && (
+              <div className="mt-6 lg:hidden">
+                <div className="relative w-full h-[220px] flex items-center justify-center overflow-hidden bg-white">
+                  <img
+                    key={productImages[currentImageIndex % productImages.length]}
+                    src={productImages[currentImageIndex % productImages.length]}
+                    alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
+                    className="w-full h-full object-contain"
+                    onError={(e) => {
+                      console.error('Error loading image:', productImages[currentImageIndex % productImages.length], e);
+                    }}
+                  />
+                </div>
+
+                {/* Botón Ver más */}
+                <div className="flex justify-center mt-4 mb-6">
+                  <button
+                    onClick={onOpenModal}
+                    className="px-6 py-2.5 bg-white text-black border-2 border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-all hover:scale-105"
+                  >
+                    Ver más
+                  </button>
+                </div>
+
+                {/* Selectores de color - SOLO MOBILE - Debajo de Ver más */}
+                <div className="flex gap-4 justify-center mb-6">
+                  {product.colors.map((color, index) => {
+                    const isSelected = color.name === selectedColor;
+
+                    return (
+                      <div
+                        key={index}
+                        onClick={() => {
+                          setSelectedColor(color.name);
+                          setCurrentImageIndex(0);
+                        }}
+                        className="flex flex-col items-center cursor-pointer transition-all"
+                      >
+                        <div
+                          className={`w-12 h-12 rounded-full border-2 transition-all ${isSelected
+                            ? "border-black ring-2 ring-black ring-offset-2 scale-110"
+                            : "border-gray-300 hover:border-gray-400 hover:scale-105"
+                            }`}
+                          style={{ backgroundColor: color.hex }}
+                        ></div>
+                        <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
+                          }`}>
+                          {color.label}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Entregas */}
-        <div className="mb-4 pb-4 border-b border-gray-200">
+        <div className="mb-4 pb-4 lg:border-b border-gray-200">
           <p className="text-xs text-gray-600">Entregas: en 1-3 días laborables</p>
         </div>
       </div>

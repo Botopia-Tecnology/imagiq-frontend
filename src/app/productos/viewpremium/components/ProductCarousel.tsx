@@ -44,7 +44,7 @@ const VideoPlayer: React.FC<{
       muted
       playsInline
       controls={false}
-      className="w-full h-full object-cover"
+      className="w-full h-full object-contain md:object-cover"
       onEnded={onVideoEnd}
       onPlay={onVideoStart}
       onError={(e) => {
@@ -79,7 +79,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   };
 
   return (
-    <div ref={ref} className="w-full relative px-4 md:px-8">
+    <div ref={ref} className="w-full relative md:px-8">
       {/* Carrusel premium - estilo Samsung más grande */}
       <div className={`relative w-full transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
@@ -93,7 +93,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
           return currentImages.length > 0 ? (
             <>
               {/* Imagen principal - estilo Samsung más grande */}
-              <div className="relative w-full h-[700px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
+              <div className="relative w-full h-[220px] md:h-[700px] bg-white md:bg-gradient-to-br md:from-gray-50 md:to-gray-100 flex items-center justify-center overflow-hidden">
                 {(() => {
                   const currentSrc = currentImages[currentImageIndex];
                   const isVideo = currentSrc && (
@@ -127,15 +127,15 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                               }
                             }
                           }}
-                          className="absolute bottom-6 right-6 w-12 h-12 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-10"
+                          className="absolute bottom-4 right-4 w-10 h-10 md:w-12 md:h-12 md:bottom-6 md:right-6 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-10"
                         >
                           {isVideoPlaying ? (
-                            <div className="w-3 h-3 flex gap-1">
-                              <div className="w-1 h-3 bg-white rounded-sm"></div>
-                              <div className="w-1 h-3 bg-white rounded-sm"></div>
+                            <div className="w-2.5 h-2.5 md:w-3 md:h-3 flex gap-1">
+                              <div className="w-0.5 md:w-1 h-2.5 md:h-3 bg-white rounded-sm"></div>
+                              <div className="w-0.5 md:w-1 h-2.5 md:h-3 bg-white rounded-sm"></div>
                             </div>
                           ) : (
-                            <div className="w-0 h-0 border-l-[6px] border-l-white border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ml-0.5"></div>
+                            <div className="w-0 h-0 border-l-[5px] md:border-l-[6px] border-l-white border-t-[3px] md:border-t-[4px] border-t-transparent border-b-[3px] md:border-b-[4px] border-b-transparent ml-0.5"></div>
                           )}
                         </button>
                       </div>
@@ -146,7 +146,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                         key={currentSrc}
                         src={currentSrc}
                         alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
-                        className={`w-full h-full ${currentImageSet === 'premium' ? 'object-cover' : 'object-contain p-8'}`}
+                        className={`w-full h-full ${currentImageSet === 'premium' ? 'object-contain md:object-cover' : 'object-contain md:p-8'}`}
                         onError={(e) => {
                           console.error('Error loading image:', currentSrc, e);
                         }}
@@ -155,12 +155,12 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                   }
                 })()}
 
-                {/* Flechas de navegación - estilo Samsung */}
+                {/* Flechas de navegación - estilo Samsung - solo en desktop */}
                 {currentImages.length > 1 && (
                   <>
                     <button
                       onClick={() => setCurrentImageIndex((prev) => prev === 0 ? currentImages.length - 1 : prev - 1)}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-105"
+                      className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-lg items-center justify-center transition-all hover:scale-105"
                     >
                       <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -168,7 +168,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                     </button>
                     <button
                       onClick={() => setCurrentImageIndex((prev) => (prev + 1) % currentImages.length)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-105"
+                      className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-lg items-center justify-center transition-all hover:scale-105"
                     >
                       <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -195,7 +195,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
               )}
             </>
           ) : (
-            <div className="w-full h-[700px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold">
+            <div className="w-full h-[220px] md:h-[700px] bg-white md:bg-gradient-to-br md:from-gray-50 md:to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold">
               <div className="text-center">
                 <div className="text-6xl mb-4">📱</div>
                 <div>Contenido premium no disponible</div>
@@ -210,7 +210,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
         {productImages.length > 0 ? (
           <>
             {/* Imagen del producto - más pequeña y simple con fondo transparente */}
-            <div className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
+            <div className="relative w-full h-[220px] md:h-[600px] flex items-center justify-center overflow-hidden">
               {(() => {
                 const currentSrc = productImages[currentImageIndex % productImages.length];
 
@@ -219,7 +219,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                     key={currentSrc}
                     src={currentSrc}
                     alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
-                    className="w-full h-full object-contain p-4"
+                    className="w-full h-full object-contain md:p-4"
                     onError={(e) => {
                       console.error('Error loading image:', currentSrc, e);
                     }}
@@ -238,7 +238,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
             </div>
           </>
         ) : (
-          <div className="w-full h-[500px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold rounded-2xl">
+          <div className="w-full h-[220px] md:h-[500px] bg-white md:bg-gradient-to-br md:from-gray-50 md:to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold rounded-2xl">
             <div className="text-center">
               <div className="text-4xl mb-2">🎨</div>
               <div>No hay fotos específicas para el color {selectedColor}</div>

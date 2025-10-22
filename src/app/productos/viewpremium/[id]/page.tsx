@@ -225,10 +225,10 @@ export default function ProductViewPage({ params }) {
 
           {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
           <div className="bg-white py-8 min-h-screen">
-            {/* Grid principal - SIEMPRE sticky */}
+            {/* Grid principal */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
-              {/* Columna izquierda: Carrusel FIJO (sticky) - ocupa todo el ancho */}
-              <div className="lg:col-span-9 sticky top-24 self-start h-screen overflow-hidden">
+              {/* Columna izquierda: Carrusel - ocupa todo el ancho */}
+              <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden">
                 <ProductCarousel
                   ref={carouselRef}
                   product={product}
@@ -254,6 +254,9 @@ export default function ProductViewPage({ params }) {
                     setSelectedColor={setSelectedColor}
                     setSelectedStorage={setSelectedStorage}
                     setCurrentImageIndex={setCurrentImageIndex}
+                    currentImageIndex={currentImageIndex}
+                    productImages={productImages}
+                    onOpenModal={openModal}
                   />
                 </div>
               </div>

@@ -65,8 +65,8 @@ const ImageModal: React.FC<ImageModalProps> = ({
         }
       `}</style>
       
-      <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-8">
-        <div className="relative w-full h-full max-w-6xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
+      <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4 md:p-8">
+        <div className="relative w-full h-full max-w-6xl max-h-[55vh] md:max-h-[90vh] bg-white rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
           {/* Botón cerrar */}
           <button
             onClick={onClose}

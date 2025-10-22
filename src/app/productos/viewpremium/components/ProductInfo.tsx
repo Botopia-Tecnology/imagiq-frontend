@@ -23,18 +23,58 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   return (
     <div ref={ref} className="w-full lg:col-span-3">
       <div className="sticky top-20">
-        {/* Dispositivo */}
-        <div className="mb-4">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <h3 className="text-lg font-bold text-gray-900">Dispositivo</h3>
-            <span className="text-gray-400 cursor-help text-sm">?</span>
+        {/* Espacio en blanco superior */}
+        <div className="h-8"></div>
+
+        {/* Iconos de características - estilo Samsung */}
+        <div className="mb-6">
+          <div className="flex justify-center gap-8">
+            {/* FlexWindow */}
+            <div className="flex flex-col items-center">
+              <div className="w-14 h-14 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-2">
+                <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" />
+                  <line x1="12" y1="4" x2="12" y2="20" strokeWidth="2" />
+                </svg>
+              </div>
+              <span className="text-xs text-black text-center font-medium">FlexWindow<br />a 4MB</span>
+            </div>
+
+            {/* Cámara Selfie */}
+            <div className="flex flex-col items-center">
+              <div className="w-14 h-14 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-2">
+                <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="3" strokeWidth="2" />
+                  <path d="M3 9a2 2 0 0 1 2-2h.93a2 2 0 0 0 1.664-.89l.812-1.22A2 2 0 0 1 10.07 4h3.86a2 2 0 0 1 1.664.89l.812 1.22A2 2 0 0 0 18.07 7H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" strokeWidth="2" />
+                </svg>
+              </div>
+              <span className="text-xs text-black text-center font-medium">10 MP Cámara<br />Selfie</span>
+            </div>
+
+            {/* Galaxy AI */}
+            <div className="flex flex-col items-center">
+              <div className="w-14 h-14 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-2">
+                <svg className="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+              </div>
+              <span className="text-xs text-black text-center font-medium">Galaxy AI</span>
+            </div>
           </div>
-          <p className="text-xs text-gray-600 mb-1.5">Selecciona tu dispositivo</p>
-          <div className="border-2 border-blue-600 rounded-lg p-2">
-            <div className="flex items-center justify-between">
-              <div className="font-semibold text-gray-900 text-xs">{product.name}</div>
-              <div className="text-right">
-                <div className="text-xs font-semibold text-gray-900">
+        </div>
+
+        {/* Dispositivo */}
+        <div className="mb-20">
+          <div className="flex items-center gap-2 mb-3">
+            <h3 className="text-2xl font-bold text-black">Dispositivo</h3>
+            <span className="w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-black cursor-help text-base font-semibold">?</span>
+          </div>
+          <p className="text-sm text-black mb-4">Selecciona tu dispositivo</p>
+          <div className="border-2 border-blue-600 rounded-md p-4 bg-blue-50/30">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-bold text-black text-lg flex-1 self-center">{product.name}</div>
+              <div className="text-right self-center">
+                <div className="text-sm text-black">
                   {(() => {
                     const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
                     const priceStr = selectedCapacity?.price || product.price || "0";
@@ -43,7 +83,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     return `Desde $ ${monthlyPrice.toLocaleString('es-CO')} al mes o`;
                   })()}
                 </div>
-                <div className="text-base font-bold text-gray-900">
+                <div className="text-2xl text-black">
                   {(() => {
                     const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
                     return selectedCapacity?.price || product.price || "Precio no disponible";
@@ -52,21 +92,21 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               </div>
             </div>
           </div>
-          <p className="text-xs text-blue-600 leading-tight mt-2">
+          <p className="text-sm text-blue-600 leading-relaxed mt-3 mb-6">
             24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
           </p>
         </div>
 
         {/* Almacenamiento */}
         {product.capacities && product.capacities.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <h3 className="text-base font-bold text-gray-900">Almacenamiento</h3>
-              <span className="text-gray-400 cursor-help text-sm">?</span>
+          <div className="mb-6 mt-8">
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-2xl font-bold text-black">Almacenamiento</h3>
+              <span className="w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-black cursor-help text-base font-semibold">?</span>
             </div>
-            <p className="text-xs text-gray-600 mb-1.5">Compra tu smartphone de mayor capacidad a menor precio</p>
+            <p className="text-sm text-black mb-4">Compra tu smartphone de mayor capacidad a menor precio</p>
 
-            <div className="space-y-1.5">
+            <div className="space-y-3">
               {product.capacities.map((capacity, index) => {
                 const isSelected = capacity.value === selectedStorage;
                 const priceStr = capacity.price || "0";
@@ -79,26 +119,26 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                   <div key={index}>
                     <div
                       onClick={() => setSelectedStorage(capacity.value)}
-                      className={`border-2 rounded-lg p-2 cursor-pointer transition-colors ${isSelected
-                        ? "border-blue-600 bg-blue-50"
+                      className={`border-2 rounded-md p-4 cursor-pointer transition-all ${isSelected
+                        ? "border-blue-600 bg-blue-50/30"
                         : "border-gray-300 hover:border-gray-400"
                         }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="font-semibold text-gray-900 text-xs">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="font-bold text-black text-base">
                           {formattedLabel}
                         </div>
                         <div className="text-right">
-                          <div className="text-xs font-semibold text-gray-900">
+                          <div className="text-sm text-gray-700">
                             $ {monthlyPrice.toLocaleString('es-CO')} al mes o
                           </div>
-                          <div className="text-base font-bold text-gray-900">
+                          <div className="text-lg text-black">
                             {capacity.price || "Precio no disponible"}
                           </div>
                         </div>
                       </div>
                     </div>
-                    <p className="text-xs text-blue-600 leading-tight mt-2">
+                    <p className="text-sm text-blue-600 leading-snug mt-2">
                       Acumula puntos al comprar + 24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
                     </p>
                   </div>
@@ -107,11 +147,11 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
 
             {/* Información importante */}
-            <div className="mt-2">
-              <p className="text-xs font-semibold text-gray-900 mb-0.5">
+            <div className="mt-3 p-3">
+              <p className="text-sm font-semibold text-gray-900 mb-1">
                 Información importante: Memoria ROM
               </p>
-              <p className="text-xs text-gray-600 leading-tight">
+              <p className="text-sm text-gray-600 leading-relaxed">
                 Parte del espacio de la memoria esta ocupada por contenidos preinstalados. Para este dispositivo, el espacio disponible para el usuario es aproximadamente el 87% de la capacidad total de la memoria indicada.
               </p>
             </div>
@@ -120,13 +160,14 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Color */}
         {product.colors && product.colors.length > 0 && (
-          <div className="mb-4">
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <h3 className="text-base font-bold text-gray-900">Color</h3>
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-base font-semibold text-gray-900">Color</h3>
+              <span className="w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-black cursor-help text-base font-semibold">?</span>
             </div>
-            <p className="text-xs text-gray-600 mb-1.5">Selecciona el color de tu dispositivo.</p>
+            <p className="text-xs text-gray-500 mb-3">Selecciona el color de tu dispositivo.</p>
 
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-4 justify-center">
               {product.colors.map((color, index) => {
                 const isSelected = color.name === selectedColor;
 
@@ -140,13 +181,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     className="flex flex-col items-center cursor-pointer transition-all"
                   >
                     <div
-                      className={`w-10 h-10 rounded-full border-2 transition-all ${isSelected
-                        ? "border-blue-600 ring-1 ring-blue-600 ring-offset-1 scale-105"
+                      className={`w-12 h-12 rounded-full border-2 transition-all ${isSelected
+                        ? "border-black ring-2 ring-black ring-offset-2 scale-110"
                         : "border-gray-300 hover:border-gray-400 hover:scale-105"
                         }`}
                       style={{ backgroundColor: color.hex }}
                     ></div>
-                    <div className={`font-semibold text-center text-xs mt-1 ${isSelected ? "text-blue-600" : "text-gray-700"
+                    <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
                       }`}>
                       {color.label}
                     </div>
@@ -158,7 +199,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         )}
 
         {/* Entregas */}
-        <div className="mb-3">
+        <div className="mb-4 pb-4 border-b border-gray-200">
           <p className="text-xs text-gray-600">Entregas: en 1-3 días laborables</p>
         </div>
       </div>

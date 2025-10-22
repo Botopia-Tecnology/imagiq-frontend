@@ -59,11 +59,8 @@ export default function Navbar() {
   const navbar = useNavbarLogic();
   const { logout } = useAuthContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-<<<<<<< Updated upstream
-  const { getNavbarRoutes, loading } = useVisibleCategories();
-=======
   const [mobileUserDropdownOpen, setMobileUserDropdownOpen] = useState(false);
->>>>>>> Stashed changes
+  const { getNavbarRoutes, loading } = useVisibleCategories();
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
@@ -121,19 +118,8 @@ export default function Navbar() {
     return shouldShowWhite ? "text-white" : "text-black";
   };
 
-<<<<<<< Updated upstream
   // Obtener las rutas dinámicas desde el hook
   const menuRoutes: NavItem[] = getNavbarRoutes();
-=======
-  const menuRoutes: NavItem[] = MENU_ORDER.map((name) =>
-    navbarRoutes.find((r) => r.name === name)
-  ).filter(
-    (r): r is NavItem =>
-      r?.name !== undefined &&
-      r?.href !== undefined &&
-      r?.category !== undefined
-  );
->>>>>>> Stashed changes
 
   // Determinar si debe mostrar fondo transparente o blanco
   const showTransparentBg =
@@ -344,7 +330,6 @@ export default function Navbar() {
 
             <nav className="min-w-0 flex-1">
               <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
-<<<<<<< Updated upstream
                 {loading ? (
                   // Skeleton loader
                   <>
@@ -373,7 +358,7 @@ export default function Navbar() {
                         <Link
                           href={item.href}
                           className={cn(
-                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block",
+                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-black tracking-tight relative inline-block",
                             navbar.showWhiteItems
                               ? "text-white hover:opacity-90"
                               : "text-black hover:text-blue-600",
@@ -407,53 +392,6 @@ export default function Navbar() {
                   );
                 })
                 )}
-=======
-                {menuRoutes.map((item) => (
-                  <li key={item.name} className="relative shrink-0">
-                    <div
-                      data-item-name={item.name}
-                      ref={navbar.setNavItemRef}
-                      onMouseEnter={() =>
-                        hasDropdownMenu(item.name) &&
-                        navbar.handleDropdownEnter(item.name)
-                      }
-                      onMouseLeave={navbar.handleDropdownLeave}
-                      className="relative inline-block"
-                    >
-                      <Link
-                        href={item.href}
-                        className={cn(
-                          "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-black tracking-tight relative inline-block",
-                          navbar.showWhiteItems
-                            ? "text-white hover:opacity-90"
-                            : "text-black hover:text-blue-600",
-                          !navbar.showWhiteItems &&
-                            "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
-                        )}
-                      >
-                        {item.name === "Televisores y AV" &&
-                        isIntermediateScreen
-                          ? "TV y AV"
-                          : item.name}
-                      </Link>
-
-                      {navbar.activeDropdown === item.name &&
-                        hasDropdownMenu(item.name) && (
-                          <div
-                            className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
-                            style={{
-                              top: `${getDropdownPosition(item.name).top}px`,
-                            }}
-                          >
-                            <div className="mx-auto max-w-screen-2xl">
-                              {getDropdownComponent(item.name)}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  </li>
-                ))}
->>>>>>> Stashed changes
               </ul>
             </nav>
           </div>

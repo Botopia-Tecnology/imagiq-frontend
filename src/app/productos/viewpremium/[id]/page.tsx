@@ -21,6 +21,8 @@ import ProductInfo from "../components/ProductInfo";
 import ImageModal from "../components/ImageModal";
 import TradeInSection from "../components/sections/TradeInSection";
 import { useProductLogic } from "../hooks/useProductLogic";
+import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
+import Specifications from "../../dispositivos-moviles/detalles-producto/Specifications";
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
 function convertProductForView(product: ProductCardProps) {
@@ -267,8 +269,13 @@ export default function ProductViewPage({ params }) {
             </div>
           </div>
 
-          {/* Solo Flixmedia al final */}
-          <ViewProduct product={convertedProduct} flix={product} />
+          {/* Beneficios imagia */}
+          <BenefitsSection />
+
+          {/* Especificaciones y Flix Media */}
+          <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
+            <Specifications product={product} flix={product} />
+          </div>
 
           {/* Modal para fotos del color seleccionado */}
           <ImageModal

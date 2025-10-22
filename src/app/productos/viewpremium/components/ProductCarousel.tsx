@@ -16,14 +16,14 @@ interface ProductCarouselProps {
 }
 
 // Componente para manejar videos con control de reproducción
-const VideoPlayer: React.FC<{ 
-  src: string; 
-  alt: string; 
+const VideoPlayer: React.FC<{
+  src: string;
+  alt: string;
   onVideoEnd?: () => void;
   onVideoStart?: () => void;
 }> = ({ src, alt, onVideoEnd, onVideoStart }) => {
   const [videoError, setVideoError] = useState(false);
-  
+
   // Usar directamente el tag video HTML5 para mejor compatibilidad
   if (videoError) {
     return (
@@ -85,11 +85,11 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
         {(() => {
           // Determinar qué imágenes usar según el estado del scroll
           // Para el carrusel premium, usar SOLO las imágenes del API (sin contenido mockeado)
-          const currentImages = showStickyCarousel 
+          const currentImages = showStickyCarousel
             ? premiumImages
             : productImages;
           const currentImageSet = showStickyCarousel ? 'premium' : 'product';
-          
+
           return currentImages.length > 0 ? (
             <>
               {/* Imagen principal - estilo Samsung más grande */}
@@ -97,22 +97,22 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                 {(() => {
                   const currentSrc = currentImages[currentImageIndex];
                   const isVideo = currentSrc && (
-                    currentSrc.includes('.webm') || 
-                    currentSrc.includes('.mp4') || 
+                    currentSrc.includes('.webm') ||
+                    currentSrc.includes('.mp4') ||
                     currentSrc.includes('.mov') ||
                     currentSrc.includes('video/upload')
                   );
-                  
+
                   if (isVideo) {
                     return (
                       <div className="relative w-full h-full flex items-center justify-center">
-                        <VideoPlayer 
-                          src={currentSrc} 
+                        <VideoPlayer
+                          src={currentSrc}
                           alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
                           onVideoStart={handleVideoStart}
                           onVideoEnd={handleVideoEnd}
                         />
-                        
+
                         {/* Botón de pausa/play estilo Samsung - parte inferior izquierda */}
                         <button
                           onClick={() => {
@@ -154,7 +154,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                     );
                   }
                 })()}
-                
+
                 {/* Flechas de navegación - estilo Samsung */}
                 {currentImages.length > 1 && (
                   <>
@@ -177,7 +177,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                   </>
                 )}
               </div>
-              
+
               {/* Puntos de navegación - PARA AMBOS CARRUSELES - CÍRCULOS */}
               {currentImages.length > 1 && (
                 <div className="flex justify-center gap-2 mt-6 mb-4">
@@ -185,11 +185,10 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                        index === currentImageIndex
-                          ? "bg-black scale-110"
-                          : "bg-gray-300 hover:bg-gray-400 hover:scale-105"
-                      }`}
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentImageIndex
+                        ? "bg-black scale-110"
+                        : "bg-gray-300 hover:bg-gray-400 hover:scale-105"
+                        }`}
                     />
                   ))}
                 </div>
@@ -210,32 +209,11 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
       <div className={`absolute top-[5%] left-0 right-0 bottom-0 w-full transition-all duration-700 ease-in-out ${!showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'}`}>
         {productImages.length > 0 ? (
           <>
-            {/* Imagen del producto - más pequeña y simple */}
-            <div className="relative w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
-              {/* Iconos de colores - SOLO en el segundo carrusel */}
-              {product.colors && product.colors.length > 0 && (
-                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
-                  {product.colors.map((color) => (
-                    <button
-                      key={color.name}
-                      onClick={() => {
-                        setSelectedColor(color.name);
-                        setCurrentImageIndex(0);
-                      }}
-                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                        selectedColor === color.name 
-                          ? 'border-black shadow-lg scale-110' 
-                          : 'border-gray-300 hover:border-gray-400'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.label || color.name}
-                    />
-                  ))}
-                </div>
-              )}
+            {/* Imagen del producto - más pequeña y simple con fondo transparente */}
+            <div className="relative w-full h-[600px] flex items-center justify-center overflow-hidden">
               {(() => {
                 const currentSrc = productImages[currentImageIndex % productImages.length];
-                 
+
                 return (
                   <img
                     key={currentSrc}
@@ -250,10 +228,10 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
               })()}
             </div>
             {/* Botón Ver más - estilo Samsung */}
-            <div className="flex justify-center mt-6">
+            <div className="flex justify-center mt-1">
               <button
                 onClick={onOpenModal}
-                className="px-6 py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-all hover:scale-105"
+                className="px-6 py-2.5 bg-white text-black border-2 border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-all hover:scale-105"
               >
                 Ver más
               </button>

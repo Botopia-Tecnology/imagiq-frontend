@@ -82,8 +82,8 @@ export default function ProductViewPage({ params }) {
   type ParamsWithId = { id: string };
   const id =
     resolvedParams &&
-    typeof resolvedParams === "object" &&
-    "id" in resolvedParams
+      typeof resolvedParams === "object" &&
+      "id" in resolvedParams
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
@@ -259,7 +259,7 @@ export default function ProductViewPage({ params }) {
           </div>
 
           {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
-          <div className="bg-white pb-8">
+          <div className="bg-white pb-8 -mt-72">
             <div className="container mx-auto px-4 md:px-6 lg:px-12">
               <div className="max-w-7xl mx-auto">
                 <TradeInSection />

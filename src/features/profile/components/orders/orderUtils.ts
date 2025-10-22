@@ -6,6 +6,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Clock, CheckCircle, Package, Truck, XCircle } from 'lucide-react';
 import { OrderStatus } from '../../types';
+import { formatDate as formatDateUtil } from '../../utils/formatters';
 
 export interface StatusInfo {
   icon: LucideIcon;
@@ -64,13 +65,8 @@ export const getStatusInfo = (status: OrderStatus): StatusInfo => {
   return ORDER_STATUS_MAP[status] || ORDER_STATUS_MAP.pending;
 };
 
-export const formatDate = (date: Date): string => {
-  return new Intl.DateTimeFormat('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(new Date(date));
-};
+// Re-export formatter para compatibilidad
+export const formatDate = formatDateUtil;
 
 export const isActiveOrder = (status: OrderStatus): boolean => {
   return ['pending', 'confirmed', 'processing', 'shipped'].includes(status);

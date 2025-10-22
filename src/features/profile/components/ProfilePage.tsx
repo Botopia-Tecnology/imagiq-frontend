@@ -96,7 +96,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
         <OrdersSection
           title="Pedidos Activos"
           orders={state.activeOrders.slice(0, 2)}
-          variant="active"
           showViewAll={state.activeOrders.length > 2}
           onViewDetails={handlers.handleOrderDetails}
           onViewAllOrders={handlers.handleViewAllOrders}
@@ -106,7 +105,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
         <OrdersSection
           title="Pedidos Recientes"
           orders={state.recentOrders.slice(0, 3)}
-          variant="recent"
           showViewAll={true}
           onViewDetails={handlers.handleOrderDetails}
           onViewAllOrders={handlers.handleViewAllOrders}

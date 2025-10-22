@@ -5,6 +5,7 @@
 
 import { InvoiceStatus } from '../../types';
 import { CheckCircle2, Clock, AlertCircle, XCircle } from 'lucide-react';
+import { formatDate as formatDateUtil, formatCurrency as formatCurrencyUtil } from '../../utils/formatters';
 
 export const getStatusConfig = (status: InvoiceStatus) => {
   switch (status) {
@@ -39,18 +40,6 @@ export const getStatusConfig = (status: InvoiceStatus) => {
   }
 };
 
-export const formatCurrency = (amount: number, currency: string = 'COP') => {
-  return new Intl.NumberFormat('es-CO', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-  }).format(amount);
-};
-
-export const formatDate = (date: Date) => {
-  return new Date(date).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-};
+// Re-export formatters para compatibilidad
+export const formatCurrency = formatCurrencyUtil;
+export const formatDate = formatDateUtil;

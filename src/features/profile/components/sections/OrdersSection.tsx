@@ -4,13 +4,12 @@
  */
 
 import React from "react";
-import OrderCard from "./OrderCard";
+import OrderCard from "../orders/OrderCard";
 import { Order } from "../../types";
 
 interface OrdersSectionProps {
   title: string;
   orders: Order[];
-  variant: "active" | "recent";
   showViewAll?: boolean;
   onViewDetails: (orderId: string) => void;
   onViewAllOrders?: () => void;
@@ -19,7 +18,6 @@ interface OrdersSectionProps {
 export const OrdersSection: React.FC<OrdersSectionProps> = ({
   title,
   orders,
-  variant,
   showViewAll = false,
   onViewDetails,
   onViewAllOrders,
@@ -44,7 +42,6 @@ export const OrdersSection: React.FC<OrdersSectionProps> = ({
           <OrderCard
             key={order.id}
             order={order}
-            variant={variant}
             onViewDetails={onViewDetails}
           />
         ))}

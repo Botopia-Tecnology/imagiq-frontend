@@ -12,6 +12,7 @@ interface ProductCarouselProps {
   premiumImages: string[];
   productImages: string[];
   onOpenModal: () => void;
+  setSelectedColor: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // Componente para manejar videos con control de reproducción
@@ -65,6 +66,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   premiumImages,
   productImages,
   onOpenModal,
+  setSelectedColor,
 }, ref) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
@@ -77,7 +79,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   };
 
   return (
-    <div ref={ref} className="w-full relative">
+    <div ref={ref} className="w-full relative px-4 md:px-8">
       {/* Carrusel premium - estilo Samsung más grande */}
       <div className={`relative w-full transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
@@ -91,7 +93,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
           return currentImages.length > 0 ? (
             <>
               {/* Imagen principal - estilo Samsung más grande */}
-              <div className="relative w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center rounded-3xl overflow-hidden shadow-xl">
+              <div className="relative w-full h-[700px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
                 {(() => {
                   const currentSrc = currentImages[currentImageIndex];
                   const isVideo = currentSrc && (
@@ -153,36 +155,40 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                   }
                 })()}
                 
-                {/* Flechas de navegación - estilo Samsung mejorado */}
+                {/* Flechas de navegación - estilo Samsung */}
                 {currentImages.length > 1 && (
                   <>
                     <button
                       onClick={() => setCurrentImageIndex((prev) => prev === 0 ? currentImages.length - 1 : prev - 1)}
-                      className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/90 hover:bg-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 border border-gray-200/50 backdrop-blur-sm"
+                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-105"
                     >
-                      <span className="text-gray-700 text-2xl font-light">‹</span>
+                      <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
                     </button>
                     <button
                       onClick={() => setCurrentImageIndex((prev) => (prev + 1) % currentImages.length)}
-                      className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/90 hover:bg-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 border border-gray-200/50 backdrop-blur-sm"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/95 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-105"
                     >
-                      <span className="text-gray-700 text-2xl font-light">›</span>
+                      <svg className="w-6 h-6 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </button>
                   </>
                 )}
               </div>
               
-              {/* Puntos de navegación - estilo Samsung más prominente */}
+              {/* Puntos de navegación - PARA AMBOS CARRUSELES - CÍRCULOS */}
               {currentImages.length > 1 && (
-                <div className="flex justify-center gap-3 mt-8 mb-4">
+                <div className="flex justify-center gap-2 mt-6 mb-4">
                   {currentImages.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-3 rounded-full transition-all duration-300 ${
+                      className={`w-3 h-3 rounded-full transition-all duration-300 ${
                         index === currentImageIndex
-                          ? "w-10 bg-black shadow-lg"
-                          : "w-3 bg-gray-300 hover:bg-gray-500 hover:scale-125"
+                          ? "bg-black scale-110"
+                          : "bg-gray-300 hover:bg-gray-400 hover:scale-105"
                       }`}
                     />
                   ))}
@@ -190,7 +196,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
               )}
             </>
           ) : (
-            <div className="w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold rounded-3xl">
+            <div className="w-full h-[700px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold">
               <div className="text-center">
                 <div className="text-6xl mb-4">📱</div>
                 <div>Contenido premium no disponible</div>
@@ -205,7 +211,28 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
         {productImages.length > 0 ? (
           <>
             {/* Imagen del producto - más pequeña y simple */}
-            <div className="relative w-full h-[500px] bg-white flex items-center justify-center rounded-lg border border-gray-200">
+            <div className="relative w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center overflow-hidden">
+              {/* Iconos de colores - SOLO en el segundo carrusel */}
+              {product.colors && product.colors.length > 0 && (
+                <div className="absolute top-4 right-4 flex flex-col gap-2 z-10">
+                  {product.colors.map((color) => (
+                    <button
+                      key={color.name}
+                      onClick={() => {
+                        setSelectedColor(color.name);
+                        setCurrentImageIndex(0);
+                      }}
+                      className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
+                        selectedColor === color.name 
+                          ? 'border-black shadow-lg scale-110' 
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                      style={{ backgroundColor: color.hex }}
+                      title={color.label || color.name}
+                    />
+                  ))}
+                </div>
+              )}
               {(() => {
                 const currentSrc = productImages[currentImageIndex % productImages.length];
                  
@@ -222,18 +249,18 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                 );
               })()}
             </div>
-            {/* Botón Ver más */}
+            {/* Botón Ver más - estilo Samsung */}
             <div className="flex justify-center mt-6">
               <button
                 onClick={onOpenModal}
-                className="px-8 py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:scale-105"
+                className="px-6 py-2.5 bg-black text-white rounded-full text-sm font-medium hover:bg-gray-800 transition-all hover:scale-105"
               >
-                Ver más fotos del color {selectedColor}
+                Ver más
               </button>
             </div>
           </>
         ) : (
-          <div className="w-full h-[500px] bg-white flex items-center justify-center text-gray-500 text-lg font-semibold rounded-lg border border-gray-200">
+          <div className="w-full h-[500px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold rounded-2xl">
             <div className="text-center">
               <div className="text-4xl mb-2">🎨</div>
               <div>No hay fotos específicas para el color {selectedColor}</div>

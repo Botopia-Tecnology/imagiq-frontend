@@ -237,6 +237,7 @@ export default function ProductViewPage({ params }) {
                   premiumImages={premiumImages}
                   productImages={productImages}
                   onOpenModal={openModal}
+                  setSelectedColor={setSelectedColor}
                 />
               </div>
 

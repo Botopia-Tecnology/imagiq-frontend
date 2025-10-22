@@ -38,11 +38,21 @@ export type {
   MenuItemProps
 } from './types/components';
 
-// Mock data utilities (for development)
+// Mock data utilities (for development and testing)
 export {
-  createMockProfileState,
   createMockUser,
   createMockAddresses,
+  createMockPaymentMethods,
   createMockActiveOrders,
-  createMockRecentOrders
+  createMockRecentOrders,
+  createMockCredits,
+  createMockCoupons,
+  createMockLoyaltyProgram,
+  createMockUserPreferences,
+  createMockProfileState,
+  mockApiDelay,
+  createMockError,
+  getOrdersByStatus,
+  getDefaultAddress,
+  getDefaultPaymentMethod
 } from './utils/mockData';

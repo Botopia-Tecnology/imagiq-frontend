@@ -6,6 +6,7 @@ import Link from "next/link";
 import { User, Menu, Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
+import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import OfertasDropdown from "./dropdowns/ofertas";
@@ -25,7 +26,9 @@ import {
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
 import type { DropdownName, NavItem } from "./navbar/types";
 
-const getDropdownComponent = (name: DropdownName) => {
+const getDropdownComponent = (
+  name: DropdownName
+): React.ReactElement | null => {
   const props = { isMobile: false };
   switch (name) {
     case "Ofertas":
@@ -42,71 +45,130 @@ const getDropdownComponent = (name: DropdownName) => {
       return <AccesoriosDropdown {...props} />;
     case "Soporte":
       return <SoporteDropdown {...props} />;
+    default:
+      return null;
   }
 };
 
+// Constantes para evitar magic numbers
+const BREAKPOINT_XL = 1280;
+const BREAKPOINT_2XL = 1536;
+const SOPORTE_DROPDOWN_TOP = 104;
+
 export default function Navbar() {
   const navbar = useNavbarLogic();
+  const { logout } = useAuthContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+<<<<<<< Updated upstream
   const { getNavbarRoutes, loading } = useVisibleCategories();
+=======
+  const [mobileUserDropdownOpen, setMobileUserDropdownOpen] = useState(false);
+>>>>>>> Stashed changes
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
+  // Extraer la función para evitar problemas de dependencias
+  const { setActiveDropdown } = navbar;
+
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
-      if (width >= 1280) {
+      const width = globalThis.innerWidth;
+      if (width >= BREAKPOINT_XL) {
         setMobileMenuOpen(false);
+        setMobileUserDropdownOpen(false);
       }
       // Detectar pantallas entre 1280px (xl) y 1536px (2xl) - más pequeño que desktop pero más grande que tablet
-      setIsIntermediateScreen(width >= 1280 && width < 1536);
+      setIsIntermediateScreen(width >= BREAKPOINT_XL && width < BREAKPOINT_2XL);
     };
 
     // Listener para cerrar dropdown cuando se dispara el evento personalizado
     const handleCloseDropdown = () => {
-      navbar.setActiveDropdown(null);
+      setActiveDropdown(null);
     };
 
     // Ejecutar una vez al montar
     handleResize();
 
-    window.addEventListener("resize", handleResize);
-    window.addEventListener(
+    globalThis.addEventListener("resize", handleResize);
+    globalThis.addEventListener(
       "close-dropdown",
       handleCloseDropdown as EventListener
     );
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener(
+      globalThis.removeEventListener("resize", handleResize);
+      globalThis.removeEventListener(
         "close-dropdown",
         handleCloseDropdown as EventListener
       );
     };
-  }, [navbar]);
+  }, [setActiveDropdown]);
 
   const getIconColorClasses = (forMobile = false): string => {
-    if (
+    // Rutas especiales que siempre usan texto negro
+    const isAlwaysBlack =
       navbar.isElectrodomesticos ||
       navbar.isDispositivosMoviles ||
-      navbar.isMasInformacionProducto
-    ) {
+      navbar.isMasInformacionProducto;
+
+    if (isAlwaysBlack) {
       return "text-black";
     }
-    if (forMobile) {
-      return navbar.showWhiteItemsMobile ? "text-white" : "text-black";
-    }
-    return navbar.showWhiteItems ? "text-white" : "text-black";
+
+    const shouldShowWhite = forMobile
+      ? navbar.showWhiteItemsMobile
+      : navbar.showWhiteItems;
+    return shouldShowWhite ? "text-white" : "text-black";
   };
 
+<<<<<<< Updated upstream
   // Obtener las rutas dinámicas desde el hook
   const menuRoutes: NavItem[] = getNavbarRoutes();
+=======
+  const menuRoutes: NavItem[] = MENU_ORDER.map((name) =>
+    navbarRoutes.find((r) => r.name === name)
+  ).filter(
+    (r): r is NavItem =>
+      r?.name !== undefined &&
+      r?.href !== undefined &&
+      r?.category !== undefined
+  );
+>>>>>>> Stashed changes
 
   // Determinar si debe mostrar fondo transparente o blanco
   const showTransparentBg =
     (navbar.isOfertas || navbar.isHome) &&
     !navbar.activeDropdown &&
     !navbar.isScrolled;
+
+  // Determinar color del logo móvil
+  const mobileLogoColor = getIconColorClasses(true);
+  const desktopIconColor = getIconColorClasses(false);
+
+  // Event handlers
+  const handleLogoClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    posthogUtils.capture("logo_click", { source: "navbar" });
+    navbar.router.push("/");
+  };
+
+  const handleMobileUserClick = () => {
+    if (navbar.isAuthenticated && navbar.user?.nombre) {
+      setMobileUserDropdownOpen(!mobileUserDropdownOpen);
+    } else {
+      navbar.router.push("/login");
+    }
+  };
+
+  const handleMobileProfileClick = () => {
+    setMobileUserDropdownOpen(false);
+    navbar.router.push("/perfil");
+  };
+
+  const handleMobileLogoutClick = () => {
+    setMobileUserDropdownOpen(false);
+    logout();
+  };
 
   const headerStyles: CSSProperties = {
     fontFamily:
@@ -135,7 +197,7 @@ export default function Navbar() {
         data-navbar="true"
         className={cn(
           "w-full z-50 transition-all duration-300 fixed",
-          !navbar.showNavbar ? "-translate-y-full" : "translate-y-0"
+          navbar.showNavbar ? "translate-y-0" : "-translate-y-full"
         )}
         style={{
           ...headerStyles,
@@ -153,11 +215,7 @@ export default function Navbar() {
         >
           <Link
             href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              posthogUtils.capture("logo_click", { source: "navbar" });
-              navbar.router.push("/");
-            }}
+            onClick={handleLogoClick}
             aria-label="Inicio"
             className="flex items-center gap-2"
           >
@@ -189,18 +247,78 @@ export default function Navbar() {
               showBump={false}
               isClient={navbar.isClient}
               onClick={navbar.handleCartClick}
-              colorClass={
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
-              }
+              colorClass={mobileLogoColor}
             />
-            <button className="p-2" aria-label="Usuario">
-              <User
-                className={cn(
-                  "w-6 h-6 transition-colors duration-300",
-                  navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+            <div className="relative">
+              <button
+                onClick={handleMobileUserClick}
+                className="p-2"
+                aria-label={
+                  navbar.isAuthenticated ? "Perfil" : "Iniciar sesión"
+                }
+              >
+                <User
+                  className={cn(
+                    "w-6 h-6 transition-colors duration-300",
+                    mobileLogoColor
+                  )}
+                />
+              </button>
+
+              {/* Dropdown de usuario en mobile */}
+              {mobileUserDropdownOpen &&
+                navbar.isAuthenticated &&
+                navbar.user?.nombre && (
+                  <>
+                    {/* Overlay para cerrar el dropdown */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setMobileUserDropdownOpen(false)}
+                      aria-hidden="true"
+                    />
+
+                    {/* Dropdown menu */}
+                    <div
+                      className="fixed right-4 top-[72px] w-56 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                      role="menu"
+                      aria-label="Menú de usuario"
+                    >
+                      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                        <p className="text-sm font-semibold text-gray-900">
+                          Hola, {navbar.user.nombre.split(" ")[0]}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Gestiona tu cuenta
+                        </p>
+                      </div>
+
+                      <button
+                        className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors duration-150 border-b border-gray-100"
+                        role="menuitem"
+                        onClick={handleMobileProfileClick}
+                      >
+                        <span className="block font-medium">Ver perfil</span>
+                        <span className="block text-sm text-gray-500">
+                          Configuración de cuenta
+                        </span>
+                      </button>
+
+                      <button
+                        className="w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 focus:bg-gray-50 focus:outline-none transition-colors duration-150"
+                        role="menuitem"
+                        onClick={handleMobileLogoutClick}
+                      >
+                        <span className="block font-medium text-red-600">
+                          Cerrar sesión
+                        </span>
+                        <span className="block text-sm text-gray-500">
+                          Salir de tu cuenta
+                        </span>
+                      </button>
+                    </div>
+                  </>
                 )}
-              />
-            </button>
+            </div>
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="p-2"
@@ -209,7 +327,7 @@ export default function Navbar() {
               <Menu
                 className={cn(
                   "w-6 h-6 transition-colors duration-300",
-                  navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                  mobileLogoColor
                 )}
               />
             </button>
@@ -226,6 +344,7 @@ export default function Navbar() {
 
             <nav className="min-w-0 flex-1">
               <ul className="flex items-center gap-2 xl:gap-3 2xl:gap-6">
+<<<<<<< Updated upstream
                 {loading ? (
                   // Skeleton loader
                   <>
@@ -288,28 +407,72 @@ export default function Navbar() {
                   );
                 })
                 )}
+=======
+                {menuRoutes.map((item) => (
+                  <li key={item.name} className="relative shrink-0">
+                    <div
+                      data-item-name={item.name}
+                      ref={navbar.setNavItemRef}
+                      onMouseEnter={() =>
+                        hasDropdownMenu(item.name) &&
+                        navbar.handleDropdownEnter(item.name)
+                      }
+                      onMouseLeave={navbar.handleDropdownLeave}
+                      className="relative inline-block"
+                    >
+                      <Link
+                        href={item.href}
+                        className={cn(
+                          "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-black tracking-tight relative inline-block",
+                          navbar.showWhiteItems
+                            ? "text-white hover:opacity-90"
+                            : "text-black hover:text-blue-600",
+                          !navbar.showWhiteItems &&
+                            "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
+                        )}
+                      >
+                        {item.name === "Televisores y AV" &&
+                        isIntermediateScreen
+                          ? "TV y AV"
+                          : item.name}
+                      </Link>
+
+                      {navbar.activeDropdown === item.name &&
+                        hasDropdownMenu(item.name) && (
+                          <div
+                            className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
+                            style={{
+                              top: `${getDropdownPosition(item.name).top}px`,
+                            }}
+                          >
+                            <div className="mx-auto max-w-screen-2xl">
+                              {getDropdownComponent(item.name)}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  </li>
+                ))}
+>>>>>>> Stashed changes
               </ul>
             </nav>
           </div>
 
           <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
             <div className="flex items-center gap-6 leading-none">
-              <div
+              <Link
+                href="/soporte/inicio_de_soporte"
+                className={cn(
+                  "text-[13px] md:text-[13.5px] font-bold",
+                  navbar.showWhiteItems
+                    ? "text-white/90 hover:text-white"
+                    : "text-black"
+                )}
                 onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}
                 onMouseLeave={navbar.handleDropdownLeave}
               >
-                <Link
-                  href="/soporte/inicio_de_soporte"
-                  className={cn(
-                    "text-[13px] md:text-[13.5px] font-bold",
-                    navbar.showWhiteItems
-                      ? "text-white/90 hover:text-white"
-                      : "text-black"
-                  )}
-                >
-                  Soporte
-                </Link>
-              </div>
+                Soporte
+              </Link>
               <Link
                 href="/ventas-corporativas"
                 className={cn(
@@ -335,31 +498,31 @@ export default function Navbar() {
                 showBump={navbar.bump}
                 isClient={navbar.isClient}
                 onClick={navbar.handleCartClick}
-                colorClass={getIconColorClasses()}
+                colorClass={desktopIconColor}
               />
               <Link
                 href="/favoritos"
                 className={cn(
                   "flex items-center justify-center w-10 h-10",
-                  getIconColorClasses()
+                  desktopIconColor
                 )}
                 aria-label="Favoritos"
               >
-                <Heart className={cn("w-5 h-5", getIconColorClasses())} />
+                <Heart className={cn("w-5 h-5", desktopIconColor)} />
               </Link>
               {navbar.isAuthenticated && navbar.user?.nombre ? (
-                <UserOptionsDropdown />
+                <UserOptionsDropdown showWhiteItems={navbar.showWhiteItems} />
               ) : (
                 <button
                   type="button"
                   className={cn(
                     "flex items-center justify-center w-10 h-10",
-                    getIconColorClasses()
+                    desktopIconColor
                   )}
-                  onClick={() => window.location.replace("/login")}
+                  onClick={() => navbar.router.push("/login")}
                   aria-label="Ingresar"
                 >
-                  <User className={cn("w-5 h-5", getIconColorClasses())} />
+                  <User className={cn("w-5 h-5", desktopIconColor)} />
                 </button>
               )}
             </div>
@@ -368,11 +531,12 @@ export default function Navbar() {
 
         {/* Dropdown de Soporte - Full Width */}
         {navbar.activeDropdown === "Soporte" && (
-          <div
+          <section
             className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
-            style={{ top: "104px" }}
+            style={{ top: `${SOPORTE_DROPDOWN_TOP}px` }}
             onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}
             onMouseLeave={navbar.handleDropdownLeave}
+            aria-label="Soporte Dropdown"
           >
             <div className="mx-auto max-w-screen-2xl">
               <SoporteDropdown
@@ -380,7 +544,7 @@ export default function Navbar() {
                 onClose={() => navbar.setActiveDropdown(null)}
               />
             </div>
-          </div>
+          </section>
         )}
       </header>
 

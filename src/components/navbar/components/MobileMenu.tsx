@@ -54,12 +54,12 @@ export const MobileMenu: FC<Props> = ({
   return (
     <>
       <div
-        className="fixed inset-0 bg-black/50 z-[100]"
+        className="fixed inset-0 bg-black/50 z-[10000]"
         onClick={onClose}
         aria-hidden="true"
       />
 
-      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white z-[101] overflow-y-auto">
+      <div className="fixed inset-y-0 right-0 w-full max-w-md bg-white z-[10001] overflow-y-auto">
         <MobileMenuHeader
           activeSubmenu={activeSubmenu}
           onClose={onClose}

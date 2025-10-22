@@ -221,25 +221,28 @@ export default function ProductViewPage({ params }) {
             </div>
           </div>
 
-          {/* Layout de dos columnas: Carrusel a la izquierda, Info a la derecha */}
-          <div className="bg-white py-8">
-            <div className="container mx-auto px-4 md:px-6 lg:px-12">
-              <div className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* Columna izquierda: Carrusel */}
-                  <ProductCarousel
-                    ref={carouselRef}
-                    product={product}
-                    selectedColor={selectedColor}
-                    currentImageIndex={currentImageIndex}
-                    setCurrentImageIndex={setCurrentImageIndex}
-                    showStickyCarousel={showStickyCarousel}
-                    premiumImages={premiumImages}
-                    productImages={productImages}
-                    onOpenModal={openModal}
-                  />
+          {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
+          <div className="bg-white py-8 min-h-screen">
+            {/* Grid principal - SIEMPRE sticky */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
+              {/* Columna izquierda: Carrusel FIJO (sticky) - ocupa todo el ancho */}
+              <div className="lg:col-span-9 sticky top-24 self-start h-screen overflow-hidden">
+                <ProductCarousel
+                  ref={carouselRef}
+                  product={product}
+                  selectedColor={selectedColor}
+                  currentImageIndex={currentImageIndex}
+                  setCurrentImageIndex={setCurrentImageIndex}
+                  showStickyCarousel={showStickyCarousel}
+                  premiumImages={premiumImages}
+                  productImages={productImages}
+                  onOpenModal={openModal}
+                />
+              </div>
 
-                  {/* Columna derecha: Información del producto */}
+              {/* Columna derecha: Información del producto con márgenes normales - SCROLLEABLE */}
+              <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-0 lg:mt-0 min-h-[200vh]">
+                <div className="max-w-7xl mx-auto">
                   <ProductInfo
                     ref={specsRef}
                     product={product}
@@ -254,8 +257,14 @@ export default function ProductViewPage({ params }) {
             </div>
           </div>
 
-          {/* Sección de Estreno y Entrego */}
-          <TradeInSection />
+          {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
+          <div className="bg-white pb-8">
+            <div className="container mx-auto px-4 md:px-6 lg:px-12">
+              <div className="max-w-7xl mx-auto">
+                <TradeInSection />
+              </div>
+            </div>
+          </div>
 
           {/* Solo Flixmedia al final */}
           <ViewProduct product={convertedProduct} flix={product} />

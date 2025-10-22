@@ -43,7 +43,7 @@ const VideoPlayer: React.FC<{
       muted
       playsInline
       controls={false}
-      className="w-full h-full object-contain"
+      className="w-full h-full object-cover"
       onEnded={onVideoEnd}
       onPlay={onVideoStart}
       onError={(e) => {
@@ -77,9 +77,9 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   };
 
   return (
-    <div ref={ref} className="w-full lg:col-span-9 lg:sticky lg:top-20 relative">
-      {/* Carrusel de imágenes reales */}
-      <div className={`relative w-full transition-opacity duration-500 ease-in-out ${showStickyCarousel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+    <div ref={ref} className="w-full relative">
+      {/* Carrusel premium - estilo Samsung más grande */}
+      <div className={`relative w-full transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
           // Determinar qué imágenes usar según el estado del scroll
           // Para el carrusel premium, usar SOLO las imágenes del API (sin contenido mockeado)
@@ -90,8 +90,8 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
           
           return currentImages.length > 0 ? (
             <>
-              {/* Imagen principal - estilo Samsung */}
-              <div className="relative w-full h-[600px] bg-white flex items-center justify-center">
+              {/* Imagen principal - estilo Samsung más grande */}
+              <div className="relative w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center rounded-3xl overflow-hidden shadow-xl">
                 {(() => {
                   const currentSrc = currentImages[currentImageIndex];
                   const isVideo = currentSrc && (
@@ -103,13 +103,39 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                   
                   if (isVideo) {
                     return (
-                      <div className="w-full h-full flex items-center justify-center">
+                      <div className="relative w-full h-full flex items-center justify-center">
                         <VideoPlayer 
                           src={currentSrc} 
                           alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
                           onVideoStart={handleVideoStart}
                           onVideoEnd={handleVideoEnd}
                         />
+                        
+                        {/* Botón de pausa/play estilo Samsung - parte inferior izquierda */}
+                        <button
+                          onClick={() => {
+                            const video = document.querySelector('video');
+                            if (video) {
+                              if (video.paused) {
+                                video.play();
+                                setIsVideoPlaying(true);
+                              } else {
+                                video.pause();
+                                setIsVideoPlaying(false);
+                              }
+                            }
+                          }}
+                          className="absolute bottom-6 right-6 w-12 h-12 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-10"
+                        >
+                          {isVideoPlaying ? (
+                            <div className="w-3 h-3 flex gap-1">
+                              <div className="w-1 h-3 bg-white rounded-sm"></div>
+                              <div className="w-1 h-3 bg-white rounded-sm"></div>
+                            </div>
+                          ) : (
+                            <div className="w-0 h-0 border-l-[6px] border-l-white border-t-[4px] border-t-transparent border-b-[4px] border-b-transparent ml-0.5"></div>
+                          )}
+                        </button>
                       </div>
                     );
                   } else {
@@ -118,7 +144,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                         key={currentSrc}
                         src={currentSrc}
                         alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
-                        className="w-full h-full object-contain"
+                        className={`w-full h-full ${currentImageSet === 'premium' ? 'object-cover' : 'object-contain p-8'}`}
                         onError={(e) => {
                           console.error('Error loading image:', currentSrc, e);
                         }}
@@ -127,36 +153,36 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                   }
                 })()}
                 
-                {/* Flechas de navegación - estilo Samsung */}
+                {/* Flechas de navegación - estilo Samsung mejorado */}
                 {currentImages.length > 1 && (
                   <>
                     <button
                       onClick={() => setCurrentImageIndex((prev) => prev === 0 ? currentImages.length - 1 : prev - 1)}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/80 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-gray-200"
+                      className="absolute left-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/90 hover:bg-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 border border-gray-200/50 backdrop-blur-sm"
                     >
-                      <span className="text-gray-600 text-xl">‹</span>
+                      <span className="text-gray-700 text-2xl font-light">‹</span>
                     </button>
                     <button
                       onClick={() => setCurrentImageIndex((prev) => (prev + 1) % currentImages.length)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-white/80 hover:bg-white shadow-lg flex items-center justify-center transition-all hover:scale-110 border border-gray-200"
+                      className="absolute right-6 top-1/2 -translate-y-1/2 w-14 h-14 rounded-full bg-white/90 hover:bg-white shadow-2xl flex items-center justify-center transition-all hover:scale-110 border border-gray-200/50 backdrop-blur-sm"
                     >
-                      <span className="text-gray-600 text-xl">›</span>
+                      <span className="text-gray-700 text-2xl font-light">›</span>
                     </button>
                   </>
                 )}
               </div>
               
-              {/* Puntos de navegación - estilo Samsung */}
+              {/* Puntos de navegación - estilo Samsung más prominente */}
               {currentImages.length > 1 && (
-                <div className="flex justify-center gap-2 mt-6">
+                <div className="flex justify-center gap-3 mt-8 mb-4">
                   {currentImages.map((_, index) => (
                     <button
                       key={index}
                       onClick={() => setCurrentImageIndex(index)}
-                      className={`h-2 rounded-full transition-all ${
+                      className={`h-3 rounded-full transition-all duration-300 ${
                         index === currentImageIndex
-                          ? "w-8 bg-gray-800"
-                          : "w-2 bg-gray-300 hover:bg-gray-500"
+                          ? "w-10 bg-black shadow-lg"
+                          : "w-3 bg-gray-300 hover:bg-gray-500 hover:scale-125"
                       }`}
                     />
                   ))}
@@ -164,22 +190,22 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
               )}
             </>
           ) : (
-            <div className="w-full h-[600px] bg-white flex items-center justify-center text-gray-500 text-lg font-semibold">
+            <div className="w-full h-[600px] bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-500 text-lg font-semibold rounded-3xl">
               <div className="text-center">
                 <div className="text-6xl mb-4">📱</div>
-                <div>Imagen no disponible</div>
+                <div>Contenido premium no disponible</div>
               </div>
             </div>
           );
         })()}
       </div>
 
-      {/* Segundo carrusel - Solo imágenes del color seleccionado */}
-      <div className={`absolute top-[5%] left-0 right-0 bottom-0 w-full transition-opacity duration-500 ease-in-out ${!showStickyCarousel ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+      {/* Segundo carrusel - Solo imágenes del color seleccionado (más pequeño) */}
+      <div className={`absolute top-[5%] left-0 right-0 bottom-0 w-full transition-all duration-700 ease-in-out ${!showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-105 pointer-events-none'}`}>
         {productImages.length > 0 ? (
           <>
-            {/* Imagen del producto - estilo Samsung */}
-            <div className="relative w-full h-[600px] bg-white flex items-center justify-center">
+            {/* Imagen del producto - más pequeña y simple */}
+            <div className="relative w-full h-[500px] bg-white flex items-center justify-center rounded-lg border border-gray-200">
               {(() => {
                 const currentSrc = productImages[currentImageIndex % productImages.length];
                  
@@ -188,7 +214,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                     key={currentSrc}
                     src={currentSrc}
                     alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
-                    className="w-full h-full object-contain"
+                    className="w-full h-full object-contain p-4"
                     onError={(e) => {
                       console.error('Error loading image:', currentSrc, e);
                     }}
@@ -196,18 +222,18 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                 );
               })()}
             </div>
-            {/* Botón pegado a la primera foto */}
-            <div className="flex justify-center mt-2">
+            {/* Botón Ver más */}
+            <div className="flex justify-center mt-6">
               <button
                 onClick={onOpenModal}
-                className="px-8 py-3 bg-white border-2 border-gray-300 rounded-full font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md"
+                className="px-8 py-3 bg-black text-white rounded-full font-semibold hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl hover:scale-105"
               >
-                Ver más
+                Ver más fotos del color {selectedColor}
               </button>
             </div>
           </>
         ) : (
-          <div className="w-full h-[600px] bg-white flex items-center justify-center text-gray-500 text-lg font-semibold">
+          <div className="w-full h-[500px] bg-white flex items-center justify-center text-gray-500 text-lg font-semibold rounded-lg border border-gray-200">
             <div className="text-center">
               <div className="text-4xl mb-2">🎨</div>
               <div>No hay fotos específicas para el color {selectedColor}</div>

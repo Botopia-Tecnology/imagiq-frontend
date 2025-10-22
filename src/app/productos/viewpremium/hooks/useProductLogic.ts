@@ -148,20 +148,22 @@ export const useProductLogic = (product: ProductCardProps | null) => {
   // Detectar scroll para ocultar/mostrar el carrusel sticky
   React.useEffect(() => {
     const handleScroll = () => {
-      if (!specsRef.current) return;
-      
-      const specsTop = specsRef.current.offsetTop;
       const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
+      const documentHeight = document.documentElement.scrollHeight - window.innerHeight;
       
-      // Ocultar el carrusel sticky cuando el usuario ha scrolleado más allá de la mitad de la ventana
-      // y las especificaciones ya no están visibles en la parte superior
-      const shouldHideCarousel = scrollY > specsTop + 200;
+      // Calcular el porcentaje de scroll (0-100)
+      const scrollPercentage = (scrollY / documentHeight) * 100;
       
+      // TEMPORAL: Mostrar el porcentaje en consola para debugging
+      console.log('📊 Scroll percentage:', scrollPercentage.toFixed(2) + '%');
+      
+      // Cambiar al segundo carrusel cuando el scroll llegue al 20%
+      const shouldHideCarousel = scrollPercentage > 20;
       setShowStickyCarousel(!shouldHideCarousel);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Ejecutar una vez al montar
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 

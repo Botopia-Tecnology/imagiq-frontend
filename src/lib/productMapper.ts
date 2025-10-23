@@ -27,7 +27,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'titanium black': { hex: '#303030', label: 'Negro Titanio' },
   'negro onyx': { hex: '#0f0f0f', label: 'Negro Onyx' },
   'onyx black': { hex: '#0f0f0f', label: 'Negro Onyx' },
-  
+
   // Grises
   'gris': { hex: '#808080', label: 'Gris' },
   'gray': { hex: '#808080', label: 'Gris' },
@@ -43,7 +43,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'silver gray': { hex: '#b8b8b8', label: 'Gris Plata' },
   'gris niebla': { hex: '#c4c4c4', label: 'Gris Niebla' },
   'mystic gray': { hex: '#c4c4c4', label: 'Gris Místico' },
-  
+
   // === BLANCOS Y PLATEADOS ===
   'blanco': { hex: '#FFFFFF', label: 'Blanco' },
   'white': { hex: '#FFFFFF', label: 'Blanco' },
@@ -55,7 +55,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'cream white': { hex: '#fffdd0', label: 'Blanco Crema' },
   'blanco nieve': { hex: '#fffafa', label: 'Blanco Nieve' },
   'snow white': { hex: '#fffafa', label: 'Blanco Nieve' },
-  
+
   'plateado': { hex: '#C0C0C0', label: 'Plateado' },
   'silver': { hex: '#C0C0C0', label: 'Plateado' },
   'plata': { hex: '#C0C0C0', label: 'Plata' },
@@ -63,7 +63,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'titanium silver': { hex: '#d4d4d4', label: 'Plata Titanio' },
   'plata místico': { hex: '#e8e8e8', label: 'Plata Místico' },
   'mystic silver': { hex: '#e8e8e8', label: 'Plata Místico' },
-  
+
   // === AZULES ===
   'azul': { hex: '#1E40AF', label: 'Azul' },
   'blue': { hex: '#1E40AF', label: 'Azul' },
@@ -84,7 +84,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'azul neblina': { hex: '#a0c4d9', label: 'Azul Neblina' },
   'cloud blue': { hex: '#a0c4d9', label: 'Azul Nube' },
   'phantom blue': { hex: '#2e5a88', label: 'Azul Fantasma' },
-  
+
   // === VERDES ===
   'verde': { hex: '#10B981', label: 'Verde' },
   'green': { hex: '#10B981', label: 'Verde' },
@@ -101,7 +101,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'lime green': { hex: '#32CD32', label: 'Verde Lima' },
   'verde sage': { hex: '#9DC183', label: 'Verde Sage' },
   'sage green': { hex: '#9DC183', label: 'Verde Sage' },
-  
+
   // === ROSAS Y ROJOS ===
   'rosado': { hex: '#FFC0CB', label: 'Rosa' },
   'rosa': { hex: '#FFC0CB', label: 'Rosa' },
@@ -115,7 +115,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'coral pink': { hex: '#FF6F61', label: 'Rosa Coral' },
   'rosa pastel': { hex: '#FFD1DC', label: 'Rosa Pastel' },
   'pastel pink': { hex: '#FFD1DC', label: 'Rosa Pastel' },
-  
+
   'rojo': { hex: '#DC2626', label: 'Rojo' },
   'red': { hex: '#DC2626', label: 'Rojo' },
   'rojo escarlata': { hex: '#FF2400', label: 'Rojo Escarlata' },
@@ -124,7 +124,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'crimson red': { hex: '#DC143C', label: 'Rojo Carmesí' },
   'burgundy': { hex: '#800020', label: 'Burgundy' },
   'borgoña': { hex: '#800020', label: 'Borgoña' },
-  
+
   // === MORADOS Y VIOLETAS ===
   'morado': { hex: '#7C3AED', label: 'Morado' },
   'purple': { hex: '#7C3AED', label: 'Morado' },
@@ -139,7 +139,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'lilac': { hex: '#C8A2C8', label: 'Lila' },
   'púrpura místico': { hex: '#9370DB', label: 'Púrpura Místico' },
   'mystic purple': { hex: '#9370DB', label: 'Púrpura Místico' },
-  
+
   // === AMARILLOS Y DORADOS ===
   'amarillo': { hex: '#FBBF24', label: 'Amarillo' },
   'yellow': { hex: '#FBBF24', label: 'Amarillo' },
@@ -147,7 +147,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'lemon yellow': { hex: '#FFF44F', label: 'Amarillo Limón' },
   'amarillo canario': { hex: '#FFEF00', label: 'Amarillo Canario' },
   'canary yellow': { hex: '#FFEF00', label: 'Amarillo Canario' },
-  
+
   'dorado': { hex: '#D4AF37', label: 'Dorado' },
   'gold': { hex: '#D4AF37', label: 'Dorado' },
   'oro': { hex: '#D4AF37', label: 'Oro' },
@@ -155,7 +155,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'champagne gold': { hex: '#F7E7CE', label: 'Dorado Champagne' },
   'bronce': { hex: '#CD7F32', label: 'Bronce' },
   'bronze': { hex: '#CD7F32', label: 'Bronce' },
-  
+
   // === NARANJAS ===
   'naranja': { hex: '#F97316', label: 'Naranja' },
   'orange': { hex: '#F97316', label: 'Naranja' },
@@ -163,7 +163,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'bright orange': { hex: '#FF6600', label: 'Naranja Brillante' },
   'durazno': { hex: '#FFE5B4', label: 'Durazno' },
   'peach': { hex: '#FFE5B4', label: 'Durazno' },
-  
+
   // === MARRONES Y BEIGES ===
   'marron': { hex: '#8B4513', label: 'Marrón' },
   'marrón': { hex: '#8B4513', label: 'Marrón' },
@@ -171,7 +171,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'café': { hex: '#6F4E37', label: 'Café' },
   'coffee': { hex: '#6F4E37', label: 'Café' },
   'chocolate': { hex: '#7B3F00', label: 'Chocolate' },
-  
+
   'beige': { hex: '#F5F5DC', label: 'Beige' },
   'crema': { hex: '#FFFDD0', label: 'Crema' },
   'cream': { hex: '#FFFDD0', label: 'Crema' },
@@ -179,7 +179,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'sand': { hex: '#C2B280', label: 'Arena' },
   'beige místico': { hex: '#f0e5d8', label: 'Beige Místico' },
   'mystic beige': { hex: '#f0e5d8', label: 'Beige Místico' },
-  
+
   // === COLORES ESPECIALES ===
   'transparente': { hex: '#F3F4F6', label: 'Transparente' },
   'transparent': { hex: '#F3F4F6', label: 'Transparente' },
@@ -188,7 +188,7 @@ export const colorMap: Record<string, { hex: string; label: string }> = {
   'multicolor': { hex: '#FF6B9D', label: 'Multicolor' },
   'iridiscente': { hex: '#E0BBE4', label: 'Iridiscente' },
   'iridescent': { hex: '#E0BBE4', label: 'Iridiscente' },
-  
+
   // === COLORES GALAXY ESPECÍFICOS ===
   'awesome navy': { hex: '#1a2332', label: 'Navy Impresionante' },
   'awesome black': { hex: '#0a0a0a', label: 'Negro Impresionante' },
@@ -218,6 +218,19 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   const id = apiProduct.codigoMarketBase;
 
 
+  // Procesar imageDetailsUrls: aplanar array de arrays a array simple
+  const processedImageDetailsUrls = apiProduct.imageDetailsUrls?.flat().filter((url) => {
+    if (Array.isArray(url)) {
+      return url[0] && typeof url[0] === 'string' && url[0].trim() !== "";
+    }
+    return url && typeof url === 'string' && url.trim() !== "";
+  }).map((url) => {
+    if (Array.isArray(url)) {
+      return url[0];
+    }
+    return url;
+  }) || [];
+
   return {
     id,
     name: apiProduct.nombreMarket,
@@ -236,11 +249,14 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     model: apiProduct.modelo,
     category: apiProduct.categoria,
     subcategory: apiProduct.subcategoria,
+    segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
     capacity: apiProduct.capacidad?.join(', ') || null,
     stock: apiProduct.stock?.reduce((sum, s) => sum + s, 0) || 0,
     sku: apiProduct.sku?.join(', ') || null,
     ean: apiProduct.ean?.join(', ') || null,
     detailedDescription: apiProduct.desDetallada?.join(' ') || null,
+    imageDetailsUrls: processedImageDetailsUrls, // URLs de imágenes adicionales procesadas
+    // imagen_premium y video_premium se asignan a nivel de color en createProductColorsFromArray
     // Pasar los datos de la API para el nuevo sistema de selección
     apiProduct,
   };
@@ -274,15 +290,15 @@ function getProductImage(apiProduct: ProductApiData): string | StaticImageData {
  */
 function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[] {
   const colorsWithPrices: ProductColor[] = [];
-  
+
   // Crear un mapa de colores únicos con sus precios correspondientes
-  const colorPriceMap = new Map<string, { 
-    color: string; 
-    preciosNormales: number[]; 
-    preciosDescuento: number[]; 
-    indices: number[] 
+  const colorPriceMap = new Map<string, {
+    color: string;
+    preciosNormales: number[];
+    preciosDescuento: number[];
+    indices: number[]
   }>();
-  
+
   // Agrupar precios por color
   const MAX_PRICE = 100000000; // Filtrar precios corruptos
   for (let index = 0; index < apiProduct.color.length; index++) {
@@ -293,23 +309,23 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Solo incluir colores con precios válidos (mayores a 0 y menores al máximo)
     if ((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioeccommerce > 0 && precioeccommerce < MAX_PRICE)) {
       const key = color.toLowerCase();
-      
+
       if (!colorPriceMap.has(key)) {
-        colorPriceMap.set(key, { 
-          color, 
-          preciosNormales: [], 
-          preciosDescuento: [], 
-          indices: [] 
+        colorPriceMap.set(key, {
+          color,
+          preciosNormales: [],
+          preciosDescuento: [],
+          indices: []
         });
       }
-      
+
       const colorData = colorPriceMap.get(key)!;
       colorData.preciosNormales.push(precioNormal);
       colorData.preciosDescuento.push(precioeccommerce);
       colorData.indices.push(index);
     }
   }
-  
+
   // Convertir el mapa a array de ProductColor
   for (const { color, preciosNormales, preciosDescuento, indices } of colorPriceMap.values()) {
     // Normalizar el color para búsqueda consistente
@@ -325,28 +341,42 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     const MAX_PRICE = 100000000;
     const preciosNormalesValidos = preciosNormales.filter(p => p > 0 && p < MAX_PRICE);
     const preciosDescuentoValidos = preciosDescuento.filter(p => p > 0 && p < MAX_PRICE);
-    
-    const precioNormalMin = preciosNormalesValidos.length > 0 
-      ? Math.min(...preciosNormalesValidos) 
+
+    const precioNormalMin = preciosNormalesValidos.length > 0
+      ? Math.min(...preciosNormalesValidos)
       : 0;
-    const precioDesctoMin = preciosDescuentoValidos.length > 0 
-      ? Math.min(...preciosDescuentoValidos) 
+    const precioDesctoMin = preciosDescuentoValidos.length > 0
+      ? Math.min(...preciosDescuentoValidos)
       : precioNormalMin;
-    
+
     const price = formatPrice(precioDesctoMin);
     let originalPrice: string | undefined;
     let discount: string | undefined;
-    
+
     // Si hay descuento real
     if (precioDesctoMin > 0 && precioDesctoMin < precioNormalMin && precioNormalMin > 0) {
       originalPrice = formatPrice(precioNormalMin);
       const discountPercent = Math.round(((precioNormalMin - precioDesctoMin) / precioNormalMin) * 100);
       discount = `-${discountPercent}%`;
     }
-    
+
     // Usar el primer SKU disponible para este color
     const firstIndex = indices[0];
-    
+
+    // Obtener imágenes y videos premium específicos para este color
+    // imagenPremium y videoPremium vienen como arrays de arrays desde el API
+    // Intentar primero con el nombre sin guión bajo (imagenPremium), luego con guión bajo (imagen_premium)
+    const imagenesPremiumColor = ((apiProduct.imagenPremium?.[firstIndex] || apiProduct.imagen_premium?.[firstIndex]) || []) as string[];
+    const videosPremiumColor = ((apiProduct.videoPremium?.[firstIndex] || apiProduct.video_premium?.[firstIndex]) || []) as string[];
+
+    // Filtrar URLs vacías o inválidas
+    const imagenesPremiumValidas = Array.isArray(imagenesPremiumColor)
+      ? imagenesPremiumColor.filter((url: string) => url && typeof url === 'string' && url.trim() !== '')
+      : [];
+    const videosPremiumValidos = Array.isArray(videosPremiumColor)
+      ? videosPremiumColor.filter((url: string) => url && typeof url === 'string' && url.trim() !== '')
+      : [];
+
     colorsWithPrices.push({
       name: normalizedColor.replaceAll(/\s+/g, '-'),
       hex: colorInfo.hex,
@@ -356,10 +386,12 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       discount,
       sku: apiProduct.sku[firstIndex],
       ean: apiProduct.ean[firstIndex],
-      imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined
+      imagePreviewUrl: apiProduct.imagePreviewUrl?.[firstIndex] || undefined,
+      imagen_premium: imagenesPremiumValidas, // Imágenes premium para este color específico
+      video_premium: videosPremiumValidos // Videos premium para este color específico
     });
   }
-  
+
   return colorsWithPrices;
 }
 
@@ -386,7 +418,7 @@ function createProductCapacitiesFromArray(apiProduct: ProductApiData): ProductCa
 
     // Solo incluir capacidades con precios válidos (mayores a 0 y menores al máximo)
     if (((precioNormal > 0 && precioNormal < MAX_PRICE) || (precioeccommerce > 0 && precioeccommerce < MAX_PRICE))
-        && capacity && capacity.trim() !== '' && capacity.toLowerCase() !== 'no aplica') {
+      && capacity && capacity.trim() !== '' && capacity.toLowerCase() !== 'no aplica') {
       const key = capacity.toLowerCase().trim();
 
       if (!capacityPriceMap.has(key)) {
@@ -470,7 +502,7 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   const MAX_PRICE = 100000000; // 100 millones
   const preciosNormalesValidos = apiProduct.precioNormal.filter(p => p > 0 && p < MAX_PRICE);
   const preciosDescuentoValidos = apiProduct.precioeccommerce.filter(p => p > 0 && p < MAX_PRICE);
-  
+
   // Si no hay precios válidos, usar valores por defecto
   if (preciosNormalesValidos.length === 0 && preciosDescuentoValidos.length === 0) {
     return {
@@ -480,15 +512,15 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
       isNew: false,
     };
   }
-  
+
   // Usar el primer precio disponible (o el más bajo si hay múltiples)
-  const precioNormal = preciosNormalesValidos.length > 0 
-    ? Math.min(...preciosNormalesValidos) 
+  const precioNormal = preciosNormalesValidos.length > 0
+    ? Math.min(...preciosNormalesValidos)
     : 0;
-  const precioeccommerce = preciosDescuentoValidos.length > 0 
-    ? Math.min(...preciosDescuentoValidos) 
+  const precioeccommerce = preciosDescuentoValidos.length > 0
+    ? Math.min(...preciosDescuentoValidos)
     : precioNormal;
-  
+
   // Formatear precios a formato colombiano - asegurar números enteros
   const formatPrice = (price: number) => {
     if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
@@ -498,20 +530,20 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
   const price = formatPrice(precioeccommerce);
   let originalPrice: string | undefined;
   let discount: string | undefined;
-  
+
   // Si hay descuento real
   if (precioeccommerce < precioNormal && precioNormal > 0) {
     originalPrice = formatPrice(precioNormal);
     const discountPercent = Math.round(((precioNormal - precioeccommerce) / precioNormal) * 100);
     discount = `-${discountPercent}%`;
   }
-  
+
   // Determinar si es producto nuevo (menos de 30 días desde fecha de inicio)
   const fechaInicio = new Date(apiProduct.fechaInicioVigencia[0]);
   const ahora = new Date();
   const diasDiferencia = (ahora.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24);
   const isNew = diasDiferencia < 30;
-  
+
   return {
     price,
     originalPrice,
@@ -536,7 +568,7 @@ export function mapApiProductsToFrontend(apiProducts: ProductApiData[]): Product
 export function debugColorMapping(color: string): { hex: string; label: string; normalized: string } {
   const normalizedColor = color.toLowerCase().trim();
   const colorInfo = colorMap[normalizedColor] || { hex: '#808080', label: color };
-  
+
   return {
     hex: colorInfo.hex,
     label: colorInfo.label,
@@ -554,26 +586,26 @@ export function groupProductsByCategory(products: ProductCardProps[]): Record<st
     'smartphones-tablets': [],
     'electrodomesticos': [],
   };
-  
+
   products.forEach(product => {
     // Mapear categorías de la API a categorías del frontend
-    if (product.name.toLowerCase().includes('buds') || 
-        product.name.toLowerCase().includes('watch') ||
-        product.name.toLowerCase().includes('cargador') ||
-        product.name.toLowerCase().includes('funda')) {
+    if (product.name.toLowerCase().includes('buds') ||
+      product.name.toLowerCase().includes('watch') ||
+      product.name.toLowerCase().includes('cargador') ||
+      product.name.toLowerCase().includes('funda')) {
       grouped['accesorios'].push(product);
     } else if (product.name.toLowerCase().includes('tv') ||
-               product.name.toLowerCase().includes('monitor') ||
-               product.name.toLowerCase().includes('soundbar')) {
+      product.name.toLowerCase().includes('monitor') ||
+      product.name.toLowerCase().includes('soundbar')) {
       grouped['tv-monitores-audio'].push(product);
     } else if (product.name.toLowerCase().includes('galaxy') ||
-               product.name.toLowerCase().includes('tab') ||
-               product.name.toLowerCase().includes('celular')) {
+      product.name.toLowerCase().includes('tab') ||
+      product.name.toLowerCase().includes('celular')) {
       grouped['smartphones-tablets'].push(product);
     } else {
       grouped['electrodomesticos'].push(product);
     }
   });
-  
+
   return grouped;
 }

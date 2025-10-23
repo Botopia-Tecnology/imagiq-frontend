@@ -40,6 +40,8 @@ export interface ProductColor {
   discount?: string; // Descuento específico para este color (opcional)
   capacity?: string; // Capacidad asociada a esta variante
   imagePreviewUrl?: string; // URL de imagen específica para este color
+  imagen_premium?: string[]; // URLs de imágenes premium para este color
+  video_premium?: string[]; // URLs de videos premium para este color
 }
 
 export interface ProductCapacity {
@@ -75,6 +77,7 @@ export interface ProductCardProps {
   model?: string;
   category?: string;
   subcategory?: string;
+  segmento?: string | string[]; // Segmento del producto (Premium, etc.) - puede ser string o array
   capacity?: string | null;
   stock?: number;
   sku?: string | null;
@@ -82,6 +85,8 @@ export interface ProductCardProps {
   skuArray?: string[];
   eanArray?: string[];
   detailedDescription?: string | null;
+  imageDetailsUrls?: string[]; // URLs de imágenes adicionales para la galería
+  // imagen_premium y video_premium ahora están a nivel de ProductColor
   selectedColor?: ProductColor;
   setSelectedColor?: (color: ProductColor) => void;
   selectedCapacity?: ProductCapacity;
@@ -108,6 +113,7 @@ export default function ProductCard({
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
   stock = 1, // Valor por defecto si no se proporciona
+  segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
@@ -321,6 +327,7 @@ export default function ProductCard({
       product_name: name,
       source: "product_card",
       destination: "multimedia_page",
+      segment: segmento,
     });
   };
 

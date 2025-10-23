@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
 import { ProfileState, ProfileUser, DBAddress, DBCard } from "../types";
 import { profileService, ProfileResponse } from "@/services/profile.service";
@@ -23,6 +24,7 @@ interface UseProfileReturn {
  */
 export const useProfile = (): UseProfileReturn => {
   const authContext = useAuthContext();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profileUser, setProfileUser] = useState<ProfileUser | null>(null);
@@ -79,11 +81,25 @@ export const useProfile = (): UseProfileReturn => {
       setProfileUser(user);
     } catch (err) {
       console.error("Error cargando perfil:", err);
-      setError(err instanceof Error ? err.message : "Error al cargar perfil");
+      const errorMessage = err instanceof Error ? err.message : "Error al cargar perfil";
+      setError(errorMessage);
+
+      // Si es error de autenticación (token expirado), hacer logout y redirigir
+      if (
+        errorMessage.includes("401") ||
+        errorMessage.includes("403") ||
+        errorMessage.includes("Unauthorized") ||
+        errorMessage.includes("No se encontró el ID del usuario") ||
+        errorMessage.toLowerCase().includes("token")
+      ) {
+        console.log("🔒 Token expirado o inválido, cerrando sesión y redirigiendo al login...");
+        authContext.logout();
+        router.push("/login");
+      }
     } finally {
       setLoading(false);
     }
-  }, [authContext.user]);
+  }, [authContext, router]);
 
   // Refrescar datos
   const refreshData = useCallback(async () => {
@@ -94,7 +110,8 @@ export const useProfile = (): UseProfileReturn => {
   const logout = useCallback(async () => {
     authContext.logout();
     setProfileUser(null);
-  }, [authContext]);
+    router.push("/login");
+  }, [authContext, router]);
 
   // Cargar perfil al montar si hay usuario autenticado
   useEffect(() => {

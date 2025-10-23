@@ -34,7 +34,7 @@ export const ProfileViewRenderer: React.FC<ProfileViewRendererProps> = ({
       return <AddressesPage onBack={onBack} className={className} />;
 
     case "payment-methods":
-      return <PaymentMethodsPage onBack={onBack} className={className} />;
+      return <PaymentMethodsPage onBack={onBack} />;
 
     case "coupons":
       return <CouponsPage onBack={onBack} className={className} />;
@@ -53,11 +53,7 @@ export const ProfileViewRenderer: React.FC<ProfileViewRendererProps> = ({
 
     case "terms":
       return (
-        <LegalPage
-          onBack={onBack}
-          className={className}
-          documentType="terms"
-        />
+        <LegalPage onBack={onBack} className={className} documentType="terms" />
       );
 
     case "privacy":

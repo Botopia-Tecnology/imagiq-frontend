@@ -6,7 +6,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import { applySortToFilters } from "@/lib/sortUtils";
-import { useDebouncedObject } from "@/hooks/useDebounce";
 import type { FilterState } from "../../components/FilterSidebar";
 import type { CategoriaParams, Seccion } from "../types/index.d";
 import {
@@ -66,23 +65,6 @@ export function useCategoryProducts(
   submenuUuid?: string,
   categoryCode?: string
 ) {
-  // Evitar llamadas API hasta que tengamos los datos críticos
-  const shouldMakeApiCall = useMemo(() => {
-    // Si estamos en una sección específica, necesitamos menuUuid
-    if (seccion && !menuUuid) {
-      return false;
-    }
-    
-    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto, esperar
-    const searchParams = new URLSearchParams(globalThis.location.search);
-    const submenuParam = searchParams.get('submenu');
-    if (submenuParam && !submenuUuid) {
-      return false;
-    }
-    
-    // Si tenemos categoryCode, podemos hacer la llamada
-    return !!categoryCode;
-  }, [seccion, menuUuid, categoryCode, submenuUuid]);
   // Memoizar los filtros de jerarquía por separado para evitar re-cálculos innecesarios
   const hierarchyFilters = useMemo(() => {
     const result: Record<string, string> = {};
@@ -102,21 +84,41 @@ export function useCategoryProducts(
     return result;
   }, [categoryCode, menuUuid, submenuUuid]);
 
-  // Aplicar debounce a los filtros de jerarquía para evitar llamadas múltiples
-  const debouncedHierarchyFilters = useDebouncedObject(hierarchyFilters, 300);
-
   // Memoizar los filtros base y aplicados por separado
   const baseFilters = useMemo(() => getCategoryBaseFilters(categoria, seccion), [categoria, seccion]);
-  
-  const appliedFilters = useMemo(() => 
-    convertFiltersToApi(categoria, filters, seccion, submenuUuid), 
+
+  const appliedFilters = useMemo(() =>
+    convertFiltersToApi(categoria, filters, seccion, submenuUuid),
     [categoria, filters, seccion, submenuUuid]
   );
 
   // Combinar todos los filtros solo cuando sea necesario
   const apiFilters = useMemo(() => {
-    return { ...baseFilters, ...appliedFilters, ...debouncedHierarchyFilters };
-  }, [baseFilters, appliedFilters, debouncedHierarchyFilters]);
+    return { ...baseFilters, ...appliedFilters, ...hierarchyFilters };
+  }, [baseFilters, appliedFilters, hierarchyFilters]);
+
+  // Evitar llamadas API hasta que tengamos los datos críticos
+  const shouldMakeApiCall = useMemo(() => {
+    // Si no tenemos categoryCode, no podemos hacer la llamada
+    if (!categoryCode) {
+      return false;
+    }
+
+    // Si estamos en una sección específica, necesitamos menuUuid
+    if (seccion && !menuUuid) {
+      return false;
+    }
+
+    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto, esperar
+    const searchParams = new URLSearchParams(globalThis.location.search);
+    const submenuParam = searchParams.get('submenu');
+    if (submenuParam && !submenuUuid) {
+      return false;
+    }
+
+    // Si llegamos aquí, tenemos todos los datos necesarios
+    return true;
+  }, [seccion, menuUuid, categoryCode, submenuUuid]);
 
   const initialFiltersForProducts = useMemo(
     () => {

@@ -11,6 +11,9 @@ import { TelevisoresSubmenu } from "./TelevisoresSubmenu";
 import { ElectrodomesticosSubmenu } from "./ElectrodomesticosSubmenu";
 import { MonitoresSubmenu } from "./MonitoresSubmenu";
 import { AccesoriosSubmenu } from "./AccesoriosSubmenu";
+import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
+import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import type { Menu } from "@/lib/api";
 
 type Props = {
   isOpen: boolean;
@@ -36,20 +39,50 @@ export const MobileMenu: FC<Props> = ({
   onSearchSubmit,
 }) => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
+  const [activeMenus, setActiveMenus] = useState<Menu[] | null>(null);
+  const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(null);
+
+  const { getNavbarRoutes, loading } = useVisibleCategories();
+  const menuRoutes = getNavbarRoutes();
 
   if (!isOpen) return null;
 
-  const handleMenuItemClick = (item: MenuItem) => {
-    if (item.hasDropdown && SUBMENU_COMPONENTS[item.name]) {
-      setActiveSubmenu(item.name);
+  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string }) => {
+    if (item.hasDropdown) {
+      // Si el item tiene menus de la API, usar DynamicMobileSubmenu
+      if (item.menus && item.menus.length > 0) {
+        setActiveMenus(item.menus);
+        setActiveCategoryCode(item.categoryCode || '');
+        setActiveSubmenu(item.name);
+      } else if (SUBMENU_COMPONENTS[item.name]) {
+        // Fallback a componente estático
+        setActiveMenus(null);
+        setActiveCategoryCode(null);
+        setActiveSubmenu(item.name);
+      }
     } else {
       onClose();
     }
   };
 
-  const SubmenuComponent = activeSubmenu
-    ? SUBMENU_COMPONENTS[activeSubmenu]
-    : null;
+  // Determinar qué componente de submenú renderizar
+  let SubmenuComponent = null;
+  if (activeSubmenu) {
+    if (activeMenus && activeMenus.length > 0 && activeCategoryCode) {
+      // Usar DynamicMobileSubmenu para categorías con datos de API
+      SubmenuComponent = (
+        <DynamicMobileSubmenu
+          menus={activeMenus}
+          categoryCode={activeCategoryCode}
+          onClose={onClose}
+        />
+      );
+    } else if (SUBMENU_COMPONENTS[activeSubmenu]) {
+      // Usar componente estático (fallback)
+      const StaticComponent = SUBMENU_COMPONENTS[activeSubmenu];
+      SubmenuComponent = <StaticComponent onClose={onClose} />;
+    }
+  }
 
   return (
     <>
@@ -72,11 +105,13 @@ export const MobileMenu: FC<Props> = ({
         <MobileMenuPromo onClose={onClose} />
 
         {SubmenuComponent ? (
-          <SubmenuComponent onClose={onClose} />
+          SubmenuComponent
         ) : (
           <MobileMenuContent
             onClose={onClose}
             onMenuItemClick={handleMenuItemClick}
+            menuRoutes={menuRoutes}
+            loading={loading}
           />
         )}
       </div>

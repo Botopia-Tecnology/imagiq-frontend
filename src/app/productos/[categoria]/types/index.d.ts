@@ -18,9 +18,14 @@ export type Seccion =
   | "buds"
   | "accesorios"
   // TV
-  | "smart-tv"
-  | "qled"
   | "crystal-uhd"
+  | "neo-qled"
+  | "oled"
+  | "proyectores"
+  | "qled"
+  | "smart-tv"
+  | "the-frame"
+  | "dispositivo-audio"
   // Audio
   | "barras-sonido"
   | "sistemas"

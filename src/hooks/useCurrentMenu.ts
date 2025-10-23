@@ -32,9 +32,14 @@ const SECCION_TO_MENU_NAME: Record<string, string> = {
   'hornos': 'Hornos',
   
   // TVs y Audio (AV)
-  'smart-tv': 'Smart TV',
-  'qled': 'QLED',
   'crystal-uhd': 'Crystal UHD',
+  'neo-qled': 'Neo QLED',
+  'oled': 'OLED',
+  'proyectores': 'Proyectores',
+  'qled': 'QLED',
+  'smart-tv': 'Smart TV',
+  'the-frame': 'The Frame',
+  'dispositivo-audio': 'Dispositivo de Audio',
   
   // Monitores (IT)
   'corporativo': 'Corporativo',

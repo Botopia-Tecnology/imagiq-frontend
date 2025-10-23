@@ -264,11 +264,11 @@ export const audioFilters: FilterConfig = {
  */
 export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
   electrodomesticos: [
-    "refrigeradores",
+    "microondas",
     "lavadoras",
+    "refrigeradores",
     "lavavajillas",
     "aire-acondicionado",
-    "microondas",
     "aspiradoras",
     "hornos",
   ],
@@ -279,7 +279,7 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
     "buds",
     "accesorios",
   ],
-  televisores: ["smart-tv", "qled", "crystal-uhd"],
+  televisores: ["crystal-uhd", "neo-qled", "oled", "proyectores", "qled", "smart-tv", "the-frame", "dispositivo-audio"],
   monitores: ["corporativo", "essential-monitor", "odyssey-gaming", "viewfinity-high-resolution"],
   audio: ["barras-sonido", "sistemas"],
   ofertas: [
@@ -294,9 +294,9 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
  * Sección por defecto para cada categoría
  */
 export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
-  electrodomesticos: "refrigeradores",
+  electrodomesticos: "microondas",
   "dispositivos-moviles": "smartphones",
-  televisores: "smart-tv",
+  televisores: "crystal-uhd",
   monitores: "corporativo",
   audio: "barras-sonido",
   ofertas: "accesorios",
@@ -343,40 +343,25 @@ export const SECTION_TITLES: Record<Seccion, string> = {
 export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
   electrodomesticos: [
     {
-      id: "refrigeradores",
-      name: "Refrigeradores",
-      subtitle: "",
-      image: refrigeradorImg,
-      href: "/productos/electrodomesticos?seccion=refrigeradores",
-    },
-    {
-      id: "lavadoras",
-      name: "Lavadoras",
-      subtitle: "",
-      image: lavadoraImg,
-      href: "/productos/electrodomesticos?seccion=lavadoras",
-    },
-
-    {
       id: "microondas",
-      name: "Microondas",
+      name: "Hornos Microondas",
       subtitle: "",
       image: microondasImg,
       href: "/productos/electrodomesticos?seccion=microondas",
     },
     {
-      id: "aspiradoras",
-      name: "Aspiradoras",
+      id: "lavadoras",
+      name: "Lavadoras y Secadoras",
       subtitle: "",
-      image: aspiradoraImg,
-      href: "/productos/electrodomesticos?seccion=aspiradoras",
+      image: lavadoraImg,
+      href: "/productos/electrodomesticos?seccion=lavadoras",
     },
     {
-      id: "aire-acondicionado",
-      name: "Aire Acondicionado",
+      id: "refrigeradores",
+      name: "Neveras",
       subtitle: "",
-      image: aireImg,
-      href: "/productos/electrodomesticos?seccion=aire-acondicionado",
+      image: refrigeradorImg,
+      href: "/productos/electrodomesticos?seccion=refrigeradores",
     },
     {
       id: "lavavajillas",
@@ -386,10 +371,24 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
       href: "/productos/electrodomesticos?seccion=lavavajillas",
     },
     {
+      id: "aire-acondicionado",
+      name: "Aire Acondicionado",
+      subtitle: "",
+      image: aireImg,
+      href: "/productos/electrodomesticos?seccion=aire-acondicionado",
+    },
+    {
+      id: "aspiradoras",
+      name: "Aspiradoras",
+      subtitle: "",
+      image: aspiradoraImg,
+      href: "/productos/electrodomesticos?seccion=aspiradoras",
+    },
+    {
       id: "hornos",
       name: "Hornos",
-      image: hornosImg,
       subtitle: "",
+      image: hornosImg,
       href: "/productos/electrodomesticos?seccion=hornos",
     },
   ],
@@ -432,11 +431,32 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
   ],
   televisores: [
     {
-      id: "smart-tv",
-      name: "Smart",
+      id: "crystal-uhd",
+      name: "Crystal UHD",
       subtitle: "TV",
       image: tvImg,
-      href: "/productos/televisores?seccion=smart-tv",
+      href: "/productos/televisores?seccion=crystal-uhd",
+    },
+    {
+      id: "neo-qled",
+      name: "Neo QLED",
+      subtitle: "TV",
+      image: tvImg,
+      href: "/productos/televisores?seccion=neo-qled",
+    },
+    {
+      id: "oled",
+      name: "OLED",
+      subtitle: "TV",
+      image: tvImg,
+      href: "/productos/televisores?seccion=oled",
+    },
+    {
+      id: "proyectores",
+      name: "Proyectores",
+      subtitle: "TV",
+      image: tvImg,
+      href: "/productos/televisores?seccion=proyectores",
     },
     {
       id: "qled",
@@ -446,11 +466,25 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
       href: "/productos/televisores?seccion=qled",
     },
     {
-      id: "crystal-uhd",
-      name: "Crystal",
-      subtitle: "UHD TV",
+      id: "smart-tv",
+      name: "Smart TV",
+      subtitle: "TV",
       image: tvImg,
-      href: "/productos/televisores?seccion=crystal-uhd",
+      href: "/productos/televisores?seccion=smart-tv",
+    },
+    {
+      id: "the-frame",
+      name: "The Frame",
+      subtitle: "TV",
+      image: tvImg,
+      href: "/productos/televisores?seccion=the-frame",
+    },
+    {
+      id: "dispositivo-audio",
+      name: "Dispositivo de Audio",
+      subtitle: "Audio",
+      image: tvImg,
+      href: "/productos/televisores?seccion=dispositivo-audio",
     },
   ],
   monitores: [

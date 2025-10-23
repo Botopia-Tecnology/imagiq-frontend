@@ -22,13 +22,13 @@ export const CATEGORY_MAPPING: Record<
   electrodomesticos: {
     apiCategory: "Electrodoméstico",
     subcategorias: {
-      refrigeradores: "Neveras,Nevecon",
-      lavadoras: "Lavadora,Secadora",
       microondas: "Hornos Microondas",
-      "aire-acondicionado": "Aire Acondicionado",
-      hornos: "Hornos Microondas",
+      lavadoras: "Lavadoras y Secadoras",
+      refrigeradores: "Neveras",
       lavavajillas: "Lavavajillas",
+      "aire-acondicionado": "Aire Acondicionado",
       aspiradoras: "Aspiradoras",
+      hornos: "Hornos",
     },
   },
   "dispositivos-moviles": {
@@ -44,9 +44,14 @@ export const CATEGORY_MAPPING: Record<
   televisores: {
     apiCategory: "TV & Audio",
     subcategorias: {
-      "smart-tv": "Televisores",
-      qled: "Televisores",
-      "crystal-uhd": "Televisores",
+      "crystal-uhd": "Crystal UHD",
+      "neo-qled": "Neo QLED",
+      "oled": "OLED",
+      "proyectores": "Proyectores",
+      "qled": "QLED",
+      "smart-tv": "Smart TV",
+      "the-frame": "The Frame",
+      "dispositivo-audio": "Dispositivo de Audio",
     },
   },
   monitores: {

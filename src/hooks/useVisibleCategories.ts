@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { categoriesEndpoints, type VisibleCategory } from '@/lib/api';
+import { categoriesEndpoints, type VisibleCategoryComplete } from '@/lib/api';
 
 export function useVisibleCategories() {
-  const [visibleCategories, setVisibleCategories] = useState<VisibleCategory[]>([]);
+  const [visibleCategories, setVisibleCategories] = useState<VisibleCategoryComplete[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,12 +11,14 @@ export function useVisibleCategories() {
       try {
         setLoading(true);
         setError(null);
-        
-        const response = await categoriesEndpoints.getVisibleCategories();
-        
+
+        const response = await categoriesEndpoints.getVisibleCategoriesComplete();
+
         if (response.success && response.data) {
-          // Filtrar solo las categorías activas
-          const activeCategories = response.data.filter(category => category.activo);
+          // Filtrar solo las categorías activas y ordenarlas
+          const activeCategories = response.data
+            .filter(category => category.activo)
+            .sort((a, b) => a.orden - b.orden);
           setVisibleCategories(activeCategories);
         } else {
           setError(response.message || 'Error al cargar categorías');
@@ -46,16 +48,27 @@ export function useVisibleCategories() {
 
   // Función para obtener las rutas del navbar basadas en las categorías visibles
   const getNavbarRoutes = () => {
-    const mappedCategories = visibleCategories.map(category => ({
-      name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),
-      href: getCategoryHref(category.nombre),
-      category: category.nombre.toLowerCase(),
-      categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
-      dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
-      uuid: category.uuid,
-      totalProducts: category.totalProducts,
-      subcategorias: category.subcategorias
-    }));
+    const mappedCategories = visibleCategories.map(category => {
+      // Calcular total de productos sumando todos los productos de los submenus
+      const totalProducts = (category.menus || []).reduce((menuTotal, menu) => {
+        const menuProductsTotal = (menu.submenus || []).reduce((submenuTotal, submenu) => {
+          return submenuTotal + (submenu.totalProducts || 0);
+        }, 0);
+        return menuTotal + menuProductsTotal;
+      }, 0);
+
+      return {
+        name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),
+        href: getCategoryHref(category.nombre),
+        category: category.nombre.toLowerCase(),
+        categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
+        dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
+        uuid: category.uuid,
+        totalProducts,
+        menus: category.menus || [],
+        orden: category.orden
+      };
+    });
 
     // Agregar rutas fijas que siempre deben estar presentes
     const fixedRoutes = [
@@ -67,7 +80,8 @@ export function useVisibleCategories() {
         dropdownName: "Ofertas",
         uuid: "ofertas",
         totalProducts: 0,
-        subcategorias: []
+        menus: [],
+        orden: 0
       },
       {
         name: "Accesorios",
@@ -77,7 +91,8 @@ export function useVisibleCategories() {
         dropdownName: "Accesorios",
         uuid: "accesorios",
         totalProducts: 0,
-        subcategorias: []
+        menus: [],
+        orden: 999
       }
     ];
 
@@ -90,10 +105,12 @@ export function useVisibleCategories() {
       dropdownName: undefined, // No tiene dropdown
       uuid: "tiendas",
       totalProducts: 0,
-      subcategorias: []
+      menus: [],
+      orden: 1000
     };
 
-    return [...fixedRoutes, ...mappedCategories, tiendasRoute];
+    // Combinar y ordenar por el campo orden
+    return [...fixedRoutes, ...mappedCategories, tiendasRoute].sort((a, b) => a.orden - b.orden);
   };
 
   // Función para obtener la URL href basada en el nombre de la categoría

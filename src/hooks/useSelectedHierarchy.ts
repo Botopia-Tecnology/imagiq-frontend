@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useCurrentMenu } from './useCurrentMenu';
 import { useSubmenus } from './useSubmenus';
 import type { CategoriaParams } from '@/app/productos/[categoria]/types';
-import { findSubmenuByFriendlyName, submenuNameToFriendly } from '@/app/productos/[categoria]/utils/submenuUtils';
+import { findSubmenuByFriendlyName } from '@/app/productos/[categoria]/utils/submenuUtils';
 
 // Mapeo de categorías de URL a códigos de API
 const CATEGORIA_TO_API_CODE: Record<CategoriaParams, string> = {
@@ -44,38 +44,7 @@ export function useSelectedHierarchy(categoria: CategoriaParams, seccion?: strin
       const selectedSubmenu = findSubmenuByFriendlyName(submenus, submenuParam);
 
       submenuUuid = selectedSubmenu?.uuid;
-
-      // Debug adicional para submenús
-      console.log('🔍 Debug Submenu Search:', {
-        submenuParam,
-        availableSubmenus: submenus.map(s => ({
-          uuid: s.uuid,
-          nombre: s.nombre,
-          nombreVisible: s.nombreVisible,
-          friendly: submenuNameToFriendly(s.nombreVisible || s.nombre)
-        })),
-        selectedSubmenu: selectedSubmenu ? {
-          uuid: selectedSubmenu.uuid,
-          nombre: selectedSubmenu.nombre,
-          nombreVisible: selectedSubmenu.nombreVisible
-        } : null,
-        submenuUuid
-      });
     }
-
-    // Debug: log para verificar el mapeo de categoría
-    console.log('🔍 Debug useSelectedHierarchy:', {
-      categoria,
-      seccion,
-      categoryCode,
-      categoryUuid,
-      menuUuid,
-      submenuUuid,
-      loading,
-      currentMenuName: currentMenu?.nombreVisible || currentMenu?.nombre,
-      submenuParam: searchParams?.get('submenu'),
-      hasSubmenus: currentMenu?.submenus?.length || 0
-    });
 
     return {
       categoryCode,

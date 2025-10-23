@@ -115,74 +115,19 @@ export function useCategoryProducts(
 
   // Combinar todos los filtros solo cuando sea necesario
   const apiFilters = useMemo(() => {
-    const combined = { ...baseFilters, ...appliedFilters, ...debouncedHierarchyFilters };
-    
-    // Debug: log para verificar que el categoryCode y menuUuid se están pasando
-    console.log('🔍 Debug useCategoryProducts:', {
-      categoria,
-      seccion,
-      categoryCode,
-      menuUuid,
-      submenuUuid,
-      hierarchyFilters: debouncedHierarchyFilters,
-      finalFilters: combined
-    });
-
-    return combined;
-  }, [baseFilters, appliedFilters, debouncedHierarchyFilters, categoria, seccion, categoryCode, menuUuid, submenuUuid]);
+    return { ...baseFilters, ...appliedFilters, ...debouncedHierarchyFilters };
+  }, [baseFilters, appliedFilters, debouncedHierarchyFilters]);
 
   const initialFiltersForProducts = useMemo(
     () => {
       // Solo calcular filtros si debemos hacer la llamada API
       if (!shouldMakeApiCall) {
-        const searchParams = new URLSearchParams(globalThis.location.search);
-        const submenuParam = searchParams.get('submenu');
-        
-        let reason = 'Waiting for critical data';
-        if (seccion && !menuUuid) {
-          reason = 'Waiting for menuUuid';
-        } else if (submenuParam && !submenuUuid) {
-          reason = 'Waiting for submenuUuid resolution';
-        } else if (!categoryCode) {
-          reason = 'Waiting for categoryCode';
-        }
-        
-        console.log('⏳ Debug API Call Skipped:', {
-          reason,
-          categoria,
-          seccion,
-          menuUuid,
-          submenuUuid,
-          submenuParam,
-          categoryCode,
-          shouldMakeApiCall
-        });
         return null; // No hacer llamada API
       }
 
-      const result = applySortToFilters({ ...apiFilters, page: currentPage, limit: itemsPerPage }, sortBy);
-      
-      // Debug: log para rastrear cuándo se cambian los filtros finales
-      const searchParams = new URLSearchParams(globalThis.location.search);
-      const submenuParam = searchParams.get('submenu');
-      
-      console.log('🚀 Debug API Call Trigger:', {
-        timestamp: new Date().toISOString(),
-        categoria,
-        seccion,
-        submenuUuid,
-        submenuParam,
-        page: currentPage,
-        limit: itemsPerPage,
-        sortBy,
-        filtersChanged: true,
-        shouldMakeApiCall,
-        hasSubmenuFilter: !!submenuUuid
-      });
-      
-      return result;
+      return applySortToFilters({ ...apiFilters, page: currentPage, limit: itemsPerPage }, sortBy);
     },
-    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy, categoria, seccion, submenuUuid]
+    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy]
   );
 
   return useProducts(initialFiltersForProducts);

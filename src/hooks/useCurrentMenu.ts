@@ -72,7 +72,7 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
     // Buscar la categoría que coincida con el código
     const category = visibleCategories.find(cat => cat.nombre === apiCode);
 
-    if (!category || !category.menus || category.menus.length === 0) {
+    if (!category?.menus?.length) {
       return null;
     }
 
@@ -84,19 +84,6 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
     // Obtener el nombre esperado del menú para la sección
     const expectedMenuName = SECCION_TO_MENU_NAME[seccion];
 
-    // Debug: log para verificar el mapeo
-    console.log('🔍 Debug useCurrentMenu:', {
-      categoria,
-      seccion,
-      expectedMenuName,
-      availableMenus: category.menus.map(m => ({
-        uuid: m.uuid,
-        nombre: m.nombre,
-        nombreVisible: m.nombreVisible,
-        activo: m.activo
-      }))
-    });
-
     // Buscar el menú que coincida con la sección
     const menu = category.menus.find(m => {
       if (!m.activo) return false;
@@ -106,33 +93,14 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
 
       // Match exacto con el nombre esperado
       if (expectedMenuName && menuName === expectedMenuName.toLowerCase()) {
-        console.log('✅ Match exacto encontrado:', { menuName, expectedMenuName });
         return true;
       }
 
       // Match por inclusión
-      const inclusionMatch = menuName.includes(sectionName) ||
+      return menuName.includes(sectionName) ||
              sectionName.includes(menuName) ||
              m.uuid === seccion;
-      
-      if (inclusionMatch) {
-        console.log('✅ Match por inclusión encontrado:', { menuName, sectionName });
-      }
-
-      return inclusionMatch;
     });
-
-    console.log('🔍 Menu encontrado:', menu ? { 
-      uuid: menu.uuid, 
-      nombre: menu.nombreVisible,
-      submenusCount: menu.submenus?.length || 0,
-      submenus: menu.submenus?.map(s => ({
-        uuid: s.uuid,
-        nombre: s.nombre,
-        nombreVisible: s.nombreVisible,
-        activo: s.activo
-      })) || []
-    } : null);
 
     return menu || null;
   }, [visibleCategories, loading, categoria, seccion]);

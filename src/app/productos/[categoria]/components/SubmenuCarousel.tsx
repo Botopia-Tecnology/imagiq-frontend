@@ -31,24 +31,15 @@ export default function SubmenuCarousel({
   const { submenus, loading, error } = useSubmenus(menu.uuid);
 
   const handleSubmenuClick = (submenuId: string) => {
-    console.log('🎯 SubmenuCarousel: handleSubmenuClick called with:', submenuId);
-    
     // Encontrar el submenú por UUID para obtener su nombre
     const submenu = submenus.find(s => s.uuid === submenuId);
     if (!submenu) {
-      console.log('❌ SubmenuCarousel: submenu not found for UUID:', submenuId);
       return;
     }
 
     // Convertir el nombre del submenú a una URL amigable
     const submenuName = submenu.nombreVisible || submenu.nombre;
     const friendlyName = submenuNameToFriendly(submenuName);
-
-    console.log('🔄 SubmenuCarousel: Converting to friendly name:', {
-      originalName: submenuName,
-      friendlyName,
-      submenuId
-    });
 
     // Construir la nueva URL manteniendo los parámetros existentes y añadiendo submenu
     const currentParams = new URLSearchParams(searchParams?.toString());
@@ -57,20 +48,12 @@ export default function SubmenuCarousel({
     // Construir la nueva URL
     const newUrl = `/productos/${categoria}?${currentParams.toString()}`;
     
-    console.log('🚀 SubmenuCarousel: Navigating to:', newUrl);
-    
     // Navegar a la nueva URL
     router.push(newUrl);
   };
 
   // Transformar submenús de la API al formato SeriesItem
   const series: SeriesItem[] = useMemo(() => {
-    console.log('📋 SubmenuCarousel: Available submenus:', submenus.map(s => ({
-      uuid: s.uuid,
-      nombre: s.nombre,
-      nombreVisible: s.nombreVisible
-    })));
-    
     return submenus.map(submenu => ({
       id: submenu.uuid,
       name: submenu.nombreVisible || submenu.nombre,

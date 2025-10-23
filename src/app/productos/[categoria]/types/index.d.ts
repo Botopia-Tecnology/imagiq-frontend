@@ -32,6 +32,11 @@ export type Seccion =
   | "microondas"
   | "aspiradoras"
   | "hornos"
+  // Monitores
+  | "corporativo"
+  | "essential-monitor"
+  | "odyssey-gaming"
+  | "viewfinity-high-resolution"
   // Ofertas
   | "tv-monitores-audio"
   | "smartphones-tablets"

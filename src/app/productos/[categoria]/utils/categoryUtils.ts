@@ -52,9 +52,10 @@ export const CATEGORY_MAPPING: Record<
   monitores: {
     apiCategory: "TV & Audio",
     subcategorias: {
-      "smart-tv": "Monitores",
-      qled: "Monitores",
-      "crystal-uhd": "Monitores",
+      "corporativo": "Monitores",
+      "essential-monitor": "Monitores",
+      "odyssey-gaming": "Monitores",
+      "viewfinity-high-resolution": "Monitores",
     },
   },
   audio: {

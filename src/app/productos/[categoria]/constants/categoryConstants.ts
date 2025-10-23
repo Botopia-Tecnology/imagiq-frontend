@@ -280,7 +280,7 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
     "accesorios",
   ],
   televisores: ["smart-tv", "qled", "crystal-uhd"],
-  monitores: ["smart-tv", "qled", "crystal-uhd"], // Usar las mismas secciones que TVs por ahora
+  monitores: ["corporativo", "essential-monitor", "odyssey-gaming", "viewfinity-high-resolution"],
   audio: ["barras-sonido", "sistemas"],
   ofertas: [
     "accesorios",
@@ -297,7 +297,7 @@ export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
   electrodomesticos: "refrigeradores",
   "dispositivos-moviles": "smartphones",
   televisores: "smart-tv",
-  monitores: "smart-tv", // Usar la misma sección por defecto que TVs
+  monitores: "corporativo",
   audio: "barras-sonido",
   ofertas: "accesorios",
 };
@@ -455,25 +455,32 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
   ],
   monitores: [
     {
-      id: "smart-tv",
-      name: "Smart",
-      subtitle: "Monitor",
+      id: "corporativo",
+      name: "Corporativo",
+      subtitle: "Monitores",
       image: tvImg,
-      href: "/productos/monitores?seccion=smart-tv",
+      href: "/productos/monitores?seccion=corporativo",
     },
     {
-      id: "qled",
-      name: "QLED",
+      id: "essential-monitor",
+      name: "Essential",
       subtitle: "Monitor",
       image: tvImg,
-      href: "/productos/monitores?seccion=qled",
+      href: "/productos/monitores?seccion=essential-monitor",
     },
     {
-      id: "crystal-uhd",
-      name: "Crystal",
-      subtitle: "UHD Monitor",
+      id: "odyssey-gaming",
+      name: "Odyssey",
+      subtitle: "Gaming",
       image: tvImg,
-      href: "/productos/monitores?seccion=crystal-uhd",
+      href: "/productos/monitores?seccion=odyssey-gaming",
+    },
+    {
+      id: "viewfinity-high-resolution",
+      name: "ViewFinity",
+      subtitle: "High Resolution",
+      image: tvImg,
+      href: "/productos/monitores?seccion=viewfinity-high-resolution",
     },
   ],
   audio: [

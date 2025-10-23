@@ -15,11 +15,14 @@ const CATEGORIA_TO_API_CODE: Record<CategoriaParams, string> = {
 
 // Mapeo de secciones a nombres de menú esperados (basado en los datos reales de la API)
 const SECCION_TO_MENU_NAME: Record<string, string> = {
+  // Dispositivos móviles (IM)
   'smartphones': 'Smartphones Galaxy',
   'tabletas': 'Galaxy Tab',
   'relojes': 'Galaxy Watch',
   'buds': 'Galaxy Buds',
   'accesorios': 'Accesorios para Galaxy',
+  
+  // Electrodomésticos (DA)
   'refrigeradores': 'Neveras',
   'lavadoras': 'Lavadoras y Secadoras',
   'lavavajillas': 'Lavavajillas',
@@ -27,9 +30,17 @@ const SECCION_TO_MENU_NAME: Record<string, string> = {
   'microondas': 'Hornos Microondas',
   'aspiradoras': 'Aspiradoras',
   'hornos': 'Hornos',
+  
+  // TVs y Audio (AV)
   'smart-tv': 'Smart TV',
   'qled': 'QLED',
-  'crystal-uhd': 'Crystal UHD'
+  'crystal-uhd': 'Crystal UHD',
+  
+  // Monitores (IT)
+  'corporativo': 'Corporativo',
+  'essential-monitor': 'Essential Monitor',
+  'odyssey-gaming': 'Odyssey Gaming',
+  'viewfinity-high-resolution': 'ViewFinity High Resolution'
 };
 
 /**

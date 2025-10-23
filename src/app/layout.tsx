@@ -4,8 +4,10 @@
 
 import type { Metadata } from "next";
 
-import { Inter } from "next/font/google";
 import { samsungSharpSans } from "./fonts";
+// Nota: eliminamos la importación de Inter desde next/font/google para evitar
+// hacer fetch a fonts.googleapis.com durante el build en entornos sin acceso.
+// Usaremos una variable CSS --font-inter definida en globals.css como fallback.
 import "./globals.css";
 
 import { AuthProvider } from "@/features/auth/context";
@@ -24,11 +26,8 @@ import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityCont
 import { ProductProvider } from "@/features/products/ProductContext";
 import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
-const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
-});
+// Si necesitas Inter desde Google Fonts en entornos con internet,
+// reactivar la importación desde next/font/google o agregar el CSS manual.
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://imagiq.com"),
@@ -107,13 +106,13 @@ export const viewport = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   // Validar children para evitar NaN, null, undefined o string vacío
   let safeChildren = children;
   const isNaNValue =
-    (typeof children === "number" && isNaN(children)) ||
+    (typeof children === "number" && Number.isNaN(children)) ||
     (typeof children === "string" &&
       (children === "NaN" || children.trim() === "")) ||
     children == null;
@@ -123,7 +122,13 @@ export default function RootLayout({
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${samsungSharpSans.variable}`}
+      className={`${samsungSharpSans.variable}`}
+      style={
+        {
+          "--font-inter":
+            "Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial",
+        } as React.CSSProperties
+      }
     >
       <head>
         <ClarityScript />

@@ -1,25 +1,24 @@
 /**
  * @module ProfilePage
- * @description Main profile page component leveraging existing UI components
- * Following Composition Pattern - combines smaller components into a cohesive page
+ * @description Página de perfil simplificada
  */
 
-import React from "react";
+import React, { useState } from "react";
 import { PUBLIC_ROUTES } from "@/constants/routes";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useProfile } from "../hooks/useProfile";
-import { useProfileNavigation } from "../hooks/useProfileNavigation";
 import ProfileHeader from "./sections/ProfileHeader";
 import QuickActions from "./sections/QuickActions";
-import BenefitsSection from "./sections/BenefitsSection";
 import AccountSection from "./sections/AccountSection";
+import BenefitsSection from "./sections/BenefitsSection";
 import SettingsSection from "./sections/SettingsSection";
 import LegalSection from "./sections/LegalSection";
 import LogoutSection from "./sections/LogoutSection";
-import OrdersSection from "./sections/OrdersSection";
-import ProfileViewRenderer from "./ProfileViewRenderer";
+import AddressesPage from "./pages/AddressesPage";
+
+type CurrentView = "main" | "addresses";
 
 interface ProfilePageProps {
   className?: string;
@@ -27,11 +26,28 @@ interface ProfilePageProps {
 
 export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   const { state, actions, isLoading } = useProfile();
-  const { currentView, handlers } = useProfileNavigation();
+  const [currentView, setCurrentView] = useState<CurrentView>("main");
 
   const handleLogout = async () => {
     await actions.logout();
   };
+
+  // Handlers de navegación
+  const handleEditProfile = () => console.log("Editar perfil");
+  const handleOrdersClick = () => console.log("Ver pedidos");
+  const handleHelpClick = () => console.log("Ver ayuda");
+  const handlePaymentMethodsClick = () => console.log("Ver métodos de pago");
+  const handleAddressesClick = () => setCurrentView("addresses");
+  const handleBillingClick = () => console.log("Ver facturación");
+  const handleCouponsClick = () => console.log("Ver cupones");
+  const handleLoyaltyClick = () => console.log("Ver programa de lealtad");
+  const handleNotificationsClick = () => console.log("Ver notificaciones");
+  const handleTermsClick = () => console.log("Ver términos");
+  const handlePrivacyClick = () => console.log("Ver privacidad");
+  const handleRelevantInfoClick = () => console.log("Ver información relevante");
+  const handleDataProcessingClick = () => console.log("Ver procesamiento de datos");
+
+  const handleBackToMain = () => setCurrentView("main");
 
   if (!state.user) {
     return (
@@ -63,82 +79,57 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
     );
   }
 
-  // Render different views based on currentView state
-  if (currentView !== "main") {
-    return (
-      <ProfileViewRenderer
-        currentView={currentView}
-        onBack={handlers.handleBackToMain}
-        className={className}
-      />
-    );
+  // Renderizar vista de direcciones
+  if (currentView === "addresses") {
+    return <AddressesPage onBack={handleBackToMain} />;
   }
 
-  // Default main profile view - Samsung style
   return (
     <div className={cn("min-h-screen bg-white", className)}>
       {/* Profile Header */}
       <ProfileHeader
         user={state.user}
-        onEditProfile={handlers.handleEditProfile}
-        loading={state.loading.profile}
+        onEditProfile={handleEditProfile}
+        loading={isLoading}
       />
 
       {/* Quick Actions */}
       <QuickActions
-        onOrdersClick={handlers.handleOrdersClick}
-        onHelpClick={handlers.handleHelpClick}
-        onPaymentMethodsClick={handlers.handlePaymentMethodsClick}
+        onOrdersClick={handleOrdersClick}
+        onHelpClick={handleHelpClick}
+        onPaymentMethodsClick={handlePaymentMethodsClick}
       />
 
       <div className="max-w-6xl mx-auto px-4 pb-8">
-        {/* Active Orders Section */}
-        <OrdersSection
-          title="Pedidos Activos"
-          orders={state.activeOrders.slice(0, 2)}
-          showViewAll={state.activeOrders.length > 2}
-          onViewDetails={handlers.handleOrderDetails}
-          onViewAllOrders={handlers.handleViewAllOrders}
-        />
-
-        {/* Recent Orders Section */}
-        <OrdersSection
-          title="Pedidos Recientes"
-          orders={state.recentOrders.slice(0, 3)}
-          showViewAll={true}
-          onViewDetails={handlers.handleOrderDetails}
-          onViewAllOrders={handlers.handleViewAllOrders}
-        />
-
         {/* Benefits Section */}
         <BenefitsSection
-          couponsCount={state.coupons.length}
-          loyaltyProgram={state.loyaltyProgram ?? undefined}
-          onCouponsClick={handlers.handleCouponsClick}
-          onLoyaltyClick={handlers.handleLoyaltyClick}
+          couponsCount={0}
+          loyaltyProgram={undefined}
+          onCouponsClick={handleCouponsClick}
+          onLoyaltyClick={handleLoyaltyClick}
         />
 
         {/* My Account Section */}
         <AccountSection
-          addressesCount={state.addresses.length}
-          paymentMethodsCount={state.paymentMethods.length}
-          onAddressesClick={handlers.handleAddressesClick}
-          onPaymentMethodsClick={handlers.handlePaymentMethodsClick}
-          onBillingClick={handlers.handleBillingClick}
+          addressesCount={state.user.direcciones?.length || 0}
+          paymentMethodsCount={state.user.tarjetas?.length || 0}
+          onAddressesClick={handleAddressesClick}
+          onPaymentMethodsClick={handlePaymentMethodsClick}
+          onBillingClick={handleBillingClick}
         />
 
         {/* Settings Section */}
         <SettingsSection
-          onNotificationsClick={handlers.handleNotificationsClick}
-          onHelpClick={handlers.handleHelpClick}
+          onNotificationsClick={handleNotificationsClick}
+          onHelpClick={handleHelpClick}
         />
 
         {/* More Information Section */}
         <LegalSection
-          onTermsClick={handlers.handleTermsClick}
-          onPrivacyClick={handlers.handlePrivacyClick}
-          onRelevantInfoClick={handlers.handleRelevantInfoClick}
-          onDataProcessingClick={handlers.handleDataProcessingClick}
+          onTermsClick={handleTermsClick}
+          onPrivacyClick={handlePrivacyClick}
+          onRelevantInfoClick={handleRelevantInfoClick}
+          onDataProcessingClick={handleDataProcessingClick}
         />
 
         {/* Logout Section */}

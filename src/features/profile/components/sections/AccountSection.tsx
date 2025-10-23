@@ -1,11 +1,5 @@
-/**
- * @module AccountSection
- * @description My Account section for profile page - Samsung style
- */
-
 import React from "react";
-import { MapPin, CreditCard, FileText } from "lucide-react";
-import MenuItem from "./MenuItem";
+import { MapPin, CreditCard, FileText, ChevronRight } from "lucide-react";
 
 interface AccountSectionProps {
   addressesCount: number;
@@ -15,39 +9,65 @@ interface AccountSectionProps {
   onBillingClick: () => void;
 }
 
-export const AccountSection: React.FC<AccountSectionProps> = ({
+const AccountSection: React.FC<AccountSectionProps> = ({
   addressesCount,
   paymentMethodsCount,
   onAddressesClick,
   onPaymentMethodsClick,
-  onBillingClick,
+  onBillingClick
 }) => {
   return (
-    <div className="mt-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4 px-2">Mi cuenta</h2>
-      <div className="bg-white border-2 border-gray-100 rounded-2xl overflow-hidden">
-        <MenuItem
-          icon={MapPin}
-          label="Direcciones"
-          badge={addressesCount}
+    <div className="py-6">
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Mi cuenta</h2>
+      <div className="space-y-2">
+        {/* Direcciones */}
+        <button
           onClick={onAddressesClick}
-        />
-        <MenuItem
-          icon={CreditCard}
-          label="Métodos de Pago"
-          badge={paymentMethodsCount}
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-black transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <MapPin className="w-5 h-5" />
+            <span className="font-semibold">Direcciones</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="bg-black text-white text-xs font-bold px-2 py-1 rounded-full">
+              {addressesCount}
+            </span>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </div>
+        </button>
+
+        {/* Métodos de Pago */}
+        <button
           onClick={onPaymentMethodsClick}
-        />
-        <MenuItem
-          icon={FileText}
-          label="Información de Facturación"
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-black transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <CreditCard className="w-5 h-5" />
+            <span className="font-semibold">Métodos de Pago</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="bg-black text-white text-xs font-bold px-2 py-1 rounded-full">
+              {paymentMethodsCount}
+            </span>
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          </div>
+        </button>
+
+        {/* Información de Facturación */}
+        <button
           onClick={onBillingClick}
-        />
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-black transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <FileText className="w-5 h-5" />
+            <span className="font-semibold">Información de Facturación</span>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        </button>
       </div>
     </div>
   );
 };
-
-AccountSection.displayName = "AccountSection";
 
 export default AccountSection;

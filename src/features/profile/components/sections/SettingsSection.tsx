@@ -1,38 +1,45 @@
-/**
- * @module SettingsSection
- * @description Settings section for profile page - Samsung style
- */
-
 import React from "react";
-import { Bell, HelpCircle } from "lucide-react";
-import MenuItem from "./MenuItem";
+import { Bell, HelpCircle, ChevronRight } from "lucide-react";
 
 interface SettingsSectionProps {
   onNotificationsClick: () => void;
   onHelpClick: () => void;
 }
 
-export const SettingsSection: React.FC<SettingsSectionProps> = ({
+const SettingsSection: React.FC<SettingsSectionProps> = ({
   onNotificationsClick,
-  onHelpClick,
+  onHelpClick
 }) => {
   return (
-    <div className="mt-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4 px-2">
-        Configuración
-      </h2>
-      <div className="bg-white border-2 border-gray-100 rounded-2xl overflow-hidden">
-        <MenuItem
-          icon={Bell}
-          label="Notificaciones"
+    <div className="py-6">
+      <h2 className="text-xl font-bold text-gray-900 mb-4">Configuración</h2>
+      <div className="space-y-2">
+        {/* Notificaciones */}
+        <button
           onClick={onNotificationsClick}
-        />
-        <MenuItem icon={HelpCircle} label="Ayuda" onClick={onHelpClick} />
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-black transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <Bell className="w-5 h-5" />
+            <span className="font-semibold">Notificaciones</span>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        </button>
+
+        {/* Ayuda */}
+        <button
+          onClick={onHelpClick}
+          className="w-full flex items-center justify-between p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-black transition-all"
+        >
+          <div className="flex items-center gap-3">
+            <HelpCircle className="w-5 h-5" />
+            <span className="font-semibold">Ayuda</span>
+          </div>
+          <ChevronRight className="w-5 h-5 text-gray-400" />
+        </button>
       </div>
     </div>
   );
 };
-
-SettingsSection.displayName = "SettingsSection";
 
 export default SettingsSection;

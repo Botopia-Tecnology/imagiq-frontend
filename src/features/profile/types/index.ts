@@ -1,45 +1,128 @@
 /**
  * @module ProfileTypes
- * @description Extended type definitions for the user profile feature
- * Extending existing types from the codebase to maximize reusability
+ * @description Tipos simplificados para el perfil basados en v_usuario_perfil
  */
 
-// Import existing types to extend them instead of recreating
-import { User as BaseUser, UserAddress } from '@/types/user';
-import type { CartItem } from '@/types/product';
-
 // ====================================
-// Extended Domain Types (reusing existing)
+// Tipos base desde la view v_usuario_perfil
 // ====================================
 
-// Extend existing User type instead of creating new one
-// Matches Usuario interface from backend auth-ms
-export interface ProfileUser extends BaseUser {
-  avatar?: string;
-  loyaltyPoints?: number;
-  memberSince?: Date;
-  // Computed property for full name
-  fullName?: string;
-  // Backend specific fields
-  email_verificado?: boolean;
-  activo?: boolean;
-  bloqueado?: boolean;
-  fecha_creacion?: Date;
-  ultimo_login?: Date | null;
-  tipo_documento?: string;
-  codigo_pais?: string;
-  fecha_nacimiento?: Date;
+/**
+ * Dirección desde la base de datos
+ * Formato del JSON en el campo 'direcciones' de v_usuario_perfil
+ */
+export interface DBAddress {
+  id: string;
+  linea_uno: string;
+  ciudad?: string;
+  pais?: string;
+  place_id?: string;
+  tipo: string;
+  nombreDireccion?: string;
+  tipoDireccion?: string;
+  esPredeterminada?: boolean;
+  direccionFormateada?: string;
+  departamento?: string;
+  complemento?: string;
+  instruccionesEntrega?: string;
+  activa?: boolean;
 }
 
-// Extend existing UserAddress type
-export interface ProfileAddress extends Omit<UserAddress, 'createdAt' | 'updatedAt'> {
+/**
+ * Tarjeta desde la base de datos
+ * Formato del JSON en el campo 'tarjetas' de v_usuario_perfil
+ */
+export interface DBCard {
+  id: number;
+  ultimos_dijitos: string;
+  tipo_tarjeta?: string;
+  nombre_titular?: string;
+  fecha_vencimiento?: string;
+  es_predeterminada?: boolean;
+  activa?: boolean;
+  marca?: string;
+  alias?: string;
+}
+
+/**
+ * Usuario desde v_usuario_perfil
+ */
+export interface ProfileUser {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  telefono?: string;
+  numero_documento?: string;
+  direcciones: DBAddress[];
+  tarjetas: DBCard[];
+  // Campos opcionales para compatibilidad con UI
+  avatar?: string;
+  loyaltyPoints?: number;
+}
+
+/**
+ * Estado del perfil
+ */
+export interface ProfileState {
+  user: ProfileUser | null;
+  loading: boolean | {
+    profile: boolean;
+    orders: boolean;
+    addresses: boolean;
+    paymentMethods: boolean;
+    invoices: boolean;
+  };
+  error: string | null;
+  // Campos adicionales para compatibilidad
+  addresses?: ProfileAddress[];
+  paymentMethods?: PaymentMethod[];
+  activeOrders?: Order[];
+  recentOrders?: Order[];
+  invoices?: Invoice[];
+  credits?: Credits;
+  coupons?: Coupon[];
+  loyaltyProgram?: LoyaltyProgram | null;
+  preferences?: ProfilePreferences;
+}
+
+/**
+ * Respuesta de la API de perfil
+ */
+export interface ProfileResponse {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  telefono?: string;
+  numero_documento?: string;
+  direcciones: DBAddress[] | string; // Puede venir como string JSON
+  tarjetas: DBCard[] | string; // Puede venir como string JSON
+}
+
+// ====================================
+// Tipos adicionales para compatibilidad (no usados por ahora)
+// ====================================
+
+export interface ProfileAddress {
+  id: string;
+  userId: string;
   alias: string;
+  type: 'home' | 'work' | 'other';
+  name: string;
+  addressLine1: string;
+  addressLine2?: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  isDefault: boolean;
   instructions?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// Reuse existing types where possible
 export interface PaymentMethod {
   id: string;
   type: 'credit_card' | 'debit_card' | 'bank_account';
@@ -51,10 +134,6 @@ export interface PaymentMethod {
   isActive: boolean;
 }
 
-// ====================================
-// Order Types (extending existing Product/Cart types)
-// ====================================
-
 export type OrderStatus =
   | 'pending'
   | 'confirmed'
@@ -63,7 +142,6 @@ export type OrderStatus =
   | 'delivered'
   | 'cancelled';
 
-// Simplified product for order items (to avoid complex Product type requirements)
 export interface ProductImage {
   id: string;
   url: string;
@@ -79,11 +157,14 @@ export interface SimplifiedProduct {
   brand?: string;
 }
 
-// Extend existing CartItem instead of creating OrderItem
-export interface OrderItem extends Omit<CartItem, 'product'> {
+export interface OrderItem {
+  id: string;
+  productId: string;
+  product: SimplifiedProduct;
+  quantity: number;
   unitPrice: number;
   totalPrice: number;
-  product: SimplifiedProduct; // Simplified product for orders
+  addedAt: Date;
 }
 
 export interface Order {
@@ -97,10 +178,6 @@ export interface Order {
   estimatedDelivery?: Date;
   shippingAddress: ProfileAddress;
 }
-
-// ====================================
-// Benefits Types (simplified)
-// ====================================
 
 export interface Credits {
   balance: number;
@@ -126,10 +203,6 @@ export interface LoyaltyProgram {
   benefits: string[];
 }
 
-// ====================================
-// Invoice/Billing Types
-// ====================================
-
 export type InvoiceStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';
 
 export interface Invoice {
@@ -153,11 +226,6 @@ export interface Invoice {
   notes?: string;
 }
 
-// ====================================
-// Profile State Types (using simplified preferences)
-// ====================================
-
-// Define a simplified preferences interface that matches the existing UserPreferencesContext
 export interface ProfilePreferences {
   categories: string[];
   brands: string[];
@@ -173,25 +241,4 @@ export interface ProfilePreferences {
     preferredShipping: string;
     wishlist: string[];
   };
-}
-
-export interface ProfileState {
-  user: ProfileUser | null;
-  addresses: ProfileAddress[];
-  paymentMethods: PaymentMethod[];
-  activeOrders: Order[];
-  recentOrders: Order[];
-  invoices: Invoice[];
-  credits: Credits;
-  coupons: Coupon[];
-  loyaltyProgram: LoyaltyProgram | null;
-  preferences: ProfilePreferences;
-  loading: {
-    profile: boolean;
-    orders: boolean;
-    addresses: boolean;
-    paymentMethods: boolean;
-    invoices: boolean;
-  };
-  error: string | null;
 }

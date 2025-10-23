@@ -61,8 +61,27 @@ export default function SubmenuCarousel({
     }));
   }, [submenus]);
 
-  // Crear filtros vacíos para el SeriesSlider (no se usan para navegación)
-  const emptyFilters = {};
+  // Detectar qué submenú está actualmente seleccionado basándose en la URL
+  const activeSubmenu = useMemo(() => {
+    const submenuParam = searchParams?.get('submenu');
+    if (!submenuParam) return null;
+    
+    // Buscar el submenú que coincida con el parámetro de la URL
+    return submenus.find(submenu => {
+      const submenuName = submenu.nombreVisible || submenu.nombre;
+      const friendlyName = submenuNameToFriendly(submenuName);
+      return friendlyName === submenuParam;
+    });
+  }, [searchParams, submenus]);
+
+  // Crear filtros para el SeriesSlider con el submenú activo
+  const activeFilters = useMemo(() => {
+    if (!activeSubmenu) return { serie: [] };
+    
+    return {
+      serie: [activeSubmenu.uuid]
+    };
+  }, [activeSubmenu]);
 
   // Si está cargando, mostrar skeleton
   if (loading) {
@@ -105,7 +124,7 @@ export default function SubmenuCarousel({
 
         <SeriesSlider
           series={series}
-          activeFilters={emptyFilters}
+          activeFilters={activeFilters}
           onSerieClick={handleSubmenuClick}
         />
       </div>

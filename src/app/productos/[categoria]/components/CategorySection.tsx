@@ -15,7 +15,7 @@ import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
-import DynamicSeriesFilter from "./DynamicSeriesFilter";
+import SubmenuCarousel from "./SubmenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
@@ -25,6 +25,7 @@ import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
 import { getSeriesConfig } from "../config/series-configs";
 import { useCurrentMenu } from "@/hooks/useCurrentMenu";
+import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -62,20 +63,25 @@ export default function CategorySection({
   const productsRef = useRef<HTMLDivElement>(null);
   const device = useDeviceType();
 
+  const filterConfig = getCategoryFilterConfig(categoria, seccion);
+  const seriesConfig = getSeriesConfig(seccion);
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
+  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoria, seccion);
+
   const { products, loading, error, totalItems, totalPages, refreshProducts } = useCategoryProducts(
     categoria,
     seccion,
     filters,
     currentPage,
     itemsPerPage,
-    sortBy
+    sortBy,
+    categoryUuid,
+    menuUuid,
+    submenuUuid,
+    categoryCode
   );
 
   useCategoryAnalytics(categoria, seccion, totalItems);
-
-  const filterConfig = getCategoryFilterConfig(categoria, seccion);
-  const seriesConfig = getSeriesConfig(seccion);
-  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -103,11 +109,9 @@ export default function CategorySection({
       {menuLoading ? (
         <SeriesFilterSkeleton />
       ) : currentMenu ? (
-        /* Usar DynamicSeriesFilter si hay datos de la API */
-        <DynamicSeriesFilter
+        /* Usar SubmenuCarousel si hay datos de la API */
+        <SubmenuCarousel
           menu={currentMenu}
-          activeFilters={filters}
-          onFilterChange={handleFilterChange}
           categoria={categoria}
           seccion={seccion}
           title={sectionTitle}

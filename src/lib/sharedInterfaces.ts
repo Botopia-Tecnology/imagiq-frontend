@@ -16,6 +16,8 @@ export interface FilterState {
 export interface BaseApiFilters {
   categoria?: string;
   subcategoria?: string;
+  menuUuid?: string;
+  submenuUuid?: string;
   precioMin?: number;
   precioMax?: number;
   conDescuento?: boolean;
@@ -45,6 +47,8 @@ export interface ApiFiltersWithSort extends BaseApiFilters {
 export interface FrontendApiFilters {
   category?: string;     // maps to categoria
   subcategory?: string;  // maps to subcategoria
+  menuUuid?: string;    // maps to menuUuid
+  submenuUuid?: string; // maps to submenuUuid
   precioMin?: number;
   precioMax?: number;
   color?: string;

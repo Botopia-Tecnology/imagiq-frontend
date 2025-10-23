@@ -59,17 +59,77 @@ export function useCategoryProducts(
   filters: FilterState,
   currentPage: number,
   itemsPerPage: number,
-  sortBy: string
+  sortBy: string,
+  categoryUuid?: string,
+  menuUuid?: string,
+  submenuUuid?: string,
+  categoryCode?: string
 ) {
+  // Memoizar los filtros de jerarquía por separado para evitar re-cálculos innecesarios
+  const hierarchyFilters = useMemo(() => {
+    const result: Record<string, string> = {};
+
+    if (categoryCode) {
+      result.categoria = categoryCode;
+    }
+
+    if (menuUuid) {
+      result.menuUuid = menuUuid;
+    }
+
+    if (submenuUuid) {
+      result.submenuUuid = submenuUuid;
+    }
+
+    return result;
+  }, [categoryCode, menuUuid, submenuUuid]);
+
+  // Memoizar los filtros base y aplicados por separado
+  const baseFilters = useMemo(() => getCategoryBaseFilters(categoria, seccion), [categoria, seccion]);
+
+  const appliedFilters = useMemo(() =>
+    convertFiltersToApi(categoria, filters, seccion, submenuUuid),
+    [categoria, filters, seccion, submenuUuid]
+  );
+
+  // Combinar todos los filtros solo cuando sea necesario
   const apiFilters = useMemo(() => {
-    const baseFilters = getCategoryBaseFilters(categoria, seccion);
-    const appliedFilters = convertFiltersToApi(categoria, filters, seccion);
-    return { ...baseFilters, ...appliedFilters };
-  }, [categoria, seccion, filters]);
+    return { ...baseFilters, ...appliedFilters, ...hierarchyFilters };
+  }, [baseFilters, appliedFilters, hierarchyFilters]);
+
+  // Evitar llamadas API hasta que tengamos los datos críticos
+  const shouldMakeApiCall = useMemo(() => {
+    // Si no tenemos categoryCode, no podemos hacer la llamada
+    if (!categoryCode) {
+      return false;
+    }
+
+    // Si estamos en una sección específica, necesitamos menuUuid
+    if (seccion && !menuUuid) {
+      return false;
+    }
+
+    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto, esperar
+    const searchParams = new URLSearchParams(globalThis.location.search);
+    const submenuParam = searchParams.get('submenu');
+    if (submenuParam && !submenuUuid) {
+      return false;
+    }
+
+    // Si llegamos aquí, tenemos todos los datos necesarios
+    return true;
+  }, [seccion, menuUuid, categoryCode, submenuUuid]);
 
   const initialFiltersForProducts = useMemo(
-    () => applySortToFilters({ ...apiFilters, page: currentPage, limit: itemsPerPage }, sortBy),
-    [apiFilters, currentPage, itemsPerPage, sortBy]
+    () => {
+      // Solo calcular filtros si debemos hacer la llamada API
+      if (!shouldMakeApiCall) {
+        return null; // No hacer llamada API
+      }
+
+      return applySortToFilters({ ...apiFilters, page: currentPage, limit: itemsPerPage }, sortBy);
+    },
+    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy]
   );
 
   return useProducts(initialFiltersForProducts);

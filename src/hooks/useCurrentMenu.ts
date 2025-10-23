@@ -13,23 +13,39 @@ const CATEGORIA_TO_API_CODE: Record<CategoriaParams, string> = {
   'ofertas': 'ofertas'
 };
 
-// Mapeo de secciones a nombres de menú esperados
+// Mapeo de secciones a nombres de menú esperados (basado en los datos reales de la API)
 const SECCION_TO_MENU_NAME: Record<string, string> = {
-  'smartphones': 'Smartphones',
-  'tabletas': 'Tabletas',
-  'relojes': 'Relojes',
-  'buds': 'Buds',
-  'accesorios': 'Accesorios',
-  'refrigeradores': 'Refrigeradores',
-  'lavadoras': 'Lavadoras',
+  // Dispositivos móviles (IM)
+  'smartphones': 'Smartphones Galaxy',
+  'tabletas': 'Galaxy Tab',
+  'relojes': 'Galaxy Watch',
+  'buds': 'Galaxy Buds',
+  'accesorios': 'Accesorios para Galaxy',
+  
+  // Electrodomésticos (DA)
+  'refrigeradores': 'Neveras',
+  'lavadoras': 'Lavadoras y Secadoras',
   'lavavajillas': 'Lavavajillas',
   'aire-acondicionado': 'Aire Acondicionado',
-  'microondas': 'Microondas',
+  'microondas': 'Hornos Microondas',
   'aspiradoras': 'Aspiradoras',
   'hornos': 'Hornos',
-  'smart-tv': 'Smart TV',
+  
+  // TVs y Audio (AV)
+  'crystal-uhd': 'Crystal UHD',
+  'neo-qled': 'Neo QLED',
+  'oled': 'OLED',
+  'proyectores': 'Proyectores',
   'qled': 'QLED',
-  'crystal-uhd': 'Crystal UHD'
+  'smart-tv': 'Smart TV',
+  'the-frame': 'The Frame',
+  'dispositivo-audio': 'Dispositivo de Audio',
+  
+  // Monitores (IT)
+  'corporativo': 'Corporativo',
+  'essential-monitor': 'Essential Monitor',
+  'odyssey-gaming': 'Odyssey Gaming',
+  'viewfinity-high-resolution': 'ViewFinity High Resolution'
 };
 
 /**
@@ -56,7 +72,7 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
     // Buscar la categoría que coincida con el código
     const category = visibleCategories.find(cat => cat.nombre === apiCode);
 
-    if (!category || !category.menus || category.menus.length === 0) {
+    if (!category?.menus?.length) {
       return null;
     }
 

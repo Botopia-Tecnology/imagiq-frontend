@@ -155,8 +155,21 @@ export function useVisibleCategories() {
       orden: 1000
     };
 
+    // Agregar Soporte después de Tiendas
+    const soporteRoute = {
+      name: "Soporte",
+      href: "/soporte/inicio_de_soporte",
+      category: "soporte",
+      categoryCode: "soporte",
+      dropdownName: undefined, // No tiene dropdown
+      uuid: "soporte",
+      totalProducts: 0,
+      menus: [],
+      orden: 1001
+    };
+
     // Combinar y ordenar por el campo orden
-    return [...fixedRoutes, ...mappedCategories, tiendasRoute].sort((a, b) => a.orden - b.orden);
+    return [...fixedRoutes, ...mappedCategories, tiendasRoute, soporteRoute].sort((a, b) => a.orden - b.orden);
   };
 
   // Función para obtener la URL href basada en el nombre de la categoría

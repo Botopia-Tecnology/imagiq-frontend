@@ -119,6 +119,7 @@ export const useProducts = (
       : initialFilters || {}
   );
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
+  const [requestId, setRequestId] = useState(0);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -132,6 +133,8 @@ export const useProducts = (
       // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
       if (filters.category) params.categoria = filters.category;
       if (filters.subcategory) params.subcategoria = filters.subcategory;
+      if (filters.menuUuid) params.menuUuid = filters.menuUuid;
+      if (filters.submenuUuid) params.submenuUuid = filters.submenuUuid;
 
       // Manejar filtros de precio usando precioMin/precioMax
       if (filters.precioMin !== undefined) {
@@ -167,6 +170,10 @@ export const useProducts = (
   // Función principal para obtener productos
   const fetchProducts = useCallback(
     async (filters: ProductFilters = {}, append = false) => {
+      // Incrementar el ID de la petición para invalidar peticiones anteriores
+      const currentRequestId = Date.now();
+      setRequestId(currentRequestId);
+
       setLoading(true);
       setError(null);
 
@@ -174,30 +181,49 @@ export const useProducts = (
         const apiParams = convertFiltersToApiParams(filters);
         const response = await productEndpoints.getFiltered(apiParams);
 
-        if (response.success && response.data) {
-          const apiData = response.data;
-          const mappedProducts = mapApiProductsToFrontend(apiData.products);
-
-          if (append) {
-            setProducts((prev) => [...prev, ...mappedProducts]);
-          } else {
-            setProducts(mappedProducts);
-            setGroupedProducts(groupProductsByCategory(mappedProducts));
+        // Verificar si esta petición sigue siendo válida comparando con el ID más reciente
+        setRequestId((latestRequestId) => {
+          // Si hay una petición más nueva, ignorar esta respuesta
+          if (currentRequestId < latestRequestId) {
+            return latestRequestId;
           }
 
-          setTotalItems(apiData.totalItems);
-          setTotalPages(apiData.totalPages);
-          setCurrentPage(apiData.currentPage);
-          setHasNextPage(apiData.hasNextPage);
-          setHasPreviousPage(apiData.hasPreviousPage);
-        } else {
-          setError(response.message || "Error al cargar productos");
-        }
+          // Esta es la petición más reciente, procesar la respuesta
+          if (response.success && response.data) {
+            const apiData = response.data;
+            const mappedProducts = mapApiProductsToFrontend(apiData.products);
+
+            if (append) {
+              setProducts((prev) => [...prev, ...mappedProducts]);
+            } else {
+              setProducts(mappedProducts);
+              setGroupedProducts(groupProductsByCategory(mappedProducts));
+            }
+
+            setTotalItems(apiData.totalItems);
+            setTotalPages(apiData.totalPages);
+            setCurrentPage(apiData.currentPage);
+            setHasNextPage(apiData.hasNextPage);
+            setHasPreviousPage(apiData.hasPreviousPage);
+          } else {
+            setError(response.message || "Error al cargar productos");
+          }
+
+          setLoading(false);
+          return currentRequestId;
+        });
       } catch (err) {
         console.error("Error fetching products:", err);
-        setError("Error de conexión al cargar productos");
-      } finally {
-        setLoading(false);
+
+        // Solo actualizar el error si esta petición sigue siendo válida
+        setRequestId((latestRequestId) => {
+          if (currentRequestId >= latestRequestId) {
+            setError("Error de conexión al cargar productos");
+            setLoading(false);
+            return currentRequestId;
+          }
+          return latestRequestId;
+        });
       }
     },
     [convertFiltersToApiParams]

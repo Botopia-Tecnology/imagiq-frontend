@@ -18,9 +18,14 @@ export type Seccion =
   | "buds"
   | "accesorios"
   // TV
-  | "smart-tv"
-  | "qled"
   | "crystal-uhd"
+  | "neo-qled"
+  | "oled"
+  | "proyectores"
+  | "qled"
+  | "smart-tv"
+  | "the-frame"
+  | "dispositivo-audio"
   // Audio
   | "barras-sonido"
   | "sistemas"
@@ -32,6 +37,11 @@ export type Seccion =
   | "microondas"
   | "aspiradoras"
   | "hornos"
+  // Monitores
+  | "corporativo"
+  | "essential-monitor"
+  | "odyssey-gaming"
+  | "viewfinity-high-resolution"
   // Ofertas
   | "tv-monitores-audio"
   | "smartphones-tablets"

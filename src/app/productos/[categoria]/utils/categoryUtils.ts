@@ -22,13 +22,13 @@ export const CATEGORY_MAPPING: Record<
   electrodomesticos: {
     apiCategory: "Electrodoméstico",
     subcategorias: {
-      refrigeradores: "Neveras,Nevecon",
-      lavadoras: "Lavadora,Secadora",
       microondas: "Hornos Microondas",
-      "aire-acondicionado": "Aire Acondicionado",
-      hornos: "Hornos Microondas",
+      lavadoras: "Lavadoras y Secadoras",
+      refrigeradores: "Neveras",
       lavavajillas: "Lavavajillas",
+      "aire-acondicionado": "Aire Acondicionado",
       aspiradoras: "Aspiradoras",
+      hornos: "Hornos",
     },
   },
   "dispositivos-moviles": {
@@ -44,17 +44,23 @@ export const CATEGORY_MAPPING: Record<
   televisores: {
     apiCategory: "TV & Audio",
     subcategorias: {
-      "smart-tv": "Televisores",
-      qled: "Televisores",
-      "crystal-uhd": "Televisores",
+      "crystal-uhd": "Crystal UHD",
+      "neo-qled": "Neo QLED",
+      "oled": "OLED",
+      "proyectores": "Proyectores",
+      "qled": "QLED",
+      "smart-tv": "Smart TV",
+      "the-frame": "The Frame",
+      "dispositivo-audio": "Dispositivo de Audio",
     },
   },
   monitores: {
     apiCategory: "TV & Audio",
     subcategorias: {
-      "smart-tv": "Monitores",
-      qled: "Monitores",
-      "crystal-uhd": "Monitores",
+      "corporativo": "Monitores",
+      "essential-monitor": "Monitores",
+      "odyssey-gaming": "Monitores",
+      "viewfinity-high-resolution": "Monitores",
     },
   },
   audio: {
@@ -77,10 +83,11 @@ export const CATEGORY_MAPPING: Record<
 
 /**
  * Obtiene los filtros base para una categoría específica
+ * NOTA: Ya NO usamos subcategory, ahora usamos menuUuid y submenuUuid
  */
 export function getCategoryBaseFilters(
   categoria: CategoriaParams,
-  seccion?: string
+  _seccion?: string // Parámetro mantenido por compatibilidad pero ya no se usa
 ): ApiFilters {
   const categoryConfig = CATEGORY_MAPPING[categoria];
 
@@ -90,21 +97,8 @@ export function getCategoryBaseFilters(
 
   const baseFilters: ApiFilters = {};
 
-  // Solo agregar filtros si hay una sección específica
-  if (seccion && seccion in categoryConfig.subcategorias) {
-    const mappedValue = categoryConfig.subcategorias[seccion];
-
-    // Caso especial para buds: usar parámetro nombre en lugar de subcategoria
-    if (seccion === "buds") {
-      baseFilters.name = mappedValue;
-    } else {
-      baseFilters.subcategory = mappedValue;
-      // Caso especial para relojes: agregar también filtro por nombre "watch"
-      if (seccion === "relojes") {
-        baseFilters.name = "watch";
-      }
-    }
-  }
+  // Ya NO agregamos subcategory - usamos menuUuid y submenuUuid en su lugar
+  // Los filtros específicos se manejan ahora a través de la jerarquía de categoría/menú/submenú
 
   return baseFilters;
 }
@@ -116,7 +110,8 @@ export function getCategoryBaseFilters(
 export function convertFiltersToApi(
   categoria: CategoriaParams,
   filters: FilterState,
-  seccion?: string
+  seccion?: string,
+  submenuUuid?: string
 ): ApiFilters {
   const baseFilters = getCategoryBaseFilters(categoria, seccion);
   let apiFilters: ApiFilters = { ...baseFilters };
@@ -133,12 +128,14 @@ export function convertFiltersToApi(
   }
 
   // Filtros específicos por categoría
+  // Si hay submenuUuid (selección del carousel), no aplicar filtros de serie
+  // para evitar conflictos entre carousel y panel de filtros
   switch (categoria) {
     case "electrodomesticos":
       apiFilters = applyElectrodomesticoFilters(apiFilters, filters);
       break;
     case "dispositivos-moviles":
-      apiFilters = applyMovilesFilters(apiFilters, filters);
+      apiFilters = applyMovilesFilters(apiFilters, filters, submenuUuid);
       break;
     case "televisores":
     case "monitores":
@@ -226,7 +223,8 @@ function applyElectrodomesticoFilters(
  */
 function applyMovilesFilters(
   apiFilters: ApiFilters,
-  filters: FilterState
+  filters: FilterState,
+  submenuUuid?: string
 ): ApiFilters {
   const result = { ...apiFilters };
 
@@ -245,7 +243,8 @@ function applyMovilesFilters(
   }
 
   // Serie (Galaxy S, Galaxy A, etc.)
-  if (filters.serie && filters.serie.length > 0) {
+  // Solo aplicar filtros de serie si NO hay submenuUuid (evitar conflicto con carousel)
+  if (filters.serie && filters.serie.length > 0 && !submenuUuid) {
     const serieVariants = filters.serie.map((serie) => {
       switch (serie) {
         case "Galaxy A":

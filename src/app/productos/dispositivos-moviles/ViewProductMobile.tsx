@@ -298,14 +298,10 @@ export default function ViewProduct({
       <div className="h-[1px] w-full" />
       <BenefitsSection />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
-      <motion.div
-        ref={specsReveal.ref}
-        {...specsReveal.motionProps}
-        className="relative flex items-center justify-center w-full min-h-[100px] py-0 md:-mt-40"
-      >
-        {/* Especificaciones técnicas dinámicas del producto */}
-        <Specifications product={productCard} flix={flix} />
-      </motion.div>
+
+      <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
+        <Specifications product={productCard} flix={flix}  />
+      </div>
 
       {/* Características destacadas (nuevo componente) */}
       {/* <Destacados /> */}

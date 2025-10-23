@@ -28,6 +28,6 @@ export default function DynamicDropdown({
   return isMobile ? (
     <MobileView items={items} categoryName={categoryName} onItemClick={handleClick} />
   ) : (
-    <DesktopView items={items} categoryName={categoryName} onItemClick={handleClick} />
+    <DesktopView items={items} categoryName={categoryName} categoryCode={categoryCode} onItemClick={handleClick} />
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { forwardRef } from "react";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
+import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 
 interface ProductInfoProps {
   product: ProductCardProps;
@@ -235,7 +236,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                             ? "border-gray-400 hover:border-gray-600 hover:scale-105"
                             : "border-gray-300 hover:border-gray-400 hover:scale-105"
                         }`}
-                      style={{ 
+                      style={{
                         backgroundColor: color.hex,
                         boxShadow: (color.hex === '#000000' || color.hex.toLowerCase() === '#000000') && !isSelected
                           ? 'inset 0 0 0 1px rgba(255,255,255,0.1)'
@@ -250,6 +251,27 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 );
               })}
             </div>
+            {/* Botón AR Experience - SOLO DESKTOP Y TABLET */}
+            {(() => {
+              const variantIndex = product.apiProduct && selectedColor
+                ? product.apiProduct.color.findIndex(
+                    (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
+                  )
+                : -1;
+
+              const urlRender3D = variantIndex !== -1 && product.apiProduct?.urlRender3D?.[variantIndex]
+                ? product.apiProduct.urlRender3D[variantIndex]
+                : null;
+
+              return urlRender3D && urlRender3D.trim() !== "" ? (
+                <div className="hidden lg:flex justify-center mt-6">
+                  <ARExperienceHandler
+                    glbUrl={urlRender3D}
+                    usdzUrl={urlRender3D}
+                  />
+                </div>
+              ) : null;
+            })()}
 
             {/* Carrusel de imágenes del color - SOLO MOBILE */}
             {productImages.length > 0 && (
@@ -276,6 +298,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     Ver más
                   </button>
                 </div>
+
+
 
                 {/* Selectores de color - SOLO MOBILE - Debajo de Ver más */}
                 <div className="flex gap-4 justify-center mb-6">
@@ -306,6 +330,27 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     );
                   })}
                 </div>
+                {/* Botón AR Experience - Solo mobile, justo después de "Ver más" */}
+                {(() => {
+                  const variantIndex = product.apiProduct && selectedColor
+                    ? product.apiProduct.color.findIndex(
+                        (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
+                      )
+                    : -1;
+
+                  const urlRender3D = variantIndex !== -1 && product.apiProduct?.urlRender3D?.[variantIndex]
+                    ? product.apiProduct.urlRender3D[variantIndex]
+                    : null;
+
+                  return urlRender3D && urlRender3D.trim() !== "" ? (
+                    <div className="flex justify-center mb-6">
+                      <ARExperienceHandler
+                        glbUrl={urlRender3D}
+                        usdzUrl={urlRender3D}
+                      />
+                    </div>
+                  ) : null;
+                })()}
               </div>
             )}
           </div>

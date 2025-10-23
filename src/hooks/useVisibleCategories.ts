@@ -46,16 +46,20 @@ export function useVisibleCategories() {
     return categoryMap[categoryName] || categoryName;
   };
 
+  // Función para calcular productos de un submenu
+  const calculateSubmenuProducts = (submenu: any) => submenu.totalProducts || 0;
+
+  // Función para calcular productos de un menu
+  const calculateMenuProducts = (menu: any) => 
+    (menu.submenus || []).reduce((total: number, submenu: any) => 
+      total + calculateSubmenuProducts(submenu), 0);
+
   // Función para obtener las rutas del navbar basadas en las categorías visibles
   const getNavbarRoutes = () => {
     const mappedCategories = visibleCategories.map(category => {
       // Calcular total de productos sumando todos los productos de los submenus
-      const totalProducts = (category.menus || []).reduce((menuTotal, menu) => {
-        const menuProductsTotal = (menu.submenus || []).reduce((submenuTotal, submenu) => {
-          return submenuTotal + (submenu.totalProducts || 0);
-        }, 0);
-        return menuTotal + menuProductsTotal;
-      }, 0);
+      const totalProducts = (category.menus || []).reduce((menuTotal, menu) => 
+        menuTotal + calculateMenuProducts(menu), 0);
 
       return {
         name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),

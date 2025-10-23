@@ -17,8 +17,9 @@ import SettingsSection from "./sections/SettingsSection";
 import LegalSection from "./sections/LegalSection";
 import LogoutSection from "./sections/LogoutSection";
 import AddressesPage from "./pages/AddressesPage";
+import PaymentMethodsPage from "./pages/PaymentMethodsPage";
 
-type CurrentView = "main" | "addresses";
+type CurrentView = "main" | "addresses" | "payment-methods";
 
 interface ProfilePageProps {
   className?: string;
@@ -36,7 +37,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   const handleEditProfile = () => console.log("Editar perfil");
   const handleOrdersClick = () => console.log("Ver pedidos");
   const handleHelpClick = () => console.log("Ver ayuda");
-  const handlePaymentMethodsClick = () => console.log("Ver métodos de pago");
+  const handlePaymentMethodsClick = () => setCurrentView("payment-methods");
   const handleAddressesClick = () => setCurrentView("addresses");
   const handleBillingClick = () => console.log("Ver facturación");
   const handleCouponsClick = () => console.log("Ver cupones");
@@ -82,6 +83,11 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   // Renderizar vista de direcciones
   if (currentView === "addresses") {
     return <AddressesPage onBack={handleBackToMain} />;
+  }
+
+  // Renderizar vista de métodos de pago
+  if (currentView === "payment-methods") {
+    return <PaymentMethodsPage onBack={handleBackToMain} />;
   }
 
   return (

@@ -25,10 +25,9 @@ import { motion } from "framer-motion";
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
   return (
-    
     <div className="min-h-screen bg-white flex flex-col">
-        {/* Skeleton del bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-[60] bg-white border-t border-gray-200 shadow-2xl">
+      {/* Skeleton del top bar - Arriba */}
+      <div className="bg-white border-b border-gray-200 shadow-sm mt-[55px] md:mt-[25px]">
         <div className="max-w-[1680px] mx-auto px-4 md:px-6 lg:px-12">
           <div className="flex items-center justify-between gap-4 md:gap-6 py-3 md:py-4">
             {/* Skeleton nombre del producto */}
@@ -51,17 +50,18 @@ function MultimediaPageSkeleton() {
             </div>
           </div>
         </div>
-        
+
         {/* Línea decorativa */}
         <div className="h-1 w-full bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse" />
       </div>
+
       {/* Skeleton del contenido principal */}
       <div className="flex-1">
         {/* Skeleton del iframe de Flixmedia */}
         <div className="w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-50 relative overflow-hidden">
           {/* Efecto de brillo */}
           <div className="absolute inset-0 -translate-x-full animate-[shimmer_2s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-          
+
           {/* Icono central de carga */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
@@ -74,8 +74,6 @@ function MultimediaPageSkeleton() {
           </div>
         </div>
       </div>
-
-    
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { categoriesEndpoints, type VisibleCategoryComplete, type Menu, type Submenu } from '@/lib/api';
+import { categoriesEndpoints, type VisibleCategoryComplete, type VisibleCategory, type Menu, type Submenu } from '@/lib/api';
 
 export function useVisibleCategories() {
   const [visibleCategories, setVisibleCategories] = useState<VisibleCategoryComplete[]>([]);
@@ -28,7 +28,7 @@ export function useVisibleCategories() {
         setError('Error al cargar categorías');
 
         // Fallback: usar categorías mock si el backend no está disponible
-        const mockCategories: VisibleCategory[] = [
+        const mockCategories: VisibleCategoryComplete[] = [
           {
             uuid: 'mock-im',
             nombre: 'IM',
@@ -36,10 +36,10 @@ export function useVisibleCategories() {
             descripcion: 'Dispositivos móviles',
             imagen: '',
             activo: true,
+            orden: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           },
           {
             uuid: 'mock-av',
@@ -48,10 +48,10 @@ export function useVisibleCategories() {
             descripcion: 'Televisores y Audio/Video',
             imagen: '',
             activo: true,
+            orden: 2,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           },
           {
             uuid: 'mock-da',
@@ -60,10 +60,10 @@ export function useVisibleCategories() {
             descripcion: 'Electrodomésticos',
             imagen: '',
             activo: true,
+            orden: 3,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           },
           {
             uuid: 'mock-it',
@@ -72,10 +72,10 @@ export function useVisibleCategories() {
             descripcion: 'Monitores',
             imagen: '',
             activo: true,
+            orden: 4,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           }
         ];
         setVisibleCategories(mockCategories);

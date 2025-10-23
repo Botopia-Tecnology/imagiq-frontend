@@ -175,14 +175,15 @@ export default function FlixmediaDetails({
         /* Ocultar TODO excepto especificaciones y galería */
         #flix-specifications-inpage [flixtemplate-key="features"],
         #flix-specifications-inpage [flixtemplate-key="background_image"],
-        #flix-specifications-inpage [flixtemplate-key="footnotes"] {
+        #flix-specifications-inpage [flixtemplate-key="footnotes"],
+        #flix-specifications-inpage [flixtemplate-key="image_gallery"] {
           display: none !important;
           visibility: hidden !important;
         }
 
         /* Mostrar SOLO especificaciones y galería de imágenes */
         #flix-specifications-inpage [flixtemplate-key="specifications"],
-        #flix-specifications-inpage [flixtemplate-key="image_gallery"] {
+         {
           display: block !important;
           visibility: visible !important;
         }
@@ -210,12 +211,6 @@ export default function FlixmediaDetails({
           padding: 0 !important;
         }
 
-        /* Personalizar galería de imágenes */
-        #flix-specifications-inpage [flixtemplate-key="image_gallery"] {
-          background-color: transparent !important;
-          padding: 0 !important;
-          margin-top: 20px !important;
-        }
       `;
 
       // Remover estilo anterior si existe
@@ -232,8 +227,8 @@ export default function FlixmediaDetails({
         const container = document.getElementById('flix-specifications-inpage');
         if (!container) return;
 
-        // Ocultar todo excepto specifications y image_gallery
-        const toHide = ['features', 'background_image', 'footnotes'];
+        // Ocultar todo excepto specifications
+        const toHide = ['features', 'background_image', 'footnotes','image_gallery'];
         toHide.forEach(key => {
           const elements = container.querySelectorAll(`[flixtemplate-key="${key}"]`);
           elements.forEach((el) => {
@@ -243,7 +238,7 @@ export default function FlixmediaDetails({
         });
 
         // Asegurarse de que specifications y galería estén visibles
-        const toShow = ['specifications', 'image_gallery'];
+        const toShow = ['specifications'];
         let hasVisibleContent = false;
         toShow.forEach(key => {
           const element = container.querySelector(`[flixtemplate-key="${key}"]`);

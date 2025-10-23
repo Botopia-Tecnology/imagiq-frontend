@@ -23,6 +23,7 @@ const VideoPlayer: React.FC<{
   onVideoStart?: () => void;
 }> = ({ src, onVideoEnd, onVideoStart }) => {
   const [videoError, setVideoError] = useState(false);
+  const [hasPlayed, setHasPlayed] = useState(false);
 
   // Usar directamente el tag video HTML5 para mejor compatibilidad
   if (videoError) {
@@ -39,14 +40,20 @@ const VideoPlayer: React.FC<{
   return (
     <video
       src={src}
-      autoPlay
-      loop
+      autoPlay={!hasPlayed}
+      loop={false}
       muted
       playsInline
       controls={false}
       className="w-full h-full object-contain md:object-cover"
-      onEnded={onVideoEnd}
-      onPlay={onVideoStart}
+      onEnded={() => {
+        setHasPlayed(true);
+        onVideoEnd?.();
+      }}
+      onPlay={() => {
+        setHasPlayed(true);
+        onVideoStart?.();
+      }}
       onError={(e) => {
         console.error('Error loading video:', src, e);
         setVideoError(true);

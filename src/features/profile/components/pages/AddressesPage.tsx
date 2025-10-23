@@ -36,6 +36,9 @@ export const AddressesPage: React.FC<AddressesPageProps> = ({
   const { state } = useProfile();
   const [selectedFilter, setSelectedFilter] = useState<FilterValue>("all");
 
+  // Debug: Ver qué datos tiene state.addresses
+  console.log('📍 [AddressesPage] state.addresses:', state.addresses);
+
   // Memoized address counts
   const addressCounts = useMemo(
     () => ({

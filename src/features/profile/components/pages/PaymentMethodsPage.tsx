@@ -30,6 +30,9 @@ export const PaymentMethodsPage: React.FC<PaymentMethodsPageProps> = ({
 
   const paymentMethods = state.paymentMethods || [];
 
+  // Debug: Ver qué datos tiene state.paymentMethods
+  console.log('💳 [PaymentMethodsPage] state.paymentMethods:', paymentMethods);
+
   // Filter payment methods
   const filteredPayments = paymentMethods.filter((payment) => {
     if (selectedFilter === "all") return true;

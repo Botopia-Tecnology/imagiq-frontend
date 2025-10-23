@@ -73,9 +73,51 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         <div className="mb-20">
           <div className="flex items-center gap-2 mb-3">
             <h3 className="text-2xl font-bold text-black">Dispositivo</h3>
-            <span className="w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-black cursor-help text-base font-semibold">?</span>
           </div>
           <p className="text-sm text-black mb-4">Selecciona tu dispositivo</p>
+
+          {/* Información de SKU, Código y Stock */}
+          <div className="mb-4 space-y-1">
+            {(() => {
+              // Buscar el índice de variante correspondiente al color seleccionado
+              let variantSku = '';
+              let variantCodigoMarket = '';
+              let variantStockTotal = 0;
+
+              if (product.apiProduct && selectedColor) {
+                const variantIndex = product.apiProduct.color.findIndex(
+                  (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
+                );
+
+                if (variantIndex !== -1) {
+                  variantSku = product.apiProduct.sku?.[variantIndex] || '';
+                  variantCodigoMarket = product.apiProduct.codigoMarket?.[variantIndex] || '';
+                  variantStockTotal = product.apiProduct.stockTotal?.[variantIndex] || 0;
+                }
+              }
+
+              return (
+                <>
+                  {variantSku && (
+                    <p className="text-sm text-gray-600">
+                      SKU: {variantSku}
+                    </p>
+                  )}
+                  {variantCodigoMarket && (
+                    <p className="text-sm text-gray-600">
+                      Código: {variantCodigoMarket}
+                    </p>
+                  )}
+                  {variantStockTotal > 0 && (
+                    <p className="text-sm text-gray-600">
+                      Stock Total: {variantStockTotal}
+                    </p>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
           <div className="border-2 border-blue-600 rounded-md p-4 bg-blue-50/30">
             <div className="flex items-center justify-between gap-3">
               <div className="font-bold text-black text-lg flex-1 self-center">{product.name}</div>
@@ -108,7 +150,6 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           <div className="mb-6 mt-8">
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-2xl font-bold text-black">Almacenamiento</h3>
-              <span className="w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-black cursor-help text-base font-semibold">?</span>
             </div>
             <p className="text-sm text-black mb-4">Compra tu smartphone de mayor capacidad a menor precio</p>
 
@@ -169,7 +210,6 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-base font-semibold text-gray-900">Color</h3>
-              <span className="w-6 h-6 rounded-full border-2 border-black flex items-center justify-center text-black cursor-help text-base font-semibold">?</span>
             </div>
             <p className="text-xs text-gray-500 mb-3">Selecciona el color de tu dispositivo.</p>
 

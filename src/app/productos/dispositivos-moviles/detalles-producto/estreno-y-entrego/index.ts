@@ -17,17 +17,16 @@ export type {
   TradeInSelection,
 } from './types';
 
-// Export data and helper functions
-export {
-  mockTradeInData,
-  getAvailableBrands,
-  getAvailableModels,
-  getAvailableCapacities,
-} from './mockData';
-
 // Export hooks
 export { useTradeInForm } from './hooks/useTradeInForm';
+export { useTradeInFlow } from './hooks/useTradeInFlow';
+export { useTradeInData, extractCodMarca, extractCodModelo } from './hooks/useTradeInData';
 
 // Export constants
-export { CONDITION_QUESTIONS } from './constants/tradeInQuestions';
-export type { ConditionQuestionData } from './constants/tradeInQuestions';
+export {
+  INITIAL_ELIGIBILITY_QUESTIONS,
+  DAMAGE_FREE_QUESTION,
+  GOOD_CONDITION_DETAILED_QUESTION,
+  DeviceState,
+} from './constants/tradeInQuestions';
+export type { QuestionData } from './constants/tradeInQuestions';

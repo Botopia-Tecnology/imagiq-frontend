@@ -65,8 +65,6 @@ const DetailsProductSection: React.FC<{
     }
   }, [productSelection.selectedVariant, onVariantsReady]);
 
-  console.log("Selected Variant:", productSelection.selectedVariant);
-
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
   const router = useRouter();
@@ -102,6 +100,9 @@ const DetailsProductSection: React.FC<{
   >([]);
   const [galleryIndex, setGalleryIndex] = React.useState(0);
   const [isTradeInModalOpen, setIsTradeInModalOpen] = React.useState(false);
+  const [tradeInCompleted, setTradeInCompleted] = React.useState(false);
+  const [tradeInDeviceName, setTradeInDeviceName] = React.useState<string>("");
+  const [tradeInValue, setTradeInValue] = React.useState<number>(0);
 
   // Handlers
   const handleToggleFavorite = () => {
@@ -145,6 +146,20 @@ const DetailsProductSection: React.FC<{
     setIsTradeInModalOpen(false);
   };
 
+  const handleCancelTradeIn = () => {
+    // Resetear a NO cuando se cierra sin completar
+    setEstrenoYEntrego(false);
+    setTradeInCompleted(false);
+  };
+
+  const handleCompleteTradeIn = (deviceName: string, value: number) => {
+    // Guardar la información cuando se completa el proceso
+    setTradeInCompleted(true);
+    setTradeInDeviceName(deviceName);
+    setTradeInValue(value);
+    setEstrenoYEntrego(true);
+  };
+
   const hasStock = () => {
     return productSelection.selectedStockTotal !== null && productSelection.selectedStockTotal > 0;
   };
@@ -171,7 +186,6 @@ const DetailsProductSection: React.FC<{
       });
       alert("Producto añadido al carrito");
     } catch (error) {
-      console.error("Error adding to cart:", error);
       alert("Error al añadir al carrito");
     } finally {
       setLoading(false);
@@ -281,6 +295,8 @@ const DetailsProductSection: React.FC<{
       <TradeInModal
         isOpen={isTradeInModalOpen}
         onClose={handleCloseTradeInModal}
+        onCancelWithoutCompletion={handleCancelTradeIn}
+        onCompleteTradeIn={handleCompleteTradeIn}
       />
 
       <main
@@ -346,13 +362,16 @@ const DetailsProductSection: React.FC<{
                     selectedMemoriaram={productSelection.selection.selectedMemoriaram}
                     onMemoriaramChange={handleMemoriaramSelection}
                     onOpenTradeInModal={handleOpenTradeInModal}
+                    tradeInSelected={estrenoYEntrego}
+                    onTradeInChange={setEstrenoYEntrego}
+                    tradeInCompleted={tradeInCompleted}
+                    tradeInDeviceName={tradeInDeviceName}
+                    tradeInValue={tradeInValue}
                   />
 
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
                     onDeliveryChange={setDeliveryOption}
-                    estrenoYEntrego={estrenoYEntrego}
-                    onEstrenoChange={setEstrenoYEntrego}
                   />
                   <p className="text-base text-[#222] font-light leading-relaxed mb-8">
                     {product.description || ""}
@@ -417,6 +436,11 @@ const DetailsProductSection: React.FC<{
               selectedMemoriaram={productSelection.selection.selectedMemoriaram}
               onMemoriaramChange={handleMemoriaramSelection}
               onOpenTradeInModal={handleOpenTradeInModal}
+              tradeInSelected={estrenoYEntrego}
+              onTradeInChange={setEstrenoYEntrego}
+              tradeInCompleted={tradeInCompleted}
+              tradeInDeviceName={tradeInDeviceName}
+              tradeInValue={tradeInValue}
             />
           </div>
         </motion.section>

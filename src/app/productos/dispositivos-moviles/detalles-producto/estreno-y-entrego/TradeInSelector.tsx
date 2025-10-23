@@ -1,20 +1,57 @@
 import React from "react";
+import TradeInCompletedSummary from "./TradeInCompletedSummary";
 
 interface TradeInSelectorProps {
+  selectedOption?: "no" | "yes";
+  onSelectionChange?: (option: "no" | "yes") => void;
   onOpenModal: () => void;
+  isCompleted?: boolean;
+  completedDeviceName?: string;
+  completedTradeInValue?: number;
 }
 
-export default function TradeInSelector({ onOpenModal }: Readonly<TradeInSelectorProps>) {
-  const [selectedOption, setSelectedOption] = React.useState<"no" | "yes">("no");
+export default function TradeInSelector({
+  selectedOption: controlledOption,
+  onSelectionChange,
+  onOpenModal,
+  isCompleted,
+  completedDeviceName,
+  completedTradeInValue,
+}: Readonly<TradeInSelectorProps>) {
+  const [internalOption, setInternalOption] = React.useState<"no" | "yes">("no");
+
+  // Si está controlado desde afuera, usar ese valor
+  const selectedOption = controlledOption ?? internalOption;
 
   const handleYesClick = () => {
-    setSelectedOption("yes");
+    const newOption = "yes";
+    if (onSelectionChange) {
+      onSelectionChange(newOption);
+    } else {
+      setInternalOption(newOption);
+    }
     onOpenModal();
   };
 
   const handleNoClick = () => {
-    setSelectedOption("no");
+    const newOption = "no";
+    if (onSelectionChange) {
+      onSelectionChange(newOption);
+    } else {
+      setInternalOption(newOption);
+    }
   };
+
+  // Si está completado, mostrar el resumen
+  if (isCompleted && completedDeviceName && completedTradeInValue) {
+    return (
+      <TradeInCompletedSummary
+        deviceName={completedDeviceName}
+        tradeInValue={completedTradeInValue}
+        onEdit={onOpenModal}
+      />
+    );
+  }
 
   return (
     <section className="mb-8">

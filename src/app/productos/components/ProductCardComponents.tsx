@@ -23,6 +23,33 @@ export interface ColorSelectorProps {
 }
 
 /**
+ * Función auxiliar para determinar si un color es azul
+ */
+const isBlueColor = (color: ProductColor): boolean => {
+  const colorName = color.name.toLowerCase();
+  const colorLabel = color.label.toLowerCase();
+  const hex = color.hex.toLowerCase();
+
+  // Verificar por nombre/etiqueta
+  const blueKeywords = ['azul', 'blue', 'navy', 'marino', 'celeste', 'sky'];
+  const hasBlueKeyword = blueKeywords.some(keyword =>
+    colorName.includes(keyword) || colorLabel.includes(keyword)
+  );
+
+  if (hasBlueKeyword) return true;
+
+  // Verificar por código hexadecimal (rangos de azul)
+  // Extraer componentes RGB del hex
+  const r = Number.parseInt(hex.slice(1, 3), 16);
+  const g = Number.parseInt(hex.slice(3, 5), 16);
+  const b = Number.parseInt(hex.slice(5, 7), 16);
+
+  // Un color es "azul" si el componente azul es dominante
+  // y es significativamente mayor que rojo y verde
+  return b > r && b > g && b > 100;
+};
+
+/**
  * Componente para seleccionar colores del producto
  */
 export const ColorSelector = ({
@@ -33,6 +60,18 @@ export const ColorSelector = ({
   onShowMore,
 }: ColorSelectorProps) => {
   if (!colors || colors.length === 0) return null;
+
+  // Ordenar colores: azules primero, luego el resto en su orden original
+  const sortedColors = [...colors].sort((a, b) => {
+    const aIsBlue = isBlueColor(a);
+    const bIsBlue = isBlueColor(b);
+
+    // Si ambos son azules o ninguno es azul, mantener orden original
+    if (aIsBlue === bIsBlue) return 0;
+
+    // Los azules van primero (retornar negativo para a)
+    return aIsBlue ? -1 : 1;
+  });
 
   return (
     <div>
@@ -45,7 +84,7 @@ export const ColorSelector = ({
         <span className="font-medium">Color:</span> {selectedColor?.label}
       </p>
       <div className="flex gap-2 flex-wrap">
-        {colors.slice(0, 4).map((color) => (
+        {sortedColors.slice(0, 4).map((color) => (
           <button
             key={color.name}
             onClick={(e) => {
@@ -74,7 +113,7 @@ export const ColorSelector = ({
             )}
           </button>
         ))}
-        {colors.length > 4 && (
+        {sortedColors.length > 4 && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -87,7 +126,7 @@ export const ColorSelector = ({
               isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
             )}
           >
-            +{colors.length - 4}
+            +{sortedColors.length - 4}
           </button>
         )}
       </div>

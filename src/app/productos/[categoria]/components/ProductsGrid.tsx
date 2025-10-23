@@ -110,10 +110,14 @@ const CategoryProductsGrid = forwardRef<
 
     return (
       <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
-        {products.length === 0 ? (
+        {products.length === 0 && !loading ? (
           <div className="col-span-full w-full text-center py-12 text-gray-500">
             No se encontraron {categoryName.toLowerCase()} con los filtros
             seleccionados.
+          </div>
+        ) : products.length === 0 && loading ? (
+          <div className="col-span-full flex justify-center items-center min-h-[400px]">
+            <LoadingSpinner />
           </div>
         ) : (
           <>

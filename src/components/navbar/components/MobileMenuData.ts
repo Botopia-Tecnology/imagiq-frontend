@@ -4,16 +4,9 @@ export type MenuItem = {
   hasDropdown?: boolean;
 };
 
-export const MENU_ITEMS: MenuItem[] = [
-  { name: "Tienda Online", href: "/" },
-  { name: "Dispositivos móviles", href: "/productos/dispositivos-moviles", hasDropdown: true },
-  { name: "Televisores y AV", href: "/productos/televisores-y-av", hasDropdown: true },
-  { name: "Electrodomésticos", href: "/productos/Electrodomesticos", hasDropdown: true },
-  { name: "Monitores", href: "/productos/monitores", hasDropdown: true },
-  { name: "Accesorios", href: "/productos/accesorios", hasDropdown: true },
-  { name: "Soporte", href: "/soporte/inicio_de_soporte" },
-  { name: "Para Empresas", href: "/ventas-corporativas" },
-];
+// NOTA: Las categorías principales (Dispositivos móviles, Televisores y AV, Electrodomésticos, Monitores, Accesorios)
+// ahora se obtienen dinámicamente desde la API en MobileMenuContent.tsx
+// Este archivo solo mantiene datos estáticos como FEATURED_PRODUCTS
 
 export const FEATURED_PRODUCTS = [
   {

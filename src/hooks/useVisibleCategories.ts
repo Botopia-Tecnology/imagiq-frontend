@@ -139,17 +139,6 @@ export function useVisibleCategories() {
         totalProducts: 0,
         menus: [],
         orden: 0
-      },
-      {
-        name: "Accesorios",
-        href: "/productos?q=accesorios",
-        category: "accesorios",
-        categoryCode: "accesorios",
-        dropdownName: "Accesorios",
-        uuid: "accesorios",
-        totalProducts: 0,
-        menus: [],
-        orden: 999
       }
     ];
 

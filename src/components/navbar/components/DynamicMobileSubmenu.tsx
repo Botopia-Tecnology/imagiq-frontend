@@ -9,6 +9,7 @@ type Props = {
   menus: Menu[];
   categoryCode: string;
   onClose: () => void;
+  loading?: boolean;
 };
 
 /**
@@ -43,7 +44,39 @@ const menuNameToSlug = (name: string): string => {
  * Componente dinámico de submenú mobile que consume datos de la API
  * Se usa para las categorías que vienen desde el backend
  */
-export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose }) => {
+export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, loading = false }) => {
+  // Si está cargando, mostrar skeleton
+  if (loading) {
+    return (
+      <div className="p-4">
+        <div className="grid grid-cols-2 gap-x-8 mb-6">
+          {/* Columna 1 - Skeleton */}
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={`sk1-${i}`} className="flex items-center gap-2">
+                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Columna 2 - Skeleton */}
+          <div className="space-y-3">
+            {[1, 2].map((i) => (
+              <div key={`sk2-${i}`} className="flex items-center gap-2">
+                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded animate-pulse" />
+                <div className="flex-1">
+                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Filtrar solo menús activos
   const activeMenus = menus.filter(menu => menu.activo);
 

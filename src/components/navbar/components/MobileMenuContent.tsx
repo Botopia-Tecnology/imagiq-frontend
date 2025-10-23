@@ -92,14 +92,15 @@ export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRou
         <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">COMPRAR POR CATEGORÍA</h3>
         <nav>
           {loading ? (
-            // Skeleton loader mientras carga
-            <>
+            // Skeleton loader mientras carga - similar al de desktop
+            <div className="space-y-2">
               {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="py-3 px-2">
-                  <div className="h-5 w-32 bg-gray-200 rounded animate-pulse" />
+                <div key={i} className="w-full flex items-center justify-between py-3 px-2">
+                  <div className="h-5 w-40 bg-gray-200 rounded animate-pulse" />
+                  <div className="h-5 w-5 bg-gray-200 rounded animate-pulse" />
                 </div>
               ))}
-            </>
+            </div>
           ) : (
             menuItems.map((item) => (
               <button

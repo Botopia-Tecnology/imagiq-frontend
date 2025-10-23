@@ -75,6 +75,7 @@ export const MobileMenu: FC<Props> = ({
           menus={activeMenus}
           categoryCode={activeCategoryCode}
           onClose={onClose}
+          loading={loading}
         />
       );
     } else if (SUBMENU_COMPONENTS[activeSubmenu]) {

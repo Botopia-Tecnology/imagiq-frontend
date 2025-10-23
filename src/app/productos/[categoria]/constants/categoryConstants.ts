@@ -326,6 +326,17 @@ export const SECTION_TITLES: Record<Seccion, string> = {
   "smart-tv": "Smart TV",
   qled: "QLED",
   "crystal-uhd": "Crystal UHD",
+  "neo-qled": "Neo QLED",
+  oled: "OLED",
+  proyectores: "Proyectores",
+  "the-frame": "The Frame",
+  "dispositivo-audio": "Dispositivo de Audio",
+
+  // Monitores
+  corporativo: "Corporativo",
+  "essential-monitor": "Essential Monitor",
+  "odyssey-gaming": "Odyssey Gaming",
+  "viewfinity-high-resolution": "ViewFinity High Resolution",
 
   // Audio
   "barras-sonido": "Barras de Sonido",

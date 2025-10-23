@@ -24,7 +24,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  * Hook para debounce de objetos complejos
  * Compara las propiedades del objeto para evitar re-renders innecesarios
  */
-export function useDebouncedObject<T extends Record<string, any>>(
+export function useDebouncedObject<T extends Record<string, string | number | boolean | null | undefined>>(
   value: T, 
   delay: number
 ): T {

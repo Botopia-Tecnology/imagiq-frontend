@@ -8,7 +8,7 @@ interface AddressesPageProps {
   className?: string;
 }
 
-const AddressesPage: React.FC<AddressesPageProps> = ({ onBack }) => {
+const AddressesPage: React.FC<AddressesPageProps> = ({ onBack, className }) => {
   const { state } = useProfile();
   const [selectedFilter, setSelectedFilter] = useState<
     "all" | "home" | "work" | "other"
@@ -69,7 +69,9 @@ const AddressesPage: React.FC<AddressesPageProps> = ({ onBack }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      className={`min-h-screen bg-gray-50${className ? ` ${className}` : ""}`}
+    >
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-100 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">

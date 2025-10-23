@@ -3,15 +3,8 @@
 import React, { use, useEffect } from "react";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
-import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
-import {
-  ProductCardProps,
-  ProductColor,
-} from "@/app/productos/components/ProductCard";
-import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-producto/StickyPriceBar";
-import { useProductContext } from "@/features/products/ProductContext";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
 // Componentes
@@ -22,60 +15,6 @@ import TradeInSection from "../components/sections/TradeInSection";
 import { useProductLogic } from "../hooks/useProductLogic";
 import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
 import Specifications from "../../dispositivos-moviles/detalles-producto/Specifications";
-
-// Convierte ProductCardProps a formato esperado por ViewProduct
-function convertProductForView(product: ProductCardProps) {
-  const image =
-    typeof product.image === "string" ? smartphonesImg : product.image;
-  const safeValue = (
-    value: string | number | null | undefined,
-    fallback: string = "None"
-  ) => {
-    if (
-      value === null ||
-      value === undefined ||
-      value === "" ||
-      (Array.isArray(value) && value.length === 0)
-    ) {
-      return fallback;
-    }
-    return String(value);
-  };
-  return {
-    id: safeValue(product.id, "None"),
-    name: safeValue(product.name, "None"),
-    image: image,
-    price: safeValue(product.price, "None"),
-    originalPrice: product.originalPrice
-      ? safeValue(product.originalPrice)
-      : undefined,
-    discount: product.discount ? safeValue(product.discount) : undefined,
-    colors:
-      product.colors?.map((color: ProductColor) => ({
-        name: safeValue(color.name || color.label, "None"),
-        hex: safeValue(color.hex, "#808080"),
-      })) || [],
-    description: safeValue(product.description, "None"),
-    specs: [
-      { label: "Marca", value: safeValue(product.brand, "None") },
-      { label: "Modelo", value: safeValue(product.model, "None") },
-      { label: "Categoría", value: safeValue(product.category, "None") },
-      { label: "Subcategoría", value: safeValue(product.subcategory, "None") },
-      { label: "Capacidad", value: safeValue(product.capacity, "None") },
-      { label: "Stock", value: safeValue(product.stock, "None") },
-      { label: "SKU", value: safeValue(product.sku, "None") },
-    ],
-  };
-}
-
-// Mantiene la integración con el contexto de tipo de producto
-function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
-  const { setIsAppliance } = useProductContext();
-  useEffect(() => {
-    setIsAppliance(isRefrigerador);
-  }, [isRefrigerador, setIsAppliance]);
-  return null;
-}
 
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
@@ -167,36 +106,8 @@ export default function ProductViewPage({ params }) {
       </div>
     );
   }
-  const convertedProduct = convertProductForView(product);
-
-  const categoriasAppliance = [
-    "neveras",
-    "nevecon",
-    "hornos microondas",
-    "lavavajillas",
-    "lavadora",
-    "secadora",
-    "aspiradoras",
-    "aire acondicionado",
-    "hornos",
-    "microondas",
-  ];
-  const subcategoria = convertedProduct.specs
-    .find((spec) => spec.label === "Subcategoría")
-    ?.value?.toLowerCase();
-  const isRefrigerador = subcategoria
-    ? categoriasAppliance.some((cat) => subcategoria.includes(cat))
-    : false;
   return (
     <>
-      <SetApplianceFlag isRefrigerador={!!isRefrigerador} />
-      {/* Vista de producto según categoría */}
-      {isRefrigerador ? (
-        /* Para electrodomésticos solo renderizar ViewProductAppliance */
-        <ViewProductAppliance product={convertedProduct} />
-      ) : (
-        /* Para dispositivos móviles renderizar con carrusel en medio */
-        <>
           {/* StickyPriceBar exacto de la página view normal */}
           <StickyPriceBar
             deviceName={product.name}
@@ -292,8 +203,6 @@ export default function ProductViewPage({ params }) {
             onPrevImage={goToPrevImage}
             onGoToImage={goToImage}
           />
-        </>
-      )}
       {/* Estilos globales para animación de ocultar header, idénticos a view normal */}
       <style
         dangerouslySetInnerHTML={{

@@ -42,6 +42,7 @@ export default function ProductViewPage({ params }) {
     specsRef,
     premiumImages,
     productImages,
+    detailImages,
     setSelectedColor,
     setSelectedStorage,
     setCurrentImageIndex,
@@ -134,7 +135,7 @@ export default function ProductViewPage({ params }) {
       </div>
 
       {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
-      <div className="bg-white pt-8 pb-0 min-h-screen">
+      <div className="bg-white pt-8 pb-0 mb-0 min-h-screen">
         {/* Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
           {/* Columna izquierda: Carrusel - ocupa todo el ancho */}
@@ -174,7 +175,7 @@ export default function ProductViewPage({ params }) {
       </div>
 
       {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
-      <div className="bg-white pb-4 -mt-48">
+      <div className="bg-white pb-4 mt-8 lg:mt-4">
         <div className="container mx-auto px-4 md:px-6 lg:px-12">
           <div className="max-w-7xl mx-auto">
             <TradeInSection />
@@ -193,7 +194,7 @@ export default function ProductViewPage({ params }) {
       {/* Modal para fotos del color seleccionado */}
       <ImageModal
         isOpen={isModalOpen}
-        productImages={productImages}
+        productImages={detailImages}
         modalImageIndex={modalImageIndex}
         slideDirection={slideDirection}
         product={product}

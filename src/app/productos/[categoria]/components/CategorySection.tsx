@@ -16,6 +16,7 @@ import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
 import DynamicSeriesFilter from "./DynamicSeriesFilter";
+import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
 import MobileFilterSidebar from "./MobileFilterSidebar";
@@ -74,7 +75,7 @@ export default function CategorySection({
 
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const seriesConfig = getSeriesConfig(seccion);
-  const currentMenu = useCurrentMenu(categoria, seccion);
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -98,8 +99,11 @@ export default function CategorySection({
 
   return (
     <div className="px-4 md:px-10">
-      {/* Usar DynamicSeriesFilter si hay datos de la API, sino usar UniversalSeriesFilter */}
-      {currentMenu ? (
+      {/* Mostrar skeleton mientras carga el menú */}
+      {menuLoading ? (
+        <SeriesFilterSkeleton />
+      ) : currentMenu ? (
+        /* Usar DynamicSeriesFilter si hay datos de la API */
         <DynamicSeriesFilter
           menu={currentMenu}
           activeFilters={filters}
@@ -109,6 +113,7 @@ export default function CategorySection({
           title={sectionTitle}
         />
       ) : seriesConfig ? (
+        /* Fallback a UniversalSeriesFilter si no hay datos de API pero hay config estática */
         <UniversalSeriesFilter
           config={seriesConfig}
           activeFilters={filters}

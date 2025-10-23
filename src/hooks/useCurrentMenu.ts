@@ -35,10 +35,18 @@ const SECCION_TO_MENU_NAME: Record<string, string> = {
 /**
  * Hook para obtener el menú actual basado en la categoría y sección activa
  */
-export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): Menu | null {
-  const { visibleCategories } = useVisibleCategories();
+export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
+  currentMenu: Menu | null;
+  loading: boolean;
+} {
+  const { visibleCategories, loading } = useVisibleCategories();
 
   const currentMenu = useMemo(() => {
+    // Si está cargando, no intentar buscar el menú aún
+    if (loading) {
+      return null;
+    }
+
     // Obtener el código de API para la categoría
     const apiCode = CATEGORIA_TO_API_CODE[categoria];
     if (!apiCode) {
@@ -79,7 +87,7 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): Me
     });
 
     return menu || null;
-  }, [visibleCategories, categoria, seccion]);
+  }, [visibleCategories, loading, categoria, seccion]);
 
-  return currentMenu;
+  return { currentMenu, loading };
 }

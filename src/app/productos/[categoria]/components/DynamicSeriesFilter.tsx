@@ -1,5 +1,5 @@
 /**
- * 🎯 DYNAMIC SERIES FILTER - Componente dinámico que usa datos de la API
+ * DYNAMIC SERIES FILTER - Componente dinámico que usa datos de la API
  * Obtiene submenús desde la API y los muestra en el SeriesSlider
  */
 

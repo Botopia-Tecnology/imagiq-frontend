@@ -65,6 +65,20 @@ export function useCategoryProducts(
   submenuUuid?: string,
   categoryCode?: string
 ) {
+  // Inicializar con el estado de sección actual
+  const [previousSeccion, setPreviousSeccion] = useState(seccion);
+  // Estado para rastrear transiciones de sección - inicializar en true para la primera carga
+  const [isTransitioning, setIsTransitioning] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+
+  // Detectar cambio de sección
+  useEffect(() => {
+    if (previousSeccion !== seccion) {
+      setIsTransitioning(true);
+      setPreviousSeccion(seccion);
+    }
+  }, [seccion, previousSeccion]);
+
   // Memoizar los filtros de jerarquía por separado para evitar re-cálculos innecesarios
   const hierarchyFilters = useMemo(() => {
     const result: Record<string, string> = {};
@@ -132,7 +146,27 @@ export function useCategoryProducts(
     [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy]
   );
 
-  return useProducts(initialFiltersForProducts);
+  const productsResult = useProducts(initialFiltersForProducts);
+
+  // Finalizar transición cuando los productos se carguen
+  useEffect(() => {
+    if (!productsResult.loading && isTransitioning && productsResult.products && productsResult.products.length > 0) {
+      setIsTransitioning(false);
+      setHasLoadedOnce(true);
+    } else if (!productsResult.loading && isTransitioning && hasLoadedOnce) {
+      // Si ya habíamos cargado antes y ahora no hay productos, también finalizar transición
+      // (significa que es una búsqueda sin resultados legítima)
+      setIsTransitioning(false);
+    }
+  }, [productsResult.loading, isTransitioning, productsResult.products, hasLoadedOnce]);
+
+  // Retornar loading como true durante la transición
+  const finalLoading = productsResult.loading || isTransitioning;
+
+  return {
+    ...productsResult,
+    loading: finalLoading
+  };
 }
 
 export function useCategoryAnalytics(

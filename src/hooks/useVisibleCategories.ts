@@ -26,6 +26,59 @@ export function useVisibleCategories() {
       } catch (err) {
         console.error('Error fetching visible categories:', err);
         setError('Error al cargar categorías');
+
+        // Fallback: usar categorías mock si el backend no está disponible
+        const mockCategories: VisibleCategory[] = [
+          {
+            uuid: 'mock-im',
+            nombre: 'IM',
+            nombreVisible: 'Dispositivos móviles',
+            descripcion: 'Dispositivos móviles',
+            imagen: '',
+            activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            totalProducts: 0,
+            subcategorias: []
+          },
+          {
+            uuid: 'mock-av',
+            nombre: 'AV',
+            nombreVisible: 'Televisores y AV',
+            descripcion: 'Televisores y Audio/Video',
+            imagen: '',
+            activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            totalProducts: 0,
+            subcategorias: []
+          },
+          {
+            uuid: 'mock-da',
+            nombre: 'DA',
+            nombreVisible: 'Electrodomésticos',
+            descripcion: 'Electrodomésticos',
+            imagen: '',
+            activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            totalProducts: 0,
+            subcategorias: []
+          },
+          {
+            uuid: 'mock-it',
+            nombre: 'IT',
+            nombreVisible: 'Monitores',
+            descripcion: 'Monitores',
+            imagen: '',
+            activo: true,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            totalProducts: 0,
+            subcategorias: []
+          }
+        ];
+        setVisibleCategories(mockCategories);
       } finally {
         setLoading(false);
       }

@@ -1,22 +1,30 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
-import { useNavbarLogic } from "@/hooks/navbarLogic";
+import { cn } from "@/lib/utils";
+
+/**
+ *
+ * Props para UserOptionsDropdown
+ */
+interface UserOptionsDropdownProps {
+  showWhiteItems: boolean;
+}
 
 /**
  * Dropdown de usuario para el Navbar
  * Diseño limpio y simétrico con posicionamiento relativo
  */
-const UserOptionsDropdown: React.FC = () => {
+const UserOptionsDropdown: React.FC<UserOptionsDropdownProps> = ({
+  showWhiteItems,
+}) => {
   const { isAuthenticated, user, logout } = useAuthContext();
-  const navbar = useNavbarLogic();
   const router = useRouter();
 
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const primerNombre = user?.nombre?.split(" ")[0] || "";
-  const textColor = navbar?.showWhiteItems ? "text-white" : "text-black";
 
   // Manejo simple del dropdown
   const handleToggle = () => setOpen(!open);
@@ -28,7 +36,10 @@ const UserOptionsDropdown: React.FC = () => {
     if (!open) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setOpen(false);
       }
     };
@@ -54,7 +65,10 @@ const UserOptionsDropdown: React.FC = () => {
     <div className="relative" ref={dropdownRef}>
       {/* Botón del usuario */}
       <button
-        className={`flex flex-col items-center justify-center px-3 py-2 text-xs md:text-sm font-medium leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md transition-colors duration-150 ${textColor} hover:opacity-80`}
+        className={cn(
+          "flex flex-col items-center justify-center px-3 py-2 text-xs md:text-sm font-medium leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md transition-colors duration-300 hover:opacity-80",
+          showWhiteItems ? "text-white" : "text-black"
+        )}
         aria-label={`Opciones de usuario para ${primerNombre}`}
         aria-haspopup="menu"
         aria-expanded={open}
@@ -81,7 +95,9 @@ const UserOptionsDropdown: React.FC = () => {
             }}
           >
             <span className="block font-medium">Ver perfil</span>
-            <span className="block text-sm text-gray-500">Gestiona tu cuenta</span>
+            <span className="block text-sm text-gray-500">
+              Gestiona tu cuenta
+            </span>
           </button>
 
           <button
@@ -93,7 +109,9 @@ const UserOptionsDropdown: React.FC = () => {
             }}
           >
             <span className="block font-medium">Cerrar sesión</span>
-            <span className="block text-sm text-gray-500">Salir de tu cuenta</span>
+            <span className="block text-sm text-gray-500">
+              Salir de tu cuenta
+            </span>
           </button>
         </div>
       )}

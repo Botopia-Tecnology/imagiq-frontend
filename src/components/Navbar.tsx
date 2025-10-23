@@ -364,7 +364,7 @@ export default function Navbar() {
                 <Heart className={cn("w-5 h-5", getIconColorClasses())} />
               </Link>
               {navbar.isAuthenticated && navbar.user?.nombre ? (
-                <UserOptionsDropdown />
+                <UserOptionsDropdown showWhiteItems={navbar.showWhiteItems} />
               ) : (
                 <button
                   type="button"

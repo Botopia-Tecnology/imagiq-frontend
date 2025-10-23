@@ -11,6 +11,69 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSearchParams, useRouter } from "next/navigation";
 
+// Helper to safely access global window in different environments
+function getWindow(): Window | undefined {
+  try {
+    // Accessing globalThis.document may throw in some sandboxed environments; guard with try/catch
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (typeof globalThis !== "undefined" && (globalThis as any).document) {
+      return globalThis as unknown as Window;
+    }
+  } catch {
+    // ignore
+  }
+  return undefined;
+}
+
+// Extracted helpers to reduce cognitive complexity of the component
+function getActiveCategoryId(
+  categories: Category[],
+  sectionParam: string | null | undefined,
+  hash: string
+): string {
+  if (sectionParam) {
+    const directMatch = categories.find((cat) => cat.id === sectionParam);
+    if (directMatch) return directMatch.id;
+
+    const foundCategory = categories.find((cat) =>
+      cat.href.includes(`seccion=${sectionParam}`)
+    );
+    if (foundCategory) return foundCategory.id;
+  }
+
+  if (hash) {
+    const foundCategory = categories.find(
+      (cat) => cat.href.startsWith("#") && cat.href === hash
+    );
+    if (foundCategory) return foundCategory.id;
+  }
+
+  return categories[0]?.id ?? "";
+}
+
+function computeCircleSize(condensed: boolean, isMobile: boolean) {
+  if (condensed) {
+    return isMobile ? "" : "w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16";
+  }
+  return isMobile
+    ? ""
+    : "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36";
+}
+
+function computeImgSize(
+  condensed: boolean,
+  isMobile: boolean,
+  itemsPerView: number
+) {
+  if (condensed) {
+    if (isMobile) return 64;
+    return itemsPerView <= 2 ? 40 : 60;
+  }
+
+  if (isMobile) return 88;
+  return itemsPerView <= 2 ? 90 : 150;
+}
+
 interface Category {
   id: string;
   name: string;
@@ -45,42 +108,17 @@ export default function CategorySlider({
   const searchParams = useSearchParams();
   const router = useRouter();
   const sectionParam = searchParams?.get("seccion");
-  const hash = typeof window !== "undefined" ? window.location.hash : "";
+  const hash = getWindow()?.location?.hash ?? "";
 
-  const activeCategoryId = useMemo(() => {
-    // Si hay un parámetro de sección en la URL, buscar la categoría correspondiente
-    if (sectionParam) {
-      // Buscar por ID directamente primero (más eficiente)
-      const directMatch = categories.find((cat) => cat.id === sectionParam);
-      if (directMatch) {
-        return directMatch.id;
-      }
-
-      // Si no hay match directo, buscar en el href
-      const foundCategory = categories.find((cat) =>
-        cat.href.includes(`seccion=${sectionParam}`)
-      );
-      if (foundCategory) {
-        return foundCategory.id;
-      }
-    }
-
-    // Fallback para URLs con hash
-    if (hash) {
-      const foundCategory = categories.find(
-        (cat) => cat.href.startsWith("#") && cat.href === hash
-      );
-      if (foundCategory) return foundCategory.id;
-    }
-
-    // Default: primera categoría
-    return categories[0]?.id || "";
-  }, [sectionParam, hash, categories]);
+  const activeCategoryId = useMemo(
+    () => getActiveCategoryId(categories, sectionParam, hash),
+    [categories, sectionParam, hash]
+  );
 
   // Responsive items per view
   useEffect(() => {
     const update = () => {
-      const w = window.innerWidth;
+      const w = getWindow()?.innerWidth ?? 1024;
       if (w < 640) {
         setItemsPerView(1);
         setIsDesktop(false);
@@ -96,8 +134,9 @@ export default function CategorySlider({
       }
     };
     update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
+    getWindow()?.addEventListener("resize", update as EventListener);
+    return () =>
+      getWindow()?.removeEventListener("resize", update as EventListener);
   }, []);
 
   const scrollByPage = useCallback((direction: 1 | -1) => {
@@ -124,7 +163,7 @@ export default function CategorySlider({
 
     const ro = new ResizeObserver(check);
     ro.observe(el);
-    window.addEventListener("resize", check);
+    getWindow()?.addEventListener("resize", check as EventListener);
 
     const updateScrollState = () => {
       setCanScrollPrev(el.scrollLeft > 0);
@@ -144,14 +183,14 @@ export default function CategorySlider({
     };
 
     el.addEventListener("scroll", updateScrollState, { passive: true });
-    window.addEventListener("keydown", onKey);
+    getWindow()?.addEventListener("keydown", onKey as EventListener);
     updateScrollState();
 
     return () => {
       ro.disconnect();
-      window.removeEventListener("resize", check);
+      getWindow()?.removeEventListener("resize", check as EventListener);
       el.removeEventListener("scroll", updateScrollState as EventListener);
-      window.removeEventListener("keydown", onKey);
+      getWindow()?.removeEventListener("keydown", onKey as EventListener);
     };
   }, [categories, itemsPerView, isDesktop, scrollPrev, scrollNext]);
 
@@ -208,26 +247,10 @@ export default function CategorySlider({
   const isMobile = !isDesktop;
 
   // 1) Círculo (más grande en móvil, y más chico si "condensed")
-  const circleSize = condensed
-    ? isMobile
-      ? ""
-      : "w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16"
-    : isMobile
-    ? ""
-    : "w-20 h-20 sm:w-24 sm:h-24 md:w-32 md:h-32 lg:w-36 lg:h-36";
+  const circleSize = computeCircleSize(condensed, isMobile);
 
   // 2) Imagen interna (subo el tamaño base en móvil)
-  const imgSize = condensed
-    ? isMobile
-      ? 64
-      : itemsPerView <= 2
-      ? 40
-      : 60
-    : isMobile
-    ? 88
-    : itemsPerView <= 2
-    ? 90
-    : 150;
+  const imgSize = computeImgSize(condensed, isMobile, itemsPerView);
 
   // 3) Activo: se encoge con scroll; crece en vista normal
   const activeScale = condensed ? "scale-75" : "scale-[100%]";

@@ -13,12 +13,22 @@ import type { CartItem } from '@/types/product';
 // ====================================
 
 // Extend existing User type instead of creating new one
+// Matches Usuario interface from backend auth-ms
 export interface ProfileUser extends BaseUser {
   avatar?: string;
   loyaltyPoints?: number;
   memberSince?: Date;
   // Computed property for full name
   fullName?: string;
+  // Backend specific fields
+  email_verificado?: boolean;
+  activo?: boolean;
+  bloqueado?: boolean;
+  fecha_creacion?: Date;
+  ultimo_login?: Date | null;
+  tipo_documento?: string;
+  codigo_pais?: string;
+  fecha_nacimiento?: Date;
 }
 
 // Extend existing UserAddress type
@@ -54,11 +64,19 @@ export type OrderStatus =
   | 'cancelled';
 
 // Simplified product for order items (to avoid complex Product type requirements)
+export interface ProductImage {
+  id: string;
+  url: string;
+  alt?: string;
+}
+
 export interface SimplifiedProduct {
   id: string;
   name: string;
-  images: unknown[];
-  [key: string]: unknown;
+  images: ProductImage[];
+  price?: number;
+  category?: string;
+  brand?: string;
 }
 
 // Extend existing CartItem instead of creating OrderItem
@@ -109,6 +127,33 @@ export interface LoyaltyProgram {
 }
 
 // ====================================
+// Invoice/Billing Types
+// ====================================
+
+export type InvoiceStatus = 'paid' | 'pending' | 'overdue' | 'cancelled';
+
+export interface Invoice {
+  id: string;
+  invoiceNumber: string;
+  orderId: string;
+  orderNumber: string;
+  status: InvoiceStatus;
+  issueDate: Date;
+  dueDate?: Date;
+  paidDate?: Date;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  currency: string;
+  items: OrderItem[];
+  billingAddress: ProfileAddress;
+  paymentMethod?: PaymentMethod;
+  downloadUrl?: string;
+  notes?: string;
+}
+
+// ====================================
 // Profile State Types (using simplified preferences)
 // ====================================
 
@@ -136,6 +181,7 @@ export interface ProfileState {
   paymentMethods: PaymentMethod[];
   activeOrders: Order[];
   recentOrders: Order[];
+  invoices: Invoice[];
   credits: Credits;
   coupons: Coupon[];
   loyaltyProgram: LoyaltyProgram | null;
@@ -145,6 +191,7 @@ export interface ProfileState {
     orders: boolean;
     addresses: boolean;
     paymentMethods: boolean;
+    invoices: boolean;
   };
   error: string | null;
 }

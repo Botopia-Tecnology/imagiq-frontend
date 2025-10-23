@@ -132,6 +132,8 @@ export const useProducts = (
       // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
       if (filters.category) params.categoria = filters.category;
       if (filters.subcategory) params.subcategoria = filters.subcategory;
+      if (filters.menuUuid) params.menuUuid = filters.menuUuid;
+      if (filters.submenuUuid) params.submenuUuid = filters.submenuUuid;
 
       // Manejar filtros de precio usando precioMin/precioMax
       if (filters.precioMin !== undefined) {

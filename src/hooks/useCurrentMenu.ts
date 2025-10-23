@@ -13,18 +13,18 @@ const CATEGORIA_TO_API_CODE: Record<CategoriaParams, string> = {
   'ofertas': 'ofertas'
 };
 
-// Mapeo de secciones a nombres de menú esperados
+// Mapeo de secciones a nombres de menú esperados (basado en los datos reales de la API)
 const SECCION_TO_MENU_NAME: Record<string, string> = {
-  'smartphones': 'Smartphones',
-  'tabletas': 'Tabletas',
-  'relojes': 'Relojes',
-  'buds': 'Buds',
-  'accesorios': 'Accesorios',
-  'refrigeradores': 'Refrigeradores',
-  'lavadoras': 'Lavadoras',
+  'smartphones': 'Smartphones Galaxy',
+  'tabletas': 'Galaxy Tab',
+  'relojes': 'Galaxy Watch',
+  'buds': 'Galaxy Buds',
+  'accesorios': 'Accesorios para Galaxy',
+  'refrigeradores': 'Neveras',
+  'lavadoras': 'Lavadoras y Secadoras',
   'lavavajillas': 'Lavavajillas',
   'aire-acondicionado': 'Aire Acondicionado',
-  'microondas': 'Microondas',
+  'microondas': 'Hornos Microondas',
   'aspiradoras': 'Aspiradoras',
   'hornos': 'Hornos',
   'smart-tv': 'Smart TV',
@@ -68,6 +68,19 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
     // Obtener el nombre esperado del menú para la sección
     const expectedMenuName = SECCION_TO_MENU_NAME[seccion];
 
+    // Debug: log para verificar el mapeo
+    console.log('🔍 Debug useCurrentMenu:', {
+      categoria,
+      seccion,
+      expectedMenuName,
+      availableMenus: category.menus.map(m => ({
+        uuid: m.uuid,
+        nombre: m.nombre,
+        nombreVisible: m.nombreVisible,
+        activo: m.activo
+      }))
+    });
+
     // Buscar el menú que coincida con la sección
     const menu = category.menus.find(m => {
       if (!m.activo) return false;
@@ -77,14 +90,23 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
 
       // Match exacto con el nombre esperado
       if (expectedMenuName && menuName === expectedMenuName.toLowerCase()) {
+        console.log('✅ Match exacto encontrado:', { menuName, expectedMenuName });
         return true;
       }
 
       // Match por inclusión
-      return menuName.includes(sectionName) ||
+      const inclusionMatch = menuName.includes(sectionName) ||
              sectionName.includes(menuName) ||
              m.uuid === seccion;
+      
+      if (inclusionMatch) {
+        console.log('✅ Match por inclusión encontrado:', { menuName, sectionName });
+      }
+
+      return inclusionMatch;
     });
+
+    console.log('🔍 Menu encontrado:', menu ? { uuid: menu.uuid, nombre: menu.nombreVisible } : null);
 
     return menu || null;
   }, [visibleCategories, loading, categoria, seccion]);

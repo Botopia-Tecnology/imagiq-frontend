@@ -77,10 +77,11 @@ export const CATEGORY_MAPPING: Record<
 
 /**
  * Obtiene los filtros base para una categoría específica
+ * NOTA: Ya NO usamos subcategory, ahora usamos menuUuid y submenuUuid
  */
 export function getCategoryBaseFilters(
   categoria: CategoriaParams,
-  seccion?: string
+  _seccion?: string // Parámetro mantenido por compatibilidad pero ya no se usa
 ): ApiFilters {
   const categoryConfig = CATEGORY_MAPPING[categoria];
 
@@ -90,21 +91,8 @@ export function getCategoryBaseFilters(
 
   const baseFilters: ApiFilters = {};
 
-  // Solo agregar filtros si hay una sección específica
-  if (seccion && seccion in categoryConfig.subcategorias) {
-    const mappedValue = categoryConfig.subcategorias[seccion];
-
-    // Caso especial para buds: usar parámetro nombre en lugar de subcategoria
-    if (seccion === "buds") {
-      baseFilters.name = mappedValue;
-    } else {
-      baseFilters.subcategory = mappedValue;
-      // Caso especial para relojes: agregar también filtro por nombre "watch"
-      if (seccion === "relojes") {
-        baseFilters.name = "watch";
-      }
-    }
-  }
+  // Ya NO agregamos subcategory - usamos menuUuid y submenuUuid en su lugar
+  // Los filtros específicos se manejan ahora a través de la jerarquía de categoría/menú/submenú
 
   return baseFilters;
 }

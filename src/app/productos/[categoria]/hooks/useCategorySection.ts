@@ -59,13 +59,45 @@ export function useCategoryProducts(
   filters: FilterState,
   currentPage: number,
   itemsPerPage: number,
-  sortBy: string
+  sortBy: string,
+  categoryUuid?: string,
+  menuUuid?: string,
+  submenuUuid?: string,
+  categoryCode?: string
 ) {
   const apiFilters = useMemo(() => {
     const baseFilters = getCategoryBaseFilters(categoria, seccion);
     const appliedFilters = convertFiltersToApi(categoria, filters, seccion);
-    return { ...baseFilters, ...appliedFilters };
-  }, [categoria, seccion, filters]);
+
+    // Agregar filtros de categoría/menú/submenú si existen usando los nombres correctos
+    const hierarchyFilters: Record<string, string> = {};
+
+    // Usar código de categoría (IM, DA, IT, AV)
+    if (categoryCode) {
+      hierarchyFilters.categoria = categoryCode;
+    }
+
+    if (menuUuid) {
+      hierarchyFilters.menuUuid = menuUuid;
+    }
+
+    if (submenuUuid) {
+      hierarchyFilters.submenuUuid = submenuUuid;
+    }
+
+    // Debug: log para verificar que el categoryCode y menuUuid se están pasando
+    console.log('🔍 Debug useCategoryProducts:', {
+      categoria,
+      seccion,
+      categoryCode,
+      menuUuid,
+      submenuUuid,
+      hierarchyFilters,
+      finalFilters: { ...baseFilters, ...appliedFilters, ...hierarchyFilters }
+    });
+
+    return { ...baseFilters, ...appliedFilters, ...hierarchyFilters };
+  }, [categoria, seccion, filters, categoryCode, menuUuid, submenuUuid]);
 
   const initialFiltersForProducts = useMemo(
     () => applySortToFilters({ ...apiFilters, page: currentPage, limit: itemsPerPage }, sortBy),

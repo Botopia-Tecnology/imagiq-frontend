@@ -25,6 +25,7 @@ import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
 import { getSeriesConfig } from "../config/series-configs";
 import { useCurrentMenu } from "@/hooks/useCurrentMenu";
+import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -62,20 +63,25 @@ export default function CategorySection({
   const productsRef = useRef<HTMLDivElement>(null);
   const device = useDeviceType();
 
+  const filterConfig = getCategoryFilterConfig(categoria, seccion);
+  const seriesConfig = getSeriesConfig(seccion);
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
+  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoria, seccion);
+
   const { products, loading, error, totalItems, totalPages, refreshProducts } = useCategoryProducts(
     categoria,
     seccion,
     filters,
     currentPage,
     itemsPerPage,
-    sortBy
+    sortBy,
+    categoryUuid,
+    menuUuid,
+    submenuUuid,
+    categoryCode
   );
 
   useCategoryAnalytics(categoria, seccion, totalItems);
-
-  const filterConfig = getCategoryFilterConfig(categoria, seccion);
-  const seriesConfig = getSeriesConfig(seccion);
-  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
 
   useEffect(() => {
     setCurrentPage(1);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { categoriesEndpoints, type VisibleCategoryComplete } from '@/lib/api';
+import { categoriesEndpoints, type VisibleCategoryComplete, type Menu, type Submenu } from '@/lib/api';
 
 export function useVisibleCategories() {
   const [visibleCategories, setVisibleCategories] = useState<VisibleCategoryComplete[]>([]);
@@ -47,11 +47,11 @@ export function useVisibleCategories() {
   };
 
   // Función para calcular productos de un submenu
-  const calculateSubmenuProducts = (submenu: any) => submenu.totalProducts || 0;
+  const calculateSubmenuProducts = (submenu: Submenu) => submenu.totalProducts || 0;
 
   // Función para calcular productos de un menu
-  const calculateMenuProducts = (menu: any) => 
-    (menu.submenus || []).reduce((total: number, submenu: any) => 
+  const calculateMenuProducts = (menu: Menu) => 
+    (menu.submenus || []).reduce((total: number, submenu: Submenu) => 
       total + calculateSubmenuProducts(submenu), 0);
 
   // Función para obtener las rutas del navbar basadas en las categorías visibles

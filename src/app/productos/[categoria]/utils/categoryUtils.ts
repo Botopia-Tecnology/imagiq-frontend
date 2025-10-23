@@ -49,6 +49,14 @@ export const CATEGORY_MAPPING: Record<
       "crystal-uhd": "Televisores",
     },
   },
+  monitores: {
+    apiCategory: "TV & Audio",
+    subcategorias: {
+      "smart-tv": "Monitores",
+      qled: "Monitores",
+      "crystal-uhd": "Monitores",
+    },
+  },
   audio: {
     apiCategory: "TV & Audio",
     subcategorias: {
@@ -133,6 +141,7 @@ export function convertFiltersToApi(
       apiFilters = applyMovilesFilters(apiFilters, filters);
       break;
     case "televisores":
+    case "monitores":
     case "audio":
       apiFilters = applyTvsFilters(apiFilters, filters);
       break;

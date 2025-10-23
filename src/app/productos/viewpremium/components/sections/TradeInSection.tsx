@@ -18,15 +18,14 @@ const TradeInSection: React.FC = () => {
           <p className="text-base text-gray-900 mb-6">
             Selecciona Estreno y Entrego y recibe una oferta por tu dispositivo antiguo
           </p>
-          
+
           {/* Option cards */}
           <div className="flex flex-col md:flex-row gap-3 md:gap-4 mb-4">
-            <div 
-              className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors ${
-                selectedOption === 'yes' 
-                  ? 'border-blue-500' 
-                  : 'border-gray-300 hover:border-blue-500'
-              }`}
+            <div
+              className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors ${selectedOption === 'yes'
+                ? 'border-blue-500'
+                : 'border-gray-300 hover:border-blue-500'
+                }`}
               onClick={() => setSelectedOption('yes')}
             >
               <div className="flex items-start justify-between">
@@ -43,12 +42,11 @@ const TradeInSection: React.FC = () => {
               Descuento inmediato seleccionando Estreno y Entrego. Aplican T&C
             </p>
 
-            <div 
-              className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors flex items-center ${
-                selectedOption === 'no' 
-                  ? 'border-blue-500' 
-                  : 'border-gray-300 hover:border-blue-500'
-              }`}
+            <div
+              className={`flex-1 border rounded-lg p-3 md:p-4 cursor-pointer transition-colors flex items-center ${selectedOption === 'no'
+                ? 'border-blue-500'
+                : 'border-gray-300 hover:border-blue-500'
+                }`}
               onClick={() => setSelectedOption('no')}
             >
               <span className="font-semibold text-gray-900">No, gracias</span>
@@ -74,9 +72,9 @@ const TradeInSection: React.FC = () => {
             <div className="flex items-center">
               <div className="w-20 h-20 flex-shrink-0 mr-4 rounded-lg overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056386/Trade-in_DM_Buying_How-to_Buy_page_Thumbnail_eulzhe.webp" 
-                  alt="Trade-in video thumbnail" 
+                <img
+                  src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056386/Trade-in_DM_Buying_How-to_Buy_page_Thumbnail_eulzhe.webp"
+                  alt="Trade-in video thumbnail"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -92,9 +90,9 @@ const TradeInSection: React.FC = () => {
             <div className="flex items-center">
               <div className="w-20 h-20 flex-shrink-0 mr-4 rounded-lg overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056415/smart_switch_PC_mrtvom.webp" 
-                  alt="Smart Switch iOS to Galaxy" 
+                <img
+                  src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056415/smart_switch_PC_mrtvom.webp"
+                  alt="Smart Switch iOS to Galaxy"
                   className="w-full h-full object-cover"
                 />
               </div>
@@ -107,16 +105,11 @@ const TradeInSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Separator line */}
-        <div className="border-t border-gray-200 my-8"></div>
-
-        {/* Beneficios section */}
-        <div className="mb-8">
+        {/* Beneficios section - COMENTADO TEMPORALMENTE */}
+        {/* <div className="mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-left">Beneficios</h2>
           
-          {/* Benefits grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {/* Estreno y Entrego */}
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex-1 mr-4">
@@ -125,7 +118,6 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm">Selecciona Estreno y Entrego y obtén hasta $700.000 de descuento. Aplican TyC</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056515/offers_tradeIn_c022s6.webp" 
                     alt="Estreno y Entrego" 
@@ -135,7 +127,6 @@ const TradeInSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Cuotas sin interés */}
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex-1 mr-4">
@@ -144,9 +135,8 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm">Beneficio de lanzamiento</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
-                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761059888/01_ICONOS_PARADIGMA_0_INTERES_1_z6a2tz.webp" 
+                    src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056515/offers_tradeIn_c022s6.webp" 
                     alt="Cuotas sin interés" 
                     className="w-full h-full object-cover"
                   />
@@ -154,7 +144,6 @@ const TradeInSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Puntos Rewards */}
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex-1 mr-4">
@@ -163,7 +152,6 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm">¡Usa tus Puntos Rewards como parte de pago multiplicados X10!</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056582/offers_rewards_v2_uurjxh.webp" 
                     alt="Puntos Rewards" 
@@ -173,7 +161,6 @@ const TradeInSection: React.FC = () => {
               </div>
             </div>
 
-            {/* Google AI Pro */}
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex-1 mr-4">
@@ -182,7 +169,6 @@ const TradeInSection: React.FC = () => {
                   <p className="text-black text-sm cursor-pointer">Ver más</p>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056609/Q7_Gifts_and_Savings_Thumbnail_Google_ai_pro_PC_80x80_w5zlxv.webp" 
                     alt="Google AI Pro" 
@@ -193,7 +179,6 @@ const TradeInSection: React.FC = () => {
             </div>
           </div>
 
-          {/* Fifth card - same width as others */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white p-4 rounded-lg border border-gray-200">
               <div className="flex items-center justify-between">
@@ -207,7 +192,6 @@ const TradeInSection: React.FC = () => {
                   </div>
                 </div>
                 <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img 
                     src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1761056719/COMPRA_REWARDS_MULTIPLICA_X10_2670X2670_cbcgej.webp" 
                     alt="Puntos Rewards X10" 
@@ -217,15 +201,15 @@ const TradeInSection: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
 
         {/* Separator line */}
-        <div className="border-t border-gray-200 my-8"></div>
+        <div className="border-t border-gray-200 my-6"></div>
 
         {/* Compra en línea. Ahorra más. */}
         <div className="bg-white py-8 mb-8">
           <h2 className="text-3xl font-bold text-gray-900 mb-6 text-left">Compra en línea. Ahorra más.</h2>
-          
+
           {/* Benefits - horizontal scroll on mobile, grid on desktop */}
           <div className="overflow-x-auto md:overflow-visible -mx-4 px-4 md:mx-0 md:px-0">
             <div className="flex md:grid md:grid-cols-3 gap-6 md:max-w-4xl min-w-max md:min-w-0">
@@ -252,6 +236,7 @@ const TradeInSection: React.FC = () => {
           </div>
         </div>
       </div>
+
     </div>
   );
 };

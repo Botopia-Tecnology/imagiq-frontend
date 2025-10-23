@@ -108,101 +108,101 @@ export default function ProductViewPage({ params }) {
   }
   return (
     <>
-          {/* StickyPriceBar exacto de la página view normal */}
-          <StickyPriceBar
-            deviceName={product.name}
-            basePrice={(() => {
-              const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-              const priceStr = selectedCapacity?.price || product.price || "0";
-              return parseInt(priceStr.replace(/[^\d]/g, ''));
-            })()}
-            selectedStorage={(selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB')}
-            selectedColor={selectedColor || undefined}
-            hasAddiFinancing={true}
-            isVisible={showStickyBar}
-          />
+      {/* StickyPriceBar exacto de la página view normal */}
+      <StickyPriceBar
+        deviceName={product.name}
+        basePrice={(() => {
+          const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
+          const priceStr = selectedCapacity?.price || product.price || "0";
+          return parseInt(priceStr.replace(/[^\d]/g, ''));
+        })()}
+        selectedStorage={(selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB')}
+        selectedColor={selectedColor || undefined}
+        hasAddiFinancing={true}
+        isVisible={showStickyBar}
+      />
 
-          {/* Breadcrumb */}
-          <div className="bg-white border-b border-gray-200">
-            <div className="container mx-auto px-4 md:px-6 lg:px-12 py-4">
-              <div className="max-w-7xl mx-auto">
-                <p className="text-sm text-gray-600">
-                  Galaxy Z / Detalles del producto
-                </p>
-              </div>
+      {/* Breadcrumb */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12 py-4">
+          <div className="max-w-7xl mx-auto">
+            <p className="text-sm text-gray-600">
+              Galaxy Z / Detalles del producto
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
+      <div className="bg-white pt-8 pb-0 min-h-screen">
+        {/* Grid principal */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
+          {/* Columna izquierda: Carrusel - ocupa todo el ancho */}
+          <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden">
+            <ProductCarousel
+              ref={carouselRef}
+              product={product}
+              selectedColor={selectedColor}
+              currentImageIndex={currentImageIndex}
+              setCurrentImageIndex={setCurrentImageIndex}
+              showStickyCarousel={showStickyCarousel}
+              premiumImages={premiumImages}
+              productImages={productImages}
+              onOpenModal={openModal}
+              setSelectedColor={setSelectedColor}
+            />
+          </div>
+
+          {/* Columna derecha: Información del producto con márgenes normales - SCROLLEABLE */}
+          <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-0 lg:mt-0 lg:min-h-[200vh]">
+            <div className="max-w-7xl mx-auto">
+              <ProductInfo
+                ref={specsRef}
+                product={product}
+                selectedColor={selectedColor}
+                selectedStorage={selectedStorage}
+                setSelectedColor={setSelectedColor}
+                setSelectedStorage={setSelectedStorage}
+                setCurrentImageIndex={setCurrentImageIndex}
+                currentImageIndex={currentImageIndex}
+                productImages={productImages}
+                onOpenModal={openModal}
+              />
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
-          <div className="bg-white py-8 min-h-screen">
-            {/* Grid principal */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
-              {/* Columna izquierda: Carrusel - ocupa todo el ancho */}
-              <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden">
-                <ProductCarousel
-                  ref={carouselRef}
-                  product={product}
-                  selectedColor={selectedColor}
-                  currentImageIndex={currentImageIndex}
-                  setCurrentImageIndex={setCurrentImageIndex}
-                  showStickyCarousel={showStickyCarousel}
-                  premiumImages={premiumImages}
-                  productImages={productImages}
-                  onOpenModal={openModal}
-                  setSelectedColor={setSelectedColor}
-                />
-              </div>
-
-              {/* Columna derecha: Información del producto con márgenes normales - SCROLLEABLE */}
-              <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-0 lg:mt-0 lg:min-h-[200vh]">
-                <div className="max-w-7xl mx-auto">
-                  <ProductInfo
-                    ref={specsRef}
-                    product={product}
-                    selectedColor={selectedColor}
-                    selectedStorage={selectedStorage}
-                    setSelectedColor={setSelectedColor}
-                    setSelectedStorage={setSelectedStorage}
-                    setCurrentImageIndex={setCurrentImageIndex}
-                    currentImageIndex={currentImageIndex}
-                    productImages={productImages}
-                    onOpenModal={openModal}
-                  />
-                </div>
-              </div>
-            </div>
+      {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
+      <div className="bg-white pb-4 -mt-48">
+        <div className="container mx-auto px-4 md:px-6 lg:px-12">
+          <div className="max-w-7xl mx-auto">
+            <TradeInSection />
           </div>
+        </div>
+      </div>
 
-          {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
-          <div className="bg-white pb-8 mt-0 md:mt-8 lg:-mt-72">
-            <div className="container mx-auto px-4 md:px-6 lg:px-12">
-              <div className="max-w-7xl mx-auto">
-                <TradeInSection />
-              </div>
-            </div>
-          </div>
+      {/* Beneficios imagiq - Banner que ocupa todo el ancho */}
+      <BenefitsSection />
 
-          {/* Beneficios imagia */}
-          <BenefitsSection />
+      {/* Especificaciones y Flix Media */}
+      <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
+        <Specifications product={product} flix={product} />
+      </div>
 
-          {/* Especificaciones y Flix Media */}
-          <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
-            <Specifications product={product} flix={product} />
-          </div>
-
-          {/* Modal para fotos del color seleccionado */}
-          <ImageModal
-            isOpen={isModalOpen}
-            productImages={productImages}
-            modalImageIndex={modalImageIndex}
-            slideDirection={slideDirection}
-            product={product}
-            selectedColor={selectedColor}
-            onClose={closeModal}
-            onNextImage={goToNextImage}
-            onPrevImage={goToPrevImage}
-            onGoToImage={goToImage}
-          />
+      {/* Modal para fotos del color seleccionado */}
+      <ImageModal
+        isOpen={isModalOpen}
+        productImages={productImages}
+        modalImageIndex={modalImageIndex}
+        slideDirection={slideDirection}
+        product={product}
+        selectedColor={selectedColor}
+        onClose={closeModal}
+        onNextImage={goToNextImage}
+        onPrevImage={goToPrevImage}
+        onGoToImage={goToImage}
+      />
       {/* Estilos globales para animación de ocultar header, idénticos a view normal */}
       <style
         dangerouslySetInnerHTML={{

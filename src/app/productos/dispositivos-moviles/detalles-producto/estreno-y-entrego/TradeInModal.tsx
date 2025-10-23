@@ -6,46 +6,49 @@ import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import ProgressBar from "./ProgressBar";
 import ModalFooter from "./ModalFooter";
-import DeviceCategorySelector from "./DeviceCategorySelector";
-import BrandDropdown from "./BrandDropdown";
-import SimpleDropdown from "./SimpleDropdown";
-import TradeInInformation from "./TradeInInformation";
-import ConditionQuestion from "./ConditionQuestion";
-import IMEIInputSection from "./IMEIInputSection";
+import ModalStepContent from "./ModalStepContent";
 import { useTradeInForm } from "./hooks/useTradeInForm";
-import { CONDITION_QUESTIONS } from "./constants/tradeInQuestions";
-import type { TradeInData } from "./types";
-import { mockTradeInData } from "./mockData";
+import { useTradeInFlow } from "./hooks/useTradeInFlow";
+import { useTradeInData } from "./hooks/useTradeInData";
+import { useTradeInValue } from "./hooks/useTradeInValue";
+import { useTradeInHandlers } from "./hooks/useTradeInHandlers";
+import { isStepValid } from "./utils/stepValidation";
 
 interface TradeInModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onContinue?: () => void;
-  tradeInData?: TradeInData;
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly onContinue?: () => void;
+  readonly onCancelWithoutCompletion?: () => void;
+  readonly onCompleteTradeIn?: (deviceName: string, value: number) => void;
 }
 
 export default function TradeInModal({
   isOpen,
   onClose,
   onContinue,
-  tradeInData = mockTradeInData,
+  onCancelWithoutCompletion,
+  onCompleteTradeIn,
 }: TradeInModalProps) {
   const [mounted, setMounted] = useState(false);
 
-  // Custom hook for all form logic
+  const { tradeInData, loading: loadingData } = useTradeInData();
+
+  // Datos por defecto mientras se carga la API
+  const safeTradeInData = tradeInData || {
+    categories: [],
+    brands: [],
+    models: [],
+    capacities: [],
+  };
+
   const {
-    currentStep,
     formState,
     dropdownState,
-    conditionAnswers,
     imeiInput,
     isStep1Valid,
-    isStep2Valid,
-    isStep3Valid,
     availableBrands,
     availableModels,
     availableCapacities,
-    setCurrentStep,
     setSelectedCategory,
     setSelectedBrand,
     setSelectedModel,
@@ -54,83 +57,62 @@ export default function TradeInModal({
     setIsModelDropdownOpen,
     setIsCapacityDropdownOpen,
     setImeiInput,
-    handleConditionAnswer,
     resetForm,
-  } = useTradeInForm({ tradeInData, isOpen });
+  } = useTradeInForm({ tradeInData: safeTradeInData, isOpen });
+
+  const {
+    flowState,
+    setCurrentStep,
+    handleInitialAnswer,
+    handleDamageFreeAnswer,
+    handleGoodConditionAnswer,
+    canContinueFromStep2,
+    resetFlow,
+  } = useTradeInFlow();
+
+  const { tradeInValue, calculatingValue } = useTradeInValue({
+    currentStep: flowState.currentStep,
+    selectedBrand: formState.selectedBrand,
+    selectedCapacity: formState.selectedCapacity,
+    deviceState: flowState.deviceState,
+  });
+
+  const { handleClose, getStepTitle, getContinueHandler, getBackHandler } =
+    useTradeInHandlers({
+      setCurrentStep,
+      canContinueFromStep2,
+      resetForm,
+      resetFlow,
+      onClose,
+      onContinue,
+      onCancelWithoutCompletion,
+      onCompleteTradeIn,
+      tradeInValue,
+      imeiInput,
+      selectedBrand: formState.selectedBrand,
+      selectedModel: formState.selectedModel,
+      selectedCapacity: formState.selectedCapacity,
+      categories: safeTradeInData.categories,
+      selectedCategory: formState.selectedCategory,
+      deviceState: flowState.deviceState,
+    });
 
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
 
-  const handleClose = () => {
-    resetForm();
-    onClose();
-  };
-
-  const handleContinueStep1 = () => setCurrentStep(2);
-
-  const handleContinueStep2 = () => {
-    if (isStep2Valid) {
-      setCurrentStep(3);
-    } else {
-      alert("Para continuar con el trade-in, tu dispositivo debe cumplir con todas las condiciones.");
-    }
-  };
-
-  const handleBackToStep1 = () => setCurrentStep(1);
-  const handleBackToStep2 = () => setCurrentStep(2);
-
-  const handleFinalContinue = () => {
-    const tradeInSelection = {
-      category: tradeInData.categories.find((c) => c.id === formState.selectedCategory),
-      brand: formState.selectedBrand,
-      model: formState.selectedModel,
-      capacity: formState.selectedCapacity,
-      imei: imeiInput,
-    };
-
-    console.log("Trade-in selection:", tradeInSelection);
-    onContinue?.();
-    handleClose();
-  };
-
-  const getStepTitle = () => {
-    switch (currentStep) {
-      case 1:
-        return {
-          title: "Vamos a empezar:",
-          subtitle: "¿Cuál dispositivo deseas entregar?",
-        };
-      case 2:
-        return {
-          title: "Último paso",
-          subtitle: "¿Tu dispositivo está en buenas condiciones?",
-        };
-      case 3:
-        return {
-          title: "Casi listo, por favor ingresa tu número de IMEI",
-          subtitle: null,
-        };
-    }
-  };
-
-  const getCurrentStepValid = () => {
-    if (currentStep === 1) return isStep1Valid;
-    if (currentStep === 2) return isStep2Valid;
-    return isStep3Valid;
-  };
-
-  const getContinueHandler = () => {
-    if (currentStep === 1) return handleContinueStep1;
-    if (currentStep === 2) return handleContinueStep2;
-    return handleFinalContinue;
-  };
-
   if (!isOpen || !mounted) return null;
 
-  const stepTitle = getStepTitle();
-  const isCurrentStepValid = getCurrentStepValid();
+  const stepTitle = getStepTitle(flowState.currentStep);
+  const isCurrentStepValid = isStepValid(
+    flowState.currentStep,
+    isStep1Valid,
+    flowState.initialAnswers,
+    flowState.damageFreeAnswer,
+    flowState.goodConditionAnswer,
+    imeiInput
+  );
 
   const modalContent = (
     <AnimatePresence>
@@ -153,7 +135,6 @@ export default function TradeInModal({
             onClick={(e) => e.stopPropagation()}
             style={{ fontFamily: "SamsungSharpSans" }}
           >
-            {/* Close Button */}
             <button
               onClick={handleClose}
               className="absolute top-6 right-6 md:top-8 md:right-10 p-1 hover:bg-gray-100 rounded-full transition-colors z-20 bg-white"
@@ -162,9 +143,7 @@ export default function TradeInModal({
               <X className="w-6 h-6 md:w-7 md:h-7 text-[#222]" />
             </button>
 
-            {/* Content Area */}
             <div className="flex-1 overflow-y-auto">
-              {/* Header */}
               <div className="bg-white px-6 md:px-10 pt-6 md:pt-8 pb-4">
                 <div className="flex items-start justify-between gap-4 mb-4 pr-8">
                   <div className="flex-1">
@@ -179,103 +158,75 @@ export default function TradeInModal({
                   </div>
                 </div>
 
-                {/* Progress Indicator */}
-                <ProgressBar currentStep={currentStep} />
+                <ProgressBar currentStep={flowState.currentStep} />
               </div>
 
-              {/* Step Content */}
-              
-              {/* Step 1: Device Selection */}
-              {currentStep === 1 && (
-                <div className="px-10 md:px-20 lg:px-24 py-6">
-                  <DeviceCategorySelector
-                    selectedCategory={formState.selectedCategory}
-                    onSelectCategory={setSelectedCategory}
-                    categories={tradeInData.categories}
-                  />
-
-                  <BrandDropdown
-                    brands={availableBrands}
-                    selectedBrand={formState.selectedBrand}
-                    isOpen={dropdownState.isBrandDropdownOpen}
-                    onToggle={() => setIsBrandDropdownOpen(!dropdownState.isBrandDropdownOpen)}
-                    onSelectBrand={(brand) => {
-                      setSelectedBrand(brand);
-                      setIsBrandDropdownOpen(false);
-                    }}
-                  />
-
-                  <SimpleDropdown
-                    label="Modelo"
-                    placeholder="Selecciona el modelo de tu dispositivo"
-                    isOpen={dropdownState.isModelDropdownOpen}
-                    isDisabled={!formState.selectedBrand}
-                    options={availableModels}
-                    selectedOption={formState.selectedModel}
-                    onToggle={() => setIsModelDropdownOpen(!dropdownState.isModelDropdownOpen)}
-                    onSelectOption={(model) => {
-                      setSelectedModel(model);
-                      setIsModelDropdownOpen(false);
-                    }}
-                  />
-
-                  <SimpleDropdown
-                    label="Capacidad"
-                    placeholder="Selecciona la capacidad de tu dispositivo"
-                    isOpen={dropdownState.isCapacityDropdownOpen}
-                    isDisabled={!formState.selectedModel}
-                    options={availableCapacities}
-                    selectedOption={formState.selectedCapacity}
-                    onToggle={() => setIsCapacityDropdownOpen(!dropdownState.isCapacityDropdownOpen)}
-                    onSelectOption={(capacity) => {
-                      setSelectedCapacity(capacity);
-                      setIsCapacityDropdownOpen(false);
-                    }}
-                  />
-
-                  <div className="-mx-10 md:-mx-20 lg:-mx-24 px-6 md:px-10 py-6">
-                    <TradeInInformation />
-                  </div>
-                </div>
-              )}
-
-              {/* Step 2: Condition Verification */}
-              {currentStep === 2 && (
-                <div className="px-6 md:px-10 py-6 space-y-6">
-                  {CONDITION_QUESTIONS.map((question, index) => (
-                    <ConditionQuestion
-                      key={question.id}
-                      question={question.question}
-                      details={question.details}
-                      answer={conditionAnswers[question.id as keyof typeof conditionAnswers]}
-                      onAnswer={(answer) => handleConditionAnswer(question.id as keyof typeof conditionAnswers, answer)}
-                      isLast={index === CONDITION_QUESTIONS.length - 1}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Step 3: IMEI Input */}
-              {currentStep === 3 && (
-                <IMEIInputSection
-                  selectedCategory={formState.selectedCategory}
-                  selectedBrand={formState.selectedBrand}
-                  selectedModel={formState.selectedModel}
-                  selectedCapacity={formState.selectedCapacity}
-                  imeiInput={imeiInput}
-                  onImeiChange={setImeiInput}
-                />
-              )}
+              <ModalStepContent
+                currentStep={flowState.currentStep}
+                isDisqualified={flowState.isDisqualified}
+                loadingData={loadingData}
+                selectedCategory={formState.selectedCategory}
+                selectedBrand={formState.selectedBrand}
+                selectedModel={formState.selectedModel}
+                selectedCapacity={formState.selectedCapacity}
+                categories={safeTradeInData.categories}
+                availableBrands={availableBrands}
+                availableModels={availableModels}
+                availableCapacities={availableCapacities}
+                isBrandDropdownOpen={dropdownState.isBrandDropdownOpen}
+                isModelDropdownOpen={dropdownState.isModelDropdownOpen}
+                isCapacityDropdownOpen={dropdownState.isCapacityDropdownOpen}
+                screenTurnsOn={flowState.initialAnswers.screenTurnsOn}
+                deviceFreeInColombia={flowState.initialAnswers.deviceFreeInColombia}
+                damageFreeAnswer={flowState.damageFreeAnswer}
+                goodConditionAnswer={flowState.goodConditionAnswer}
+                imeiInput={imeiInput}
+                tradeInValue={tradeInValue}
+                calculatingValue={calculatingValue}
+                onSelectCategory={setSelectedCategory}
+                onSelectBrand={(brand) => {
+                  setSelectedBrand(brand);
+                  setIsBrandDropdownOpen(false);
+                }}
+                onSelectModel={(model) => {
+                  setSelectedModel(model);
+                  setIsModelDropdownOpen(false);
+                }}
+                onSelectCapacity={(capacity) => {
+                  setSelectedCapacity(capacity);
+                  setIsCapacityDropdownOpen(false);
+                }}
+                onToggleBrandDropdown={() =>
+                  setIsBrandDropdownOpen(!dropdownState.isBrandDropdownOpen)
+                }
+                onToggleModelDropdown={() =>
+                  setIsModelDropdownOpen(!dropdownState.isModelDropdownOpen)
+                }
+                onToggleCapacityDropdown={() =>
+                  setIsCapacityDropdownOpen(!dropdownState.isCapacityDropdownOpen)
+                }
+                onScreenTurnsOnAnswer={(answer) =>
+                  handleInitialAnswer("screenTurnsOn", answer)
+                }
+                onDeviceFreeAnswer={(answer) =>
+                  handleInitialAnswer("deviceFreeInColombia", answer)
+                }
+                onDamageFreeAnswer={handleDamageFreeAnswer}
+                onGoodConditionAnswer={handleGoodConditionAnswer}
+                onImeiChange={setImeiInput}
+                onClose={handleClose}
+              />
             </div>
 
-            {/* Footer */}
-            <ModalFooter
-              currentStep={currentStep}
-              isStepValid={isCurrentStepValid}
-              onClose={handleClose}
-              onBack={currentStep === 2 ? handleBackToStep1 : handleBackToStep2}
-              onContinue={getContinueHandler()}
-            />
+            {!flowState.isDisqualified && (
+              <ModalFooter
+                currentStep={flowState.currentStep}
+                isStepValid={isCurrentStepValid}
+                onClose={handleClose}
+                onBack={getBackHandler(flowState.currentStep)}
+                onContinue={getContinueHandler(flowState.currentStep)}
+              />
+            )}
           </motion.div>
         </motion.div>
       )}

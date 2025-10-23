@@ -1,12 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import type { Brand, DeviceModel, DeviceCapacity, TradeInData } from "../types";
-import {
-  getAvailableBrands,
-  getAvailableModels,
-  getAvailableCapacities,
-} from "../mockData";
-
-type TradeInStep = 1 | 2 | 3;
 
 interface TradeInFormState {
   selectedCategory: string;
@@ -21,37 +14,19 @@ interface DropdownState {
   isCapacityDropdownOpen: boolean;
 }
 
-interface ConditionAnswers {
-  "no-damage": boolean | null;
-  "good-condition": boolean | null;
-  "unlocked-colombia": boolean | null;
-}
-
 interface UseTradeInFormProps {
   tradeInData: TradeInData;
   isOpen: boolean;
 }
 
 interface UseTradeInFormReturn {
-  // State
-  currentStep: TradeInStep;
   formState: TradeInFormState;
   dropdownState: DropdownState;
-  conditionAnswers: ConditionAnswers;
   imeiInput: string;
-
-  // Validation
   isStep1Valid: boolean;
-  isStep2Valid: boolean;
-  isStep3Valid: boolean;
-
-  // Filtered data
   availableBrands: Brand[];
   availableModels: DeviceModel[];
   availableCapacities: DeviceCapacity[];
-
-  // Setters
-  setCurrentStep: (step: TradeInStep) => void;
   setSelectedCategory: (category: string) => void;
   setSelectedBrand: (brand: Brand | null) => void;
   setSelectedModel: (model: DeviceModel | null) => void;
@@ -59,18 +34,25 @@ interface UseTradeInFormReturn {
   setIsBrandDropdownOpen: (open: boolean) => void;
   setIsModelDropdownOpen: (open: boolean) => void;
   setIsCapacityDropdownOpen: (open: boolean) => void;
-  setConditionAnswers: React.Dispatch<React.SetStateAction<ConditionAnswers>>;
   setImeiInput: (value: string) => void;
-
-  // Actions
-  handleConditionAnswer: (questionId: keyof ConditionAnswers, answer: boolean) => void;
   resetForm: () => void;
 }
 
-export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): UseTradeInFormReturn {
-  const [currentStep, setCurrentStep] = useState<TradeInStep>(1);
+const getFilteredBrands = (data: TradeInData, categoryId: string): Brand[] => {
+  const categoryModels = data.models.filter((m) => m.categoryId === categoryId);
+  const brandIds = new Set(categoryModels.map((m) => m.brandId));
+  return data.brands.filter((b) => brandIds.has(b.id));
+};
 
-  // Form state
+const getFilteredModels = (data: TradeInData, brandId: string, categoryId: string): DeviceModel[] => {
+  return data.models.filter((m) => m.brandId === brandId && m.categoryId === categoryId);
+};
+
+const getFilteredCapacities = (data: TradeInData, modelId: string): DeviceCapacity[] => {
+  return data.capacities.filter((c) => c.modelId === modelId);
+};
+
+export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): UseTradeInFormReturn {
   const [formState, setFormState] = useState<TradeInFormState>({
     selectedCategory: "watch",
     selectedBrand: null,
@@ -78,43 +60,36 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     selectedCapacity: null,
   });
 
-  // Dropdown state
   const [dropdownState, setDropdownState] = useState<DropdownState>({
     isBrandDropdownOpen: false,
     isModelDropdownOpen: false,
     isCapacityDropdownOpen: false,
   });
 
-  // Condition answers
-  const [conditionAnswers, setConditionAnswers] = useState<ConditionAnswers>({
-    "no-damage": null,
-    "good-condition": null,
-    "unlocked-colombia": null,
-  });
-
-  // IMEI input
   const [imeiInput, setImeiInput] = useState<string>("");
 
-  // Filtered data
-  const availableBrands = getAvailableBrands(tradeInData, formState.selectedCategory);
-  const availableModels = formState.selectedBrand
-    ? getAvailableModels(tradeInData, formState.selectedBrand.id, formState.selectedCategory)
-    : [];
-  const availableCapacities = formState.selectedModel
-    ? getAvailableCapacities(tradeInData, formState.selectedModel.id)
-    : [];
+  const availableBrands = useMemo(
+    () => getFilteredBrands(tradeInData, formState.selectedCategory),
+    [tradeInData, formState.selectedCategory]
+  );
 
-  // Validation
+  const availableModels = useMemo(
+    () => formState.selectedBrand ? getFilteredModels(tradeInData, formState.selectedBrand.id, formState.selectedCategory) : [],
+    [tradeInData, formState.selectedBrand, formState.selectedCategory]
+  );
+
+  const availableCapacities = useMemo(
+    () => formState.selectedModel ? getFilteredCapacities(tradeInData, formState.selectedModel.id) : [],
+    [tradeInData, formState.selectedModel]
+  );
+
   const isStep1Valid = Boolean(
     formState.selectedCategory &&
     formState.selectedBrand &&
     formState.selectedModel &&
     formState.selectedCapacity
   );
-  const isStep2Valid = Object.values(conditionAnswers).every((answer) => answer === true);
-  const isStep3Valid = imeiInput.trim().length > 0;
 
-  // Reset dependent selections when category changes
   useEffect(() => {
     setFormState((prev) => ({
       ...prev,
@@ -129,7 +104,6 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     });
   }, [formState.selectedCategory]);
 
-  // Reset dependent selections when brand changes
   useEffect(() => {
     setFormState((prev) => ({
       ...prev,
@@ -143,19 +117,11 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     }));
   }, [formState.selectedBrand]);
 
-  // Reset capacity when model changes
   useEffect(() => {
-    setFormState((prev) => ({
-      ...prev,
-      selectedCapacity: null,
-    }));
-    setDropdownState((prev) => ({
-      ...prev,
-      isCapacityDropdownOpen: false,
-    }));
+    setFormState((prev) => ({ ...prev, selectedCapacity: null }));
+    setDropdownState((prev) => ({ ...prev, isCapacityDropdownOpen: false }));
   }, [formState.selectedModel]);
 
-  // Manage body scroll
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "unset";
     return () => {
@@ -163,14 +129,7 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     };
   }, [isOpen]);
 
-  // Condition answer handler
-  const handleConditionAnswer = useCallback((questionId: keyof ConditionAnswers, answer: boolean) => {
-    setConditionAnswers((prev) => ({ ...prev, [questionId]: answer }));
-  }, []);
-
-  // Reset form
   const resetForm = useCallback(() => {
-    setCurrentStep(1);
     setFormState({
       selectedCategory: "watch",
       selectedBrand: null,
@@ -182,15 +141,9 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
       isModelDropdownOpen: false,
       isCapacityDropdownOpen: false,
     });
-    setConditionAnswers({
-      "no-damage": null,
-      "good-condition": null,
-      "unlocked-colombia": null,
-    });
     setImeiInput("");
   }, []);
 
-  // Individual setters for form state
   const setSelectedCategory = useCallback((category: string) => {
     setFormState((prev) => ({ ...prev, selectedCategory: category }));
   }, []);
@@ -207,7 +160,6 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     setFormState((prev) => ({ ...prev, selectedCapacity: capacity }));
   }, []);
 
-  // Individual setters for dropdown state
   const setIsBrandDropdownOpen = useCallback((open: boolean) => {
     setDropdownState((prev) => ({ ...prev, isBrandDropdownOpen: open }));
   }, []);
@@ -221,25 +173,13 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
   }, []);
 
   return {
-    // State
-    currentStep,
     formState,
     dropdownState,
-    conditionAnswers,
     imeiInput,
-
-    // Validation
     isStep1Valid,
-    isStep2Valid,
-    isStep3Valid,
-
-    // Filtered data
     availableBrands,
     availableModels,
     availableCapacities,
-
-    // Setters
-    setCurrentStep,
     setSelectedCategory,
     setSelectedBrand,
     setSelectedModel,
@@ -247,11 +187,7 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     setIsBrandDropdownOpen,
     setIsModelDropdownOpen,
     setIsCapacityDropdownOpen,
-    setConditionAnswers,
     setImeiInput,
-
-    // Actions
-    handleConditionAnswer,
     resetForm,
   };
 }

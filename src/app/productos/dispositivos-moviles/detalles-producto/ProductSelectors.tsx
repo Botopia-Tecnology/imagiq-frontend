@@ -23,6 +23,11 @@ interface ProductSelectorsProps {
 
   // Trade-in modal
   onOpenTradeInModal: () => void;
+  tradeInSelected?: boolean;
+  onTradeInChange?: (selected: boolean) => void;
+  tradeInCompleted?: boolean;
+  tradeInDeviceName?: string;
+  tradeInValue?: number;
 }
 
 export default function ProductSelectors({
@@ -38,7 +43,19 @@ export default function ProductSelectors({
   selectedMemoriaram,
   onMemoriaramChange,
   onOpenTradeInModal,
+  tradeInSelected,
+  onTradeInChange,
+  tradeInCompleted,
+  tradeInDeviceName,
+  tradeInValue,
 }: Readonly<ProductSelectorsProps>) {
+  // Convertir boolean a "yes" | "no"
+  const tradeInOption: "no" | "yes" = tradeInSelected ? "yes" : "no";
+
+  const handleTradeInChange = (option: "no" | "yes") => {
+    onTradeInChange?.(option === "yes");
+  };
+
   const renderStorageOptions = () => {
     if (variantsLoading) {
       return <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>;
@@ -145,7 +162,14 @@ export default function ProductSelectors({
       <div className="h-px bg-gray-200 mb-8"></div>
 
       {/* Trade-in selector */}
-      <TradeInSelector onOpenModal={onOpenTradeInModal} />
+      <TradeInSelector
+        selectedOption={tradeInOption}
+        onSelectionChange={handleTradeInChange}
+        onOpenModal={onOpenTradeInModal}
+        isCompleted={tradeInCompleted}
+        completedDeviceName={tradeInDeviceName}
+        completedTradeInValue={tradeInValue}
+      />
 
       {/* Línea separadora */}
       <div className="h-px bg-gray-200 mb-8"></div>

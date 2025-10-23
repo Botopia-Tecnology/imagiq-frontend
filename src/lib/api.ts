@@ -214,6 +214,13 @@ export const menusEndpoints = {
   getSubmenus: (menuUuid: string) => apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`)
 };
 
+// Trade-in (Entrego y Estreno) API endpoints
+export const tradeInEndpoints = {
+  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/trade-in/hierarchy'),
+  calculateValue: (data: TradeInValueRequest) => 
+    apiClient.post<TradeInValueResponse>('/api/trade-in/value', data)
+};
+
 // Favorite filter
 export interface FavoriteFilterParams {
   page?: number;
@@ -336,4 +343,41 @@ export interface VisibleCategoryComplete {
   createdAt: string;
   updatedAt: string;
   menus: Menu[];
+}
+
+// Trade-in (Entrego y Estreno) types
+export interface TradeInModel {
+  codModelo: string;
+  modelo: string;
+  capacidad: string;
+}
+
+export interface TradeInBrand {
+  codMarca: string;
+  marca: string;
+  maxPrecio: number;
+  models: TradeInModel[];
+}
+
+export interface TradeInCategory {
+  categoria: string;
+  maxPrecio: number;
+  brands: TradeInBrand[];
+}
+
+export interface TradeInValueRequest {
+  codMarca: string;
+  codModelo: string;
+  grado: 'A' | 'B' | 'C'; // A=Excelente, B=Buen estado, C=Estado regular
+}
+
+export interface TradeInValueResponse {
+  codMarca: string;
+  marca: string;
+  codModelo: string;
+  modelo: string;
+  capacidad: string;
+  categoria: string;
+  grado: 'A' | 'B' | 'C';
+  valorRetoma: number;
 }

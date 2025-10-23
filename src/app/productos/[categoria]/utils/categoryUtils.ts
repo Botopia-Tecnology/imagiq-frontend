@@ -110,7 +110,8 @@ export function getCategoryBaseFilters(
 export function convertFiltersToApi(
   categoria: CategoriaParams,
   filters: FilterState,
-  seccion?: string
+  seccion?: string,
+  submenuUuid?: string
 ): ApiFilters {
   const baseFilters = getCategoryBaseFilters(categoria, seccion);
   let apiFilters: ApiFilters = { ...baseFilters };
@@ -127,12 +128,14 @@ export function convertFiltersToApi(
   }
 
   // Filtros específicos por categoría
+  // Si hay submenuUuid (selección del carousel), no aplicar filtros de serie
+  // para evitar conflictos entre carousel y panel de filtros
   switch (categoria) {
     case "electrodomesticos":
       apiFilters = applyElectrodomesticoFilters(apiFilters, filters);
       break;
     case "dispositivos-moviles":
-      apiFilters = applyMovilesFilters(apiFilters, filters);
+      apiFilters = applyMovilesFilters(apiFilters, filters, submenuUuid);
       break;
     case "televisores":
     case "monitores":
@@ -220,7 +223,8 @@ function applyElectrodomesticoFilters(
  */
 function applyMovilesFilters(
   apiFilters: ApiFilters,
-  filters: FilterState
+  filters: FilterState,
+  submenuUuid?: string
 ): ApiFilters {
   const result = { ...apiFilters };
 
@@ -239,7 +243,8 @@ function applyMovilesFilters(
   }
 
   // Serie (Galaxy S, Galaxy A, etc.)
-  if (filters.serie && filters.serie.length > 0) {
+  // Solo aplicar filtros de serie si NO hay submenuUuid (evitar conflicto con carousel)
+  if (filters.serie && filters.serie.length > 0 && !submenuUuid) {
     const serieVariants = filters.serie.map((serie) => {
       switch (serie) {
         case "Galaxy A":

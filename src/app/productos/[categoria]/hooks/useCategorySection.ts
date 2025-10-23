@@ -67,7 +67,7 @@ export function useCategoryProducts(
 ) {
   const apiFilters = useMemo(() => {
     const baseFilters = getCategoryBaseFilters(categoria, seccion);
-    const appliedFilters = convertFiltersToApi(categoria, filters, seccion);
+    const appliedFilters = convertFiltersToApi(categoria, filters, seccion, submenuUuid);
 
     // Agregar filtros de categoría/menú/submenú si existen usando los nombres correctos
     const hierarchyFilters: Record<string, string> = {};

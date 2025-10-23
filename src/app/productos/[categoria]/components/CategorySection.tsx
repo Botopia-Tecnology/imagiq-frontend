@@ -15,7 +15,7 @@ import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
-import DynamicSeriesFilter from "./DynamicSeriesFilter";
+import SubmenuCarousel from "./SubmenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
@@ -109,11 +109,9 @@ export default function CategorySection({
       {menuLoading ? (
         <SeriesFilterSkeleton />
       ) : currentMenu ? (
-        /* Usar DynamicSeriesFilter si hay datos de la API */
-        <DynamicSeriesFilter
+        /* Usar SubmenuCarousel si hay datos de la API */
+        <SubmenuCarousel
           menu={currentMenu}
-          activeFilters={filters}
-          onFilterChange={handleFilterChange}
           categoria={categoria}
           seccion={seccion}
           title={sectionTitle}

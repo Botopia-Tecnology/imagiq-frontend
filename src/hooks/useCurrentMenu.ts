@@ -122,7 +122,17 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
       return inclusionMatch;
     });
 
-    console.log('🔍 Menu encontrado:', menu ? { uuid: menu.uuid, nombre: menu.nombreVisible } : null);
+    console.log('🔍 Menu encontrado:', menu ? { 
+      uuid: menu.uuid, 
+      nombre: menu.nombreVisible,
+      submenusCount: menu.submenus?.length || 0,
+      submenus: menu.submenus?.map(s => ({
+        uuid: s.uuid,
+        nombre: s.nombre,
+        nombreVisible: s.nombreVisible,
+        activo: s.activo
+      })) || []
+    } : null);
 
     return menu || null;
   }, [visibleCategories, loading, categoria, seccion]);

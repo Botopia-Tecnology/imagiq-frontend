@@ -12,6 +12,9 @@ import type { ProductColor, ProductCapacity } from "../ProductCard";
 
 /**
  * Limpia el nombre del producto eliminando patrones de conectividad y almacenamiento
+ * 
+ *  FUNCIÓN MANTENIDA PARA REFERENCIA - NO USAR EN TÍTULOS DE PRODUCTOS 
+ * Los títulos ahora vienen directamente del atributo 'modelo' de la API sin procesar
  */
 export const cleanProductName = (productName: string): string => {
   // Patrones para eliminar conectividad

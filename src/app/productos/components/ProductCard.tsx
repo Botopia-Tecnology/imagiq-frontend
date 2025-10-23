@@ -21,7 +21,6 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { useProductSelection } from "@/hooks/useProductSelection";
 import {
-  cleanProductName,
   calculateDynamicPrices,
   calculateSavings,
 } from "./utils/productCardHelpers";
@@ -368,7 +367,7 @@ export default function ProductCard({
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       tabIndex={0}
-      aria-label={`Ver detalles de ${cleanProductName(name)}`}
+        aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
       className={cn(
         "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
         isOutOfStock && "opacity-60",
@@ -438,7 +437,7 @@ export default function ProductCard({
                 isOutOfStock ? "text-gray-500" : "text-black"
               )}
             >
-              {cleanProductName(name)}
+              {apiProduct?.modelo || name}
             </button>
           </h3>
           

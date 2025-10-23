@@ -15,6 +15,7 @@ import TelevisoresDropdown from "./dropdowns/televisores";
 import MonitoresDropdown from "./dropdowns/monitores";
 import AccesoriosDropdown from "./dropdowns/accesorios";
 import SoporteDropdown from "./dropdowns/soporte";
+import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import {
   MobileMenu,
@@ -25,8 +26,22 @@ import {
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
 import type { DropdownName, NavItem } from "./navbar/types";
 
-const getDropdownComponent = (name: DropdownName) => {
+const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
   const props = { isMobile: false };
+
+  // Si el item tiene menus (datos de la API), usar DynamicDropdown
+  if (item && item.menus && item.menus.length > 0) {
+    return (
+      <DynamicDropdown
+        menus={item.menus}
+        categoryName={item.name}
+        categoryCode={item.categoryCode || ''}
+        isMobile={false}
+      />
+    );
+  }
+
+  // Fallback a dropdowns estáticos
   switch (name) {
     case "Ofertas":
       return <OfertasDropdown {...props} />;
@@ -278,7 +293,8 @@ export default function Navbar() {
                             >
                               <div className="mx-auto max-w-screen-2xl">
                                 {getDropdownComponent(
-                                  dropdownKey as DropdownName
+                                  dropdownKey as DropdownName,
+                                  item
                                 )}
                               </div>
                             </div>

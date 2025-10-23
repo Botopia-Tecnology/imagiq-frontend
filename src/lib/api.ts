@@ -205,7 +205,13 @@ export const productEndpoints = {
 
 // Categories API endpoints
 export const categoriesEndpoints = {
-  getVisibleCategories: () => apiClient.get<VisibleCategory[]>('/api/categorias/visibles')
+  getVisibleCategories: () => apiClient.get<VisibleCategory[]>('/api/categorias/visibles'),
+  getVisibleCategoriesComplete: () => apiClient.get<VisibleCategoryComplete[]>('/api/categorias/visibles/completas')
+};
+
+// Menus API endpoints
+export const menusEndpoints = {
+  getSubmenus: (menuUuid: string) => apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`)
 };
 
 // Favorite filter
@@ -264,7 +270,7 @@ export interface FavoriteApiResponse {
   hasPreviousPage: boolean;
 }
 
-// Visible Categories types
+// Visible Categories types (legacy - deprecated)
 export interface Subcategoria {
   uuid: string;
   nombre: string;
@@ -288,4 +294,46 @@ export interface VisibleCategory {
   updatedAt: string;
   subcategorias: Subcategoria[];
   totalProducts: number;
+}
+
+// Complete Visible Categories types (new structure)
+export interface Submenu {
+  uuid: string;
+  nombre: string;
+  nombreVisible: string;
+  descripcion: string;
+  imagen: string;
+  activo: boolean;
+  orden: number;
+  menusVisiblesId: string;
+  createdAt: string;
+  updatedAt: string;
+  totalProducts: number;
+}
+
+export interface Menu {
+  uuid: string;
+  nombre: string;
+  nombreVisible: string;
+  descripcion: string;
+  imagen: string;
+  activo: boolean;
+  orden: number;
+  categoriasVisiblesId: string;
+  createdAt: string;
+  updatedAt: string;
+  submenus: Submenu[];
+}
+
+export interface VisibleCategoryComplete {
+  uuid: string;
+  nombre: string;
+  nombreVisible: string;
+  descripcion: string;
+  imagen: string;
+  activo: boolean;
+  orden: number;
+  createdAt: string;
+  updatedAt: string;
+  menus: Menu[];
 }

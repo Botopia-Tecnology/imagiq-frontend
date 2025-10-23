@@ -15,6 +15,8 @@ import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
+import DynamicSeriesFilter from "./DynamicSeriesFilter";
+import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
 import MobileFilterSidebar from "./MobileFilterSidebar";
@@ -22,6 +24,7 @@ import MobileFilterSidebar from "./MobileFilterSidebar";
 import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
 import { getSeriesConfig } from "../config/series-configs";
+import { useCurrentMenu } from "@/hooks/useCurrentMenu";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -72,6 +75,7 @@ export default function CategorySection({
 
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const seriesConfig = getSeriesConfig(seccion);
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -95,7 +99,21 @@ export default function CategorySection({
 
   return (
     <div className="px-4 md:px-10">
-      {seriesConfig && (
+      {/* Mostrar skeleton mientras carga el menú */}
+      {menuLoading ? (
+        <SeriesFilterSkeleton />
+      ) : currentMenu ? (
+        /* Usar DynamicSeriesFilter si hay datos de la API */
+        <DynamicSeriesFilter
+          menu={currentMenu}
+          activeFilters={filters}
+          onFilterChange={handleFilterChange}
+          categoria={categoria}
+          seccion={seccion}
+          title={sectionTitle}
+        />
+      ) : seriesConfig ? (
+        /* Fallback a UniversalSeriesFilter si no hay datos de API pero hay config estática */
         <UniversalSeriesFilter
           config={seriesConfig}
           activeFilters={filters}
@@ -103,7 +121,7 @@ export default function CategorySection({
           categoria={categoria}
           seccion={seccion}
         />
-      )}
+      ) : null}
 
       <HeaderSection
         title={sectionTitle}

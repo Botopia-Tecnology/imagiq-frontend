@@ -280,6 +280,7 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
     "accesorios",
   ],
   televisores: ["smart-tv", "qled", "crystal-uhd"],
+  monitores: ["smart-tv", "qled", "crystal-uhd"], // Usar las mismas secciones que TVs por ahora
   audio: ["barras-sonido", "sistemas"],
   ofertas: [
     "accesorios",
@@ -296,6 +297,7 @@ export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
   electrodomesticos: "refrigeradores",
   "dispositivos-moviles": "smartphones",
   televisores: "smart-tv",
+  monitores: "smart-tv", // Usar la misma sección por defecto que TVs
   audio: "barras-sonido",
   ofertas: "accesorios",
 };
@@ -451,6 +453,29 @@ export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
       href: "/productos/televisores?seccion=crystal-uhd",
     },
   ],
+  monitores: [
+    {
+      id: "smart-tv",
+      name: "Smart",
+      subtitle: "Monitor",
+      image: tvImg,
+      href: "/productos/monitores?seccion=smart-tv",
+    },
+    {
+      id: "qled",
+      name: "QLED",
+      subtitle: "Monitor",
+      image: tvImg,
+      href: "/productos/monitores?seccion=qled",
+    },
+    {
+      id: "crystal-uhd",
+      name: "Crystal",
+      subtitle: "UHD Monitor",
+      image: tvImg,
+      href: "/productos/monitores?seccion=crystal-uhd",
+    },
+  ],
   audio: [
     {
       id: "barras-sonido",
@@ -563,6 +588,8 @@ export function getCategoryFilterConfig(
       return movilesFilters;
     case "televisores":
       return tvsFilters;
+    case "monitores":
+      return tvsFilters; // Usar los mismos filtros que TVs por ahora
     case "audio":
       return audioFilters;
     default:

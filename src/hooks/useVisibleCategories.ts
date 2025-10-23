@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { categoriesEndpoints, type VisibleCategory } from '@/lib/api';
+import { categoriesEndpoints, type VisibleCategoryComplete, type VisibleCategory, type Menu, type Submenu } from '@/lib/api';
 
 export function useVisibleCategories() {
-  const [visibleCategories, setVisibleCategories] = useState<VisibleCategory[]>([]);
+  const [visibleCategories, setVisibleCategories] = useState<VisibleCategoryComplete[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,12 +11,14 @@ export function useVisibleCategories() {
       try {
         setLoading(true);
         setError(null);
-        
-        const response = await categoriesEndpoints.getVisibleCategories();
-        
+
+        const response = await categoriesEndpoints.getVisibleCategoriesComplete();
+
         if (response.success && response.data) {
-          // Filtrar solo las categorías activas
-          const activeCategories = response.data.filter(category => category.activo);
+          // Filtrar solo las categorías activas y ordenarlas
+          const activeCategories = response.data
+            .filter(category => category.activo)
+            .sort((a, b) => a.orden - b.orden);
           setVisibleCategories(activeCategories);
         } else {
           setError(response.message || 'Error al cargar categorías');
@@ -26,7 +28,7 @@ export function useVisibleCategories() {
         setError('Error al cargar categorías');
 
         // Fallback: usar categorías mock si el backend no está disponible
-        const mockCategories: VisibleCategory[] = [
+        const mockCategories: VisibleCategoryComplete[] = [
           {
             uuid: 'mock-im',
             nombre: 'IM',
@@ -34,10 +36,10 @@ export function useVisibleCategories() {
             descripcion: 'Dispositivos móviles',
             imagen: '',
             activo: true,
+            orden: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           },
           {
             uuid: 'mock-av',
@@ -46,10 +48,10 @@ export function useVisibleCategories() {
             descripcion: 'Televisores y Audio/Video',
             imagen: '',
             activo: true,
+            orden: 2,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           },
           {
             uuid: 'mock-da',
@@ -58,10 +60,10 @@ export function useVisibleCategories() {
             descripcion: 'Electrodomésticos',
             imagen: '',
             activo: true,
+            orden: 3,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           },
           {
             uuid: 'mock-it',
@@ -70,10 +72,10 @@ export function useVisibleCategories() {
             descripcion: 'Monitores',
             imagen: '',
             activo: true,
+            orden: 4,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            totalProducts: 0,
-            subcategorias: []
+            menus: []
           }
         ];
         setVisibleCategories(mockCategories);
@@ -97,18 +99,33 @@ export function useVisibleCategories() {
     return categoryMap[categoryName] || categoryName;
   };
 
+  // Función para calcular productos de un submenu
+  const calculateSubmenuProducts = (submenu: Submenu) => submenu.totalProducts || 0;
+
+  // Función para calcular productos de un menu
+  const calculateMenuProducts = (menu: Menu) => 
+    (menu.submenus || []).reduce((total: number, submenu: Submenu) => 
+      total + calculateSubmenuProducts(submenu), 0);
+
   // Función para obtener las rutas del navbar basadas en las categorías visibles
   const getNavbarRoutes = () => {
-    const mappedCategories = visibleCategories.map(category => ({
-      name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),
-      href: getCategoryHref(category.nombre),
-      category: category.nombre.toLowerCase(),
-      categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
-      dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
-      uuid: category.uuid,
-      totalProducts: category.totalProducts,
-      subcategorias: category.subcategorias
-    }));
+    const mappedCategories = visibleCategories.map(category => {
+      // Calcular total de productos sumando todos los productos de los submenus
+      const totalProducts = (category.menus || []).reduce((menuTotal, menu) => 
+        menuTotal + calculateMenuProducts(menu), 0);
+
+      return {
+        name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),
+        href: getCategoryHref(category.nombre),
+        category: category.nombre.toLowerCase(),
+        categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
+        dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
+        uuid: category.uuid,
+        totalProducts,
+        menus: category.menus || [],
+        orden: category.orden
+      };
+    });
 
     // Agregar rutas fijas que siempre deben estar presentes
     const fixedRoutes = [
@@ -120,17 +137,8 @@ export function useVisibleCategories() {
         dropdownName: "Ofertas",
         uuid: "ofertas",
         totalProducts: 0,
-        subcategorias: []
-      },
-      {
-        name: "Accesorios",
-        href: "/productos?q=accesorios",
-        category: "accesorios",
-        categoryCode: "accesorios",
-        dropdownName: "Accesorios",
-        uuid: "accesorios",
-        totalProducts: 0,
-        subcategorias: []
+        menus: [],
+        orden: 0
       }
     ];
 
@@ -143,10 +151,12 @@ export function useVisibleCategories() {
       dropdownName: undefined, // No tiene dropdown
       uuid: "tiendas",
       totalProducts: 0,
-      subcategorias: []
+      menus: [],
+      orden: 1000
     };
 
-    return [...fixedRoutes, ...mappedCategories, tiendasRoute];
+    // Combinar y ordenar por el campo orden
+    return [...fixedRoutes, ...mappedCategories, tiendasRoute].sort((a, b) => a.orden - b.orden);
   };
 
   // Función para obtener la URL href basada en el nombre de la categoría

@@ -3,12 +3,6 @@ import { MenuItemCard } from "./MenuItemCard";
 import { CloseButton } from "@/components/navbar/components/CloseButton";
 import type { MenuItem } from "./types";
 
-// Importar PROMOS de cada categoría
-// import { PROMOS as ofertasPromos } from "@/components/dropdowns/ofertas/constants";
-// import { PROMOS as movilesPromos } from "@/components/dropdowns/dispositivos_moviles/constants";
-// import { PROMOS as electrodomesticosPromos } from "@/components/dropdowns/electrodomesticos/constants";
-// import { PROMOS as televisoresPromos } from "@/components/dropdowns/televisores/constants";
-// import { PROMOS as monitoresPromos } from "@/components/dropdowns/monitores/constants";
 
 type Props = {
   items: MenuItem[];
@@ -21,25 +15,6 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
   // Filtrar solo items activos
   const activeItems = items.filter(item => item.activo);
 
-  // // Obtener los PROMOS según el código de categoría
-  // const getPromosForCategory = (categoryCode?: string) => {
-  //   switch (categoryCode) {
-  //     case "IM":
-  //       return movilesPromos;
-  //     case "AV":
-  //       return televisoresPromos;
-  //     case "DA":
-  //       return electrodomesticosPromos;
-  //     case "IT":
-  //       return monitoresPromos;
-  //     case "ofertas":
-  //       return ofertasPromos;
-  //     default:
-  //       return [];
-  //   }
-  // };
-
-  // const promos = getPromosForCategory(categoryCode);
 
   if (activeItems.length === 0) {
     return (

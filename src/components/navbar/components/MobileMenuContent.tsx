@@ -29,7 +29,7 @@ type Props = {
 export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRoutes, loading }) => {
   // Rutas estáticas que siempre deben aparecer
   const staticRoutes = [
-    { name: "Tienda Online", href: "/", hasDropdown: false },
+    { name: "", href: "/", hasDropdown: false },
     { name: "Soporte", href: "/soporte/inicio_de_soporte", hasDropdown: false },
     { name: "Para Empresas", href: "/ventas-corporativas", hasDropdown: false },
   ];
@@ -41,7 +41,6 @@ export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRou
 
   // Construir el menú completo: Tienda Online + API Categories + Soporte + Para Empresas
   const menuItems: (MenuItem & { menus?: Menu[]; categoryCode?: string })[] = [
-    staticRoutes[0], // Tienda Online
     ...apiCategories.map(route => ({
       name: route.name,
       href: route.href,

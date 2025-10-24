@@ -55,38 +55,6 @@ export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRou
 
   return (
     <div className="p-4">
-      {/* Sección NOVEDADES (estática) */}
-      <div className="mb-6">
-        <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">NOVEDADES</h3>
-        <div className="flex overflow-x-auto gap-3 pb-2 scrollbar-hide -mx-4 px-4">
-          {FEATURED_PRODUCTS.map((product) => (
-            <Link
-              key={product.name}
-              href={product.href}
-              onClick={onClose}
-              className="flex-shrink-0 text-center"
-              style={{ width: "100px" }}
-            >
-              <div className="mb-1">
-                <div className="w-full aspect-square relative">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    width={100}
-                    height={100}
-                    className="object-contain w-full h-full"
-                    unoptimized
-                  />
-                </div>
-              </div>
-              <p className="text-xs text-gray-900 leading-tight" style={{ fontWeight: 900 }}>
-                {product.name}
-              </p>
-            </Link>
-          ))}
-        </div>
-      </div>
-
       {/* Sección COMPRAR POR CATEGORÍA (dinámica + estática) */}
       <div className="mb-6">
         <h3 className="text-xs font-bold text-gray-500 uppercase mb-3">COMPRAR POR CATEGORÍA</h3>

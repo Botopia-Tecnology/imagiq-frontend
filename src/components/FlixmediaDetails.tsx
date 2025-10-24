@@ -167,23 +167,29 @@ export default function FlixmediaDetails({
   // Agregar estilos después de que el script cargue para mostrar solo especificaciones y galería
   useEffect(() => {
     if (!scriptLoaded) return;
-
+//         #flix-specifications-inpage [flixtemplate-key="background_image"],
     setTimeout(() => {
       const style = document.createElement('style');
       style.id = 'flixmedia-specifications-styles';
       style.textContent = `
-        /* Ocultar TODO excepto especificaciones y galería */
-        #flix-specifications-inpage [flixtemplate-key="features"],
-        #flix-specifications-inpage [flixtemplate-key="background_image"],
+        /* Ocultar elementos no deseados */
+
         #flix-specifications-inpage [flixtemplate-key="footnotes"],
         #flix-specifications-inpage [flixtemplate-key="image_gallery"] {
           display: none !important;
           visibility: hidden !important;
         }
 
-        /* Mostrar SOLO especificaciones y galería de imágenes */
+        /* Ocultar todo dentro de features EXCEPTO el selector de características clave */
+        #flix-specifications-inpage [flixtemplate-key="features"] > *:not(.inpage_selector_keyfeature) {
+          display: none !important;
+          visibility: hidden !important;
+        }
+
+        /* Mostrar especificaciones y el selector de características clave */
         #flix-specifications-inpage [flixtemplate-key="specifications"],
-         {
+        #flix-specifications-inpage [flixtemplate-key="features"],
+        #flix-specifications-inpage .inpage_selector_keyfeature {
           display: block !important;
           visibility: visible !important;
         }
@@ -227,8 +233,8 @@ export default function FlixmediaDetails({
         const container = document.getElementById('flix-specifications-inpage');
         if (!container) return;
 
-        // Ocultar todo excepto specifications
-        const toHide = ['features', 'background_image', 'footnotes','image_gallery'];
+        // Ocultar elementos no deseados 'background_image',
+        const toHide = [ 'footnotes','image_gallery'];
         toHide.forEach(key => {
           const elements = container.querySelectorAll(`[flixtemplate-key="${key}"]`);
           elements.forEach((el) => {
@@ -237,8 +243,19 @@ export default function FlixmediaDetails({
           });
         });
 
-        // Asegurarse de que specifications y galería estén visibles
-        const toShow = ['specifications'];
+        // Ocultar elementos dentro de features EXCEPTO el selector de características clave
+        const featuresContainer = container.querySelector(`[flixtemplate-key="features"]`);
+        if (featuresContainer) {
+          Array.from(featuresContainer.children).forEach((child) => {
+            if (!child.classList.contains('inpage_selector_keyfeature')) {
+              (child as HTMLElement).style.display = 'none';
+              (child as HTMLElement).style.visibility = 'hidden';
+            }
+          });
+        }
+
+        // Asegurarse de que specifications y el selector de características estén visibles
+        const toShow = ['specifications', 'features'];
         let hasVisibleContent = false;
         toShow.forEach(key => {
           const element = container.querySelector(`[flixtemplate-key="${key}"]`);
@@ -248,6 +265,13 @@ export default function FlixmediaDetails({
             hasVisibleContent = true;
           }
         });
+
+        // Mostrar específicamente el selector de características clave
+        const keyFeatureSelector = container.querySelector('.inpage_selector_keyfeature');
+        if (keyFeatureSelector) {
+          (keyFeatureSelector as HTMLElement).style.display = 'block';
+          (keyFeatureSelector as HTMLElement).style.visibility = 'visible';
+        }
 
         if (hasVisibleContent) {
           console.log('✅ Especificaciones y galería visibles');

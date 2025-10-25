@@ -29,13 +29,13 @@ import type { DropdownName, NavItem } from "./navbar/types";
 const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
   const props = { isMobile: false };
 
-  // Si el item tiene menus (datos de la API), usar DynamicDropdown
-  if (item && item.menus && item.menus.length > 0) {
+  // Si el item tiene uuid (datos de la API), usar DynamicDropdown con carga lazy
+  if (item && item.uuid && item.categoryCode) {
     return (
       <DynamicDropdown
-        menus={item.menus}
+        categoryUuid={item.uuid}
         categoryName={item.name}
-        categoryCode={item.categoryCode || ''}
+        categoryCode={item.categoryCode}
         isMobile={false}
       />
     );

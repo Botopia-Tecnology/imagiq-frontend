@@ -5,23 +5,21 @@ import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import type { FC } from "react";
 import { FEATURED_PRODUCTS, MenuItem } from "./MobileMenuData";
-import type { Menu } from "@/lib/api";
 
 type NavItem = {
   name: string;
   href: string;
   category: string;
-  categoryCode: string;
+  categoryCode?: string;
   dropdownName?: string;
-  uuid: string;
-  totalProducts: number;
-  menus: Menu[];
-  orden: number;
+  uuid?: string;
+  totalProducts?: number;
+  orden?: number;
 };
 
 type Props = {
   onClose: () => void;
-  onMenuItemClick: (item: MenuItem & { menus?: Menu[]; categoryCode?: string }) => void;
+  onMenuItemClick: (item: MenuItem & { uuid?: string; categoryCode?: string }) => void;
   menuRoutes: NavItem[];
   loading: boolean;
 };
@@ -40,12 +38,12 @@ export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRou
   );
 
   // Construir el menú completo: Tienda Online + API Categories + Soporte + Para Empresas
-  const menuItems: (MenuItem & { menus?: Menu[]; categoryCode?: string })[] = [
+  const menuItems: (MenuItem & { uuid?: string; categoryCode?: string })[] = [
     ...apiCategories.map(route => ({
       name: route.name,
       href: route.href,
       hasDropdown: true,
-      menus: route.menus,
+      uuid: route.uuid,
       categoryCode: route.categoryCode,
     })),
     staticRoutes[1], // Soporte

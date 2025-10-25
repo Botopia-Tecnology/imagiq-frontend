@@ -143,9 +143,6 @@ export default function HomePage() {
         <motion.div ref={historiasReveal.ref} {...historiasReveal.motionProps}>
           <Historias />
         </motion.div>
-        <motion.div ref={ultimosReveal.ref} {...ultimosReveal.motionProps}>
-          <UltimosProductos />
-        </motion.div>
         {/* Sección de reseñas de clientes - arriba del mapa */}
         <motion.section
           ref={reviewsReveal.ref}

@@ -77,22 +77,6 @@ export const MonitoresSubmenu: FC<Props> = ({ onClose }) => {
           </Link>
         ))}
       </div>
-
-      <div className="border-t border-gray-300 pt-4 mt-2">
-        <nav className="space-y-1">
-          {MONITORES_LINKS.map((link) => (
-            <Link
-              key={link.title}
-              href={link.href}
-              onClick={onClose}
-              className="block py-2 text-sm text-gray-900 hover:text-blue-600"
-              style={{ fontWeight: 900 }}
-            >
-              {link.title}
-            </Link>
-          ))}
-        </nav>
-      </div>
     </div>
   );
 };

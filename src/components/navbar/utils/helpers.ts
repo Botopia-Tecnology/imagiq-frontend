@@ -7,6 +7,7 @@ const DROPDOWNS: readonly DropdownName[] = [
   "Electrodomésticos",
   "Monitores",
   "Accesorios",
+  "Soporte",
 ] as const;
 
 export const hasDropdownMenu = (name: string): name is DropdownName =>

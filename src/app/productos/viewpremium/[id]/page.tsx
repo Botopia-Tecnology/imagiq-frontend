@@ -3,7 +3,7 @@
 import React, { use, useEffect } from "react";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
-import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
+import ViewPremiumSkeleton from "./ViewPremiumSkeleton";
 import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-producto/StickyPriceBar";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
@@ -86,7 +86,7 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
   if (loading || !showContent) {
-    return <ProductDetailSkeleton />;
+    return <ViewPremiumSkeleton />;
   }
   if (error) {
     return notFound();

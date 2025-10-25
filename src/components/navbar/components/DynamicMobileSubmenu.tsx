@@ -48,10 +48,9 @@ export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, 
   // Si está cargando, mostrar skeleton
   if (loading) {
     return (
-      <div className="p-4">
-        <div className="grid grid-cols-2 gap-x-8 mb-6">
-          {/* Columna 1 - Skeleton */}
-          <div className="space-y-3">
+      <div className="px-6 pt-2 pb-6 min-h-screen flex flex-col">
+
+          <div className="space-y-6">
             {[1, 2, 3].map((i) => (
               <div key={`sk1-${i}`} className="flex items-center gap-2">
                 <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded animate-pulse" />
@@ -61,18 +60,6 @@ export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, 
               </div>
             ))}
           </div>
-          {/* Columna 2 - Skeleton */}
-          <div className="space-y-3">
-            {[1, 2].map((i) => (
-              <div key={`sk2-${i}`} className="flex items-center gap-2">
-                <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded animate-pulse" />
-                <div className="flex-1">
-                  <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
     );
   }
@@ -90,10 +77,6 @@ export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, 
     );
   }
 
-  // Dividir en dos columnas
-  const midpoint = Math.ceil(activeMenus.length / 2);
-  const column1 = activeMenus.slice(0, midpoint);
-  const column2 = activeMenus.slice(midpoint);
 
   // Función para generar la URL del menú
   const getMenuHref = (menu: Menu): string => {
@@ -104,61 +87,30 @@ export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, 
   };
 
   return (
-    <div className="p-4">
-      <div className="grid grid-cols-2 gap-x-8 mb-6">
-        {/* Columna 1 */}
-        <div className="space-y-3">
-          {column1.map((menu) => (
-            <Link
-              key={menu.uuid}
-              href={getMenuHref(menu)}
-              onClick={onClose}
-              className="flex items-center gap-2"
-            >
-              {menu.imagen && (
-                <div className="w-12 h-12 flex-shrink-0 relative">
-                  <Image
-                    src={menu.imagen}
-                    alt={menu.nombreVisible || menu.nombre}
-                    fill
-                    className="object-contain"
-                  />
-                </div>
-              )}
-              <p className="text-xs text-gray-900 whitespace-pre-line leading-tight" style={{ fontWeight: 900 }}>
-                {menu.nombreVisible || menu.nombre}
-              </p>
-            </Link>
-          ))}
-        </div>
-
-        {/* Columna 2 */}
-        {column2.length > 0 && (
-          <div className="space-y-3">
-            {column2.map((menu) => (
-              <Link
-                key={menu.uuid}
-                href={getMenuHref(menu)}
-                onClick={onClose}
-                className="flex items-center gap-2"
-              >
-                {menu.imagen && (
-                  <div className="w-12 h-12 flex-shrink-0 relative">
-                    <Image
-                      src={menu.imagen}
-                      alt={menu.nombreVisible || menu.nombre}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                )}
-                <p className="text-xs text-gray-900 whitespace-pre-line leading-tight" style={{ fontWeight: 900 }}>
-                  {menu.nombreVisible || menu.nombre}
-                </p>
-              </Link>
-            ))}
-          </div>
-        )}
+    <div className="px-6 pt-2 pb-6 min-h-screen flex flex-col">
+      <div className="space-y-6">
+        {activeMenus.map((menu) => (
+          <Link
+            key={menu.uuid}
+            href={getMenuHref(menu)}
+            onClick={onClose}
+            className="flex items-center gap-4"
+          >
+            {menu.imagen && (
+              <div className="w-20 h-20 flex-shrink-0 relative">
+                <Image
+                  src={menu.imagen}
+                  alt={menu.nombreVisible || menu.nombre}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+            )}
+            <p className="text-base text-gray-900 whitespace-pre-line leading-tight" style={{ fontWeight: 900 }}>
+              {menu.nombreVisible || menu.nombre}
+            </p>
+          </Link>
+        ))}
       </div>
     </div>
   );

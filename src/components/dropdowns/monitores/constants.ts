@@ -27,21 +27,6 @@ export const MAIN_ITEMS: readonly MainItem[] = [
   },
 ] as const;
 
-export const PROMOS: readonly PromoItem[] = [
-  {
-    title: "Por qué un Monitor Gaming Odyssey",
-    href: "/productos/monitores?seccion=por-que-odyssey",
-    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773429/porque-gaming-odyssey_mrv3wr.webp",
-    imageAlt: "Por qué un Monitor Gaming Odyssey"
-  },
-  {
-    title: "Ayúdame a elegir mi monitor",
-    href: "/productos/monitores?seccion=ayuda-elegir",
-    imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759773428/Ayudame-elegir_idbwes.webp",
-    imageAlt: "Ayúdame a elegir mi monitor"
-  },
-] as const;
-
 export const SIZES = {
   main: { container: 100, image: 90 },
   promo: { default: 48 },

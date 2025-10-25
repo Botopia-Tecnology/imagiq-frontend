@@ -310,22 +310,6 @@ export default function Navbar() {
 
           <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
             <div className="flex items-center gap-6 leading-none">
-              <div
-                onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}
-                onMouseLeave={navbar.handleDropdownLeave}
-              >
-                <Link
-                  href="/soporte/inicio_de_soporte"
-                  className={cn(
-                    "text-[13px] md:text-[13.5px] font-bold",
-                    navbar.showWhiteItems
-                      ? "text-white/90 hover:text-white"
-                      : "text-black"
-                  )}
-                >
-                  Soporte
-                </Link>
-              </div>
               <Link
                 href="/ventas-corporativas"
                 className={cn(
@@ -381,23 +365,6 @@ export default function Navbar() {
             </div>
           </div>
         </div>
-
-        {/* Dropdown de Soporte - Full Width */}
-        {navbar.activeDropdown === "Soporte" && (
-          <div
-            className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
-            style={{ top: "104px" }}
-            onMouseEnter={() => navbar.handleDropdownEnter("Soporte")}
-            onMouseLeave={navbar.handleDropdownLeave}
-          >
-            <div className="mx-auto max-w-screen-2xl">
-              <SoporteDropdown
-                isMobile={false}
-                onClose={() => navbar.setActiveDropdown(null)}
-              />
-            </div>
-          </div>
-        )}
       </header>
 
       <MobileMenu

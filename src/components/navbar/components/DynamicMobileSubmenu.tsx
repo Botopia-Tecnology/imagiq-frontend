@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { FC } from "react";
 import type { Menu } from "@/lib/api";
-import { useMenusLazy } from "@/hooks/useMenusLazy";
 
 type Props = {
-  categoryUuid: string;
+  menus: Menu[];
   categoryCode: string;
   onClose: () => void;
-  // Deprecated: usar categoryUuid en su lugar
-  menus?: Menu[];
   loading?: boolean;
 };
 
@@ -48,36 +44,7 @@ const menuNameToSlug = (name: string): string => {
  * Componente dinámico de submenú mobile que consume datos de la API
  * Se usa para las categorías que vienen desde el backend
  */
-export const DynamicMobileSubmenu: FC<Props> = ({
-  categoryUuid,
-  categoryCode,
-  onClose,
-  menus: deprecatedMenus,
-  loading: deprecatedLoading = false
-}) => {
-  const { loadMenus } = useMenusLazy();
-  const [menus, setMenus] = useState<Menu[]>(deprecatedMenus || []);
-  const [loading, setLoading] = useState(deprecatedLoading);
-
-  useEffect(() => {
-    // Si ya tenemos menus (modo legacy), no cargar
-    if (deprecatedMenus && deprecatedMenus.length > 0) {
-      setMenus(deprecatedMenus);
-      setLoading(false);
-      return;
-    }
-
-    // Cargar menús de forma lazy
-    const fetchMenus = async () => {
-      setLoading(true);
-      const loadedMenus = await loadMenus(categoryUuid);
-      setMenus(loadedMenus);
-      setLoading(false);
-    };
-
-    fetchMenus();
-  }, [categoryUuid, deprecatedMenus, loadMenus]);
-
+export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, loading = false }) => {
   // Si está cargando, mostrar skeleton
   if (loading) {
     return (

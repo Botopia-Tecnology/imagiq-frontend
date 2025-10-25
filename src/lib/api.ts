@@ -205,13 +205,12 @@ export const productEndpoints = {
 
 // Categories API endpoints
 export const categoriesEndpoints = {
-  getVisibleCategories: () => apiClient.get<VisibleCategoryLight[]>('/api/categorias/visibles'),
+  getVisibleCategories: () => apiClient.get<VisibleCategory[]>('/api/categorias/visibles'),
   getVisibleCategoriesComplete: () => apiClient.get<VisibleCategoryComplete[]>('/api/categorias/visibles/completas')
 };
 
 // Menus API endpoints
 export const menusEndpoints = {
-  getMenusByCategory: (categoryUuid: string) => apiClient.get<Menu[]>(`/api/categorias/visibles/${categoryUuid}/menus`),
   getSubmenus: (menuUuid: string) => apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`)
 };
 
@@ -305,20 +304,6 @@ export interface VisibleCategory {
 }
 
 // Complete Visible Categories types (new structure)
-
-// Categoría mínima (sin menus) - para carga inicial optimizada
-export interface VisibleCategoryLight {
-  uuid: string;
-  nombre: string;
-  nombreVisible: string;
-  descripcion: string;
-  imagen: string;
-  activo: boolean;
-  orden: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface Submenu {
   uuid: string;
   nombre: string;

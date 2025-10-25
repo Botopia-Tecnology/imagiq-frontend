@@ -1,13 +1,11 @@
 import type { Menu } from '@/lib/api';
 
 export type DynamicDropdownProps = {
-  categoryUuid: string;
+  menus: Menu[];
   categoryName: string;
   categoryCode: string;
   isMobile?: boolean;
   onItemClick?: () => void;
-  // Deprecated: usar categoryUuid en su lugar
-  menus?: Menu[];
 };
 
 export type MenuItem = {

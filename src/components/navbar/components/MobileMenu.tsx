@@ -13,6 +13,7 @@ import { MonitoresSubmenu } from "./MonitoresSubmenu";
 import { AccesoriosSubmenu } from "./AccesoriosSubmenu";
 import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import type { Menu } from "@/lib/api";
 
 type Props = {
   isOpen: boolean;
@@ -38,7 +39,7 @@ export const MobileMenu: FC<Props> = ({
   onSearchSubmit,
 }) => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
-  const [activeCategoryUuid, setActiveCategoryUuid] = useState<string | null>(null);
+  const [activeMenus, setActiveMenus] = useState<Menu[] | null>(null);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(null);
 
   const { getNavbarRoutes, loading } = useVisibleCategories();
@@ -46,16 +47,16 @@ export const MobileMenu: FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleMenuItemClick = (item: MenuItem & { uuid?: string; categoryCode?: string }) => {
+  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string }) => {
     if (item.hasDropdown) {
-      // Si el item tiene uuid de la API, usar DynamicMobileSubmenu
-      if (item.uuid && item.categoryCode) {
-        setActiveCategoryUuid(item.uuid);
-        setActiveCategoryCode(item.categoryCode);
+      // Si el item tiene menus de la API, usar DynamicMobileSubmenu
+      if (item.menus && item.menus.length > 0) {
+        setActiveMenus(item.menus);
+        setActiveCategoryCode(item.categoryCode || '');
         setActiveSubmenu(item.name);
       } else if (SUBMENU_COMPONENTS[item.name]) {
         // Fallback a componente estático
-        setActiveCategoryUuid(null);
+        setActiveMenus(null);
         setActiveCategoryCode(null);
         setActiveSubmenu(item.name);
       }
@@ -67,13 +68,14 @@ export const MobileMenu: FC<Props> = ({
   // Determinar qué componente de submenú renderizar
   let SubmenuComponent = null;
   if (activeSubmenu) {
-    if (activeCategoryUuid && activeCategoryCode) {
+    if (activeMenus && activeMenus.length > 0 && activeCategoryCode) {
       // Usar DynamicMobileSubmenu para categorías con datos de API
       SubmenuComponent = (
         <DynamicMobileSubmenu
-          categoryUuid={activeCategoryUuid}
+          menus={activeMenus}
           categoryCode={activeCategoryCode}
           onClose={onClose}
+          loading={loading}
         />
       );
     } else if (SUBMENU_COMPONENTS[activeSubmenu]) {

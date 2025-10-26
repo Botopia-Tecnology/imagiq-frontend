@@ -41,20 +41,20 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
 
   // Vista principal producto - 1000x1000, fill_pad (mantiene proporciones, rellena espacios)
   // q_auto:best para máxima calidad
-  'product-main': 'f_auto,q_auto:best,c_fill,g_auto,w_1000,h_1000',
+  'product-main': 'f_auto,q_auto:best,c_pad,g_auto,w_3000,h_3000',
 
-  // Detalle producto - 1000x1000, fill_pad (mantiene proporciones completas, máxima calidad)
+  // Detalle producto - 1000x1000, pad (mantiene proporciones completas, máxima calidad)
   // q_auto:best para máxima calidad
-  'product-detail': 'f_auto,q_auto:best,c_fill_pad,g_auto,w_1000,h_1000,b_auto:predominant',
+  'product-detail': 'f_auto,q_auto:best,c_pad,w_1000,h_1000',
 
-  // Thumbnail - 150x150, fill_pad con relleno
-  thumbnail: 'f_auto,q_auto:best,c_fill_pad,g_auto,w_150,h_150,b_auto:predominant',
+  // Thumbnail - 150x150, pad con relleno
+  thumbnail: 'f_auto,q_auto:best,c_pad,g_auto,w_150,h_150,b_auto:predominant',
 
-  // Comparación - 300x300, fill_pad
-  comparison: 'f_auto,q_auto:best,c_fill_pad,g_auto,w_300,h_300,b_auto:predominant',
+  // Comparación - 300x300, pad
+  comparison: 'f_auto,q_auto:best,c_pad,g_auto,w_300,h_300,b_auto:predominant',
 
-  // Hero/Banner - 1200x600, fill (recorta para llenar completamente)
-  hero: 'f_auto,q_auto:best,c_fill,g_auto,w_1200,h_600',
+  // Hero/Banner - 1200x600, pad (recorta para llenar completamente)
+  hero: 'f_auto,q_auto:best,c_pad,g_auto,w_1200,h_600',
 
   // Original - solo formato y calidad automática (máxima calidad)
   original: 'f_auto,q_auto:best',

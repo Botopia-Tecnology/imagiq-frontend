@@ -190,6 +190,11 @@ export const useProducts = (
       setLoading(true);
       setError(null);
 
+      // Si no es append, limpiar productos inmediatamente para mostrar skeleton
+      if (!append) {
+        setProducts([]);
+      }
+
       try {
         const apiParams = convertFiltersToApiParams(filters, customOffset);
         const response = await productEndpoints.getFiltered(apiParams);

@@ -19,7 +19,7 @@ import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
 import SubmenuCarousel from "./SubmenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
-import SkeletonCard from "@/components/SkeletonCard";
+import SkeletonCard from "@/components/SkeletonCard"; // Aún se usa para carga inicial
 import MobileFilterSidebar from "./MobileFilterSidebar";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
@@ -207,19 +207,13 @@ export default function CategorySection({
                 viewMode={viewMode}
                 categoryName={sectionTitle}
                 showBanner={(device === "desktop" || device === "large") && products.length >= 4}
+                showLazySkeletons={hasMore}
+                lazySkeletonCount={3}
               />
 
-              {/* Scroll infinito dentro de la página actual */}
+              {/* Elemento invisible para detectar scroll */}
               {!error && hasMore && (
-                <div ref={loadMoreRef} className="w-full">
-                  {loading && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-                      {Array.from({ length: 3 }, (_, i) => (
-                        <SkeletonCard key={`lazy-sk-${i}`} />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <div ref={loadMoreRef} className="h-4" />
               )}
 
               {/* Paginación tradicional */}

@@ -143,7 +143,7 @@ export function useCategoryProducts(
 
       return applySortToFilters({
         ...apiFilters,
-        page: currentPage,
+        page: 1,
         limit: itemsPerPage,
         lazyLimit: 6, // Cargar 6 productos por scroll
         lazyOffset: 0

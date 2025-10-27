@@ -2,61 +2,22 @@
  * 📱 PRODUCT SHOWCASE - 4 Product Cards
  *
  * Muestra 4 productos destacados en formato de grid
- * - Galaxy S25 FE + Buds3 FE
- * - Galaxy S25 Ultra 256 GB
- * - Galaxy Tab S11 256GB + Adaptador
- * - Galaxy Watch8 Classic de 40 mm
+ * Ahora con productos reales del backend (dispositivos móviles)
  */
 
 "use client";
 
 import { useState } from "react";
-import Image, { StaticImageData } from "next/image";
+import Image from "next/image";
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
-
-// Importar imágenes
-import s25feImg from "@/img/dispositivosmoviles/cel1.png";
-import s25ultraImg from "@/img/dispositivosmoviles/cel2.png";
-import tabletImg from "@/img/tabletas/tableta1.png";
-import watchImg from "@/img/categorias/galaxy_watch.png";
-
-interface Product {
-  id: string;
-  title: string;
-  image: StaticImageData;
-  href: string;
-}
-
-const products: Product[] = [
-  {
-    id: "s25-fe-buds",
-    title: "Galaxy S25 FE + Buds3 FE",
-    image: s25feImg,
-    href: "/productos/smartphones/galaxy-s25-fe",
-  },
-  {
-    id: "s25-ultra",
-    title: "Galaxy S25 Ultra 256 GB",
-    image: s25ultraImg,
-    href: "/productos/smartphones/galaxy-s25-ultra",
-  },
-  {
-    id: "tab-s11",
-    title: "Galaxy Tab S11 256GB + Adaptador",
-    image: tabletImg,
-    href: "/productos/tablets/galaxy-tab-s11",
-  },
-  {
-    id: "watch8-classic",
-    title: "Galaxy Watch8 Classic de 40 mm",
-    image: watchImg,
-    href: "/productos/wearables/galaxy-watch8-classic",
-  },
-];
+import { useProducts } from "@/features/products/useProducts";
+import type { ProductCardProps as ProductData } from "@/app/productos/components/ProductCard";
+import emptyImg from "@/img/empty.jpeg";
+import SkeletonCard from "@/components/SkeletonCard";
 
 interface ProductCardProps {
-  product: Product;
+  product: ProductData;
 }
 
 function ProductCard({ product }: ProductCardProps) {
@@ -65,14 +26,20 @@ function ProductCard({ product }: ProductCardProps) {
   const handleClick = () => {
     posthogUtils.capture("product_showcase_card_click", {
       product_id: product.id,
-      product_title: product.title,
+      product_title: product.name,
       source: "product_showcase",
     });
   };
 
+  // Determinar la URL del producto
+  const productUrl = `/productos/viewpremium/${product.sku || product.id}`;
+
+  // Usar la imagen de preview o empty como fallback
+  const imageUrl = product.imagePreviewUrl || emptyImg;
+
   return (
     <Link
-      href={product.href}
+      href={productUrl}
       onClick={handleClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -84,15 +51,15 @@ function ProductCard({ product }: ProductCardProps) {
           className="text-base font-semibold text-gray-900 text-center leading-tight h-[48px] flex items-center justify-center w-full"
           style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
         >
-          {product.title}
+          {product.name}
         </h3>
 
         {/* Imagen del producto */}
         <div className="relative w-full flex-1 flex items-center justify-center">
           <div className="relative w-[200px] h-[200px]">
             <Image
-              src={product.image}
-              alt={product.title}
+              src={imageUrl}
+              alt={product.name}
               fill
               className={`object-contain transition-transform duration-500 ease-out ${
                 isHovered ? "scale-110" : "scale-100"
@@ -126,12 +93,56 @@ function ProductCard({ product }: ProductCardProps) {
 }
 
 export default function ProductShowcase() {
+  // Obtener 4 productos de dispositivos móviles
+  const { products, loading } = useProducts({
+    category: "MOV",
+    limit: 4,
+    page: 1,
+  });
+
+  // Mostrar skeletons mientras carga
+  if (loading) {
+    return (
+      <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
+        <div className="w-full" style={{ maxWidth: "1440px" }}>
+          {/* Desktop: Grid 4 columnas */}
+          <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={`skeleton-${i}`} className="w-full h-[420px]">
+                <SkeletonCard />
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile: Scroll horizontal */}
+          <div className="md:hidden overflow-x-auto scrollbar-hide">
+            <div className="flex gap-[25px] px-4">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={`skeleton-mobile-${i}`} className="flex-shrink-0 w-[280px] h-[420px]">
+                  <SkeletonCard />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Si no hay productos, no mostrar nada
+  if (!products || products.length === 0) {
+    return null;
+  }
+
+  // Tomar solo los primeros 4 productos
+  const displayProducts = products.slice(0, 4);
+
   return (
     <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
       <div className="w-full" style={{ maxWidth: "1440px" }}>
         {/* Desktop: Grid 4 columnas */}
         <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
-          {products.map((product) => (
+          {displayProducts.map((product) => (
             <div key={product.id} className="w-full h-[420px]">
               <ProductCard product={product} />
             </div>
@@ -141,7 +152,7 @@ export default function ProductShowcase() {
         {/* Mobile: Scroll horizontal */}
         <div className="md:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-[25px] px-4">
-            {products.map((product) => (
+            {displayProducts.map((product) => (
               <div
                 key={product.id}
                 className="flex-shrink-0 w-[280px] h-[420px]"

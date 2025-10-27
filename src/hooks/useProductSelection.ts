@@ -8,6 +8,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ProductApiData } from '@/lib/api';
 import { colorMap } from '@/lib/productMapper';
+import { getColorName } from '@/lib/colorNaming';
 
 export interface ProductVariant {
   index: number;
@@ -36,6 +37,7 @@ export interface SelectionState {
 export interface ColorOption {
   color: string;
   hex: string;
+  label?: string; // Nombre legible del color
   variants: ProductVariant[];
 }
 
@@ -339,21 +341,26 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       const isHexColor = /^#[0-9A-F]{6}$/i.test(trimmedColor);
 
       let hex: string;
+      let label: string;
+
       if (isHexColor) {
-        // Si es hexadecimal, usarlo directamente
+        // Si es hexadecimal, usarlo directamente y obtener nombre con ntc
         hex = trimmedColor;
+        label = getColorName(trimmedColor);
       } else {
         // Si es un nombre, buscar en el colorMap
         const normalizedColor = trimmedColor.toLowerCase();
         const colorInfo = colorMap[normalizedColor];
         hex = colorInfo?.hex || '#808080';
+        label = colorInfo?.label || color;
       }
 
-      console.log(`Color mapping: "${color}" (isHex: ${isHexColor}) -> hex: "${hex}"`);
+      console.log(`Color mapping: "${color}" (isHex: ${isHexColor}) -> hex: "${hex}", label: "${label}"`);
 
       return {
-        color,
+        color, // Mantener el valor original para lógica interna
         hex,
+        label, // Agregar el nombre legible
         variants: allVariants.filter(v => v.color === color)
       };
     });

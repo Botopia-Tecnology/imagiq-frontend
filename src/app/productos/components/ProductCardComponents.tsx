@@ -75,14 +75,7 @@ export const ColorSelector = ({
 
   return (
     <div>
-      <p
-        className={cn(
-          "text-xs py-1.5",
-          isOutOfStock ? "text-gray-400" : "text-gray-600"
-        )}
-      >
-        <span className="font-medium">Color:</span> {selectedColor?.label}
-      </p>
+      {/* Removido el label del color - solo mostrar selectores */}
       <div className="flex gap-2 flex-wrap">
         {sortedColors.slice(0, 4).map((color) => (
           <button

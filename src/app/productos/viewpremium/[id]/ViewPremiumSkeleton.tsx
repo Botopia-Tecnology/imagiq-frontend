@@ -18,7 +18,7 @@ export default function ViewPremiumSkeleton() {
       {/* Layout principal de dos columnas */}
       <div className="pt-8 pb-0">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
-          {/* Columna izquierda: Carrusel - ocupa todo el ancho */}
+          {/* Columna izquierda: Carrusel - ocupa el ancho */}
           <div className="lg:col-span-9">
             {/* DESKTOP: Carrusel grande */}
             <div className="hidden lg:block">

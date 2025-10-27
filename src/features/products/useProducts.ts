@@ -51,7 +51,8 @@ interface UseProductsReturn {
   loadMore: () => Promise<void>;
   goToPage: (page: number) => Promise<void>;
   refreshProducts: () => Promise<void>;
-  hasMore: boolean;
+  hasMore: boolean; // Hay más productos en la página actual (lazy scroll)
+  hasMorePages: boolean; // Hay más páginas disponibles (paginación)
 }
 interface FavoriteFilters {
   page?: number;
@@ -120,15 +121,27 @@ export const useProducts = (
   );
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
   const [requestId, setRequestId] = useState(0);
+  const [lazyOffset, setLazyOffset] = useState(0);
+  const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
-    (filters: ProductFilters): ProductFilterParams => {
+    (filters: ProductFilters, offset?: number): ProductFilterParams => {
       const params: ProductFilterParams = {
         page: filters.page || currentPage,
-        limit: filters.limit || 50,
+        limit: filters.limit || 20,
         precioMin: 1, // Siempre filtrar productos con precio mayor a 0 por defecto
       };
+
+      // Agregar parámetros de lazy loading si están definidos
+      if (filters.lazyLimit !== undefined) {
+        params.lazyLimit = filters.lazyLimit;
+      }
+      if (offset !== undefined) {
+        params.lazyOffset = offset;
+      } else if (filters.lazyOffset !== undefined) {
+        params.lazyOffset = filters.lazyOffset;
+      }
 
       // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
       if (filters.category) params.categoria = filters.category;
@@ -169,7 +182,7 @@ export const useProducts = (
 
   // Función principal para obtener productos
   const fetchProducts = useCallback(
-    async (filters: ProductFilters = {}, append = false) => {
+    async (filters: ProductFilters = {}, append = false, customOffset?: number) => {
       // Incrementar el ID de la petición para invalidar peticiones anteriores
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
@@ -178,7 +191,7 @@ export const useProducts = (
       setError(null);
 
       try {
-        const apiParams = convertFiltersToApiParams(filters);
+        const apiParams = convertFiltersToApiParams(filters, customOffset);
         const response = await productEndpoints.getFiltered(apiParams);
 
         // Verificar si esta petición sigue siendo válida comparando con el ID más reciente
@@ -194,10 +207,21 @@ export const useProducts = (
             const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
             if (append) {
-              setProducts((prev) => [...prev, ...mappedProducts]);
+              setProducts((prev) => {
+                // Crear un Set con los IDs existentes para evitar duplicados
+                const existingIds = new Set(prev.map(p => p.id));
+                // Filtrar solo los productos nuevos que no existen
+                const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
+                return [...prev, ...newProducts];
+              });
             } else {
               setProducts(mappedProducts);
               setGroupedProducts(groupProductsByCategory(mappedProducts));
+              // Resetear offset y estado cuando no es append
+              if (!filters.lazyOffset && customOffset === undefined) {
+                setLazyOffset(0);
+                setHasMoreInCurrentPage(true);
+              }
             }
 
             setTotalItems(apiData.totalItems);
@@ -278,25 +302,44 @@ export const useProducts = (
       if (!filters.page) {
         setCurrentPage(1);
       }
-      await fetchProducts(filters, false);
+      // Resetear offset y estado cuando se cambian filtros
+      setLazyOffset(0);
+      setHasMoreInCurrentPage(true);
+      await fetchProducts(filters, false, 0);
     },
     [fetchProducts]
   );
 
-  // Función para cargar más productos (paginación)
+  // Función para cargar más productos (paginación con lazy loading)
   const loadMore = useCallback(async () => {
-    if (hasNextPage && !loading) {
-      const nextPage = currentPage + 1;
+    if (!loading) {
       if (currentSearchQuery) {
-        // Si estamos en modo búsqueda, usar searchProducts
-        await searchProducts(currentSearchQuery, nextPage);
+        // Si estamos en modo búsqueda, usar paginación tradicional
+        if (hasNextPage) {
+          const nextPage = currentPage + 1;
+          await searchProducts(currentSearchQuery, nextPage);
+        }
       } else {
-        // Si no estamos en modo búsqueda, usar fetchProducts normal
-        setCurrentPage(nextPage);
-        await fetchProducts(currentFilters, true);
+        // Si usamos lazy loading dentro de la página actual
+        const lazyLimit = currentFilters.lazyLimit || 6;
+        const limit = currentFilters.limit || 20;
+
+        // Calcular el nuevo offset
+        const newOffset = lazyOffset + lazyLimit;
+
+        // Si el nuevo offset alcanza el límite de la página actual, DETENER
+        // El usuario debe usar los botones de paginación para ir a la siguiente página
+        if (newOffset < limit) {
+          // Continuar en la misma página con nuevo offset
+          setLazyOffset(newOffset);
+          await fetchProducts(currentFilters, true, newOffset);
+        } else {
+          // Ya no hay más productos en la página actual
+          setHasMoreInCurrentPage(false);
+        }
       }
     }
-  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, lazyOffset, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -306,10 +349,12 @@ export const useProducts = (
           // Si estamos en modo búsqueda, usar searchProducts
           await searchProducts(currentSearchQuery, page);
         } else {
-          // Si no estamos en modo búsqueda, usar fetchProducts normal
+          // Resetear offset y estado al cambiar de página manualmente
+          setLazyOffset(0);
+          setHasMoreInCurrentPage(true);
           const filtersWithPage = { ...currentFilters, page };
           setCurrentFilters(filtersWithPage);
-          await fetchProducts(filtersWithPage, false);
+          await fetchProducts(filtersWithPage, false, 0);
         }
       }
     },
@@ -322,10 +367,12 @@ export const useProducts = (
       // Si estamos en modo búsqueda, refrescar la búsqueda actual
       await searchProducts(currentSearchQuery, currentPage);
     } else {
-      // Si no estamos en modo búsqueda, usar fetchProducts normal
+      // Resetear offset y estado al refrescar
+      setLazyOffset(0);
+      setHasMoreInCurrentPage(true);
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
-      await fetchProducts(filtersToUse, false);
+      await fetchProducts(filtersToUse, false, 0);
     }
   }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts]);
 
@@ -340,6 +387,12 @@ export const useProducts = (
       typeof initialFilters === "function"
         ? initialFilters()
         : initialFilters || {};
+
+    // Actualizar currentFilters con los filtros iniciales para que loadMore los use
+    setCurrentFilters((prevFilters) => ({
+      ...prevFilters,
+      ...filtersToUse,
+    }));
     fetchProducts(filtersToUse, false);
   }, [initialFilters, fetchProducts]);
 
@@ -358,7 +411,8 @@ export const useProducts = (
     loadMore,
     goToPage,
     refreshProducts,
-    hasMore: hasNextPage,
+    hasMore: hasMoreInCurrentPage, // Hay más productos en la página actual (para lazy scroll)
+    hasMorePages: hasNextPage, // Hay más páginas (para paginación)
   };
 };
 

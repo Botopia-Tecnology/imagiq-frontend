@@ -31,6 +31,8 @@ export interface BaseApiFilters {
   filterMode?: "AND" | "OR";
   page?: number;
   limit?: number;
+  lazyLimit?: number;
+  lazyOffset?: number;
 }
 
 /**
@@ -60,6 +62,8 @@ export interface FrontendApiFilters {
   model?: string;        // maps to modelo
   page?: number;
   limit?: number;
+  lazyLimit?: number;
+  lazyOffset?: number;
 }
 
 /**

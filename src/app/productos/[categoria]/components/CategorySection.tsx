@@ -9,17 +9,19 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 import Pagination from "../../dispositivos-moviles/components/Pagination";
+import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
 import SubmenuCarousel from "./SubmenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
-import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import SkeletonCard from "@/components/SkeletonCard";
 import MobileFilterSidebar from "./MobileFilterSidebar";
+import LoadingSpinner from "@/components/LoadingSpinner";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
@@ -47,8 +49,7 @@ export default function CategorySection({
   sectionTitle,
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } =
-    useCategoryPagination();
+  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination();
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,
@@ -68,7 +69,7 @@ export default function CategorySection({
   const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoria, seccion);
 
-  const { products, loading, error, totalItems, totalPages, refreshProducts } = useCategoryProducts(
+  const { products, loading, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -80,6 +81,14 @@ export default function CategorySection({
     submenuUuid,
     categoryCode
   );
+
+  // Configurar scroll infinito
+  const loadMoreRef = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore: hasMore,
+    isLoading: loading,
+    threshold: 800, // Disparar la carga cuando esté a 800px del final
+  });
 
   useCategoryAnalytics(categoria, seccion, totalItems);
 
@@ -199,6 +208,14 @@ export default function CategorySection({
                 showBanner={(device === "desktop" || device === "large") && products.length >= 4}
               />
 
+              {/* Scroll infinito dentro de la página actual */}
+              {!error && products.length > 0 && hasMore && (
+                <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
+                  {loading && <LoadingSpinner />}
+                </div>
+              )}
+
+              {/* Paginación tradicional */}
               {!error && products.length > 0 && (
                 <div className="mt-8">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
@@ -206,6 +223,11 @@ export default function CategorySection({
                       itemsPerPage={itemsPerPage}
                       onItemsPerPageChange={handleItemsPerPageChange}
                     />
+                    {!hasMore && !hasMorePages && (
+                      <p className="text-gray-500 text-sm">
+                        Has visto todos los productos de esta página
+                      </p>
+                    )}
                   </div>
                   <Pagination
                     currentPage={currentPage}

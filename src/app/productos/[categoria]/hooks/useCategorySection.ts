@@ -141,7 +141,13 @@ export function useCategoryProducts(
         return null; // No hacer llamada API
       }
 
-      return applySortToFilters({ ...apiFilters, page: currentPage, limit: itemsPerPage }, sortBy);
+      return applySortToFilters({
+        ...apiFilters,
+        page: currentPage,
+        limit: itemsPerPage,
+        lazyLimit: 6, // Cargar 6 productos por scroll
+        lazyOffset: 0
+      }, sortBy);
     },
     [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy]
   );

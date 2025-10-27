@@ -251,7 +251,7 @@ export default function ProductCard({
 
   // Usar precios del nuevo sistema si están disponibles
   const finalCurrentPrice = currentPrice ? `$ ${Math.round(currentPrice).toLocaleString('es-CO')}` : legacyPrice;
-  const finalCurrentOriginalPrice = currentOriginalPrice ? `$ ${Math.round(currentOriginalPrice).toLocaleString('es-CO')}` : legacyOriginalPrice;
+  const finalCurrentOriginalPrice = currentOriginalPrice ? `$${Math.round(currentOriginalPrice).toLocaleString('es-CO')}` : legacyOriginalPrice;
 
   const handleAddToCart = async () => {
     if (isLoading) {
@@ -543,7 +543,7 @@ export default function ProductCard({
                         isOutOfStock ? "text-gray-400" : "text-blue-600"
                       )}
                     >
-                      Ahorra $ {savings.toLocaleString("es-CO")}
+                      Ahorra ${savings.toLocaleString("es-CO")}
                     </span>
                   </div>
                 );
@@ -570,7 +570,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs  font-bold",
+                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs lg:text-lg  font-bold",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -588,7 +588,7 @@ export default function ProductCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-black py-2.5 px-4 text-xs font-bold hover:underline transition-all border border-gray-300 rounded-full"
+              className="w-full text-black py-2.5 px-4 text-xs lg:text-md font-bold hover:underline transition-all border border-gray-300 rounded-full"
             >
               Más información
             </button>

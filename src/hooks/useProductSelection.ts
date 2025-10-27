@@ -332,14 +332,25 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   // Funciones helper para compatibilidad con componentes legacy
   const getColorOptions = useCallback((): ColorOption[] => {
     return availableColorsFiltered.map(color => {
-      // Normalizar el color: trim y lowercase
-      const normalizedColor = color.toLowerCase().trim();
-      // Usar el colorMap de productMapper para obtener el hex correcto
-      const colorInfo = colorMap[normalizedColor];
-      const hex = colorInfo?.hex || '#808080';
-      
-      console.log(`Color mapping: "${color}" (normalized: "${normalizedColor}") -> hex: "${hex}" (found: ${!!colorInfo})`);
-      
+      // Normalizar el color: trim
+      const trimmedColor = color.trim();
+
+      // Detectar si es un color hexadecimal
+      const isHexColor = /^#[0-9A-F]{6}$/i.test(trimmedColor);
+
+      let hex: string;
+      if (isHexColor) {
+        // Si es hexadecimal, usarlo directamente
+        hex = trimmedColor;
+      } else {
+        // Si es un nombre, buscar en el colorMap
+        const normalizedColor = trimmedColor.toLowerCase();
+        const colorInfo = colorMap[normalizedColor];
+        hex = colorInfo?.hex || '#808080';
+      }
+
+      console.log(`Color mapping: "${color}" (isHex: ${isHexColor}) -> hex: "${hex}"`);
+
       return {
         color,
         hex,

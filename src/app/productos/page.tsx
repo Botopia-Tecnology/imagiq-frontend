@@ -89,20 +89,6 @@ function ProductosContent() {
   // Estados para vista y ordenamiento
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [sortBy, setSortBy] = useState("precio-mayor"); // Por defecto: precio mayor a menor
-  
-  // Mapeo de opciones de ordenamiento a parámetros de API
-  const getSortParams = (sortOption: string) => {
-    switch (sortOption) {
-      case "precio-menor":
-        return { sortBy: "precio", sortOrder: "asc" };
-      case "precio-mayor":
-        return { sortBy: "precio", sortOrder: "desc" };
-      case "nombre":
-        return { sortBy: "nombre", sortOrder: "asc" };
-      default:
-        return { sortBy: "", sortOrder: "" };
-    }
-  };
 
   // Obtener parámetro de búsqueda de la URL
   const searchQuery = searchParams?.get("q");
@@ -169,14 +155,14 @@ function ProductosContent() {
     switch (sortBy) {
       case "precio-menor":
         return sorted.sort((a, b) => {
-          const priceA = parseFloat(a.price || "0");
-          const priceB = parseFloat(b.price || "0");
+          const priceA = Number.parseFloat(a.price || "0");
+          const priceB = Number.parseFloat(b.price || "0");
           return priceA - priceB;
         });
       case "precio-mayor":
         return sorted.sort((a, b) => {
-          const priceA = parseFloat(a.price || "0");
-          const priceB = parseFloat(b.price || "0");
+          const priceA = Number.parseFloat(a.price || "0");
+          const priceB = Number.parseFloat(b.price || "0");
           return priceB - priceA;
         });
       case "nombre":
@@ -188,6 +174,13 @@ function ProductosContent() {
 
   // UX: contador de resultados
   const resultCount = sortedProducts.length;
+
+  // Compute grid classes
+  const gridClasses = useMemo(() => {
+    if (viewMode === "list") return "grid-cols-1";
+    if (searchQuery) return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4";
+    return "grid-cols-1 sm:grid-cols-2 md:grid-cols-3";
+  }, [viewMode, searchQuery]);
 
   // Handlers para paginación
   const handlePageChange = useCallback((page: number) => {
@@ -306,13 +299,7 @@ function ProductosContent() {
             <div className={searchQuery ? "w-full" : "flex-1"}>
               {sortedProducts.length > 0 ? (
                 <>
-                  <div className={`grid gap-4 md:gap-5 lg:gap-6 justify-items-center ${
-                    viewMode === "list"
-                      ? "grid-cols-1"
-                      : searchQuery
-                        ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
-                        : "grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
-                  }`}>
+                  <div className={`grid gap-4 md:gap-5 lg:gap-6 justify-items-center ${gridClasses}`}>
                     {sortedProducts.map((product) => (
                       <ProductCard
                         key={product.id}
@@ -331,6 +318,7 @@ function ProductosContent() {
                         puntos_q={product.puntos_q}
                         viewMode={viewMode}
                         stock={product.stock}
+                        apiProduct={product.apiProduct}
                       />
                     ))}
                   </div>

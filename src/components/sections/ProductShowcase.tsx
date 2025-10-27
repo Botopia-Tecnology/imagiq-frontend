@@ -1,7 +1,7 @@
 /**
  * 📱 PRODUCT SHOWCASE - 4 Product Cards
  *
- * Muestra 4 productos destacados en formato de grid
+ * Muestra 2 celulares y 2 relojes premium
  * Ahora con productos reales del backend
  */
 
@@ -14,9 +14,9 @@ import SkeletonCard from "@/components/SkeletonCard";
 
 export default function ProductShowcase() {
   // Memoizar filtros para evitar re-renders infinitos
-  // Top 4 productos de mayor precio con stock disponible
+  // Top productos de mayor precio con stock disponible
   const filters = useMemo(() => ({
-    limit: 20, // Traer más productos para filtrar manualmente
+    limit: 30, // Traer más productos para filtrar manualmente
     page: 1,
     minStock: 1, // Solo productos con stock
     sortBy: "precio",
@@ -26,19 +26,46 @@ export default function ProductShowcase() {
   // Obtener productos
   const { products: allProducts, loading } = useProducts(filters);
 
-  // Filtrar manualmente solo dispositivos móviles por subcategoría
+  // Filtrar y combinar 2 celulares + hasta 2 relojes (completar con celulares si faltan)
   const products = useMemo(() => {
     if (!allProducts) return [];
 
-    // Filtrar por subcategoría que contenga "Movil" o "Dispositivos"
-    return allProducts
+    // Filtrar celulares/smartphones
+    const todosLosCelulares = allProducts
       .filter(p =>
         p.subcategory?.toLowerCase().includes('movil') ||
         p.subcategory?.toLowerCase().includes('dispositivo') ||
         p.subcategory?.toLowerCase().includes('celular') ||
         p.subcategory?.toLowerCase().includes('smartphone')
+      );
+
+    // Filtrar relojes
+    const relojes = allProducts
+      .filter(p =>
+        p.subcategory?.toLowerCase().includes('reloj') ||
+        p.subcategory?.toLowerCase().includes('watch') ||
+        p.subcategory?.toLowerCase().includes('wearable') ||
+        p.name?.toLowerCase().includes('watch') ||
+        p.name?.toLowerCase().includes('galaxy watch')
       )
-      .slice(0, 4); // Solo tomar los primeros 4
+      .slice(0, 2); // Intentar tomar hasta 2 relojes
+
+    // Tomar 2 celulares iniciales
+    const celularesIniciales = todosLosCelulares.slice(0, 2);
+
+    // Si faltan relojes para completar 4 productos, agregar más celulares
+    const relojesDisponibles = relojes.length;
+    const celularesAdicionales = 4 - 2 - relojesDisponibles; // Total necesario para llegar a 4
+
+    // Tomar celulares adicionales (empezar desde el índice 2, después de los 2 iniciales)
+    const celularesExtra = celularesAdicionales > 0
+      ? todosLosCelulares.slice(2, 2 + celularesAdicionales)
+      : [];
+
+    // Combinar: 2 celulares + relojes disponibles + celulares extra si es necesario
+    const combined = [...celularesIniciales, ...relojes, ...celularesExtra];
+
+    return combined.slice(0, 4); // Asegurar máximo 4 productos
   }, [allProducts]);
 
   // Mostrar skeletons mientras carga
@@ -75,7 +102,7 @@ export default function ProductShowcase() {
     return null;
   }
 
-  // Tomar solo los primeros 4 productos
+  // Asegurar que tengamos exactamente 4 productos (o los que haya)
   const displayProducts = products.slice(0, 4);
 
   return (

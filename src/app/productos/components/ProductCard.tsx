@@ -459,7 +459,7 @@ export default function ProductCard({
         </div>
 
         {/* Selector de colores */}
-        <div className="h-[66px] px-3">
+        <div className="h-[40px] px-3">
           <ColorSelector
             colors={apiProduct ? 
               productSelection.availableColors.map(colorName => {
@@ -481,7 +481,7 @@ export default function ProductCard({
         </div>
 
         {/* Selector de capacidad */}
-        <div className="h-[60px] px-3">
+        <div className="h-[40px] px-3">
           <CapacitySelector
             capacities={apiProduct ? 
               productSelection.availableCapacities.map(capacityName => {
@@ -528,10 +528,10 @@ export default function ProductCard({
                 if (!hasSavings) return null;
 
                 return (
-                  <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-1.5">
                     <span
                       className={cn(
-                        "text-sm line-through",
+                        "text-xs line-through",
                         isOutOfStock ? "text-gray-300" : "text-gray-500"
                       )}
                     >
@@ -539,7 +539,7 @@ export default function ProductCard({
                     </span>
                     <span
                       className={cn(
-                        "text-sm font-semibold",
+                        "text-xs font-semibold whitespace-nowrap",
                         isOutOfStock ? "text-gray-400" : "text-blue-600"
                       )}
                     >
@@ -558,7 +558,7 @@ export default function ProductCard({
                   e.stopPropagation();
                   alert("Te notificaremos cuando este producto esté disponible");
                 }}
-                className="w-full bg-black text-white py-2.5 px-4 rounded-full text-sm font-bold hover:bg-gray-800 transition-colors"
+                className="w-full bg-black text-white py-2.5 px-4 rounded-full text-xs md:text-sm font-bold hover:bg-gray-800 transition-colors"
               >
                 Notifícame
               </button>
@@ -570,7 +570,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-sm font-bold",
+                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs md:text-sm font-bold",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -588,7 +588,7 @@ export default function ProductCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-black py-2.5 px-4 text-sm font-bold hover:underline transition-all border border-gray-300 rounded-full"
+              className="w-full text-black py-2.5 px-4 text-xs md:text-sm font-bold hover:underline transition-all border border-gray-300 rounded-full"
             >
               Más información
             </button>

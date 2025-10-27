@@ -6,6 +6,7 @@
 import { forwardRef, useState } from "react";
 import Image from "next/image";
 import LoadingSpinner from "@/components/LoadingSpinner";
+import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard, {
   type ProductCardProps,
 } from "../../components/ProductCard";
@@ -22,6 +23,8 @@ interface CategoryProductsGridProps {
   viewMode?: "grid" | "list";
   categoryName: string;
   showBanner?: boolean;
+  showLazySkeletons?: boolean; // Mostrar skeletons de lazy loading
+  lazySkeletonCount?: number; // Cantidad de skeletons
 }
 
 
@@ -38,6 +41,8 @@ const CategoryProductsGrid = forwardRef<
       viewMode = "grid",
       categoryName,
       showBanner = false,
+      showLazySkeletons = false,
+      lazySkeletonCount = 3,
     },
     ref
   ) => {
@@ -83,7 +88,8 @@ const CategoryProductsGrid = forwardRef<
       }
     };
 
-    if (loading) {
+    // Solo mostrar spinner de carga inicial cuando NO hay productos
+    if (loading && products.length === 0) {
       return (
         <div className="flex justify-center items-center min-h-[400px]">
           <LoadingSpinner />
@@ -249,6 +255,13 @@ const CategoryProductsGrid = forwardRef<
                 </div>
               );
             })}
+
+            {/* Skeletons de lazy loading - aparecen en el mismo grid después de los productos */}
+            {showLazySkeletons && loading && Array.from({ length: lazySkeletonCount }, (_, i) => (
+              <div key={`lazy-skeleton-${i}`} className="w-full">
+                <SkeletonCard />
+              </div>
+            ))}
           </>
         )}
 

@@ -9,16 +9,17 @@
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 
 import Pagination from "../../dispositivos-moviles/components/Pagination";
+import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
 import SubmenuCarousel from "./SubmenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
-import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
-import SkeletonCard from "@/components/SkeletonCard";
+import SkeletonCard from "@/components/SkeletonCard"; // Aún se usa para carga inicial
 import MobileFilterSidebar from "./MobileFilterSidebar";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
@@ -47,8 +48,7 @@ export default function CategorySection({
   sectionTitle,
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } =
-    useCategoryPagination();
+  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination();
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,
@@ -68,7 +68,7 @@ export default function CategorySection({
   const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoria, seccion);
 
-  const { products, loading, error, totalItems, totalPages, refreshProducts } = useCategoryProducts(
+  const { products, loading, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -80,6 +80,14 @@ export default function CategorySection({
     submenuUuid,
     categoryCode
   );
+
+  // Configurar scroll infinito
+  const loadMoreRef = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore: hasMore,
+    isLoading: loading,
+    threshold: 800, // Disparar la carga cuando esté a 800px del final
+  });
 
   useCategoryAnalytics(categoria, seccion, totalItems);
 
@@ -178,7 +186,8 @@ export default function CategorySection({
           ref={productsRef}
           className={cn("flex-1 min-w-0", device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0")}
         >
-          {loading && (
+          {/* Skeleton solo en carga inicial (cuando no hay productos) */}
+          {loading && products.length === 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: itemsPerPage }, (_, i) => (
                 <SkeletonCard key={`sk-${i}`} />
@@ -186,7 +195,8 @@ export default function CategorySection({
             </div>
           )}
 
-          {!loading && (
+          {/* Mostrar productos siempre que haya al menos uno */}
+          {products.length > 0 && (
             <>
               <CategoryProductsGrid
                 ref={productsRef}
@@ -197,8 +207,16 @@ export default function CategorySection({
                 viewMode={viewMode}
                 categoryName={sectionTitle}
                 showBanner={(device === "desktop" || device === "large") && products.length >= 4}
+                showLazySkeletons={hasMore}
+                lazySkeletonCount={3}
               />
 
+              {/* Elemento invisible para detectar scroll */}
+              {!error && hasMore && (
+                <div ref={loadMoreRef} className="h-4" />
+              )}
+
+              {/* Paginación tradicional */}
               {!error && products.length > 0 && (
                 <div className="mt-8">
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
@@ -206,6 +224,11 @@ export default function CategorySection({
                       itemsPerPage={itemsPerPage}
                       onItemsPerPageChange={handleItemsPerPageChange}
                     />
+                    {!hasMore && !hasMorePages && (
+                      <p className="text-gray-500 text-sm">
+                        Has visto todos los productos de esta página
+                      </p>
+                    )}
                   </div>
                   <Pagination
                     currentPage={currentPage}

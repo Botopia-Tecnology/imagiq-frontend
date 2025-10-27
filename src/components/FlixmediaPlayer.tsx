@@ -232,7 +232,7 @@ export default function FlixmediaPlayer({
 
   // Estado 4: Contenedor para Flixmedia
   return (
-    <div ref={containerRef} className={`${className} w-full`}>
+    <div ref={containerRef} className={`${className} w-full px-4 md:px-6 lg:px-8`}>
       <div id="flix-inpage"></div>
     </div>
   );

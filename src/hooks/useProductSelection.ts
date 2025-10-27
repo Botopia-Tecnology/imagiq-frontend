@@ -328,7 +328,6 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     });
   }, []);
 
-  //START
   // Funciones helper para compatibilidad con componentes legacy
   const getColorOptions = useCallback((): ColorOption[] => {
     return availableColorsFiltered.map(color => {
@@ -339,6 +338,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       const isHexColor = /^#[0-9A-F]{6}$/i.test(trimmedColor);
 
       let hex: string;
+
       if (isHexColor) {
         // Si es hexadecimal, usarlo directamente
         hex = trimmedColor;
@@ -349,10 +349,8 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         hex = colorInfo?.hex || '#808080';
       }
 
-      console.log(`Color mapping: "${color}" (isHex: ${isHexColor}) -> hex: "${hex}"`);
-
       return {
-        color,
+        color, // Mantener el valor original para lógica interna
         hex,
         variants: allVariants.filter(v => v.color === color)
       };

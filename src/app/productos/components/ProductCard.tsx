@@ -370,7 +370,6 @@ export default function ProductCard({
         aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
       className={cn(
         "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
-        isOutOfStock && "opacity-60",
         className
       )}
     >
@@ -414,6 +413,14 @@ export default function ProductCard({
           })}
         </div>
 
+        {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
+        {isOutOfStock && (
+          <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
+            <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
+              <p className="text-xs text-gray-600 text-center font-medium">Sin unidades</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contenido del producto */}
@@ -421,10 +428,7 @@ export default function ProductCard({
         {/* Título del producto */}
         <div className="px-3">
           <h3
-            className={cn(
-              "text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap",
-              isOutOfStock ? "text-gray-500" : "text-black"
-            )}
+            className="text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap text-black"
           >
             <button
               type="button"
@@ -432,10 +436,7 @@ export default function ProductCard({
                 event.stopPropagation();
                 handleMoreInfo();
               }}
-              className={cn(
-                "w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black",
-                isOutOfStock ? "text-gray-500" : "text-black"
-              )}
+              className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
             >
               {apiProduct?.modelo || name}
             </button>
@@ -510,10 +511,7 @@ export default function ProductCard({
             <div className="space-y-1">
               {/* Precio principal */}
               <div
-                className={cn(
-                  "text-xl font-bold",
-                  isOutOfStock ? "text-gray-400" : "text-black"
-                )}
+                className="text-xl font-bold text-black"
               >
                 {finalCurrentPrice}
               </div>
@@ -530,18 +528,12 @@ export default function ProductCard({
                 return (
                   <div className="flex items-center gap-1.5">
                     <span
-                      className={cn(
-                        "text-xs line-through",
-                        isOutOfStock ? "text-gray-300" : "text-gray-500"
-                      )}
+                      className="text-xs line-through text-gray-500"
                     >
                       {finalCurrentOriginalPrice}
                     </span>
                     <span
-                      className={cn(
-                        "text-xs font-semibold whitespace-nowrap",
-                        isOutOfStock ? "text-gray-400" : "text-blue-600"
-                      )}
+                      className="text-xs font-semibold whitespace-nowrap text-blue-600"
                     >
                       Ahorra ${savings.toLocaleString("es-CO")}
                     </span>
@@ -552,36 +544,30 @@ export default function ProductCard({
           )}
           {/* Botones de acción */}
           <div className="space-y-2">
-            {isOutOfStock ? (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isOutOfStock) {
                   alert("Te notificaremos cuando este producto esté disponible");
-                }}
-                className="w-full bg-black text-white py-2.5 px-4 rounded-full text-xs font-bold hover:bg-gray-800 transition-colors"
-              >
-                Notifícame
-              </button>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
+                } else {
                   handleAddToCart();
-                }}
-                disabled={isLoading}
-                className={cn(
-                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs lg:text-lg  font-bold",
-                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                  isLoading && "animate-pulse"
-                )}
-              >
-                {isLoading ? (
-                  <Loader className="w-4 h-4 mx-auto" />
-                ) : (
-                  "Comprar ahora"
-                )}
-              </button>
-            )}
+                }
+              }}
+              disabled={isLoading}
+              className={cn(
+                "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs lg:text-lg font-bold",
+                "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                isLoading && "animate-pulse"
+              )}
+            >
+              {isLoading ? (
+                <Loader className="w-4 h-4 mx-auto" />
+              ) : isOutOfStock ? (
+                "Notifícame"
+              ) : (
+                "Comprar ahora"
+              )}
+            </button>
 
             <button
               onClick={(e) => {

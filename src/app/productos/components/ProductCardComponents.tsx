@@ -75,7 +75,6 @@ export const ColorSelector = ({
 
   return (
     <div>
-      {/* Removido el label del color - solo mostrar selectores */}
       <div className="flex gap-2 flex-wrap">
         {sortedColors.slice(0, 4).map((color) => (
           <button

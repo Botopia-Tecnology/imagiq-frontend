@@ -233,7 +233,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
 
   return {
     id,
-    name: apiProduct.nombreMarket,
+    name: apiProduct.modelo || apiProduct.nombreMarket,
     image,
     colors,
     capacities: capacities.length > 0 ? capacities : undefined,

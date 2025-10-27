@@ -331,6 +331,7 @@ function ProductosContent() {
                         puntos_q={product.puntos_q}
                         viewMode={viewMode}
                         stock={product.stock}
+                        apiProduct={product.apiProduct}
                       />
                     ))}
                   </div>

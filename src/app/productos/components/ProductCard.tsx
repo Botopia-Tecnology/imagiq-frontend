@@ -413,6 +413,14 @@ export default function ProductCard({
           })}
         </div>
 
+        {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
+        {isOutOfStock && (
+          <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
+            <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200 shadow-sm">
+              <p className="text-xs text-gray-600 text-center font-medium">Sin unidades</p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Contenido del producto */}
@@ -536,13 +544,6 @@ export default function ProductCard({
           )}
           {/* Botones de acción */}
           <div className="space-y-2">
-            {/* Etiqueta "Sin unidades" si no hay stock */}
-            {isOutOfStock && (
-              <div className="w-full py-1.5 px-3 rounded-md bg-gray-50 border border-gray-200">
-                <p className="text-xs text-gray-600 text-center font-medium">Sin unidades</p>
-              </div>
-            )}
-
             <button
               onClick={(e) => {
                 e.stopPropagation();

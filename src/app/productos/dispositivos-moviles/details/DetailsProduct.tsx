@@ -661,9 +661,9 @@ const DetailsProduct: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {benefits.map((benefit, index) => (
+              {benefits.map((benefit) => (
                 <div
-                  key={index}
+                  key={benefit.title}
                   className="flex flex-col items-center text-center"
                 >
                   <div

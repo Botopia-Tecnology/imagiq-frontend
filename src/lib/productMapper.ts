@@ -252,7 +252,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     subcategory: apiProduct.subcategoria,
     segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
     capacity: apiProduct.capacidad?.join(', ') || null,
-    stock: apiProduct.stock?.reduce((sum, s) => sum + s, 0) || 0,
+    stock: apiProduct.stockTotal?.reduce((sum, s) => sum + s, 0) || 0, // Usar stockTotal en lugar de stock
     sku: apiProduct.sku?.join(', ') || null,
     ean: apiProduct.ean?.join(', ') || null,
     detailedDescription: apiProduct.desDetallada?.join(' ') || null,

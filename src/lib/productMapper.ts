@@ -7,7 +7,6 @@
 import { ProductApiData } from './api';
 import { ProductCardProps, ProductColor, ProductCapacity } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
-import { getColorName } from './colorNaming';
 
 // Importar imágenes mock para usar temporalmente
 import emptyImg from '@/img/empty.jpeg';
@@ -335,9 +334,9 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Determinar si el color ya es un hexadecimal
     const isHexColor = /^#[0-9A-F]{6}$/i.test(color.trim());
 
-    // Si ya es hex, usarlo directamente y obtener nombre con ntc; sino buscar en colorMap
+    // Si ya es hex, usarlo directamente; sino buscar en colorMap
     const colorInfo = isHexColor
-      ? { hex: color.trim(), label: getColorName(color.trim()) } // Usar ntc para obtener nombre
+      ? { hex: color.trim(), label: color.trim() } // Usar el hex directamente
       : (colorMap[normalizedColor] || { hex: '#808080', label: color });
     const formatPrice = (price: number) => {
       if (!price || isNaN(price) || price <= 0) return "Precio no disponible";

@@ -416,7 +416,7 @@ export default function ProductCard({
         {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
         {isOutOfStock && (
           <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
-            <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200 shadow-sm">
+            <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
               <p className="text-xs text-gray-600 text-center font-medium">Sin unidades</p>
             </div>
           </div>

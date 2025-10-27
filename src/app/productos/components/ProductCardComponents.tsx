@@ -75,12 +75,6 @@ export const ColorSelector = ({
 
   return (
     <div>
-      {/* Label del color seleccionado */}
-      {selectedColor && (
-        <p className="text-xs text-gray-600 mb-2">
-          Color: {selectedColor.label}
-        </p>
-      )}
       <div className="flex gap-2 flex-wrap">
         {sortedColors.slice(0, 4).map((color) => (
           <button

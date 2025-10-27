@@ -115,7 +115,7 @@ export default function ProductViewPage({ params }) {
         basePrice={(() => {
           const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
           const priceStr = selectedCapacity?.price || product.price || "0";
-          return parseInt(priceStr.replace(/[^\d]/g, ''));
+          return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
         })()}
         selectedStorage={(selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB')}
         selectedColor={selectedColor || undefined}
@@ -123,22 +123,11 @@ export default function ProductViewPage({ params }) {
         isVisible={showStickyBar}
       />
 
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 md:px-6 lg:px-12 py-4">
-          <div className="max-w-7xl mx-auto">
-            <p className="text-sm text-gray-600">
-              Galaxy Z / Detalles del producto
-            </p>
-          </div>
-        </div>
-      </div>
-
       {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
       <div className="bg-white pt-8 pb-0 mb-0 min-h-screen">
         {/* Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
-          {/* Columna izquierda: Carrusel - ocupa todo el ancho */}
+          {/* Columna izquierda: Carrusel - ocupa el ancho */}
           <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden">
             <ProductCarousel
               ref={carouselRef}
@@ -183,7 +172,7 @@ export default function ProductViewPage({ params }) {
         </div>
       </div>
 
-      {/* Beneficios imagiq - Banner que ocupa todo el ancho */}
+      {/* Beneficios imagiq - Banner que ocupa el ancho */}
       <BenefitsSection />
 
       {/* Especificaciones y Flix Media */}

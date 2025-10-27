@@ -33,50 +33,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         {/* Espacio en blanco superior */}
         <div className="h-8"></div>
 
-        {/* Iconos de características - estilo Samsung */}
-        <div className="mb-6">
-          <div className="flex justify-center gap-8">
-            {/* FlexWindow */}
-            <div className="flex flex-col items-center">
-              <div className="w-14 h-14 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-2">
-                <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth="2" />
-                  <line x1="12" y1="4" x2="12" y2="20" strokeWidth="2" />
-                </svg>
-              </div>
-              <span className="text-xs text-black text-center font-medium">FlexWindow<br />a 4MB</span>
-            </div>
-
-            {/* Cámara Selfie */}
-            <div className="flex flex-col items-center">
-              <div className="w-14 h-14 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-2">
-                <svg className="w-7 h-7 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <circle cx="12" cy="12" r="3" strokeWidth="2" />
-                  <path d="M3 9a2 2 0 0 1 2-2h.93a2 2 0 0 0 1.664-.89l.812-1.22A2 2 0 0 1 10.07 4h3.86a2 2 0 0 1 1.664.89l.812 1.22A2 2 0 0 0 18.07 7H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9z" strokeWidth="2" />
-                </svg>
-              </div>
-              <span className="text-xs text-black text-center font-medium">10 MP Cámara<br />Selfie</span>
-            </div>
-
-            {/* Galaxy AI */}
-            <div className="flex flex-col items-center">
-              <div className="w-14 h-14 bg-white border border-gray-200 rounded-full flex items-center justify-center mb-2">
-                <svg className="w-7 h-7 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                </svg>
-              </div>
-              <span className="text-xs text-black text-center font-medium">Galaxy AI</span>
-            </div>
-          </div>
-        </div>
 
         {/* Dispositivo */}
         <div className="mb-20">
-          <div className="flex items-center gap-2 mb-3">
-            <h3 className="text-2xl font-bold text-black">Dispositivo</h3>
-          </div>
-          <p className="text-sm text-black mb-4">Selecciona tu dispositivo</p>
-
           {/* Información de SKU, Código y Stock */}
           <div className="mb-4 space-y-1">
             {(() => {
@@ -128,7 +87,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
                     const priceStr = selectedCapacity?.price || product.price || "0";
                     const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
-                    const monthlyPrice = Math.round(priceNumber / 24);
+                    const monthlyPrice = Math.round(priceNumber / 12);
                     return `Desde $ ${monthlyPrice.toLocaleString('es-CO')} al mes o`;
                   })()}
                 </div>
@@ -142,7 +101,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
           </div>
           <p className="text-sm text-blue-600 leading-relaxed mt-3 mb-6">
-            24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
+            12 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
           </p>
         </div>
 
@@ -159,7 +118,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 const isSelected = capacity.value === selectedStorage;
                 const priceStr = capacity.price || "0";
                 const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
-                const monthlyPrice = Math.round(priceNumber / 24);
+                const monthlyPrice = Math.round(priceNumber / 12);
                 const formattedLabel = String(capacity.label || "")
                   .replace(/(\d+)\s*gb\b/i, '$1 GB') + ' | 12GB';
 

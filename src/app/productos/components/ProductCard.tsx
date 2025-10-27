@@ -558,7 +558,7 @@ export default function ProductCard({
                   e.stopPropagation();
                   alert("Te notificaremos cuando este producto esté disponible");
                 }}
-                className="w-full bg-black text-white py-2.5 px-4 rounded-full text-xs md:text-sm font-bold hover:bg-gray-800 transition-colors"
+                className="w-full bg-black text-white py-2.5 px-4 rounded-full text-xs font-bold hover:bg-gray-800 transition-colors"
               >
                 Notifícame
               </button>
@@ -570,7 +570,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs md:text-sm font-bold",
+                  "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs  font-bold",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -588,7 +588,7 @@ export default function ProductCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-black py-2.5 px-4 text-xs md:text-sm font-bold hover:underline transition-all border border-gray-300 rounded-full"
+              className="w-full text-black py-2.5 px-4 text-xs font-bold hover:underline transition-all border border-gray-300 rounded-full"
             >
               Más información
             </button>

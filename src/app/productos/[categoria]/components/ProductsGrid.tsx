@@ -83,7 +83,8 @@ const CategoryProductsGrid = forwardRef<
       }
     };
 
-    if (loading) {
+    // Solo mostrar spinner de carga inicial cuando NO hay productos
+    if (loading && products.length === 0) {
       return (
         <div className="flex justify-center items-center min-h-[400px]">
           <LoadingSpinner />

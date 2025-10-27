@@ -21,7 +21,6 @@ import SubmenuCarousel from "./SubmenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
 import SkeletonCard from "@/components/SkeletonCard";
 import MobileFilterSidebar from "./MobileFilterSidebar";
-import LoadingSpinner from "@/components/LoadingSpinner";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
@@ -187,7 +186,8 @@ export default function CategorySection({
           ref={productsRef}
           className={cn("flex-1 min-w-0", device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0")}
         >
-          {loading && (
+          {/* Skeleton solo en carga inicial (cuando no hay productos) */}
+          {loading && products.length === 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {Array.from({ length: itemsPerPage }, (_, i) => (
                 <SkeletonCard key={`sk-${i}`} />
@@ -195,7 +195,8 @@ export default function CategorySection({
             </div>
           )}
 
-          {!loading && (
+          {/* Mostrar productos siempre que haya al menos uno */}
+          {products.length > 0 && (
             <>
               <CategoryProductsGrid
                 ref={productsRef}
@@ -209,9 +210,15 @@ export default function CategorySection({
               />
 
               {/* Scroll infinito dentro de la página actual */}
-              {!error && products.length > 0 && hasMore && (
-                <div ref={loadMoreRef} className="w-full py-8 flex justify-center">
-                  {loading && <LoadingSpinner />}
+              {!error && hasMore && (
+                <div ref={loadMoreRef} className="w-full">
+                  {loading && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                      {Array.from({ length: 3 }, (_, i) => (
+                        <SkeletonCard key={`lazy-sk-${i}`} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -31,8 +31,8 @@ export function ProductCard({ product }: ProductCardProps) {
   // Determinar la URL del producto
   const productUrl = `/productos/viewpremium/${product.sku || product.id}`;
 
-  // Usar la imagen de preview o empty como fallback
-  const imageUrl = product.imagePreviewUrl || emptyImg;
+  // Usar la imagen (puede ser base64 o URL) o empty como fallback
+  const imageUrl = product.image || emptyImg;
 
   return (
     <Link

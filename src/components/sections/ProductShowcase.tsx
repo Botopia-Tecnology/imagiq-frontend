@@ -2,103 +2,44 @@
  * 📱 PRODUCT SHOWCASE - 4 Product Cards
  *
  * Muestra 4 productos destacados en formato de grid
- * Ahora con productos reales del backend (dispositivos móviles)
+ * Ahora con productos reales del backend
  */
 
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { posthogUtils } from "@/lib/posthogClient";
+import { useMemo } from "react";
 import { useProducts } from "@/features/products/useProducts";
-import type { ProductCardProps as ProductData } from "@/app/productos/components/ProductCard";
-import emptyImg from "@/img/empty.jpeg";
+import ProductCard from "@/app/productos/components/ProductCard";
 import SkeletonCard from "@/components/SkeletonCard";
 
-interface ProductCardProps {
-  product: ProductData;
-}
-
-function ProductCard({ product }: ProductCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const handleClick = () => {
-    posthogUtils.capture("product_showcase_card_click", {
-      product_id: product.id,
-      product_title: product.name,
-      source: "product_showcase",
-    });
-  };
-
-  // Determinar la URL del producto
-  const productUrl = `/productos/viewpremium/${product.sku || product.id}`;
-
-  // Usar la imagen de preview o empty como fallback
-  const imageUrl = product.imagePreviewUrl || emptyImg;
-
-  return (
-    <Link
-      href={productUrl}
-      onClick={handleClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="group block h-full"
-    >
-      <div className="relative bg-gray-50 h-full flex flex-col items-center justify-between p-6 hover:bg-gray-100 transition-colors duration-300">
-        {/* Título */}
-        <h3
-          className="text-base font-semibold text-gray-900 text-center leading-tight h-[48px] flex items-center justify-center w-full"
-          style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}
-        >
-          {product.name}
-        </h3>
-
-        {/* Imagen del producto */}
-        <div className="relative w-full flex-1 flex items-center justify-center">
-          <div className="relative w-[200px] h-[200px]">
-            <Image
-              src={imageUrl}
-              alt={product.name}
-              fill
-              className={`object-contain transition-transform duration-500 ease-out ${
-                isHovered ? "scale-110" : "scale-100"
-              }`}
-              sizes="200px"
-            />
-          </div>
-        </div>
-
-        {/* Botón Comprar - Visible siempre en mobile, aparece en hover en desktop */}
-        <div
-          className={`absolute bottom-6 left-1/2 transform -translate-x-1/2 transition-all duration-300 md:opacity-0 md:translate-y-4 ${
-            isHovered ? "md:opacity-100 md:translate-y-0" : ""
-          } opacity-100 translate-y-0`}
-        >
-          <button
-            className="bg-black text-white px-10 py-3 rounded-full font-semibold text-base transition-transform duration-300 transform hover:scale-105 shadow-xl whitespace-nowrap"
-            style={{
-              fontFamily: "'Samsung Sharp Sans', sans-serif",
-            }}
-          >
-            Comprar
-          </button>
-        </div>
-
-        {/* Espacio para mantener consistencia */}
-        <div className="h-[48px]"></div>
-      </div>
-    </Link>
-  );
-}
-
 export default function ProductShowcase() {
-  // Obtener 4 productos de dispositivos móviles
-  const { products, loading } = useProducts({
-    category: "MOV",
-    limit: 4,
+  // Memoizar filtros para evitar re-renders infinitos
+  // Top 4 productos de mayor precio con stock disponible
+  const filters = useMemo(() => ({
+    limit: 20, // Traer más productos para filtrar manualmente
     page: 1,
-  });
+    minStock: 1, // Solo productos con stock
+    sortBy: "precio",
+    sortOrder: "desc", // Mayor a menor precio
+  }), []);
+
+  // Obtener productos
+  const { products: allProducts, loading } = useProducts(filters);
+
+  // Filtrar manualmente solo dispositivos móviles por subcategoría
+  const products = useMemo(() => {
+    if (!allProducts) return [];
+
+    // Filtrar por subcategoría que contenga "Movil" o "Dispositivos"
+    return allProducts
+      .filter(p =>
+        p.subcategory?.toLowerCase().includes('movil') ||
+        p.subcategory?.toLowerCase().includes('dispositivo') ||
+        p.subcategory?.toLowerCase().includes('celular') ||
+        p.subcategory?.toLowerCase().includes('smartphone')
+      )
+      .slice(0, 4); // Solo tomar los primeros 4
+  }, [allProducts]);
 
   // Mostrar skeletons mientras carga
   if (loading) {
@@ -108,7 +49,7 @@ export default function ProductShowcase() {
           {/* Desktop: Grid 4 columnas */}
           <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
             {Array.from({ length: 4 }, (_, i) => (
-              <div key={`skeleton-${i}`} className="w-full h-[420px]">
+              <div key={`skeleton-${i}`} className="w-full">
                 <SkeletonCard />
               </div>
             ))}
@@ -118,7 +59,7 @@ export default function ProductShowcase() {
           <div className="md:hidden overflow-x-auto scrollbar-hide">
             <div className="flex gap-[25px] px-4">
               {Array.from({ length: 4 }, (_, i) => (
-                <div key={`skeleton-mobile-${i}`} className="flex-shrink-0 w-[280px] h-[420px]">
+                <div key={`skeleton-mobile-${i}`} className="flex-shrink-0 w-[280px]">
                   <SkeletonCard />
                 </div>
               ))}
@@ -143,9 +84,11 @@ export default function ProductShowcase() {
         {/* Desktop: Grid 4 columnas */}
         <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
           {displayProducts.map((product) => (
-            <div key={product.id} className="w-full h-[420px]">
-              <ProductCard product={product} />
-            </div>
+            <ProductCard
+              key={product.id}
+              {...product}
+              viewMode="grid"
+            />
           ))}
         </div>
 
@@ -155,9 +98,12 @@ export default function ProductShowcase() {
             {displayProducts.map((product) => (
               <div
                 key={product.id}
-                className="flex-shrink-0 w-[280px] h-[420px]"
+                className="flex-shrink-0 w-[280px]"
               >
-                <ProductCard product={product} />
+                <ProductCard
+                  {...product}
+                  viewMode="grid"
+                />
               </div>
             ))}
           </div>

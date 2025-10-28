@@ -18,10 +18,10 @@ import { useDeviceType } from "@/components/responsive";
 import { CategoriaParams, Seccion } from "./types";
 import { isValidCategory } from "./utils/categoryUtils";
 import {
-  DEFAULT_SECTION,
+  getDefaultSection,
   isValidSectionForCategory,
   getSectionTitle,
-} from "./constants/categoryConstants";
+} from "./config/category-mappings";
 
 // Importar componentes de categoría dinámicamente
 import CategorySection from "./components/CategorySection";
@@ -45,7 +45,7 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   const activeSection =
     seccionParam && isValidSectionForCategory(categoria, seccionParam)
       ? (seccionParam as Seccion)
-      : DEFAULT_SECTION[categoria];
+      : getDefaultSection(categoria);
 
   // Tracking de vista de página
   useEffect(() => {

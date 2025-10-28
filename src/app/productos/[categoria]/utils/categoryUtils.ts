@@ -12,74 +12,11 @@ import type { CategoryApiFilters } from "@/lib/sharedInterfaces";
 // Alias local para mantener compatibilidad
 export type ApiFilters = CategoryApiFilters;
 
-/**
- * Mapea las categorías del frontend a las categorías de la API
- */
-export const CATEGORY_MAPPING: Record<
-  CategoriaParams,
-  { apiCategory: string; subcategorias: Record<string, string> }
-> = {
-  electrodomesticos: {
-    apiCategory: "Electrodoméstico",
-    subcategorias: {
-      microondas: "Hornos Microondas",
-      lavadoras: "Lavadoras y Secadoras",
-      refrigeradores: "Neveras",
-      lavavajillas: "Lavavajillas",
-      "aire-acondicionado": "Aire Acondicionado",
-      aspiradoras: "Aspiradoras",
-      hornos: "Hornos",
-    },
-  },
-  "dispositivos-moviles": {
-    apiCategory: "Dispositivos Móviles",
-    subcategorias: {
-      smartphones: "Celulares",
-      tabletas: "Tablets",
-      relojes: "Wearables",
-      buds: "buds", // Usar nombre en parámetro, no subcategoria
-      accesorios: "Accesorios",
-    },
-  },
-  televisores: {
-    apiCategory: "TV & Audio",
-    subcategorias: {
-      "crystal-uhd": "Crystal UHD",
-      "neo-qled": "Neo QLED",
-      "oled": "OLED",
-      "proyectores": "Proyectores",
-      "qled": "QLED",
-      "smart-tv": "Smart TV",
-      "the-frame": "The Frame",
-      "dispositivo-audio": "Dispositivo de Audio",
-    },
-  },
-  monitores: {
-    apiCategory: "TV & Audio",
-    subcategorias: {
-      "corporativo": "Monitores",
-      "essential-monitor": "Monitores",
-      "odyssey-gaming": "Monitores",
-      "viewfinity-high-resolution": "Monitores",
-    },
-  },
-  audio: {
-    apiCategory: "TV & Audio",
-    subcategorias: {
-      "barras-sonido": "Soundbars",
-      sistemas: "Sistemas de Audio",
-    },
-  },
-  ofertas: {
-    apiCategory: "Ofertas",
-    subcategorias: {
-      accesorios: "Accesorios",
-      "tv-monitores-audio": "TV & Audio",
-      "smartphones-tablets": "Dispositivos Móviles",
-      electrodomesticos: "Electrodoméstico",
-    },
-  },
-};
+// Importar la nueva fuente de verdad
+import { CATEGORY_MAPPING, getSubcategoryForSection } from "../config/category-mappings";
+import type { CategoryMapping } from "../config/category-mappings";
+
+// CATEGORY_MAPPING_LEGACY se eliminó - usar CATEGORY_MAPPING desde ../config/category-mappings.ts
 
 /**
  * Obtiene los filtros base para una categoría específica
@@ -380,5 +317,5 @@ export function getAvailableSubcategories(
   categoria: CategoriaParams
 ): string[] {
   const categoryConfig = CATEGORY_MAPPING[categoria];
-  return Object.keys(categoryConfig.subcategorias);
+  return Object.keys(categoryConfig.sections);
 }

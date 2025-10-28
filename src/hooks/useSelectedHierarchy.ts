@@ -4,16 +4,7 @@ import { useCurrentMenu } from './useCurrentMenu';
 import { useSubmenus } from './useSubmenus';
 import type { CategoriaParams } from '@/app/productos/[categoria]/types';
 import { findSubmenuByFriendlyName } from '@/app/productos/[categoria]/utils/submenuUtils';
-
-// Mapeo de categorías de URL a códigos de API
-const CATEGORIA_TO_API_CODE: Record<CategoriaParams, string> = {
-  'dispositivos-moviles': 'IM',
-  'televisores': 'AV',
-  'electrodomesticos': 'DA',
-  'monitores': 'IT',
-  'audio': 'AV',
-  'ofertas': 'ofertas'
-};
+import { CATEGORY_API_CODES } from '@/app/productos/[categoria]/config/category-mappings';
 
 /**
  * Hook para obtener la jerarquía seleccionada (categoría, menú, submenú)
@@ -26,7 +17,7 @@ export function useSelectedHierarchy(categoria: CategoriaParams, seccion?: strin
 
   const hierarchy = useMemo(() => {
     // Código de categoría (IM, DA, IT, AV)
-    const categoryCode = CATEGORIA_TO_API_CODE[categoria];
+    const categoryCode = CATEGORY_API_CODES[categoria];
 
     // UUID de la categoría (para referencia, si se necesita)
     const categoryUuid = currentMenu?.categoriasVisiblesId || undefined;

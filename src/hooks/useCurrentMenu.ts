@@ -2,56 +2,7 @@ import { useMemo, useEffect, useState } from 'react';
 import { useVisibleCategories } from './useVisibleCategories';
 import { menusEndpoints, type Menu } from '@/lib/api';
 import type { CategoriaParams } from '@/app/productos/[categoria]/types';
-
-// Mapeo de categorías de URL a códigos de API
-const CATEGORIA_TO_API_CODE: Record<CategoriaParams, string> = {
-  'dispositivos-moviles': 'IM',
-  'televisores': 'AV',
-  'electrodomesticos': 'DA',
-  'monitores': 'IT',
-  'audio': 'AV',
-  'ofertas': 'ofertas'
-};
-
-// Mapeo de secciones a nombres de menú esperados (basado en los datos reales de la API)
-const SECCION_TO_MENU_NAME: Record<string, string> = {
-  // Dispositivos móviles (IM)
-  'smartphones': 'Smartphones Galaxy',
-  'tabletas': 'Galaxy Tab',
-  'relojes': 'Galaxy Watch',
-  'buds': 'Galaxy Buds',
-  'accesorios': 'Accesorios para Galaxy',
-  
-  // Electrodomésticos (DA)
-  'refrigeradores': 'Neveras',
-  'neveras': 'Neveras',
-  'lavadoras': 'Lavadoras y Secadoras',
-  'lavadoras-secadoras': 'Lavadoras y Secadoras',
-  'lavadoras-y-secadoras': 'Lavadoras y Secadoras',
-  'lavavajillas': 'Lavavajillas',
-  'aire-acondicionado': 'Aire Acondicionado',
-  'aires-acondicionados': 'Aire Acondicionado',
-  'microondas': 'Hornos Microondas',
-  'hornos-microondas': 'Hornos Microondas',
-  'aspiradoras': 'Aspiradoras',
-  'hornos': 'Hornos',
-  
-  // TVs y Audio (AV)
-  'crystal-uhd': 'Crystal UHD',
-  'neo-qled': 'Neo QLED',
-  'oled': 'OLED',
-  'proyectores': 'Proyectores',
-  'qled': 'QLED',
-  'smart-tv': 'Smart TV',
-  'the-frame': 'The Frame',
-  'dispositivo-audio': 'Dispositivo de Audio',
-  
-  // Monitores (IT)
-  'corporativo': 'Corporativo',
-  'essential-monitor': 'Essential Monitor',
-  'odyssey-gaming': 'Odyssey Gaming',
-  'viewfinity-high-resolution': 'ViewFinity High Resolution'
-};
+import { CATEGORY_API_CODES, getMenuNameForSection } from '@/app/productos/[categoria]/config/category-mappings';
 
 /**
  * Hook para obtener el menú actual basado en la categoría y sección activa.
@@ -66,7 +17,7 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
   const [menusLoading, setMenusLoading] = useState(false);
 
   // Obtener la categoría actual
-  const apiCode = CATEGORIA_TO_API_CODE[categoria];
+  const apiCode = CATEGORY_API_CODES[categoria];
   const category = visibleCategories.find(cat => cat.nombre === apiCode);
 
   // Cargar menús cuando la categoría está disponible
@@ -113,8 +64,8 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
       return menus.find(m => m.activo) || null;
     }
 
-    // Obtener el nombre esperado del menú para la sección
-    const expectedMenuName = SECCION_TO_MENU_NAME[seccion];
+    // Obtener el nombre esperado del menú para la sección usando la nueva fuente de verdad
+    const expectedMenuName = getMenuNameForSection(categoria, seccion);
     const sectionName = seccion.toLowerCase();
 
     // Buscar el menú que coincida con la sección

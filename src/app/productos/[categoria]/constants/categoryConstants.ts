@@ -259,104 +259,8 @@ export const audioFilters: FilterConfig = {
   compatibilidad: ["Android", "iOS", "Windows", "Universal"],
 };
 
-/**
- * Secciones disponibles por categoría
- */
-export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
-  electrodomesticos: [
-    "neveras",
-    "refrigeradores",
-    "microondas",
-    "hornos-microondas",
-    "lavadoras",
-    "lavadoras-secadoras",
-    "lavadoras-y-secadoras",
-    "lavavajillas",
-    "aire-acondicionado",
-    "aires-acondicionados",
-    "aspiradoras",
-    "hornos",
-  ],
-  "dispositivos-moviles": [
-    "smartphones",
-    "tabletas",
-    "relojes",
-    "buds",
-    "accesorios",
-  ],
-  televisores: ["crystal-uhd", "neo-qled", "oled", "proyectores", "qled", "smart-tv", "the-frame", "dispositivo-audio"],
-  monitores: ["corporativo", "essential-monitor", "odyssey-gaming", "viewfinity-high-resolution"],
-  audio: ["barras-sonido", "sistemas"],
-  ofertas: [
-    "accesorios",
-    "tv-monitores-audio",
-    "smartphones-tablets",
-    "electrodomesticos",
-  ],
-};
-
-/**
- * Sección por defecto para cada categoría
- */
-export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
-  electrodomesticos: "neveras",
-  "dispositivos-moviles": "smartphones",
-  televisores: "crystal-uhd",
-  monitores: "corporativo",
-  audio: "barras-sonido",
-  ofertas: "accesorios",
-};
-
-/**
- * Títulos legibles para las secciones
- */
-export const SECTION_TITLES: Record<Seccion, string> = {
-  // Electrodomésticos
-  neveras: "Neveras",
-  refrigeradores: "Refrigeradores",
-  lavadoras: "Lavadoras",
-  "lavadoras-secadoras": "Lavadoras y Secadoras",
-  "lavadoras-y-secadoras": "Lavadoras y Secadoras",
-  lavavajillas: "Lavavajillas",
-  "aire-acondicionado": "Aire Acondicionado",
-  "aires-acondicionados": "Aires Acondicionados",
-  microondas: "Microondas",
-  "hornos-microondas": "Hornos Microondas",
-  aspiradoras: "Aspiradoras",
-  hornos: "Hornos",
-
-  // Móviles
-  smartphones: "Smartphones",
-  tabletas: "Tabletas",
-  relojes: "Relojes",
-  buds: "Galaxy Buds",
-  accesorios: "Accesorios",
-
-  // TVs
-  "smart-tv": "Smart TV",
-  qled: "QLED",
-  "crystal-uhd": "Crystal UHD",
-  "neo-qled": "Neo QLED",
-  oled: "OLED",
-  proyectores: "Proyectores",
-  "the-frame": "The Frame",
-  "dispositivo-audio": "Dispositivo de Audio",
-
-  // Monitores
-  corporativo: "Corporativo",
-  "essential-monitor": "Essential Monitor",
-  "odyssey-gaming": "Odyssey Gaming",
-  "viewfinity-high-resolution": "ViewFinity High Resolution",
-
-  // Audio
-  "barras-sonido": "Barras de Sonido",
-  sistemas: "Sistemas de Audio",
-
-  // Ofertas
-  "tv-monitores-audio": "TV, Monitores y Audio",
-  "smartphones-tablets": "Smartphones y Tablets",
-  electrodomesticos: "Electrodomésticos",
-};
+// Las constantes CATEGORY_SECTIONS, DEFAULT_SECTION, SECTION_TITLES se movieron a ../config/category-mappings.ts
+// Importa desde category-mappings.ts en su lugar
 
 /**
  * Configuración del CategorySlider para cada categoría
@@ -598,23 +502,8 @@ export function getCategoryFilters(
   return initialState;
 }
 
-/**
- * Obtiene el título legible para una sección
- */
-export function getSectionTitle(seccion: Seccion): string {
-  return SECTION_TITLES[seccion] || seccion;
-}
-
-/**
- * Valida si una sección es válida para una categoría específica
- */
-export function isValidSectionForCategory(
-  categoria: CategoriaParams,
-  seccion: string
-): boolean {
-  const validSections = CATEGORY_SECTIONS[categoria];
-  return validSections ? validSections.includes(seccion as Seccion) : false;
-}
+// Las funciones getSectionTitle e isValidSectionForCategory se movieron a ../config/category-mappings.ts
+// Importa desde category-mappings.ts en su lugar
 
 /**
  * Obtiene la configuración del CategorySlider para una categoría

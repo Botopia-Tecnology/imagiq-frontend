@@ -119,11 +119,17 @@ export default function SuccessCheckoutPage({
           try {
             const items = JSON.parse(cartItems);
             if (Array.isArray(items) && items.length > 0) {
-              productosDesc = items.map((item: { quantity?: number; name?: string; sku?: string }) => {
+              const descripcion = items.map((item: { quantity?: number; name?: string; sku?: string }) => {
                 const quantity = item.quantity || 1;
                 const name = item.name || item.sku || "producto";
                 return `${quantity} ${name}`;
               }).join(", ");
+
+              // WhatsApp tiene límite de 30 caracteres para este campo
+              if (descripcion.length <= 30) {
+                productosDesc = descripcion;
+              }
+              // Si excede, mantiene "tus productos"
             }
           } catch (e) {
             console.error("Error al parsear cart-items:", e);

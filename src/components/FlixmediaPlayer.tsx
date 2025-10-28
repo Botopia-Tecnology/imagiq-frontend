@@ -9,11 +9,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import {
-  FlixmediaEmptyState,
-  FlixmediaLoadingState,
-  FlixmediaNotFoundState,
-} from "./FlixmediaStates";
-import {
   findAvailableSku,
   findAvailableEan,
   parseSkuString,
@@ -39,67 +34,65 @@ export default function FlixmediaPlayer({
 }: FlixmediaPlayerProps) {
   const [actualMpn, setActualMpn] = useState<string | null>(null);
   const [actualEan, setActualEan] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [contentFound, setContentFound] = useState<boolean | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  console.log(actualMpn)
-  console.log(actualEan)
   const router = useRouter();
+
   useEffect(() => {
     async function searchAvailableSku() {
+      const startTime = performance.now();
+      console.log('🎬 [PASO 1] FlixmediaPlayer montado - Iniciando búsqueda de SKU/EAN');
+
       if (!mpn && !ean) {
-        console.warn("⚠️ No se proporcionó MPN/SKU ni EAN");
+        console.warn('⚠️ No hay MPN ni EAN para buscar');
         return;
       }
-
-      setIsSearching(true);
-      console.group(`🎬 Flixmedia - Búsqueda inteligente de SKU`);
-      console.log(`📦 Producto: "${productName}"`);
-      console.log(`📋 MPN recibido: ${mpn}`);
-      console.log(`🏷️ EAN recibido: ${ean}`);
 
       let foundMpn = false;
       let foundEan = false;
 
       // Si tenemos MPN, buscamos el SKU disponible
       if (mpn) {
+        const mpnStartTime = performance.now();
         const skus = parseSkuString(mpn);
+        console.log(`🔍 [PASO 2] Buscando entre ${skus.length} SKUs en paralelo...`);
 
-        if (skus.length === 0) {
-          console.warn("⚠️ No hay SKUs válidos para verificar");
-        } else {
+        if (skus.length > 0) {
           const availableSku = await findAvailableSku(skus);
+          const mpnEndTime = performance.now();
 
           if (availableSku) {
+            console.log(`✅ [PASO 2 COMPLETADO] SKU encontrado: ${availableSku} (${(mpnEndTime - mpnStartTime).toFixed(2)}ms)`);
             setActualMpn(availableSku);
             foundMpn = true;
-            console.log(`✅ Usando MPN: ${availableSku}`);
           } else {
-            console.log(`❌ No se encontró contenido multimedia para MPN`);
+            console.log(`❌ [PASO 2] No se encontró SKU disponible (${(mpnEndTime - mpnStartTime).toFixed(2)}ms)`);
           }
         }
       }
 
       // Si no encontramos MPN o no había MPN, buscamos por EAN
       if (!foundMpn && ean) {
+        const eanStartTime = performance.now();
         const eans = parseSkuString(ean);
+        console.log(`🔍 [PASO 3] Buscando entre ${eans.length} EANs en paralelo...`);
 
-        if (eans.length === 0) {
-          console.warn("⚠️ No hay EANs válidos para verificar");
-        } else {
-          console.log(`🔍 Buscando contenido por EAN...`);
+        if (eans.length > 0) {
           const availableEan = await findAvailableEan(eans);
+          const eanEndTime = performance.now();
 
           if (availableEan) {
+            console.log(`✅ [PASO 3 COMPLETADO] EAN encontrado: ${availableEan} (${(eanEndTime - eanStartTime).toFixed(2)}ms)`);
             setActualEan(availableEan);
             foundEan = true;
-            console.log(`✅ Usando EAN: ${availableEan}`);
           } else {
-            console.log(`❌ No se encontró contenido multimedia para EAN`);
+            console.log(`❌ [PASO 3] No se encontró EAN disponible (${(eanEndTime - eanStartTime).toFixed(2)}ms)`);
           }
         }
       }
+
+      const endTime = performance.now();
+      console.log(`⏱️ [RESUMEN BÚSQUEDA] Tiempo total de búsqueda: ${(endTime - startTime).toFixed(2)}ms`);
 
       // Función helper para verificar si el producto es premium
       const isPremiumProduct = (segmento?: string | string[]): boolean => {
@@ -108,30 +101,26 @@ export default function FlixmediaPlayer({
         return segmentoValue?.toLowerCase() === 'premium';
       };
 
-      // Si no se encontró ni MPN ni EAN, ejecutar callback
+      // Si no se encontró ni MPN ni EAN, redirigir a la vista del producto
       if (!foundMpn && !foundEan) {
-        console.log(`❌ No hay contenido disponible en Flixmedia`);
-        // Determinar la ruta según el segmento del producto
+        console.log('❌ [REDIRECT] No hay contenido Flixmedia disponible - Redirigiendo a vista de producto');
         const isPremium = isPremiumProduct(segmento);
-        const route = isPremium 
-          ? `/productos/viewpremium/${productId}` 
+        const route = isPremium
+          ? `/productos/viewpremium/${productId}`
           : `/productos/view/${productId}`;
         router.replace(route);
-        setContentFound(false);
-      } else {
-        setContentFound(true);
       }
-
-      setIsSearching(false);
-      console.groupEnd();
     }
 
     searchAvailableSku();
-  }, [mpn, ean, productName]);
+  }, [mpn, ean, productName, productId, segmento, router]);
 
   useEffect(() => {
     // Cargar el script de Flixmedia solo cuando tengamos MPN o EAN
     if ((actualMpn || actualEan) && !scriptLoaded) {
+      const scriptStartTime = performance.now();
+      console.log(`🚀 [PASO 4] Agregando script de Flixmedia (MPN: ${actualMpn || 'N/A'}, EAN: ${actualEan || 'N/A'})`);
+
       // Limpiar scripts anteriores si existen
       const existingScripts = document.querySelectorAll('script[src*="flixfacts.com"]');
       existingScripts.forEach(script => script.remove());
@@ -154,64 +143,49 @@ export default function FlixmediaPlayer({
       script.setAttribute('data-flix-fallback-language', '');
 
       script.onload = () => {
-        console.log('✅ Script de Flixmedia cargado');
-        console.log('📋 Config:', { distributor: '17257', language: 'f5', brand: 'Samsung', mpn: actualMpn, ean: actualEan });
-        console.log('🌍 Entorno:', { hostname: window.location.hostname, href: window.location.href });
-
-        // Interceptar errores de scripts
-        window.addEventListener('error', (e) => {
-          if (e.filename && e.filename.includes('flixcar.com')) {
-            console.error('🚨 Error en script de Flixmedia:', e.message, e.filename);
-          }
-        }, true);
-
+        const scriptEndTime = performance.now();
+        console.log(`✅ [PASO 5] Script de Flixmedia cargado (${(scriptEndTime - scriptStartTime).toFixed(2)}ms)`);
+        console.log('🔄 [PASO 6] Flixmedia procesando contenido... (monitoreando cada 500ms)');
         setScriptLoaded(true);
 
-        // Monitorear cada segundo durante 10 segundos
+        // Monitorear cuando el contenido realmente aparece
         let checkCount = 0;
-        const checkInterval = setInterval(() => {
+        const contentCheckInterval = setInterval(() => {
           checkCount++;
           const inpageDiv = document.getElementById('flix-inpage');
 
           if (inpageDiv) {
             const children = inpageDiv.children.length;
             const height = inpageDiv.offsetHeight;
+            const hasContent = children > 1 || height > 100;
 
-            console.log(`🔍 [${checkCount}/10]`, {
-              children,
-              height,
-              firstTag: inpageDiv.children[0]?.tagName || 'none',
-              scriptSrc: inpageDiv.querySelector('script')?.src || 'no script'
-            });
+            console.log(`🔍 [MONITOREO ${checkCount}] Children: ${children}, Height: ${height}px, Contenido visible: ${hasContent ? 'SÍ ✅' : 'NO ⏳'}`);
 
-            if (children > 1 || height > 100) {
-              console.log('✅ Contenido cargado!', { children, height });
-              clearInterval(checkInterval);
+            if (hasContent) {
+              const totalTime = performance.now() - scriptStartTime;
+              console.log(`🎉 [PASO 7 COMPLETADO] ¡Contenido Flixmedia visible en pantalla! Tiempo total desde script: ${(totalTime).toFixed(2)}ms`);
+              clearInterval(contentCheckInterval);
             }
+          } else {
+            console.log(`🔍 [MONITOREO ${checkCount}] Div #flix-inpage aún no existe`);
           }
 
-          if (checkCount >= 10) {
-            clearInterval(checkInterval);
-            const div = document.getElementById('flix-inpage');
-            if (div && (div.children.length <= 1 || div.offsetHeight === 0)) {
-              console.error('❌ FALLO: Sin contenido después de 10s');
-              console.error('🔍 Debug:', { hostname: window.location.hostname, children: div.children.length, height: div.offsetHeight });
-              console.error('📄 HTML:', div.innerHTML.substring(0, 200));
-            }
+          // Timeout después de 20 intentos (10 segundos)
+          if (checkCount >= 20) {
+            console.warn('⚠️ [TIMEOUT] Se alcanzó el límite de 10 segundos esperando contenido');
+            clearInterval(contentCheckInterval);
           }
-        }, 1000);
+        }, 500);
       };
 
       script.onerror = () => {
-        console.error('❌ Error al cargar script de Flixmedia');
+        console.error('❌ [ERROR] No se pudo cargar el script de Flixmedia');
       };
-
-      console.log('🚀 Agregando script de Flixmedia...', { mpn: actualMpn, ean: actualEan, hasContainer: !!containerRef.current });
 
       if (containerRef.current) {
         containerRef.current.appendChild(script);
       } else {
-        console.error('❌ containerRef.current no existe!');
+        console.error('❌ [ERROR] containerRef.current no existe');
       }
 
       // Cleanup al desmontar
@@ -223,14 +197,7 @@ export default function FlixmediaPlayer({
     }
   }, [actualMpn, actualEan, scriptLoaded]);
 
-
-  // Estado 2: Buscando SKU disponible
-  if (isSearching) {
-    return <FlixmediaLoadingState className={className} />;
-  }
-
-
-  // Estado 4: Contenedor para Flixmedia
+  // Contenedor simple para Flixmedia - Sin skeletons, la página ya tiene uno
   return (
     <div ref={containerRef} className={`${className} w-full px-4 md:px-6 lg:px-8`}>
       <div id="flix-inpage"></div>

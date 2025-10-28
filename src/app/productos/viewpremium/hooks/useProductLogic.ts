@@ -116,9 +116,9 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     }
 
     // Fallback: buscar en imageDetailsUrls plano (formato antiguo)
-    if (product.imageDetailsUrls && Array.isArray(product.imageDetailsUrls) && product.imageDetailsUrls.length > 0) {
+    if (product.apiProduct?.imageDetailsUrls && Array.isArray(product.apiProduct.imageDetailsUrls) && product.apiProduct.imageDetailsUrls.length > 0) {
       const selectedColorData = product.colors?.find(c => c.name === selectedColor);
-      const validImages = product.imageDetailsUrls.filter(url => url && typeof url === 'string' && url.trim() !== '');
+      const validImages = product.apiProduct.imageDetailsUrls.flat().filter((url: string) => url && typeof url === 'string' && url.trim() !== '');
 
       // Intentar filtrar por color en la URL
       const colorName = selectedColor.toLowerCase().trim();

@@ -420,15 +420,9 @@ export default function LavavajillasSection() {
                     name={product.name}
                     image={product.image}
                     colors={product.colors}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
                     price={product.price}
                     originalPrice={product.originalPrice}
                     discount={product.discount}
-                    isNew={product.isNew}
-                    onAddToCart={(productId: string, color: string) => {
-                      console.log(`Añadir al carrito: ${productId} - ${color}`);
-                    }}
                     onToggleFavorite={(productId: string) => {
                       console.log(`Toggle favorito: ${productId}`);
                     }}

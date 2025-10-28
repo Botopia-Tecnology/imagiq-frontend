@@ -127,9 +127,6 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
               <ProductCard
                 {...product}
                 isFavorite={isFavorite(product.id)}
-                onAddToCart={() => {
-                  // TODO: Implementar lógica de añadir al carrito
-                }}
                 onToggleFavorite={(productId: string) => {
                   if (isFavorite(productId)) {
                     handleRemoveToFavorites(productId);

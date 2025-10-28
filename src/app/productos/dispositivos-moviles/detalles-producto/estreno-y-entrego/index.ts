@@ -1,6 +1,7 @@
 // Export all trade-in related components
 export { default as TradeInModal } from './TradeInModal';
 export { default as TradeInSelector } from './TradeInSelector';
+export { default as TradeInCompletedSummary } from './TradeInCompletedSummary';
 export { default as BrandDropdown } from './BrandDropdown';
 export { default as DeviceCategorySelector } from './DeviceCategorySelector';
 export { default as SimpleDropdown } from './SimpleDropdown';

@@ -36,15 +36,15 @@ const DetailsProductSection: React.FC<{
     codigoMarketBase: product.id,
     codigoMarket: [],
     nombreMarket: product.name,
-    categoria: product.category || '',
-    subcategoria: product.subcategory || '',
-    modelo: product.model || '',
+    categoria: '',
+    subcategoria: '',
+    modelo: '',
     color: product.colors?.map(c => c.label) || [],
     capacidad: product.capacities?.map(c => c.label) || [],
     memoriaram: [],
-    descGeneral: product.description || null,
-    sku: product.skuArray || [],
-    ean: product.eanArray || [],
+    descGeneral: null,
+    sku: [],
+    ean: [],
     desDetallada: [],
     stock: [],
     stockTotal: [],
@@ -345,12 +345,12 @@ const DetailsProductSection: React.FC<{
                 <header className="">
                   <ProductHeader
                     name={product.name}
-                    sku={productSelection.selectedSku ?? product.sku ?? undefined}
+                    sku={productSelection.selectedSku ?? undefined}
                     codigoMarket={productSelection.selectedCodigoMarket ?? undefined}
                     stock={productSelection.selectedStock ?? undefined}
                     stockTotal={productSelection.selectedStockTotal ?? undefined}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
+                    rating={undefined}
+                    reviewCount={undefined}
                     isFavorite={isFavorite}
                     onToggleFavorite={handleToggleFavorite}
                   />
@@ -379,7 +379,7 @@ const DetailsProductSection: React.FC<{
                     onDeliveryChange={setDeliveryOption}
                   />
                   <p className="text-base text-[#222] font-light leading-relaxed mb-8">
-                    {product.description || ""}
+                    {/* Description removed from ProductCardProps */}
                   </p>
                 </header>
 
@@ -409,7 +409,7 @@ const DetailsProductSection: React.FC<{
                 {product.name}
               </h1>
               <p className="text-base text-[#222] mb-4 font-light leading-snug">
-                {product.description || ""}
+                {/* Description removed from ProductCardProps */}
               </p>
               {productSelection.selectedVariant?.urlRender3D && productSelection.selectedVariant.urlRender3D.trim() != "" && (
                 <ARExperienceHandler

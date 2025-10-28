@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import logoSamsung from "@/img/logo_Samsung.png";
 
 /**
@@ -31,7 +31,8 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
   open,
   onFinish,
 }) => {
-  // Eliminado timeoutRef, no se usa
+  // Estado para controlar el cambio de texto
+  const [showSecondText, setShowSecondText] = useState(false);
 
   // Callback para finalizar solo cuando la animación SVG termina
   const animationRef = useRef<SVGAnimateElement | null>(null);
@@ -47,6 +48,20 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       };
     }
   }, [open, onFinish]);
+
+  // Cambiar texto a mitad de la animación (7 segundos)
+  useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        setShowSecondText(true);
+      }, 7000); // Cambia el texto a los 7 segundos
+
+      return () => {
+        clearTimeout(timer);
+        setShowSecondText(false);
+      };
+    }
+  }, [open]);
 
   if (!open) return null;
 
@@ -163,15 +178,15 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           />
         </image>
       </svg>
-      {/* Texto debajo del logo, responsive y legible */}
+      {/* Texto debajo del logo, responsive y legible con transición */}
       <span
-        className="block mt-10 md:mt-20 text-white text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold logo-reload-animate-fadeInText text-center tracking-tight z-40 drop-shadow-2xl px-2"
+        className="block mt-10 md:mt-20 text-white text-2xl xs:text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-extrabold logo-reload-animate-fadeInText text-center tracking-tight z-40 drop-shadow-2xl px-2 transition-all duration-1000"
         style={{
           wordBreak: "break-word",
           lineHeight: 1.1,
         }}
       >
-        Procesando la compra...
+        {showSecondText ? "Ya casi es tuya..." : "Procesando la compra..."}
       </span>
     </div>
   );

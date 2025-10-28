@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { CreditCard } from "lucide-react";
 
 /**
  * Overlay de éxito de compra con animaciones premium, accesibilidad y microinteracciones.
@@ -25,7 +26,7 @@ const DEFAULT_MESSAGE: Record<string, string> = {
 /**
  * Animación de éxito de compra premium.
  * - Fondo verde se expande desde el botón hasta cubrir la pantalla.
- * - Ícono animado (video MP4) centrado arriba del texto.
+ * - Ícono de tarjeta de crédito animado centrado arriba del texto.
  * - Mensaje de éxito centrado.
  * - Accesibilidad y microinteracciones.
  */
@@ -44,7 +45,6 @@ function CheckoutSuccessOverlay({
   const headingId = "checkout-success-heading";
   const [expand, setExpand] = useState(false);
   const [showContent, setShowContent] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const msg =
     typeof message === "string" ? message : DEFAULT_MESSAGE[locale ?? "es"];
 
@@ -60,30 +60,6 @@ function CheckoutSuccessOverlay({
       setShowContent(false);
     }
   }, [open]);
-
-  /**
-   * Forzar reproducción del video cada vez que se muestra el contenido.
-   * Si autoplay es bloqueado por el navegador, intenta reproducirlo manualmente.
-   */
-  useEffect(() => {
-    if (showContent && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      // Intenta reproducir el video (algunos navegadores requieren muted para autoplay)
-      const playPromise = videoRef.current.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          // Si autoplay es bloqueado, intenta reproducirlo de nuevo tras un pequeño delay
-          setTimeout(() => {
-            videoRef.current?.play();
-          }, 100);
-        });
-      }
-    }
-  }, [showContent]);
-
-  // El overlay solo se cierra con el botón continuar
-
-  // El overlay NO se cierra automáticamente
 
   // Foco en botón continuar
   useEffect(() => {
@@ -130,22 +106,18 @@ function CheckoutSuccessOverlay({
       {/* Contenido central animado */}
       {showContent && (
         <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-md px-6 py-12 animate-fadeInContent">
-          {/* Ícono animado (video MP4) */}
+          {/* Ícono animado de tarjeta de crédito */}
           <div className="flex justify-center w-full mb-2">
-            <video
-              ref={videoRef}
-              autoPlay
-              playsInline
-              controls={false}
-              loop
-              muted
-              className="w-42 h-42 object-contain rounded-full shadow-2xl border-4 border-white"
-              aria-label="Animación de éxito"
+            <div
+              className="p-8 rounded-full bg-white shadow-2xl animate-cardBounce"
               style={{ boxShadow: "0 4px 32px #00904755" }}
+              aria-label="Animación de éxito"
             >
-              <source src="/Payment_Success.mp4" type="video/mp4" />
-              Tu navegador no soporta el video.
-            </video>
+              <CreditCard
+                className="w-24 h-24 text-[#009047] animate-cardSwipe"
+                strokeWidth={2}
+              />
+            </div>
           </div>
           {/* Mensaje de éxito */}
           <h2
@@ -205,22 +177,36 @@ function CheckoutSuccessOverlay({
         .animate-riseFade {
           animation: riseFade 0.9s cubic-bezier(0.77, 0, 0.175, 1);
         }
-        @keyframes svgIcon {
+        @keyframes cardBounce {
           0% {
-            transform: scale(0.7);
+            transform: scale(0.5) rotate(-10deg);
             opacity: 0;
           }
-          60% {
-            transform: scale(1.1);
+          50% {
+            transform: scale(1.1) rotate(5deg);
             opacity: 1;
           }
           100% {
-            transform: scale(1);
+            transform: scale(1) rotate(0deg);
             opacity: 1;
           }
         }
-        .animate-svgIcon {
-          animation: svgIcon 0.9s cubic-bezier(0.77, 0, 0.175, 1);
+        .animate-cardBounce {
+          animation: cardBounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes cardSwipe {
+          0%, 100% {
+            transform: translateX(0) rotate(0deg);
+          }
+          25% {
+            transform: translateX(-4px) rotate(-2deg);
+          }
+          75% {
+            transform: translateX(4px) rotate(2deg);
+          }
+        }
+        .animate-cardSwipe {
+          animation: cardSwipe 2s ease-in-out infinite;
         }
         @keyframes sheen {
           0% {

@@ -482,16 +482,10 @@ export default function RefrigeradoresSection() {
                     name={product.name}
                     image={product.image}
                     colors={product.colors}
-                    rating={product.rating}
-                    reviewCount={product.reviewCount}
                     price={product.price}
                     originalPrice={product.originalPrice}
                     discount={product.discount}
-                    isNew={product.isNew}
                     isFavorite={isFavorite(product.id)}
-                    onAddToCart={(productId: string, color: string) => {
-                      console.log(`Añadir al carrito: ${productId} - ${color}`);
-                    }}
                     onToggleFavorite={(productId: string) => {
                       if (isFavorite(productId)) {
                         handleRemoveToFavorites(productId);

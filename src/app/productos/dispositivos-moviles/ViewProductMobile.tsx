@@ -93,23 +93,10 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
             ean: product.colors[0].ean || product.colors[0].name || "EAN",
           }
         : undefined,
-    sku: product.sku || product.id || "SKU",
-    ean: product.ean || product.id || "EAN",
-    skuArray: skuArray,
-    eanArray: eanArray,
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
     discount: product.discount,
-    description: product.description,
-    brand: product.brand,
-    model: product.model,
-    category: product.category,
-    subcategory: product.subcategory,
-    capacity: product.capacity,
     stock: product.stock,
-    detailedDescription: product.detailedDescription,
-    reviewCount: product.reviewCount,
-    rating: product.rating,
   };
 }
 

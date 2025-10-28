@@ -12,8 +12,6 @@ import ProductCard, {
 } from "../../components/ProductCard";
 import { useFavorites } from "@/features/products/useProducts";
 import GuestDataModal from "../../components/GuestDataModal";
-import { useCartContext } from "@/features/cart/CartContext";
-import { posthogUtils } from "@/lib/posthogClient";
 
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
@@ -50,7 +48,6 @@ const CategoryProductsGrid = forwardRef<
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-    const { addProduct } = useCartContext();
 
     const handleAddToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");
@@ -205,7 +202,7 @@ const CategoryProductsGrid = forwardRef<
 
               return (
                 <div
-                  key={product.sku}
+                  key={product.id}
                   className={
                     viewMode === "grid"
                       ? showBanner
@@ -218,31 +215,6 @@ const CategoryProductsGrid = forwardRef<
                   <ProductCard
                     {...product}
                     isFavorite={isFavorite(product.id)}
-                    onAddToCart={() => {
-                      posthogUtils.capture("add_to_cart", {
-                        product_id: product.id,
-                        product_name: product.name,
-                        source: "category_grid",
-                        category: categoryName
-                      });
-                      addProduct({
-                        id: product.id,
-                        name: product.name,
-                        image: typeof product.image === "string" ? product.image : product.image.src ?? "",
-                        price: typeof product.price === "string"
-                          ? parseInt(product.price.replace(/[^\d]/g, ""))
-                          : product.price || 0,
-                        originalPrice: typeof product.originalPrice === "string"
-                          ? parseInt(product.originalPrice.replace(/[^\d]/g, ""))
-                          : product.originalPrice,
-                        stock: product.stock,
-                        shippingFrom: "Bogotá",
-                        quantity: 1,
-                        sku: product.sku || product.id,
-                        ean: product.ean || product.id,
-                        puntos_q: product.puntos_q || 0,
-                      });
-                    }}
                     onToggleFavorite={(productId: string) => {
                       if (isFavorite(productId)) {
                         handleRemoveToFavorites(productId);

@@ -264,11 +264,16 @@ export const audioFilters: FilterConfig = {
  */
 export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
   electrodomesticos: [
-    "microondas",
-    "lavadoras",
+    "neveras",
     "refrigeradores",
+    "microondas",
+    "hornos-microondas",
+    "lavadoras",
+    "lavadoras-secadoras",
+    "lavadoras-y-secadoras",
     "lavavajillas",
     "aire-acondicionado",
+    "aires-acondicionados",
     "aspiradoras",
     "hornos",
   ],
@@ -294,7 +299,7 @@ export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
  * Sección por defecto para cada categoría
  */
 export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
-  electrodomesticos: "microondas",
+  electrodomesticos: "neveras",
   "dispositivos-moviles": "smartphones",
   televisores: "crystal-uhd",
   monitores: "corporativo",
@@ -307,11 +312,16 @@ export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
  */
 export const SECTION_TITLES: Record<Seccion, string> = {
   // Electrodomésticos
+  neveras: "Neveras",
   refrigeradores: "Refrigeradores",
   lavadoras: "Lavadoras",
+  "lavadoras-secadoras": "Lavadoras y Secadoras",
+  "lavadoras-y-secadoras": "Lavadoras y Secadoras",
   lavavajillas: "Lavavajillas",
   "aire-acondicionado": "Aire Acondicionado",
+  "aires-acondicionados": "Aires Acondicionados",
   microondas: "Microondas",
+  "hornos-microondas": "Hornos Microondas",
   aspiradoras: "Aspiradoras",
   hornos: "Hornos",
 

@@ -24,10 +24,15 @@ const SECCION_TO_MENU_NAME: Record<string, string> = {
   
   // Electrodomésticos (DA)
   'refrigeradores': 'Neveras',
+  'neveras': 'Neveras',
   'lavadoras': 'Lavadoras y Secadoras',
+  'lavadoras-secadoras': 'Lavadoras y Secadoras',
+  'lavadoras-y-secadoras': 'Lavadoras y Secadoras',
   'lavavajillas': 'Lavavajillas',
   'aire-acondicionado': 'Aire Acondicionado',
+  'aires-acondicionados': 'Aire Acondicionado',
   'microondas': 'Hornos Microondas',
+  'hornos-microondas': 'Hornos Microondas',
   'aspiradoras': 'Aspiradoras',
   'hornos': 'Hornos',
   
@@ -110,23 +115,40 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
 
     // Obtener el nombre esperado del menú para la sección
     const expectedMenuName = SECCION_TO_MENU_NAME[seccion];
+    const sectionName = seccion.toLowerCase();
 
     // Buscar el menú que coincida con la sección
     const menu = menus.find(m => {
       if (!m.activo) return false;
 
       const menuName = (m.nombreVisible || m.nombre).toLowerCase();
-      const sectionName = seccion.toLowerCase();
 
-      // Match exacto con el nombre esperado
+      // Prioridad 1: Match exacto con el nombre esperado (más preciso)
       if (expectedMenuName && menuName === expectedMenuName.toLowerCase()) {
         return true;
       }
 
-      // Match por inclusión
-      return menuName.includes(sectionName) ||
-             sectionName.includes(menuName) ||
-             m.uuid === seccion;
+      // Prioridad 2: Match exacto por slug (convertir menuName a slug y comparar)
+      // Esto maneja casos como "Hornos Microondas" → "hornos-microondas"
+      const menuSlug = menuName
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '') // Eliminar acentos
+        .replace(/\s+/g, '-') // Espacios a guiones
+        .replace(/[^\w-]/g, '') // Remover caracteres especiales
+        .replace(/-+/g, '-') // Múltiples guiones a uno solo
+        .replace(/^-|-$/g, ''); // Remover guiones al inicio/final
+      
+      if (menuSlug === sectionName) {
+        return true;
+      }
+
+      // Prioridad 3: Match por UUID directo
+      if (m.uuid === seccion) {
+        return true;
+      }
+
+      // No hacer match si hay expectedMenuName definido
+      return false;
     });
 
     return menu || null;

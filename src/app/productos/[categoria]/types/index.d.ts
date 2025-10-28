@@ -30,11 +30,16 @@ export type Seccion =
   | "barras-sonido"
   | "sistemas"
   // Electrodomesticos
+  | "neveras"
   | "refrigeradores"
   | "lavadoras"
+  | "lavadoras-secadoras"
+  | "lavadoras-y-secadoras"
   | "lavavajillas"
   | "aire-acondicionado"
+  | "aires-acondicionados"
   | "microondas"
+  | "hornos-microondas"
   | "aspiradoras"
   | "hornos"
   // Monitores

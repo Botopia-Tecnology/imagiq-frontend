@@ -36,6 +36,9 @@ export interface OrderDetails
   orden_id: string;
   fecha_creacion: string;
 
+  // Array de envíos (la respuesta del backend puede tener múltiples envíos)
+  envios?: DetalleEnvio[];
+
   // Propiedades específicas que pueden existir en ambos tipos
   metodo_envio?: string;
   hora_recogida_autorizada?: string | null;

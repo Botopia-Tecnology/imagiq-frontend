@@ -12,6 +12,9 @@ export interface DetalleEnvio {
   url_seguimiento: string;
   pdf_base64: string;
   eventos: EnvioEvento[];
+  metodo_envio?: string;
+  hora_recogida_autorizada?: string | null;
+  token?: string;
 }
 
 export interface DetalleRecogida {

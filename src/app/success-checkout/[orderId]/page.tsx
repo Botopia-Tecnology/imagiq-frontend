@@ -119,7 +119,7 @@ export default function SuccessCheckoutPage({
           try {
             const items = JSON.parse(cartItems);
             if (Array.isArray(items) && items.length > 0) {
-              productosDesc = items.map((item: any) => {
+              productosDesc = items.map((item: { quantity?: number; name?: string; sku?: string }) => {
                 const quantity = item.quantity || 1;
                 const name = item.name || item.sku || "producto";
                 return `${quantity} ${name}`;

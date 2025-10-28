@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect } from "react";
+import React, { use } from "react";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
 import ViewPremiumSkeleton from "./ViewPremiumSkeleton";
@@ -167,7 +167,12 @@ export default function ProductViewPage({ params }) {
       <div className="bg-white pb-4 mt-8 lg:mt-4">
         <div className="container mx-auto px-4 md:px-6 lg:px-12">
           <div className="max-w-7xl mx-auto">
-            <TradeInSection />
+            <TradeInSection
+              onTradeInComplete={(deviceName, value) => {
+                console.log('Trade-in completado:', deviceName, value);
+                // Aquí puedes agregar lógica adicional si necesitas hacer algo cuando se completa el trade-in
+              }}
+            />
           </div>
         </div>
       </div>

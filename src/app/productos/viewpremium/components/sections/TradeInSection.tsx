@@ -2,17 +2,75 @@
 
 import React, { useState } from "react";
 import { RefreshCcw } from "lucide-react";
+import { TradeInModal, TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 
-const TradeInSection: React.FC = () => {
+interface TradeInSectionProps {
+  onTradeInComplete?: (deviceName: string, value: number) => void;
+}
+
+const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [tradeInCompleted, setTradeInCompleted] = useState(false);
+  const [tradeInValue, setTradeInValue] = useState<number>(0);
+  const [tradeInDeviceName, setTradeInDeviceName] = useState<string>("");
+
+  const handleYesClick = () => {
+    setSelectedOption('yes');
+    setIsModalOpen(true);
+  };
+
+  const handleNoClick = () => {
+    setSelectedOption('no');
+    setTradeInCompleted(false);
+    setTradeInValue(0);
+    setTradeInDeviceName("");
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    if (!tradeInCompleted) {
+      setSelectedOption(null);
+    }
+  };
+
+  const handleCompleteTradeIn = (deviceName: string, value: number) => {
+    setTradeInCompleted(true);
+    setTradeInValue(value);
+    setTradeInDeviceName(deviceName);
+    setIsModalOpen(false);
+    if (onTradeInComplete) {
+      onTradeInComplete(deviceName, value);
+    }
+  };
+
+  const handleCancelWithoutCompletion = () => {
+    setSelectedOption(null);
+    setIsModalOpen(false);
+  };
+
+  const handleEdit = () => {
+    setIsModalOpen(true);
+  };
+
   return (
     <div className="bg-white py-0">
       <div className="container mx-auto px-4 md:px-6 lg:px-12 max-w-7xl">
         {/* Horizontal separator line */}
         <div className="border-t border-gray-200 mb-6"></div>
 
-        {/* Estreno y Entrego section */}
-        <div className="mb-6">
+        {/* Mostrar banner de resumen si el Trade-In está completado */}
+        {tradeInCompleted && tradeInValue > 0 && tradeInDeviceName && (
+          <TradeInCompletedSummary
+            deviceName={tradeInDeviceName}
+            tradeInValue={tradeInValue}
+            onEdit={handleEdit}
+          />
+        )}
+
+        {/* Estreno y Entrego section - Solo mostrar si NO está completado */}
+        {!tradeInCompleted && (
+          <div className="mb-6">
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
             Estreno y Entrego
           </h2>
@@ -27,15 +85,24 @@ const TradeInSection: React.FC = () => {
                 ? 'border-blue-500'
                 : 'border-gray-300 hover:border-blue-500'
                 }`}
-              onClick={() => setSelectedOption('yes')}
+              onClick={handleYesClick}
             >
               <div className="flex items-start justify-between">
                 <span className="font-semibold text-gray-900">Sí, por favor</span>
-                <div className="text-right">
-                  <p className="text-sm text-gray-600 mb-0">Ahorra hasta</p>
-                  <p className="text-xl md:text-lg text-blue-600">$ 599.992</p>
-                </div>
+                {tradeInCompleted && tradeInValue > 0 && (
+                  <div className="text-right">
+                    <p className="text-sm text-gray-600 mb-0">Ahorra hasta</p>
+                    <p className="text-xl md:text-lg text-blue-600">
+                      $ {tradeInValue.toLocaleString('es-CO')}
+                    </p>
+                  </div>
+                )}
               </div>
+              {tradeInCompleted && tradeInDeviceName && (
+                <p className="text-xs text-gray-500 mt-2">
+                  Dispositivo: {tradeInDeviceName}
+                </p>
+              )}
             </div>
 
             <div
@@ -43,12 +110,13 @@ const TradeInSection: React.FC = () => {
                 ? 'border-blue-500'
                 : 'border-gray-300 hover:border-blue-500'
                 }`}
-              onClick={() => setSelectedOption('no')}
+              onClick={handleNoClick}
             >
               <span className="font-semibold text-gray-900">No, gracias</span>
             </div>
           </div>
         </div>
+        )}
 
         {/* Te presentamos Estreno y entrego & Pasarte de iOS a Galaxy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -88,6 +156,15 @@ const TradeInSection: React.FC = () => {
         {/* Separator line */}
         <div className="border-t border-gray-200 my-6"></div>
       </div>
+
+      {/* Trade-In Modal */}
+      <TradeInModal
+        isOpen={isModalOpen}
+        onClose={handleModalClose}
+        onContinue={() => setIsModalOpen(false)}
+        onCancelWithoutCompletion={handleCancelWithoutCompletion}
+        onCompleteTradeIn={handleCompleteTradeIn}
+      />
     </div>
   );
 };

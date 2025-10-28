@@ -10,6 +10,9 @@ export interface ProductCardProps {
   imagen: string;
   stock?: number;
   ubicacionEnvio?: string;
+  color?: string;
+  capacity?: string;
+  ram?: string;
   onQuantityChange: (cantidad: number) => void;
   onRemove: () => void;
 }
@@ -34,6 +37,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
   imagen,
   stock,
   ubicacionEnvio = "Bogotá",
+  color,
+  capacity,
+  ram,
   onQuantityChange,
   onRemove,
 }) => {
@@ -55,6 +61,17 @@ const ProductCard: React.FC<ProductCardProps> = ({
           <div className="flex-1 min-w-0 flex flex-col">
             {/* Nombre truncado */}
             <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
+
+            {/* Detalles de variante */}
+            {(color || capacity || ram) && (
+              <div className="text-xs text-gray-600 mb-1 flex flex-wrap gap-1">
+                {color && <span>{color}</span>}
+                {color && (capacity || ram) && <span>•</span>}
+                {capacity && <span>{capacity}</span>}
+                {capacity && ram && <span>•</span>}
+                {ram && <span>{ram}</span>}
+              </div>
+            )}
 
             {/* Botón Eliminar */}
             <button
@@ -115,6 +132,16 @@ const ProductCard: React.FC<ProductCardProps> = ({
         <div className="flex-1 min-w-0">
           <div className="mb-2">
             <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
+            {/* Detalles de variante */}
+            {(color || capacity || ram) && (
+              <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1">
+                {color && <span>{color}</span>}
+                {color && (capacity || ram) && <span>•</span>}
+                {capacity && <span>{capacity}</span>}
+                {capacity && ram && <span>•</span>}
+                {ram && <span>{ram}</span>}
+              </div>
+            )}
             <p className="text-sm text-gray-500">Enviado desde {ubicacionEnvio}</p>
           </div>
 

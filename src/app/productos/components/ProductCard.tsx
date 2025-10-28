@@ -283,7 +283,7 @@ export default function ProductCard({
       addProduct({
         id,
         name,
-        image: typeof image === "string" ? image : image.src ?? "",
+        image: typeof currentImage === "string" ? currentImage : (typeof image === "string" ? image : image.src ?? ""),
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
@@ -292,12 +292,15 @@ export default function ProductCard({
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentOriginalPrice,
-        stock,
+        stock: productSelection.selectedStockTotal || stock,
         shippingFrom: "Bogotá",
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: skuToUse, // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
+        color: productSelection.selection.selectedColor || selectedColor?.label || undefined,
+        capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label || undefined,
+        ram: productSelection.selection.selectedMemoriaram || undefined,
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -565,7 +568,7 @@ export default function ProductCard({
               ) : isOutOfStock ? (
                 "Notifícame"
               ) : (
-                "Comprar ahora"
+                "Añadir al carrito"
               )}
             </button>
 

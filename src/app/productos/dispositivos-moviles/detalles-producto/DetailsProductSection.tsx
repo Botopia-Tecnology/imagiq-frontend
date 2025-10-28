@@ -173,7 +173,7 @@ const DetailsProductSection: React.FC<{
     try {
       addProduct({
         id: product.id,
-        name: `${product.name} - ${productSelection.selection.selectedColor} - ${productSelection.selection.selectedCapacity} - ${productSelection.selection.selectedMemoriaram}`,
+        name: product.name,
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
         stock: productSelection.selectedStockTotal || product.stock || 1,
@@ -183,6 +183,9 @@ const DetailsProductSection: React.FC<{
         sku: productSelection.selectedSku,
         ean: productSelection.selectedVariant?.ean || '',
         puntos_q: product.puntos_q ?? 4,
+        color: productSelection.selection.selectedColor || undefined,
+        capacity: productSelection.selection.selectedCapacity || undefined,
+        ram: productSelection.selection.selectedMemoriaram || undefined,
       });
       alert("Producto añadido al carrito");
     } catch (error) {

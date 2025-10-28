@@ -182,7 +182,7 @@ export default function AddiFinancing({
         </div>
 
         <button className="w-full rounded-full bg-[#4A90E2] text-white px-6 py-3 sm:py-4 font-bold text-base sm:text-lg shadow-lg hover:bg-[#357ABD] transition-all duration-200 hover:shadow-xl">
-          Comprar ahora
+          Añadir al carrito
         </button>
 
         <p className="text-[10px] sm:text-xs text-[#999] text-center mt-3">

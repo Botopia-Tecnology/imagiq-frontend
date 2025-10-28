@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import { menusEndpoints, type Menu as MenuType } from "@/lib/api";
 import OfertasDropdown from "./dropdowns/ofertas";
 import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
 import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
@@ -26,46 +27,77 @@ import {
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
 import type { DropdownName, NavItem } from "./navbar/types";
 
-const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
-  const props = { isMobile: false };
-
-  // Si el item tiene menus (datos de la API), usar DynamicDropdown
-  if (item && item.menus && item.menus.length > 0) {
-    return (
-      <DynamicDropdown
-        menus={item.menus}
-        categoryName={item.name}
-        categoryCode={item.categoryCode || ''}
-        isMobile={false}
-      />
-    );
-  }
-
-  // Fallback a dropdowns estáticos
-  switch (name) {
-    case "Ofertas":
-      return <OfertasDropdown {...props} />;
-    case "Dispositivos móviles":
-      return <DispositivosMovilesDropdown {...props} />;
-    case "Televisores y AV":
-      return <TelevisoresDropdown {...props} />;
-    case "Electrodomésticos":
-      return <ElectrodomesticosDropdown {...props} />;
-    case "Monitores":
-      return <MonitoresDropdown {...props} />;
-    case "Accesorios":
-      return <AccesoriosDropdown {...props} />;
-    case "Soporte":
-      return <SoporteDropdown {...props} />;
-  }
-};
-
 export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { getNavbarRoutes, loading } = useVisibleCategories();
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
+
+  // Estado para carga bajo demanda de menús
+  const [loadedMenus, setLoadedMenus] = useState<Record<string, MenuType[]>>({});
+  const [loadingMenus, setLoadingMenus] = useState<Record<string, boolean>>({});
+
+  // Función para cargar menús bajo demanda
+  const loadMenusForCategory = async (categoryUuid: string) => {
+    // Si ya están cargados o están cargando, no hacer nada
+    if (loadedMenus[categoryUuid] || loadingMenus[categoryUuid]) return;
+
+    setLoadingMenus(prev => ({ ...prev, [categoryUuid]: true }));
+    try {
+      const response = await menusEndpoints.getMenusByCategory(categoryUuid);
+      if (response.success && response.data) {
+        setLoadedMenus(prev => ({ ...prev, [categoryUuid]: response.data }));
+      }
+    } catch (error) {
+      console.error('Error loading menus:', error);
+    } finally {
+      setLoadingMenus(prev => ({ ...prev, [categoryUuid]: false }));
+    }
+  };
+
+  // Función para obtener el componente dropdown apropiado
+  const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
+    const props = { isMobile: false };
+
+    // Si el item tiene uuid de categoría, intentar usar menús cargados dinámicamente
+    if (item?.uuid) {
+      const categoryUuid = item.uuid;
+      const cachedMenus = loadedMenus[categoryUuid];
+      const isLoading = loadingMenus[categoryUuid] || false;
+
+      // Mostrar DynamicDropdown si hay menús cargados o si está cargando
+      if (cachedMenus || isLoading) {
+        return (
+          <DynamicDropdown
+            menus={cachedMenus || []}
+            categoryName={item.name}
+            categoryCode={item.categoryCode || ''}
+            isMobile={false}
+            loading={isLoading}
+          />
+        );
+      }
+    }
+
+    // Fallback a dropdowns estáticos
+    switch (name) {
+      case "Ofertas":
+        return <OfertasDropdown {...props} />;
+      case "Dispositivos móviles":
+        return <DispositivosMovilesDropdown {...props} />;
+      case "Televisores y AV":
+        return <TelevisoresDropdown {...props} />;
+      case "Electrodomésticos":
+        return <ElectrodomesticosDropdown {...props} />;
+      case "Monitores":
+        return <MonitoresDropdown {...props} />;
+      case "Accesorios":
+        return <AccesoriosDropdown {...props} />;
+      case "Soporte":
+        return <SoporteDropdown {...props} />;
+    }
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -259,10 +291,15 @@ export default function Navbar() {
                       <div
                         data-item-name={dropdownKey}
                         ref={navbar.setNavItemRef}
-                        onMouseEnter={() =>
-                          hasDropdownMenu(dropdownKey) &&
-                          navbar.handleDropdownEnter(dropdownKey as DropdownName)
-                        }
+                        onMouseEnter={() => {
+                          if (hasDropdownMenu(dropdownKey)) {
+                            navbar.handleDropdownEnter(dropdownKey as DropdownName);
+                            // Cargar menús bajo demanda si el item tiene uuid
+                            if (item.uuid) {
+                              loadMenusForCategory(item.uuid);
+                            }
+                          }
+                        }}
                         onMouseLeave={navbar.handleDropdownLeave}
                         className="relative inline-block"
                       >

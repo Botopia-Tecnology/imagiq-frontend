@@ -211,7 +211,8 @@ export const categoriesEndpoints = {
 
 // Menus API endpoints
 export const menusEndpoints = {
-  getSubmenus: (menuUuid: string) => apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`)
+  getSubmenus: (menuUuid: string) => apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`),
+  getMenusByCategory: (categoryUuid: string) => apiClient.get<Menu[]>(`/api/categorias/visibles/${categoryUuid}/menus`)
 };
 
 // Trade-in (Entrego y Estreno) API endpoints

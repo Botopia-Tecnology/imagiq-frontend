@@ -6,9 +6,28 @@ type Props = {
   items: MenuItem[];
   categoryName: string;
   onItemClick: (label: string, href: string) => void;
+  loading?: boolean;
 };
 
-export const MobileView: FC<Props> = ({ items, categoryName, onItemClick }) => {
+export const MobileView: FC<Props> = ({ items, categoryName, onItemClick, loading = false }) => {
+  // Si está cargando, mostrar skeleton
+  if (loading) {
+    return (
+      <div className="p-4">
+        <div className="space-y-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex items-center gap-3 p-3 animate-pulse">
+              <div className="w-12 h-12 flex-shrink-0 bg-gray-200 rounded" />
+              <div className="flex-1">
+                <div className="h-4 w-32 bg-gray-200 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   // Filtrar solo items activos
   const activeItems = items.filter(item => item.activo);
 

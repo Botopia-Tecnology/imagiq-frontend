@@ -5,13 +5,14 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
+import { useShippingOrigin } from "@/hooks/useShippingOrigin";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
-import { getProductSeries, getSeriesHref } from "./utils/productSeriesUtils";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 // Components
 import StickyPriceBar from "./StickyPriceBar";
@@ -67,22 +68,13 @@ const DetailsProductSection: React.FC<{
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
+  const { shouldShowShippingOrigin } = useShippingOrigin();
   const router = useRouter();
   const {
     addToFavorites,
     removeFromFavorites,
     isFavorite: checkIsFavorite,
   } = useFavorites();
-
-  // Detectar serie dinámica del producto
-  const productSeries = React.useMemo(
-    () => getProductSeries(product.name),
-    [product.name]
-  );
-  const seriesHref = React.useMemo(
-    () => getSeriesHref(productSeries),
-    [productSeries]
-  );
 
   // Control de scroll para StickyPriceBar
   const showStickyBar = useScrollNavbar(50, 50, true); //150
@@ -177,7 +169,7 @@ const DetailsProductSection: React.FC<{
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
         stock: productSelection.selectedStockTotal || product.stock || 1,
-        shippingFrom: "Bogotá",
+        shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
         quantity: 1,
         image: productSelection.selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
         sku: productSelection.selectedSku,
@@ -313,13 +305,9 @@ const DetailsProductSection: React.FC<{
         >
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}
-            <nav className="flex items-center gap-2 mb-8 text-sm text-gray-600">
-              <a href={seriesHref} className="hover:text-gray-900">
-                {productSeries}
-              </a>
-              <span>/</span>
-              <span className="text-gray-900">Detalles del producto</span>
-            </nav>
+            <div className="mb-8">
+              <Breadcrumbs productName="Detalles del producto" />
+            </div>
 
             <div className="grid grid-cols-12 gap-16 items-start">
               {/* Imagen a la izquierda */}
@@ -396,6 +384,11 @@ const DetailsProductSection: React.FC<{
         {/* MOBILE: Stack vertical */}
         <motion.section className="lg:hidden">
           <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
+            {/* Breadcrumb móvil */}
+            <div className="mb-4">
+              <Breadcrumbs productName="Detalles del producto" />
+            </div>
+
             <DeviceCarousel
               alt={product.name}
               imagePreviewUrl={productSelection.selectedVariant?.imagePreviewUrl}

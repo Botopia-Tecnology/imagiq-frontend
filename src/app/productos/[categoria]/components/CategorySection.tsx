@@ -10,6 +10,7 @@ import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import Pagination from "../../dispositivos-moviles/components/Pagination";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
@@ -113,6 +114,11 @@ export default function CategorySection({
 
   return (
     <div className="px-4 md:px-10">
+      {/* Breadcrumbs */}
+      <div className="mb-4 mt-2">
+        <Breadcrumbs />
+      </div>
+
       {/* Mostrar skeleton mientras carga el menú */}
       {menuLoading ? (
         <SeriesFilterSkeleton />

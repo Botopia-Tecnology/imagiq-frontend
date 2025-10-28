@@ -15,7 +15,8 @@ interface WhatsAppMessageRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: WhatsAppMessageRequest = await request.json();
-    const { to, nombre, ordenId, numeroGuia, productos, fechaEntrega } = body;
+    const { to, nombre, ordenId, numeroGuia } = body;
+    let { productos, fechaEntrega } = body;
 
     // Validar que todos los campos requeridos estén presentes
     if (!to || !nombre || !ordenId || !numeroGuia || !productos || !fechaEntrega) {
@@ -23,6 +24,15 @@ export async function POST(request: NextRequest) {
         { success: false, error: "Faltan campos requeridos" },
         { status: 400 }
       );
+    }
+
+    // Validar límites de caracteres de WhatsApp (30 caracteres por parámetro)
+    if (productos.length > 30) {
+      productos = "tus productos";
+    }
+
+    if (fechaEntrega.length > 30) {
+      fechaEntrega = "Próximamente";
     }
 
     // Construir el cuerpo del mensaje de WhatsApp

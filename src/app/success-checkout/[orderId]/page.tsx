@@ -80,6 +80,12 @@ export default function SuccessCheckoutPage({
           return;
         }
 
+        // Asegurar que el teléfono tenga el código de país 57
+        let telefono = userInfo.telefono.toString();
+        if (!telefono.startsWith("57")) {
+          telefono = "57" + telefono;
+        }
+
         // Obtener datos del envío
         const envioData = orderData.envios && orderData.envios.length > 0 ? orderData.envios[0] : null;
 
@@ -154,7 +160,7 @@ export default function SuccessCheckoutPage({
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
-            to: userInfo.telefono,
+            to: telefono,
             nombre: nombreCapitalizado,
             ordenId: pathParams.orderId,
             numeroGuia: numeroGuia,

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { BreadcrumbItem, BreadcrumbFilters } from "./types";
+import { BreadcrumbItem } from "./types";
 import {
   formatSlugToName,
   buildFilterPath,
@@ -43,6 +43,18 @@ export function useBreadcrumbs(
 
     // Handle productos routes
     if (segments[0] === "productos") {
+      // Handle /productos/view/[id] route - special case for product detail
+      if (segments[1] === "view" && segments[2]) {
+        // For /productos/view/[id], just show "Detalles del producto"
+        if (productName) {
+          items.push({
+            label: productName,
+            href: undefined,
+          });
+        }
+        return items;
+      }
+
       // Add category
       if (segments[1]) {
         const category = segments[1];
@@ -179,7 +191,7 @@ export function useBreadcrumbs(
         }
 
         // Handle product detail views
-        if (segments[2] === "detalles-producto" || segments[2] === "viewpremium") {
+        if (segments[2] === "detalles-producto" || segments[2] === "viewpremium" || segments[2] === "view") {
           // Add product name if provided
           if (productName) {
             items.push({

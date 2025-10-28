@@ -128,7 +128,7 @@ export default function ProductViewPage({ params }) {
       <div className="bg-white pt-8 pb-0 mb-0 min-h-screen">
         {/* Breadcrumbs */}
         <div className="px-4 md:px-6 lg:px-12 mb-4">
-          <Breadcrumbs productName={product.name} />
+          <Breadcrumbs productName="Detalles del producto" />
         </div>
 
         {/* Grid principal */}

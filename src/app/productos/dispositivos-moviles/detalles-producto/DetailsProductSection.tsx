@@ -306,7 +306,7 @@ const DetailsProductSection: React.FC<{
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}
             <div className="mb-8">
-              <Breadcrumbs productName={product.name} />
+              <Breadcrumbs productName="Detalles del producto" />
             </div>
 
             <div className="grid grid-cols-12 gap-16 items-start">
@@ -384,6 +384,11 @@ const DetailsProductSection: React.FC<{
         {/* MOBILE: Stack vertical */}
         <motion.section className="lg:hidden">
           <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
+            {/* Breadcrumb móvil */}
+            <div className="mb-4">
+              <Breadcrumbs productName="Detalles del producto" />
+            </div>
+
             <DeviceCarousel
               alt={product.name}
               imagePreviewUrl={productSelection.selectedVariant?.imagePreviewUrl}

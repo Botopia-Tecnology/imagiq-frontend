@@ -34,6 +34,7 @@ export default function ProductViewPage({ params }) {
   const {
     selectedColor,
     selectedStorage,
+    selectedRam,
     currentImageIndex,
     showStickyCarousel,
     isModalOpen,
@@ -46,6 +47,7 @@ export default function ProductViewPage({ params }) {
     detailImages,
     setSelectedColor,
     setSelectedStorage,
+    setSelectedRam,
     setCurrentImageIndex,
     openModal,
     closeModal,
@@ -157,8 +159,10 @@ export default function ProductViewPage({ params }) {
                 product={product}
                 selectedColor={selectedColor}
                 selectedStorage={selectedStorage}
+                selectedRam={selectedRam}
                 setSelectedColor={setSelectedColor}
                 setSelectedStorage={setSelectedStorage}
+                setSelectedRam={setSelectedRam}
                 setCurrentImageIndex={setCurrentImageIndex}
                 currentImageIndex={currentImageIndex}
                 productImages={productImages}
@@ -170,7 +174,7 @@ export default function ProductViewPage({ params }) {
       </div>
 
       {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
-      <div className="bg-white pb-4 mt-8 lg:mt-4">
+      <div className="bg-white pb-4 mt-8 lg:-mt-16">
         <div className="container mx-auto px-4 md:px-6 lg:px-12">
           <div className="max-w-7xl mx-auto">
             <TradeInSection

@@ -7,6 +7,7 @@ export const useProductLogic = (product: ProductCardProps | null) => {
   // Estados para selección de variantes
   const [selectedColor, setSelectedColor] = React.useState<string | null>(null);
   const [selectedStorage, setSelectedStorage] = React.useState<string | null>(null);
+  const [selectedRam, setSelectedRam] = React.useState<string | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = React.useState(0);
   const [showStickyCarousel, setShowStickyCarousel] = React.useState(true);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
@@ -25,6 +26,26 @@ export const useProductLogic = (product: ProductCardProps | null) => {
       // Seleccionar la primera capacidad disponible
       if (product.capacities && product.capacities.length > 0) {
         setSelectedStorage(product.capacities[0].value);
+      }
+      // Seleccionar la RAM mínima si hay opciones disponibles
+      if (product.apiProduct?.memoriaram) {
+        const ramOptions = Array.from(new Set(product.apiProduct.memoriaram))
+          .filter(ram => ram && ram.trim() !== '');
+
+        if (ramOptions.length > 0) {
+          // Si solo hay una opción, preseleccionarla
+          if (ramOptions.length === 1) {
+            setSelectedRam(ramOptions[0]);
+          } else {
+            // Si hay múltiples opciones, seleccionar la mínima
+            const sortedRams = ramOptions.sort((a, b) => {
+              const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+              const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+              return numA - numB;
+            });
+            setSelectedRam(sortedRams[0]);
+          }
+        }
       }
     }
   }, [product]);
@@ -214,6 +235,7 @@ export const useProductLogic = (product: ProductCardProps | null) => {
   return {
     selectedColor,
     selectedStorage,
+    selectedRam,
     currentImageIndex,
     showStickyCarousel,
     isModalOpen,
@@ -226,6 +248,7 @@ export const useProductLogic = (product: ProductCardProps | null) => {
     detailImages,
     setSelectedColor,
     setSelectedStorage,
+    setSelectedRam,
     setCurrentImageIndex,
     openModal,
     closeModal,

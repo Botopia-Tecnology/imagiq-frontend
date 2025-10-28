@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import ViewPremiumSkeleton from "./ViewPremiumSkeleton";
 import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-producto/StickyPriceBar";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
+import { Breadcrumbs } from "@/components/breadcrumbs";
 
 // Componentes
 import ProductCarousel from "../components/ProductCarousel";
@@ -125,6 +126,11 @@ export default function ProductViewPage({ params }) {
 
       {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
       <div className="bg-white pt-8 pb-0 mb-0 min-h-screen">
+        {/* Breadcrumbs */}
+        <div className="px-4 md:px-6 lg:px-12 mb-4">
+          <Breadcrumbs productName="Detalles del producto" />
+        </div>
+
         {/* Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
           {/* Columna izquierda: Carrusel - ocupa el ancho */}

@@ -8,8 +8,10 @@ interface ProductInfoProps {
   product: ProductCardProps;
   selectedColor: string | null;
   selectedStorage: string | null;
+  selectedRam: string | null;
   setSelectedColor: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedStorage: React.Dispatch<React.SetStateAction<string | null>>;
+  setSelectedRam: React.Dispatch<React.SetStateAction<string | null>>;
   setCurrentImageIndex: React.Dispatch<React.SetStateAction<number>>;
   currentImageIndex: number;
   productImages: string[];
@@ -20,8 +22,10 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   product,
   selectedColor,
   selectedStorage,
+  selectedRam,
   setSelectedColor,
   setSelectedStorage,
+  setSelectedRam,
   setCurrentImageIndex,
   currentImageIndex,
   productImages,
@@ -68,11 +72,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       Código: {variantCodigoMarket}
                     </p>
                   )}
-                  {variantStockTotal > 0 && (
-                    <p className="text-sm text-gray-600">
-                      Stock Total: {variantStockTotal}
-                    </p>
-                  )}
+                  <p className="text-sm text-gray-600">
+                    Stock Total: {variantStockTotal}
+                  </p>
                 </>
               );
             })()}
@@ -120,7 +122,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
                 const monthlyPrice = Math.round(priceNumber / 12);
                 const formattedLabel = String(capacity.label || "")
-                  .replace(/(\d+)\s*gb\b/i, '$1 GB') + ' | 12GB';
+                  .replace(/(\d+)\s*gb\b/i, '$1 GB');
 
                 return (
                   <div key={index}>
@@ -164,6 +166,46 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
           </div>
         )}
+
+        {/* Memoria RAM */}
+        {(() => {
+          // Obtener opciones únicas de RAM del producto
+          const ramOptions = product.apiProduct?.memoriaram
+            ? Array.from(new Set(product.apiProduct.memoriaram)).filter(ram => ram && ram.trim() !== '')
+            : [];
+
+          // Solo mostrar si hay opciones de RAM
+          if (ramOptions.length === 0) return null;
+
+          return (
+            <div className="mb-6 mt-8">
+              <div className="flex items-center gap-2 mb-3">
+                <h3 className="text-2xl font-bold text-black">Memoria RAM</h3>
+              </div>
+              <p className="text-sm text-black mb-4">Elige tu Memoria Ram</p>
+
+              <div className="grid grid-cols-2 gap-4">
+                {ramOptions.map((ram, index) => {
+                  const isSelected = ram === selectedRam;
+
+                  return (
+                    <div
+                      key={index}
+                      onClick={() => setSelectedRam(ram)}
+                      className={`border-2 rounded-md px-6 py-6 cursor-pointer transition-all ${
+                        isSelected
+                          ? "border-blue-600 bg-blue-50/30"
+                          : "border-gray-300 hover:border-gray-400"
+                      }`}
+                    >
+                      <span className="font-semibold text-base">{ram}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Color */}
         {product.colors && product.colors.length > 0 && (

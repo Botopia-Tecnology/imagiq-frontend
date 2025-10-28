@@ -1,6 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
+import { useShippingOrigin } from "@/hooks/useShippingOrigin";
 
 export interface ProductCardProps {
   nombre: string;
@@ -36,7 +37,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   cantidad,
   imagen,
   stock,
-  ubicacionEnvio = "Bogotá",
+  ubicacionEnvio,
   color,
   capacity,
   ram,
@@ -46,6 +47,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const limiteMax = calcularLimiteMaximo(stock);
   const disponible = calcularDisponible(stock, cantidad);
   const descuento = calcularDescuento(precioOriginal, precio);
+
+  // Verificar condiciones para mostrar origen de envío
+  const { shouldShowShippingOrigin } = useShippingOrigin();
+  const mostrarOrigen = shouldShowShippingOrigin && ubicacionEnvio;
 
   return (
     <>
@@ -142,7 +147,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 {ram && <span>{ram}</span>}
               </div>
             )}
-            <p className="text-sm text-gray-500">Enviado desde {ubicacionEnvio}</p>
+            {mostrarOrigen && (
+              <p className="text-sm text-gray-500">Enviado desde {ubicacionEnvio}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-6 mt-4">

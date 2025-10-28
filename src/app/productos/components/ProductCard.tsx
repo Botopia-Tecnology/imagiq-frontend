@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { useProductSelection } from "@/hooks/useProductSelection";
+import { useShippingOrigin } from "@/hooks/useShippingOrigin";
 import {
   calculateDynamicPrices,
   calculateSavings,
@@ -118,6 +119,9 @@ export default function ProductCard({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageIndex] = useState(0);
+
+  // Hook para determinar si mostrar origen de envío
+  const { shouldShowShippingOrigin } = useShippingOrigin();
 
   // Hook para manejo inteligente de selección de productos
   const productSelection = useProductSelection(apiProduct || {
@@ -293,7 +297,7 @@ export default function ProductCard({
             ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentOriginalPrice,
         stock: productSelection.selectedStockTotal || stock,
-        shippingFrom: "Bogotá",
+        shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: skuToUse, // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado

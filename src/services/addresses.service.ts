@@ -161,17 +161,19 @@ export class AddressesService {
    */
   public async getUserAddresses(): Promise<AddressResponse[]> {
     try {
-      // Si no hay token JWT, incluir usuarioId como query param
-      const token = this.getAuthToken();
       let url = `${BASE_CONFIG.API_URL}/api/addresses`;
 
-      if (!token) {
-        const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
-        if (userInfo.id) {
-          url += `?usuarioId=${encodeURIComponent(userInfo.id)}`;
-        } else if (userInfo.email) {
-          url += `?usuarioId=${encodeURIComponent(userInfo.email)}`;
-        }
+      // El backend requiere usuarioId siempre (con o sin token JWT)
+      const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
+
+      if (userInfo.id) {
+        url += `?usuarioId=${encodeURIComponent(userInfo.id)}`;
+      } else if (userInfo.email) {
+        url += `?usuarioId=${encodeURIComponent(userInfo.email)}`;
+      } else {
+        // Si no hay userInfo, retornar array vacío
+        console.warn('No hay información de usuario para obtener direcciones');
+        return [];
       }
 
       const response = await fetch(url, {
@@ -180,13 +182,20 @@ export class AddressesService {
       });
 
       if (!response.ok) {
+        // Si es 400 o 401, probablemente no hay usuario autenticado, retornar array vacío
+        if (response.status === 400 || response.status === 401) {
+          console.warn(`Usuario no autenticado o sin permisos (${response.status})`);
+          return [];
+        }
         throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       return await response.json();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error obteniendo direcciones';
-      throw new Error(errorMessage);
+      console.error('Error en getUserAddresses:', errorMessage);
+      // Retornar array vacío en lugar de lanzar error
+      return [];
     }
   }
 
@@ -230,7 +239,7 @@ export class AddressesService {
       }
 
       return await response.json();
-    } catch (error: unknown) {
+    } catch {
       return null;
     }
   }

@@ -13,7 +13,7 @@ import { MonitoresSubmenu } from "./MonitoresSubmenu";
 import { AccesoriosSubmenu } from "./AccesoriosSubmenu";
 import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
-import type { Menu } from "@/lib/api";
+import { menusEndpoints, type Menu } from "@/lib/api";
 
 type Props = {
   isOpen: boolean;
@@ -42,16 +42,48 @@ export const MobileMenu: FC<Props> = ({
   const [activeMenus, setActiveMenus] = useState<Menu[] | null>(null);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(null);
 
+  // Estado para carga bajo demanda de menús
+  const [loadedMenus, setLoadedMenus] = useState<Record<string, Menu[]>>({});
+  const [loadingMenus, setLoadingMenus] = useState<Record<string, boolean>>({});
+
   const { getNavbarRoutes, loading } = useVisibleCategories();
   const menuRoutes = getNavbarRoutes();
 
   if (!isOpen) return null;
 
-  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string }) => {
+  // Función para cargar menús bajo demanda
+  const loadMenusForCategory = async (categoryUuid: string) => {
+    // Si ya están cargados o están cargando, no hacer nada
+    if (loadedMenus[categoryUuid] || loadingMenus[categoryUuid]) return;
+
+    setLoadingMenus(prev => ({ ...prev, [categoryUuid]: true }));
+    try {
+      const response = await menusEndpoints.getMenusByCategory(categoryUuid);
+      if (response.success && response.data) {
+        setLoadedMenus(prev => ({ ...prev, [categoryUuid]: response.data }));
+      }
+    } catch (error) {
+      console.error('Error loading menus:', error);
+    } finally {
+      setLoadingMenus(prev => ({ ...prev, [categoryUuid]: false }));
+    }
+  };
+
+  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string }) => {
     if (item.hasDropdown) {
-      // Si el item tiene menus de la API, usar DynamicMobileSubmenu
-      if (item.menus && item.menus.length > 0) {
-        setActiveMenus(item.menus);
+      // Si el item tiene uuid, cargar menús bajo demanda
+      if (item.uuid) {
+        const categoryUuid = item.uuid;
+        const cachedMenus = loadedMenus[categoryUuid];
+        const isLoading = loadingMenus[categoryUuid];
+
+        // Cargar menús si no están en caché
+        if (!cachedMenus && !isLoading) {
+          loadMenusForCategory(categoryUuid);
+        }
+
+        // Mostrar submenú con menús cargados o en estado de carga
+        setActiveMenus(cachedMenus || []);
         setActiveCategoryCode(item.categoryCode || '');
         setActiveSubmenu(item.name);
       } else if (SUBMENU_COMPONENTS[item.name]) {
@@ -68,14 +100,18 @@ export const MobileMenu: FC<Props> = ({
   // Determinar qué componente de submenú renderizar
   let SubmenuComponent = null;
   if (activeSubmenu) {
-    if (activeMenus && activeMenus.length > 0 && activeCategoryCode) {
+    // Buscar el item activo para obtener su uuid
+    const activeItem = menuRoutes.find(route => route.name === activeSubmenu);
+    const isLoadingCategory = activeItem?.uuid ? loadingMenus[activeItem.uuid] || false : false;
+
+    if (activeCategoryCode) {
       // Usar DynamicMobileSubmenu para categorías con datos de API
       SubmenuComponent = (
         <DynamicMobileSubmenu
-          menus={activeMenus}
+          menus={activeMenus || []}
           categoryCode={activeCategoryCode}
           onClose={onClose}
-          loading={loading}
+          loading={isLoadingCategory}
         />
       );
     } else if (SUBMENU_COMPONENTS[activeSubmenu]) {

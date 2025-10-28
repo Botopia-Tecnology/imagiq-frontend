@@ -42,6 +42,12 @@ interface UserData {
   telefono: string;
 }
 
+interface CartItem {
+  quantity?: number;
+  name?: string;
+  sku?: string;
+}
+
 export default function SuccessCheckoutPage({
   params,
 }: Readonly<{ params: Promise<{ orderId: string }> }>) {

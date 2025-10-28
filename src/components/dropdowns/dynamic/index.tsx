@@ -12,6 +12,7 @@ export default function DynamicDropdown({
   categoryCode,
   isMobile = false,
   onItemClick,
+  loading = false,
 }: DynamicDropdownProps) {
   const handleClick = (label: string, href: string) => {
     posthogUtils.capture("dropdown_item_click", {
@@ -26,8 +27,8 @@ export default function DynamicDropdown({
   const items = transformMenusToItems(menus, categoryCode);
 
   return isMobile ? (
-    <MobileView items={items} categoryName={categoryName} onItemClick={handleClick} />
+    <MobileView items={items} categoryName={categoryName} onItemClick={handleClick} loading={loading} />
   ) : (
-    <DesktopView items={items} categoryName={categoryName} categoryCode={categoryCode} onItemClick={handleClick} />
+    <DesktopView items={items} categoryName={categoryName} categoryCode={categoryCode} onItemClick={handleClick} loading={loading} />
   );
 }

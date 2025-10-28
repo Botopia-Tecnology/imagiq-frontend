@@ -16,6 +16,10 @@ export type NavItem = {
   categoryCode?: string;
   dropdownName?: string;
   uuid?: string;
+  /**
+   * Total de productos en esta categoría.
+   * Este valor ahora viene directamente del endpoint /api/categorias/visibles
+   */
   totalProducts?: number;
   orden?: number;
   // Legacy support (deprecated)
@@ -30,7 +34,11 @@ export type NavItem = {
     createdAt: string;
     updatedAt: string;
   }>;
-  // New structure
+  /**
+   * @deprecated Los menús ahora se cargan bajo demanda al hacer hover/click.
+   * Este campo ya no se llena desde useVisibleCategories.
+   * En su lugar, se cargan dinámicamente desde /api/categorias/visibles/{uuid}/menus
+   */
   menus?: Array<{
     uuid: string;
     nombre: string;

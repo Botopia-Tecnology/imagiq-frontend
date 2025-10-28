@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useVisibleCategories } from './useVisibleCategories';
-import type { Menu } from '@/lib/api';
+import { menusEndpoints, type Menu } from '@/lib/api';
 import type { CategoriaParams } from '@/app/productos/[categoria]/types';
 
 // Mapeo de categorías de URL a códigos de API
@@ -49,43 +49,70 @@ const SECCION_TO_MENU_NAME: Record<string, string> = {
 };
 
 /**
- * Hook para obtener el menú actual basado en la categoría y sección activa
+ * Hook para obtener el menú actual basado en la categoría y sección activa.
+ * Los menús se cargan bajo demanda desde el endpoint /api/categorias/visibles/{uuid}/menus
  */
 export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
   currentMenu: Menu | null;
   loading: boolean;
 } {
-  const { visibleCategories, loading } = useVisibleCategories();
+  const { visibleCategories, loading: categoriesLoading } = useVisibleCategories();
+  const [menus, setMenus] = useState<Menu[]>([]);
+  const [menusLoading, setMenusLoading] = useState(false);
+
+  // Obtener la categoría actual
+  const apiCode = CATEGORIA_TO_API_CODE[categoria];
+  const category = visibleCategories.find(cat => cat.nombre === apiCode);
+
+  // Cargar menús cuando la categoría está disponible
+  useEffect(() => {
+    if (!category?.uuid || categoriesLoading) return;
+
+    let isMounted = true;
+
+    const loadMenus = async () => {
+      setMenusLoading(true);
+      try {
+        const response = await menusEndpoints.getMenusByCategory(category.uuid);
+        if (response.success && response.data && isMounted) {
+          setMenus(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading menus for category:', error);
+      } finally {
+        if (isMounted) {
+          setMenusLoading(false);
+        }
+      }
+    };
+
+    loadMenus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [category?.uuid, categoriesLoading]);
 
   const currentMenu = useMemo(() => {
     // Si está cargando, no intentar buscar el menú aún
-    if (loading) {
+    if (categoriesLoading || menusLoading) {
       return null;
     }
 
-    // Obtener el código de API para la categoría
-    const apiCode = CATEGORIA_TO_API_CODE[categoria];
-    if (!apiCode) {
-      return null;
-    }
-
-    // Buscar la categoría que coincida con el código
-    const category = visibleCategories.find(cat => cat.nombre === apiCode);
-
-    if (!category?.menus?.length) {
+    if (!menus.length) {
       return null;
     }
 
     // Si no hay sección especificada, retornar el primer menú activo
     if (!seccion) {
-      return category.menus.find(m => m.activo) || null;
+      return menus.find(m => m.activo) || null;
     }
 
     // Obtener el nombre esperado del menú para la sección
     const expectedMenuName = SECCION_TO_MENU_NAME[seccion];
 
     // Buscar el menú que coincida con la sección
-    const menu = category.menus.find(m => {
+    const menu = menus.find(m => {
       if (!m.activo) return false;
 
       const menuName = (m.nombreVisible || m.nombre).toLowerCase();
@@ -103,7 +130,10 @@ export function useCurrentMenu(categoria: CategoriaParams, seccion?: string): {
     });
 
     return menu || null;
-  }, [visibleCategories, loading, categoria, seccion]);
+  }, [menus, menusLoading, categoriesLoading, seccion]);
 
-  return { currentMenu, loading };
+  return {
+    currentMenu,
+    loading: categoriesLoading || menusLoading
+  };
 }

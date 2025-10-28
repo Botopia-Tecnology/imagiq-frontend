@@ -6,6 +6,7 @@ export type DynamicDropdownProps = {
   categoryCode: string;
   isMobile?: boolean;
   onItemClick?: () => void;
+  loading?: boolean;
 };
 
 export type MenuItem = {

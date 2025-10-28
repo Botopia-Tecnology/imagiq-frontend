@@ -13,42 +13,39 @@ export default function TradeInCompletedSummary({
 }: TradeInCompletedSummaryProps) {
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-bold text-[#222] mb-4">
-        Estreno y Entrego
-      </h2>
-
-      <div className="border-2 border-[#0099FF] bg-white rounded-xl p-6">
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex-1">
-            <p className="text-sm text-[#0099FF] font-medium mb-2">
-              ¡Felicidades! El descuento Estreno y Entrego ha sido aplicado a tu compra
-            </p>
-
-            <div className="space-y-2">
-              <div>
-                <p className="text-xs text-gray-600">Devolución de dinero hasta</p>
-                <p className="text-2xl font-bold text-[#0099FF]">
-                  $ {tradeInValue.toLocaleString('es-CO')}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-[#222]">{deviceName}</p>
-                <button
-                  onClick={onEdit}
-                  className="text-xs text-gray-500 hover:text-[#0099FF] underline transition-colors"
-                >
-                  Editar
-                </button>
-              </div>
+      <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="flex-shrink-0">
+              <svg className="w-6 h-6 text-[#0099FF]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
             </div>
+            <div className="flex-1">
+              <h3 className="text-base font-semibold text-[#222] mb-1">
+                Estreno y Entrego
+              </h3>
+              <p className="text-sm text-gray-600">{deviceName}</p>
+
+              <button
+                onClick={onEdit}
+                className="text-sm text-[#0099FF] hover:underline transition-colors mt-2 inline-block"
+              >
+                Más información
+              </button>
+            </div>
+          </div>
+
+          <div className="text-right flex-shrink-0">
+            <p className="text-xl font-bold text-[#0099FF]">
+              - $ {tradeInValue.toLocaleString('es-CO')}
+            </p>
           </div>
         </div>
 
-        <div className="text-xs text-gray-600 mt-4 pt-4 border-t border-gray-200">
-          <p>
-            *El descuento solo aplica para el teléfono declarado en las condiciones anteriores.
-            Se anulará la compra en caso de lo contrario.
+        <div className="mt-3 pt-3 border-t border-gray-200">
+          <p className="text-xs text-gray-700 leading-relaxed">
+            Este es un valor aproximado del beneficio Estreno y Entrego al que aplicaste. Aplican TyC*
           </p>
         </div>
       </div>

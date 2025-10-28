@@ -1,8 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
+import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 
 /**
  * Paso 1 del carrito de compras
@@ -15,10 +16,16 @@ import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
  * Recibe onContinue para avanzar al paso 2
  */
 export default function Step1({ onContinue }: { onContinue: () => void }) {
-  const [addedName, setAddedName] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string>("");
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+
+  // Estado para Trade-In
+  const [tradeInData, setTradeInData] = useState<{
+    deviceName: string;
+    value: number;
+    completed: boolean;
+  } | null>(null);
 
   // Usar el hook centralizado useCart
   const {
@@ -26,19 +33,34 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     updateQuantity,
     removeProduct,
     calculations,
-    addProduct,
   } = useCart();
 
-  // Eliminado el console.log para evitar renderizados innecesarios
-
-  // Cargar productos desde el hook centralizado
-  // Los productos ya están disponibles a través del hook useCart
+  // Cargar datos de Trade-In desde localStorage
+  useEffect(() => {
+    const storedTradeIn = localStorage.getItem('imagiq_trade_in');
+    console.log('🔍 Verificando Trade-In en localStorage:', storedTradeIn);
+    if (storedTradeIn) {
+      try {
+        const data = JSON.parse(storedTradeIn);
+        console.log('📦 Datos de Trade-In cargados:', data);
+        if (data.completed) {
+          setTradeInData(data);
+          console.log('✅ Trade-In aplicado al carrito');
+        }
+      } catch (error) {
+        console.error('❌ Error al cargar datos de Trade-In:', error);
+      }
+    } else {
+      console.log('ℹ️ No hay datos de Trade-In guardados');
+    }
+  }, []);
 
   // Usar cálculos del hook centralizado
   const subtotal = calculations.subtotal;
+  const tradeInSavings = tradeInData?.value || 0; // Ahorro, NO descuento inmediato
   const envio = 0;
   const impuestos = Math.round(subtotal * 0.09); // ejemplo 9%
-  const total = subtotal + envio;
+  const total = subtotal + envio; // NO restar el Trade-In, es un beneficio posterior
 
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
@@ -82,6 +104,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     alert(`"${nombre}" agregado a tu compra`);
   };
 
+  // Handler para remover plan de Trade-In (usado en el banner mobile)
+  const handleRemoveTradeIn = () => {
+    setTradeInData(null);
+    localStorage.removeItem('imagiq_trade_in');
+  };
+
   return (
     <main className="min-h-screen py-2 md:py-8 px-2 md:px-0 pb-40 md:pb-8">
       {/* Grid principal: productos y resumen de compra */}
@@ -92,6 +120,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           className="p-0 md:p-4"
         >
           <h2 className="font-bold text-lg mb-3 md:mb-6 px-2 md:px-0">Productos</h2>
+
           {cartProducts.length === 0 ? (
             <div className="text-gray-500 text-center py-16 text-lg">
               No hay productos en el carrito.
@@ -125,12 +154,43 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 </div>
                 <p className="text-xs text-gray-600">Tu compra califica para envío gratuito</p>
               </div>
+
+              {/* Banner de Trade-In - Debajo de productos */}
+              {tradeInData?.completed && (
+                <div className="mt-6 px-2 md:px-0">
+                  <TradeInCompletedSummary
+                    deviceName={tradeInData.deviceName}
+                    tradeInValue={tradeInData.value}
+                    onEdit={handleRemoveTradeIn}
+                  />
+                </div>
+              )}
             </>
           )}
         </section>
         {/* Resumen de compra - Solo Desktop */}
         <aside className="hidden md:flex rounded-2xl p-6 flex-col gap-6">
           <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
+
+          {/* Estreno y Entrego - Justo después del título */}
+          {tradeInData?.completed && tradeInSavings > 0 && (
+            <div className="mb-4 pb-4 border-b border-gray-200">
+              <div className="flex justify-between items-start mb-2">
+                <span className="text-sm font-semibold text-gray-900 uppercase">
+                  Estreno y Entrego
+                </span>
+                <span className="text-base font-bold text-blue-600">
+                  - $ {Number(tradeInSavings).toLocaleString()}
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
+                Este es un valor aproximado del<br />
+                beneficio Estreno y Entrego al que<br />
+                aplicaste. Aplican TyC*
+              </p>
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             <div className="flex justify-between text-sm">
               <span>

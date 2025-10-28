@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { RefreshCcw } from "lucide-react";
 import { TradeInModal, TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 
@@ -15,6 +15,24 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
   const [tradeInValue, setTradeInValue] = useState<number>(0);
   const [tradeInDeviceName, setTradeInDeviceName] = useState<string>("");
 
+  // Cargar datos de Trade-In desde localStorage al montar el componente
+  useEffect(() => {
+    const storedTradeIn = localStorage.getItem('imagiq_trade_in');
+    if (storedTradeIn) {
+      try {
+        const data = JSON.parse(storedTradeIn);
+        if (data.completed) {
+          setTradeInCompleted(true);
+          setTradeInValue(data.value);
+          setTradeInDeviceName(data.deviceName);
+          setSelectedOption('yes');
+        }
+      } catch (error) {
+        console.error('Error al cargar datos de Trade-In:', error);
+      }
+    }
+  }, []);
+
   const handleYesClick = () => {
     setSelectedOption('yes');
     setIsModalOpen(true);
@@ -25,6 +43,8 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
     setTradeInCompleted(false);
     setTradeInValue(0);
     setTradeInDeviceName("");
+    // Limpiar localStorage si el usuario dice "No, gracias"
+    localStorage.removeItem('imagiq_trade_in');
   };
 
   const handleModalClose = () => {
@@ -39,6 +59,16 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
     setTradeInValue(value);
     setTradeInDeviceName(deviceName);
     setIsModalOpen(false);
+
+    // Guardar en localStorage para mostrar en el carrito
+    const tradeInData = {
+      deviceName,
+      value,
+      completed: true,
+      timestamp: new Date().toISOString(),
+    };
+    localStorage.setItem('imagiq_trade_in', JSON.stringify(tradeInData));
+
     if (onTradeInComplete) {
       onTradeInComplete(deviceName, value);
     }

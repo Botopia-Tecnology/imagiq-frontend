@@ -49,12 +49,12 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     }
   }, [open, onFinish]);
 
-  // Cambiar texto a mitad de la animación (7 segundos)
+  // Cambiar texto a mitad de la animación (5 segundos de 10 total)
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
         setShowSecondText(true);
-      }, 7000); // Cambia el texto a los 7 segundos
+      }, 5000); // Cambia el texto a los 5 segundos
 
       return () => {
         clearTimeout(timer);
@@ -63,13 +63,13 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     }
   }, [open]);
 
-  if (!open) return null;
-
   /**
    * Subcomponente: Logo Samsung con máscara de ola SVG animada
    * Inspirado en el efecto CodePen, la ola sube y "llena" el logo.
+   * Usando React.useMemo para evitar que el SVG se recree cuando cambia el texto
+   * IMPORTANTE: Este hook debe estar antes del early return para cumplir con Rules of Hooks
    */
-  const AnimatedLogoWithWaveMask = () => (
+  const animatedLogoWithWaveMask = React.useMemo(() => (
     <div
       className="relative flex flex-col items-center justify-center z-10 w-full max-w-[1000px] h-[420px] md:w-[1000px] md:h-[420px] px-2"
       style={{ minWidth: 0 }}
@@ -122,7 +122,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             <animate
               ref={animationRef}
               attributeName="d"
-              dur="14s"
+              dur="10s"
               repeatCount="1"
               fill="freeze"
               values="
@@ -173,7 +173,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             attributeName="opacity"
             values="0;0;0.1;0.5;0.85;0.99"
             keyTimes="0;0.18;0.32;0.55;0.75;1"
-            dur="24s"
+            dur="10s"
             fill="freeze"
           />
         </image>
@@ -189,15 +189,10 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
         {showSecondText ? "Ya casi es tuya..." : "Procesando la compra..."}
       </span>
     </div>
-  );
+  ), [showSecondText]); // Solo se recrea cuando cambia el texto, manteniendo la animación SVG intacta
 
-  /**
-   * Subcomponente: Logo Samsung animado
-   * - Crece con efecto de entrada y sombra.
-   */
-  /**
-   * Subcomponente: Logo Samsung animado con ola subiendo
-   */
+  // Early return después de todos los hooks para cumplir con Rules of Hooks
+  if (!open) return null;
 
   // Render principal
   return (
@@ -216,7 +211,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       aria-label="Procesando compra"
     >
       {/* Logo Samsung animado con ola SVG subiendo y llenando el logo */}
-      <AnimatedLogoWithWaveMask />
+      {animatedLogoWithWaveMask}
     </div>
   );
 };

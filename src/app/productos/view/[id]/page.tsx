@@ -46,15 +46,15 @@ function convertProductForView(product: ProductCardProps) {
         name: safeValue(color.name || color.label, "None"),
         hex: safeValue(color.hex, "#808080"),
       })) || [],
-    description: safeValue(product.description, "None"),
+    description: safeValue(product.apiProduct?.descGeneral, "None"),
     specs: [
-      { label: "Marca", value: safeValue(product.brand, "None") },
-      { label: "Modelo", value: safeValue(product.model, "None") },
-      { label: "Categoría", value: safeValue(product.category, "None") },
-      { label: "Subcategoría", value: safeValue(product.subcategory, "None") },
-      { label: "Capacidad", value: safeValue(product.capacity, "None") },
+      { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
+      { label: "Modelo", value: safeValue(product.apiProduct?.modelo, "None") },
+      { label: "Categoría", value: safeValue(product.apiProduct?.categoria, "None") },
+      { label: "Subcategoría", value: safeValue(product.apiProduct?.subcategoria, "None") },
+      { label: "Capacidad", value: safeValue(product.selectedCapacity?.value || product.capacities?.[0]?.value, "None") },
       { label: "Stock", value: safeValue(product.stock, "None") },
-      { label: "SKU", value: safeValue(product.sku, "None") },
+      { label: "SKU", value: safeValue(product.selectedColor?.sku || product.colors?.[0]?.sku, "None") },
     ],
   };
 }

@@ -75,7 +75,7 @@ export default function TVProductsGrid() {
             <ProductCard
               key={product.id}
               {...product}
-              viewMode="grid"
+              
             />
           ))}
         </div>
@@ -87,7 +87,7 @@ export default function TVProductsGrid() {
               <div key={product.id} className="flex-shrink-0 w-[280px]">
                 <ProductCard
                   {...product}
-                  viewMode="grid"
+                  
                 />
               </div>
             ))}

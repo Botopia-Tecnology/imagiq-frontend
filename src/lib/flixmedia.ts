@@ -25,20 +25,15 @@ export async function checkFlixmediaAvailability(
 ): Promise<FlixmediaAvailability> {
   try {
     const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/mpn/${mpn}`;
-    console.log(`🔍 Verificando disponibilidad en Flixmedia: ${mpn}`);
-
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {
-      console.log(`✅ SKU encontrado en Flixmedia: ${mpn} (Product ID: ${data.product_id})`);
       return { available: true, productId: data.product_id };
     } else {
-      console.log(`❌ SKU no encontrado en Flixmedia: ${mpn}`);
       return { available: false };
     }
   } catch (error) {
-    console.error(`❌ Error verificando Flixmedia para ${mpn}:`, error);
     return { available: false };
   }
 }
@@ -53,54 +48,69 @@ export async function checkFlixmediaAvailabilityByEan(
 ): Promise<FlixmediaAvailability> {
   try {
     const url = `${FLIXMEDIA_CONFIG.matchApiUrl}/${distributorId}/${language}/ean/${ean}`;
-    console.log(`🔍 Verificando disponibilidad por EAN en Flixmedia: ${ean}`);
-
     const response = await fetch(url);
     const data = await response.json();
 
     if (data.event === "matchhit" && data.product_id) {
-      console.log(`✅ EAN encontrado en Flixmedia: ${ean} (Product ID: ${data.product_id})`);
       return { available: true, productId: data.product_id };
     } else {
-      console.log(`❌ EAN no encontrado en Flixmedia: ${ean}`);
       return { available: false };
     }
   } catch (error) {
-    console.error(`❌ Error verificando Flixmedia para EAN ${ean}:`, error);
     return { available: false };
   }
 }
 
 /**
  * Busca el primer SKU disponible en una lista de SKUs
+ * OPTIMIZADO: Usa Promise.any() para búsqueda paralela en lugar de secuencial
+ * Esto reduce el tiempo de búsqueda de O(n) a O(1) en el mejor caso
  */
 export async function findAvailableSku(skus: string[]): Promise<string | null> {
-  console.log(`🔢 SKUs a verificar:`, skus);
+  try {
+    // Crear una promesa por cada SKU que resuelva solo si tiene contenido disponible
+    const promises = skus.map(async (sku) => {
+      const result = await checkFlixmediaAvailability(sku);
+      if (result.available) {
+        return sku; // Resuelve con el SKU si está disponible
+      }
+      throw new Error(`SKU ${sku} no disponible`); // Rechaza si no está disponible
+    });
 
-  for (const sku of skus) {
-    const result = await checkFlixmediaAvailability(sku);
-    if (result.available) {
-      return sku;
-    }
+    // Promise.any() devuelve el primer SKU que tenga contenido disponible
+    // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
+    const availableSku = await Promise.any(promises);
+    return availableSku;
+  } catch (error) {
+    // Solo llega aquí si TODOS los SKUs fallaron (AggregateError)
+    return null;
   }
-
-  return null;
 }
 
 /**
  * Busca el primer EAN disponible en una lista de EANs
+ * OPTIMIZADO: Usa Promise.any() para búsqueda paralela en lugar de secuencial
+ * Esto reduce el tiempo de búsqueda de O(n) a O(1) en el mejor caso
  */
 export async function findAvailableEan(eans: string[]): Promise<string | null> {
-  console.log(`🔢 EANs a verificar:`, eans);
+  try {
+    // Crear una promesa por cada EAN que resuelva solo si tiene contenido disponible
+    const promises = eans.map(async (ean) => {
+      const result = await checkFlixmediaAvailabilityByEan(ean);
+      if (result.available) {
+        return ean; // Resuelve con el EAN si está disponible
+      }
+      throw new Error(`EAN ${ean} no disponible`); // Rechaza si no está disponible
+    });
 
-  for (const ean of eans) {
-    const result = await checkFlixmediaAvailabilityByEan(ean);
-    if (result.available) {
-      return ean;
-    }
+    // Promise.any() devuelve el primer EAN que tenga contenido disponible
+    // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
+    const availableEan = await Promise.any(promises);
+    return availableEan;
+  } catch (error) {
+    // Solo llega aquí si TODOS los EANs fallaron (AggregateError)
+    return null;
   }
-
-  return null;
 }
 
 /**

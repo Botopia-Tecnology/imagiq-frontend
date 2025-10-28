@@ -240,25 +240,9 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     price,
     originalPrice,
     discount,
-    isNew,
-    rating: 4.5, // Valor por defecto, se puede obtener de reviews en el futuro
-    reviewCount: Math.floor(Math.random() * 500) + 50, // Valor temporal
-    // Datos adicionales para la página de detalle
-    description: apiProduct.descGeneral || null,
-    brand: "Samsung", // Por defecto, se puede obtener de la API en el futuro
-    model: apiProduct.modelo,
-    category: apiProduct.categoria,
-    subcategory: apiProduct.subcategoria,
     segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
-    capacity: apiProduct.capacidad?.join(', ') || null,
     stock: apiProduct.stockTotal?.reduce((sum, s) => sum + s, 0) || 0, // Usar stockTotal en lugar de stock
-    sku: apiProduct.sku?.join(', ') || null,
-    ean: apiProduct.ean?.join(', ') || null,
-    detailedDescription: apiProduct.desDetallada?.join(' ') || null,
-    imageDetailsUrls: processedImageDetailsUrls, // URLs de imágenes adicionales procesadas
-    // imagen_premium y video_premium se asignan a nivel de color en createProductColorsFromArray
-    // Pasar los datos de la API para el nuevo sistema de selección
-    apiProduct,
+    apiProduct: apiProduct, // Incluir el producto original de la API para acceso a campos adicionales
   };
 }
 

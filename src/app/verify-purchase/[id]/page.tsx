@@ -21,7 +21,6 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
     if (!orderId) return;
 
     try {
-      setIsLoading(true);
       const response = await fetch(
         `${API_BASE_URL}/api/orders/verify/${orderId}`
       );
@@ -29,6 +28,7 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
       // Verificar primero el status HTTP de la respuesta
       if (!response.ok) {
         console.error("HTTP error:", response.status, response.statusText);
+        // Mantener la animación visible durante la redirección
         router.push("/error-checkout");
         return;
       }
@@ -37,6 +37,7 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
 
       // Verificar el status del body de la respuesta
       if (data.status === 200) {
+        // Mantener la animación visible durante la redirección
         router.push(`/success-checkout/${orderId}`);
       } else {
         console.error("Verification failed with status:", data.status, data.message);
@@ -45,15 +46,17 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
     } catch (error) {
       console.error("Error verifying order:", error);
       router.push("/error-checkout");
-    } finally {
-      setIsLoading(false);
     }
+    // NO hacer setIsLoading(false) para mantener la animación visible
+    // hasta que la nueva página cargue completamente
   }, [orderId, router]);
 
   return (
-    <LogoReloadAnimation
-      open={isLoading}
-      onFinish={orderId ? verifyOrder : undefined}
-    />
+    <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#0057B7] via-[#0a2a5c] to-[#1e90ff]">
+      <LogoReloadAnimation
+        open={isLoading}
+        onFinish={orderId ? verifyOrder : undefined}
+      />
+    </div>
   );
 }

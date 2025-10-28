@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { CreditCard } from "lucide-react";
 
 /**
@@ -39,7 +38,6 @@ function CheckoutSuccessOverlay({
   locale = "es",
   triggerPosition,
 }: Readonly<CheckoutSuccessOverlayProps>) {
-  const router = useRouter();
   const overlayRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const headingId = "checkout-success-heading";

@@ -135,8 +135,8 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
               "
             >
               <FiShoppingCart className="text-lg" />
-              <span className="hidden sm:inline">Comprar ahora</span>
-              <span className="sm:hidden">Comprar</span>
+              <span className="hidden sm:inline">Añadir al carrito</span>
+              <span className="sm:hidden">Añadir</span>
             </motion.button>
           </div>
         </div>

@@ -37,13 +37,6 @@ export default function PriceAndActions({
       <div className="flex flex-row gap-4">
         <button
           className="rounded-full bg-[#0099FF] text-white px-7 py-2 font-semibold text-sm shadow hover:bg-[#007ACC] transition-all duration-200 ease-in-out disabled:opacity-60"
-          onClick={onBuyNow}
-          disabled={loading}
-        >
-          {loading ? "Procesando..." : "Comprar ahora"}
-        </button>
-        <button
-          className="rounded-full border border-[#0099FF] text-[#0099FF] px-7 py-2 font-semibold text-sm bg-white hover:bg-[#F2F6FA] transition-all duration-200 ease-in-out disabled:opacity-60"
           onClick={onAddToCart}
           disabled={loading}
         >

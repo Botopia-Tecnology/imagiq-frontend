@@ -232,29 +232,40 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   const selectColor = useCallback((color: string) => {
     setSelection(prev => {
       const newSelection = { ...prev, selectedColor: color };
-      
+
       // Si la capacidad actual no es compatible con el nuevo color, resetear capacidad
       if (prev.selectedCapacity) {
-        const compatibleCapacity = allVariants.some(variant => 
+        const compatibleCapacity = allVariants.some(variant =>
           variant.color === color && variant.capacity === prev.selectedCapacity && variant.memoriaram === prev.selectedMemoriaram
         );
-        
+
         if (!compatibleCapacity) {
           newSelection.selectedCapacity = null;
         }
       }
-      
+
       // Si la memoria RAM actual no es compatible con el nuevo color, resetear memoria RAM
       if (prev.selectedMemoriaram) {
-        const compatibleMemoriaram = allVariants.some(variant => 
+        const compatibleMemoriaram = allVariants.some(variant =>
           variant.color === color && variant.capacity === prev.selectedCapacity && variant.memoriaram === prev.selectedMemoriaram
         );
-        
+
         if (!compatibleMemoriaram) {
           newSelection.selectedMemoriaram = null;
         }
       }
-      
+
+      // Buscar y actualizar selectedVariant con la nueva selección
+      if (newSelection.selectedColor && newSelection.selectedCapacity && newSelection.selectedMemoriaram) {
+        newSelection.selectedVariant = allVariants.find(variant =>
+          variant.color === newSelection.selectedColor &&
+          variant.capacity === newSelection.selectedCapacity &&
+          variant.memoriaram === newSelection.selectedMemoriaram
+        ) || null;
+      } else {
+        newSelection.selectedVariant = null;
+      }
+
       return newSelection;
     });
   }, [allVariants]);
@@ -262,29 +273,40 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   const selectCapacity = useCallback((capacity: string) => {
     setSelection(prev => {
       const newSelection = { ...prev, selectedCapacity: capacity };
-      
+
       // Si el color actual no es compatible con la nueva capacidad, resetear color
       if (prev.selectedColor) {
-        const compatibleColor = allVariants.some(variant => 
+        const compatibleColor = allVariants.some(variant =>
           variant.capacity === capacity && variant.color === prev.selectedColor && variant.memoriaram === prev.selectedMemoriaram
         );
-        
+
         if (!compatibleColor) {
           newSelection.selectedColor = null;
         }
       }
-      
+
       // Si la memoria RAM actual no es compatible con la nueva capacidad, resetear memoria RAM
       if (prev.selectedMemoriaram) {
-        const compatibleMemoriaram = allVariants.some(variant => 
+        const compatibleMemoriaram = allVariants.some(variant =>
           variant.capacity === capacity && variant.color === prev.selectedColor && variant.memoriaram === prev.selectedMemoriaram
         );
-        
+
         if (!compatibleMemoriaram) {
           newSelection.selectedMemoriaram = null;
         }
       }
-      
+
+      // Buscar y actualizar selectedVariant con la nueva selección
+      if (newSelection.selectedColor && newSelection.selectedCapacity && newSelection.selectedMemoriaram) {
+        newSelection.selectedVariant = allVariants.find(variant =>
+          variant.color === newSelection.selectedColor &&
+          variant.capacity === newSelection.selectedCapacity &&
+          variant.memoriaram === newSelection.selectedMemoriaram
+        ) || null;
+      } else {
+        newSelection.selectedVariant = null;
+      }
+
       return newSelection;
     });
   }, [allVariants]);
@@ -292,29 +314,40 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   const selectMemoriaram = useCallback((memoriaram: string) => {
     setSelection(prev => {
       const newSelection = { ...prev, selectedMemoriaram: memoriaram };
-      
+
       // Si el color actual no es compatible con la nueva memoria RAM, resetear color
       if (prev.selectedColor) {
-        const compatibleColor = allVariants.some(variant => 
+        const compatibleColor = allVariants.some(variant =>
           variant.memoriaram === memoriaram && variant.color === prev.selectedColor && variant.capacity === prev.selectedCapacity
         );
-        
+
         if (!compatibleColor) {
           newSelection.selectedColor = null;
         }
       }
-      
+
       // Si la capacidad actual no es compatible con la nueva memoria RAM, resetear capacidad
       if (prev.selectedCapacity) {
-        const compatibleCapacity = allVariants.some(variant => 
+        const compatibleCapacity = allVariants.some(variant =>
           variant.memoriaram === memoriaram && variant.color === prev.selectedColor && variant.capacity === prev.selectedCapacity
         );
-        
+
         if (!compatibleCapacity) {
           newSelection.selectedCapacity = null;
         }
       }
-      
+
+      // Buscar y actualizar selectedVariant con la nueva selección
+      if (newSelection.selectedColor && newSelection.selectedCapacity && newSelection.selectedMemoriaram) {
+        newSelection.selectedVariant = allVariants.find(variant =>
+          variant.color === newSelection.selectedColor &&
+          variant.capacity === newSelection.selectedCapacity &&
+          variant.memoriaram === newSelection.selectedMemoriaram
+        ) || null;
+      } else {
+        newSelection.selectedVariant = null;
+      }
+
       return newSelection;
     });
   }, [allVariants]);

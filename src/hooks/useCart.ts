@@ -21,6 +21,12 @@ export interface CartProduct {
   originalPrice?: number;
   /** Ubicación de envío (ej: "Bogotá") */
   shippingFrom?: string;
+  /** Color del producto */
+  color?: string;
+  /** Capacidad del producto (ej: "128GB", "256GB") */
+  capacity?: string;
+  /** Memoria RAM del producto (ej: "8GB", "12GB") */
+  ram?: string;
 }
 
 interface CartCalculations {
@@ -123,8 +129,14 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       const originalPrice = typeof p.originalPrice === "number" ? p.originalPrice : undefined;
       // shippingFrom
       const shippingFrom = typeof p.shippingFrom === "string" ? p.shippingFrom : undefined;
+      // color
+      const color = typeof p.color === "string" ? p.color : undefined;
+      // capacity
+      const capacity = typeof p.capacity === "string" ? p.capacity : undefined;
+      // ram
+      const ram = typeof p.ram === "string" ? p.ram : undefined;
 
-      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom };
+      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, color, capacity, ram };
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }

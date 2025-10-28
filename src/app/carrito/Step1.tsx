@@ -109,6 +109,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     cantidad={product.quantity}
                     stock={product.stock}
                     ubicacionEnvio={product.shippingFrom}
+                    color={product.color}
+                    capacity={product.capacity}
+                    ram={product.ram}
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
                     }

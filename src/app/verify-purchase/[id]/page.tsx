@@ -25,11 +25,21 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
       const response = await fetch(
         `${API_BASE_URL}/api/orders/verify/${orderId}`
       );
+
+      // Verificar primero el status HTTP de la respuesta
+      if (!response.ok) {
+        console.error("HTTP error:", response.status, response.statusText);
+        router.push("/error-checkout");
+        return;
+      }
+
       const data: { message: string; status: number } = await response.json();
 
+      // Verificar el status del body de la respuesta
       if (data.status === 200) {
         router.push(`/success-checkout/${orderId}`);
       } else {
+        console.error("Verification failed with status:", data.status, data.message);
         router.push("/error-checkout");
       }
     } catch (error) {

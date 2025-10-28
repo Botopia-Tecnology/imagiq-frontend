@@ -7,7 +7,6 @@
 
 import React, { useEffect, useRef } from "react";
 import { ArrowLeft, FileText, Shield } from "lucide-react";
-import PrivacyContent from "../legal/PrivacyContent";
 
 interface LegalPageProps {
   onBack: () => void;
@@ -66,7 +65,8 @@ const LegalPage: React.FC<LegalPageProps> = ({
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
               <p className="text-sm text-blue-900">
                 <strong>Información importante:</strong> Esta sección está en
-                desarrollo. Los términos y condiciones se mostrarán próximamente.
+                desarrollo. Los términos y condiciones se mostrarán
+                próximamente.
               </p>
             </div>
           </>
@@ -83,7 +83,6 @@ const LegalPage: React.FC<LegalPageProps> = ({
             </div>
 
             {/* Privacy Content */}
-            <PrivacyContent />
           </>
         )}
       </div>

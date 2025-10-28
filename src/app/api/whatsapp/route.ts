@@ -15,7 +15,8 @@ interface WhatsAppMessageRequest {
 export async function POST(request: NextRequest) {
   try {
     const body: WhatsAppMessageRequest = await request.json();
-    let { to, nombre, ordenId, numeroGuia, productos, fechaEntrega } = body;
+    const { to, nombre, ordenId, numeroGuia } = body;
+    let { productos, fechaEntrega } = body;
 
     // Validar que todos los campos requeridos estén presentes
     if (!to || !nombre || !ordenId || !numeroGuia || !productos || !fechaEntrega) {

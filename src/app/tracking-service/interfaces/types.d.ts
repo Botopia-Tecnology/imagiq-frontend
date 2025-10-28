@@ -12,6 +12,9 @@ export interface DetalleEnvio {
   url_seguimiento: string;
   pdf_base64: string;
   eventos: EnvioEvento[];
+  metodo_envio?: string;
+  hora_recogida_autorizada?: string | null;
+  token?: string;
 }
 
 export interface DetalleRecogida {
@@ -35,6 +38,9 @@ export interface OrderDetails
   // Propiedades comunes
   orden_id: string;
   fecha_creacion: string;
+
+  // Array de envíos (la respuesta del backend puede tener múltiples envíos)
+  envios?: DetalleEnvio[];
 
   // Propiedades específicas que pueden existir en ambos tipos
   metodo_envio?: string;

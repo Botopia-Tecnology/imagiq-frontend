@@ -57,13 +57,16 @@ export default function TrackingService({
       .then((res) => {
         const data = res.data;
 
+        // Extract envio data from the envios array if it exists
+        const envioData = data.envios && data.envios.length > 0 ? data.envios[0] : data;
+
         // Set common data
-        setOrderNumber(data.numero_guia || data.orden_id || "...");
+        setOrderNumber(envioData.numero_guia || data.orden_id || "...");
 
         // Handle shipping-specific data
-        if (data.tiempo_entrega_estimado) {
+        if (envioData.tiempo_entrega_estimado) {
           const fechaCreacion = new Date(data.fecha_creacion);
-          const dias = Number.parseInt(data.tiempo_entrega_estimado);
+          const dias = Number.parseInt(envioData.tiempo_entrega_estimado);
 
           fechaCreacion.setDate(fechaCreacion.getDate() + dias);
           setEstimatedInitDate(formatDate(fechaCreacion.toISOString()));
@@ -73,13 +76,13 @@ export default function TrackingService({
         }
 
         // Set tracking data
-        setTrackingSteps(data.eventos || []);
-        setPdfBase64(data.pdf_base64 || "");
+        setTrackingSteps(envioData.eventos || []);
+        setPdfBase64(envioData.pdf_base64 || "");
 
         // Set pickup-specific data
-        setMetodoEnvio(data.metodo_envio || "");
-        setHoraRecogida(data.hora_recogida_autorizada || "");
-        setToken(data.token || "");
+        setMetodoEnvio(envioData.metodo_envio || "");
+        setHoraRecogida(envioData.hora_recogida_autorizada || "");
+        setToken(envioData.token || "");
 
         setIsLoading(false);
       })

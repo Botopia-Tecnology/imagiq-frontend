@@ -11,12 +11,36 @@
  * - Limpieza automática del carrito
  * - Redirección a la página principal para continuar comprando
  * - Diseño responsive y accesible
+ * - Envío automático de mensaje de WhatsApp con confirmación
  */
 
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
 import CheckoutSuccessOverlay from "../../carrito/CheckoutSuccessOverlay";
 import { useCart } from "@/hooks/useCart";
+import { apiClient } from "@/lib/api";
+
+interface OrderData {
+  orden_id: string;
+  fecha_creacion: string;
+  usuario_id: string;
+  envios?: Array<{
+    numero_guia: string;
+    tiempo_entrega_estimado: string;
+  }>;
+  order_items?: Array<{
+    sku: string;
+    quantity: number;
+    product_name?: string;
+  }>;
+}
+
+interface UserData {
+  id: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+}
 
 export default function SuccessCheckoutPage({
   params,
@@ -25,10 +49,121 @@ export default function SuccessCheckoutPage({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const { clearCart } = useCart();
-  
+  const [whatsappSent, setWhatsappSent] = useState(false);
+
+  // Enviar mensaje de WhatsApp cuando se carga la página
   useEffect(() => {
-    console.log(pathParams)
-  }, [pathParams])
+    const sendWhatsAppMessage = async () => {
+      if (whatsappSent) return; // Evitar envíos duplicados
+
+      try {
+        // Obtener datos de la orden
+        const orderResponse = await apiClient.get<OrderData>(`/api/orders/shipping-info/${pathParams.orderId}`);
+
+        if (!orderResponse.success || !orderResponse.data) {
+          console.error("Error al obtener datos de la orden");
+          return;
+        }
+
+        const orderData = orderResponse.data;
+
+        // Obtener datos del usuario desde localStorage (misma clave que en checkout)
+        const userData = localStorage.getItem("imagiq_user");
+        let userInfo: UserData | null = null;
+
+        if (userData) {
+          userInfo = JSON.parse(userData);
+        }
+
+        if (!userInfo || !userInfo.telefono) {
+          console.log("No hay información de usuario o teléfono disponible");
+          return;
+        }
+
+        // Obtener datos del envío
+        const envioData = orderData.envios && orderData.envios.length > 0 ? orderData.envios[0] : null;
+
+        // Obtener número de guía
+        const numeroGuia = envioData?.numero_guia || orderData.orden_id.substring(0, 8);
+
+        // Calcular fechas de entrega estimada (formato corto para WhatsApp)
+        let fechaEntrega = "Próximamente";
+
+        if (envioData?.tiempo_entrega_estimado) {
+          const fechaCreacion = new Date(orderData.fecha_creacion);
+          const dias = parseInt(envioData.tiempo_entrega_estimado);
+
+          // Fecha inicial
+          fechaCreacion.setDate(fechaCreacion.getDate() + dias);
+          const diaInicio = fechaCreacion.getDate();
+          const mesInicio = fechaCreacion.toLocaleDateString("es-ES", { month: "short" });
+
+          // Fecha final (2 días después)
+          fechaCreacion.setDate(fechaCreacion.getDate() + 2);
+          const diaFin = fechaCreacion.getDate();
+          const mesFin = fechaCreacion.toLocaleDateString("es-ES", { month: "short" });
+
+          // Formato corto: "29-31 de oct" o "29 oct - 1 nov"
+          if (mesInicio === mesFin) {
+            fechaEntrega = `${diaInicio}-${diaFin} de ${mesInicio}`;
+          } else {
+            fechaEntrega = `${diaInicio} ${mesInicio} - ${diaFin} ${mesFin}`;
+          }
+        }
+
+        // Obtener items del carrito desde localStorage
+        const cartItems = localStorage.getItem("cart-items");
+        let productosDesc = "tus productos";
+
+        if (cartItems) {
+          try {
+            const items = JSON.parse(cartItems);
+            if (Array.isArray(items) && items.length > 0) {
+              productosDesc = items.map((item: { quantity?: number; name?: string; sku?: string }) => {
+                const quantity = item.quantity || 1;
+                const name = item.name || item.sku || "producto";
+                return `${quantity} ${name}`;
+              }).join(", ");
+            }
+          } catch (e) {
+            console.error("Error al parsear cart-items:", e);
+          }
+        }
+
+        // Capitalizar la primera letra del nombre
+        const nombreCapitalizado = userInfo.nombre.charAt(0).toUpperCase() + userInfo.nombre.slice(1).toLowerCase();
+
+        // Enviar mensaje de WhatsApp
+        const whatsappResponse = await fetch("/api/whatsapp", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            to: userInfo.telefono,
+            nombre: nombreCapitalizado,
+            ordenId: pathParams.orderId,
+            numeroGuia: numeroGuia,
+            productos: productosDesc,
+            fechaEntrega: fechaEntrega
+          })
+        });
+
+        const whatsappData = await whatsappResponse.json();
+
+        if (whatsappData.success) {
+          console.log("Mensaje de WhatsApp enviado exitosamente");
+          setWhatsappSent(true);
+        } else {
+          console.error("Error al enviar mensaje de WhatsApp:", whatsappData);
+        }
+      } catch (error) {
+        console.error("Error al procesar envío de WhatsApp:", error);
+      }
+    };
+
+    sendWhatsAppMessage();
+  }, [pathParams.orderId, whatsappSent])
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {

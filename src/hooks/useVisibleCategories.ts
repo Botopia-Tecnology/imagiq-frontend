@@ -109,6 +109,8 @@ export function useVisibleCategories() {
         categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
         dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
         uuid: category.uuid,
+        totalProducts: 0,
+        menus: [],
         orden: category.orden
       };
     });
@@ -123,6 +125,7 @@ export function useVisibleCategories() {
         dropdownName: "Ofertas",
         uuid: "ofertas",
         totalProducts: 0,
+        menus: [],
         orden: 0
       }
     ];
@@ -136,6 +139,7 @@ export function useVisibleCategories() {
       dropdownName: undefined, // No tiene dropdown
       uuid: "tiendas",
       totalProducts: 0,
+      menus: [],
       orden: 1000
     };
 
@@ -148,6 +152,7 @@ export function useVisibleCategories() {
       dropdownName: "Soporte", // Tiene dropdown
       uuid: "soporte",
       totalProducts: 0,
+      menus: [],
       orden: 1001
     };
 

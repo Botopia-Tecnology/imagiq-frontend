@@ -6,6 +6,7 @@
 import React, { useState } from "react";
 import { PUBLIC_ROUTES } from "@/constants/routes";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { useProfile } from "../hooks/useProfile";
@@ -28,6 +29,7 @@ interface ProfilePageProps {
 export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   const { state, actions, isLoading } = useProfile();
   const [currentView, setCurrentView] = useState<CurrentView>("main");
+  const router = useRouter();
 
   const handleLogout = async () => {
     await actions.logout();
@@ -43,10 +45,8 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   const handleCouponsClick = () => console.log("Ver cupones");
   const handleLoyaltyClick = () => console.log("Ver programa de lealtad");
   const handleNotificationsClick = () => console.log("Ver notificaciones");
-  const handleTermsClick = () => console.log("Ver términos");
-  const handlePrivacyClick = () => console.log("Ver privacidad");
-  const handleRelevantInfoClick = () => console.log("Ver información relevante");
-  const handleDataProcessingClick = () => console.log("Ver procesamiento de datos");
+  const handleTermsClick = () => router.push("/perfil/legal-terms");
+  const handlePrivacyClick = () => router.push("/perfil/legal-privacy");
 
   const handleBackToMain = () => setCurrentView("main");
 
@@ -130,12 +130,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
           onHelpClick={handleHelpClick}
         />
 
-        {/* More Information Section */}
+        {/* Legal Documentation Section */}
         <LegalSection
           onTermsClick={handleTermsClick}
           onPrivacyClick={handlePrivacyClick}
-          onRelevantInfoClick={handleRelevantInfoClick}
-          onDataProcessingClick={handleDataProcessingClick}
         />
 
         {/* Logout Section */}

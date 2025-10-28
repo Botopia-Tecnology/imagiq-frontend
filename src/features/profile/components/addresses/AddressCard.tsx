@@ -56,7 +56,7 @@ const AddressCard: React.FC<AddressCardProps> = ({
         </button>
       </div>
       <div className="flex flex-row items-center w-full h-full gap-4">
-        {/* Icono y título */}
+        {/* Icono y tipo */}
         <div className="flex flex-col items-center min-w-[70px]">
           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-1">
             {getIcon()}
@@ -73,7 +73,10 @@ const AddressCard: React.FC<AddressCardProps> = ({
         </div>
         {/* Info dirección */}
         <div className="flex-1 flex flex-col justify-center w-full">
-          <p className="text-gray-600 text-sm font-medium mb-1">
+          <p className="font-bold text-base text-gray-900 mb-1">
+            {address.nombreDireccion || getTypeName()}
+          </p>
+          <p className="text-gray-600 text-sm font-medium mb-1 break-words">
             {address.linea_uno}
           </p>
           {address.complemento && (

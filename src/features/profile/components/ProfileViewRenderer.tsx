@@ -52,36 +52,10 @@ export const ProfileViewRenderer: React.FC<ProfileViewRendererProps> = ({
       return <HelpPage onBack={onBack} className={className} />;
 
     case "terms":
-      return (
-        <LegalPage onBack={onBack} className={className} documentType="terms" />
-      );
+      return <LegalPage onBack={onBack} documentType="terms" />;
 
     case "privacy":
-      return (
-        <LegalPage
-          onBack={onBack}
-          className={className}
-          documentType="privacy"
-        />
-      );
-
-    case "data-processing":
-      return (
-        <LegalPage
-          onBack={onBack}
-          className={className}
-          documentType="data-processing"
-        />
-      );
-
-    case "relevant-info":
-      return (
-        <LegalPage
-          onBack={onBack}
-          className={className}
-          documentType="relevant-info"
-        />
-      );
+      return <LegalPage onBack={onBack} documentType="privacy" />;
 
     default:
       return null;

@@ -1,14 +1,4 @@
-"use client";
-
-import LegalPage from "@/features/profile/components/pages/LegalPage";
-import { useRouter } from "next/navigation";
-
+// Página de términos legales (estructura vacía para rehacer contenido)
 export default function LegalTermsPage() {
-  const router = useRouter();
-
-  const handleBack = () => {
-    router.back();
-  };
-
-  return <LegalPage documentType="terms" onBack={handleBack} />;
+  return <div>Legal Terms Page (pendiente de rehacer contenido)</div>;
 }

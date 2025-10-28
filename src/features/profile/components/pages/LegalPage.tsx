@@ -7,19 +7,22 @@
 
 import React, { useEffect, useRef } from "react";
 import { ArrowLeft, FileText, Shield } from "lucide-react";
-import { LegalDocumentType } from "../../types/legal";
-import { TERMS_CATEGORIES } from "../../constants/legalDocuments";
-import CategorySection from "../legal/CategorySection";
 import PrivacyContent from "../legal/PrivacyContent";
 
 interface LegalPageProps {
   onBack: () => void;
-  documentType?: LegalDocumentType;
+  documentType?: string;
 }
 
-const LegalPage: React.FC<LegalPageProps> = ({ onBack, documentType = "terms" }) => {
+const LegalPage: React.FC<LegalPageProps> = ({
+  onBack,
+  documentType = "terms",
+}) => {
   const pageRef = useRef<HTMLDivElement>(null);
-  const title = documentType === "terms" ? "Términos y Condiciones" : "Política de Privacidad";
+  const title =
+    documentType === "terms"
+      ? "Términos y Condiciones"
+      : "Política de Privacidad";
   const HeaderIcon = documentType === "terms" ? FileText : Shield;
 
   // Reset scroll to top when component mounts or documentType changes
@@ -29,10 +32,6 @@ const LegalPage: React.FC<LegalPageProps> = ({ onBack, documentType = "terms" })
     }
     window.scrollTo(0, 0);
   }, [documentType]);
-
-  const handleDocumentClick = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
-  };
 
   return (
     <div ref={pageRef} className="min-h-screen bg-gray-50">
@@ -66,31 +65,8 @@ const LegalPage: React.FC<LegalPageProps> = ({ onBack, documentType = "terms" })
           <>
             <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
               <p className="text-sm text-blue-900">
-                <strong>Información importante:</strong> A continuación
-                encontrarás todos los términos y condiciones aplicables a
-                productos, servicios y promociones de Samsung en Colombia. Haz
-                clic en cada documento para ver los detalles.
-              </p>
-            </div>
-
-            {/* Categories */}
-            <div className="space-y-4">
-              {TERMS_CATEGORIES.map((category, index) => (
-                <CategorySection
-                  key={category.id}
-                  category={category}
-                  onDocumentClick={handleDocumentClick}
-                  defaultExpanded={index === 0}
-                />
-              ))}
-            </div>
-
-            {/* Footer Info */}
-            <div className="mt-8 p-4 bg-gray-100 rounded-xl">
-              <p className="text-xs text-gray-600 text-center">
-                Todos los documentos están sujetos a modificación. Por favor
-                verifica la vigencia de cada documento antes de hacer uso de
-                las promociones.
+                <strong>Información importante:</strong> Esta sección está en
+                desarrollo. Los términos y condiciones se mostrarán próximamente.
               </p>
             </div>
           </>

@@ -53,15 +53,6 @@ export default function HeaderSection({
   return (
     <div className="bg-white py-4 sm:py-6">
       <div className="max-w-7xl">
-        {/* Título de la página */}
-        {title && (
-          <div className="mb-4 md:mb-6">
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900">
-              {title}
-            </h1>
-          </div>
-        )}
-
         {/* Header principal */}
         <div className="flex items-center justify-between gap-4 mb-6">
           {/* Botón de filtros móvil - ahora a la derecha del título */}

@@ -63,11 +63,11 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
   const { recalculatePoints } = usePointsContext();
   const [activeTab, setActiveTab] = useState(0);
 
-  // Usar los arrays de flix si están disponibles, sino usar los del producto
-  const skuToUse = flix?.sku || product.sku;
-  const eanToUse = flix?.ean || product.ean;
-  const skuArrayToUse = flix?.skuArray || product.skuArray;
-  const eanArrayToUse = flix?.eanArray || product.eanArray;
+  // Usar datos del producto si están disponibles
+  const skuToUse = undefined;
+  const eanToUse = undefined;
+  const skuArrayToUse: string[] = [];
+  const eanArrayToUse: string[] = [];
 
   // --- VISUAL: Precio formateado y mostrado dentro del botón ---
   // Usar el precio real del producto, formateado
@@ -92,8 +92,8 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
       name: product.name,
       image,
       price: priceNumber,
-      sku: product.sku || "SKU",
-      ean: product.sku || "EAN",
+      sku: skuToUse || "SKU",
+      ean: eanToUse || "EAN",
       quantity: 1,
       puntos_q: product.puntos_q ?? 4,
     });

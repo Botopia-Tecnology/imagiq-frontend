@@ -33,18 +33,18 @@ export default function ProductShowcase() {
     // Filtrar celulares/smartphones
     const todosLosCelulares = allProducts
       .filter(p =>
-        p.subcategory?.toLowerCase().includes('movil') ||
-        p.subcategory?.toLowerCase().includes('dispositivo') ||
-        p.subcategory?.toLowerCase().includes('celular') ||
-        p.subcategory?.toLowerCase().includes('smartphone')
+        p.apiProduct?.subcategoria?.toLowerCase().includes('movil') ||
+        p.apiProduct?.subcategoria?.toLowerCase().includes('dispositivo') ||
+        p.apiProduct?.subcategoria?.toLowerCase().includes('celular') ||
+        p.apiProduct?.subcategoria?.toLowerCase().includes('smartphone')
       );
 
     // Filtrar relojes
     const relojes = allProducts
       .filter(p =>
-        p.subcategory?.toLowerCase().includes('reloj') ||
-        p.subcategory?.toLowerCase().includes('watch') ||
-        p.subcategory?.toLowerCase().includes('wearable') ||
+        p.apiProduct?.subcategoria?.toLowerCase().includes('reloj') ||
+        p.apiProduct?.subcategoria?.toLowerCase().includes('watch') ||
+        p.apiProduct?.subcategoria?.toLowerCase().includes('wearable') ||
         p.name?.toLowerCase().includes('watch') ||
         p.name?.toLowerCase().includes('galaxy watch')
       )
@@ -114,7 +114,6 @@ export default function ProductShowcase() {
             <ProductCard
               key={product.id}
               {...product}
-              viewMode="grid"
             />
           ))}
         </div>
@@ -129,7 +128,6 @@ export default function ProductShowcase() {
               >
                 <ProductCard
                   {...product}
-                  viewMode="grid"
                 />
               </div>
             ))}

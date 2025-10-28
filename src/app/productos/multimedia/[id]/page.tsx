@@ -133,9 +133,22 @@ export default function MultimediaPage({
     );
   }
 
-  // Extraer SKU y EAN del producto
-  const productSku = product.sku;
-  const productEan = product.ean || null;
+  // Extraer TODOS los SKUs y EANs del producto desde los colores/capacidades
+  // Recolectamos todos los SKUs para que Flixmedia pueda buscar en todos hasta encontrar contenido
+  const allSkus = product.colors?.map(color => color.sku).filter(Boolean) || [];
+  const allEans = product.colors?.map(color => color.ean).filter(Boolean) || [];
+
+  // Agregar SKUs de capacidades si existen
+  if (product.capacities) {
+    product.capacities.forEach(capacity => {
+      if (capacity.sku) allSkus.push(capacity.sku);
+      if (capacity.ean) allEans.push(capacity.ean);
+    });
+  }
+
+  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaPlayer)
+  const productSku = allSkus.length > 0 ? allSkus.join(',') : null;
+  const productEan = allEans.length > 0 ? allEans.join(',') : null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {

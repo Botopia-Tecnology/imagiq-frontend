@@ -59,40 +59,18 @@ export interface ProductCardProps {
   name: string;
   image: string | StaticImageData;
   colors: ProductColor[];
-  capacities?: ProductCapacity[]; // Capacidades disponibles
-  rating?: number;
-  reviewCount?: number;
+  capacities?: ProductCapacity[];
   price?: string;
   originalPrice?: string;
   discount?: string;
-  isNew?: boolean;
   isFavorite?: boolean;
-  onAddToCart?: (productId: string, color: string) => void;
   onToggleFavorite?: (productId: string) => void;
   className?: string;
-  viewMode?: "grid" | "list"; // Modo de visualización
-  // Datos adicionales para la página de detalle
-  description?: string | null;
-  brand?: string;
-  model?: string;
-  category?: string;
-  subcategory?: string;
-  segmento?: string | string[]; // Segmento del producto (Premium, etc.) - puede ser string o array
-  capacity?: string | null;
+  segmento?: string | string[];
   stock?: number;
-  sku?: string | null;
-  ean?: string | null;
-  skuArray?: string[];
-  eanArray?: string[];
-  detailedDescription?: string | null;
-  imageDetailsUrls?: string[]; // URLs de imágenes adicionales para la galería
-  // imagen_premium y video_premium ahora están a nivel de ProductColor
   selectedColor?: ProductColor;
-  setSelectedColor?: (color: ProductColor) => void;
   selectedCapacity?: ProductCapacity;
-  setSelectedCapacity?: (capacity: ProductCapacity) => void;
-  puntos_q?: number; // Puntos Q acumulables por producto (valor fijo por ahora)
-  // Datos de la API para el nuevo sistema de selección
+  puntos_q?: number;
   apiProduct?: ProductApiData;
 }
 

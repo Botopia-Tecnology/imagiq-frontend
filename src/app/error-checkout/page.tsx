@@ -63,7 +63,7 @@ export default function ErrorCheckoutPage() {
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#dc2626]">
       <CheckoutErrorOverlay
         open={open}
         onClose={handleClose}

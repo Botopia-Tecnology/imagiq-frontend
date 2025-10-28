@@ -15,7 +15,7 @@
  */
 
 import { useRouter } from "next/navigation";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useRef, useState } from "react";
 import CheckoutSuccessOverlay from "../../carrito/CheckoutSuccessOverlay";
 import { useCart } from "@/hooks/useCart";
 import { apiClient } from "@/lib/api";
@@ -55,12 +55,13 @@ export default function SuccessCheckoutPage({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const { clearCart } = useCart();
-  const [whatsappSent, setWhatsappSent] = useState(false);
+  const whatsappSentRef = useRef(false);
 
   // Enviar mensaje de WhatsApp cuando se carga la página
   useEffect(() => {
     const sendWhatsAppMessage = async () => {
-      if (whatsappSent) return; // Evitar envíos duplicados
+      if (whatsappSentRef.current) return; // Evitar envíos duplicados
+      whatsappSentRef.current = true; // Marcar como enviado inmediatamente
 
       try {
         // Obtener datos de la orden
@@ -179,7 +180,6 @@ export default function SuccessCheckoutPage({
 
         if (whatsappData.success) {
           console.log("Mensaje de WhatsApp enviado exitosamente");
-          setWhatsappSent(true);
         } else {
           console.error("Error al enviar mensaje de WhatsApp:", whatsappData);
         }
@@ -189,7 +189,7 @@ export default function SuccessCheckoutPage({
     };
 
     sendWhatsAppMessage();
-  }, [pathParams.orderId, whatsappSent])
+  }, [pathParams.orderId]) // Solo depende del orderId, useRef previene duplicados
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {
@@ -241,7 +241,7 @@ export default function SuccessCheckoutPage({
   }, []);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#009047]">
       <CheckoutSuccessOverlay
         open={open}
         onClose={handleClose}

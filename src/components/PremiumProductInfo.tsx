@@ -143,30 +143,12 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
           {product.name}
         </h1>
-        {product.model && (
-          <p className="text-sm text-gray-600">Modelo: {product.model}</p>
+        {product.apiProduct?.modelo && (
+          <p className="text-sm text-gray-600">Modelo: {product.apiProduct.modelo}</p>
         )}
       </div>
 
-      {/* Rating */}
-      {product.rating && (
-        <div className="flex items-center gap-2">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <span
-                key={i}
-                className={`text-lg ${i < Math.floor(product.rating!) ? "text-yellow-400" : "text-gray-300"
-                  }`}
-              >
-                ★
-              </span>
-            ))}
-          </div>
-          <span className="text-sm text-gray-600">
-            {product.rating.toFixed(1)} ({product.reviewCount || 0})
-          </span>
-        </div>
-      )}
+      {/* Rating - ProductCardProps doesn't have rating or reviewCount, so we'll skip this section */}
 
       {/* Precio */}
       <div className="space-y-2">
@@ -276,13 +258,13 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
       </div>
 
       {/* Descripción */}
-      {product.description && (
+      {product.apiProduct?.descGeneral && (
         <div className="pt-6 border-t">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Descripción
           </h3>
           <p className="text-gray-600 text-sm leading-relaxed">
-            {product.description}
+            {product.apiProduct.descGeneral}
           </p>
         </div>
       )}

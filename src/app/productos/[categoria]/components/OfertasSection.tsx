@@ -9,6 +9,8 @@ import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ItemsPerPageSelector from "../../electrodomesticos/components/ItemsPerPageSelector";
 import Pagination from "../../electrodomesticos/components/Pagination";
+import Banner from "@/components/Banner";
+import { OFERTAS_BANNERS_MAP } from "@/config/banners";
 
 // Mapeo de secciones a filtros de API
 const ofertasFiltersMap: Record<string, { category?: string; subcategory?: string }> = {
@@ -105,12 +107,18 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
 
   const sectionTitle = seccion ? ofertasTitles[seccion] : "Ofertas Samsung";
 
+  // Obtener el banner para esta sección
+  const bannerConfig = seccion ? OFERTAS_BANNERS_MAP[seccion] : null;
+
   return (
-    <div className="container mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-8 text-center">
+    <div className="container mx-auto px-4 md:px-8 lg:px-12 py-8">
+      <h1 className="text-3xl font-bold mb-6 text-center">
         {sectionTitle}
       </h1>
-      
+
+      {/* Banner promocional */}
+      {bannerConfig && <Banner config={bannerConfig} className="mb-10 max-w-7xl mx-auto" />}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
         {products.length === 0 ? (
           <div className="col-span-3 text-center text-gray-500 text-lg py-4">

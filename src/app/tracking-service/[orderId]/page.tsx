@@ -79,10 +79,10 @@ export default function TrackingService({
         setTrackingSteps(envioData.eventos || []);
         setPdfBase64(envioData.pdf_base64 || "");
 
-        // Set pickup-specific data
-        setMetodoEnvio(envioData.metodo_envio || "");
-        setHoraRecogida(envioData.hora_recogida_autorizada || "");
-        setToken(envioData.token || "");
+        // Set pickup-specific data (from OrderDetails or fallback to envioData)
+        setMetodoEnvio(data.metodo_envio || "");
+        setHoraRecogida(data.hora_recogida_autorizada || "");
+        setToken(data.token || "");
 
         setIsLoading(false);
       })

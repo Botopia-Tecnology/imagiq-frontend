@@ -9,7 +9,7 @@ import { useMemo } from 'react';
 import { useVisibleCategories } from '@/hooks/useVisibleCategories';
 import { useCurrentMenu } from '@/hooks/useCurrentMenu';
 import { useSubmenus } from '@/hooks/useSubmenus';
-import type { CategoriaParams, Seccion } from '../types';
+import type { CategoriaParams } from '../types';
 import { 
   generateCategorySliderConfig,
   generateSeriesConfig,

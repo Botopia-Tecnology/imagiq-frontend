@@ -305,11 +305,10 @@ export const AddressMap3D: React.FC<AddressMap3DProps> = ({
         <div className="text-center p-6 max-w-sm">
           <div className="text-4xl mb-4">🗺️</div>
           <h3 className="text-blue-800 font-semibold mb-2">Google Maps No Disponible</h3>
-          <p className="text-blue-600 text-sm mb-3">{mapError}</p>
+          <p className="text-blue-600 text-sm mb-3 whitespace-pre-line">{mapError}</p>
           <div className="text-blue-500 text-xs space-y-1">
-            <p>🔧 Backend debe estar corriendo en puerto 3001</p>
-            <p>🔑 Google Places API configurada en backend</p>
-            <p>⚡ Misma API key que el autocompletado</p>
+            <p>💡 Abre la consola del navegador (F12) para más detalles</p>
+            <p>🔄 Recarga la página si el problema persiste</p>
           </div>
           {address && (
             <div className="mt-4 p-3 bg-white/70 rounded-lg">

@@ -122,15 +122,15 @@ export default function CategorySection({
       {/* Mostrar skeleton mientras carga el menú */}
       {menuLoading ? (
         <SeriesFilterSkeleton />
-      ) : currentMenu ? (
-        /* Usar SubmenuCarousel si hay datos de la API */
+      ) : seccion && currentMenu ? (
+        /* Usar SubmenuCarousel solo si hay sección específica */
         <SubmenuCarousel
           menu={currentMenu}
           categoria={categoria}
           seccion={seccion}
           title={sectionTitle}
         />
-      ) : seriesConfig ? (
+      ) : seccion && seriesConfig ? (
         /* Fallback a UniversalSeriesFilter si no hay datos de API pero hay config estática */
         <UniversalSeriesFilter
           config={seriesConfig}

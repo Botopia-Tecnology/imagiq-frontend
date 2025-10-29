@@ -1,6 +1,6 @@
 'use client';
 
-import Script from 'next/script';
+import { useEffect, useState } from 'react';
 
 /**
  * Componente que carga Microsoft Clarity de forma first-party
@@ -9,16 +9,71 @@ import Script from 'next/script';
  * - El Project ID vive solo en el backend
  * - Soporta consentimiento a través del header x-analytics-consent
  * - Totalmente first-party para evitar ad-blockers
+ *
+ * IMPORTANTE: Este componente carga el script de Clarity de forma dinámica
+ * ejecutando el código JavaScript que viene del backend, el cual contiene
+ * la inicialización completa de Clarity con el Project ID.
  */
 export default function ClarityScript() {
-  // Obtener la URL base del API desde variables de entorno
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const [mounted, setMounted] = useState(false);
 
-  return (
-    <Script
-      src={`${apiUrl}/api/analytics/clarity.js`}
-      strategy="afterInteractive"
-      id="clarity-bootstrap"
-    />
-  );
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Solo ejecutar en el cliente después de montar
+    if (!mounted) return;
+    if (globalThis.window === undefined) return;
+
+    // Prevenir múltiples cargas
+    if (globalThis.window.clarity) {
+      console.debug('[Clarity] Already initialized');
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const clarityUrl = `${apiUrl}/api/custommer/analytics/clarity.js`;
+
+    // Verificar si ya existe el script
+    const existingScript = document.querySelector(
+      `script[src="${clarityUrl}"]`
+    );
+    if (existingScript) {
+      console.debug('[Clarity] Script already exists in DOM');
+      return;
+    }
+
+    // Crear y cargar el script de forma dinámica
+    const script = document.createElement('script');
+    script.src = clarityUrl;
+    script.async = true;
+    script.id = 'clarity-bootstrap';
+
+    script.onload = () => {
+      console.debug('[Clarity] Script loaded successfully');
+      if (globalThis.window?.clarity) {
+        console.debug('[Clarity] window.clarity is now available');
+      }
+    };
+
+    script.onerror = () => {
+      console.warn(
+        '[Clarity] Failed to load from backend. Ensure the API is running at:',
+        apiUrl
+      );
+    };
+
+    // Insertar el script en el head
+    document.head.appendChild(script);
+
+    // Cleanup: remover el script cuando el componente se desmonte
+    return () => {
+      const scriptToRemove = document.getElementById('clarity-bootstrap');
+      scriptToRemove?.remove();
+    };
+  }, [mounted]);
+
+  // Este componente no renderiza nada visible
+  return null;
 }

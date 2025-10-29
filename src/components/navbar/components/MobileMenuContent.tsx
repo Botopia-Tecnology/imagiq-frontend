@@ -1,56 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { ChevronRight } from "lucide-react";
 import type { FC } from "react";
-import { FEATURED_PRODUCTS, MenuItem } from "./MobileMenuData";
-import type { Menu } from "@/lib/api";
-
-type NavItem = {
-  name: string;
-  href: string;
-  category: string;
-  categoryCode: string;
-  dropdownName?: string;
-  uuid: string;
-  totalProducts: number;
-  menus: Menu[];
-  orden: number;
-};
+import { MenuItem } from "./MobileMenuData";
+import { hasDropdownMenu } from "../utils/helpers";
+import type { NavItem } from "../types";
 
 type Props = {
   onClose: () => void;
-  onMenuItemClick: (item: MenuItem & { menus?: Menu[]; categoryCode?: string }) => void;
+  onMenuItemClick: (item: MenuItem & { menus?: any[]; categoryCode?: string; uuid?: string; dropdownName?: string }) => void;
   menuRoutes: NavItem[];
   loading: boolean;
 };
 
 export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRoutes, loading }) => {
-  // Rutas estáticas que siempre deben aparecer
-  const staticRoutes = [
-    { name: "", href: "/", hasDropdown: false },
-    { name: "Soporte", href: "/soporte/inicio_de_soporte", hasDropdown: false },
-    { name: "Para Empresas", href: "/ventas-corporativas", hasDropdown: false },
-  ];
-
-  // Categorías que vienen de la API (las 5 principales)
-  const apiCategories = menuRoutes.filter(route =>
-    ['IM', 'AV', 'DA', 'IT'].includes(route.categoryCode) || route.categoryCode === 'accesorios'
-  );
-
-  // Construir el menú completo: Tienda Online + API Categories + Soporte + Para Empresas
-  const menuItems: (MenuItem & { menus?: Menu[]; categoryCode?: string })[] = [
-    ...apiCategories.map(route => ({
+  // Usar todas las rutas del navbar en el mismo orden que desktop
+  // Cada item ya viene con toda la información necesaria (uuid, categoryCode, etc.)
+  const menuItems: (MenuItem & { menus?: any[]; categoryCode?: string; uuid?: string; dropdownName?: string })[] = menuRoutes.map(route => {
+    const dropdownKey = route.dropdownName || route.name;
+    const hasDropdown = hasDropdownMenu(dropdownKey, route);
+    
+    return {
       name: route.name,
       href: route.href,
-      hasDropdown: true,
-      menus: route.menus,
+      hasDropdown,
       categoryCode: route.categoryCode,
-    })),
-    staticRoutes[1], // Soporte
-    staticRoutes[2], // Para Empresas
-  ];
+      uuid: route.uuid,
+      dropdownName: route.dropdownName,
+    };
+  });
 
   return (
     <div className="p-4">
@@ -70,14 +49,25 @@ export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRou
             </div>
           ) : (
             menuItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => (item.hasDropdown ? onMenuItemClick(item) : (window.location.href = item.href))}
-                className="w-full flex items-center justify-between py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 rounded-lg px-2 -mx-2"
-              >
-                <span>{item.name}</span>
-                {item.hasDropdown && <ChevronRight className="w-5 h-5 text-gray-400" />}
-              </button>
+              item.hasDropdown ? (
+                <button
+                  key={item.name}
+                  onClick={() => onMenuItemClick(item)}
+                  className="w-full flex items-center justify-between py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 rounded-lg px-2 -mx-2"
+                >
+                  <span>{item.name}</span>
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                </button>
+              ) : (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={onClose}
+                  className="w-full flex items-center justify-between py-3 text-base font-semibold text-gray-900 hover:bg-gray-50 rounded-lg px-2 -mx-2"
+                >
+                  <span>{item.name}</span>
+                </Link>
+              )
             ))
           )}
         </nav>

@@ -2,6 +2,8 @@
  * Utilidades para generación de slugs dinámicos desde nombres de API
  */
 
+import type { VisibleCategory, Menu } from '@/lib/api';
+
 /**
  * Convierte un nombre a slug URL-friendly
  * Ejemplo: "Dispositivos móviles" → "dispositivos-moviles"
@@ -21,7 +23,7 @@ export function toSlug(name: string): string {
 /**
  * Encuentra una categoría por slug en la lista de categorías visibles
  */
-export function findCategoryBySlug(categories: any[], slug: string) {
+export function findCategoryBySlug(categories: VisibleCategory[], slug: string): VisibleCategory | undefined {
   return categories.find(cat => {
     const categorySlug = toSlug(cat.nombreVisible || cat.nombre);
     return categorySlug === slug;
@@ -31,10 +33,9 @@ export function findCategoryBySlug(categories: any[], slug: string) {
 /**
  * Encuentra un menú por slug en la lista de menús de una categoría
  */
-export function findMenuBySlug(menus: any[], slug: string) {
+export function findMenuBySlug(menus: Menu[], slug: string): Menu | undefined {
   return menus.find(menu => {
     const menuSlug = toSlug(menu.nombreVisible || menu.nombre);
     return menuSlug === slug;
   });
 }
-

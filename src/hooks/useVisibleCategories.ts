@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { categoriesEndpoints, type VisibleCategory } from '@/lib/api';
+import { toSlug } from '@/app/productos/[categoria]/utils/slugUtils';
 
 export function useVisibleCategories() {
   const [visibleCategories, setVisibleCategories] = useState<VisibleCategory[]>([]);
@@ -162,7 +163,6 @@ export function useVisibleCategories() {
   const getCategoryHref = (categoryCode: string, categoryVisibleName?: string): string => {
     // Si tenemos nombreVisible, generar slug dinámicamente
     if (categoryVisibleName) {
-      const { toSlug } = require('@/app/productos/[categoria]/utils/slugUtils');
       return `/productos/${toSlug(categoryVisibleName)}`;
     }
     

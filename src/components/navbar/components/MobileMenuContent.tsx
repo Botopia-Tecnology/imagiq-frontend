@@ -6,10 +6,11 @@ import type { FC } from "react";
 import { MenuItem } from "./MobileMenuData";
 import { hasDropdownMenu } from "../utils/helpers";
 import type { NavItem } from "../types";
+import type { Menu } from "@/lib/api";
 
 type Props = {
   onClose: () => void;
-  onMenuItemClick: (item: MenuItem & { menus?: any[]; categoryCode?: string; uuid?: string; dropdownName?: string }) => void;
+  onMenuItemClick: (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string }) => void;
   menuRoutes: NavItem[];
   loading: boolean;
 };
@@ -17,7 +18,7 @@ type Props = {
 export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRoutes, loading }) => {
   // Usar todas las rutas del navbar en el mismo orden que desktop
   // Cada item ya viene con toda la información necesaria (uuid, categoryCode, etc.)
-  const menuItems: (MenuItem & { menus?: any[]; categoryCode?: string; uuid?: string; dropdownName?: string })[] = menuRoutes.map(route => {
+  const menuItems: (MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string })[] = menuRoutes.map(route => {
     const dropdownKey = route.dropdownName || route.name;
     const hasDropdown = hasDropdownMenu(dropdownKey, route);
     

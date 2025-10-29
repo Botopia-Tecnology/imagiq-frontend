@@ -18,9 +18,7 @@ import { PostHogProvider } from "@/features/analytics/PostHogProvider";
 import ChatbotWidget from "@/components/chatbotWidget";
 import { Toaster } from "@/components/ui/sonner";
 import ClientLayout from "./ClientLayout";
-import ClarityScript from "@/components/analytics/ClarityScript";
-import GTMScript from "@/components/analytics/GTMScript";
-import MetaPixelScript from "@/components/analytics/MetaPixelScript";
+import AnalyticsScripts from "@/components/analytics/AnalyticsScripts";
 import { ResponsiveProvider } from "@/components/responsive"; // Importa el provider
 import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 import { ProductProvider } from "@/features/products/ProductContext";
@@ -130,12 +128,9 @@ export default function RootLayout({
         } as React.CSSProperties
       }
     >
-      <head>
-        <ClarityScript />
-        <GTMScript />
-        <MetaPixelScript />
-      </head>
+      <head></head>
       <body className="antialiased">
+        <AnalyticsScripts />
         <ResponsiveProvider>
           <ProductProvider>
             <NavbarVisibilityProvider>

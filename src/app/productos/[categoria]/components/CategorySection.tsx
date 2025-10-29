@@ -192,60 +192,47 @@ export default function CategorySection({
           ref={productsRef}
           className={cn("flex-1 min-w-0", device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0")}
         >
-          {/* Skeleton solo en carga inicial (cuando no hay productos) */}
-          {loading && products.length === 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {Array.from({ length: itemsPerPage }, (_, i) => (
-                <SkeletonCard key={`sk-${i}`} />
-              ))}
-            </div>
+          {/* Mostrar grid de productos (incluye skeleton, mensaje de vacío o productos) */}
+          <CategoryProductsGrid
+            ref={productsRef}
+            products={products}
+            loading={loading}
+            error={error}
+            refreshProducts={refreshProducts}
+            viewMode={viewMode}
+            categoryName={sectionTitle}
+            showBanner={(device === "desktop" || device === "large") && products.length >= 4}
+            showLazySkeletons={hasMore}
+            lazySkeletonCount={3}
+          />
+
+          {/* Elemento invisible para detectar scroll */}
+          {!error && hasMore && products.length > 0 && (
+            <div ref={loadMoreRef} className="h-4" />
           )}
 
-          {/* Mostrar productos siempre que haya al menos uno */}
-          {products.length > 0 && (
-            <>
-              <CategoryProductsGrid
-                ref={productsRef}
-                products={products}
-                loading={loading}
-                error={error}
-                refreshProducts={refreshProducts}
-                viewMode={viewMode}
-                categoryName={sectionTitle}
-                showBanner={(device === "desktop" || device === "large") && products.length >= 4}
-                showLazySkeletons={hasMore}
-                lazySkeletonCount={3}
+          {/* Paginación tradicional */}
+          {!error && products.length > 0 && (
+            <div className="mt-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                <ItemsPerPageSelector
+                  itemsPerPage={itemsPerPage}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                />
+                {!hasMore && !hasMorePages && (
+                  <p className="text-gray-500 text-sm">
+                    Has visto todos los productos de esta página
+                  </p>
+                )}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalItems={totalItems}
+                itemsPerPage={itemsPerPage}
               />
-
-              {/* Elemento invisible para detectar scroll */}
-              {!error && hasMore && (
-                <div ref={loadMoreRef} className="h-4" />
-              )}
-
-              {/* Paginación tradicional */}
-              {!error && products.length > 0 && (
-                <div className="mt-8">
-                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                    <ItemsPerPageSelector
-                      itemsPerPage={itemsPerPage}
-                      onItemsPerPageChange={handleItemsPerPageChange}
-                    />
-                    {!hasMore && !hasMorePages && (
-                      <p className="text-gray-500 text-sm">
-                        Has visto todos los productos de esta página
-                      </p>
-                    )}
-                  </div>
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={handlePageChange}
-                    totalItems={totalItems}
-                    itemsPerPage={itemsPerPage}
-                  />
-                </div>
-              )}
-            </>
+            </div>
           )}
         </div>
       </div>

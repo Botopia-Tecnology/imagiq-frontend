@@ -28,7 +28,7 @@ interface CategoriaPageContentProps {
 function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   const searchParams = useSearchParams();
   const device = useDeviceType();
-  const { visibleCategories } = useVisibleCategories();
+  const { visibleCategories, loading: categoriesLoading } = useVisibleCategories();
   
   const isOfertasPage = categoria === "ofertas";
   const seccionParam = searchParams?.get("seccion");
@@ -100,7 +100,16 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     );
   }
   
-  // Error si categoría no se encuentra dinámicamente
+  // Mostrar skeleton mientras cargan las categorías
+  if (categoriesLoading) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+  
+  // Error si categoría no se encuentra dinámicamente (solo después de cargar)
   if (!dynamicCategory) {
     return (
       <div className="bg-white min-h-screen flex items-center justify-center">

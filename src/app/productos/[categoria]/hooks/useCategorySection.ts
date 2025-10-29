@@ -154,17 +154,16 @@ export function useCategoryProducts(
 
   const productsResult = useProducts(initialFiltersForProducts);
 
-  // Finalizar transición cuando los productos se carguen
+  // Finalizar transición cuando los productos se carguen (con o sin resultados)
   useEffect(() => {
-    if (!productsResult.loading && isTransitioning && productsResult.products && productsResult.products.length > 0) {
+    if (!productsResult.loading && isTransitioning) {
+      // Finalizar transición cuando termine de cargar, haya o no productos
       setIsTransitioning(false);
-      setHasLoadedOnce(true);
-    } else if (!productsResult.loading && isTransitioning && hasLoadedOnce) {
-      // Si ya habíamos cargado antes y ahora no hay productos, también finalizar transición
-      // (significa que es una búsqueda sin resultados legítima)
-      setIsTransitioning(false);
+      if (productsResult.products && productsResult.products.length > 0) {
+        setHasLoadedOnce(true);
+      }
     }
-  }, [productsResult.loading, isTransitioning, productsResult.products, hasLoadedOnce]);
+  }, [productsResult.loading, isTransitioning, productsResult.products]);
 
   // Retornar loading como true durante la transición
   const finalLoading = productsResult.loading || isTransitioning;

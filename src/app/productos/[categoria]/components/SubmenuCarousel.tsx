@@ -6,7 +6,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
 import type { Menu } from "@/lib/api";
 import SeriesSlider from "./SeriesSlider";
@@ -27,6 +27,7 @@ export default function SubmenuCarousel({
   title,
 }: Props) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { submenus, loading, error } = useSubmenus(menu.uuid);
 
@@ -45,8 +46,8 @@ export default function SubmenuCarousel({
     const currentParams = new URLSearchParams(searchParams?.toString());
     currentParams.set('submenu', friendlyName);
     
-    // Construir la nueva URL
-    const newUrl = `/productos/${categoria}?${currentParams.toString()}`;
+    // Usar el pathname actual para mantener el slug correcto
+    const newUrl = `${pathname}?${currentParams.toString()}`;
     
     // Navegar a la nueva URL
     router.push(newUrl);

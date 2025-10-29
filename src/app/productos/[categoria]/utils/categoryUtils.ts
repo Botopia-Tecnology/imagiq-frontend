@@ -12,89 +12,18 @@ import type { CategoryApiFilters } from "@/lib/sharedInterfaces";
 // Alias local para mantener compatibilidad
 export type ApiFilters = CategoryApiFilters;
 
-/**
- * Mapea las categorías del frontend a las categorías de la API
- */
-export const CATEGORY_MAPPING: Record<
-  CategoriaParams,
-  { apiCategory: string; subcategorias: Record<string, string> }
-> = {
-  electrodomesticos: {
-    apiCategory: "Electrodoméstico",
-    subcategorias: {
-      microondas: "Hornos Microondas",
-      lavadoras: "Lavadoras y Secadoras",
-      refrigeradores: "Neveras",
-      lavavajillas: "Lavavajillas",
-      "aire-acondicionado": "Aire Acondicionado",
-      aspiradoras: "Aspiradoras",
-      hornos: "Hornos",
-    },
-  },
-  "dispositivos-moviles": {
-    apiCategory: "Dispositivos Móviles",
-    subcategorias: {
-      smartphones: "Celulares",
-      tabletas: "Tablets",
-      relojes: "Wearables",
-      buds: "buds", // Usar nombre en parámetro, no subcategoria
-      accesorios: "Accesorios",
-    },
-  },
-  televisores: {
-    apiCategory: "TV & Audio",
-    subcategorias: {
-      "crystal-uhd": "Crystal UHD",
-      "neo-qled": "Neo QLED",
-      "oled": "OLED",
-      "proyectores": "Proyectores",
-      "qled": "QLED",
-      "smart-tv": "Smart TV",
-      "the-frame": "The Frame",
-      "dispositivo-audio": "Dispositivo de Audio",
-    },
-  },
-  monitores: {
-    apiCategory: "TV & Audio",
-    subcategorias: {
-      "corporativo": "Monitores",
-      "essential-monitor": "Monitores",
-      "odyssey-gaming": "Monitores",
-      "viewfinity-high-resolution": "Monitores",
-    },
-  },
-  audio: {
-    apiCategory: "TV & Audio",
-    subcategorias: {
-      "barras-sonido": "Soundbars",
-      sistemas: "Sistemas de Audio",
-    },
-  },
-  ofertas: {
-    apiCategory: "Ofertas",
-    subcategorias: {
-      accesorios: "Accesorios",
-      "tv-monitores-audio": "TV & Audio",
-      "smartphones-tablets": "Dispositivos Móviles",
-      electrodomesticos: "Electrodoméstico",
-    },
-  },
-};
+// Los mapeos de categorías ahora son dinámicos desde la API
+// Ya no se importa CATEGORY_MAPPING porque todo es dinámico
 
 /**
  * Obtiene los filtros base para una categoría específica
  * NOTA: Ya NO usamos subcategory, ahora usamos menuUuid y submenuUuid
+ * Ahora es dinámico - no necesita mapeos estáticos
  */
 export function getCategoryBaseFilters(
   categoria: CategoriaParams,
   _seccion?: string // Parámetro mantenido por compatibilidad pero ya no se usa
 ): ApiFilters {
-  const categoryConfig = CATEGORY_MAPPING[categoria];
-
-  if (!categoryConfig) {
-    throw new Error(`Categoría ${categoria} no encontrada`);
-  }
-
   const baseFilters: ApiFilters = {};
 
   // Ya NO agregamos subcategory - usamos menuUuid y submenuUuid en su lugar
@@ -366,19 +295,22 @@ function applyTvsFilters(
 
 /**
  * Valida si una categoría es soportada
+ * Ahora es dinámico - solo valida "ofertas" como estática
  */
 export function isValidCategory(
   categoria: string
 ): categoria is CategoriaParams {
-  return categoria in CATEGORY_MAPPING;
+  // Solo "ofertas" es estático, el resto viene dinámicamente de la API
+  return categoria === "ofertas" || categoria.length > 0;
 }
 
 /**
  * Obtiene las subcategorías disponibles para una categoría
+ * Ahora es dinámico - retorna array vacío ya que los menús vienen de la API
  */
 export function getAvailableSubcategories(
   categoria: CategoriaParams
 ): string[] {
-  const categoryConfig = CATEGORY_MAPPING[categoria];
-  return Object.keys(categoryConfig.subcategorias);
+  // Los menús ahora vienen dinámicamente desde la API
+  return [];
 }

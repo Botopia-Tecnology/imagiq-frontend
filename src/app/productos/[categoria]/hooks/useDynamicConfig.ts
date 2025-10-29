@@ -5,10 +5,11 @@
  * basadas en los datos de la API.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useState } from 'react';
 import { useVisibleCategories } from '@/hooks/useVisibleCategories';
 import { useCurrentMenu } from '@/hooks/useCurrentMenu';
 import { useSubmenus } from '@/hooks/useSubmenus';
+import { menusEndpoints, type Menu } from '@/lib/api';
 import type { CategoriaParams } from '../types';
 import { 
   generateCategorySliderConfig,
@@ -22,6 +23,7 @@ import {
 
 /**
  * Hook principal que proporciona toda la configuración dinámica
+ * Ahora carga los menús bajo demanda para la categoría actual
  */
 export function useDynamicCategoryConfig(
   categoria: CategoriaParams,
@@ -30,6 +32,8 @@ export function useDynamicCategoryConfig(
   const { visibleCategories, loading: categoriesLoading } = useVisibleCategories();
   const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
   const { submenus, loading: submenusLoading } = useSubmenus(currentMenu?.uuid || null);
+  const [menus, setMenus] = useState<Menu[]>([]);
+  const [menusLoading, setMenusLoading] = useState(false);
 
   // Encontrar la categoría actual en los datos de la API
   const currentCategory = useMemo(() => {
@@ -37,22 +41,51 @@ export function useDynamicCategoryConfig(
     return visibleCategories.find(cat => cat.nombre === categoryCode);
   }, [visibleCategories, categoria]);
 
+  // Cargar menús bajo demanda para la categoría actual
+  useEffect(() => {
+    if (!currentCategory?.uuid || categoriesLoading) return;
+
+    let isMounted = true;
+
+    const loadMenus = async () => {
+      setMenusLoading(true);
+      try {
+        const response = await menusEndpoints.getMenusByCategory(currentCategory.uuid);
+        if (response.success && response.data && isMounted) {
+          setMenus(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading menus:', error);
+      } finally {
+        if (isMounted) {
+          setMenusLoading(false);
+        }
+      }
+    };
+
+    loadMenus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentCategory?.uuid, categoriesLoading]);
+
   // Generar configuración dinámica
   const dynamicConfig = useMemo(() => {
-    if (!currentCategory?.menus) {
+    if (!menus.length && !menusLoading) {
       return null;
     }
 
     return {
-      sliderConfig: generateCategorySliderConfig(categoria, currentCategory.menus),
+      sliderConfig: generateCategorySliderConfig(categoria, menus),
       seriesConfig: generateSeriesConfig(categoria, seccion || '', currentMenu, submenus),
       sectionTitle: generateSectionTitle(categoria, seccion || '', currentMenu),
       filterConfig: generateFilterConfig(categoria, seccion || ''),
-      seccionToMenuName: generateSeccionToMenuNameMapping(currentCategory.menus),
-      availableSections: generateAvailableSections(currentCategory.menus),
-      defaultSection: generateDefaultSection(currentCategory.menus)
+      seccionToMenuName: generateSeccionToMenuNameMapping(menus),
+      availableSections: generateAvailableSections(menus),
+      defaultSection: generateDefaultSection(menus)
     };
-  }, [categoria, seccion, currentCategory, currentMenu, submenus]);
+  }, [categoria, seccion, menus, currentMenu, submenus, menusLoading]);
 
   // Configuración de slider dinámica
   const sliderConfig = useMemo(() => {
@@ -107,7 +140,7 @@ export function useDynamicCategoryConfig(
     defaultSection,
     
     // Estados de carga
-    loading: categoriesLoading || menuLoading || submenusLoading,
+    loading: categoriesLoading || menuLoading || submenusLoading || menusLoading,
     
     // Datos de la API
     currentCategory,

@@ -54,14 +54,9 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     // Si tenemos menú actual, usar su UUID como sección
     if (currentMenu) return currentMenu.uuid;
     
-    // Buscar menú por slug en menús de la categoría
-    if (dynamicCategory?.menus) {
-      const menu = findMenuBySlug(dynamicCategory.menus, seccionParam);
-      return menu?.uuid || null;
-    }
-    
-    return null;
-  }, [seccionParam, currentMenu, dynamicCategory]);
+    // Usar directamente el parámetro de sección
+    return seccionParam;
+  }, [seccionParam, currentMenu]);
   
   // Título dinámico desde API
   const sectionTitle = useMemo(() => {

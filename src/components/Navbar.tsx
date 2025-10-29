@@ -298,7 +298,7 @@ export default function Navbar() {
                         data-item-name={dropdownKey}
                         ref={navbar.setNavItemRef}
                         onMouseEnter={() => {
-                          if (hasDropdownMenu(dropdownKey)) {
+                          if (hasDropdownMenu(dropdownKey, item)) {
                             navbar.handleDropdownEnter(dropdownKey as DropdownName);
                             // Cargar menús bajo demanda si el item tiene uuid
                             if (item.uuid) {
@@ -324,7 +324,7 @@ export default function Navbar() {
                         </Link>
 
                         {navbar.activeDropdown === dropdownKey &&
-                          hasDropdownMenu(dropdownKey) && (
+                          hasDropdownMenu(dropdownKey, item) && (
                             <div
                               className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
                               style={{

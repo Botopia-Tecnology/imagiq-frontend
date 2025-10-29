@@ -26,8 +26,9 @@ export function useSelectedHierarchy(categoriaNombre?: string, seccion?: string)
     // UUID de la categoría (para referencia, si se necesita)
     const categoryUuid = currentMenu?.categoriasVisiblesId || undefined;
 
-    // UUID del menú actual
-    const menuUuid = currentMenu?.uuid || undefined;
+    // UUID del menú actual: solo incluir si hay una sección en la URL
+    // Si no hay sección, NO incluir menuUuid para que se muestren todos los productos de la categoría
+    const menuUuid = seccion && currentMenu?.uuid ? currentMenu.uuid : undefined;
 
     // UUID del submenú: buscar en los submenus del currentMenu el que coincida con el filtro "submenu" activo
     let submenuUuid: string | undefined = undefined;
@@ -48,7 +49,7 @@ export function useSelectedHierarchy(categoriaNombre?: string, seccion?: string)
       submenuUuid,
       loading
     };
-  }, [currentMenu, searchParams, loading, categoriaNombre, submenus, visibleCategories]);
+  }, [currentMenu, searchParams, loading, categoriaNombre, submenus, visibleCategories, seccion]);
 
   return hierarchy;
 }

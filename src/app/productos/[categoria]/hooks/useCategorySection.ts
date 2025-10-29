@@ -84,7 +84,7 @@ export function useCategoryProducts(
     const result: Record<string, string> = {};
 
     if (categoryCode) {
-      result.categoria = categoryCode;
+      result.category = categoryCode; // FrontendApiFilters espera 'category', no 'categoria'
     }
 
     if (menuUuid) {

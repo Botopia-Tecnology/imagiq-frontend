@@ -60,31 +60,36 @@ export default function Navbar() {
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
     const props = { isMobile: false };
 
-    // Si el item tiene uuid de categoría, intentar usar menús cargados dinámicamente
-    if (item?.uuid) {
+    // Categorías que deben mantenerse estáticas
+    const STATIC_CATEGORIES = ['ofertas', 'tiendas', 'soporte'];
+    
+    // Si el item tiene uuid de categoría y NO es una categoría estática, usar DynamicDropdown
+    if (item?.uuid && !STATIC_CATEGORIES.includes(item.uuid)) {
       const categoryUuid = item.uuid;
       const cachedMenus = loadedMenus[categoryUuid];
       const isLoading = loadingMenus[categoryUuid] || false;
 
-      // Mostrar DynamicDropdown si hay menús cargados o si está cargando
-      if (cachedMenus || isLoading) {
-        return (
-          <DynamicDropdown
-            menus={cachedMenus || []}
-            categoryName={item.name}
-            categoryCode={item.categoryCode || ''}
-            categoryVisibleName={item.categoryVisibleName}
-            isMobile={false}
-            loading={isLoading}
-          />
-        );
-      }
+      // Siempre usar DynamicDropdown para categorías dinámicas
+      // Muestra loading mientras cargan los menús o los menús si ya están cargados
+      return (
+        <DynamicDropdown
+          menus={cachedMenus || []}
+          categoryName={item.name}
+          categoryCode={item.categoryCode || ''}
+          categoryVisibleName={item.categoryVisibleName}
+          isMobile={false}
+          loading={isLoading}
+        />
+      );
     }
 
-    // Fallback a dropdowns estáticos
+    // Fallback a dropdowns estáticos solo para categorías especiales
     switch (name) {
       case "Ofertas":
         return <OfertasDropdown {...props} />;
+      case "Soporte":
+        return <SoporteDropdown {...props} />;
+      // Otros dropdowns estáticos (legacy) no se usan más, pero mantenemos por compatibilidad
       case "Dispositivos móviles":
         return <DispositivosMovilesDropdown {...props} />;
       case "Televisores y AV":
@@ -95,8 +100,8 @@ export default function Navbar() {
         return <MonitoresDropdown {...props} />;
       case "Accesorios":
         return <AccesoriosDropdown {...props} />;
-      case "Soporte":
-        return <SoporteDropdown {...props} />;
+      default:
+        return null;
     }
   };
 
@@ -315,10 +320,7 @@ export default function Navbar() {
                               "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                           )}
                         >
-                          {dropdownKey === "Televisores y AV" &&
-                          isIntermediateScreen
-                            ? "TV y AV"
-                            : item.name}
+                          {item.name}
                         </Link>
 
                         {navbar.activeDropdown === dropdownKey &&

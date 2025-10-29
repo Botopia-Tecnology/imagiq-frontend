@@ -5,7 +5,6 @@
 
 import { forwardRef, useState } from "react";
 import Image from "next/image";
-import LoadingSpinner from "@/components/LoadingSpinner";
 import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard, {
   type ProductCardProps,
@@ -85,15 +84,6 @@ const CategoryProductsGrid = forwardRef<
       }
     };
 
-    // Solo mostrar spinner de carga inicial cuando NO hay productos
-    if (loading && products.length === 0) {
-      return (
-        <div className="flex justify-center items-center min-h-[400px]">
-          <LoadingSpinner />
-        </div>
-      );
-    }
-
     if (error) {
       return (
         <div className="text-center py-12">
@@ -113,16 +103,27 @@ const CategoryProductsGrid = forwardRef<
 
     return (
       <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
-        {products.length === 0 && !loading ? (
+        {/* Mostrar skeletons mientras carga y no hay productos */}
+        {loading && products.length === 0 && (
+          <>
+            {Array.from({ length: 12 }, (_, i) => (
+              <div key={`skeleton-${i}`} className="w-full">
+                <SkeletonCard />
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* Mostrar mensaje solo cuando terminó de cargar y NO hay productos */}
+        {products.length === 0 && !loading && (
           <div className="col-span-full w-full text-center py-12 text-gray-500">
             No se encontraron {categoryName.toLowerCase()} con los filtros
             seleccionados.
           </div>
-        ) : products.length === 0 && loading ? (
-          <div className="col-span-full flex justify-center items-center min-h-[400px]">
-            <LoadingSpinner />
-          </div>
-        ) : (
+        )}
+
+        {/* Mostrar productos si existen */}
+        {products.length > 0 && (
           <>
             {/* Banner promocional 1 - Grid position: fila 2, columna 1 - Solo en desktop */}
             {showBanner && viewMode === "grid" && products.length >= 4 && (

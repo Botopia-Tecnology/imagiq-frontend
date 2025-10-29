@@ -10,11 +10,6 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { menusEndpoints, type Menu as MenuType } from "@/lib/api";
 import OfertasDropdown from "./dropdowns/ofertas";
-import DispositivosMovilesDropdown from "./dropdowns/dispositivos_moviles";
-import ElectrodomesticosDropdown from "./dropdowns/electrodomesticos";
-import TelevisoresDropdown from "./dropdowns/televisores";
-import MonitoresDropdown from "./dropdowns/monitores";
-import AccesoriosDropdown from "./dropdowns/accesorios";
 import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
@@ -89,17 +84,6 @@ export default function Navbar() {
         return <OfertasDropdown {...props} />;
       case "Soporte":
         return <SoporteDropdown {...props} />;
-      // Otros dropdowns estáticos (legacy) no se usan más, pero mantenemos por compatibilidad
-      case "Dispositivos móviles":
-        return <DispositivosMovilesDropdown {...props} />;
-      case "Televisores y AV":
-        return <TelevisoresDropdown {...props} />;
-      case "Electrodomésticos":
-        return <ElectrodomesticosDropdown {...props} />;
-      case "Monitores":
-        return <MonitoresDropdown {...props} />;
-      case "Accesorios":
-        return <AccesoriosDropdown {...props} />;
       default:
         return null;
     }

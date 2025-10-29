@@ -123,7 +123,8 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   return (
     <div className={`bg-white ${devicePaddingClass}`}>
       <CategorySection
-        categoria={dynamicCategory.nombre}
+        categoria={categoria}  // Usar slug de la URL para mapear filtros estáticos
+        categoriaApiCode={dynamicCategory.nombre}  // Código de API para llamadas
         seccion={activeSection || ""}
         sectionTitle={sectionTitle}
       />

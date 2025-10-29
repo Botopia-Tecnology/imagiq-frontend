@@ -506,7 +506,22 @@ export function getCategoryFilters(
 // getCategorySliderConfig se eliminó porque era @deprecated
 
 /**
+ * Mapeo de slugs dinámicos a configuraciones de filtros estáticos
+ * Esto permite que filtros dinámicos (por API) funcionen con filtros estáticos
+ */
+const FILTER_CONFIG_MAP: Record<string, string> = {
+  'dispositivos-moviles': 'dispositivos-moviles',
+  'electrodomesticos': 'electrodomesticos',
+  'televisores': 'televisores',
+  'televisores-y-av': 'televisores', // Mapear slug dinámico a configuración estática
+  'tv-y-audio': 'televisores', // Variación del slug
+  'monitores': 'monitores',
+  'audio': 'audio',
+};
+
+/**
  * Obtiene la configuración de filtros disponibles para una categoría y sección específica
+ * Soporta tanto slugs estáticos como dinámicos (generados desde la API)
  */
 export function getCategoryFilterConfig(
   categoria: CategoriaParams,
@@ -521,8 +536,11 @@ export function getCategoryFilterConfig(
     return movilesSectionFilters[seccion];
   }
 
+  // Normalizar el slug a la configuración de filtros conocida
+  const normalizedCategoria = FILTER_CONFIG_MAP[categoria] || categoria;
+
   // Devolver configuración genérica por categoría
-  switch (categoria) {
+  switch (normalizedCategoria) {
     case "electrodomesticos":
       return electrodomesticoFilters;
     case "dispositivos-moviles":

@@ -38,13 +38,15 @@ import {
 } from "../hooks/useCategorySection";
 
 interface CategorySectionProps {
-  readonly categoria: CategoriaParams;
+  readonly categoria: CategoriaParams;  // Slug de la URL para mapear filtros
+  readonly categoriaApiCode: string;  // Código de API (AV, DA, IM, etc.)
   readonly seccion: Seccion;
   readonly sectionTitle: string;
 }
 
 export default function CategorySection({
   categoria,
+  categoriaApiCode,
   seccion,
   sectionTitle,
 }: CategorySectionProps) {
@@ -66,8 +68,8 @@ export default function CategorySection({
 
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const seriesConfig = getSeriesConfig(seccion);
-  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoria, seccion);
-  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoria, seccion);
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoriaApiCode, seccion);
+  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
 
   const { products, loading, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
     categoria,

@@ -14,6 +14,7 @@ export type NavItem = {
   href: string;
   category: string;
   categoryCode?: string;
+  categoryVisibleName?: string; // Nombre visible de la categoría para generar slugs dinámicos
   dropdownName?: string;
   uuid?: string;
   /**

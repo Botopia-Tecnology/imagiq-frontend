@@ -259,11 +259,11 @@ export const audioFilters: FilterConfig = {
   compatibilidad: ["Android", "iOS", "Windows", "Universal"],
 };
 
-// Las constantes CATEGORY_SECTIONS, DEFAULT_SECTION, SECTION_TITLES se movieron a ../config/category-mappings.ts
-// Importa desde category-mappings.ts en su lugar
-
 /**
  * Configuración del CategorySlider para cada categoría
+ * 
+ * NOTA: Ahora las categorías y secciones son dinámicas desde la API.
+ * Este slider se mantiene por compatibilidad pero debería migrarse a datos dinámicos.
  */
 export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
   electrodomesticos: [
@@ -502,18 +502,8 @@ export function getCategoryFilters(
   return initialState;
 }
 
-// Las funciones getSectionTitle e isValidSectionForCategory se movieron a ../config/category-mappings.ts
-// Importa desde category-mappings.ts en su lugar
-
-/**
- * Obtiene la configuración del CategorySlider para una categoría
- * @deprecated Use getSliderConfig from slider-configs.ts instead
- */
-export function getCategorySliderConfig(
-  categoria: CategoriaParams
-): Category[] {
-  return CATEGORY_SLIDER_CONFIG[categoria] || [];
-}
+// getSectionTitle e isValidSectionForCategory ahora son funciones dinámicas en slugUtils.ts
+// getCategorySliderConfig se eliminó porque era @deprecated
 
 /**
  * Obtiene la configuración de filtros disponibles para una categoría y sección específica

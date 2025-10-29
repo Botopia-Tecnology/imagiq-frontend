@@ -10,6 +10,7 @@ export default function DynamicDropdown({
   menus,
   categoryName,
   categoryCode,
+  categoryVisibleName,
   isMobile = false,
   onItemClick,
   loading = false,
@@ -23,8 +24,8 @@ export default function DynamicDropdown({
     onItemClick?.();
   };
 
-  // Transformar los menús de la API a items
-  const items = transformMenusToItems(menus, categoryCode);
+  // Transformar los menús de la API a items con nombreVisible para generar slugs dinámicos
+  const items = transformMenusToItems(menus, categoryCode, categoryVisibleName);
 
   return isMobile ? (
     <MobileView items={items} categoryName={categoryName} onItemClick={handleClick} loading={loading} />

@@ -73,6 +73,7 @@ export default function Navbar() {
             menus={cachedMenus || []}
             categoryName={item.name}
             categoryCode={item.categoryCode || ''}
+            categoryVisibleName={item.categoryVisibleName}
             isMobile={false}
             loading={isLoading}
           />

@@ -8,49 +8,11 @@ import { tabletFilters } from "../../dispositivos-moviles/constants/tabletsConst
 import { watchFilters } from "../../dispositivos-moviles/constants/watchesConstants";
 import { smartTvCategories } from "../../televisores/constants";
 
-export type CategoriaParams = "dispositivos-moviles" | "televisores" | "electrodomesticos" | "monitores" | "audio" | "ofertas";
+// Ahora es dinámico: cualquier string es válido
+export type CategoriaParams = string;
 
-export type Seccion =
-  // Dispositivos moviles
-  | "smartphones"
-  | "tabletas"
-  | "relojes"
-  | "buds"
-  | "accesorios"
-  // TV
-  | "crystal-uhd"
-  | "neo-qled"
-  | "oled"
-  | "proyectores"
-  | "qled"
-  | "smart-tv"
-  | "the-frame"
-  | "dispositivo-audio"
-  // Audio
-  | "barras-sonido"
-  | "sistemas"
-  // Electrodomesticos
-  | "neveras"
-  | "refrigeradores"
-  | "lavadoras"
-  | "lavadoras-secadoras"
-  | "lavadoras-y-secadoras"
-  | "lavavajillas"
-  | "aire-acondicionado"
-  | "aires-acondicionados"
-  | "microondas"
-  | "hornos-microondas"
-  | "aspiradoras"
-  | "hornos"
-  // Monitores
-  | "corporativo"
-  | "essential-monitor"
-  | "odyssey-gaming"
-  | "viewfinity-high-resolution"
-  // Ofertas
-  | "tv-monitores-audio"
-  | "smartphones-tablets"
-  | "electrodomesticos";
+// Ahora es dinámico: cualquier string es válido
+export type Seccion = string;
 
 interface Config {
   secciones: Seccion[];

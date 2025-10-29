@@ -1,91 +1,132 @@
 /**
  * 📦 PRODUCTOS CATEGORIZADOS PAGE - IMAGIQ ECOMMERCE
  *
- * Página dinámica que maneja diferentes categorías de productos:
- * - Electrodomésticos, Dispositivos Móviles, TVs, Audio
- * - Sistema estandarizado para obtener productos de BD
- * - Navegación entre secciones por categoría
- * - Layout responsive y escalable
+ * Página dinámica que maneja diferentes categorías de productos desde API
+ * Sistema dinámico basado en datos de backend
  */
 
 "use client";
 
-import { useEffect, Suspense, use } from "react";
+import { useEffect, Suspense, use, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useDeviceType } from "@/components/responsive";
+import { useCurrentMenu } from "@/hooks/useCurrentMenu";
+import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import { findCategoryBySlug, findMenuBySlug, toSlug } from "./utils/slugUtils";
 
-import { CategoriaParams, Seccion } from "./types";
-import { isValidCategory } from "./utils/categoryUtils";
-import {
-  getDefaultSection,
-  isValidSectionForCategory,
-  getSectionTitle,
-} from "./config/category-mappings";
-
-// Importar componentes de categoría dinámicamente
 import CategorySection from "./components/CategorySection";
 import OfertasSection from "./components/OfertasSection";
 
+// Solo ofertas se mantiene estático
+const STATIC_CATEGORIES = ["ofertas"] as const;
+
 interface CategoriaPageContentProps {
-  readonly categoria: CategoriaParams;
+  readonly categoria: string;
 }
 
 function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   const searchParams = useSearchParams();
   const device = useDeviceType();
-
-  // Obtener la sección de los query params
+  const { visibleCategories } = useVisibleCategories();
+  
+  const isOfertasPage = categoria === "ofertas";
   const seccionParam = searchParams?.get("seccion");
   
-  // Verificar si es una página de ofertas
-  const isOfertasPage = categoria === "ofertas";
-
-  // Validar y obtener sección activa
-  const activeSection =
-    seccionParam && isValidSectionForCategory(categoria, seccionParam)
-      ? (seccionParam as Seccion)
-      : getDefaultSection(categoria);
-
-  // Tracking de vista de página
+  // Resolver categoría dinámicamente desde API
+  const dynamicCategory = useMemo(() => {
+    if (isOfertasPage) return null;
+    return findCategoryBySlug(visibleCategories, categoria);
+  }, [visibleCategories, categoria, isOfertasPage]);
+  
+  // Obtener nombre de la categoría para useCurrentMenu (espera el código de API)
+  const categoryApiName = dynamicCategory?.nombre;
+  
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(
+    categoryApiName,
+    seccionParam || undefined
+  );
+  
+  // Resolver sección activa dinámicamente
+  const activeSection = useMemo(() => {
+    if (!seccionParam) return null;
+    
+    // Si tenemos menú actual, usar su UUID como sección
+    if (currentMenu) return currentMenu.uuid;
+    
+    // Buscar menú por slug en menús de la categoría
+    if (dynamicCategory?.menus) {
+      const menu = findMenuBySlug(dynamicCategory.menus, seccionParam);
+      return menu?.uuid || null;
+    }
+    
+    return null;
+  }, [seccionParam, currentMenu, dynamicCategory]);
+  
+  // Título dinámico desde API
+  const sectionTitle = useMemo(() => {
+    if (currentMenu) {
+      return currentMenu.nombreVisible || currentMenu.nombre;
+    }
+    if (dynamicCategory) {
+      return dynamicCategory.nombreVisible || dynamicCategory.nombre;
+    }
+    return categoria;
+  }, [currentMenu, dynamicCategory, categoria]);
+  
+  const devicePaddingClass = 
+    device === "mobile" ? "px-2" : 
+    device === "tablet" ? "px-4" : 
+    "px-0";
+  
+  // Tracking de vista de página (debe estar antes de returns condicionales)
   useEffect(() => {
-    posthogUtils.capture("page_view", {
-      page: "productos_categoria",
-      categoria,
-      section: activeSection,
-      device,
-    });
-  }, [categoria, activeSection, device]);
-
-  // Padding responsivo (solo horizontal)
-  let devicePaddingClass = "px-0";
-  if (device === "mobile") {
-    devicePaddingClass = "px-2";
-  } else if (device === "tablet") {
-    devicePaddingClass = "px-4";
-  }
-
-  // Si es página de ofertas, mostrar componente especial
+    if (dynamicCategory && activeSection !== null) {
+      posthogUtils.capture("page_view", {
+        page: "productos_categoria",
+        categoria: dynamicCategory.nombre,
+        section: activeSection,
+        device,
+      });
+    }
+  }, [dynamicCategory, activeSection, device]);
+  
+  // Si es ofertas, usar componente especial estático
   if (isOfertasPage) {
     return (
-      <div className={`bg-white min-h-screen ${devicePaddingClass}`}>
+      <div className="bg-white min-h-screen">
         <OfertasSection seccion={seccionParam} />
       </div>
     );
   }
-
+  
+  // Error si categoría no se encuentra dinámicamente
+  if (!dynamicCategory) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600 mb-4">
+            Categoría no encontrada
+          </h1>
+          <p className="text-gray-600">
+            La categoría &quot;{categoria}&quot; no existe
+          </p>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <div className={`bg-white ${devicePaddingClass}`}>
       <CategorySection
-        categoria={categoria}
-        seccion={activeSection}
-        sectionTitle={getSectionTitle(activeSection)}
+        categoria={dynamicCategory.nombre}
+        seccion={activeSection || ""}
+        sectionTitle={sectionTitle}
       />
     </div>
   );
 }
 
-// Componente de loading para el Suspense boundary
 function CategoriaPageLoading() {
   return (
     <div className="bg-white min-h-screen flex items-center justify-center">
@@ -96,26 +137,9 @@ function CategoriaPageLoading() {
 
 export default function Page({
   params,
-}: Readonly<{ params: Promise<{ categoria: CategoriaParams }> }>) {
+}: Readonly<{ params: Promise<{ categoria: string }> }>) {
   const { categoria } = use(params);
-
-  // Validar que la categoría existe (incluyendo ofertas)
-  if (!isValidCategory(categoria) && categoria !== "ofertas") {
-    return (
-      <main className="px-8 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-4">
-            Error: La categoría &quot;{categoria}&quot; no existe
-          </h1>
-          <p className="text-gray-600">
-            Las categorías disponibles son: electrodomestico, moviles, tvs,
-            audio, ofertas
-          </p>
-        </div>
-      </main>
-    );
-  }
-
+  
   return (
     <Suspense fallback={<CategoriaPageLoading />}>
       <CategoriaPageContent categoria={categoria} />

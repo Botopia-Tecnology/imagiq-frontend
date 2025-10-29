@@ -104,9 +104,10 @@ export function useVisibleCategories() {
     const mappedCategories = visibleCategories.map(category => {
       return {
         name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),
-        href: getCategoryHref(category.nombre),
+        href: getCategoryHref(category.nombre, category.nombreVisible),
         category: category.nombre.toLowerCase(),
         categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
+        categoryVisibleName: category.nombreVisible, // Nombre visible para generar slugs dinámicos
         dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
         uuid: category.uuid,
         totalProducts: 0,
@@ -161,7 +162,15 @@ export function useVisibleCategories() {
   };
 
   // Función para obtener la URL href basada en el nombre de la categoría
-  const getCategoryHref = (categoryName: string): string => {
+  // Ahora genera slugs dinámicamente desde el nombreVisible
+  const getCategoryHref = (categoryCode: string, categoryVisibleName?: string): string => {
+    // Si tenemos nombreVisible, generar slug dinámicamente
+    if (categoryVisibleName) {
+      const { toSlug } = require('@/app/productos/[categoria]/utils/slugUtils');
+      return `/productos/${toSlug(categoryVisibleName)}`;
+    }
+    
+    // Fallback a mapeo estático para compatibilidad
     const hrefMap: Record<string, string> = {
       'IM': '/productos/dispositivos-moviles',
       'AV': '/productos/televisores',
@@ -169,7 +178,7 @@ export function useVisibleCategories() {
       'IT': '/productos/monitores'
     };
     
-    return hrefMap[categoryName] || `/productos/${categoryName.toLowerCase()}`;
+    return hrefMap[categoryCode] || `/productos/${categoryCode.toLowerCase()}`;
   };
 
   return {

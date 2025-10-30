@@ -20,6 +20,7 @@ import {
   NavbarLogo,
 } from "./navbar/components";
 import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
+import { isStaticCategoryUuid } from "@/constants/staticCategories";
 import type { DropdownName, NavItem } from "./navbar/types";
 
 export default function Navbar() {
@@ -55,11 +56,8 @@ export default function Navbar() {
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
     const props = { isMobile: false };
 
-    // Categorías que deben mantenerse estáticas
-    const STATIC_CATEGORIES = ['ofertas', 'tiendas', 'soporte'];
-    
     // Si el item tiene uuid de categoría y NO es una categoría estática, usar DynamicDropdown
-    if (item?.uuid && !STATIC_CATEGORIES.includes(item.uuid)) {
+    if (item?.uuid && !isStaticCategoryUuid(item.uuid)) {
       const categoryUuid = item.uuid;
       const cachedMenus = loadedMenus[categoryUuid];
       const isLoading = loadingMenus[categoryUuid] || false;
@@ -285,7 +283,7 @@ export default function Navbar() {
                           if (hasDropdownMenu(dropdownKey, item)) {
                             navbar.handleDropdownEnter(dropdownKey as DropdownName);
                             // Cargar menús bajo demanda si el item tiene uuid
-                            if (item.uuid) {
+                            if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
                               loadMenusForCategory(item.uuid);
                             }
                           }

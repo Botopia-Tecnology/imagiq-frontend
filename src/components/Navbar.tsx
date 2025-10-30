@@ -338,7 +338,7 @@ export default function Navbar() {
               {isAuthenticated && user?.defaultAddress && (
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate",
+                    "flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate leading-relaxed py-0.5",
                     navbar.showWhiteItems ? "text-white/90" : "text-black/80"
                   )}
                   title={user.defaultAddress.direccionFormateada}

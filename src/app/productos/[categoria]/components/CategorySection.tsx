@@ -19,6 +19,7 @@ import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import UniversalSeriesFilter from "./UniversalSeriesFilter";
 import SubmenuCarousel from "./SubmenuCarousel";
+import MenuCarousel from "./MenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
 import SkeletonCard from "@/components/SkeletonCard"; // Aún se usa para carga inicial
 import MobileFilterSidebar from "./MobileFilterSidebar";
@@ -27,7 +28,9 @@ import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
 import { getSeriesConfig } from "../config/series-configs";
 import { useCurrentMenu } from "@/hooks/useCurrentMenu";
+import { useCategoryMenus } from "@/hooks/useCategoryMenus";
 import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
+import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -69,7 +72,18 @@ export default function CategorySection({
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const seriesConfig = getSeriesConfig(seccion);
   const { currentMenu, loading: menuLoading } = useCurrentMenu(categoriaApiCode, seccion);
+  const { menus: categoryMenus, loading: categoryMenusLoading } = useCategoryMenus(categoriaApiCode);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
+  const { visibleCategories, mapCategoryToNavbarName } = useVisibleCategories();
+
+  // Determinar nombre visible de la categoría para título cuando no hay sección
+  const categoryVisibleName = (() => {
+    const cat = visibleCategories.find(c => c.nombre === categoriaApiCode);
+    if (cat?.nombreVisible) return cat.nombreVisible;
+    return mapCategoryToNavbarName ? mapCategoryToNavbarName(categoriaApiCode) : sectionTitle;
+  })();
+
+  const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
   const { products, loading, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
     categoria,
@@ -85,7 +99,7 @@ export default function CategorySection({
   );
 
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
-  const compositeLoading = loading || menuLoading;
+  const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
 
   // Configurar scroll infinito
   const loadMoreRef = useInfiniteScroll({
@@ -124,8 +138,8 @@ export default function CategorySection({
         <Breadcrumbs />
       </div>
 
-      {/* Mostrar skeleton mientras carga el menú */}
-      {menuLoading ? (
+      {/* Mostrar skeleton mientras cargan menús/series */}
+      {menuLoading || (!seccion && categoryMenusLoading) ? (
         <SeriesFilterSkeleton />
       ) : seccion && currentMenu ? (
         /* Usar SubmenuCarousel solo si hay sección específica */
@@ -134,6 +148,13 @@ export default function CategorySection({
           categoria={categoria}
           seccion={seccion}
           title={sectionTitle}
+        />
+      ) : !seccion && categoryMenus.length > 0 ? (
+        /* Mostrar carrusel de MENÚS cuando no hay sección seleccionada */
+        <MenuCarousel
+          menus={categoryMenus}
+          categoria={categoria}
+          title={effectiveTitle}
         />
       ) : seccion && seriesConfig ? (
         /* Fallback a UniversalSeriesFilter si no hay datos de API pero hay config estática */
@@ -147,7 +168,7 @@ export default function CategorySection({
       ) : null}
 
       <HeaderSection
-        title={sectionTitle}
+        title={effectiveTitle}
         totalItems={totalItems}
         sortBy={sortBy}
         setSortBy={setSortBy}
@@ -156,7 +177,7 @@ export default function CategorySection({
         onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
-        clearAllFiltersText={`Ver todos los ${sectionTitle.toLowerCase()}`}
+        clearAllFiltersText={`Ver todos los ${effectiveTitle.toLowerCase()}`}
       />
 
       <div className={cn("flex gap-6 items-start", device === "mobile" || device === "tablet" ? "flex-col" : "flex-row")}>
@@ -205,7 +226,7 @@ export default function CategorySection({
             error={error}
             refreshProducts={refreshProducts}
             viewMode={viewMode}
-            categoryName={sectionTitle}
+            categoryName={effectiveTitle}
             showBanner={(device === "desktop" || device === "large") && products.length >= 4}
             showLazySkeletons={hasMore}
             lazySkeletonCount={3}

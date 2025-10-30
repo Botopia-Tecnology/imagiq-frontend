@@ -345,7 +345,7 @@ export default function Navbar() {
                 >
                   <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
                   <span className="truncate">
-                    {user.defaultAddress.ciudad || user.defaultAddress.nombreDireccion}
+                    {user.defaultAddress.direccionFormateada}
                   </span>
                 </div>
               )}

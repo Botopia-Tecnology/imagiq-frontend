@@ -85,8 +85,8 @@ export class ApiClient {
   }
 
   // HTTP methods
-  async get<T>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, { method: "GET" });
+  async get<T>(endpoint: string, init?: RequestInit): Promise<ApiResponse<T>> {
+    return this.request<T>(endpoint, { method: "GET", ...(init || {}) });
   }
 
   async post<T>(endpoint: string, data?: unknown): Promise<ApiResponse<T>> {
@@ -119,7 +119,7 @@ export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
   getFiltered: (() => {
     const inFlightByUrl: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
-    return (params: ProductFilterParams) => {
+    return (params: ProductFilterParams, init?: RequestInit) => {
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
@@ -132,7 +132,7 @@ export const productEndpoints = {
         return inFlightByUrl[url] as Promise<ApiResponse<ProductApiResponse>>;
       }
 
-      const p = apiClient.get<ProductApiResponse>(url).finally(() => {
+      const p = apiClient.get<ProductApiResponse>(url, init).finally(() => {
         // liberar inmediatamente al resolver/rechazar para no cachear respuestas
         delete inFlightByUrl[url];
       });

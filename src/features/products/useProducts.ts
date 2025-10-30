@@ -10,7 +10,7 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   productEndpoints,
   ProductFilterParams,
@@ -123,6 +123,8 @@ export const useProducts = (
   const [requestId, setRequestId] = useState(0);
   const [lazyOffset, setLazyOffset] = useState(0);
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
+  const abortRef = useRef<AbortController | null>(null);
+  const lastUrlRef = useRef<string | null>(null);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -190,14 +192,26 @@ export const useProducts = (
       setLoading(true);
       setError(null);
 
-      // Si no es append, limpiar productos inmediatamente para mostrar skeleton
-      if (!append) {
-        setProducts([]);
-      }
-
       try {
         const apiParams = convertFiltersToApiParams(filters, customOffset);
-        const response = await productEndpoints.getFiltered(apiParams);
+        // Construir URL de esta solicitud para decidir si abortamos la previa
+        const sp = new URLSearchParams();
+        (Object.entries(apiParams) as Array<[string, unknown]>).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== "") {
+            sp.append(key, String(value as string | number | boolean));
+          }
+        });
+        const nextUrl = `/api/products/filtered?${sp.toString()}`;
+
+        // Solo abortar si la solicitud anterior es para una URL DIFERENTE
+        if (abortRef.current && lastUrlRef.current && lastUrlRef.current !== nextUrl) {
+          abortRef.current.abort();
+        }
+        const controller = new AbortController();
+        abortRef.current = controller;
+        lastUrlRef.current = nextUrl;
+
+        const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
 
         // Verificar si esta petición sigue siendo válida comparando con el ID más reciente
         setRequestId((latestRequestId) => {
@@ -242,9 +256,12 @@ export const useProducts = (
           return currentRequestId;
         });
       } catch (err) {
+        // Ignorar aborts como errores visibles
+        // @ts-expect-error 'name' puede existir si es AbortError
+        if (err?.name === 'AbortError') {
+          return;
+        }
         console.error("Error fetching products:", err);
-
-        // Solo actualizar el error si esta petición sigue siendo válida
         setRequestId((latestRequestId) => {
           if (currentRequestId >= latestRequestId) {
             setError("Error de conexión al cargar productos");

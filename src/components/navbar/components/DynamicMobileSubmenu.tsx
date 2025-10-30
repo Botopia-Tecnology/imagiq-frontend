@@ -8,6 +8,7 @@ import type { Menu } from "@/lib/api";
 type Props = {
   menus: Menu[];
   categoryCode: string;
+  categoryVisibleName?: string;
   onClose: () => void;
   loading?: boolean;
 };
@@ -15,7 +16,16 @@ type Props = {
 /**
  * Mapea el código de categoría de la API al slug de URL
  */
-const getCategorySlug = (categoryCode: string): string => {
+const getCategorySlug = (categoryCode: string, categoryVisibleName?: string): string => {
+  // Si tenemos nombreVisible, generar slug dinámicamente para alinear con desktop
+  if (categoryVisibleName) {
+    try {
+      const { toSlug } = require('@/app/productos/[categoria]/utils/slugUtils');
+      return toSlug(categoryVisibleName);
+    } catch {
+      // fallback a mapping
+    }
+  }
   const mapping: Record<string, string> = {
     'IM': 'dispositivos-moviles',
     'AV': 'televisores',
@@ -44,7 +54,7 @@ const menuNameToSlug = (name: string): string => {
  * Componente dinámico de submenú mobile que consume datos de la API
  * Se usa para las categorías que vienen desde el backend
  */
-export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, loading = false }) => {
+export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, categoryVisibleName, onClose, loading = false }) => {
   // Si está cargando, mostrar skeleton
   if (loading) {
     return (
@@ -80,7 +90,7 @@ export const DynamicMobileSubmenu: FC<Props> = ({ menus, categoryCode, onClose, 
 
   // Función para generar la URL del menú
   const getMenuHref = (menu: Menu): string => {
-    const categorySlug = getCategorySlug(categoryCode);
+    const categorySlug = getCategorySlug(categoryCode, categoryVisibleName);
     const seccionSlug = menuNameToSlug(menu.nombreVisible || menu.nombre);
 
     return `/productos/${categorySlug}?seccion=${seccionSlug}`;

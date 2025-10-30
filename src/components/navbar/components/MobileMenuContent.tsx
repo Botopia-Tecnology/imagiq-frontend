@@ -10,7 +10,7 @@ import type { Menu } from "@/lib/api";
 
 type Props = {
   onClose: () => void;
-  onMenuItemClick: (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string }) => void;
+  onMenuItemClick: (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string; categoryVisibleName?: string }) => void;
   menuRoutes: NavItem[];
   loading: boolean;
 };
@@ -18,7 +18,7 @@ type Props = {
 export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRoutes, loading }) => {
   // Usar todas las rutas del navbar en el mismo orden que desktop
   // Cada item ya viene con toda la información necesaria (uuid, categoryCode, etc.)
-  const menuItems: (MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string })[] = menuRoutes.map(route => {
+  const menuItems: (MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string; categoryVisibleName?: string })[] = menuRoutes.map(route => {
     const dropdownKey = route.dropdownName || route.name;
     const hasDropdown = hasDropdownMenu(dropdownKey, route);
     
@@ -29,6 +29,7 @@ export const MobileMenuContent: FC<Props> = ({ onClose, onMenuItemClick, menuRou
       categoryCode: route.categoryCode,
       uuid: route.uuid,
       dropdownName: route.dropdownName,
+      categoryVisibleName: route.categoryVisibleName,
     };
   });
 

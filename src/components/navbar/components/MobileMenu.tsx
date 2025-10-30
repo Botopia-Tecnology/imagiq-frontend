@@ -33,6 +33,7 @@ export const MobileMenu: FC<Props> = ({
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [activeMenus, setActiveMenus] = useState<Menu[] | null>(null);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(null);
+  const [activeCategoryVisibleName, setActiveCategoryVisibleName] = useState<string | null>(null);
   const [activeDropdownName, setActiveDropdownName] = useState<DropdownName | null>(null);
 
   // Estado para carga bajo demanda de menús
@@ -80,7 +81,7 @@ export const MobileMenu: FC<Props> = ({
     }
   };
 
-  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string }) => {
+  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string; categoryVisibleName?: string }) => {
     if (item.hasDropdown) {
       const dropdownKey = item.dropdownName || item.name;
       const STATIC_CATEGORIES = ['ofertas', 'tiendas', 'soporte'];
@@ -100,6 +101,7 @@ export const MobileMenu: FC<Props> = ({
 
         // Primero establecer el estado del submenú activo
         setActiveCategoryCode(item.categoryCode || '');
+        setActiveCategoryVisibleName(item.categoryVisibleName || null);
         setActiveSubmenu(item.name);
         
         // Si ya hay menús en caché, establecerlos inmediatamente
@@ -169,6 +171,7 @@ export const MobileMenu: FC<Props> = ({
         <DynamicMobileSubmenu
           menus={menusToPass}
           categoryCode={activeCategoryCode}
+          categoryVisibleName={activeCategoryVisibleName || undefined}
           onClose={onClose}
           loading={isStillLoading}
         />

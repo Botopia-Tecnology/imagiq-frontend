@@ -332,19 +332,20 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
-            <div className="flex items-center gap-4 leading-none">
+          <div className="hidden lg:flex flex-col items-end justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
+            <div className="flex items-center gap-4">
               {/* Dirección predeterminada del usuario */}
               {isAuthenticated && user?.defaultAddress && (
                 <div
                   className={cn(
-                    "flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate leading-[1.4]",
+                    "flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate",
                     navbar.showWhiteItems ? "text-white/90" : "text-black/80"
                   )}
                   title={user.defaultAddress.direccionFormateada}
+                  style={{ lineHeight: '1.4' }}
                 >
                   <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-                  <span className="truncate leading-[1.4]">
+                  <span className="truncate block" style={{ lineHeight: '1.4' }}>
                     {user.defaultAddress.direccionFormateada}
                   </span>
                 </div>

@@ -11,7 +11,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 
@@ -179,7 +179,9 @@ export default function HorizontalFilters({
               return (
                 <div
                   key={filterKey}
-                  ref={(el) => (dropdownRefs.current[filterKey] = el)}
+                  ref={(el) => {
+                    dropdownRefs.current[filterKey] = el;
+                  }}
                   className="relative flex-shrink-0"
                 >
                   {/* Botón píldora */}
@@ -241,7 +243,7 @@ export default function HorizontalFilters({
                                 </span>
                               </label>
                             ))
-                          : (options as string[]).map((option, index) => (
+                          : (options as string[]).map((option) => (
                               <label
                                 key={`${filterKey}-${option}`}
                                 className={cn(
@@ -289,7 +291,9 @@ export default function HorizontalFilters({
           return (
             <div
               key={filterKey}
-              ref={(el) => (dropdownRefs.current[filterKey] = el)}
+              ref={(el) => {
+                dropdownRefs.current[filterKey] = el;
+              }}
               className="relative"
             >
               {/* Botón píldora */}
@@ -351,7 +355,7 @@ export default function HorizontalFilters({
                             </span>
                           </label>
                         ))
-                      : (options as string[]).map((option, index) => (
+                      : (options as string[]).map((option) => (
                           <label
                             key={`${filterKey}-${option}`}
                             className={cn(

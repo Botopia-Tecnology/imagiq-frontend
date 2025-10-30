@@ -172,6 +172,9 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Usar el primer SKU disponible para este color
     const firstIndex = indices[0];
 
+    // Obtener el nombre del color del API si está disponible
+    const nombreColorDisplay = apiProduct.nombreColor?.[firstIndex] || undefined;
+
     // Obtener imágenes y videos premium específicos para este color
     // imagenPremium y videoPremium vienen como arrays de arrays desde el API
     // Intentar primero con el nombre sin guión bajo (imagenPremium), luego con guión bajo (imagen_premium)
@@ -190,6 +193,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       name: normalizedColor.replaceAll(/\s+/g, '-'),
       hex: colorInfo.hex,
       label: colorInfo.label,
+      nombreColorDisplay,
       price,
       originalPrice,
       discount,

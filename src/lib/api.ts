@@ -348,6 +348,7 @@ export interface ProductApiData {
   modelo: string;
   segmento?: string[]; // Campo para identificar productos premium (array)
   color: string[];
+  nombreColor?: string[]; // Nombre del color para mostrar (ej: "Negro Medianoche")
   capacidad: string[];
   memoriaram: string[];
   descGeneral: string | null;

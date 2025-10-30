@@ -205,8 +205,39 @@ export const productEndpoints = {
 
 // Categories API endpoints
 export const categoriesEndpoints = {
-  getVisibleCategories: () => apiClient.get<VisibleCategory[]>('/api/categorias/visibles'),
-  getVisibleCategoriesComplete: () => apiClient.get<VisibleCategoryComplete[]>('/api/categorias/visibles/completas')
+  getVisibleCategories: (() => {
+    let cache: VisibleCategory[] | undefined;
+    let inFlight: Promise<void> | null = null;
+    let lastError: string | null = null;
+
+    return async (): Promise<ApiResponse<VisibleCategory[]>> => {
+      if (cache) {
+        return { data: cache, success: true };
+      }
+      if (inFlight) {
+        await inFlight;
+        return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+      }
+
+      inFlight = (async () => {
+        const resp = await apiClient.get<VisibleCategory[]>('/api/categorias/visibles');
+        if (resp.success && resp.data) {
+          // Ordenar/filtrar activas aquí para que todos los consumidores lo reciban consistente
+          cache = (resp.data as VisibleCategory[])
+            .filter(c => (c as VisibleCategory).activo)
+            .sort((a, b) => a.orden - b.orden);
+          lastError = null;
+        } else {
+          cache = cache || [];
+          lastError = resp.message || 'Error al cargar categorías visibles';
+        }
+      })();
+
+      await inFlight;
+      inFlight = null;
+      return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+    };
+  })(),
 };
 
 // Menus API endpoints

@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react';
 import { categoriesEndpoints, type VisibleCategory } from '@/lib/api';
 import { toSlug } from '@/app/productos/[categoria]/utils/slugUtils';
 
-// Cache simple en memoria para evitar llamadas duplicadas a /api/categorias/visibles
-let cachedVisibleCategories: VisibleCategory[] | null = null;
-let cachedError: string | null = null;
-let inFlightRequest: Promise<void> | null = null;
-
 export function useVisibleCategories() {
   const [visibleCategories, setVisibleCategories] = useState<VisibleCategory[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,43 +13,12 @@ export function useVisibleCategories() {
         setLoading(true);
         setError(null);
 
-        // Usar cache si ya está disponible
-        if (cachedVisibleCategories) {
-          setVisibleCategories(cachedVisibleCategories);
-          setError(cachedError);
-          return;
-        }
-
-        // Reutilizar petición en curso si existe
-        if (inFlightRequest) {
-          await inFlightRequest;
-          if (cachedVisibleCategories) {
-            setVisibleCategories(cachedVisibleCategories);
-            setError(cachedError);
-          }
-          return;
-        }
-
-        inFlightRequest = (async () => {
-          const response = await categoriesEndpoints.getVisibleCategories();
-          if (response.success && response.data) {
-            const activeCategories = response.data
-              .filter(category => category.activo)
-              .sort((a, b) => a.orden - b.orden);
-            cachedVisibleCategories = activeCategories;
-            cachedError = null;
-          } else {
-            cachedVisibleCategories = cachedVisibleCategories || [];
-            cachedError = response.message || 'Error al cargar categorías';
-          }
-        })();
-
-        await inFlightRequest;
-        setVisibleCategories(cachedVisibleCategories || []);
-        setError(cachedError);
+        const response = await categoriesEndpoints.getVisibleCategories();
+        setVisibleCategories((response.data as VisibleCategory[]) || []);
+        setError(response.message || null);
       } catch (err) {
         console.error('Error fetching visible categories:', err);
-        cachedError = 'Error al cargar categorías';
+        setError('Error al cargar categorías');
 
         // Fallback: usar categorías mock si el backend no está disponible
         const mockCategories: VisibleCategory[] = [
@@ -107,11 +71,9 @@ export function useVisibleCategories() {
             totalProducts: 0
           }
         ];
-        cachedVisibleCategories = mockCategories;
         setVisibleCategories(mockCategories);
       } finally {
         setLoading(false);
-        inFlightRequest = null;
       }
     };
 

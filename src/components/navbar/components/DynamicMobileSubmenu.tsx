@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import type { FC } from "react";
 import type { Menu } from "@/lib/api";
+import { toSlug } from "@/app/productos/[categoria]/utils/slugUtils";
 
 type Props = {
   menus: Menu[];
@@ -19,12 +20,7 @@ type Props = {
 const getCategorySlug = (categoryCode: string, categoryVisibleName?: string): string => {
   // Si tenemos nombreVisible, generar slug dinámicamente para alinear con desktop
   if (categoryVisibleName) {
-    try {
-      const { toSlug } = require('@/app/productos/[categoria]/utils/slugUtils');
-      return toSlug(categoryVisibleName);
-    } catch {
-      // fallback a mapping
-    }
+    return toSlug(categoryVisibleName);
   }
   const mapping: Record<string, string> = {
     'IM': 'dispositivos-moviles',

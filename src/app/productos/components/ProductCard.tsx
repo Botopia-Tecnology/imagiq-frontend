@@ -28,12 +28,12 @@ import {
 import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { ProductApiData } from "@/lib/api";
-import getColorNameFromHex from "@/lib/colorName";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
   hex: string; // Código hexadecimal del color (ej: "#000000")
   label: string; // Nombre mostrado al usuario (ej: "Negro Medianoche")
+  nombreColorDisplay?: string; // Nombre del color del API para mostrar después de "Color:"
   sku: string; // SKU específico para esta variante de color
   ean: string; // SKU específico para esta variante de color
   price?: string; // Precio específico para este color (opcional)
@@ -453,11 +453,11 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Nombre de color derivado del HEX (antes del selector) */}
-        {displayedSelectedColor?.hex && (
+        {/* Nombre de color del API (antes del selector) */}
+        {displayedSelectedColor?.nombreColorDisplay && (
           <div className="px-3 mb-1">
             <p className="text-xs text-gray-600 font-medium">
-              {`Color: ${getColorNameFromHex(displayedSelectedColor.hex)}`}
+              {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
             </p>
           </div>
         )}

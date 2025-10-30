@@ -136,7 +136,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Determinar si el color ya es un hexadecimal
     const isHexColor = /^#[0-9A-F]{6}$/i.test(color.trim());
 
-    // Si ya es hex, usarlo directamente; sino buscar en colorMap
+    // Si ya es hex, usarlo directamente; si no, usar gris por defecto para el círculo de color
     const colorInfo = isHexColor
       ? { hex: color.trim(), label: color.trim() } // Usar el hex directamente
       : { hex: '#808080', label: color };
@@ -172,6 +172,9 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
     // Usar el primer SKU disponible para este color
     const firstIndex = indices[0];
 
+    // Obtener el nombre del color del API si está disponible
+    const nombreColorDisplay = apiProduct.nombreColor?.[firstIndex] || undefined;
+
     // Obtener imágenes y videos premium específicos para este color
     // imagenPremium y videoPremium vienen como arrays de arrays desde el API
     // Intentar primero con el nombre sin guión bajo (imagenPremium), luego con guión bajo (imagen_premium)
@@ -190,6 +193,7 @@ function createProductColorsFromArray(apiProduct: ProductApiData): ProductColor[
       name: normalizedColor.replaceAll(/\s+/g, '-'),
       hex: colorInfo.hex,
       label: colorInfo.label,
+      nombreColorDisplay,
       price,
       originalPrice,
       discount,
@@ -368,25 +372,6 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
 export function mapApiProductsToFrontend(apiProducts: ProductApiData[]): ProductCardProps[] {
   return apiProducts
     .map(mapApiProductToFrontend);
-}
-
-/**
- * Función de utilidad para debuggear colores
- * Útil para identificar inconsistencias en el mapeo de colores
- */
-export function debugColorMapping(color: string): { hex: string; label: string; normalized: string } {
-  const normalizedColor = color.toLowerCase().trim();
-  // Con API en hex, devolver el propio valor si es hex; si no, fallback gris
-  const isHexColor = /^#[0-9A-F]{6}$/i.test(color.trim());
-  const colorInfo = isHexColor
-    ? { hex: color.trim(), label: color.trim() }
-    : { hex: '#808080', label: color };
-
-  return {
-    hex: colorInfo.hex,
-    label: colorInfo.label,
-    normalized: normalizedColor
-  };
 }
 
 /**

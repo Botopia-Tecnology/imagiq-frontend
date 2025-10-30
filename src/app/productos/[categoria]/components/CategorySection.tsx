@@ -84,6 +84,9 @@ export default function CategorySection({
     categoryCode
   );
 
+  // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
+  const compositeLoading = loading || menuLoading;
+
   // Configurar scroll infinito
   const loadMoreRef = useInfiniteScroll({
     onLoadMore: loadMore,
@@ -198,7 +201,7 @@ export default function CategorySection({
           <CategoryProductsGrid
             ref={productsRef}
             products={products}
-            loading={loading}
+            loading={compositeLoading}
             error={error}
             refreshProducts={refreshProducts}
             viewMode={viewMode}

@@ -17,7 +17,6 @@ import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPer
 import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
-import UniversalSeriesFilter from "./UniversalSeriesFilter";
 import SubmenuCarousel from "./SubmenuCarousel";
 import MenuCarousel from "./MenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
@@ -26,7 +25,6 @@ import MobileFilterSidebar from "./MobileFilterSidebar";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
-import { getSeriesConfig } from "../config/series-configs";
 import { useCurrentMenu } from "@/hooks/useCurrentMenu";
 import { useCategoryMenus } from "@/hooks/useCategoryMenus";
 import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
@@ -70,7 +68,6 @@ export default function CategorySection({
   const device = useDeviceType();
 
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
-  const seriesConfig = getSeriesConfig(seccion);
   const { currentMenu, loading: menuLoading } = useCurrentMenu(categoriaApiCode, seccion);
   const { menus: categoryMenus, loading: categoryMenusLoading } = useCategoryMenus(categoriaApiCode);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
@@ -155,15 +152,6 @@ export default function CategorySection({
           menus={categoryMenus}
           categoria={categoria}
           title={effectiveTitle}
-        />
-      ) : seccion && seriesConfig ? (
-        /* Fallback a UniversalSeriesFilter si no hay datos de API pero hay config estática */
-        <UniversalSeriesFilter
-          config={seriesConfig}
-          activeFilters={filters}
-          onFilterChange={handleFilterChange}
-          categoria={categoria}
-          seccion={seccion}
         />
       ) : null}
 

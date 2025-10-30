@@ -272,7 +272,7 @@ const FILTER_CONFIG_MAP: Record<string, string> = {
   'dispositivos-moviles': 'dispositivos-moviles',
   'electrodomesticos': 'electrodomesticos',
   'televisores': 'televisores',
-  'televisores-y-av': 'televisores', // Mapear slug dinámico a configuración estática
+  'tv-y-av': 'televisores', // Mapear slug dinámico a configuración estática
   'tv-y-audio': 'televisores', // Variación del slug
   'monitores': 'monitores',
   'audio': 'audio',

@@ -210,9 +210,66 @@ export const categoriesEndpoints = {
 };
 
 // Menus API endpoints
+// Simple in-memory caches and in-flight maps to dedupe requests
+const menusByCategoryCache: Record<string, Menu[] | undefined> = {};
+const menusByCategoryInFlight: Record<string, Promise<void> | undefined> = {};
+
+const submenusByMenuCache: Record<string, Submenu[] | undefined> = {};
+const submenusByMenuInFlight: Record<string, Promise<void> | undefined> = {};
+
 export const menusEndpoints = {
-  getSubmenus: (menuUuid: string) => apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`),
-  getMenusByCategory: (categoryUuid: string) => apiClient.get<Menu[]>(`/api/categorias/visibles/${categoryUuid}/menus`)
+  getSubmenus: async (menuUuid: string): Promise<ApiResponse<Submenu[]>> => {
+    // Return from cache if present
+    if (submenusByMenuCache[menuUuid]) {
+      return { data: submenusByMenuCache[menuUuid] as Submenu[], success: true };
+    }
+
+    // Deduplicate concurrent calls
+    if (submenusByMenuInFlight[menuUuid]) {
+      await submenusByMenuInFlight[menuUuid];
+      return { data: submenusByMenuCache[menuUuid] ?? [], success: true };
+    }
+
+    submenusByMenuInFlight[menuUuid] = (async () => {
+      const resp = await apiClient.get<Submenu[]>(`/api/menus/visibles/${menuUuid}/submenus`);
+      if (resp.success && resp.data) {
+        // sort/filter handled by consumers; store as-is
+        submenusByMenuCache[menuUuid] = resp.data;
+      } else {
+        submenusByMenuCache[menuUuid] = [];
+      }
+    })();
+
+    await submenusByMenuInFlight[menuUuid];
+    submenusByMenuInFlight[menuUuid] = undefined;
+    return { data: submenusByMenuCache[menuUuid] ?? [], success: true };
+  },
+
+  getMenusByCategory: async (categoryUuid: string): Promise<ApiResponse<Menu[]>> => {
+    // Return from cache if present
+    if (menusByCategoryCache[categoryUuid]) {
+      return { data: menusByCategoryCache[categoryUuid] as Menu[], success: true };
+    }
+
+    // Deduplicate concurrent calls
+    if (menusByCategoryInFlight[categoryUuid]) {
+      await menusByCategoryInFlight[categoryUuid];
+      return { data: menusByCategoryCache[categoryUuid] ?? [], success: true };
+    }
+
+    menusByCategoryInFlight[categoryUuid] = (async () => {
+      const resp = await apiClient.get<Menu[]>(`/api/categorias/visibles/${categoryUuid}/menus`);
+      if (resp.success && resp.data) {
+        menusByCategoryCache[categoryUuid] = resp.data;
+      } else {
+        menusByCategoryCache[categoryUuid] = [];
+      }
+    })();
+
+    await menusByCategoryInFlight[categoryUuid];
+    menusByCategoryInFlight[categoryUuid] = undefined;
+    return { data: menusByCategoryCache[categoryUuid] ?? [], success: true };
+  }
 };
 
 // Trade-in (Entrego y Estreno) API endpoints

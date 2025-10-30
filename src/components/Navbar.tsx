@@ -189,39 +189,52 @@ export default function Navbar() {
             mobileMenuOpen && "hidden"
           )}
         >
-          <Link
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              posthogUtils.capture("logo_click", { source: "navbar" });
-              navbar.router.push("/");
-            }}
-            aria-label="Inicio"
-            className="flex items-center gap-2"
-          >
-            <Image
-              src={
-                navbar.showWhiteItemsMobile
-                  ? "/frame_white.png"
-                  : "/frame_black.png"
-              }
-              alt="Q Logo"
-              height={40}
-              width={40}
-              className="h-10 w-10 transition-all duration-300"
-              priority
-            />
-            <img
-              src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-              alt="Samsung"
-              className={cn(
-                "h-8 w-auto transition-all duration-300",
-                navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
-              )}
-            />
-          </Link>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Link
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                posthogUtils.capture("logo_click", { source: "navbar" });
+                navbar.router.push("/");
+              }}
+              aria-label="Inicio"
+              className="flex-shrink-0"
+            >
+              <Image
+                src={
+                  navbar.showWhiteItemsMobile
+                    ? "/frame_white.png"
+                    : "/frame_black.png"
+                }
+                alt="Q Logo"
+                height={40}
+                width={40}
+                className="h-10 w-10 transition-all duration-300"
+                priority
+              />
+            </Link>
 
-          <div className="flex items-center gap-2">
+            {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
+            {isAuthenticated && user?.defaultAddress ? (
+              <AddressDropdown
+                showWhiteItems={navbar.showWhiteItemsMobile}
+                currentAddress={user.defaultAddress}
+              />
+            ) : (
+              <Image
+                src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
+                alt="Samsung"
+                width={100}
+                height={32}
+                className={cn(
+                  "h-8 w-auto transition-all duration-300",
+                  navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
+                )}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
             <CartIcon
               count={navbar.itemCount}
               showBump={false}

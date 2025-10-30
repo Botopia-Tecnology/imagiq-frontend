@@ -19,11 +19,13 @@ type ExtendedPlaceDetails = PlaceDetails & {
 interface AddNewAddressFormProps {
   onAddressAdded?: (address: Direccion) => void;
   onCancel?: () => void;
+  withContainer?: boolean; // Si debe mostrar el contenedor con padding y border
 }
 
 export default function AddNewAddressForm({
   onAddressAdded,
   onCancel,
+  withContainer = true,
 }: AddNewAddressFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<ExtendedPlaceDetails | null>(null);
@@ -267,9 +269,8 @@ export default function AddNewAddressForm({
     }
   };
 
-  return (
-    <div className="p-4 rounded-lg border border-gray-200 shadow-lg bg-white w-full max-w-3xl">
-      <form onSubmit={handleSubmit} className="space-y-4">
+  const formContent = (
+    <form onSubmit={handleSubmit} className="space-y-4">
         {/* Sección de dirección de envío */}
         <div className="space-y-4">
           <h5 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-1">
@@ -586,6 +587,13 @@ export default function AddNewAddressForm({
           )}
         </div>
       </form>
+  );
+
+  return withContainer ? (
+    <div className="p-4 rounded-lg border border-gray-200 shadow-lg bg-white w-full max-w-3xl">
+      {formContent}
     </div>
+  ) : (
+    formContent
   );
 }

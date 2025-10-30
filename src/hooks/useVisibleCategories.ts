@@ -14,16 +14,8 @@ export function useVisibleCategories() {
         setError(null);
 
         const response = await categoriesEndpoints.getVisibleCategories();
-
-        if (response.success && response.data) {
-          // Filtrar solo las categorías activas y ordenarlas
-          const activeCategories = response.data
-            .filter(category => category.activo)
-            .sort((a, b) => a.orden - b.orden);
-          setVisibleCategories(activeCategories);
-        } else {
-          setError(response.message || 'Error al cargar categorías');
-        }
+        setVisibleCategories((response.data as VisibleCategory[]) || []);
+        setError(response.message || null);
       } catch (err) {
         console.error('Error fetching visible categories:', err);
         setError('Error al cargar categorías');

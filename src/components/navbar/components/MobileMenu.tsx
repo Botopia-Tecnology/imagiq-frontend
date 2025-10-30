@@ -9,6 +9,7 @@ import { MobileMenuContent } from "./MobileMenuContent";
 import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { menusEndpoints, type Menu } from "@/lib/api";
+import { isStaticCategoryUuid } from "@/constants/staticCategories";
 import OfertasDropdown from "@/components/dropdowns/ofertas";
 import SoporteDropdown from "@/components/dropdowns/soporte";
 import type { DropdownName } from "../types";
@@ -33,6 +34,7 @@ export const MobileMenu: FC<Props> = ({
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [activeMenus, setActiveMenus] = useState<Menu[] | null>(null);
   const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(null);
+  const [activeCategoryVisibleName, setActiveCategoryVisibleName] = useState<string | null>(null);
   const [activeDropdownName, setActiveDropdownName] = useState<DropdownName | null>(null);
 
   // Estado para carga bajo demanda de menús
@@ -80,13 +82,11 @@ export const MobileMenu: FC<Props> = ({
     }
   };
 
-  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string }) => {
+  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string; categoryVisibleName?: string }) => {
     if (item.hasDropdown) {
       const dropdownKey = item.dropdownName || item.name;
-      const STATIC_CATEGORIES = ['ofertas', 'tiendas', 'soporte'];
-      
       // Si es una categoría estática (Ofertas, Soporte)
-      if (STATIC_CATEGORIES.includes(item.uuid || '')) {
+      if (isStaticCategoryUuid(item.uuid)) {
         setActiveDropdownName(dropdownKey as DropdownName);
         setActiveSubmenu(item.name);
         return;
@@ -100,6 +100,7 @@ export const MobileMenu: FC<Props> = ({
 
         // Primero establecer el estado del submenú activo
         setActiveCategoryCode(item.categoryCode || '');
+        setActiveCategoryVisibleName(item.categoryVisibleName || null);
         setActiveSubmenu(item.name);
         
         // Si ya hay menús en caché, establecerlos inmediatamente
@@ -169,6 +170,7 @@ export const MobileMenu: FC<Props> = ({
         <DynamicMobileSubmenu
           menus={menusToPass}
           categoryCode={activeCategoryCode}
+          categoryVisibleName={activeCategoryVisibleName || undefined}
           onClose={onClose}
           loading={isStillLoading}
         />

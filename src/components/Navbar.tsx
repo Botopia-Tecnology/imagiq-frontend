@@ -332,8 +332,8 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="hidden lg:flex flex-col items-end justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
-            <div className="flex items-center gap-4">
+          <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
+            <div className="w-full flex items-center justify-between">
               {/* Dirección predeterminada del usuario */}
               {isAuthenticated && user?.defaultAddress && (
                 <div
@@ -354,7 +354,7 @@ export default function Navbar() {
               <Link
                 href="/ventas-corporativas"
                 className={cn(
-                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap",
+                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap ml-auto",
                   navbar.showWhiteItems
                     ? "text-white/90 hover:text-white"
                     : "text-black"
@@ -365,7 +365,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="w-full flex items-center gap-2">
               <SearchBar
                 value={navbar.searchQuery}
                 onChange={navbar.setSearchQuery}

@@ -23,6 +23,9 @@ export default function SoporteDropdown({ isMobile = false, onClose }: SoporteDr
       item_href: href,
       device: isMobile ? "mobile" : "desktop",
     });
+
+    // Cerrar el dropdown al hacer clic en un item
+    window.dispatchEvent(new Event("close-dropdown"));
   };
 
   return isMobile ? (

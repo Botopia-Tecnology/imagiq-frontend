@@ -4,7 +4,6 @@
  */
 
 import { forwardRef, useState } from "react";
-import Image from "next/image";
 import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard, {
   type ProductCardProps,
@@ -19,7 +18,6 @@ interface CategoryProductsGridProps {
   refreshProducts: () => void;
   viewMode?: "grid" | "list";
   categoryName: string;
-  showBanner?: boolean;
   showLazySkeletons?: boolean; // Mostrar skeletons de lazy loading
   lazySkeletonCount?: number; // Cantidad de skeletons
 }
@@ -37,7 +35,6 @@ const CategoryProductsGrid = forwardRef<
       refreshProducts,
       viewMode = "grid",
       categoryName,
-      showBanner = false,
       showLazySkeletons = false,
       lazySkeletonCount = 3,
     },
@@ -102,7 +99,7 @@ const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <div ref={ref} className={viewMode === "grid" && showBanner ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
+      <div ref={ref} className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
         {/* Mostrar skeletons mientras carga y no hay productos */}
         {loading && products.length === 0 && (
           <>
@@ -125,109 +122,22 @@ const CategoryProductsGrid = forwardRef<
         {/* Mostrar productos si existen */}
         {products.length > 0 && (
           <>
-            {/* Banner promocional 1 - Grid position: fila 2, columna 1 - Solo en desktop */}
-            {showBanner && viewMode === "grid" && products.length >= 4 && (
-              <div
-                className="hidden lg:block"
-                style={{ gridRow: "2", gridColumn: "1" }}
-              >
-                <div className="relative h-full bg-sky-50 rounded-xl">
-                  <Image
-                    src="https://images.samsung.com/is/image/samsung/assets/co/pf/20250929/24038_PC_MX_Offer-deals_s25fe-launch_PD19_Content-Card-1_312x1012_OP02.jpg?$ORIGIN_JPG$"
-                    alt="Promoción especial"
-                    fill
-                    className="object-contain rounded-xl"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    priority
-                  />
-                  <div className="absolute top-0 left-0 right-0 bg-sky-50 p-5 z-10">
-                    <h3 className="text-black text-xl font-bold mb-2">¿Aún lo estás pensando?</h3>
-                    <p className="text-balck text-sm">Usa cupones especiales y termina tu compra con descuento</p>
-                  </div>
-                </div>
+            {products.map((product) => (
+              <div key={product.id} className="w-full">
+                <ProductCard
+                  {...product}
+                  isFavorite={isFavorite(product.id)}
+                  onToggleFavorite={(productId: string) => {
+                    if (isFavorite(productId)) {
+                      handleRemoveToFavorites(productId);
+                    } else {
+                      handleAddToFavorites(productId);
+                    }
+                  }}
+                  className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+                />
               </div>
-            )}
-
-            {/* Banner promocional 2 - Grid position: fila 4, columna 2 - Solo en desktop */}
-            {showBanner && viewMode === "grid" && products.length >= 7 && (
-              <div
-                className="hidden lg:block"
-                style={{ gridRow: "4", gridColumn: "2" }}
-              >
-                <div className="relative rounded-xl overflow-hidden h-full bg-gray-300">
-                  <Image
-                    src="https://images.samsung.com/is/image/samsung/assets/co/smartphones/23086_01_VD_BANNER_PF_VISA_330x1012.jpg?$ORIGIN_JPG$"
-                    alt="10% descuento Visa"
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
-                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-4 z-10">
-                    <h3 className="text-white text-base font-bold mb-1">10% de Dto. adicional pagando con tarjetas Visa</h3>
-                    <p className="text-white text-xs leading-tight">Sábados, Domingos y Festivos. Ahora los multiplicamos X10: Redime 25.000 puntos y recibe $250.000 Dto. Úsalos todos y ahorra.</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {products.map((product, index) => {
-              // Calcular posición en el grid cuando hay banner
-              let gridPosition = {};
-
-              if (showBanner && viewMode === "grid") {
-                if (index < 3) {
-                  // Fila 1: productos 0, 1, 2 (columnas 1, 2, 3)
-                  gridPosition = { gridRow: "1", gridColumn: `${index + 1}` };
-                } else if (index === 3) {
-                  // Fila 2: producto 3 (columna 2, porque columna 1 la ocupa el banner 1)
-                  gridPosition = { gridRow: "2", gridColumn: "2" };
-                } else if (index === 4) {
-                  // Fila 2: producto 4 (columna 3)
-                  gridPosition = { gridRow: "2", gridColumn: "3" };
-                } else if (index >= 5 && index <= 7) {
-                  // Fila 3: productos 5, 6, 7 (columnas 1, 2, 3)
-                  gridPosition = { gridRow: "3", gridColumn: `${(index - 5) + 1}` };
-                } else if (index === 8) {
-                  // Fila 4: producto 8 (columna 1)
-                  gridPosition = { gridRow: "4", gridColumn: "1" };
-                } else if (index === 9) {
-                  // Fila 4: producto 9 (columna 3, porque columna 2 la ocupa el banner 2)
-                  gridPosition = { gridRow: "4", gridColumn: "3" };
-                } else {
-                  // Fila 5 en adelante: flujo normal (auto)
-                  const rowAfterBanner2 = Math.floor((index - 10) / 3) + 5;
-                  const colAfterBanner2 = ((index - 10) % 3) + 1;
-                  gridPosition = { gridRow: `${rowAfterBanner2}`, gridColumn: `${colAfterBanner2}` };
-                }
-              }
-
-              return (
-                <div
-                  key={product.id}
-                  className={
-                    viewMode === "grid"
-                      ? showBanner
-                        ? "" // En grid con banner usamos style para posicionar
-                        : "w-full"
-                      : "w-full"
-                  }
-                  style={showBanner && viewMode === "grid" ? gridPosition : undefined}
-                >
-                  <ProductCard
-                    {...product}
-                    isFavorite={isFavorite(product.id)}
-                    onToggleFavorite={(productId: string) => {
-                      if (isFavorite(productId)) {
-                        handleRemoveToFavorites(productId);
-                      } else {
-                        handleAddToFavorites(productId);
-                      }
-                    }}
-                    className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
-                  />
-                </div>
-              );
-            })}
+            ))}
 
             {/* Skeletons de lazy loading - aparecen en el mismo grid después de los productos */}
             {showLazySkeletons && loading && Array.from({ length: lazySkeletonCount }, (_, i) => (

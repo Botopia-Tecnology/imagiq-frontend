@@ -14,7 +14,8 @@ export function useSelectedHierarchy(categoriaNombre?: string, seccion?: string)
   const searchParams = useSearchParams();
   const { visibleCategories } = useVisibleCategories();
   const { currentMenu, loading } = useCurrentMenu(categoriaNombre, seccion);
-  const { submenus } = useSubmenus(currentMenu?.uuid || null);
+  // Evitar cargar submenús si no hay sección seleccionada
+  const { submenus } = useSubmenus(seccion ? (currentMenu?.uuid || null) : null);
 
   const hierarchy = useMemo(() => {
     // Encontrar categoría por nombre para obtener el código

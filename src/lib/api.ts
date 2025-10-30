@@ -117,16 +117,29 @@ export type { ProductFilterParams } from "./sharedInterfaces";
 // Product API endpoints
 export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
-  getFiltered: (params: ProductFilterParams) => {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        searchParams.append(key, String(value));
+  getFiltered: (() => {
+    const inFlightByUrl: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
+    return (params: ProductFilterParams) => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          searchParams.append(key, String(value));
+        }
+      });
+      const url = `/api/products/filtered?${searchParams.toString()}`;
+
+      if (inFlightByUrl[url]) {
+        return inFlightByUrl[url] as Promise<ApiResponse<ProductApiResponse>>;
       }
-    });
-    const url = `/api/products/filtered?${searchParams.toString()}`;
-    return apiClient.get<ProductApiResponse>(url);
-  },
+
+      const p = apiClient.get<ProductApiResponse>(url).finally(() => {
+        // liberar inmediatamente al resolver/rechazar para no cachear respuestas
+        delete inFlightByUrl[url];
+      });
+      inFlightByUrl[url] = p;
+      return p;
+    };
+  })(),
   getById: (id: string) =>
     apiClient.get<ProductApiResponse>(`/api/products/${id}`),
   getByCategory: (category: string) =>

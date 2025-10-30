@@ -28,6 +28,7 @@ import {
 import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { ProductApiData } from "@/lib/api";
+import getColorNameFromHex from "@/lib/colorName";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -345,6 +346,14 @@ export default function ProductCard({
     responsive: true,
   });
 
+  // Color seleccionado para UI (coincide con el selector de colores)
+  const displayedSelectedColor = useMemo(() => {
+    if (apiProduct) {
+      return colors.find(c => c.label === productSelection.selection.selectedColor) || null;
+    }
+    return selectedColor;
+  }, [apiProduct, colors, productSelection.selection.selectedColor, selectedColor]);
+
   return (
     // eslint-disable-next-line jsx-a11y/prefer-tag-over-role
     <div
@@ -443,6 +452,15 @@ export default function ProductCard({
             </div>
           )}
         </div>
+
+        {/* Nombre de color derivado del HEX (antes del selector) */}
+        {displayedSelectedColor?.hex && (
+          <div className="px-3 mb-1">
+            <p className="text-xs text-gray-600 font-medium">
+              {`Color: ${getColorNameFromHex(displayedSelectedColor.hex)}`}
+            </p>
+          </div>
+        )}
 
         {/* Selector de colores */}
         <div className="h-[40px] px-3">

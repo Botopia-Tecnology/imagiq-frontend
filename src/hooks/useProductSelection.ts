@@ -7,7 +7,7 @@
 
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { ProductApiData } from '@/lib/api';
-import { colorMap } from '@/lib/productMapper';
+// colorMap deprecado: el API ahora entrega hex
 
 export interface ProductVariant {
   index: number;
@@ -376,10 +376,8 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         // Si es hexadecimal, usarlo directamente
         hex = trimmedColor;
       } else {
-        // Si es un nombre, buscar en el colorMap
-        const normalizedColor = trimmedColor.toLowerCase();
-        const colorInfo = colorMap[normalizedColor];
-        hex = colorInfo?.hex || '#808080';
+        // Si llega nombre (caso legacy), fallback a gris
+        hex = '#808080';
       }
 
       return {

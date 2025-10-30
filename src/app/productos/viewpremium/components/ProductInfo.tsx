@@ -102,9 +102,6 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               </div>
             </div>
           </div>
-          <p className="text-sm text-blue-600 leading-relaxed mt-3 mb-6">
-            12 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
-          </p>
         </div>
 
         {/* Almacenamiento */}
@@ -147,9 +144,6 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                         </div>
                       </div>
                     </div>
-                    <p className="text-sm text-blue-600 leading-snug mt-2">
-                      Acumula puntos al comprar + 24 cuotas sin interés con bancos aliados. Continúa al carrito para ver el precio final con DTO
-                    </p>
                   </div>
                 );
               })}

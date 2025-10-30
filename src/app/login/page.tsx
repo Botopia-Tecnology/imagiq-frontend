@@ -26,6 +26,14 @@ interface LoginSuccessResponse {
   access_token: string;
   user: Omit<Usuario, "contrasena" | "tipo_documento">;
   skus: string[] | { sku: string }[];
+  defaultAddress?: {
+    id: string;
+    nombreDireccion: string;
+    direccionFormateada: string;
+    ciudad?: string;
+    departamento?: string;
+    esPredeterminada: boolean;
+  } | null;
 }
 // Login error response
 interface LoginErrorResponse {
@@ -229,7 +237,7 @@ export default function LoginPage() {
         setIsLoading(false);
         return;
       }
-      const { user, access_token, skus } = result;
+      const { user, access_token, skus, defaultAddress } = result;
       posthogUtils.capture("login_attempt", {
         email: formData.email,
         user_role: user.rol,
@@ -256,6 +264,7 @@ export default function LoginPage() {
         numero_documento: user.numero_documento,
         telefono: user.telefono,
         role: user.rol,
+        defaultAddress: defaultAddress || null,
       });
       posthogUtils.capture("login_success", {
         user_id: user.id,

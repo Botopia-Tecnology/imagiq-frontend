@@ -33,6 +33,17 @@ export interface User {
   role?: 1 | 2 | 3 | 4;
   telefono: string;
   numero_documento: string;
+  defaultAddress?: DefaultAddress | null;
+}
+
+// Interface para dirección predeterminada del usuario
+export interface DefaultAddress {
+  id: string;
+  nombreDireccion: string;
+  direccionFormateada: string;
+  ciudad?: string;
+  departamento?: string;
+  esPredeterminada: boolean;
 }
 
 // Legacy interface - keeping for compatibility

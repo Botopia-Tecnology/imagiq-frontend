@@ -3,7 +3,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { User, Menu, Heart } from "lucide-react";
+import { User, Menu, Heart, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -13,6 +13,7 @@ import OfertasDropdown from "./dropdowns/ofertas";
 import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
+import { useAuthContext } from "@/features/auth/context";
 import {
   MobileMenu,
   CartIcon,
@@ -27,6 +28,7 @@ export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { getNavbarRoutes, loading } = useVisibleCategories();
+  const { user, isAuthenticated } = useAuthContext();
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
@@ -331,11 +333,27 @@ export default function Navbar() {
           </div>
 
           <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
-            <div className="flex items-center gap-6 leading-none">
+            <div className="flex items-center gap-4 leading-none">
+              {/* Dirección predeterminada del usuario */}
+              {isAuthenticated && user?.defaultAddress && (
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[200px] truncate",
+                    navbar.showWhiteItems ? "text-white/90" : "text-black/80"
+                  )}
+                  title={user.defaultAddress.direccionFormateada}
+                >
+                  <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span className="truncate">
+                    {user.defaultAddress.ciudad || user.defaultAddress.nombreDireccion}
+                  </span>
+                </div>
+              )}
+
               <Link
                 href="/ventas-corporativas"
                 className={cn(
-                  "text-[13px] md:text-[13.5px] font-bold",
+                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap",
                   navbar.showWhiteItems
                     ? "text-white/90 hover:text-white"
                     : "text-black"

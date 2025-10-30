@@ -41,3 +41,10 @@ yarn-error.log*
 next-env.d.ts
 .claude/
 run-bun.ps1
+
+# lighthouse
+.unlighthouse/
+
+# documentation temporales
+CLARITY_INTEGRATION_FIX.md
+BACKEND_FIX_NEEDED.md

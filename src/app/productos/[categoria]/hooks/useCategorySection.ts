@@ -24,9 +24,14 @@ export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion)
   return { filters, setFilters };
 }
 
-export function useCategoryPagination() {
+export function useCategoryPagination(categoria?: CategoriaParams, seccion?: Seccion) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
+
+  // Resetear página cuando cambia categoría o sección
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [categoria, seccion]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);

@@ -51,18 +51,11 @@ export default function HeaderSection({
   };
 
   return (
-    <div className="bg-white py-4 sm:py-6">
+    <div className="bg-white py-2">
       <div className="max-w-7xl">
-        {/* Header principal */}
-        <div className="flex items-center justify-between gap-4 mb-6">
-          {/* Botón de filtros móvil - ahora a la derecha del título */}
-          <button
-            onClick={onShowMobileFilters}
-            className="lg:hidden inline-flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg hover:bg-gray-50 text-sm font-medium text-gray-700 transition-colors duration-200 shadow-sm flex-shrink-0"
-          >
-            <Filter className="w-4 h-4" />
-            Filtros
-          </button>
+        {/* Header principal - Ahora vacío porque los filtros están como píldoras */}
+        <div className="flex items-center justify-between gap-4 mb-2">
+          {/* Espacio reservado para futuro contenido */}
         </div>
       </div>
     </div>

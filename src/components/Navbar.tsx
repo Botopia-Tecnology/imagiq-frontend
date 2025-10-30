@@ -13,6 +13,8 @@ import OfertasDropdown from "./dropdowns/ofertas";
 import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
+import { useAuthContext } from "@/features/auth/context";
+import AddressDropdown from "./navbar/AddressDropdown";
 import {
   MobileMenu,
   CartIcon,
@@ -27,6 +29,7 @@ export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { getNavbarRoutes, loading } = useVisibleCategories();
+  const { user, isAuthenticated } = useAuthContext();
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
@@ -186,39 +189,52 @@ export default function Navbar() {
             mobileMenuOpen && "hidden"
           )}
         >
-          <Link
-            href="/"
-            onClick={(e) => {
-              e.preventDefault();
-              posthogUtils.capture("logo_click", { source: "navbar" });
-              navbar.router.push("/");
-            }}
-            aria-label="Inicio"
-            className="flex items-center gap-2"
-          >
-            <Image
-              src={
-                navbar.showWhiteItemsMobile
-                  ? "/frame_white.png"
-                  : "/frame_black.png"
-              }
-              alt="Q Logo"
-              height={40}
-              width={40}
-              className="h-10 w-10 transition-all duration-300"
-              priority
-            />
-            <img
-              src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-              alt="Samsung"
-              className={cn(
-                "h-8 w-auto transition-all duration-300",
-                navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
-              )}
-            />
-          </Link>
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <Link
+              href="/"
+              onClick={(e) => {
+                e.preventDefault();
+                posthogUtils.capture("logo_click", { source: "navbar" });
+                navbar.router.push("/");
+              }}
+              aria-label="Inicio"
+              className="flex-shrink-0"
+            >
+              <Image
+                src={
+                  navbar.showWhiteItemsMobile
+                    ? "/frame_white.png"
+                    : "/frame_black.png"
+                }
+                alt="Q Logo"
+                height={40}
+                width={40}
+                className="h-10 w-10 transition-all duration-300"
+                priority
+              />
+            </Link>
 
-          <div className="flex items-center gap-2">
+            {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
+            {isAuthenticated && user?.defaultAddress ? (
+              <AddressDropdown
+                showWhiteItems={navbar.showWhiteItemsMobile}
+                currentAddress={user.defaultAddress}
+              />
+            ) : (
+              <Image
+                src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
+                alt="Samsung"
+                width={100}
+                height={32}
+                className={cn(
+                  "h-8 w-auto transition-all duration-300",
+                  navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
+                )}
+              />
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
             <CartIcon
               count={navbar.itemCount}
               showBump={false}
@@ -330,12 +346,20 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="hidden lg:flex flex-col items-end justify-between gap-2 flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
-            <div className="flex items-center gap-6 leading-none">
+          <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
+            <div className="w-full flex items-center justify-between">
+              {/* Dirección predeterminada del usuario con dropdown */}
+              {isAuthenticated && user?.defaultAddress && (
+                <AddressDropdown
+                  showWhiteItems={navbar.showWhiteItems}
+                  currentAddress={user.defaultAddress}
+                />
+              )}
+
               <Link
                 href="/ventas-corporativas"
                 className={cn(
-                  "text-[13px] md:text-[13.5px] font-bold",
+                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap ml-auto",
                   navbar.showWhiteItems
                     ? "text-white/90 hover:text-white"
                     : "text-black"
@@ -346,7 +370,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="w-full flex items-center gap-2">
               <SearchBar
                 value={navbar.searchQuery}
                 onChange={navbar.setSearchQuery}

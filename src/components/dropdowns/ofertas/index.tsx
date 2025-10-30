@@ -15,6 +15,10 @@ export default function OfertasDropdown({
       item: label,
       href,
     });
+
+    // Cerrar el dropdown al hacer clic en un item
+    window.dispatchEvent(new Event("close-dropdown"));
+
     onItemClick?.();
   };
 

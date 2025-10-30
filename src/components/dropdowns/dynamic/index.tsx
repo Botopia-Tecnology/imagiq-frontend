@@ -21,6 +21,10 @@ export default function DynamicDropdown({
       item: label,
       href,
     });
+
+    // Cerrar el dropdown al hacer clic en un item
+    window.dispatchEvent(new Event("close-dropdown"));
+
     onItemClick?.();
   };
 

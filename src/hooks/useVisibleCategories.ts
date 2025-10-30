@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { categoriesEndpoints, type VisibleCategoryComplete } from '@/lib/api';
+import { categoriesEndpoints, type VisibleCategory } from '@/lib/api';
+import { toSlug } from '@/app/productos/[categoria]/utils/slugUtils';
 
 export function useVisibleCategories() {
-  const [visibleCategories, setVisibleCategories] = useState<VisibleCategoryComplete[]>([]);
+  const [visibleCategories, setVisibleCategories] = useState<VisibleCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,7 +13,7 @@ export function useVisibleCategories() {
         setLoading(true);
         setError(null);
 
-        const response = await categoriesEndpoints.getVisibleCategoriesComplete();
+        const response = await categoriesEndpoints.getVisibleCategories();
 
         if (response.success && response.data) {
           // Filtrar solo las categorías activas y ordenarlas
@@ -28,7 +29,7 @@ export function useVisibleCategories() {
         setError('Error al cargar categorías');
 
         // Fallback: usar categorías mock si el backend no está disponible
-        const mockCategories: VisibleCategoryComplete[] = [
+        const mockCategories: VisibleCategory[] = [
           {
             uuid: 'mock-im',
             nombre: 'IM',
@@ -39,7 +40,7 @@ export function useVisibleCategories() {
             orden: 1,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            menus: []
+            totalProducts: 0
           },
           {
             uuid: 'mock-av',
@@ -51,7 +52,7 @@ export function useVisibleCategories() {
             orden: 2,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            menus: []
+            totalProducts: 0
           },
           {
             uuid: 'mock-da',
@@ -63,7 +64,7 @@ export function useVisibleCategories() {
             orden: 3,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            menus: []
+            totalProducts: 0
           },
           {
             uuid: 'mock-it',
@@ -75,7 +76,7 @@ export function useVisibleCategories() {
             orden: 4,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-            menus: []
+            totalProducts: 0
           }
         ];
         setVisibleCategories(mockCategories);
@@ -104,13 +105,13 @@ export function useVisibleCategories() {
     const mappedCategories = visibleCategories.map(category => {
       return {
         name: category.nombreVisible || mapCategoryToNavbarName(category.nombre),
-        href: getCategoryHref(category.nombre),
+        href: getCategoryHref(category.nombre, category.nombreVisible),
         category: category.nombre.toLowerCase(),
         categoryCode: category.nombre, // Código original de la categoría (IM, AV, DA, IT)
+        categoryVisibleName: category.nombreVisible, // Nombre visible para generar slugs dinámicos
         dropdownName: mapCategoryToNavbarName(category.nombre), // Nombre para el dropdown
         uuid: category.uuid,
         totalProducts: 0,
-        menus: [],
         orden: category.orden
       };
     });
@@ -125,7 +126,6 @@ export function useVisibleCategories() {
         dropdownName: "Ofertas",
         uuid: "ofertas",
         totalProducts: 0,
-        menus: [],
         orden: 0
       }
     ];
@@ -136,11 +136,10 @@ export function useVisibleCategories() {
       href: "/tiendas",
       category: "ubicaciones",
       categoryCode: "tiendas",
-      dropdownName: undefined, // No tiene dropdown
-      uuid: "tiendas",
-      totalProducts: 0,
-      menus: [],
-      orden: 1000
+        dropdownName: undefined, // No tiene dropdown
+        uuid: "tiendas",
+        totalProducts: 0,
+        orden: 1000
     };
 
     // Agregar Soporte después de Tiendas
@@ -149,11 +148,10 @@ export function useVisibleCategories() {
       href: "/soporte/inicio_de_soporte",
       category: "soporte",
       categoryCode: "soporte",
-      dropdownName: "Soporte", // Tiene dropdown
-      uuid: "soporte",
-      totalProducts: 0,
-      menus: [],
-      orden: 1001
+        dropdownName: "Soporte", // Tiene dropdown
+        uuid: "soporte",
+        totalProducts: 0,
+        orden: 1001
     };
 
     // Combinar y ordenar por el campo orden
@@ -161,7 +159,14 @@ export function useVisibleCategories() {
   };
 
   // Función para obtener la URL href basada en el nombre de la categoría
-  const getCategoryHref = (categoryName: string): string => {
+  // Ahora genera slugs dinámicamente desde el nombreVisible
+  const getCategoryHref = (categoryCode: string, categoryVisibleName?: string): string => {
+    // Si tenemos nombreVisible, generar slug dinámicamente
+    if (categoryVisibleName) {
+      return `/productos/${toSlug(categoryVisibleName)}`;
+    }
+    
+    // Fallback a mapeo estático para compatibilidad
     const hrefMap: Record<string, string> = {
       'IM': '/productos/dispositivos-moviles',
       'AV': '/productos/televisores',
@@ -169,7 +174,7 @@ export function useVisibleCategories() {
       'IT': '/productos/monitores'
     };
     
-    return hrefMap[categoryName] || `/productos/${categoryName.toLowerCase()}`;
+    return hrefMap[categoryCode] || `/productos/${categoryCode.toLowerCase()}`;
   };
 
   return {

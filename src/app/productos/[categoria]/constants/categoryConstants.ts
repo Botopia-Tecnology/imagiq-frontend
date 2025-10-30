@@ -5,22 +5,6 @@
 
 import type { CategoriaParams, Seccion } from "../types";
 import type { FilterConfig, FilterState } from "../../components/FilterSidebar";
-import type { Category } from "../../components/CategorySlider";
-
-// Importar imágenes para el CategorySlider
-import smartphoneImg from "@/img/categorias/Smartphones.png";
-import tabletImg from "@/img/categorias/Tabletas.png";
-import watchImg from "@/img/categorias/galaxy_watch.png";
-import budsImg from "@/img/categorias/galaxy_buds.png";
-import accesoriosImg from "@/img/categorias/accesorios.png";
-import refrigeradorImg from "@/img/electrodomesticos/electrodomesticos1.png";
-import lavadoraImg from "@/img/electrodomesticos/electrodomesticos5.png";
-import tvImg from "@/img/categorias/Tv_Monitores.png";
-import lavavajillasImg from "@/img/electrodomesticos/lavavajillas2.png";
-import aspiradoraImg from "@/img/electrodomesticos/electrodomesticos3.png";
-import microondasImg from "@/img/electrodomesticos/electrodomesticos4.png";
-import aireImg from "@/img/electrodomesticos/aire2.png";
-import hornosImg from "@/img/electrodomesticos/horno.png";
 
 /**
  * Configuración de filtros para electrodomésticos - OPCIONES DISPONIBLES
@@ -260,326 +244,6 @@ export const audioFilters: FilterConfig = {
 };
 
 /**
- * Secciones disponibles por categoría
- */
-export const CATEGORY_SECTIONS: Record<CategoriaParams, Seccion[]> = {
-  electrodomesticos: [
-    "neveras",
-    "refrigeradores",
-    "microondas",
-    "hornos-microondas",
-    "lavadoras",
-    "lavadoras-secadoras",
-    "lavadoras-y-secadoras",
-    "lavavajillas",
-    "aire-acondicionado",
-    "aires-acondicionados",
-    "aspiradoras",
-    "hornos",
-  ],
-  "dispositivos-moviles": [
-    "smartphones",
-    "tabletas",
-    "relojes",
-    "buds",
-    "accesorios",
-  ],
-  televisores: ["crystal-uhd", "neo-qled", "oled", "proyectores", "qled", "smart-tv", "the-frame", "dispositivo-audio"],
-  monitores: ["corporativo", "essential-monitor", "odyssey-gaming", "viewfinity-high-resolution"],
-  audio: ["barras-sonido", "sistemas"],
-  ofertas: [
-    "accesorios",
-    "tv-monitores-audio",
-    "smartphones-tablets",
-    "electrodomesticos",
-  ],
-};
-
-/**
- * Sección por defecto para cada categoría
- */
-export const DEFAULT_SECTION: Record<CategoriaParams, Seccion> = {
-  electrodomesticos: "neveras",
-  "dispositivos-moviles": "smartphones",
-  televisores: "crystal-uhd",
-  monitores: "corporativo",
-  audio: "barras-sonido",
-  ofertas: "accesorios",
-};
-
-/**
- * Títulos legibles para las secciones
- */
-export const SECTION_TITLES: Record<Seccion, string> = {
-  // Electrodomésticos
-  neveras: "Neveras",
-  refrigeradores: "Refrigeradores",
-  lavadoras: "Lavadoras",
-  "lavadoras-secadoras": "Lavadoras y Secadoras",
-  "lavadoras-y-secadoras": "Lavadoras y Secadoras",
-  lavavajillas: "Lavavajillas",
-  "aire-acondicionado": "Aire Acondicionado",
-  "aires-acondicionados": "Aires Acondicionados",
-  microondas: "Microondas",
-  "hornos-microondas": "Hornos Microondas",
-  aspiradoras: "Aspiradoras",
-  hornos: "Hornos",
-
-  // Móviles
-  smartphones: "Smartphones",
-  tabletas: "Tabletas",
-  relojes: "Relojes",
-  buds: "Galaxy Buds",
-  accesorios: "Accesorios",
-
-  // TVs
-  "smart-tv": "Smart TV",
-  qled: "QLED",
-  "crystal-uhd": "Crystal UHD",
-  "neo-qled": "Neo QLED",
-  oled: "OLED",
-  proyectores: "Proyectores",
-  "the-frame": "The Frame",
-  "dispositivo-audio": "Dispositivo de Audio",
-
-  // Monitores
-  corporativo: "Corporativo",
-  "essential-monitor": "Essential Monitor",
-  "odyssey-gaming": "Odyssey Gaming",
-  "viewfinity-high-resolution": "ViewFinity High Resolution",
-
-  // Audio
-  "barras-sonido": "Barras de Sonido",
-  sistemas: "Sistemas de Audio",
-
-  // Ofertas
-  "tv-monitores-audio": "TV, Monitores y Audio",
-  "smartphones-tablets": "Smartphones y Tablets",
-  electrodomesticos: "Electrodomésticos",
-};
-
-/**
- * Configuración del CategorySlider para cada categoría
- */
-export const CATEGORY_SLIDER_CONFIG: Record<CategoriaParams, Category[]> = {
-  electrodomesticos: [
-    {
-      id: "microondas",
-      name: "Hornos Microondas",
-      subtitle: "",
-      image: microondasImg,
-      href: "/productos/electrodomesticos?seccion=microondas",
-    },
-    {
-      id: "lavadoras",
-      name: "Lavadoras y Secadoras",
-      subtitle: "",
-      image: lavadoraImg,
-      href: "/productos/electrodomesticos?seccion=lavadoras",
-    },
-    {
-      id: "refrigeradores",
-      name: "Neveras",
-      subtitle: "",
-      image: refrigeradorImg,
-      href: "/productos/electrodomesticos?seccion=refrigeradores",
-    },
-    {
-      id: "lavavajillas",
-      name: "Lavavajillas",
-      subtitle: "",
-      image: lavavajillasImg,
-      href: "/productos/electrodomesticos?seccion=lavavajillas",
-    },
-    {
-      id: "aire-acondicionado",
-      name: "Aire Acondicionado",
-      subtitle: "",
-      image: aireImg,
-      href: "/productos/electrodomesticos?seccion=aire-acondicionado",
-    },
-    {
-      id: "aspiradoras",
-      name: "Aspiradoras",
-      subtitle: "",
-      image: aspiradoraImg,
-      href: "/productos/electrodomesticos?seccion=aspiradoras",
-    },
-    {
-      id: "hornos",
-      name: "Hornos",
-      subtitle: "",
-      image: hornosImg,
-      href: "/productos/electrodomesticos?seccion=hornos",
-    },
-  ],
-  "dispositivos-moviles": [
-    {
-      id: "smartphones",
-      name: "Smartphones",
-      subtitle: "Galaxy Series",
-      image: smartphoneImg,
-      href: "/productos/dispositivos-moviles?seccion=smartphones",
-    },
-    {
-      id: "tabletas",
-      name: "Tabletas",
-      subtitle: "Galaxy Tab",
-      image: tabletImg,
-      href: "/productos/dispositivos-moviles?seccion=tabletas",
-    },
-    {
-      id: "relojes",
-      name: "Relojes",
-      subtitle: "Galaxy Watch",
-      image: watchImg,
-      href: "/productos/dispositivos-moviles?seccion=relojes",
-    },
-    {
-      id: "buds",
-      name: "Galaxy Buds",
-      subtitle: "Audio inalámbrico",
-      image: budsImg,
-      href: "/productos/dispositivos-moviles?seccion=buds",
-    },
-    {
-      id: "accesorios",
-      name: "Accesorios",
-      subtitle: "Fundas y más",
-      image: accesoriosImg,
-      href: "/productos/dispositivos-moviles?seccion=accesorios",
-    },
-  ],
-  televisores: [
-    {
-      id: "crystal-uhd",
-      name: "Crystal UHD",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=crystal-uhd",
-    },
-    {
-      id: "neo-qled",
-      name: "Neo QLED",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=neo-qled",
-    },
-    {
-      id: "oled",
-      name: "OLED",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=oled",
-    },
-    {
-      id: "proyectores",
-      name: "Proyectores",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=proyectores",
-    },
-    {
-      id: "qled",
-      name: "QLED",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=qled",
-    },
-    {
-      id: "smart-tv",
-      name: "Smart TV",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=smart-tv",
-    },
-    {
-      id: "the-frame",
-      name: "The Frame",
-      subtitle: "TV",
-      image: tvImg,
-      href: "/productos/televisores?seccion=the-frame",
-    },
-    {
-      id: "dispositivo-audio",
-      name: "Dispositivo de Audio",
-      subtitle: "Audio",
-      image: tvImg,
-      href: "/productos/televisores?seccion=dispositivo-audio",
-    },
-  ],
-  monitores: [
-    {
-      id: "corporativo",
-      name: "Corporativo",
-      subtitle: "Monitores",
-      image: tvImg,
-      href: "/productos/monitores?seccion=corporativo",
-    },
-    {
-      id: "essential-monitor",
-      name: "Essential",
-      subtitle: "Monitor",
-      image: tvImg,
-      href: "/productos/monitores?seccion=essential-monitor",
-    },
-    {
-      id: "odyssey-gaming",
-      name: "Odyssey",
-      subtitle: "Gaming",
-      image: tvImg,
-      href: "/productos/monitores?seccion=odyssey-gaming",
-    },
-    {
-      id: "viewfinity-high-resolution",
-      name: "ViewFinity",
-      subtitle: "High Resolution",
-      image: tvImg,
-      href: "/productos/monitores?seccion=viewfinity-high-resolution",
-    },
-  ],
-  audio: [
-    {
-      id: "barras-sonido",
-      name: "Barras de Sonido",
-      subtitle: "Audio premium",
-      image: budsImg, // Usar la misma imagen por ahora
-      href: "/productos/audio?seccion=barras-sonido",
-    },
-  ],
-  ofertas: [
-    {
-      id: "accesorios",
-      name: "Accesorios",
-      subtitle: "Ofertas especiales",
-      image: accesoriosImg,
-      href: "/productos/ofertas?seccion=accesorios",
-    },
-    {
-      id: "tv-monitores-audio",
-      name: "TV, Monitores y Audio",
-      subtitle: "Ofertas especiales",
-      image: tvImg,
-      href: "/productos/ofertas?seccion=tv-monitores-audio",
-    },
-    {
-      id: "smartphones-tablets",
-      name: "Smartphones y Tablets",
-      subtitle: "Ofertas especiales",
-      image: smartphoneImg,
-      href: "/productos/ofertas?seccion=smartphones-tablets",
-    },
-    {
-      id: "electrodomesticos",
-      name: "Electrodomésticos",
-      subtitle: "Ofertas especiales",
-      image: refrigeradorImg,
-      href: "/productos/ofertas?seccion=electrodomesticos",
-    },
-  ],
-};
-
-/**
  * Obtiene la configuración de filtros para una categoría y sección específica
  * Devuelve el estado inicial (arrays vacíos) para usar con useState
  */
@@ -598,36 +262,25 @@ export function getCategoryFilters(
   return initialState;
 }
 
-/**
- * Obtiene el título legible para una sección
- */
-export function getSectionTitle(seccion: Seccion): string {
-  return SECTION_TITLES[seccion] || seccion;
-}
+// NOTA: Las funciones getSectionTitle e isValidSectionForCategory ahora son dinámicas en slugUtils.ts
 
 /**
- * Valida si una sección es válida para una categoría específica
+ * Mapeo de slugs dinámicos a configuraciones de filtros estáticos
+ * Esto permite que filtros dinámicos (por API) funcionen con filtros estáticos
  */
-export function isValidSectionForCategory(
-  categoria: CategoriaParams,
-  seccion: string
-): boolean {
-  const validSections = CATEGORY_SECTIONS[categoria];
-  return validSections ? validSections.includes(seccion as Seccion) : false;
-}
-
-/**
- * Obtiene la configuración del CategorySlider para una categoría
- * @deprecated Use getSliderConfig from slider-configs.ts instead
- */
-export function getCategorySliderConfig(
-  categoria: CategoriaParams
-): Category[] {
-  return CATEGORY_SLIDER_CONFIG[categoria] || [];
-}
+const FILTER_CONFIG_MAP: Record<string, string> = {
+  'dispositivos-moviles': 'dispositivos-moviles',
+  'electrodomesticos': 'electrodomesticos',
+  'televisores': 'televisores',
+  'televisores-y-av': 'televisores', // Mapear slug dinámico a configuración estática
+  'tv-y-audio': 'televisores', // Variación del slug
+  'monitores': 'monitores',
+  'audio': 'audio',
+};
 
 /**
  * Obtiene la configuración de filtros disponibles para una categoría y sección específica
+ * Soporta tanto slugs estáticos como dinámicos (generados desde la API)
  */
 export function getCategoryFilterConfig(
   categoria: CategoriaParams,
@@ -642,8 +295,11 @@ export function getCategoryFilterConfig(
     return movilesSectionFilters[seccion];
   }
 
+  // Normalizar el slug a la configuración de filtros conocida
+  const normalizedCategoria = FILTER_CONFIG_MAP[categoria] || categoria;
+
   // Devolver configuración genérica por categoría
-  switch (categoria) {
+  switch (normalizedCategoria) {
     case "electrodomesticos":
       return electrodomesticoFilters;
     case "dispositivos-moviles":

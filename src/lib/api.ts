@@ -295,13 +295,15 @@ export interface VisibleCategory {
   uuid: string;
   nombre: string;
   nombreVisible: string;
-  descripcion: string;
-  imagen: string;
+  descripcion: string | null;
+  imagen: string | null;
   activo: boolean;
+  orden: number;
   createdAt: string;
   updatedAt: string;
-  subcategorias: Subcategoria[];
   totalProducts: number;
+  // Legado: subcategorias ya no vienen en el endpoint ligero
+  subcategorias?: Subcategoria[];
 }
 
 // Complete Visible Categories types (new structure)

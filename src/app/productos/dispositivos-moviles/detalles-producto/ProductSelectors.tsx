@@ -101,7 +101,7 @@ export default function ProductSelectors({
         </p>
         {selectedColor && (
           <div className="text-sm text-[#222] mb-4">
-            Color : <span className="font-normal">{selectedColor.color}</span>
+            Color : <span className="font-normal">{selectedColor.nombreColorDisplay || selectedColor.color}</span>
           </div>
         )}
         <div className="flex gap-3 items-center">

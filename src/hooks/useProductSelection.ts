@@ -35,6 +35,7 @@ export interface SelectionState {
 // Interfaces compatibles para componentes legacy
 export interface ColorOption {
   color: string;
+  nombreColorDisplay: string | null;
   hex: string;
   variants: ProductVariant[];
 }
@@ -380,13 +381,21 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         hex = '#808080';
       }
 
+      // Encontrar el nombreColor correspondiente desde el API
+      // Buscar la primera variante con este color para obtener su índice
+      const firstVariantWithColor = allVariants.find(v => v.color === color);
+      const nombreColorDisplay = firstVariantWithColor 
+        ? (apiProduct.nombreColor?.[firstVariantWithColor.index] || null)
+        : null;
+
       return {
         color, // Mantener el valor original para lógica interna
+        nombreColorDisplay,
         hex,
         variants: allVariants.filter(v => v.color === color)
       };
     });
-  }, [availableColorsFiltered, allVariants]);
+  }, [availableColorsFiltered, allVariants, apiProduct]);
 
   const getStorageOptions = useCallback((): StorageOption[] => {
     return availableCapacitiesFiltered.map(capacity => ({

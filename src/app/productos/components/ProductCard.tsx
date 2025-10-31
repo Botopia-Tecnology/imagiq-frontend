@@ -418,7 +418,7 @@ export default function ProductCard({
       </div>
 
       {/* Contenido del producto */}
-      <div className="py-3 space-y-2">
+      <div className="py-2 space-y-2">
         {/* Título del producto */}
         <div className="px-3">
           <h3
@@ -435,9 +435,9 @@ export default function ProductCard({
               {apiProduct?.modelo || name}
             </button>
           </h3>
-          
-          {/* SKU y CodigoMarket dinámicos */}
-          {(currentSku || currentCodigoMarket) && (
+
+          {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
+          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (currentSku || currentCodigoMarket) && (
             <div className="mt-1 space-y-0.5">
               {currentSku && (
                 <p className="text-xs text-gray-500 font-medium">
@@ -509,7 +509,7 @@ export default function ProductCard({
         </div>
 
         {/* Precio */}
-        <div className="h-[150px] px-3 flex flex-col justify-between">
+        <div className="px-3 space-y-3">
           {finalCurrentPrice && (
             <div className="space-y-1">
               {/* Precio principal */}
@@ -545,8 +545,8 @@ export default function ProductCard({
               })()}
             </div>
           )}
-          {/* Botones de acción */}
-          <div className="space-y-2">
+          {/* Botones de acción - Horizontal */}
+          <div className="flex items-center gap-3">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -558,7 +558,7 @@ export default function ProductCard({
               }}
               disabled={isLoading}
               className={cn(
-                "w-full bg-black text-white py-2.5 px-4 rounded-full text-xs lg:text-lg font-bold",
+                "flex-1 bg-black text-white py-2 px-3 rounded-full text-sm font-semibold",
                 "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                 isLoading && "animate-pulse"
               )}
@@ -577,7 +577,7 @@ export default function ProductCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-black py-2.5 px-4 text-xs lg:text-md font-bold hover:underline transition-all border border-gray-300 rounded-full"
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
             >
               Más información
             </button>

@@ -14,12 +14,14 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 
 import Pagination from "../../dispositivos-moviles/components/Pagination";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
-import HorizontalFilters from "../../components/HorizontalFilters";
+import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import SubmenuCarousel from "./SubmenuCarousel";
 import MenuCarousel from "./MenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
+import SkeletonCard from "@/components/SkeletonCard"; // Aún se usa para carga inicial
+import MobileFilterSidebar from "./MobileFilterSidebar";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
 import { getCategoryFilterConfig } from "../constants/categoryConstants";
@@ -58,8 +60,10 @@ export default function CategorySection({
     setFilters
   );
 
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const productsRef = useRef<HTMLDivElement>(null);
   const device = useDeviceType();
 
@@ -158,65 +162,93 @@ export default function CategorySection({
         setSortBy={setSortBy}
         viewMode={viewMode}
         setViewMode={setViewMode}
-        onShowMobileFilters={() => {}}
+        onShowMobileFilters={() => setShowMobileFilters(true)}
         filters={filters}
         setFilters={setFilters}
         clearAllFiltersText={`Ver todos los ${effectiveTitle.toLowerCase()}`}
       />
 
-      {/* Filtros horizontales - Visibles en todos los dispositivos */}
-      <div className="mb-4">
-        <HorizontalFilters
+      <div className={cn("flex gap-6 items-start", device === "mobile" || device === "tablet" ? "flex-col" : "flex-row")}>
+        {(device === "desktop" || device === "large") && (
+          <aside
+            ref={sidebarRef}
+            className="shrink-0 w-80 sticky self-start"
+            style={{
+              top: '100px',
+              maxHeight: 'calc(100vh - 120px)',
+              overflowY: 'auto',
+              position: 'sticky',
+            }}
+          >
+            <FilterSidebar
+              filterConfig={filterConfig}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              expandedFilters={expandedFilters}
+              onToggleFilter={handleToggleFilter}
+              resultCount={totalItems || 0}
+            />
+          </aside>
+        )}
+
+        <MobileFilterSidebar
+          show={showMobileFilters}
+          onClose={() => setShowMobileFilters(false)}
           filterConfig={filterConfig}
           filters={filters}
           onFilterChange={handleFilterChange}
+          expandedFilters={expandedFilters}
+          onToggleFilter={handleToggleFilter}
           resultCount={totalItems || 0}
         />
-      </div>
 
-      {/* Grid de productos a ancho completo */}
-      <div ref={productsRef} className={cn("w-full", device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0")}>
-        {/* Mostrar grid de productos (incluye skeleton, mensaje de vacío o productos) */}
-        <CategoryProductsGrid
+        <div
           ref={productsRef}
-          products={products}
-          loading={compositeLoading}
-          error={error}
-          refreshProducts={refreshProducts}
-          viewMode={viewMode}
-          categoryName={effectiveTitle}
-          showLazySkeletons={hasMore}
-          lazySkeletonCount={3}
-        />
+          className={cn("flex-1 min-w-0", device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0")}
+        >
+          {/* Mostrar grid de productos (incluye skeleton, mensaje de vacío o productos) */}
+          <CategoryProductsGrid
+            ref={productsRef}
+            products={products}
+            loading={compositeLoading}
+            error={error}
+            refreshProducts={refreshProducts}
+            viewMode={viewMode}
+            categoryName={effectiveTitle}
+            showBanner={(device === "desktop" || device === "large") && products.length >= 4}
+            showLazySkeletons={hasMore}
+            lazySkeletonCount={3}
+          />
 
-        {/* Elemento invisible para detectar scroll */}
-        {!error && hasMore && products.length > 0 && (
-          <div ref={loadMoreRef} className="h-4" />
-        )}
+          {/* Elemento invisible para detectar scroll */}
+          {!error && hasMore && products.length > 0 && (
+            <div ref={loadMoreRef} className="h-4" />
+          )}
 
-        {/* Paginación tradicional */}
-        {!error && products.length > 0 && (
-          <div className="mt-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-              <ItemsPerPageSelector
+          {/* Paginación tradicional */}
+          {!error && products.length > 0 && (
+            <div className="mt-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                <ItemsPerPageSelector
+                  itemsPerPage={itemsPerPage}
+                  onItemsPerPageChange={handleItemsPerPageChange}
+                />
+                {!hasMore && !hasMorePages && (
+                  <p className="text-gray-500 text-sm">
+                    Has visto todos los productos de esta página
+                  </p>
+                )}
+              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+                totalItems={totalItems}
                 itemsPerPage={itemsPerPage}
-                onItemsPerPageChange={handleItemsPerPageChange}
               />
-              {!hasMore && !hasMorePages && (
-                <p className="text-gray-500 text-sm">
-                  Has visto todos los productos de esta página
-                </p>
-              )}
             </div>
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              totalItems={totalItems}
-              itemsPerPage={itemsPerPage}
-            />
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

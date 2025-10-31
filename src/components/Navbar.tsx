@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
-import { menusEndpoints, type Menu as MenuType } from "@/lib/api";
+import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import OfertasDropdown from "./dropdowns/ofertas";
 import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
@@ -33,27 +33,8 @@ export default function Navbar() {
 
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
-  // Estado para carga bajo demanda de menús
-  const [loadedMenus, setLoadedMenus] = useState<Record<string, MenuType[]>>({});
-  const [loadingMenus, setLoadingMenus] = useState<Record<string, boolean>>({});
-
-  // Función para cargar menús bajo demanda
-  const loadMenusForCategory = async (categoryUuid: string) => {
-    // Si ya están cargados o están cargando, no hacer nada
-    if (loadedMenus[categoryUuid] || loadingMenus[categoryUuid]) return;
-
-    setLoadingMenus(prev => ({ ...prev, [categoryUuid]: true }));
-    try {
-      const response = await menusEndpoints.getMenusByCategory(categoryUuid);
-      if (response.success && response.data) {
-        setLoadedMenus(prev => ({ ...prev, [categoryUuid]: response.data }));
-      }
-    } catch (error) {
-      console.error('Error loading menus:', error);
-    } finally {
-      setLoadingMenus(prev => ({ ...prev, [categoryUuid]: false }));
-    }
-  };
+  // Pre-cargar menús de todas las categorías dinámicas al cargar la página
+  const { preloadedMenus, loadingStates, getMenus, isLoading } = usePreloadCategoryMenus();
 
   // Función para obtener el componente dropdown apropiado
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
@@ -62,19 +43,20 @@ export default function Navbar() {
     // Si el item tiene uuid de categoría y NO es una categoría estática, usar DynamicDropdown
     if (item?.uuid && !isStaticCategoryUuid(item.uuid)) {
       const categoryUuid = item.uuid;
-      const cachedMenus = loadedMenus[categoryUuid];
-      const isLoading = loadingMenus[categoryUuid] || false;
+      // Usar menús precargados en lugar de estado local
+      const cachedMenus = getMenus(categoryUuid) || [];
+      const menusLoading = isLoading(categoryUuid);
 
       // Siempre usar DynamicDropdown para categorías dinámicas
       // Muestra loading mientras cargan los menús o los menús si ya están cargados
       return (
         <DynamicDropdown
-          menus={cachedMenus || []}
+          menus={cachedMenus}
           categoryName={item.name}
           categoryCode={item.categoryCode || ''}
           categoryVisibleName={item.categoryVisibleName}
           isMobile={false}
-          loading={isLoading}
+          loading={menusLoading}
         />
       );
     }
@@ -298,10 +280,8 @@ export default function Navbar() {
                         onMouseEnter={() => {
                           if (hasDropdownMenu(dropdownKey, item)) {
                             navbar.handleDropdownEnter(dropdownKey as DropdownName);
-                            // Cargar menús bajo demanda si el item tiene uuid
-                            if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
-                              loadMenusForCategory(item.uuid);
-                            }
+                            // Los menús ya se están pre-cargando, no es necesario cargarlos aquí
+                            // El hook usePreloadCategoryMenus ya los carga automáticamente
                           }
                         }}
                         onMouseLeave={navbar.handleDropdownLeave}

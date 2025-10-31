@@ -8,7 +8,8 @@ import { MobileMenuPromo } from "./MobileMenuPromo";
 import { MobileMenuContent } from "./MobileMenuContent";
 import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
-import { menusEndpoints, type Menu } from "@/lib/api";
+import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
+import type { Menu } from "@/lib/api";
 import { isStaticCategoryUuid } from "@/constants/staticCategories";
 import OfertasDropdown from "@/components/dropdowns/ofertas";
 import SoporteDropdown from "@/components/dropdowns/soporte";
@@ -37,50 +38,28 @@ export const MobileMenu: FC<Props> = ({
   const [activeCategoryVisibleName, setActiveCategoryVisibleName] = useState<string | null>(null);
   const [activeDropdownName, setActiveDropdownName] = useState<DropdownName | null>(null);
 
-  // Estado para carga bajo demanda de menús
-  const [loadedMenus, setLoadedMenus] = useState<Record<string, Menu[]>>({});
-  const [loadingMenus, setLoadingMenus] = useState<Record<string, boolean>>({});
+  // Pre-cargar menús de todas las categorías dinámicas al cargar la página
+  const { getMenus, isLoading } = usePreloadCategoryMenus();
 
   const { getNavbarRoutes, loading } = useVisibleCategories();
   const menuRoutes = getNavbarRoutes();
 
-  // Sincronizar activeMenus cuando los menús se cargan en loadedMenus
+  // Sincronizar activeMenus cuando los menús precargados estén disponibles
   useEffect(() => {
     if (activeSubmenu && activeCategoryCode) {
       const activeItem = menuRoutes.find(route => route.name === activeSubmenu);
       if (activeItem?.uuid) {
         const categoryUuid = activeItem.uuid;
-        const menus = loadedMenus[categoryUuid];
+        const menus = getMenus(categoryUuid);
         // Actualizar activeMenus cuando los menús estén disponibles
         if (menus && menus.length > 0) {
           setActiveMenus(menus);
-        } else if (!loadingMenus[categoryUuid] && menus === undefined) {
-          // Si no hay menús y no está cargando, podría ser que aún no se haya iniciado la carga
-          // En este caso, mantener el estado actual
         }
       }
     }
-  }, [loadedMenus, activeSubmenu, activeCategoryCode, menuRoutes, loadingMenus]);
+  }, [activeSubmenu, activeCategoryCode, menuRoutes, getMenus]);
 
   if (!isOpen) return null;
-
-  // Función para cargar menús bajo demanda
-  const loadMenusForCategory = async (categoryUuid: string) => {
-    // Si ya están cargados o están cargando, no hacer nada
-    if (loadedMenus[categoryUuid] || loadingMenus[categoryUuid]) return;
-
-    setLoadingMenus(prev => ({ ...prev, [categoryUuid]: true }));
-    try {
-      const response = await menusEndpoints.getMenusByCategory(categoryUuid);
-      if (response.success && response.data) {
-        setLoadedMenus(prev => ({ ...prev, [categoryUuid]: response.data }));
-      }
-    } catch (error) {
-      console.error('Error loading menus:', error);
-    } finally {
-      setLoadingMenus(prev => ({ ...prev, [categoryUuid]: false }));
-    }
-  };
 
   const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string; categoryVisibleName?: string }) => {
     if (item.hasDropdown) {
@@ -92,28 +71,24 @@ export const MobileMenu: FC<Props> = ({
         return;
       }
 
-      // Si el item tiene uuid (categoría dinámica), cargar menús bajo demanda
+      // Si el item tiene uuid (categoría dinámica), usar menús precargados
       if (item.uuid) {
         const categoryUuid = item.uuid;
-        const cachedMenus = loadedMenus[categoryUuid];
-        const isLoading = loadingMenus[categoryUuid];
+        const cachedMenus = getMenus(categoryUuid);
+        const menusLoading = isLoading(categoryUuid);
 
         // Primero establecer el estado del submenú activo
         setActiveCategoryCode(item.categoryCode || '');
         setActiveCategoryVisibleName(item.categoryVisibleName || null);
         setActiveSubmenu(item.name);
         
-        // Si ya hay menús en caché, establecerlos inmediatamente
-        if (cachedMenus) {
+        // Si ya hay menús precargados, establecerlos inmediatamente
+        if (cachedMenus && cachedMenus.length > 0) {
           setActiveMenus(cachedMenus);
         } else {
-          // Si no hay menús en caché, NO establecer activeMenus a []
-          // Esto evita que se muestre "no hay menús disponibles" mientras cargan
+          // Si aún están cargando, mantener activeMenus como null
           // El useEffect actualizará activeMenus cuando los menús se carguen
-          // Cargar menús si no están cargando ya
-          if (!isLoading) {
-            loadMenusForCategory(categoryUuid);
-          }
+          setActiveMenus(null);
         }
       }
     } else {
@@ -155,16 +130,9 @@ export const MobileMenu: FC<Props> = ({
     if (activeCategoryCode) {
       const activeItem = menuRoutes.find(route => route.name === activeSubmenu);
       const categoryUuid = activeItem?.uuid;
-      const isLoadingCategory = categoryUuid ? (loadingMenus[categoryUuid] ?? false) : false;
-      
-      // Determinar qué menús pasar:
-      // 1. Si hay activeMenus (ya cargados), usarlos
-      // 2. Si está cargando, pasar array vacío para mostrar skeleton
-      // 3. Si hay menús en loadedMenus pero no en activeMenus, el useEffect los actualizará
-      const menusToPass = activeMenus || (isLoadingCategory ? [] : []);
-
-      // Determinar si está cargando: está explícitamente cargando O si no hay menús en activeMenus ni en loadedMenus
-      const isStillLoading = isLoadingCategory || (categoryUuid ? (!activeMenus && !loadedMenus[categoryUuid]) : false);
+      const menusToPass = activeMenus || [];
+      // Verificar si están cargando usando el hook de precarga
+      const isStillLoading = categoryUuid ? isLoading(categoryUuid) : false;
 
       return (
         <DynamicMobileSubmenu

@@ -192,6 +192,11 @@ export const useProducts = (
       setLoading(true);
       setError(null);
 
+      // Limpiar productos cuando no es append para mostrar skeletons
+      if (!append) {
+        setProducts([]);
+      }
+
       try {
         const apiParams = convertFiltersToApiParams(filters, customOffset);
         // Construir URL de esta solicitud para decidir si abortamos la previa
@@ -282,6 +287,8 @@ export const useProducts = (
       setError(null);
       setCurrentSearchQuery(query);
       setCurrentPage(page);
+      // Limpiar productos para mostrar skeletons
+      setProducts([]);
 
       try {
         const searchParams = {

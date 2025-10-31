@@ -29,7 +29,7 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   const searchParams = useSearchParams();
   const device = useDeviceType();
   const { visibleCategories, loading: categoriesLoading } = useVisibleCategories();
-  
+
   const isOfertasPage = categoria === "ofertas";
   const seccionParam = searchParams?.get("seccion");
   
@@ -38,7 +38,7 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     if (isOfertasPage) return null;
     return findCategoryBySlug(visibleCategories, categoria);
   }, [visibleCategories, categoria, isOfertasPage]);
-  
+
   // Obtener nombre de la categoría para useCurrentMenu (espera el código de API)
   const categoryApiName = dynamicCategory?.nombre;
   
@@ -73,19 +73,19 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     device === "mobile" ? "px-2" : 
     device === "tablet" ? "px-4" : 
     "px-0";
-  
+
   // Tracking de vista de página (debe estar antes de returns condicionales)
   useEffect(() => {
     if (dynamicCategory && activeSection !== null) {
-      posthogUtils.capture("page_view", {
-        page: "productos_categoria",
+    posthogUtils.capture("page_view", {
+      page: "productos_categoria",
         categoria: dynamicCategory.nombre,
-        section: activeSection,
-        device,
-      });
+      section: activeSection,
+      device,
+    });
     }
   }, [dynamicCategory, activeSection, device]);
-  
+
   // Si es ofertas, usar componente especial estático
   if (isOfertasPage) {
     return (
@@ -119,7 +119,7 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
       </div>
     );
   }
-  
+
   return (
     <div className={`bg-white ${devicePaddingClass}`}>
       <CategorySection
@@ -144,7 +144,7 @@ export default function Page({
   params,
 }: Readonly<{ params: Promise<{ categoria: string }> }>) {
   const { categoria } = use(params);
-  
+
   return (
     <Suspense fallback={<CategoriaPageLoading />}>
       <CategoriaPageContent categoria={categoria} />

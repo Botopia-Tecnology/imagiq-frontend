@@ -46,18 +46,40 @@ export default function HeroSection() {
     const handleScroll = () => {
       const heroHeight = window.innerHeight;
       const scrolled = window.scrollY;
+      const viewportWidth = window.innerWidth;
+
+      // Ancho máximo del contenido (1440px)
+      const maxContentWidth = 1440;
+
+      // Calcular cuánto necesitamos reducir para alcanzar 1440px
+      // Si el viewport es menor a 1440px, no necesitamos reducir
+      if (viewportWidth <= maxContentWidth) {
+        setScrollProgress(0);
+        return;
+      }
+
+      // Calcular el porcentaje de reducción necesario para alcanzar 1440px
+      const targetWidth = (maxContentWidth / viewportWidth) * 100; // Ancho objetivo en %
+      const maxReduction = 100 - targetWidth; // Cuánto debemos reducir en total
 
       // Calcular progreso: 0 al inicio, 1 cuando hemos scrolleado toda la altura del hero
-      const progress = Math.min(scrolled / heroHeight, 1);
+      const scrollProgress = Math.min(scrolled / heroHeight, 1);
 
-      setScrollProgress(progress);
+      // Aplicar el progreso solo hasta la reducción necesaria
+      const actualProgress = scrollProgress * (maxReduction / 8); // Dividir por 8 porque ese es nuestro multiplicador
+
+      setScrollProgress(Math.min(actualProgress, maxReduction / 8));
     };
 
     // Ejecutar al cargar para establecer el estado inicial
     handleScroll();
 
     window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
 
   const handleVideoEnd = () => {

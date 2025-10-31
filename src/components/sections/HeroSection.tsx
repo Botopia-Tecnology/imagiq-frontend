@@ -14,6 +14,7 @@ export default function HeroSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoMobileRef = useRef<HTMLVideoElement>(null);
   const [videoEnded, setVideoEnded] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
 
   useEffect(() => {
     const desktop = videoRef.current;
@@ -39,6 +40,25 @@ export default function HeroSection() {
       }
     }
   }, [config.muted]);
+
+  // Efecto de scroll para reducir el video
+  useEffect(() => {
+    const handleScroll = () => {
+      const heroHeight = window.innerHeight;
+      const scrolled = window.scrollY;
+
+      // Calcular progreso: 0 al inicio, 1 cuando hemos scrolleado toda la altura del hero
+      const progress = Math.min(scrolled / heroHeight, 1);
+
+      setScrollProgress(progress);
+    };
+
+    // Ejecutar al cargar para establecer el estado inicial
+    handleScroll();
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleVideoEnd = () => {
     if (config.showContentOnEnd) {
@@ -67,7 +87,7 @@ export default function HeroSection() {
       className="relative w-full h-screen flex items-center justify-center overflow-hidden transition-colors duration-1000 ease-in-out -mt-[64px] xl:-mt-[100px] pt-[64px] xl:pt-[100px]"
       style={{
         zIndex: 1,
-        backgroundColor: config.bgColor,
+        backgroundColor: '#ffffff',
       }}
       data-hero="true"
     >
@@ -76,7 +96,7 @@ export default function HeroSection() {
         {/* Desktop video */}
         <video
           ref={videoRef}
-          className="hidden md:block w-full h-full object-cover"
+          className="hidden md:block h-full object-cover"
           autoPlay={config.autoplay}
           muted={config.muted}
           loop={config.loop}
@@ -86,7 +106,10 @@ export default function HeroSection() {
           poster={config.posterSrc}
           style={{
             opacity: videoEnded ? 0 : 1,
-            transition: "opacity 0.5s ease-in-out",
+            width: `${100 - scrollProgress * 8}%`,
+            marginLeft: `${scrollProgress * 4}%`,
+            marginRight: `${scrollProgress * 4}%`,
+            transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
           }}
         >
           <source src={config.videoSrc} type="video/mp4" />
@@ -94,18 +117,21 @@ export default function HeroSection() {
 
         {/* Desktop poster image - shown when video ends */}
         <div
-          className="hidden md:block absolute inset-0 bg-cover bg-center"
+          className="hidden md:block absolute top-0 left-0 bg-cover bg-center"
           style={{
             backgroundImage: `url(${config.posterSrc})`,
             opacity: videoEnded ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out",
+            width: `${100 - scrollProgress * 8}%`,
+            height: '100%',
+            marginLeft: `${scrollProgress * 4}%`,
+            transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
           }}
         />
 
         {/* Mobile video */}
         <video
           ref={videoMobileRef}
-          className="md:hidden w-full h-full object-cover"
+          className="md:hidden h-full object-cover"
           autoPlay={config.autoplay}
           muted={config.muted}
           loop={config.loop}
@@ -115,7 +141,10 @@ export default function HeroSection() {
           poster={config.posterSrcMobile}
           style={{
             opacity: videoEnded ? 0 : 1,
-            transition: "opacity 0.5s ease-in-out",
+            width: `${100 - scrollProgress * 8}%`,
+            marginLeft: `${scrollProgress * 4}%`,
+            marginRight: `${scrollProgress * 4}%`,
+            transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
           }}
         >
           <source src={config.videoSrcMobile} type="video/mp4" />
@@ -123,11 +152,14 @@ export default function HeroSection() {
 
         {/* Mobile poster image - shown when video ends */}
         <div
-          className="md:hidden absolute inset-0 bg-cover bg-center"
+          className="md:hidden absolute top-0 left-0 bg-cover bg-center"
           style={{
             backgroundImage: `url(${config.posterSrcMobile})`,
             opacity: videoEnded ? 1 : 0,
-            transition: "opacity 0.5s ease-in-out",
+            width: `${100 - scrollProgress * 8}%`,
+            height: '100%',
+            marginLeft: `${scrollProgress * 4}%`,
+            transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
           }}
         />
       </div>

@@ -15,7 +15,7 @@
       links: [
         { name: "Información de la garantía", href: "/soporte/informacion_de_la_garantia" },
         { name: "Reservar y reparar", href: "/soporte/reparar" },
-        { name: "Costo de Reparación", href: "/soporte/costo-reparacion" },
+        { name: "Costo de Reparación", href: "/soporte/costo_de_reparacion" },
       ],
     },
     {

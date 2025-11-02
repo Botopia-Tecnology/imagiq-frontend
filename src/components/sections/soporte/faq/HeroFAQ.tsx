@@ -4,16 +4,17 @@ const quickTags = ["pago", "devoluciones", "cancelaciones", "entrega", "trade-in
 
 export function HeroFAQ() {
   return (
-    <div className="px-4 sm:px-8 md:px-16 lg:px-24 xl:px-32 2xl:px-48 py-4">
-      <div 
-        className="relative text-white py-20 md:py-24 lg:py-28 px-8 overflow-hidden"
-        style={{
-          backgroundImage: "url('https://res.cloudinary.com/dcljjtnxr/image/upload/v1759860713/Captura_wdrzi1.png')",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat"
-        }}
-      >
+    <div className="w-full flex justify-center">
+      <div className="relative w-full max-w-[1400px]">
+        <div 
+          className="relative text-white py-20 md:py-24 lg:py-28 px-8 overflow-hidden"
+          style={{
+            backgroundImage: "url('https://res.cloudinary.com/dcljjtnxr/image/upload/v1759860713/Captura_wdrzi1.png')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat"
+          }}
+        >
 
       <div className="max-w-4xl mx-auto text-center relative z-10">
         <p className="text-sm mb-2 opacity-90">Estamos aquí para ti</p>
@@ -54,8 +55,9 @@ export function HeroFAQ() {
             </button>
           ))}
         </div>
+        </div>
       </div>
-    </div>
+      </div>
     </div>
   );
 }

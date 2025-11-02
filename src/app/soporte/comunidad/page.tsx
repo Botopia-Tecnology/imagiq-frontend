@@ -1,8 +1,8 @@
+import { redirect } from "next/navigation";
+
 export default function ComunidadPage() {
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-4">Comunidad</h1>
-      <p className="text-gray-600">Esta página está vacía</p>
-    </div>
+  // Redirect to Samsung Community external page
+  redirect(
+    "https://r1.community.samsung.com/t5/colombia/ct-p/co?profile.language=es&page=1&tab=recent_topics"
   );
 }

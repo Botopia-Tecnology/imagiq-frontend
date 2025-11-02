@@ -23,6 +23,22 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: "/soporte/comunidad",
+        destination:
+          "https://r1.community.samsung.com/t5/colombia/ct-p/co?profile.language=es&page=1&tab=recent_topics",
+        permanent: false,
+      },
+      {
+        source: "/soporte/comunidad",
+        destination:
+          "https://r1.community.samsung.com/t5/colombia/ct-p/co?profile.language=es&page=1&tab=recent_topics",
+        permanent: false,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

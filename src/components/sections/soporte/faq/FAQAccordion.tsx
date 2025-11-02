@@ -254,7 +254,7 @@ export function FAQAccordion() {
                 onClick={() => toggleAccordion(index)}
                 className="w-full flex items-center justify-between py-6 px-8 text-left hover:bg-gray-200 transition-colors min-h-[80px]"
               >
-                <span className="text-lg font-medium text-gray-800 flex-1 pr-4">{item.title}</span>
+                <span className="text-lg font-bold text-gray-800 flex-1 pr-4">{item.title}</span>
                 <span className="text-2xl font-light text-gray-600 flex-shrink-0 w-8 text-center">
                   {openIndex === index ? '−' : '+'}
                 </span>

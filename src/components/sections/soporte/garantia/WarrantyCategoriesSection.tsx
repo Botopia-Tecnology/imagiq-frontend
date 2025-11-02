@@ -105,21 +105,21 @@ export function WarrantyCategoriesSection() {
 
         {/* Category Tabs */}
         <div className="mb-12">
-          <div className="bg-gray-800">
-            <div className="flex">
+          <div className="bg-black">
+            <div className="flex flex-col sm:flex-row">
               {categories.map((category) => (
                  <button
                    key={category.id}
                    onClick={() => setActiveCategory(category.id)}
-                   className={`flex-1 px-6 py-5 font-bold text-sm transition-all duration-200 relative ${
+                   className={`flex-1 px-4 py-4 font-bold text-xs sm:text-sm transition-all duration-200 relative ${
                      activeCategory === category.id
-                       ? "bg-black text-blue-500"
-                       : "bg-gray-700 text-white hover:bg-gray-600"
+                       ? "bg-gray-800 text-white"
+                       : "bg-gray-600 text-white hover:bg-gray-700"
                    }`}
                  >
                    {category.name}
                    {activeCategory === category.id && (
-                     <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-0.5 bg-blue-500"></div>
+                     <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-8 h-1 bg-white"></div>
                    )}
                  </button>
               ))}
@@ -131,17 +131,20 @@ export function WarrantyCategoriesSection() {
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {currentCategory?.products.map((product, index) => (
-              <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div key={index} className="bg-white rounded-lg shadow-sm border border-gray-300 overflow-hidden">
                 {/* Card Header */}
-                <div className="bg-gray-100 px-6 py-4">
+                <div className="bg-gray-100 px-6 py-4 border-b border-gray-300">
                   <h3 className="text-lg font-bold text-gray-900 text-center">{product.title}</h3>
                 </div>
                 
                 {/* Card Body */}
-                <div className="p-6">
+                <div className="p-6 bg-white">
                   <div className="text-center mb-4">
                     <p className="text-sm text-gray-600 mb-2">{product.description}</p>
-                    <span className="text-3xl font-black text-gray-800">{product.warrantyPeriod}</span>
+                    <div className="flex flex-col items-center">
+                      <span className="text-5xl font-black text-gray-800 leading-none">{product.warrantyPeriod.split(' ')[0]}</span>
+                      <p className="text-sm text-gray-600 mt-1">{product.warrantyPeriod.split(' ')[1]}</p>
+                    </div>
                   </div>
 
                   {product.note && (

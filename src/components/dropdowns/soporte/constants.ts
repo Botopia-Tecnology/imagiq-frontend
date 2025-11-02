@@ -13,7 +13,7 @@
     {
       title: "REPARACIONES Y GARANTÍA",
       links: [
-        { name: "Información de la garantía", href: "/soporte/garantia" },
+        { name: "Información de la garantía", href: "/soporte/informacion_de_la_garantia" },
         { name: "Reservar y reparar", href: "/soporte/reparar" },
         { name: "Costo de Reparación", href: "/soporte/costo-reparacion" },
       ],
@@ -39,7 +39,7 @@
       name: "Garantía",
       imageSrc: "https://res.cloudinary.com/dqay3uml6/image/upload/v1759842073/sim-garantia_zsepcv.webp",
       imageAlt: "Garantía",
-      href: "/soporte/garantia",
+      href: "/soporte/informacion_de_la_garantia",
     },
     {
       name: "Descarga manual",

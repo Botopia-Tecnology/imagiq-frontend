@@ -202,3 +202,8 @@ export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; heigh
   hero: { width: 1200, height: 600 },
   original: { width: 800, height: 800 }, // Fallback
 };
+
+/**
+ * Alias para getCloudinaryUrl (para compatibilidad)
+ */
+export const getCloudinaryImageUrl = getCloudinaryUrl;

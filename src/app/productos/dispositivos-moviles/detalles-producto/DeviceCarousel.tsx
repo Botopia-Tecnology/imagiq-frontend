@@ -69,7 +69,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   return (
     <div className="w-full">
       {/* Carrusel con fondo gris */}
-      <div className="relative rounded-2xl px-4 py-4 w-full bg-gray-50">
+      <div className="relative rounded-2xl px-4 py-4 w-full bg-gray-50 overflow-hidden">
         {/* Flechas de navegación */}
         {images.length > 1 && (
           <>
@@ -91,20 +91,24 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
         )}
 
         {/* Imagen del dispositivo con altura aumentada */}
-        <div
-          className="flex justify-center h-[600px] items-center relative cursor-pointer group"
+        <button
+          type="button"
+          className="flex justify-center h-[600px] w-full items-center relative cursor-pointer group overflow-hidden"
           onClick={() => onImageClick?.(images, currentImageIndex)}
+          aria-label={`Mostrar imagen ${currentImageIndex + 1} de ${alt}`}
         >
-          <Image
-            src={cloudinaryImage.src}
-            alt={`${alt} - Imagen ${currentImageIndex + 1}`}
-            width={cloudinaryImage.width}
-            height={cloudinaryImage.height}
-            className="object-contain transition-opacity duration-300 max-h-full w-auto group-hover:opacity-90"
-            sizes={cloudinaryImage.imageProps.sizes}
-            priority={currentImageIndex === 0}
-          />
-        </div>
+          {/* Use `fill` so the image is positioned/centered by CSS and won't be cropped; ensure object-contain + object-center */}
+          <div className="relative w-full h-full">
+            <Image
+              src={cloudinaryImage.src}
+              alt={`${alt} - Imagen ${currentImageIndex + 1}`}
+              fill
+              className="object-contain object-center"
+              sizes={cloudinaryImage.imageProps.sizes}
+              priority={currentImageIndex === 0}
+            />
+          </div>
+        </button>
       </div>
       
       {/* Miniaturas de imágenes - Fuera del fondo gris */}

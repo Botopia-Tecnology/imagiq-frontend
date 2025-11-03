@@ -126,11 +126,58 @@ export function usePreloadCategoryMenus() {
     return !!preloadedMenus[categoryUuid];
   };
 
+  /**
+   * Priorizar la carga del menú de una categoría específica
+   * Útil cuando el usuario hace hover sobre una categoría en el navbar
+   * Si la categoría ya está cargada o cargando, retorna inmediatamente
+   * Si no, inicia la carga inmediatamente
+   */
+  const prioritizeCategory = (categoryUuid: string): void => {
+    // Si ya está cargada, no hacer nada
+    if (preloadedMenus[categoryUuid]) {
+      return;
+    }
+
+    // Si ya está cargando o siendo procesada, no iniciar otra carga
+    // El endpoint menusEndpoints.getMenusByCategory ya maneja deduplicación
+    if (loadingStates[categoryUuid] || processingRef.current.has(categoryUuid)) {
+      return;
+    }
+
+    // Marcar como siendo procesada
+    processingRef.current.add(categoryUuid);
+    setLoadingStates((prev) => ({ ...prev, [categoryUuid]: true }));
+
+    // Iniciar carga inmediatamente
+    menusEndpoints
+      .getMenusByCategory(categoryUuid)
+      .then((response) => {
+        if (response.success && response.data) {
+          setPreloadedMenus((prev) => ({
+            ...prev,
+            [categoryUuid]: response.data,
+          }));
+        }
+      })
+      .catch((error) => {
+        console.error(`Error prioritizing menu load for category ${categoryUuid}:`, error);
+      })
+      .finally(() => {
+        processingRef.current.delete(categoryUuid);
+        setLoadingStates((prev) => {
+          const updated = { ...prev };
+          delete updated[categoryUuid];
+          return updated;
+        });
+      });
+  };
+
   return {
     preloadedMenus,
     loadingStates,
     getMenus,
     isLoading,
     isLoaded,
+    prioritizeCategory,
   };
 }

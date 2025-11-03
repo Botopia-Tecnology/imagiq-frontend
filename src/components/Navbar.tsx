@@ -34,7 +34,8 @@ export default function Navbar() {
   const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
 
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
-  const { preloadedMenus, loadingStates, getMenus, isLoading } = usePreloadCategoryMenus();
+  // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
+  const { preloadedMenus, loadingStates, getMenus, isLoading, prioritizeCategory } = usePreloadCategoryMenus();
 
   // Función para obtener el componente dropdown apropiado
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
@@ -280,8 +281,11 @@ export default function Navbar() {
                         onMouseEnter={() => {
                           if (hasDropdownMenu(dropdownKey, item)) {
                             navbar.handleDropdownEnter(dropdownKey as DropdownName);
-                            // Los menús ya se están pre-cargando, no es necesario cargarlos aquí
-                            // El hook usePreloadCategoryMenus ya los carga automáticamente
+                            // Priorizar la carga del menú si es una categoría dinámica
+                            // Esto asegura que el menú se cargue inmediatamente al hacer hover
+                            if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
+                              prioritizeCategory(item.uuid);
+                            }
                           }
                         }}
                         onMouseLeave={navbar.handleDropdownLeave}

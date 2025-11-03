@@ -47,9 +47,8 @@ export default function MenuCarousel({ menus, categoria, categoryCode, title }: 
     prefetchWithDebounce({
       categoryCode,
       menuUuid,
-      categoria: categoria as any,
     }, 200); // Debounce de 200ms
-  }, [categoryCode, categoria, prefetchWithDebounce]);
+  }, [categoryCode, prefetchWithDebounce]);
 
   // Cancelar prefetch cuando el usuario deja de hacer hover
   const handleMenuLeave = useCallback((menuUuid: string) => {
@@ -58,9 +57,8 @@ export default function MenuCarousel({ menus, categoria, categoryCode, title }: 
     cancelPrefetch({
       categoryCode,
       menuUuid,
-      categoria: categoria as any,
     });
-  }, [categoryCode, categoria, cancelPrefetch]);
+  }, [categoryCode, cancelPrefetch]);
 
   const activeFilters = { serie: [] as string[] };
 

@@ -26,7 +26,6 @@ interface Props {
 export default function SubmenuCarousel({
   menu,
   categoria,
-  seccion,
   categoryCode,
   menuUuid,
   title,
@@ -99,9 +98,8 @@ export default function SubmenuCarousel({
       categoryCode,
       menuUuid: menuUuid, // Usar el prop que viene de CategorySection
       submenuUuid,
-      categoria: categoria as any,
     }, 200); // Debounce de 200ms
-  }, [categoryCode, menuUuid, categoria, prefetchWithDebounce]);
+  }, [categoryCode, menuUuid, prefetchWithDebounce]);
 
   // Cancelar prefetch cuando el usuario deja de hacer hover
   const handleSubmenuLeave = useCallback((submenuUuid: string) => {
@@ -111,9 +109,8 @@ export default function SubmenuCarousel({
       categoryCode,
       menuUuid: menuUuid, // Usar el prop que viene de CategorySection
       submenuUuid,
-      categoria: categoria as any,
     });
-  }, [categoryCode, menuUuid, categoria, cancelPrefetch]);
+  }, [categoryCode, menuUuid, cancelPrefetch]);
 
   // Si está cargando, mostrar skeleton
   if (loading) {

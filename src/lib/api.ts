@@ -14,7 +14,7 @@ import type { ProductFilterParams } from "./sharedInterfaces";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Generic API response type
-interface ApiResponse<T> {
+export interface ApiResponse<T> {
   data: T;
   success: boolean;
   message?: string;

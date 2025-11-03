@@ -59,14 +59,14 @@ export default function ProductHeader({
       </div>
 
       {/* Información del producto */}
-      {(sku || codigoMarket || stock !== undefined || stockTotal !== undefined) && (
+      {((process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (sku || codigoMarket)) || stock !== undefined || stockTotal !== undefined) && (
         <div className="text-sm text-gray-500 mb-3 space-y-1">
-          {sku && (
+          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && sku && (
             <div>
               <span className="font-medium">SKU:</span> {sku}
             </div>
           )}
-          {codigoMarket && (
+          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && codigoMarket && (
             <div>
               <span className="font-medium">Código:</span> {codigoMarket}
             </div>

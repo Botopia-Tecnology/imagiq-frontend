@@ -37,11 +37,11 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
   // b_white necesario para imágenes WebP con transparencia
   // g_auto centra el producto en el frame
   // Solo las MUY verticales (como Z Fold)
-  catalog: 'f_auto,q_auto:best,c_pad,w_3000,h_3000',
+  catalog: 'f_auto,q_auto:best,c_pad,w_1000,h_1000',
 
   // Vista principal producto - 1000x1000, fill_pad (mantiene proporciones, rellena espacios)
   // q_auto:best para máxima calidad
-  'product-main': 'f_auto,q_auto:best,c_pad,g_auto,w_3000,h_3000',
+  'product-main': 'f_auto,q_auto:best,c_pad,g_auto,w_1000,h_1000',
 
   // Detalle producto - 1000x1000, pad (mantiene proporciones completas, máxima calidad)
   // q_auto:best para máxima calidad
@@ -202,3 +202,8 @@ export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; heigh
   hero: { width: 1200, height: 600 },
   original: { width: 800, height: 800 }, // Fallback
 };
+
+/**
+ * Alias para getCloudinaryUrl (para compatibilidad)
+ */
+export const getCloudinaryImageUrl = getCloudinaryUrl;

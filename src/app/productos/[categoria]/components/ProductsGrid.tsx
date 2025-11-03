@@ -24,7 +24,7 @@ interface CategoryProductsGridProps {
 }
 
 
-const CategoryProductsGrid = forwardRef<
+export const CategoryProductsGrid = forwardRef<
   HTMLDivElement,
   CategoryProductsGridProps
 >(
@@ -124,22 +124,27 @@ const CategoryProductsGrid = forwardRef<
         {/* Mostrar productos si existen (independientemente del estado de loading) */}
         {products.length > 0 && (
           <>
-            {products.map((product) => (
-              <div key={product.id} className="w-full">
-                <ProductCard
-                  {...product}
-                  isFavorite={isFavorite(product.id)}
-                  onToggleFavorite={(productId: string) => {
-                    if (isFavorite(productId)) {
-                      handleRemoveToFavorites(productId);
-                    } else {
-                      handleAddToFavorites(productId);
-                    }
-                  }}
-                  className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
-                />
-              </div>
-            ))}
+            {products.map((product) => {
+              return (
+                <div
+                  key={product.id}
+                  className="w-full"
+                >
+                  <ProductCard
+                    {...product}
+                    isFavorite={isFavorite(product.id)}
+                    onToggleFavorite={(productId: string) => {
+                      if (isFavorite(productId)) {
+                        handleRemoveToFavorites(productId);
+                      } else {
+                        handleAddToFavorites(productId);
+                      }
+                    }}
+                    className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+                  />
+                </div>
+              );
+            })}
 
             {/* Skeletons de lazy loading - solo cuando isLoadingMore es true */}
             {isLoadingMore && Array.from({ length: lazySkeletonCount }, (_, i) => (

@@ -62,12 +62,12 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
               return (
                 <>
-                  {variantSku && (
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && variantSku && (
                     <p className="text-sm text-gray-600">
                       SKU: {variantSku}
                     </p>
                   )}
-                  {variantCodigoMarket && (
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && variantCodigoMarket && (
                     <p className="text-sm text-gray-600">
                       Código: {variantCodigoMarket}
                     </p>

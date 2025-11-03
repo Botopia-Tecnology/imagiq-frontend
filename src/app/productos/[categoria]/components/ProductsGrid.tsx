@@ -99,7 +99,7 @@ const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <div ref={ref} className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
+      <div ref={ref} className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-6" : "flex flex-wrap"}>
         {/* Mostrar skeletons mientras carga y no hay productos */}
         {loading && products.length === 0 && (
           <>
@@ -122,22 +122,27 @@ const CategoryProductsGrid = forwardRef<
         {/* Mostrar productos si existen */}
         {products.length > 0 && (
           <>
-            {products.map((product) => (
-              <div key={product.id} className="w-full">
-                <ProductCard
-                  {...product}
-                  isFavorite={isFavorite(product.id)}
-                  onToggleFavorite={(productId: string) => {
-                    if (isFavorite(productId)) {
-                      handleRemoveToFavorites(productId);
-                    } else {
-                      handleAddToFavorites(productId);
-                    }
-                  }}
-                  className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
-                />
-              </div>
-            ))}
+            {products.map((product) => {
+              return (
+                <div
+                  key={product.id}
+                  className="w-full"
+                >
+                  <ProductCard
+                    {...product}
+                    isFavorite={isFavorite(product.id)}
+                    onToggleFavorite={(productId: string) => {
+                      if (isFavorite(productId)) {
+                        handleRemoveToFavorites(productId);
+                      } else {
+                        handleAddToFavorites(productId);
+                      }
+                    }}
+                    className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+                  />
+                </div>
+              );
+            })}
 
             {/* Skeletons de lazy loading - aparecen en el mismo grid después de los productos */}
             {showLazySkeletons && loading && Array.from({ length: lazySkeletonCount }, (_, i) => (

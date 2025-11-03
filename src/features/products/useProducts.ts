@@ -129,6 +129,8 @@ export const useProducts = (
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string | null>(null);
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
+  const previousMenuUuidRef = useRef<string | undefined>(undefined);
+  const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -193,7 +195,37 @@ export const useProducts = (
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
 
+      // Si no es append (carga inicial o cambio de filtros), resetear lazyOffset
+      if (!append && customOffset === undefined) {
+        setLazyOffset(0);
+        setHasMoreInCurrentPage(true);
+      }
+
       const apiParams = convertFiltersToApiParams(filters, customOffset);
+      
+      // Detectar cambios en menuUuid o submenuUuid para invalidación selectiva de caché
+      const currentMenuUuid = apiParams.menuUuid;
+      const currentSubmenuUuid = apiParams.submenuUuid;
+      
+      if (!append && (
+        previousMenuUuidRef.current !== currentMenuUuid ||
+        previousSubmenuUuidRef.current !== currentSubmenuUuid
+      )) {
+        // Invalidar caché de combinaciones menu+submenu anteriores
+        if (previousMenuUuidRef.current) {
+          productCache.invalidatePattern((key) => {
+            // Invalidar entradas que tengan el menuUuid anterior con cualquier submenuUuid
+            const keyParams = productCache.parseCacheKey(key);
+            if (!keyParams) return false;
+            return keyParams.menuUuid === previousMenuUuidRef.current && 
+                   keyParams.submenuUuid !== undefined;
+          });
+        }
+        
+        // Actualizar referencias
+        previousMenuUuidRef.current = currentMenuUuid;
+        previousSubmenuUuidRef.current = currentSubmenuUuid;
+      }
       
       // Verificar caché solo para carga inicial (no para lazy loading)
       // El caché mejora la velocidad percibida al mostrar datos inmediatamente
@@ -540,11 +572,33 @@ export const useProducts = (
         ? initialFilters()
         : initialFilters || {};
 
-    // Actualizar currentFilters con los filtros iniciales para que loadMore los use
-    setCurrentFilters((prevFilters) => ({
-      ...prevFilters,
-      ...filtersToUse,
-    }));
+    // Detectar si cambian parámetros críticos (menuUuid, submenuUuid)
+    const apiParams = convertFiltersToApiParams(filtersToUse);
+    const currentMenuUuid = apiParams.menuUuid;
+    const currentSubmenuUuid = apiParams.submenuUuid;
+    
+    // Si cambian parámetros críticos, reemplazar filtros completamente en lugar de hacer merge
+    const criticalParamsChanged = 
+      previousMenuUuidRef.current !== currentMenuUuid ||
+      previousSubmenuUuidRef.current !== currentSubmenuUuid;
+    
+    if (criticalParamsChanged) {
+      // Reemplazar completamente los filtros cuando cambian parámetros críticos
+      setCurrentFilters(filtersToUse);
+    } else {
+      // Para cambios menores (paginación, ordenamiento), hacer merge
+      setCurrentFilters((prevFilters) => ({
+        ...prevFilters,
+        ...filtersToUse,
+      }));
+    }
+    
+    // Actualizar referencias después de procesar
+    // Esto asegura que la próxima vez detectemos cambios correctamente
+    if (criticalParamsChanged || previousMenuUuidRef.current === undefined) {
+      previousMenuUuidRef.current = currentMenuUuid;
+      previousSubmenuUuidRef.current = currentSubmenuUuid;
+    }
     
     // Llamar fetchProducts - este verificará el caché internamente y mostrará datos inmediatamente si existen
     fetchProducts(filtersToUse, false);

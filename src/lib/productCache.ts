@@ -133,8 +133,9 @@ class ProductCache {
   
   /**
    * Parsea una clave de caché para extraer los parámetros
+   * Público para permitir invalidación selectiva basada en patrones
    */
-  private parseCacheKey(key: string): ProductFilterParams | null {
+  public parseCacheKey(key: string): ProductFilterParams | null {
     if (!key.startsWith('products:')) {
       return null;
     }

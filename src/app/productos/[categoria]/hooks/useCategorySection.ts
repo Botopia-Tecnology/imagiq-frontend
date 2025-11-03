@@ -76,13 +76,16 @@ export function useCategoryProducts(
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  // Detectar cambio de sección
+  // Detectar cambio de sección o menú
+  const [previousMenuUuid, setPreviousMenuUuid] = useState(menuUuid);
+  
   useEffect(() => {
-    if (previousSeccion !== seccion) {
+    if (previousSeccion !== seccion || previousMenuUuid !== menuUuid) {
       setIsTransitioning(true);
       setPreviousSeccion(seccion);
+      setPreviousMenuUuid(menuUuid);
     }
-  }, [seccion, previousSeccion]);
+  }, [seccion, previousSeccion, menuUuid, previousMenuUuid]);
 
   // Memoizar los filtros de jerarquía por separado para evitar re-cálculos innecesarios
   const hierarchyFilters = useMemo(() => {
@@ -128,10 +131,12 @@ export function useCategoryProducts(
       return false;
     }
 
-    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto, esperar
+    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto:
+    // - Si tenemos menuUuid, proceder (el submenu no pertenece al menú actual, se ignorará)
+    // - Si no tenemos menuUuid, esperar (aún estamos cargando el menú)
     const searchParams = new URLSearchParams(globalThis.location.search);
     const submenuParam = searchParams.get('submenu');
-    if (submenuParam && !submenuUuid) {
+    if (submenuParam && !submenuUuid && !menuUuid) {
       return false;
     }
 
@@ -154,7 +159,8 @@ export function useCategoryProducts(
         lazyOffset: 0
       }, sortBy);
     },
-    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy]
+    // Incluir menuUuid y submenuUuid explícitamente para detectar cambios
+    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy, menuUuid, submenuUuid]
   );
 
   const productsResult = useProducts(initialFiltersForProducts);

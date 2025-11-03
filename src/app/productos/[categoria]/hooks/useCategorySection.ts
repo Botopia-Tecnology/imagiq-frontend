@@ -175,7 +175,9 @@ export function useCategoryProducts(
 
   return {
     ...productsResult,
-    loading: finalLoading
+    loading: finalLoading,
+    // isLoadingMore se mantiene separado, no se afecta por la transición
+    isLoadingMore: productsResult.isLoadingMore
   };
 }
 

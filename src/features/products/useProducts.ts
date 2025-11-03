@@ -40,6 +40,7 @@ interface UseProductsReturn {
   products: ProductCardProps[];
   groupedProducts: Record<string, ProductCardProps[]>;
   loading: boolean;
+  isLoadingMore: boolean; // Estado de carga para lazy loading (append)
   error: string | null;
   totalItems: number;
   totalPages: number;
@@ -108,6 +109,7 @@ export const useProducts = (
     Record<string, ProductCardProps[]>
   >({});
   const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Estado separado para lazy loading
   const [error, setError] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -189,7 +191,12 @@ export const useProducts = (
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
 
-      setLoading(true);
+      // Distinguir entre carga inicial y lazy loading
+      if (append) {
+        setIsLoadingMore(true);
+      } else {
+        setLoading(true);
+      }
       setError(null);
 
       // Limpiar productos cuando no es append para mostrar skeletons
@@ -236,7 +243,20 @@ export const useProducts = (
                 const existingIds = new Set(prev.map(p => p.id));
                 // Filtrar solo los productos nuevos que no existen
                 const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
-                return [...prev, ...newProducts];
+                const updatedProducts = [...prev, ...newProducts];
+                
+                // Verificar si todavía hay más productos que cargar
+                const lazyLimit = filters.lazyLimit || 6;
+                const limit = filters.limit || 20;
+                const currentOffset = customOffset !== undefined ? customOffset : (filters.lazyOffset || 0);
+                const nextOffset = currentOffset + lazyLimit;
+                
+                // Si no hay productos nuevos o se alcanzó el límite, no hay más
+                if (newProducts.length === 0 || nextOffset >= limit || (apiData.totalItems > 0 && nextOffset >= apiData.totalItems)) {
+                  setHasMoreInCurrentPage(false);
+                }
+                
+                return updatedProducts;
               });
             } else {
               setProducts(mappedProducts);
@@ -257,7 +277,12 @@ export const useProducts = (
             setError(response.message || "Error al cargar productos");
           }
 
-          setLoading(false);
+          // Resetear el estado de carga correspondiente
+          if (append) {
+            setIsLoadingMore(false);
+          } else {
+            setLoading(false);
+          }
           return currentRequestId;
         });
       } catch (err) {
@@ -270,7 +295,12 @@ export const useProducts = (
         setRequestId((latestRequestId) => {
           if (currentRequestId >= latestRequestId) {
             setError("Error de conexión al cargar productos");
-            setLoading(false);
+            // Resetear el estado de carga correspondiente
+            if (append) {
+              setIsLoadingMore(false);
+            } else {
+              setLoading(false);
+            }
             return currentRequestId;
           }
           return latestRequestId;
@@ -341,7 +371,7 @@ export const useProducts = (
 
   // Función para cargar más productos (paginación con lazy loading)
   const loadMore = useCallback(async () => {
-    if (!loading) {
+    if (!loading && !isLoadingMore) {
       if (currentSearchQuery) {
         // Si estamos en modo búsqueda, usar paginación tradicional
         if (hasNextPage) {
@@ -356,9 +386,10 @@ export const useProducts = (
         // Calcular el nuevo offset
         const newOffset = lazyOffset + lazyLimit;
 
-        // Si el nuevo offset alcanza el límite de la página actual, DETENER
+        // Verificar tanto el límite de la página como el total de items disponibles
+        // Si el nuevo offset alcanza el límite de la página actual O supera totalItems, DETENER
         // El usuario debe usar los botones de paginación para ir a la siguiente página
-        if (newOffset < limit) {
+        if (newOffset < limit && (totalItems === 0 || newOffset < totalItems)) {
           // Continuar en la misma página con nuevo offset
           setLazyOffset(newOffset);
           await fetchProducts(currentFilters, true, newOffset);
@@ -368,7 +399,7 @@ export const useProducts = (
         }
       }
     }
-  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, lazyOffset, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -429,6 +460,7 @@ export const useProducts = (
     products,
     groupedProducts,
     loading,
+    isLoadingMore,
     error,
     totalItems,
     totalPages,

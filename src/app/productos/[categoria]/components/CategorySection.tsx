@@ -78,7 +78,7 @@ export default function CategorySection({
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
-  const { products, loading, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
+  const { products, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -95,10 +95,11 @@ export default function CategorySection({
   const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
 
   // Configurar scroll infinito
+  // Usar isLoadingMore en lugar de loading para evitar bloquear mientras se cargan productos adicionales
   const loadMoreRef = useInfiniteScroll({
     onLoadMore: loadMore,
     hasMore: hasMore,
-    isLoading: loading,
+    isLoading: loading || isLoadingMore,
     threshold: 800, // Disparar la carga cuando esté a 800px del final
   });
 
@@ -181,6 +182,7 @@ export default function CategorySection({
           ref={productsRef}
           products={products}
           loading={compositeLoading}
+          isLoadingMore={isLoadingMore}
           error={error}
           refreshProducts={refreshProducts}
           viewMode={viewMode}

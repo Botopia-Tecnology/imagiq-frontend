@@ -512,34 +512,40 @@ export default function ProductCard({
         <div className="px-3 space-y-3">
           {finalCurrentPrice && (
             <div className="space-y-1">
-              {/* Precio principal */}
-              <div
-                className="text-xl font-bold text-black"
-              >
-                {finalCurrentPrice}
-              </div>
-
-              {/* Precio original y ahorro (solo si hay descuento) */}
               {(() => {
                 const { hasSavings, savings } = calculateSavings(
                   finalCurrentPrice,
                   finalCurrentOriginalPrice
                 );
 
-                if (!hasSavings) return null;
+                if (!hasSavings) {
+                  // Sin descuento: solo precio
+                  return (
+                    <div className="text-xl font-bold text-black">
+                      {finalCurrentPrice}
+                    </div>
+                  );
+                }
 
+                // Con descuento: precio + info de descuento a la derecha
                 return (
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className="text-xs line-through text-gray-500"
-                    >
-                      {finalCurrentOriginalPrice}
-                    </span>
-                    <span
-                      className="text-xs font-semibold whitespace-nowrap text-blue-600"
-                    >
-                      Ahorra ${savings.toLocaleString("es-CO")}
-                    </span>
+                  <div className="flex items-end gap-3">
+                    {/* Precio final */}
+                    <div className="text-xl font-bold text-black leading-tight">
+                      {finalCurrentPrice}
+                    </div>
+
+                    {/* Info de descuento a la derecha */}
+                    <div className="flex flex-col items-start justify-end">
+                      {/* Precio anterior tachado */}
+                      <span className="text-xs line-through text-gray-500 leading-tight">
+                        {finalCurrentOriginalPrice}
+                      </span>
+                      {/* Ahorro */}
+                      <span className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">
+                        Ahorra ${savings.toLocaleString("es-CO")}
+                      </span>
+                    </div>
                   </div>
                 );
               })()}
@@ -558,7 +564,7 @@ export default function ProductCard({
               }}
               disabled={isLoading}
               className={cn(
-                "flex-1 bg-black text-white py-2 px-3 rounded-full text-sm font-semibold",
+                "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
                 "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                 isLoading && "animate-pulse"
               )}

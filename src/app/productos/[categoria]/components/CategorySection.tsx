@@ -215,7 +215,6 @@ export default function CategorySection({
             refreshProducts={refreshProducts}
             viewMode={viewMode}
             categoryName={effectiveTitle}
-            showBanner={(device === "desktop" || device === "large") && products.length >= 4}
             showLazySkeletons={hasMore}
             lazySkeletonCount={3}
           />

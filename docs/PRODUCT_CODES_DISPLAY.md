@@ -16,7 +16,7 @@ NEXT_PUBLIC_SHOW_PRODUCT_CODES=true  # Mostrar códigos
 NEXT_PUBLIC_SHOW_PRODUCT_CODES=false # Ocultar códigos (recomendado para producción)
 ```
 
-### Archivo de configuración
+### Desarrollo Local
 
 Edita el archivo `.env.local`:
 
@@ -41,6 +41,53 @@ O si estás en desarrollo:
 # Volver a iniciar
 bun run dev
 ```
+
+### 🚀 Configuración en Vercel (Producción)
+
+**⚠️ IMPORTANTE**: Vercel NO lee el archivo `.env.local`. Debes configurar las variables manualmente.
+
+#### Paso 1: Añadir variable en Vercel Dashboard
+
+1. Ve a tu proyecto en Vercel: https://vercel.com/[tu-equipo]/imagiq-frontend
+2. Navega a **Settings** → **Environment Variables**
+3. Click en **Add New**
+4. Configura:
+   - **Key (Name)**: `NEXT_PUBLIC_SHOW_PRODUCT_CODES`
+   - **Value**: `true` o `false`
+   - **Environments**: Selecciona según necesidad:
+     - ✅ **Production** - Para el sitio en producción
+     - ✅ **Preview** - Para PRs y branches
+     - ⬜ **Development** - Para desarrollo local (opcional, usa `.env.local`)
+
+#### Paso 2: Redeploy
+
+**Las variables de entorno solo se aplican en nuevos deploys**, no afectan deploys existentes.
+
+**Opción A - Redeploy manual desde Dashboard**:
+1. Ve a **Deployments**
+2. Encuentra el último deployment exitoso
+3. Click en los 3 puntos (...) → **Redeploy**
+4. Confirma el redeploy
+
+**Opción B - Redeploy desde Git**:
+```bash
+# Commit vacío para trigger deploy
+git commit --allow-empty -m "chore: trigger redeploy para aplicar env vars"
+git push origin main
+```
+
+**Opción C - Desde CLI de Vercel**:
+```bash
+vercel --prod
+```
+
+#### Verificación en Vercel
+
+Después del deploy, verifica que la variable esté aplicada:
+
+1. Ve al deployment en Vercel
+2. Click en **Runtime Logs** o **Function Logs**
+3. Los códigos SKU/Market deberían aparecer si está en `true`
 
 ## 📍 Ubicación de los códigos
 
@@ -91,17 +138,43 @@ El sistema utiliza el hook `useProductSelection` para rastrear la variante actua
 
 ## 🐛 Troubleshooting
 
-### Los códigos no aparecen después de cambiar la variable
+### Los códigos no aparecen en desarrollo local
 
-**Solución**: Asegúrate de hacer un rebuild completo:
+**Causa**: No se hizo rebuild después de cambiar `.env.local`
 
+**Solución**:
 ```bash
 # Limpiar caché
 rm -rf .next
 
 # Rebuild
 bun run build
+
+# Reiniciar dev server
+bun run dev
 ```
+
+### Los códigos no aparecen en Vercel (Producción)
+
+**Causa más común**: La variable NO está configurada en Vercel Dashboard
+
+**Solución**:
+1. ✅ Verifica que la variable existe en Vercel:
+   - Settings → Environment Variables
+   - Debe existir `NEXT_PUBLIC_SHOW_PRODUCT_CODES=true`
+2. ✅ Verifica que esté habilitada para el environment correcto:
+   - Production (para producción)
+   - Preview (para PRs/branches)
+3. ✅ Haz un redeploy:
+   ```bash
+   git commit --allow-empty -m "chore: trigger redeploy"
+   git push origin main
+   ```
+
+**Verificación**:
+- Ve al deployment en Vercel
+- Click en "Environment Variables" del deployment
+- Confirma que `NEXT_PUBLIC_SHOW_PRODUCT_CODES` aparece como `true`
 
 ### Los códigos no cambian al seleccionar colores/capacidades
 
@@ -109,11 +182,28 @@ bun run build
 
 **Verificación**: Revisa que el objeto `apiProduct` tenga arrays de `sku` y `codigoMarket` con la misma longitud que los arrays de colores/capacidades.
 
+**Debug**:
+```typescript
+console.log('Product SKUs:', apiProduct?.sku);
+console.log('Product Codes:', apiProduct?.codigoMarket);
+console.log('Selected index:', variantIndex);
+```
+
 ### Los códigos aparecen como "undefined"
 
 **Causa**: La variante seleccionada no tiene un SKU o código asignado.
 
 **Solución**: Verifica los datos del backend para esa variante específica.
+
+### Rebuild en Vercel pero los cambios no se ven
+
+**Causa**: Cache del navegador
+
+**Solución**:
+1. Hard refresh: `Cmd/Ctrl + Shift + R`
+2. Limpiar caché del navegador
+3. Probar en modo incógnito
+4. Verificar que estás viendo el deployment correcto (revisa la URL)
 
 ## 📋 Checklist de implementación
 

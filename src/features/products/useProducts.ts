@@ -22,6 +22,7 @@ import {
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
+import { productCache } from "@/lib/productCache";
 
 type ProductFilters = FrontendFilterParams;
 
@@ -191,21 +192,49 @@ export const useProducts = (
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
 
-      // Distinguir entre carga inicial y lazy loading
-      if (append) {
-        setIsLoadingMore(true);
-      } else {
-        setLoading(true);
-      }
-      setError(null);
-
-      // Limpiar productos cuando no es append para mostrar skeletons
-      if (!append) {
-        setProducts([]);
-      }
-
       try {
         const apiParams = convertFiltersToApiParams(filters, customOffset);
+        
+        // Verificar caché solo para carga inicial (no para lazy loading)
+        // El caché mejora la velocidad percibida al mostrar datos inmediatamente
+        let hasCachedData = false;
+        if (!append) {
+          const cachedResponse = productCache.get(apiParams);
+          if (cachedResponse && cachedResponse.success && cachedResponse.data) {
+            hasCachedData = true;
+            // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
+            const apiData = cachedResponse.data;
+            const mappedProducts = mapApiProductsToFrontend(apiData.products);
+            
+            setProducts(mappedProducts);
+            setGroupedProducts(groupProductsByCategory(mappedProducts));
+            setTotalItems(apiData.totalItems);
+            setTotalPages(apiData.totalPages);
+            setCurrentPage(apiData.currentPage);
+            setHasNextPage(apiData.hasNextPage);
+            setHasPreviousPage(apiData.hasPreviousPage);
+            
+            // Resetear estados
+            if (!filters.lazyOffset && customOffset === undefined) {
+              setLazyOffset(0);
+              setHasMoreInCurrentPage(true);
+            }
+            
+            // Si tenemos datos del caché, no mostrar loading - los datos ya están visibles
+            // La actualización en background continuará y actualizará cuando llegue
+            setError(null);
+          } else {
+            // No hay caché, mostrar loading normalmente
+            setLoading(true);
+            setError(null);
+            setProducts([]);
+          }
+        } else {
+          // Para lazy loading, mostrar loading normalmente
+          setIsLoadingMore(true);
+          setError(null);
+        }
+
         // Construir URL de esta solicitud para decidir si abortamos la previa
         const sp = new URLSearchParams();
         (Object.entries(apiParams) as Array<[string, unknown]>).forEach(([key, value]) => {
@@ -234,6 +263,12 @@ export const useProducts = (
 
           // Esta es la petición más reciente, procesar la respuesta
           if (response.success && response.data) {
+            // Guardar en caché solo para carga inicial (no para lazy loading)
+            // El lazy loading es incremental y no debería cacharse individualmente
+            if (!append) {
+              productCache.set(apiParams, response);
+            }
+            
             const apiData = response.data;
             const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
@@ -432,9 +467,14 @@ export const useProducts = (
       setHasMoreInCurrentPage(true);
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
+      
+      // Invalidar caché para los filtros actuales para forzar actualización fresca
+      const apiParams = convertFiltersToApiParams(filtersToUse, 0);
+      productCache.invalidate(apiParams);
+      
       await fetchProducts(filtersToUse, false, 0);
     }
-  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts]);
+  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts, convertFiltersToApiParams]);
 
   // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {

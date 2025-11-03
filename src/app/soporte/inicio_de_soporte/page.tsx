@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { HeroSection } from "@/components/sections/soporte/inicio-soporte/HeroSection";
+import { SupportTopBar } from "@/components/sections/soporte/inicio-soporte/TopBar";
 import { ProductsSection } from "@/components/sections/soporte/inicio-soporte/ProductsSection";
 import { CarouselSection } from "@/components/sections/soporte/inicio-soporte/CarouselSection";
 import { InfoCardsSection } from "@/components/sections/soporte/inicio-soporte/InfoCardsSection";
@@ -12,6 +13,7 @@ import { ContactInfoSection } from "@/components/sections/soporte/inicio-soporte
 export default function InicioDeSoportePage() {
   return (
     <div className="min-h-screen bg-white">
+      <SupportTopBar />
       <HeroSection />
       <ProductsSection />
       <CarouselSection />

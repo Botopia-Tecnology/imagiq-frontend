@@ -20,7 +20,7 @@ const cards = [
   {
     title: "Información sobre la garantía",
     image: "https://res.cloudinary.com/dcljjtnxr/image/upload/v1759840729/Warranty-Desktop-330x330_h9o6nq.webp",
-    href: "#",
+    href: "/soporte/informacion_de_la_garantia",
     size: "small",
   },
   {

@@ -10,8 +10,12 @@ type Props = {
 };
 
 export const MobileView: FC<Props> = ({ items, categoryName, onItemClick, loading = false }) => {
-  // Si está cargando, mostrar skeleton
-  if (loading) {
+  // Filtrar solo items activos
+  const activeItems = items.filter(item => item.activo);
+
+  // Mostrar skeleton solo si está cargando Y no hay menús disponibles
+  // Esto permite que cada categoría muestre sus menús independientemente tan pronto como estén disponibles
+  if (loading && activeItems.length === 0) {
     return (
       <div className="p-4">
         <div className="space-y-3">
@@ -27,9 +31,6 @@ export const MobileView: FC<Props> = ({ items, categoryName, onItemClick, loadin
       </div>
     );
   }
-
-  // Filtrar solo items activos
-  const activeItems = items.filter(item => item.activo);
 
   if (activeItems.length === 0) {
     return (

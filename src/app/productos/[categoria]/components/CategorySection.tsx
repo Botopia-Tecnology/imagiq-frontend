@@ -141,6 +141,8 @@ export default function CategorySection({
           menu={currentMenu}
           categoria={categoria}
           seccion={seccion}
+          categoryCode={categoryCode}
+          menuUuid={menuUuid}
           title={sectionTitle}
         />
       ) : !seccion && categoryMenus.length > 0 ? (
@@ -148,6 +150,7 @@ export default function CategorySection({
         <MenuCarousel
           menus={categoryMenus}
           categoria={categoria}
+          categoryCode={categoryCode}
           title={effectiveTitle}
         />
       ) : null}

@@ -161,17 +161,20 @@ export function useCategoryProducts(
 
   // Finalizar transición cuando los productos se carguen (con o sin resultados)
   useEffect(() => {
-    if (!productsResult.loading && isTransitioning) {
-      // Finalizar transición cuando termine de cargar, haya o no productos
+    // Si hay productos, finalizar transición inmediatamente (incluso si está cargando)
+    // Esto permite que el caché muestre productos sin esperar la transición
+    if (productsResult.products && productsResult.products.length > 0) {
       setIsTransitioning(false);
-      if (productsResult.products && productsResult.products.length > 0) {
-        setHasLoadedOnce(true);
-      }
+      setHasLoadedOnce(true);
+    } else if (!productsResult.loading && isTransitioning) {
+      // Si no hay productos pero terminó de cargar, también finalizar transición
+      setIsTransitioning(false);
     }
   }, [productsResult.loading, isTransitioning, productsResult.products]);
 
-  // Retornar loading como true durante la transición
-  const finalLoading = productsResult.loading || isTransitioning;
+  // Retornar loading como true durante la transición SOLO si no hay productos cargados
+  // Si hay productos (del caché), no mostrar loading aunque esté en transición
+  const finalLoading = productsResult.loading || (isTransitioning && productsResult.products.length === 0);
 
   return {
     ...productsResult,

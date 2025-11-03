@@ -78,22 +78,80 @@ class ProductCache {
 
   /**
    * Obtiene una entrada del caché si existe y no está expirada
+   * También busca variaciones ignorando sortBy/sortOrder para mayor flexibilidad
    */
   get(params: ProductFilterParams): ApiResponse<ProductApiResponse> | null {
-    const key = this.generateCacheKey(params);
-    const entry = this.cache.get(key);
-
-    if (!entry) {
+    // Primero intentar búsqueda exacta
+    const exactKey = this.generateCacheKey(params);
+    const exactEntry = this.cache.get(exactKey);
+    
+    if (exactEntry && !this.isExpired(exactEntry)) {
+      return exactEntry.data;
+    }
+    
+    // Si no hay coincidencia exacta, buscar ignorando sortBy/sortOrder
+    // Esto permite que el prefetch (sin sortBy) coincida con la búsqueda real (con sortBy)
+    const paramsWithoutSort: ProductFilterParams = { ...params };
+    delete paramsWithoutSort.sortBy;
+    delete paramsWithoutSort.sortOrder;
+    
+    // También intentar sin page (para que cache de página 1 sirva como base)
+    const paramsWithoutSortPage: ProductFilterParams = { ...paramsWithoutSort };
+    delete paramsWithoutSortPage.page;
+    
+    // Buscar todas las claves que coincidan con los parámetros sin sort
+    for (const [key, entry] of this.cache.entries()) {
+      if (this.isExpired(entry)) continue;
+      
+      // Extraer parámetros de la clave para comparar
+      const keyParams = this.parseCacheKey(key);
+      if (!keyParams) continue;
+      
+      // Comparar ignorando sortBy, sortOrder y page
+      const matchParams: ProductFilterParams = { ...keyParams };
+      delete matchParams.sortBy;
+      delete matchParams.sortOrder;
+      delete matchParams.page;
+      
+      const searchParams: ProductFilterParams = { ...paramsWithoutSortPage };
+      
+      // Comparar parámetros críticos
+      const criticalMatch = 
+        matchParams.categoria === searchParams.categoria &&
+        matchParams.menuUuid === searchParams.menuUuid &&
+        matchParams.submenuUuid === searchParams.submenuUuid &&
+        matchParams.lazyLimit === searchParams.lazyLimit &&
+        matchParams.lazyOffset === searchParams.lazyOffset;
+      
+      if (criticalMatch) {
+        return entry.data;
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * Parsea una clave de caché para extraer los parámetros
+   */
+  private parseCacheKey(key: string): ProductFilterParams | null {
+    if (!key.startsWith('products:')) {
       return null;
     }
-
-    // Verificar si está expirada
-    if (this.isExpired(entry)) {
-      this.cache.delete(key);
-      return null;
-    }
-
-    return entry.data;
+    
+    const paramsString = key.replace('products:', '');
+    const params: Record<string, string | number> = {};
+    
+    paramsString.split('|').forEach(param => {
+      const [paramKey, paramValue] = param.split(':');
+      if (paramKey && paramValue) {
+        // Intentar convertir a número si es posible
+        const numValue = Number(paramValue);
+        params[paramKey] = isNaN(numValue) ? paramValue : numValue;
+      }
+    });
+    
+    return params as ProductFilterParams;
   }
 
   /**

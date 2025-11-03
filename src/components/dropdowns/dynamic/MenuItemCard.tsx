@@ -5,14 +5,26 @@ import type { MenuItem } from "./types";
 type Props = {
   item: MenuItem;
   onClick: (label: string, href: string) => void;
+  onHover?: (menuUuid: string) => void;
+  onLeave?: (menuUuid: string) => void;
 };
 
-export const MenuItemCard: FC<Props> = ({ item, onClick }) => {
+export const MenuItemCard: FC<Props> = ({ item, onClick, onHover, onLeave }) => {
+  const handleMouseEnter = () => {
+    onHover?.(item.uuid);
+  };
+
+  const handleMouseLeave = () => {
+    onLeave?.(item.uuid);
+  };
+
   return (
     <li className="list-none">
       <Link
         href={item.href}
         onClick={() => onClick(item.name, item.href)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
         className="flex flex-col items-center text-center p-4 hover:bg-gray-50 rounded-lg transition-colors group"
       >
         {item.imageSrc && (

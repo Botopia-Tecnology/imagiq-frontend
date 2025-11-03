@@ -14,6 +14,8 @@ interface Props {
   readonly series: readonly SeriesItem[];
   readonly activeFilters: FilterState;
   readonly onSerieClick: (serieId: string) => void;
+  readonly onSerieHover?: (serieId: string) => void;
+  readonly onSerieLeave?: (serieId: string) => void;
 }
 
 const ScrollButton = ({
@@ -47,7 +49,13 @@ const ScrollButton = ({
   );
 };
 
-export default function SeriesSlider({ series, activeFilters, onSerieClick }: Props) {
+export default function SeriesSlider({ 
+  series, 
+  activeFilters, 
+  onSerieClick,
+  onSerieHover,
+  onSerieLeave
+}: Props) {
   const [hoveredSerie, setHoveredSerie] = useState<string | null>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -111,8 +119,14 @@ export default function SeriesSlider({ series, activeFilters, onSerieClick }: Pr
             <button
               key={serie.id}
               onClick={() => onSerieClick(serie.id)}
-              onMouseEnter={() => setHoveredSerie(serie.id)}
-              onMouseLeave={() => setHoveredSerie(null)}
+              onMouseEnter={() => {
+                setHoveredSerie(serie.id);
+                onSerieHover?.(serie.id);
+              }}
+              onMouseLeave={() => {
+                setHoveredSerie(null);
+                onSerieLeave?.(serie.id);
+              }}
               className={cn(
                 "relative rounded-xl transition-all duration-300 flex-shrink-0",
                 "flex items-center gap-3 sm:gap-4",

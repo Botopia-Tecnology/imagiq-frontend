@@ -5,18 +5,21 @@
 
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useSubmenus } from "@/hooks/useSubmenus";
 import type { Menu } from "@/lib/api";
 import SeriesSlider from "./SeriesSlider";
 import type { SeriesItem } from "../config/series-configs";
 import { submenuNameToFriendly } from "../utils/submenuUtils";
+import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 
 interface Props {
   readonly menu: Menu;
   readonly categoria: string;
   readonly seccion?: string;
+  readonly categoryCode?: string; // Código de API de la categoría (ej: "AV", "DA")
+  readonly menuUuid?: string; // UUID del menú actual (para prefetch más preciso)
   readonly title?: string;
 }
 
@@ -24,12 +27,15 @@ export default function SubmenuCarousel({
   menu,
   categoria,
   seccion,
+  categoryCode,
+  menuUuid,
   title,
 }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { submenus, loading, error } = useSubmenus(menu.uuid);
+  const { prefetchWithDebounce, cancelPrefetch } = usePrefetchProducts();
 
   const handleSubmenuClick = (submenuId: string) => {
     // Encontrar el submenú por UUID para obtener su nombre
@@ -84,6 +90,31 @@ export default function SubmenuCarousel({
     };
   }, [activeSubmenu]);
 
+  // Prefetch productos cuando el usuario hace hover sobre un submenú
+  // Usar menuUuid prop si está disponible, sino usar menu.uuid
+  const handleSubmenuHover = useCallback((submenuUuid: string) => {
+    if (!categoryCode || !menuUuid) return;
+    
+    prefetchWithDebounce({
+      categoryCode,
+      menuUuid: menuUuid, // Usar el prop que viene de CategorySection
+      submenuUuid,
+      categoria: categoria as any,
+    }, 200); // Debounce de 200ms
+  }, [categoryCode, menuUuid, categoria, prefetchWithDebounce]);
+
+  // Cancelar prefetch cuando el usuario deja de hacer hover
+  const handleSubmenuLeave = useCallback((submenuUuid: string) => {
+    if (!categoryCode || !menuUuid) return;
+    
+    cancelPrefetch({
+      categoryCode,
+      menuUuid: menuUuid, // Usar el prop que viene de CategorySection
+      submenuUuid,
+      categoria: categoria as any,
+    });
+  }, [categoryCode, menuUuid, categoria, cancelPrefetch]);
+
   // Si está cargando, mostrar skeleton
   if (loading) {
     return (
@@ -127,6 +158,8 @@ export default function SubmenuCarousel({
           series={series}
           activeFilters={activeFilters}
           onSerieClick={handleSubmenuClick}
+          onSerieHover={handleSubmenuHover}
+          onSerieLeave={handleSubmenuLeave}
         />
       </div>
     </section>

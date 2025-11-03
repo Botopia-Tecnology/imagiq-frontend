@@ -128,6 +128,7 @@ export const useProducts = (
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string | null>(null);
+  const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -192,12 +193,13 @@ export const useProducts = (
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
 
+      const apiParams = convertFiltersToApiParams(filters, customOffset);
+      
+      // Verificar caché solo para carga inicial (no para lazy loading)
+      // El caché mejora la velocidad percibida al mostrar datos inmediatamente
+      let hasCachedData = false;
+      
       try {
-        const apiParams = convertFiltersToApiParams(filters, customOffset);
-        
-        // Verificar caché solo para carga inicial (no para lazy loading)
-        // El caché mejora la velocidad percibida al mostrar datos inmediatamente
-        let hasCachedData = false;
         if (!append) {
           const cachedResponse = productCache.get(apiParams);
           if (cachedResponse && cachedResponse.success && cachedResponse.data) {
@@ -206,7 +208,14 @@ export const useProducts = (
             const apiData = cachedResponse.data;
             const mappedProducts = mapApiProductsToFrontend(apiData.products);
             
+            // IMPORTANTE: Establecer todos los estados de forma síncrona
+            // React batch automáticamente los setState en el mismo render,
+            // pero establecer loading en false primero asegura que no se muestren skeletons
+            setError(null);
+            
+            // Establecer productos y metadatos de forma síncrona
             setProducts(mappedProducts);
+            productsRef.current = mappedProducts; // Actualizar ref
             setGroupedProducts(groupProductsByCategory(mappedProducts));
             setTotalItems(apiData.totalItems);
             setTotalPages(apiData.totalPages);
@@ -220,14 +229,20 @@ export const useProducts = (
               setHasMoreInCurrentPage(true);
             }
             
-            // Si tenemos datos del caché, no mostrar loading - los datos ya están visibles
-            // La actualización en background continuará y actualizará cuando llegue
-            setError(null);
+            // IMPORTANTE: Establecer loading en false AL FINAL para que React
+            // actualice todos los estados juntos, evitando mostrar skeletons
+            setLoading(false);
+            
+            // Si hay datos en caché, aún así hacer la llamada API en background
+            // para actualizar datos frescos (stale-while-revalidate)
+            // Pero NO limpiar productos ni mostrar loading
           } else {
             // No hay caché, mostrar loading normalmente
+            // Limpiar productos para mostrar skeletons
             setLoading(true);
             setError(null);
             setProducts([]);
+            productsRef.current = []; // Actualizar ref
           }
         } else {
           // Para lazy loading, mostrar loading normalmente
@@ -254,6 +269,9 @@ export const useProducts = (
 
         const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
 
+        // Capturar el valor de hasCachedData para usar en el callback
+        const wasCached = hasCachedData;
+
         // Verificar si esta petición sigue siendo válida comparando con el ID más reciente
         setRequestId((latestRequestId) => {
           // Si hay una petición más nueva, ignorar esta respuesta
@@ -279,6 +297,7 @@ export const useProducts = (
                 // Filtrar solo los productos nuevos que no existen
                 const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
                 const updatedProducts = [...prev, ...newProducts];
+                productsRef.current = updatedProducts; // Actualizar ref
                 
                 // Verificar si todavía hay más productos que cargar
                 const lazyLimit = filters.lazyLimit || 6;
@@ -294,12 +313,42 @@ export const useProducts = (
                 return updatedProducts;
               });
             } else {
-              setProducts(mappedProducts);
-              setGroupedProducts(groupProductsByCategory(mappedProducts));
-              // Resetear offset y estado cuando no es append
-              if (!filters.lazyOffset && customOffset === undefined) {
-                setLazyOffset(0);
-                setHasMoreInCurrentPage(true);
+              // Solo actualizar productos si no había datos del caché o si los datos son diferentes
+              // Esto evita "parpadeo" cuando los datos del caché ya están mostrados
+              if (!wasCached) {
+                setProducts(mappedProducts);
+                productsRef.current = mappedProducts; // Actualizar ref
+                setGroupedProducts(groupProductsByCategory(mappedProducts));
+                // Resetear offset y estado cuando no es append
+                if (!filters.lazyOffset && customOffset === undefined) {
+                  setLazyOffset(0);
+                  setHasMoreInCurrentPage(true);
+                }
+              } else {
+                // Si había caché, solo actualizar si los datos son realmente diferentes
+                // Comparar por cantidad de productos o IDs para evitar actualizaciones innecesarias
+                setProducts((prev) => {
+                  // Si los productos son diferentes, actualizar
+                  const prevIds = new Set(prev.map(p => p.id));
+                  const newIds = new Set(mappedProducts.map(p => p.id));
+                  const areDifferent = 
+                    prev.length !== mappedProducts.length ||
+                    !Array.from(prevIds).every(id => newIds.has(id)) ||
+                    !Array.from(newIds).every(id => prevIds.has(id));
+                  
+                  if (areDifferent) {
+                    productsRef.current = mappedProducts; // Actualizar ref
+                    return mappedProducts;
+                  }
+                  return prev; // Mantener productos actuales si son los mismos
+                });
+                
+                // Siempre actualizar metadatos (totalItems, paginación, etc.)
+                setGroupedProducts(groupProductsByCategory(mappedProducts));
+                if (!filters.lazyOffset && customOffset === undefined) {
+                  setLazyOffset(0);
+                  setHasMoreInCurrentPage(true);
+                }
               }
             }
 
@@ -316,7 +365,10 @@ export const useProducts = (
           if (append) {
             setIsLoadingMore(false);
           } else {
-            setLoading(false);
+            // Solo poner loading en false si no había caché (si había caché, ya se puso en false antes)
+            if (!wasCached) {
+              setLoading(false);
+            }
           }
           return currentRequestId;
         });
@@ -493,8 +545,10 @@ export const useProducts = (
       ...prevFilters,
       ...filtersToUse,
     }));
+    
+    // Llamar fetchProducts - este verificará el caché internamente y mostrará datos inmediatamente si existen
     fetchProducts(filtersToUse, false);
-  }, [initialFilters, fetchProducts]);
+  }, [initialFilters, fetchProducts, convertFiltersToApiParams]);
 
   return {
     products,

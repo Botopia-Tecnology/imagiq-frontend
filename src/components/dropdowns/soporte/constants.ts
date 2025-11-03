@@ -6,7 +6,7 @@
       links: [
         { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
         { name: "Manual y Software", href: "/soporte/manual_y_software" },
-        { name: "Buscar soporte", href: "/soporte/buscar" },
+        { name: "Buscar soporte", href: "/soporte/buscar_soporte" },
         { name: "FAQ sobre la compra", href: "/soporte/faq_sobre_la_compra" },
       ],
     },

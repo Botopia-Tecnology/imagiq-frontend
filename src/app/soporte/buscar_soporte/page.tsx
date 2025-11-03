@@ -6,7 +6,7 @@ import { ResultsList } from "@/components/sections/soporte/buscar/ResultsList";
 
 export default function BuscarSoportePage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="bg-white">
       <SearchHeader />
       <div className="flex">
         <FiltersSidebar />

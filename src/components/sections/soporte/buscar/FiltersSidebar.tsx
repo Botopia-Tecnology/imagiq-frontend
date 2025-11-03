@@ -51,7 +51,7 @@ export function FiltersSidebar() {
   };
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 p-6 space-y-6">
+    <div className="w-80 bg-white border-r border-gray-200 px-6 pt-6 space-y-6">
       {/* PRODUCT CATEGORY */}
       <div>
         <button className="w-full flex items-center justify-between mb-4">
@@ -146,7 +146,7 @@ export function FiltersSidebar() {
       </div>
 
       {/* CONTENT SOURCE */}
-      <div>
+      <div className="pb-6">
         <button className="w-full flex items-center justify-between mb-4">
           <span className="font-semibold text-sm">CONTENT SOURCE</span>
           <svg

@@ -20,6 +20,8 @@ export const generateMenuHref = (
   // Generar slug del menú dinámicamente desde su nombre
   const section = toSlug(menuName);
 
+  // IMPORTANTE: Cuando cambiamos de menú, eliminar el parámetro submenu
+  // porque el submenu pertenece al menú anterior, no al nuevo
   return `${baseHref}?seccion=${section}`;
 };
 

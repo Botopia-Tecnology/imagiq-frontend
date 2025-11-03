@@ -76,13 +76,16 @@ export function useCategoryProducts(
   const [isTransitioning, setIsTransitioning] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
 
-  // Detectar cambio de sección
+  // Detectar cambio de sección o menú
+  const [previousMenuUuid, setPreviousMenuUuid] = useState(menuUuid);
+  
   useEffect(() => {
-    if (previousSeccion !== seccion) {
+    if (previousSeccion !== seccion || previousMenuUuid !== menuUuid) {
       setIsTransitioning(true);
       setPreviousSeccion(seccion);
+      setPreviousMenuUuid(menuUuid);
     }
-  }, [seccion, previousSeccion]);
+  }, [seccion, previousSeccion, menuUuid, previousMenuUuid]);
 
   // Memoizar los filtros de jerarquía por separado para evitar re-cálculos innecesarios
   const hierarchyFilters = useMemo(() => {
@@ -123,15 +126,20 @@ export function useCategoryProducts(
       return false;
     }
 
-    // Si estamos en una sección específica, necesitamos menuUuid
-    if (seccion && !menuUuid) {
+    // Si estamos en una sección específica (no vacía), necesitamos menuUuid
+    // Si seccion es "" (cadena vacía), significa que estamos en la categoría base, así que no necesitamos menuUuid
+    if (seccion && seccion.trim() !== "" && !menuUuid) {
       return false;
     }
 
-    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto, esperar
+    // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto:
+    // - Si tenemos menuUuid, proceder (el submenu no pertenece al menú actual, se ignorará)
+    // - Si no tenemos menuUuid y estamos en categoría base (seccion vacía), proceder (ignorar submenu)
+    // - Si no tenemos menuUuid y hay seccion, esperar (aún estamos cargando el menú)
     const searchParams = new URLSearchParams(globalThis.location.search);
     const submenuParam = searchParams.get('submenu');
-    if (submenuParam && !submenuUuid) {
+    if (submenuParam && !submenuUuid && !menuUuid && seccion && seccion.trim() !== "") {
+      // Solo bloquear si hay seccion y no tenemos menuUuid
       return false;
     }
 
@@ -146,36 +154,54 @@ export function useCategoryProducts(
         return null; // No hacer llamada API
       }
 
+      // Crear objeto de filtros asegurándose de que no incluya menuUuid/submenuUuid cuando son undefined
+      const filtersWithoutUndefined = { ...apiFilters };
+      
+      // Eliminar explícitamente menuUuid y submenuUuid si son undefined
+      // Esto asegura que los filtros cambien cuando pasan de tener valor a undefined
+      if (!menuUuid) {
+        delete filtersWithoutUndefined.menuUuid;
+      }
+      if (!submenuUuid) {
+        delete filtersWithoutUndefined.submenuUuid;
+      }
+
       return applySortToFilters({
-        ...apiFilters,
+        ...filtersWithoutUndefined,
         page: currentPage,
         limit: itemsPerPage,
         lazyLimit: 6, // Cargar 6 productos por scroll
         lazyOffset: 0
       }, sortBy);
     },
-    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy]
+    // Incluir menuUuid y submenuUuid explícitamente para detectar cambios
+    [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy, menuUuid, submenuUuid]
   );
 
   const productsResult = useProducts(initialFiltersForProducts);
 
   // Finalizar transición cuando los productos se carguen (con o sin resultados)
   useEffect(() => {
-    if (!productsResult.loading && isTransitioning) {
-      // Finalizar transición cuando termine de cargar, haya o no productos
+    // Si hay productos, finalizar transición inmediatamente (incluso si está cargando)
+    // Esto permite que el caché muestre productos sin esperar la transición
+    if (productsResult.products && productsResult.products.length > 0) {
       setIsTransitioning(false);
-      if (productsResult.products && productsResult.products.length > 0) {
         setHasLoadedOnce(true);
-      }
+    } else if (!productsResult.loading && isTransitioning) {
+      // Si no hay productos pero terminó de cargar, también finalizar transición
+      setIsTransitioning(false);
     }
   }, [productsResult.loading, isTransitioning, productsResult.products]);
 
-  // Retornar loading como true durante la transición
-  const finalLoading = productsResult.loading || isTransitioning;
+  // Retornar loading como true durante la transición SOLO si no hay productos cargados
+  // Si hay productos (del caché), no mostrar loading aunque esté en transición
+  const finalLoading = productsResult.loading || (isTransitioning && productsResult.products.length === 0);
 
   return {
     ...productsResult,
-    loading: finalLoading
+    loading: finalLoading,
+    // isLoadingMore se mantiene separado, no se afecta por la transición
+    isLoadingMore: productsResult.isLoadingMore
   };
 }
 

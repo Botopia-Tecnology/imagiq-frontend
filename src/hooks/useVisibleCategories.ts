@@ -128,10 +128,10 @@ export function useVisibleCategories() {
       href: "/tiendas",
       category: "ubicaciones",
       categoryCode: "tiendas",
-        dropdownName: undefined, // No tiene dropdown
-        uuid: "tiendas",
-        totalProducts: 0,
-        orden: 1000
+      dropdownName: undefined, // No tiene dropdown
+      uuid: "tiendas",
+      totalProducts: 0,
+      orden: 1000
     };
 
     // Agregar Soporte después de Tiendas
@@ -140,10 +140,10 @@ export function useVisibleCategories() {
       href: "/soporte/inicio_de_soporte",
       category: "soporte",
       categoryCode: "soporte",
-        dropdownName: "Soporte", // Tiene dropdown
-        uuid: "soporte",
-        totalProducts: 0,
-        orden: 1001
+      dropdownName: "Soporte", // Tiene dropdown
+      uuid: "soporte",
+      totalProducts: 0,
+      orden: 1001
     };
 
     // Combinar y ordenar por el campo orden

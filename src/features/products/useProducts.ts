@@ -22,6 +22,7 @@ import {
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
+import { productCache } from "@/lib/productCache";
 
 type ProductFilters = FrontendFilterParams;
 
@@ -40,6 +41,7 @@ interface UseProductsReturn {
   products: ProductCardProps[];
   groupedProducts: Record<string, ProductCardProps[]>;
   loading: boolean;
+  isLoadingMore: boolean; // Estado de carga para lazy loading (append)
   error: string | null;
   totalItems: number;
   totalPages: number;
@@ -108,6 +110,7 @@ export const useProducts = (
     Record<string, ProductCardProps[]>
   >({});
   const [loading, setLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Estado separado para lazy loading
   const [error, setError] = useState<string | null>(null);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -125,6 +128,9 @@ export const useProducts = (
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string | null>(null);
+  const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
+  const previousMenuUuidRef = useRef<string | undefined>(undefined);
+  const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -189,11 +195,99 @@ export const useProducts = (
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
 
-      setLoading(true);
-      setError(null);
+      // Si no es append (carga inicial o cambio de filtros), resetear lazyOffset
+      if (!append && customOffset === undefined) {
+        setLazyOffset(0);
+        setHasMoreInCurrentPage(true);
+      }
 
+      const apiParams = convertFiltersToApiParams(filters, customOffset);
+      
+      // Detectar cambios en menuUuid o submenuUuid para invalidación selectiva de caché
+      const currentMenuUuid = apiParams.menuUuid;
+      const currentSubmenuUuid = apiParams.submenuUuid;
+      
+      // Detectar cambios usando la misma lógica mejorada que usamos en el useEffect
+      const menuUuidChangedForCache = 
+        (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
+        (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
+      
+      const submenuUuidChangedForCache = 
+        (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
+        (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
+      
+      if (!append && (menuUuidChangedForCache || submenuUuidChangedForCache)) {
+        // Invalidar caché de combinaciones menu+submenu anteriores
+        if (previousMenuUuidRef.current) {
+          productCache.invalidatePattern((key) => {
+            // Invalidar entradas que tengan el menuUuid anterior con cualquier submenuUuid
+            const keyParams = productCache.parseCacheKey(key);
+            if (!keyParams) return false;
+            return keyParams.menuUuid === previousMenuUuidRef.current && 
+                   keyParams.submenuUuid !== undefined;
+          });
+        }
+        
+        // Actualizar referencias
+        previousMenuUuidRef.current = currentMenuUuid;
+        previousSubmenuUuidRef.current = currentSubmenuUuid;
+      }
+      
+      // Verificar caché solo para carga inicial (no para lazy loading)
+      // El caché mejora la velocidad percibida al mostrar datos inmediatamente
+      let hasCachedData = false;
+      
       try {
-        const apiParams = convertFiltersToApiParams(filters, customOffset);
+        if (!append) {
+          const cachedResponse = productCache.get(apiParams);
+          if (cachedResponse && cachedResponse.success && cachedResponse.data) {
+            hasCachedData = true;
+            // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
+            const apiData = cachedResponse.data;
+            const mappedProducts = mapApiProductsToFrontend(apiData.products);
+            
+            // IMPORTANTE: Establecer todos los estados de forma síncrona
+            // React batch automáticamente los setState en el mismo render,
+            // pero establecer loading en false primero asegura que no se muestren skeletons
+            setError(null);
+            
+            // Establecer productos y metadatos de forma síncrona
+            setProducts(mappedProducts);
+            productsRef.current = mappedProducts; // Actualizar ref
+            setGroupedProducts(groupProductsByCategory(mappedProducts));
+            setTotalItems(apiData.totalItems);
+            setTotalPages(apiData.totalPages);
+            setCurrentPage(apiData.currentPage);
+            setHasNextPage(apiData.hasNextPage);
+            setHasPreviousPage(apiData.hasPreviousPage);
+            
+            // Resetear estados
+            if (!filters.lazyOffset && customOffset === undefined) {
+              setLazyOffset(0);
+              setHasMoreInCurrentPage(true);
+            }
+            
+            // IMPORTANTE: Establecer loading en false AL FINAL para que React
+            // actualice todos los estados juntos, evitando mostrar skeletons
+            setLoading(false);
+            
+            // Si hay datos en caché, aún así hacer la llamada API en background
+            // para actualizar datos frescos (stale-while-revalidate)
+            // Pero NO limpiar productos ni mostrar loading
+          } else {
+            // No hay caché, mostrar loading normalmente
+            // Limpiar productos para mostrar skeletons
+            setLoading(true);
+            setError(null);
+            setProducts([]);
+            productsRef.current = []; // Actualizar ref
+          }
+        } else {
+          // Para lazy loading, mostrar loading normalmente
+          setIsLoadingMore(true);
+          setError(null);
+        }
+
         // Construir URL de esta solicitud para decidir si abortamos la previa
         const sp = new URLSearchParams();
         (Object.entries(apiParams) as Array<[string, unknown]>).forEach(([key, value]) => {
@@ -213,6 +307,9 @@ export const useProducts = (
 
         const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
 
+        // Capturar el valor de hasCachedData para usar en el callback
+        const wasCached = hasCachedData;
+
         // Verificar si esta petición sigue siendo válida comparando con el ID más reciente
         setRequestId((latestRequestId) => {
           // Si hay una petición más nueva, ignorar esta respuesta
@@ -222,6 +319,12 @@ export const useProducts = (
 
           // Esta es la petición más reciente, procesar la respuesta
           if (response.success && response.data) {
+            // Guardar en caché solo para carga inicial (no para lazy loading)
+            // El lazy loading es incremental y no debería cacharse individualmente
+            if (!append) {
+              productCache.set(apiParams, response);
+            }
+            
             const apiData = response.data;
             const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
@@ -231,15 +334,59 @@ export const useProducts = (
                 const existingIds = new Set(prev.map(p => p.id));
                 // Filtrar solo los productos nuevos que no existen
                 const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
-                return [...prev, ...newProducts];
+                const updatedProducts = [...prev, ...newProducts];
+                productsRef.current = updatedProducts; // Actualizar ref
+                
+                // Verificar si todavía hay más productos que cargar
+                const lazyLimit = filters.lazyLimit || 6;
+                const limit = filters.limit || 20;
+                const currentOffset = customOffset !== undefined ? customOffset : (filters.lazyOffset || 0);
+                const nextOffset = currentOffset + lazyLimit;
+                
+                // Si no hay productos nuevos o se alcanzó el límite, no hay más
+                if (newProducts.length === 0 || nextOffset >= limit || (apiData.totalItems > 0 && nextOffset >= apiData.totalItems)) {
+                  setHasMoreInCurrentPage(false);
+                }
+                
+                return updatedProducts;
               });
             } else {
-              setProducts(mappedProducts);
-              setGroupedProducts(groupProductsByCategory(mappedProducts));
-              // Resetear offset y estado cuando no es append
-              if (!filters.lazyOffset && customOffset === undefined) {
-                setLazyOffset(0);
-                setHasMoreInCurrentPage(true);
+              // Solo actualizar productos si no había datos del caché o si los datos son diferentes
+              // Esto evita "parpadeo" cuando los datos del caché ya están mostrados
+              if (!wasCached) {
+                setProducts(mappedProducts);
+                productsRef.current = mappedProducts; // Actualizar ref
+                setGroupedProducts(groupProductsByCategory(mappedProducts));
+                // Resetear offset y estado cuando no es append
+                if (!filters.lazyOffset && customOffset === undefined) {
+                  setLazyOffset(0);
+                  setHasMoreInCurrentPage(true);
+                }
+              } else {
+                // Si había caché, solo actualizar si los datos son realmente diferentes
+                // Comparar por cantidad de productos o IDs para evitar actualizaciones innecesarias
+                setProducts((prev) => {
+                  // Si los productos son diferentes, actualizar
+                  const prevIds = new Set(prev.map(p => p.id));
+                  const newIds = new Set(mappedProducts.map(p => p.id));
+                  const areDifferent = 
+                    prev.length !== mappedProducts.length ||
+                    !Array.from(prevIds).every(id => newIds.has(id)) ||
+                    !Array.from(newIds).every(id => prevIds.has(id));
+                  
+                  if (areDifferent) {
+                    productsRef.current = mappedProducts; // Actualizar ref
+                    return mappedProducts;
+                  }
+                  return prev; // Mantener productos actuales si son los mismos
+                });
+                
+                // Siempre actualizar metadatos (totalItems, paginación, etc.)
+                setGroupedProducts(groupProductsByCategory(mappedProducts));
+                if (!filters.lazyOffset && customOffset === undefined) {
+                  setLazyOffset(0);
+                  setHasMoreInCurrentPage(true);
+                }
               }
             }
 
@@ -252,7 +399,15 @@ export const useProducts = (
             setError(response.message || "Error al cargar productos");
           }
 
-          setLoading(false);
+          // Resetear el estado de carga correspondiente
+          if (append) {
+            setIsLoadingMore(false);
+          } else {
+            // Solo poner loading en false si no había caché (si había caché, ya se puso en false antes)
+            if (!wasCached) {
+              setLoading(false);
+            }
+          }
           return currentRequestId;
         });
       } catch (err) {
@@ -265,7 +420,12 @@ export const useProducts = (
         setRequestId((latestRequestId) => {
           if (currentRequestId >= latestRequestId) {
             setError("Error de conexión al cargar productos");
-            setLoading(false);
+            // Resetear el estado de carga correspondiente
+            if (append) {
+              setIsLoadingMore(false);
+            } else {
+              setLoading(false);
+            }
             return currentRequestId;
           }
           return latestRequestId;
@@ -282,6 +442,8 @@ export const useProducts = (
       setError(null);
       setCurrentSearchQuery(query);
       setCurrentPage(page);
+      // Limpiar productos para mostrar skeletons
+      setProducts([]);
 
       try {
         const searchParams = {
@@ -334,7 +496,7 @@ export const useProducts = (
 
   // Función para cargar más productos (paginación con lazy loading)
   const loadMore = useCallback(async () => {
-    if (!loading) {
+    if (!loading && !isLoadingMore) {
       if (currentSearchQuery) {
         // Si estamos en modo búsqueda, usar paginación tradicional
         if (hasNextPage) {
@@ -349,9 +511,10 @@ export const useProducts = (
         // Calcular el nuevo offset
         const newOffset = lazyOffset + lazyLimit;
 
-        // Si el nuevo offset alcanza el límite de la página actual, DETENER
+        // Verificar tanto el límite de la página como el total de items disponibles
+        // Si el nuevo offset alcanza el límite de la página actual O supera totalItems, DETENER
         // El usuario debe usar los botones de paginación para ir a la siguiente página
-        if (newOffset < limit) {
+        if (newOffset < limit && (totalItems === 0 || newOffset < totalItems)) {
           // Continuar en la misma página con nuevo offset
           setLazyOffset(newOffset);
           await fetchProducts(currentFilters, true, newOffset);
@@ -361,7 +524,7 @@ export const useProducts = (
         }
       }
     }
-  }, [hasNextPage, loading, currentPage, currentSearchQuery, currentFilters, lazyOffset, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -394,9 +557,14 @@ export const useProducts = (
       setHasMoreInCurrentPage(true);
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
+      
+      // Invalidar caché para los filtros actuales para forzar actualización fresca
+      const apiParams = convertFiltersToApiParams(filtersToUse, 0);
+      productCache.invalidate(apiParams);
+      
       await fetchProducts(filtersToUse, false, 0);
     }
-  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts]);
+  }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts, convertFiltersToApiParams]);
 
   // Cargar productos iniciales y cuando cambien los filtros
   useEffect(() => {
@@ -410,18 +578,56 @@ export const useProducts = (
         ? initialFilters()
         : initialFilters || {};
 
-    // Actualizar currentFilters con los filtros iniciales para que loadMore los use
-    setCurrentFilters((prevFilters) => ({
-      ...prevFilters,
-      ...filtersToUse,
-    }));
+    // Detectar si cambian parámetros críticos (menuUuid, submenuUuid)
+    const apiParams = convertFiltersToApiParams(filtersToUse);
+    const currentMenuUuid = apiParams.menuUuid;
+    const currentSubmenuUuid = apiParams.submenuUuid;
+    
+    // Detectar si seccion cambia a vacía (navegación a categoría base)
+    // Cuando menuUuid y submenuUuid cambian a undefined, significa que navegamos de menu/submenu a categoría base
+    // Esto es crítico porque necesitamos reemplazar los filtros completamente
+    const seccionBecameEmpty = 
+      previousMenuUuidRef.current !== undefined && 
+      currentMenuUuid === undefined;
+    
+    // Detectar cambios críticos usando comparación estricta que maneja undefined correctamente
+    // Necesitamos detectar cuando cambia de valor a undefined, o de undefined a valor, o entre valores diferentes
+    const menuUuidChanged = 
+      (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
+      (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
+    
+    const submenuUuidChanged = 
+      (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
+      (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
+    
+    // Si seccion se vuelve vacía (navegación a categoría base), también es un cambio crítico
+    const criticalParamsChanged = menuUuidChanged || submenuUuidChanged || seccionBecameEmpty;
+    
+    if (criticalParamsChanged) {
+      // Reemplazar completamente los filtros cuando cambian parámetros críticos
+      setCurrentFilters(filtersToUse);
+    } else {
+      // Para cambios menores (paginación, ordenamiento), hacer merge
+      setCurrentFilters((prevFilters) => ({
+        ...prevFilters,
+        ...filtersToUse,
+      }));
+    }
+    
+    // Actualizar referencias siempre después de procesar
+    // Esto asegura que la próxima vez detectemos cambios correctamente, incluso cuando cambia a undefined
+    previousMenuUuidRef.current = currentMenuUuid;
+    previousSubmenuUuidRef.current = currentSubmenuUuid;
+    
+    // Llamar fetchProducts - este verificará el caché internamente y mostrará datos inmediatamente si existen
     fetchProducts(filtersToUse, false);
-  }, [initialFilters, fetchProducts]);
+  }, [initialFilters, fetchProducts, convertFiltersToApiParams]);
 
   return {
     products,
     groupedProducts,
     loading,
+    isLoadingMore,
     error,
     totalItems,
     totalPages,

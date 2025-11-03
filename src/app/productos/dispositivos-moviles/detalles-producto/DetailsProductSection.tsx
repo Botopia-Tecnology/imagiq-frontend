@@ -371,7 +371,7 @@ const DetailsProductSection: React.FC<{
 
                 <AddiFinancing
                   productName={product.name}
-                  selectedColor={productSelection.selection.selectedColor || undefined}
+                  selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
                   selectedStorage={productSelection.selection.selectedCapacity || undefined}
                   currentPrice={getCurrentPrice()}
                   originalPrice={originalPrice}

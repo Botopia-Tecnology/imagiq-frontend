@@ -14,6 +14,7 @@ import GuestDataModal from "../../components/GuestDataModal";
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
   loading: boolean;
+  isLoadingMore?: boolean; // Estado de carga para lazy loading (append)
   error: string | null;
   refreshProducts: () => void;
   viewMode?: "grid" | "list";
@@ -23,7 +24,7 @@ interface CategoryProductsGridProps {
 }
 
 
-const CategoryProductsGrid = forwardRef<
+export const CategoryProductsGrid = forwardRef<
   HTMLDivElement,
   CategoryProductsGridProps
 >(
@@ -31,6 +32,7 @@ const CategoryProductsGrid = forwardRef<
     {
       products,
       loading,
+      isLoadingMore = false,
       error,
       refreshProducts,
       viewMode = "grid",
@@ -99,8 +101,8 @@ const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <div ref={ref} className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-6" : "flex flex-wrap"}>
-        {/* Mostrar skeletons mientras carga y no hay productos */}
+      <div ref={ref} className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}>
+        {/* Mostrar skeletons iniciales solo cuando loading es true Y no hay productos */}
         {loading && products.length === 0 && (
           <>
             {Array.from({ length: 12 }, (_, i) => (
@@ -119,7 +121,7 @@ const CategoryProductsGrid = forwardRef<
           </div>
         )}
 
-        {/* Mostrar productos si existen */}
+        {/* Mostrar productos si existen (independientemente del estado de loading) */}
         {products.length > 0 && (
           <>
             {products.map((product) => {
@@ -144,8 +146,8 @@ const CategoryProductsGrid = forwardRef<
               );
             })}
 
-            {/* Skeletons de lazy loading - aparecen en el mismo grid después de los productos */}
-            {showLazySkeletons && loading && Array.from({ length: lazySkeletonCount }, (_, i) => (
+            {/* Skeletons de lazy loading - solo cuando isLoadingMore es true */}
+            {isLoadingMore && Array.from({ length: lazySkeletonCount }, (_, i) => (
               <div key={`lazy-skeleton-${i}`} className="w-full">
                 <SkeletonCard />
               </div>

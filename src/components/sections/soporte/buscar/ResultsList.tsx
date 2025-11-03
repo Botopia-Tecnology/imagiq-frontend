@@ -1,35 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 const results = [
   {
-    title: "Galaxy A80 - ¿Cómo cambiar el usuario y contraseña de Mobile Hotspot?",
+    title: "Galaxy A30s - ¿Cómo activar la función Mobile Hotspot?",
     description:
-      "Preguntas más frecuentes para Samsung Dispositivo móviles. Encuentra más información sobre ' Galaxy A80 - ¿Cómo cambiar el usuario y contraseña de Mobile Hotspot? 'Con el Soporte de Samsung.",
+      "Preguntas más frecuentes para Samsung dispositivos móviles. Encuentra más información sobre 'Galaxy A30s - ¿Cómo activar la función Mobile Hotspot?' con el Soporte de Samsung.",
     category: "Asistencia técnica",
     subcategory: "Soluciones",
     highlighted: "Mobile",
   },
   {
-    title: "Galaxy Note20 Ultra - ¿Cómo activar el ahorro de datos móviles?",
+    title: "Galaxy A31 - ¿Cómo ocultar los contactos sin número teléfonico?",
     description:
-      "Preguntas frecuentes para celulares. Descubre más acerca de 'el ahorro de datos móviles' con el Soporte de Samsung.",
+      "Preguntas mas frecuentes para Samsung dispositivos móviles. Encuentra mas información sobre 'Galaxy A31 - ¿Cómo ocultar los contactos sin número teléfonico?' con el Soporte de Samsung.",
     category: "Asistencia técnica",
     subcategory: "Soluciones",
   },
   {
-    title:
-      "Galaxy Note20 Ultra - ¿Cómo poner una alarma para el límite de consumo de datos móviles?",
+    title: "Cómo activar las llamadas por Wi-Fi en tu teléfono Galaxy",
     description:
-      "Preguntas más frecuentes para Samsung dispositivos móviles. Encuentra más información sobre Galaxy Note20 Ultra - ¿Cómo poner una alarma para el límite de consumo de datos móviles? con el Soporte de Samsung.",
-    category: "Asistencia técnica",
-    subcategory: "Soluciones",
-  },
-  {
-    title: "Qué hacer cuando mi teléfono Galaxy no conecta a la red WiFi",
-    description:
-      "Preguntas frecuentes para celulares. Descubre más acerca de 'Qué hacer cuando mi teléfono Galaxy no conecta a la red WiFi' con el Soporte de Samsung",
+      "Preguntas frecuentes para celulares. Descubre más acerca de 'llamadas Wi-Fi' con el Soporte de Samsung",
     category: "Asistencia técnica",
     subcategory: "Soluciones",
   },
@@ -37,19 +30,20 @@ const results = [
 
 export function ResultsList() {
   return (
-    <div className="flex-1 bg-gray-50 p-6">
-      <div className="max-w-5xl mx-auto space-y-4">
-        {results.map((result, index) => (
+    <div className="flex-1 bg-white px-6 pt-6">
+      <div className="max-w-5xl mx-auto">
+        <div className="space-y-4">
+          {results.map((result, index) => (
           <Link
             key={index}
             href="#"
-            className="block bg-white rounded-lg p-6 hover:shadow-md transition-shadow border border-gray-200"
+            className="block bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow border border-gray-200"
           >
-            <h3 className="text-lg font-semibold mb-2 text-blue-600 hover:underline">
+            <h3 className="text-lg font-bold mb-2 text-black hover:underline">
               {result.highlighted ? (
                 <>
                   {result.title.split(result.highlighted)[0]}
-                  <span className="text-blue-600">{result.highlighted}</span>
+                  <span className="text-black">{result.highlighted}</span>
                   {result.title.split(result.highlighted)[1]}
                 </>
               ) : (
@@ -67,7 +61,28 @@ export function ResultsList() {
               <span>{result.subcategory}</span>
             </div>
           </Link>
-        ))}
+          ))}
+        </div>
+
+        {/* Botón Ver más */}
+        <div className="flex justify-center mt-8">
+          <button className="px-8 py-3 border border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center gap-2">
+            <span className="text-sm font-medium text-black">Ver más</span>
+            <svg
+              className="w-4 h-4 text-black"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

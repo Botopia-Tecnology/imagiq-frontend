@@ -126,17 +126,20 @@ export function useCategoryProducts(
       return false;
     }
 
-    // Si estamos en una sección específica, necesitamos menuUuid
-    if (seccion && !menuUuid) {
+    // Si estamos en una sección específica (no vacía), necesitamos menuUuid
+    // Si seccion es "" (cadena vacía), significa que estamos en la categoría base, así que no necesitamos menuUuid
+    if (seccion && seccion.trim() !== "" && !menuUuid) {
       return false;
     }
 
     // Si hay un parámetro submenu en la URL pero no tenemos submenuUuid resuelto:
     // - Si tenemos menuUuid, proceder (el submenu no pertenece al menú actual, se ignorará)
-    // - Si no tenemos menuUuid, esperar (aún estamos cargando el menú)
+    // - Si no tenemos menuUuid y estamos en categoría base (seccion vacía), proceder (ignorar submenu)
+    // - Si no tenemos menuUuid y hay seccion, esperar (aún estamos cargando el menú)
     const searchParams = new URLSearchParams(globalThis.location.search);
     const submenuParam = searchParams.get('submenu');
-    if (submenuParam && !submenuUuid && !menuUuid) {
+    if (submenuParam && !submenuUuid && !menuUuid && seccion && seccion.trim() !== "") {
+      // Solo bloquear si hay seccion y no tenemos menuUuid
       return false;
     }
 
@@ -151,8 +154,20 @@ export function useCategoryProducts(
         return null; // No hacer llamada API
       }
 
+      // Crear objeto de filtros asegurándose de que no incluya menuUuid/submenuUuid cuando son undefined
+      const filtersWithoutUndefined = { ...apiFilters };
+      
+      // Eliminar explícitamente menuUuid y submenuUuid si son undefined
+      // Esto asegura que los filtros cambien cuando pasan de tener valor a undefined
+      if (!menuUuid) {
+        delete filtersWithoutUndefined.menuUuid;
+      }
+      if (!submenuUuid) {
+        delete filtersWithoutUndefined.submenuUuid;
+      }
+
       return applySortToFilters({
-        ...apiFilters,
+        ...filtersWithoutUndefined,
         page: currentPage,
         limit: itemsPerPage,
         lazyLimit: 6, // Cargar 6 productos por scroll
@@ -171,7 +186,7 @@ export function useCategoryProducts(
     // Esto permite que el caché muestre productos sin esperar la transición
     if (productsResult.products && productsResult.products.length > 0) {
       setIsTransitioning(false);
-      setHasLoadedOnce(true);
+        setHasLoadedOnce(true);
     } else if (!productsResult.loading && isTransitioning) {
       // Si no hay productos pero terminó de cargar, también finalizar transición
       setIsTransitioning(false);

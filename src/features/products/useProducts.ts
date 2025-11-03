@@ -207,10 +207,16 @@ export const useProducts = (
       const currentMenuUuid = apiParams.menuUuid;
       const currentSubmenuUuid = apiParams.submenuUuid;
       
-      if (!append && (
-        previousMenuUuidRef.current !== currentMenuUuid ||
-        previousSubmenuUuidRef.current !== currentSubmenuUuid
-      )) {
+      // Detectar cambios usando la misma lógica mejorada que usamos en el useEffect
+      const menuUuidChangedForCache = 
+        (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
+        (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
+      
+      const submenuUuidChangedForCache = 
+        (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
+        (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
+      
+      if (!append && (menuUuidChangedForCache || submenuUuidChangedForCache)) {
         // Invalidar caché de combinaciones menu+submenu anteriores
         if (previousMenuUuidRef.current) {
           productCache.invalidatePattern((key) => {
@@ -577,10 +583,25 @@ export const useProducts = (
     const currentMenuUuid = apiParams.menuUuid;
     const currentSubmenuUuid = apiParams.submenuUuid;
     
-    // Si cambian parámetros críticos, reemplazar filtros completamente en lugar de hacer merge
-    const criticalParamsChanged = 
-      previousMenuUuidRef.current !== currentMenuUuid ||
-      previousSubmenuUuidRef.current !== currentSubmenuUuid;
+    // Detectar si seccion cambia a vacía (navegación a categoría base)
+    // Cuando menuUuid y submenuUuid cambian a undefined, significa que navegamos de menu/submenu a categoría base
+    // Esto es crítico porque necesitamos reemplazar los filtros completamente
+    const seccionBecameEmpty = 
+      previousMenuUuidRef.current !== undefined && 
+      currentMenuUuid === undefined;
+    
+    // Detectar cambios críticos usando comparación estricta que maneja undefined correctamente
+    // Necesitamos detectar cuando cambia de valor a undefined, o de undefined a valor, o entre valores diferentes
+    const menuUuidChanged = 
+      (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
+      (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
+    
+    const submenuUuidChanged = 
+      (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
+      (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
+    
+    // Si seccion se vuelve vacía (navegación a categoría base), también es un cambio crítico
+    const criticalParamsChanged = menuUuidChanged || submenuUuidChanged || seccionBecameEmpty;
     
     if (criticalParamsChanged) {
       // Reemplazar completamente los filtros cuando cambian parámetros críticos
@@ -593,12 +614,10 @@ export const useProducts = (
       }));
     }
     
-    // Actualizar referencias después de procesar
-    // Esto asegura que la próxima vez detectemos cambios correctamente
-    if (criticalParamsChanged || previousMenuUuidRef.current === undefined) {
-      previousMenuUuidRef.current = currentMenuUuid;
-      previousSubmenuUuidRef.current = currentSubmenuUuid;
-    }
+    // Actualizar referencias siempre después de procesar
+    // Esto asegura que la próxima vez detectemos cambios correctamente, incluso cuando cambia a undefined
+    previousMenuUuidRef.current = currentMenuUuid;
+    previousSubmenuUuidRef.current = currentSubmenuUuid;
     
     // Llamar fetchProducts - este verificará el caché internamente y mostrará datos inmediatamente si existen
     fetchProducts(filtersToUse, false);

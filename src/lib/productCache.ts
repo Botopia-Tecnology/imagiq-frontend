@@ -116,10 +116,23 @@ class ProductCache {
       const searchParams: ProductFilterParams = { ...paramsWithoutSortPage };
       
       // Comparar parámetros críticos
+      // Manejar undefined correctamente: undefined debe coincidir con undefined o ausencia de propiedad
+      const categoriaMatch = 
+        (matchParams.categoria === undefined && searchParams.categoria === undefined) ||
+        matchParams.categoria === searchParams.categoria;
+      
+      const menuUuidMatch = 
+        (matchParams.menuUuid === undefined && searchParams.menuUuid === undefined) ||
+        matchParams.menuUuid === searchParams.menuUuid;
+      
+      const submenuUuidMatch = 
+        (matchParams.submenuUuid === undefined && searchParams.submenuUuid === undefined) ||
+        matchParams.submenuUuid === searchParams.submenuUuid;
+      
       const criticalMatch = 
-        matchParams.categoria === searchParams.categoria &&
-        matchParams.menuUuid === searchParams.menuUuid &&
-        matchParams.submenuUuid === searchParams.submenuUuid &&
+        categoriaMatch &&
+        menuUuidMatch &&
+        submenuUuidMatch &&
         matchParams.lazyLimit === searchParams.lazyLimit &&
         matchParams.lazyOffset === searchParams.lazyOffset;
       

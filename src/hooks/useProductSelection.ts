@@ -15,6 +15,7 @@ export interface ProductVariant {
   capacity: string;
   memoriaram: string;
   sku: string;
+  skuPostback: string;
   ean: string;
   codigoMarket: string;
   precioNormal: number;
@@ -55,6 +56,7 @@ export interface UseProductSelectionReturn {
   
   // Información del producto seleccionado
   selectedSku: string | null;
+  selectedSkuPostback: string | null;
   selectedCodigoMarket: string | null;
   selectedPrice: number | null;
   selectedOriginalPrice: number | null;
@@ -76,6 +78,7 @@ export interface UseProductSelectionReturn {
   
   // Información de debug
   allVariants: ProductVariant[];
+
 }
 
 export function useProductSelection(apiProduct: ProductApiData, productColors?: Array<{label: string, hex: string}>): UseProductSelectionReturn {  
@@ -103,6 +106,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         capacity: apiProduct.capacidad[i] || '',
         memoriaram: apiProduct.memoriaram[i] || '',
         sku: apiProduct.sku[i] || '',
+        skuPostback: apiProduct.skuPostback?.[i] || '',
         ean: apiProduct.ean[i] || '',
         codigoMarket: apiProduct.codigoMarket[i] || '',
         precioNormal: apiProduct.precioNormal[i] || 0,
@@ -150,8 +154,6 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       });
     }
   }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
-
-
 
   // Colores disponibles basado en la capacidad y memoria RAM seleccionadas
   const availableColorsFiltered = useMemo(() => {
@@ -222,7 +224,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   const selectedDiscount = selectedPrice && selectedOriginalPrice && selectedPrice < selectedOriginalPrice
     ? Math.round(((selectedOriginalPrice - selectedPrice) / selectedOriginalPrice) * 100)
     : null;
-  const selectedStockTotal = selectedVariant?.stockTotal || null;
+  const selectedStockTotal = selectedVariant?.stockTotal ?? null;
 
   // Funciones de selección
   const selectColor = useCallback((color: string) => {
@@ -418,6 +420,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     availableCapacities: availableCapacitiesFiltered,
     availableMemoriaram: availableMemoriaramFiltered,
     selectedSku,
+    selectedSkuPostback: selectedVariant?.skuPostback || null,
     selectedCodigoMarket,
     selectedPrice,
     selectedOriginalPrice,

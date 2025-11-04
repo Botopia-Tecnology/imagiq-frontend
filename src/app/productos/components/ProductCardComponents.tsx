@@ -17,7 +17,6 @@ import type { ProductColor, ProductCapacity } from "./ProductCard";
 export interface ColorSelectorProps {
   colors: ProductColor[];
   selectedColor: ProductColor | null;
-  isOutOfStock: boolean;
   onColorSelect: (color: ProductColor) => void;
   onShowMore: (e: React.MouseEvent) => void;
 }
@@ -55,7 +54,6 @@ const isBlueColor = (color: ProductColor): boolean => {
 export const ColorSelector = ({
   colors,
   selectedColor,
-  isOutOfStock,
   onColorSelect,
   onShowMore,
 }: ColorSelectorProps) => {
@@ -81,15 +79,10 @@ export const ColorSelector = ({
             key={color.name}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isOutOfStock) {
-                onColorSelect(color);
-              }
+              onColorSelect(color);
             }}
             className={cn(
-              "w-6.5 h-6.5 rounded-full border transition-all duration-200 relative",
-              isOutOfStock
-                ? "opacity-40 cursor-not-allowed"
-                : "cursor-pointer",
+              "w-6.5 h-6.5 rounded-full border transition-all duration-200 relative cursor-pointer",
               selectedColor?.name === color.name
                 ? "border-black p-0.5"
                 : "border-gray-300 hover:border-gray-400"
@@ -109,14 +102,9 @@ export const ColorSelector = ({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (!isOutOfStock) {
-                onShowMore(e);
-              }
+              onShowMore(e);
             }}
-            className={cn(
-              "w-6.5 h-6.5 rounded-full border-2 border-gray-300 flex items-center justify-center text-[10px] font-medium text-gray-600 hover:border-gray-400",
-              isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
-            )}
+            className="w-6.5 h-6.5 rounded-full border-2 border-gray-300 flex items-center justify-center text-[10px] font-medium text-gray-600 hover:border-gray-400 cursor-pointer"
           >
             +{sortedColors.length - 4}
           </button>
@@ -132,7 +120,6 @@ export const ColorSelector = ({
 export interface CapacitySelectorProps {
   capacities: ProductCapacity[];
   selectedCapacity: ProductCapacity | null;
-  isOutOfStock: boolean;
   onCapacitySelect: (capacity: ProductCapacity) => void;
 }
 
@@ -142,7 +129,6 @@ export interface CapacitySelectorProps {
 export const CapacitySelector = ({
   capacities,
   selectedCapacity,
-  isOutOfStock,
   onCapacitySelect,
 }: CapacitySelectorProps) => {
   if (!capacities || capacities.length === 0) return null;
@@ -155,13 +141,10 @@ export const CapacitySelector = ({
             key={capacity.value}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isOutOfStock) {
-                onCapacitySelect(capacity);
-              }
+              onCapacitySelect(capacity);
             }}
             className={cn(
-              "px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200",
-              isOutOfStock ? "opacity-40 cursor-not-allowed" : "cursor-pointer",
+              "px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 cursor-pointer",
               selectedCapacity?.value === capacity.value
                 ? "border-black bg-black text-white"
                 : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"

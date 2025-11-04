@@ -13,7 +13,6 @@ import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { shouldShowColorSelector, shouldShowCapacitySelector } from "@/app/productos/components/utils/categoryColorConfig";
 
 // Components
 import StickyPriceBar from "./StickyPriceBar";
@@ -96,27 +95,6 @@ const DetailsProductSection: React.FC<{
   const [tradeInCompleted, setTradeInCompleted] = React.useState(false);
   const [tradeInDeviceName, setTradeInDeviceName] = React.useState<string>("");
   const [tradeInValue, setTradeInValue] = React.useState<number>(0);
-
-  // Determinar si debe mostrar selectores basándose en la categoría
-  const showColorSelector = shouldShowColorSelector(
-    product.apiProduct?.categoria,
-    product.apiProduct?.subcategoria
-  );
-  const showCapacitySelector = shouldShowCapacitySelector(
-    product.apiProduct?.categoria,
-    product.apiProduct?.subcategoria
-  );
-
-  // DEBUG: Log para verificar qué está pasando en detalles
-  console.log('[DetailsProductSection Debug]', {
-    productName: product.name,
-    categoria: product.apiProduct?.categoria,
-    subcategoria: product.apiProduct?.subcategoria,
-    showColorSelector,
-    showCapacitySelector,
-    hasColors: product.colors?.length > 0,
-    hasCapacities: product.capacities?.length > 0,
-  });
 
   // Handlers
   const handleToggleFavorite = () => {
@@ -362,29 +340,27 @@ const DetailsProductSection: React.FC<{
                     isFavorite={isFavorite}
                     onToggleFavorite={handleToggleFavorite}
                   />
-                  {/* ProductSelectors - Solo para categorías específicas */}
-                  {(showColorSelector || showCapacitySelector) && (
-                    <ProductSelectors
-                      colorOptions={productSelection.getColorOptions()}
-                      selectedColor={productSelection.getSelectedColorOption()}
-                      onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
-                      hasStock={hasStock}
-                      storageOptions={productSelection.getStorageOptions()}
-                      selectedStorage={productSelection.getSelectedStorageOption()}
-                      onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
-                      variantsLoading={false}
-                      memoriaramOptions={productSelection.availableMemoriaram}
-                      selectedMemoriaram={productSelection.selection.selectedMemoriaram}
-                      onMemoriaramChange={handleMemoriaramSelection}
-                      onOpenTradeInModal={handleOpenTradeInModal}
-                      tradeInSelected={estrenoYEntrego}
-                      onTradeInChange={setEstrenoYEntrego}
-                      tradeInCompleted={tradeInCompleted}
-                      tradeInDeviceName={tradeInDeviceName}
-                      tradeInValue={tradeInValue}
-                      acceptsTradeIn={product.acceptsTradeIn}
-                    />
-                  )}
+                  {/* ProductSelectors - Filtrado data-driven interno */}
+                  <ProductSelectors
+                    colorOptions={productSelection.getColorOptions()}
+                    selectedColor={productSelection.getSelectedColorOption()}
+                    onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
+                    hasStock={hasStock}
+                    storageOptions={productSelection.getStorageOptions()}
+                    selectedStorage={productSelection.getSelectedStorageOption()}
+                    onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
+                    variantsLoading={false}
+                    memoriaramOptions={productSelection.availableMemoriaram}
+                    selectedMemoriaram={productSelection.selection.selectedMemoriaram}
+                    onMemoriaramChange={handleMemoriaramSelection}
+                    onOpenTradeInModal={handleOpenTradeInModal}
+                    tradeInSelected={estrenoYEntrego}
+                    onTradeInChange={setEstrenoYEntrego}
+                    tradeInCompleted={tradeInCompleted}
+                    tradeInDeviceName={tradeInDeviceName}
+                    tradeInValue={tradeInValue}
+                    acceptsTradeIn={product.acceptsTradeIn}
+                  />
 
                   <DeliveryTradeInOptions
                     deliveryOption={deliveryOption}
@@ -445,29 +421,27 @@ const DetailsProductSection: React.FC<{
               onBuyNow={handleBuyNow}
               onAddToCart={handleAddToCart}
             />
-            {/* ProductSelectors - Solo para categorías específicas */}
-            {(showColorSelector || showCapacitySelector) && (
-              <ProductSelectors
-                colorOptions={productSelection.getColorOptions()}
-                selectedColor={productSelection.getSelectedColorOption()}
-                onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
-                hasStock={hasStock}
-                storageOptions={productSelection.getStorageOptions()}
-                selectedStorage={productSelection.getSelectedStorageOption()}
-                onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
-                variantsLoading={false}
-                memoriaramOptions={productSelection.availableMemoriaram}
-                selectedMemoriaram={productSelection.selection.selectedMemoriaram}
-                onMemoriaramChange={handleMemoriaramSelection}
-                onOpenTradeInModal={handleOpenTradeInModal}
-                tradeInSelected={estrenoYEntrego}
-                onTradeInChange={setEstrenoYEntrego}
-                tradeInCompleted={tradeInCompleted}
-                tradeInDeviceName={tradeInDeviceName}
-                tradeInValue={tradeInValue}
-                acceptsTradeIn={product.acceptsTradeIn}
-              />
-            )}
+            {/* ProductSelectors - Filtrado data-driven interno */}
+            <ProductSelectors
+              colorOptions={productSelection.getColorOptions()}
+              selectedColor={productSelection.getSelectedColorOption()}
+              onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
+              hasStock={hasStock}
+              storageOptions={productSelection.getStorageOptions()}
+              selectedStorage={productSelection.getSelectedStorageOption()}
+              onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
+              variantsLoading={false}
+              memoriaramOptions={productSelection.availableMemoriaram}
+              selectedMemoriaram={productSelection.selection.selectedMemoriaram}
+              onMemoriaramChange={handleMemoriaramSelection}
+              onOpenTradeInModal={handleOpenTradeInModal}
+              tradeInSelected={estrenoYEntrego}
+              onTradeInChange={setEstrenoYEntrego}
+              tradeInCompleted={tradeInCompleted}
+              tradeInDeviceName={tradeInDeviceName}
+              tradeInValue={tradeInValue}
+              acceptsTradeIn={product.acceptsTradeIn}
+            />
           </div>
         </motion.section>
       </main>

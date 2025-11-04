@@ -61,7 +61,6 @@ export function shouldShowColorSelector(
   // Si no hay categoría ni subcategoría, MOSTRAR selector por defecto
   // Esto mantiene compatibilidad con productos legacy y dispositivos móviles
   if (!categoria && !subcategoria) {
-    console.log('[shouldShowColorSelector] Sin categoría/subcategoría -> Mostrar selector (true)');
     return true;
   }
 
@@ -69,35 +68,22 @@ export function shouldShowColorSelector(
   const normalizedCategoria = categoria ? normalizeString(categoria) : '';
   const normalizedSubcategoria = subcategoria ? normalizeString(subcategoria) : '';
 
-  console.log('[shouldShowColorSelector] Debug:', {
-    categoriaOriginal: categoria,
-    subcategoriaOriginal: subcategoria,
-    categorianormalizada: normalizedCategoria,
-    subcategorianormalizada: normalizedSubcategoria,
-  });
-
   // Verificar si la categoría está en la lista permitida
   const categoryMatch = CATEGORIES_WITH_COLOR_SELECTOR.some(cat => {
     const normalized = normalizeString(cat);
-    const match = normalized === normalizedCategoria;
-    console.log(`  Comparando "${normalized}" === "${normalizedCategoria}": ${match}`);
-    return match;
+    return normalized === normalizedCategoria;
   });
 
   if (categoryMatch) {
-    console.log('[shouldShowColorSelector] Categoría coincide -> Mostrar selector (true)');
     return true;
   }
 
   // Verificar si la subcategoría está en la lista permitida
   const subcategoryMatch = SUBCATEGORIES_WITH_COLOR_SELECTOR.some(subcat => {
     const normalized = normalizeString(subcat);
-    const match = normalized === normalizedSubcategoria;
-    console.log(`  Comparando subcategoría "${normalized}" === "${normalizedSubcategoria}": ${match}`);
-    return match;
+    return normalized === normalizedSubcategoria;
   });
 
-  console.log(`[shouldShowColorSelector] Resultado final: ${subcategoryMatch}`);
   return subcategoryMatch;
 }
 

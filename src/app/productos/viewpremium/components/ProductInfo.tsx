@@ -31,18 +31,6 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   productImages,
   onOpenModal,
 }, ref) => {
-  // DEBUG: Log para verificar qué está pasando en product detail
-  console.log('[ProductInfo Debug]', {
-    productName: product.name,
-    categoria: product.apiProduct?.categoria,
-    subcategoria: product.apiProduct?.subcategoria,
-    hasColors: product.colors?.length > 0,
-    hasCapacities: product.capacities?.length > 0,
-    rawColors: product.colors?.map(c => c.label),
-    rawCapacities: product.capacities?.map(c => c.label),
-    rawRam: product.apiProduct?.memoriaram,
-  });
-
   return (
     <div ref={ref} className="w-full lg:col-span-3">
       <div className="lg:sticky lg:top-20">

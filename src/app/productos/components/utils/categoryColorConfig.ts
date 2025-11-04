@@ -118,3 +118,19 @@ export function shouldShowCapacitySelector(
   // Puede ser customizada en el futuro si necesitan lógica diferente
   return shouldShowColorSelector(categoria, subcategoria);
 }
+
+/**
+ * Determina si un producto debe mostrar selector de memoria RAM
+ * Solo dispositivos móviles (IM) deben mostrar selector de RAM
+ *
+ * @param categoria - Categoría del producto
+ * @param subcategoria - Subcategoría del producto (opcional)
+ * @returns true si debe mostrar selector de RAM
+ */
+export function shouldShowRamSelector(
+  categoria?: string | null,
+  subcategoria?: string | null
+): boolean {
+  // RAM solo para dispositivos móviles (IM)
+  return shouldShowColorSelector(categoria, subcategoria);
+}

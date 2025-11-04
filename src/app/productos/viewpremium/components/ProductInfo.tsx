@@ -118,12 +118,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Almacenamiento */}
         {(() => {
-          // Verificar si hay capacidades válidas (no "NO APLICA")
+          // Verificar si hay capacidades válidas (no "NO APLICA", "NO", etc.)
           const validCapacities = product.capacities?.filter(cap => {
             const normalizedLabel = cap.label?.toLowerCase().trim() || '';
             return !normalizedLabel.includes('no aplica') &&
                    normalizedLabel !== 'n/a' &&
                    normalizedLabel !== 'na' &&
+                   normalizedLabel !== 'no' &&
                    normalizedLabel !== '';
           }) || [];
 
@@ -192,11 +193,12 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           const ramOptions = product.apiProduct?.memoriaram
             ? Array.from(new Set(product.apiProduct.memoriaram)).filter(ram => {
                 if (!ram || ram.trim() === '') return false;
-                // Filtrar valores "NO APLICA" (case insensitive)
+                // Filtrar valores "NO APLICA", "NO", "N/A", "NA" (case insensitive)
                 const normalizedRam = ram.toLowerCase().trim();
                 return !normalizedRam.includes('no aplica') &&
                        normalizedRam !== 'n/a' &&
-                       normalizedRam !== 'na';
+                       normalizedRam !== 'na' &&
+                       normalizedRam !== 'no';
               })
             : [];
 
@@ -235,12 +237,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Color */}
         {(() => {
-          // Verificar si hay colores válidos (no "NO APLICA")
+          // Verificar si hay colores válidos (no "NO APLICA", "NO", etc.)
           const validColors = product.colors?.filter(color => {
             const normalizedLabel = color.label?.toLowerCase().trim() || '';
             return !normalizedLabel.includes('no aplica') &&
                    normalizedLabel !== 'n/a' &&
                    normalizedLabel !== 'na' &&
+                   normalizedLabel !== 'no' &&
                    normalizedLabel !== '';
           }) || [];
 

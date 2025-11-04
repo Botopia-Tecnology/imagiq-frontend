@@ -144,6 +144,17 @@ export default function ProductCard({
     apiProduct?.subcategoria
   );
 
+  // DEBUG: Log para verificar qué está pasando
+  console.log('[ProductCard Debug]', {
+    productName: name,
+    categoria: apiProduct?.categoria,
+    subcategoria: apiProduct?.subcategoria,
+    showColorSelector,
+    showCapacitySelector,
+    hasColors: colors?.length > 0,
+    hasCapacities: capacities?.length > 0,
+  });
+
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
 

@@ -314,7 +314,6 @@ function ProductosContent() {
                         isFavorite={product.isFavorite}
                         onToggleFavorite={product.onToggleFavorite}
                         puntos_q={product.puntos_q}
-                        stock={product.stock}
                         segmento={product.segmento}
                         apiProduct={product.apiProduct}
                       />

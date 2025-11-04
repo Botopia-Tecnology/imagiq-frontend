@@ -27,6 +27,7 @@ import {
 import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { ProductApiData } from "@/lib/api";
+import { shouldShowColorSelector, shouldShowCapacitySelector } from "./utils/categoryColorConfig";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -67,7 +68,6 @@ export interface ProductCardProps {
   onToggleFavorite?: (productId: string) => void;
   className?: string;
   segmento?: string | string[];
-  stock?: number;
   selectedColor?: ProductColor;
   selectedCapacity?: ProductCapacity;
   puntos_q?: number;
@@ -91,7 +91,6 @@ export default function ProductCard({
   selectedColor: selectedColorProp,
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
-  stock = 1, // Valor por defecto si no se proporciona
   segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
 }: ProductCardProps & { puntos_q?: number }) {
@@ -114,7 +113,6 @@ export default function ProductCard({
     sku: [],
     ean: [],
     desDetallada: [],
-    stock: [],
     stockTotal: [],
     urlImagenes: [],
     urlRender3D: [],
@@ -127,7 +125,17 @@ export default function ProductCard({
   });
 
   // Verificar si el producto está sin stock
-  const isOutOfStock = productSelection.selectedStockTotal === 0 || stock === 0;
+  const isOutOfStock = productSelection.selectedStockTotal === 0;
+
+  // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
+  const showColorSelector = shouldShowColorSelector(
+    apiProduct?.categoria,
+    apiProduct?.subcategoria
+  );
+  const showCapacitySelector = shouldShowCapacitySelector(
+    apiProduct?.categoria,
+    apiProduct?.subcategoria
+  );
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
@@ -273,7 +281,7 @@ export default function ProductCard({
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentOriginalPrice,
-        stock: productSelection.selectedStockTotal || stock,
+        stock: productSelection.selectedStockTotal ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: currentSku || '', // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
@@ -449,8 +457,8 @@ export default function ProductCard({
           )}
         </div>
 
-        {/* Nombre de color del API (antes del selector) */}
-        {displayedSelectedColor?.nombreColorDisplay && (
+        {/* Nombre de color del API (antes del selector) - Solo si debe mostrar selector */}
+        {showColorSelector && displayedSelectedColor?.nombreColorDisplay && (
           <div className="px-3 mb-1">
             <p className="text-xs text-gray-600 font-medium">
               {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
@@ -458,51 +466,55 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Selector de colores */}
-        <div className="h-[40px] px-3">
-          <ColorSelector
-            colors={apiProduct ? 
-              productSelection.availableColors.map(colorName => {
-                // Crear un ProductColor basado en el nombre del color
-                const normalizedColor = colorName.toLowerCase().trim();
-                const colorInfo = colors.find(c => c.label.toLowerCase() === normalizedColor) || 
-                  { name: normalizedColor.replaceAll(/\s+/g, '-'), hex: '#808080', label: colorName, sku: '', ean: '' };
-                return colorInfo;
-              }) : colors
-            }
-            selectedColor={apiProduct ? 
-              colors.find(c => c.label === productSelection.selection.selectedColor) || null : 
-              selectedColor
-            }
-            isOutOfStock={isOutOfStock}
-            onColorSelect={handleColorSelect}
-            onShowMore={handleCardClick}
-          />
-        </div>
+        {/* Selector de colores - Solo para categorías específicas */}
+        {showColorSelector && (
+          <div className="h-[40px] px-3">
+            <ColorSelector
+              colors={apiProduct ?
+                productSelection.availableColors.map(colorName => {
+                  // Crear un ProductColor basado en el nombre del color
+                  const normalizedColor = colorName.toLowerCase().trim();
+                  const colorInfo = colors.find(c => c.label.toLowerCase() === normalizedColor) ||
+                    { name: normalizedColor.replaceAll(/\s+/g, '-'), hex: '#808080', label: colorName, sku: '', ean: '' };
+                  return colorInfo;
+                }) : colors
+              }
+              selectedColor={apiProduct ?
+                colors.find(c => c.label === productSelection.selection.selectedColor) || null :
+                selectedColor
+              }
+              isOutOfStock={isOutOfStock}
+              onColorSelect={handleColorSelect}
+              onShowMore={handleCardClick}
+            />
+          </div>
+        )}
 
-        {/* Selector de capacidad */}
-        <div className="h-[40px] px-3">
-          <CapacitySelector
-            capacities={apiProduct ? 
-              productSelection.availableCapacities.map(capacityName => {
-                // Crear un ProductCapacity basado en el nombre de la capacidad
-                const capacityInfo = capacities?.find(c => c.label === capacityName) || 
-                  { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
-                return capacityInfo;
-              }) : (capacities || [])
-            }
-            selectedCapacity={apiProduct ? 
-              productSelection.availableCapacities.map(capacityName => {
-                const capacityInfo = capacities?.find(c => c.label === capacityName) || 
-                  { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
-                return capacityInfo;
-              }).find(c => c.label === productSelection.selection.selectedCapacity) || null : 
-              selectedCapacity
-            }
-            isOutOfStock={isOutOfStock}
-            onCapacitySelect={handleCapacitySelect}
-          />
-        </div>
+        {/* Selector de capacidad - Solo para categorías específicas */}
+        {showCapacitySelector && (
+          <div className="h-[40px] px-3">
+            <CapacitySelector
+              capacities={apiProduct ?
+                productSelection.availableCapacities.map(capacityName => {
+                  // Crear un ProductCapacity basado en el nombre de la capacidad
+                  const capacityInfo = capacities?.find(c => c.label === capacityName) ||
+                    { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
+                  return capacityInfo;
+                }) : (capacities || [])
+              }
+              selectedCapacity={apiProduct ?
+                productSelection.availableCapacities.map(capacityName => {
+                  const capacityInfo = capacities?.find(c => c.label === capacityName) ||
+                    { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
+                  return capacityInfo;
+                }).find(c => c.label === productSelection.selection.selectedCapacity) || null :
+                selectedCapacity
+              }
+              isOutOfStock={isOutOfStock}
+              onCapacitySelect={handleCapacitySelect}
+            />
+          </div>
+        )}
 
         {/* Precio */}
         <div className="px-3 space-y-3">

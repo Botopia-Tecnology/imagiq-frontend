@@ -44,7 +44,6 @@ type RawProduct = {
   category?: string;
   subcategory?: string;
   capacity?: string;
-  stock?: number;
   sku?: string;
   ean?: string;
   skuArray?: string[];
@@ -96,7 +95,6 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
     discount: product.discount,
-    stock: product.stock,
   };
 }
 

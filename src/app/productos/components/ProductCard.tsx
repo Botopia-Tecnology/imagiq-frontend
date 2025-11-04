@@ -69,7 +69,6 @@ export interface ProductCardProps {
   onToggleFavorite?: (productId: string) => void;
   className?: string;
   segmento?: string | string[];
-  stock?: number;
   selectedColor?: ProductColor;
   selectedCapacity?: ProductCapacity;
   puntos_q?: number;
@@ -93,7 +92,6 @@ export default function ProductCard({
   selectedColor: selectedColorProp,
   selectedCapacity: selectedCapacityProp,
   puntos_q = 4, // Valor fijo por defecto
-  stock = 1, // Valor por defecto si no se proporciona
   segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
 }: ProductCardProps & { puntos_q?: number }) {
@@ -119,7 +117,6 @@ export default function ProductCard({
     sku: [],
     ean: [],
     desDetallada: [],
-    stock: [],
     stockTotal: [],
     urlImagenes: [],
     urlRender3D: [],
@@ -132,7 +129,7 @@ export default function ProductCard({
   });
 
   // Verificar si el producto está sin stock
-  const isOutOfStock = productSelection.selectedStockTotal === 0 || stock === 0;
+  const isOutOfStock = productSelection.selectedStockTotal === 0;
 
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
   const showColorSelector = shouldShowColorSelector(
@@ -287,7 +284,7 @@ export default function ProductCard({
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentOriginalPrice,
-        stock: productSelection.selectedStockTotal || stock,
+        stock: productSelection.selectedStockTotal ?? 0,
         shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: currentSku || '', // SKU del sistema seleccionado

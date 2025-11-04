@@ -46,7 +46,6 @@ const DetailsProductSection: React.FC<{
     sku: [],
     ean: [],
     desDetallada: [],
-    stock: [],
     stockTotal: [],
     urlImagenes: [],
     urlRender3D: [],
@@ -168,7 +167,7 @@ const DetailsProductSection: React.FC<{
         name: product.name,
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
-        stock: productSelection.selectedStockTotal || product.stock || 1,
+        stock: productSelection.selectedStockTotal ?? 1,
         shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
         quantity: 1,
         image: productSelection.selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
@@ -333,7 +332,6 @@ const DetailsProductSection: React.FC<{
                     name={product.name}
                     sku={productSelection.selectedSku ?? undefined}
                     codigoMarket={productSelection.selectedCodigoMarket ?? undefined}
-                    stock={productSelection.selectedStock ?? undefined}
                     stockTotal={productSelection.selectedStockTotal ?? undefined}
                     rating={undefined}
                     reviewCount={undefined}

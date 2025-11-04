@@ -65,8 +65,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
+    console.log(product)
     if (product) {
-      updateQuantity(product.id, cantidad);
+      updateQuantity(product.sku, cantidad);
     }
   };
 
@@ -77,7 +78,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     if (product) {
       // Programar la eliminación para después del renderizado usando setTimeout
       setTimeout(() => {
-        removeProduct(product.id);
+        removeProduct(product.sku);
       }, 0);
     }
   };
@@ -130,7 +131,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
                 {cartProducts.map((product, idx) => (
                   <ProductCard
-                    key={product.id}
+                    key={product.sku}
                     nombre={product.name}
                     imagen={product.image}
                     precio={product.price}

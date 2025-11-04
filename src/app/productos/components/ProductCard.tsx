@@ -269,7 +269,7 @@ export default function ProductCard({
         product_id: id,
         product_name: name,
         selected_color: selectedColor?.name || productSelection.selection.selectedColor,
-        selected_color_sku: skuToUse,
+        selected_color_sku: currentSku || '',
         selected_color_ean: eanToUse,
         source: "product_card",
       });
@@ -290,7 +290,7 @@ export default function ProductCard({
         stock: productSelection.selectedStockTotal || stock,
         shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
         quantity: 1, // SIEMPRE agregar de 1 en 1
-        sku: skuToUse, // SKU del sistema seleccionado
+        sku: currentSku || '', // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
         color: productSelection.selection.selectedColor || selectedColor?.label || undefined,
@@ -447,7 +447,6 @@ export default function ProductCard({
               {apiProduct?.modelo || name}
             </button>
           </h3>
-
           {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
           {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (currentSku || currentCodigoMarket) && (
             <div className="mt-1 space-y-0.5">

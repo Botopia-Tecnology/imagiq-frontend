@@ -5,7 +5,6 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
-import { useShippingOrigin } from "@/hooks/useShippingOrigin";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
@@ -32,30 +31,32 @@ const DetailsProductSection: React.FC<{
   onVariantsReady?: (ready: boolean) => void;
 }> = ({ product, onVariantsReady }) => {
   // Hooks - Usar el mismo sistema que ProductCard
-  const productSelection = useProductSelection(product.apiProduct || {
-    codigoMarketBase: product.id,
-    codigoMarket: [],
-    nombreMarket: product.name,
-    categoria: '',
-    subcategoria: '',
-    modelo: '',
-    color: product.colors?.map(c => c.label) || [],
-    capacidad: product.capacities?.map(c => c.label) || [],
-    memoriaram: [],
-    descGeneral: null,
-    sku: [],
-    ean: [],
-    desDetallada: [],
-    stockTotal: [],
-    urlImagenes: [],
-    urlRender3D: [],
-    imagePreviewUrl: [],
-    imageDetailsUrls: [],
-    precioNormal: [],
-    precioeccommerce: [],
-    fechaInicioVigencia: [],
-    fechaFinalVigencia: []
-  });
+  const productSelection = useProductSelection(
+    product.apiProduct || {
+      codigoMarketBase: product.id,
+      codigoMarket: [],
+      nombreMarket: product.name,
+      categoria: "",
+      subcategoria: "",
+      modelo: "",
+      color: product.colors?.map((c) => c.label) || [],
+      capacidad: product.capacities?.map((c) => c.label) || [],
+      memoriaram: [],
+      descGeneral: null,
+      sku: [],
+      ean: [],
+      desDetallada: [],
+      stockTotal: [],
+      urlImagenes: [],
+      urlRender3D: [],
+      imagePreviewUrl: [],
+      imageDetailsUrls: [],
+      precioNormal: [],
+      precioeccommerce: [],
+      fechaInicioVigencia: [],
+      fechaFinalVigencia: [],
+    }
+  );
 
   // Notificar cuando las variantes estén listas (usando productSelection)
   // No dependemos de loading porque productSelection siempre tiene una variante seleccionada
@@ -67,7 +68,6 @@ const DetailsProductSection: React.FC<{
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
-  const { shouldShowShippingOrigin } = useShippingOrigin();
   const router = useRouter();
   const {
     addToFavorites,
@@ -108,7 +108,7 @@ const DetailsProductSection: React.FC<{
   const handleColorSelection = (colorName: string) => {
     productSelection.selectColor(colorName);
     // Buscar el hex del color para el contexto global
-    const colorInfo = product.colors?.find(c => c.label === colorName);
+    const colorInfo = product.colors?.find((c) => c.label === colorName);
     if (colorInfo?.hex) setGlobalSelectedColor(colorInfo.hex);
   };
 
@@ -152,7 +152,10 @@ const DetailsProductSection: React.FC<{
   };
 
   const hasStock = () => {
-    return productSelection.selectedStockTotal !== null && productSelection.selectedStockTotal > 0;
+    return (
+      productSelection.selectedStockTotal !== null &&
+      productSelection.selectedStockTotal > 0
+    );
   };
 
   const handleAddToCart = async () => {
@@ -162,17 +165,20 @@ const DetailsProductSection: React.FC<{
     }
     setLoading(true);
     try {
-      addProduct({
+      await addProduct({
         id: product.id,
         name: product.name,
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
         stock: productSelection.selectedStockTotal ?? 1,
-        shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
         quantity: 1,
-        image: productSelection.selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
+        image:
+          productSelection.selectedVariant?.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : fallbackImage.src),
         sku: productSelection.selectedSku,
-        ean: productSelection.selectedVariant?.ean || '',
+        ean: productSelection.selectedVariant?.ean || "",
         puntos_q: product.puntos_q ?? 4,
         color: productSelection.selection.selectedColor || undefined,
         capacity: productSelection.selection.selectedCapacity || undefined,
@@ -193,10 +199,10 @@ const DetailsProductSection: React.FC<{
 
   // Helper functions for price calculations
   const getCurrentPrice = () => {
-    if (typeof productSelection.selectedPrice === 'number') {
+    if (typeof productSelection.selectedPrice === "number") {
       return productSelection.selectedPrice;
     }
-    if (typeof product.price === 'number') {
+    if (typeof product.price === "number") {
       return product.price;
     }
     return 0;
@@ -242,7 +248,10 @@ const DetailsProductSection: React.FC<{
     const parsedOriginalPrice =
       typeof product.originalPrice === "number"
         ? product.originalPrice
-        : Number.parseInt(String(product.originalPrice).replaceAll(/[^\d]/g, ''), 10) || 0;
+        : Number.parseInt(
+            String(product.originalPrice).replaceAll(/[^\d]/g, ""),
+            10
+          ) || 0;
     return parsedOriginalPrice;
   }, [productSelection.selectedOriginalPrice, product.originalPrice]);
 
@@ -256,7 +265,10 @@ const DetailsProductSection: React.FC<{
     if (typeof product.discount === "number") {
       return product.discount;
     }
-    const parsedValue = Number.parseInt(String(product.discount).replaceAll(/[^\d]/g, ""), 10);
+    const parsedValue = Number.parseInt(
+      String(product.discount).replaceAll(/[^\d]/g, ""),
+      10
+    );
     return parsedValue || 0;
   }, [productSelection.selectedDiscount, product.discount]);
 
@@ -274,7 +286,9 @@ const DetailsProductSection: React.FC<{
         basePrice={getCurrentPrice()}
         originalPrice={originalPrice}
         selectedColor={productSelection.selection.selectedColor || undefined}
-        selectedStorage={productSelection.selection.selectedCapacity || undefined}
+        selectedStorage={
+          productSelection.selection.selectedCapacity || undefined
+        }
         onBuyClick={handleBuyNow}
         hasAddiFinancing={true}
         isVisible={showStickyBar}
@@ -313,16 +327,23 @@ const DetailsProductSection: React.FC<{
               <div className="col-span-6 sticky top-20 self-start">
                 <StickyImageContainer
                   productName={product.name}
-                  imagePreviewUrl={productSelection.selectedVariant?.imagePreviewUrl}
-                  imageDetailsUrls={product.apiProduct?.imageDetailsUrls?.[productSelection.selectedVariant?.index || 0] || []}
+                  imagePreviewUrl={
+                    productSelection.selectedVariant?.imagePreviewUrl
+                  }
+                  imageDetailsUrls={
+                    product.apiProduct?.imageDetailsUrls?.[
+                      productSelection.selectedVariant?.index || 0
+                    ] || []
+                  }
                   onImageClick={handleImageClick}
                 />
-                {productSelection.selectedVariant?.urlRender3D && productSelection.selectedVariant.urlRender3D.trim() != "" && (
-                  <ARExperienceHandler
-                    glbUrl={productSelection.selectedVariant.urlRender3D}
-                    usdzUrl={productSelection.selectedVariant.urlRender3D}
-                  />
-                )}
+                {productSelection.selectedVariant?.urlRender3D &&
+                  productSelection.selectedVariant.urlRender3D.trim() != "" && (
+                    <ARExperienceHandler
+                      glbUrl={productSelection.selectedVariant.urlRender3D}
+                      usdzUrl={productSelection.selectedVariant.urlRender3D}
+                    />
+                  )}
               </div>
 
               {/* Información del producto a la derecha */}
@@ -331,8 +352,12 @@ const DetailsProductSection: React.FC<{
                   <ProductHeader
                     name={product.name}
                     sku={productSelection.selectedSku ?? undefined}
-                    codigoMarket={productSelection.selectedCodigoMarket ?? undefined}
-                    stockTotal={productSelection.selectedStockTotal ?? undefined}
+                    codigoMarket={
+                      productSelection.selectedCodigoMarket ?? undefined
+                    }
+                    stockTotal={
+                      productSelection.selectedStockTotal ?? undefined
+                    }
                     rating={undefined}
                     reviewCount={undefined}
                     isFavorite={isFavorite}
@@ -342,14 +367,20 @@ const DetailsProductSection: React.FC<{
                   <ProductSelectors
                     colorOptions={productSelection.getColorOptions()}
                     selectedColor={productSelection.getSelectedColorOption()}
-                    onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
+                    onColorChange={(colorOption) =>
+                      handleColorSelection(colorOption.color)
+                    }
                     hasStock={hasStock}
                     storageOptions={productSelection.getStorageOptions()}
                     selectedStorage={productSelection.getSelectedStorageOption()}
-                    onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
+                    onStorageChange={(storageOption) =>
+                      handleStorageSelection(storageOption.capacidad)
+                    }
                     variantsLoading={false}
                     memoriaramOptions={productSelection.availableMemoriaram}
-                    selectedMemoriaram={productSelection.selection.selectedMemoriaram}
+                    selectedMemoriaram={
+                      productSelection.selection.selectedMemoriaram
+                    }
                     onMemoriaramChange={handleMemoriaramSelection}
                     onOpenTradeInModal={handleOpenTradeInModal}
                     tradeInSelected={estrenoYEntrego}
@@ -371,8 +402,15 @@ const DetailsProductSection: React.FC<{
 
                 <AddiFinancing
                   productName={product.name}
-                  selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
-                  selectedStorage={productSelection.selection.selectedCapacity || undefined}
+                  selectedColor={
+                    productSelection.getSelectedColorOption()
+                      ?.nombreColorDisplay ||
+                    productSelection.selection.selectedColor ||
+                    undefined
+                  }
+                  selectedStorage={
+                    productSelection.selection.selectedCapacity || undefined
+                  }
                   currentPrice={getCurrentPrice()}
                   originalPrice={originalPrice}
                 />
@@ -391,8 +429,14 @@ const DetailsProductSection: React.FC<{
 
             <DeviceCarousel
               alt={product.name}
-              imagePreviewUrl={productSelection.selectedVariant?.imagePreviewUrl}
-              imageDetailsUrls={product.apiProduct?.imageDetailsUrls?.[productSelection.selectedVariant?.index || 0] || []}
+              imagePreviewUrl={
+                productSelection.selectedVariant?.imagePreviewUrl
+              }
+              imageDetailsUrls={
+                product.apiProduct?.imageDetailsUrls?.[
+                  productSelection.selectedVariant?.index || 0
+                ] || []
+              }
               onImageClick={handleImageClick}
             />
             <header className="mb-4 text-center mt-6">
@@ -402,12 +446,13 @@ const DetailsProductSection: React.FC<{
               <p className="text-base text-[#222] mb-4 font-light leading-snug">
                 {/* Description removed from ProductCardProps */}
               </p>
-              {productSelection.selectedVariant?.urlRender3D && productSelection.selectedVariant.urlRender3D.trim() != "" && (
-                <ARExperienceHandler
-                  glbUrl={productSelection.selectedVariant.urlRender3D}
-                  usdzUrl={productSelection.selectedVariant.urlRender3D}
-                />
-              )}
+              {productSelection.selectedVariant?.urlRender3D &&
+                productSelection.selectedVariant.urlRender3D.trim() != "" && (
+                  <ARExperienceHandler
+                    glbUrl={productSelection.selectedVariant.urlRender3D}
+                    usdzUrl={productSelection.selectedVariant.urlRender3D}
+                  />
+                )}
             </header>
 
             <PriceAndActions
@@ -423,11 +468,15 @@ const DetailsProductSection: React.FC<{
             <ProductSelectors
               colorOptions={productSelection.getColorOptions()}
               selectedColor={productSelection.getSelectedColorOption()}
-              onColorChange={(colorOption) => handleColorSelection(colorOption.color)}
+              onColorChange={(colorOption) =>
+                handleColorSelection(colorOption.color)
+              }
               hasStock={hasStock}
               storageOptions={productSelection.getStorageOptions()}
               selectedStorage={productSelection.getSelectedStorageOption()}
-              onStorageChange={(storageOption) => handleStorageSelection(storageOption.capacidad)}
+              onStorageChange={(storageOption) =>
+                handleStorageSelection(storageOption.capacidad)
+              }
               variantsLoading={false}
               memoriaramOptions={productSelection.availableMemoriaram}
               selectedMemoriaram={productSelection.selection.selectedMemoriaram}

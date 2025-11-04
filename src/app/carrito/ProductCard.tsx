@@ -11,6 +11,10 @@ export interface ProductCardProps {
   imagen: string;
   stock?: number;
   ubicacionEnvio?: string;
+  /** Ciudad de envío (ej: "BOGOTÁ") */
+  shippingCity?: string;
+  /** Nombre de la tienda (ej: "Ses Bogotá C.C. Andino") */
+  shippingStore?: string;
   color?: string;
   capacity?: string;
   ram?: string;
@@ -37,7 +41,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   cantidad,
   imagen,
   stock,
-  ubicacionEnvio,
+  shippingCity,
+  shippingStore,
   color,
   capacity,
   ram,
@@ -50,7 +55,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // Verificar condiciones para mostrar origen de envío
   const { shouldShowShippingOrigin } = useShippingOrigin();
-  const mostrarOrigen = shouldShowShippingOrigin && ubicacionEnvio;
+  const mostrarOrigen = shouldShowShippingOrigin && (shippingCity || shippingStore);
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
@@ -159,7 +164,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
               </div>
             )}
             {mostrarOrigen && (
-              <p className="text-sm text-gray-500">Enviado desde {ubicacionEnvio}</p>
+              <div className="mt-1">
+                <p className="text-sm text-gray-500">Enviado desde {shippingCity}</p>
+                {shippingStore && (
+                  <p className="text-xs text-gray-400 mt-0.5">{shippingStore}</p>
+                )}
+              </div>
             )}
           </div>
 

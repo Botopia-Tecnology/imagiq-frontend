@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
+import { productEndpoints } from "@/lib/api";
 
 export interface CartProduct {
   id: string;
@@ -19,8 +20,12 @@ export interface CartProduct {
   stock?: number;
   /** Precio original sin descuento */
   originalPrice?: number;
-  /** Ubicación de envío (ej: "Bogotá") */
+  /** Ubicación de envío (ej: "Bogotá")*/
   shippingFrom?: string;
+  /** Ciudad de envío (ej: "BOGOTÁ") */
+  shippingCity?: string;
+  /** Nombre de la tienda (ej: "Ses Bogotá C.C. Andino") */
+  shippingStore?: string;
   /** Color del producto */
   color?: string;
   /** Capacidad del producto (ej: "128GB", "256GB") */
@@ -50,8 +55,9 @@ interface UseCartReturn {
   // Acciones
   addProduct: (
     product: Omit<CartProduct, "quantity">,
-    quantity?: number
-  ) => void;
+    quantity?: number,
+    userId?: string
+  ) => Promise<void>;
   removeProduct: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -127,8 +133,11 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       const stock = typeof p.stock === "number" ? p.stock : undefined;
       // originalPrice - del backend
       const originalPrice = typeof p.originalPrice === "number" ? p.originalPrice : undefined;
-      // shippingFrom
+      // shippingFrom 
       const shippingFrom = typeof p.shippingFrom === "string" ? p.shippingFrom : undefined;
+      // shippingCity y shippingStore
+      const shippingCity = typeof p.shippingCity === "string" ? p.shippingCity : undefined;
+      const shippingStore = typeof p.shippingStore === "string" ? p.shippingStore : undefined;
       // color
       const color = typeof p.color === "string" ? p.color : undefined;
       // capacity
@@ -136,7 +145,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       // ram
       const ram = typeof p.ram === "string" ? p.ram : undefined;
 
-      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, color, capacity, ram };
+      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color, capacity, ram };
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }
@@ -257,9 +266,10 @@ export function useCart(): UseCartReturn {
   /**
    * Agrega un producto al carrito y muestra una alerta única por acción.
    * Evita duplicidad de toasts usando un flag temporal por producto.
+   * Si se proporciona userId, obtiene la ubicación de envío del backend en segundo plano.
    */
   const addProduct = useCallback(
-    (product: Omit<CartProduct, "quantity">, quantity: number = 1) => {
+    async (product: Omit<CartProduct, "quantity">, quantity: number = 1, userId?: string) => {
       const now = Date.now();
       const productId = product.id;
       // Prevenir múltiples clics del mismo producto en 300ms
@@ -268,6 +278,8 @@ export function useCart(): UseCartReturn {
         return;
       }
       addProductTimeoutRef.current[productId] = now;
+
+      // Agregar producto inmediatamente sin bloquear
       setProducts((currentProducts) => {
         const existingIndex = currentProducts.findIndex(
           (p) => p.sku === product.sku
@@ -285,7 +297,7 @@ export function useCart(): UseCartReturn {
           };
           wasUpdated = true;
         } else {
-          newProducts = [...currentProducts, { ...product, quantity }];
+          newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom , }];
           finalQuantity = quantity;
         }
         // Guardar productos en localStorage
@@ -317,6 +329,59 @@ export function useCart(): UseCartReturn {
         }
         return newProducts;
       });
+
+      // Obtener ubicación de envío en segundo plano si tenemos userId
+      if (userId) {
+        setTimeout(async () => {
+          try {
+            const response = await productEndpoints.getCandidateStores({
+              skus: [product.sku],
+              user_id: userId,
+            });
+
+            if (response.success && response.data) {
+              const { stores, default_direction } = response.data;
+
+              // Obtener la primera ciudad y tienda disponible
+              let shippingCity = default_direction.ciudad || "BOGOTÁ";
+              let shippingStore = "";
+
+              // Si stores no está vacío, obtener la primera ciudad y su primera tienda
+              const storeEntries = Object.entries(stores);
+              if (storeEntries.length > 0) {
+                const [firstCity, firstCityStores] = storeEntries[0];
+                shippingCity = firstCity;
+                if (firstCityStores.length > 0) {
+                  shippingStore = firstCityStores[0].nombre_tienda.trim();
+                }
+              }
+
+              // Actualizar el producto con ciudad y tienda por separado
+              setProducts((currentProducts) => {
+                const updatedProducts = currentProducts.map(p =>
+                  p.sku === product.sku ? { ...p, shippingCity, shippingStore } : p
+                );
+
+                // Guardar en localStorage
+                try {
+                  localStorage.setItem(
+                    STORAGE_KEYS.CART_ITEMS,
+                    JSON.stringify(updatedProducts)
+                  );
+                } catch (error) {
+                  console.error("Error saving updated shipping location:", error);
+                }
+
+                return updatedProducts;
+              });
+            }
+          } catch (error) {
+            console.error('Error al obtener tienda candidata:', error);
+            // No hacer nada si falla, el producto ya está en el carrito
+          }
+        }, 0);
+      }
+
       // Limpiar el timeout después de 500ms
       setTimeout(() => {
         if (addProductTimeoutRef.current[productId] === now) {
@@ -499,6 +564,7 @@ export function useCart(): UseCartReturn {
     },
     [saveDiscount]
   );
+
 
   // Cálculos derivados
   const calculations: CartCalculations = {

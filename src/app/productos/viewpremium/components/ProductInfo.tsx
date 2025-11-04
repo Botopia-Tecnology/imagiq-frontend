@@ -3,6 +3,7 @@
 import React, { forwardRef } from "react";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
+import { shouldShowColorSelector, shouldShowCapacitySelector } from "@/app/productos/components/utils/categoryColorConfig";
 
 interface ProductInfoProps {
   product: ProductCardProps;
@@ -31,6 +32,16 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   productImages,
   onOpenModal,
 }, ref) => {
+  // Determinar si debe mostrar selectores basándose en la categoría
+  const showColorSelector = shouldShowColorSelector(
+    product.apiProduct?.categoria,
+    product.apiProduct?.subcategoria
+  );
+  const showCapacitySelector = shouldShowCapacitySelector(
+    product.apiProduct?.categoria,
+    product.apiProduct?.subcategoria
+  );
+
   return (
     <div ref={ref} className="w-full lg:col-span-3">
       <div className="lg:sticky lg:top-20">
@@ -104,8 +115,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           </div>
         </div>
 
-        {/* Almacenamiento */}
-        {product.capacities && product.capacities.length > 0 && (
+        {/* Almacenamiento - Solo para categorías específicas */}
+        {showCapacitySelector && product.capacities && product.capacities.length > 0 && (
           <div className="mb-6 mt-8">
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-2xl font-bold text-black">Almacenamiento</h3>
@@ -201,8 +212,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           );
         })()}
 
-        {/* Color */}
-        {product.colors && product.colors.length > 0 && (
+        {/* Color - Solo para categorías específicas */}
+        {showColorSelector && product.colors && product.colors.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-base font-semibold text-gray-900">Color</h3>

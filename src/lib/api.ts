@@ -369,6 +369,7 @@ export interface ProductApiData {
   precioeccommerce: number[];
   fechaInicioVigencia: string[];
   fechaFinalVigencia: string[];
+  indRetoma?: number[]; // Indicador de retoma (0 o 1 por cada variante)
 }
 
 export interface FavoriteApiResponse {

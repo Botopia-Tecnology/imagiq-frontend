@@ -49,6 +49,10 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     return url;
   }) || [];
 
+  // Verificar si el producto acepta retoma (Trade-In)
+  // indRetoma es un array de 0 o 1, si al menos una variante tiene 1, acepta retoma
+  const acceptsTradeIn = apiProduct.indRetoma?.some(value => value === 1) ?? false;
+
   return {
     id,
     name: apiProduct.modelo || apiProduct.nombreMarket,
@@ -61,6 +65,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
     stock: apiProduct.stockTotal?.reduce((sum, s) => sum + s, 0) || 0, // Usar stockTotal en lugar de stock
     apiProduct: apiProduct, // Incluir el producto original de la API para acceso a campos adicionales
+    acceptsTradeIn, // Indicador de si acepta retoma
   };
 }
 

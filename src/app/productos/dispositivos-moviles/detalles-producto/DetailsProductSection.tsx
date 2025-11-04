@@ -358,6 +358,7 @@ const DetailsProductSection: React.FC<{
                     tradeInCompleted={tradeInCompleted}
                     tradeInDeviceName={tradeInDeviceName}
                     tradeInValue={tradeInValue}
+                    acceptsTradeIn={product.acceptsTradeIn}
                   />
 
                   <DeliveryTradeInOptions
@@ -437,6 +438,7 @@ const DetailsProductSection: React.FC<{
               tradeInCompleted={tradeInCompleted}
               tradeInDeviceName={tradeInDeviceName}
               tradeInValue={tradeInValue}
+              acceptsTradeIn={product.acceptsTradeIn}
             />
           </div>
         </motion.section>

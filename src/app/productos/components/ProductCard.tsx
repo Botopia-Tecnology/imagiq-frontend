@@ -73,6 +73,7 @@ export interface ProductCardProps {
   selectedCapacity?: ProductCapacity;
   puntos_q?: number;
   apiProduct?: ProductApiData;
+  acceptsTradeIn?: boolean; // Indica si el producto acepta retoma (basado en indRetoma)
 }
 
 

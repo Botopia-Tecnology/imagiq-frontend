@@ -20,7 +20,7 @@ export interface DeviceVariant {
   capacidad: string;
   nombreMarket?: string;
   precio: number;
-  stock: number;
+  stockTotal: number;
 }
 
 export interface UseDeviceVariantsReturn {
@@ -75,7 +75,6 @@ export function useDeviceVariants(productId: string): UseDeviceVariantsReturn {
       sku: [],
       ean: [],
       desDetallada: [],
-      stock: [],
       stockTotal: [],
       urlImagenes: [],
       urlRender3D: [],
@@ -120,7 +119,7 @@ export function useDeviceVariants(productId: string): UseDeviceVariantsReturn {
       capacidad: variant.capacity,
       nombreMarket: apiProduct?.nombreMarket,
       precio: variant.precioeccommerce,
-      stock: variant.stock,
+      stockTotal: variant.stockTotal,
     };
   }, [productSelection.selectedVariant, apiProduct]);
 

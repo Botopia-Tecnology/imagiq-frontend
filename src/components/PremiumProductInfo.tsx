@@ -122,7 +122,7 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
 
   const hasStock = () => {
     if (!selectedVariant) return true;
-    return selectedVariant.stock > 0;
+    return selectedVariant.stockTotal > 0;
   };
 
   const parsePrice = (price: string | number | null | undefined): number => {

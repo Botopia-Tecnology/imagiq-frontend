@@ -19,7 +19,6 @@ export interface ProductVariant {
   codigoMarket: string;
   precioNormal: number;
   precioeccommerce: number;
-  stock: number;
   stockTotal: number;
   imagePreviewUrl?: string;
   urlRender3D?: string;
@@ -60,7 +59,6 @@ export interface UseProductSelectionReturn {
   selectedPrice: number | null;
   selectedOriginalPrice: number | null;
   selectedDiscount: number | null;
-  selectedStock: number | null;
   selectedStockTotal: number | null;
   selectedVariant: ProductVariant | null;
   
@@ -95,7 +93,6 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       apiProduct.codigoMarket.length,
       apiProduct.precioNormal.length,
       apiProduct.precioeccommerce.length,
-      apiProduct.stock.length,
       apiProduct.stockTotal.length
     );
     
@@ -110,7 +107,6 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         codigoMarket: apiProduct.codigoMarket[i] || '',
         precioNormal: apiProduct.precioNormal[i] || 0,
         precioeccommerce: apiProduct.precioeccommerce[i] || 0,
-        stock: apiProduct.stock[i] || 0,
         stockTotal: apiProduct.stockTotal[i] || 0,
         imagePreviewUrl: apiProduct.imagePreviewUrl?.[i],
         urlRender3D: apiProduct.urlRender3D?.[i]
@@ -223,10 +219,9 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   const selectedCodigoMarket = selectedVariant?.codigoMarket || null;
   const selectedPrice = selectedVariant?.precioeccommerce || null;
   const selectedOriginalPrice = selectedVariant?.precioNormal || null;
-  const selectedDiscount = selectedPrice && selectedOriginalPrice && selectedPrice < selectedOriginalPrice 
+  const selectedDiscount = selectedPrice && selectedOriginalPrice && selectedPrice < selectedOriginalPrice
     ? Math.round(((selectedOriginalPrice - selectedPrice) / selectedOriginalPrice) * 100)
     : null;
-  const selectedStock = selectedVariant?.stock || null;
   const selectedStockTotal = selectedVariant?.stockTotal || null;
 
   // Funciones de selección
@@ -427,7 +422,6 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     selectedPrice,
     selectedOriginalPrice,
     selectedDiscount,
-    selectedStock,
     selectedStockTotal,
     selectedVariant,
     selectColor,

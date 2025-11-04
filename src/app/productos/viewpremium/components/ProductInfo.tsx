@@ -42,6 +42,17 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
     product.apiProduct?.subcategoria
   );
 
+  // DEBUG: Log para verificar qué está pasando en product detail
+  console.log('[ProductInfo Debug]', {
+    productName: product.name,
+    categoria: product.apiProduct?.categoria,
+    subcategoria: product.apiProduct?.subcategoria,
+    showColorSelector,
+    showCapacitySelector,
+    hasColors: product.colors?.length > 0,
+    hasCapacities: product.capacities?.length > 0,
+  });
+
   return (
     <div ref={ref} className="w-full lg:col-span-3">
       <div className="lg:sticky lg:top-20">

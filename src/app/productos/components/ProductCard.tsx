@@ -125,7 +125,10 @@ export default function ProductCard({
     precioNormal: [],
     precioeccommerce: [],
     fechaInicioVigencia: [],
-    fechaFinalVigencia: []
+    fechaFinalVigencia: [],
+    indRetoma: [],
+    indcerointeres: [],
+    skuPostback: [],
   });
 
   // Verificar si el producto está sin stock
@@ -162,10 +165,11 @@ export default function ProductCard({
   const currentCodigoMarket = productSelection.selectedCodigoMarket || null;
   const currentPrice = productSelection.selectedPrice || null;
   const currentOriginalPrice = productSelection.selectedOriginalPrice || null;
+  const currentskuPostback = productSelection.selectedSkuPostback || null;
 
   // Obtener la imagen del color seleccionado o usar la imagen por defecto
   const currentImage = useMemo(() => {
-    
+
     // Si hay datos de API, usar la imagen de la variante seleccionada
     if (apiProduct && productSelection.selectedVariant?.imagePreviewUrl) {
       return productSelection.selectedVariant.imagePreviewUrl;
@@ -202,7 +206,7 @@ export default function ProductCard({
       // Usar el sistema legacy
       setSelectedColorLocal(color);
     }
-    
+
     posthogUtils.capture("product_color_selected", {
       product_id: id,
       product_name: name,
@@ -221,7 +225,7 @@ export default function ProductCard({
       // Usar el sistema legacy
       setSelectedCapacityLocal(capacity);
     }
-    
+
     posthogUtils.capture("product_capacity_selected", {
       product_id: id,
       product_name: name,
@@ -256,7 +260,7 @@ export default function ProductCard({
       // Validación estricta: debe existir un SKU válido
       const skuToUse = currentSku || selectedColor?.sku;
       const eanToUse = productSelection.selectedVariant?.ean || selectedColor?.ean || '';
-      
+
       if (!skuToUse) {
         setIsLoading(false);
         return;
@@ -370,7 +374,7 @@ export default function ProductCard({
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       tabIndex={0}
-        aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
+      aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
       className={cn(
         "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
         className
@@ -445,7 +449,7 @@ export default function ProductCard({
             </button>
           </h3>
           {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
-          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (currentSku || currentCodigoMarket) && (
+          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (currentSku || currentCodigoMarket || currentskuPostback) && (
             <div className="mt-1 space-y-0.5">
               {currentSku && (
                 <p className="text-xs text-gray-500 font-medium">
@@ -457,6 +461,26 @@ export default function ProductCard({
                   Código: {currentCodigoMarket}
                 </p>
               )}
+              {currentskuPostback && (<div>
+                <p className="text-xs text-gray-500 font-medium">
+                  SKU Postback: {currentskuPostback}
+                </p>
+              </div>
+              )}
+
+              {/* Mostrar stock disponible - AGREGAR ESTO */}
+              {productSelection.selectedStockTotal !== null && (
+                <div className="text-sm text-gray-600 mt-2">
+                  Stock disponible:{" "}
+                  <span className={cn(
+                    "ml-1 font-semibold",
+                    productSelection.selectedStockTotal > 0 ? "text-green-600" : "text-red-600"
+                  )}>
+                    {productSelection.selectedStockTotal}
+                  </span>
+                </div>
+              )}
+
             </div>
           )}
         </div>
@@ -487,7 +511,6 @@ export default function ProductCard({
                 colors.find(c => c.label === productSelection.selection.selectedColor) || null :
                 selectedColor
               }
-              isOutOfStock={isOutOfStock}
               onColorSelect={handleColorSelect}
               onShowMore={handleCardClick}
             />
@@ -514,7 +537,6 @@ export default function ProductCard({
                 }).find(c => c.label === productSelection.selection.selectedCapacity) || null :
                 selectedCapacity
               }
-              isOutOfStock={isOutOfStock}
               onCapacitySelect={handleCapacitySelect}
             />
           </div>

@@ -12,6 +12,7 @@
 
 import React, { createContext, useContext, useCallback } from "react";
 import { useCart, CartProduct } from "@/hooks/useCart";
+import { useAuthContext } from "@/features/auth/context";
 
 /**
  * CartContextType
@@ -21,7 +22,7 @@ type CartContextType = {
   /** Array de productos en el carrito */
   cart: CartProduct[];
   /** Añade un producto al carrito (o suma cantidad si ya existe) */
-  addProduct: (product: CartProduct) => void;
+  addProduct: (product: CartProduct) => Promise<void>;
   /** Elimina un producto por id */
   removeProduct: (id: string) => void;
   /** Actualiza la cantidad de un producto */
@@ -64,6 +65,9 @@ export const useCartContext = () => {
  * Proveedor global del carrito. Ahora usa el hook centralizado useCart.
  */
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
+  // Obtener el usuario autenticado
+  const { user } = useAuthContext();
+
   // Usar el hook centralizado useCart
   const {
     products,
@@ -84,12 +88,12 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Memoizar funciones para evitar que cambien en cada render
   const addProduct = useCallback(
-    (product: CartProduct) => {
+    async (product: CartProduct) => {
       // Extraer quantity del producto y pasarlo por separado para evitar problemas de tipo
       const { quantity, ...productWithoutQuantity } = product;
-      addToCart(productWithoutQuantity, quantity || 1);
+      await addToCart(productWithoutQuantity, quantity || 1, user?.id);
     },
-    [addToCart]
+    [addToCart, user?.id]
   );
 
   const updateQuantity = useCallback(

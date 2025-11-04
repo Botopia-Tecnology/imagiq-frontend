@@ -5,7 +5,6 @@ import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
-import { useShippingOrigin } from "@/hooks/useShippingOrigin";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
@@ -68,7 +67,6 @@ const DetailsProductSection: React.FC<{
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
-  const { shouldShowShippingOrigin } = useShippingOrigin();
   const router = useRouter();
   const {
     addToFavorites,
@@ -163,13 +161,13 @@ const DetailsProductSection: React.FC<{
     }
     setLoading(true);
     try {
-      addProduct({
+      await addProduct({
         id: product.id,
         name: product.name,
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
         stock: productSelection.selectedStockTotal || product.stock || 1,
-        shippingFrom: shouldShowShippingOrigin ? "Bogotá" : undefined,
+        // shippingCity y shippingStore se obtienen automáticamente del backend
         quantity: 1,
         image: productSelection.selectedVariant?.imagePreviewUrl || (typeof product.image === "string" ? product.image : fallbackImage.src),
         sku: productSelection.selectedSku,

@@ -160,7 +160,7 @@ export const productEndpoints = {
     searchParams.append('precioMin', String(params?.precioMin ?? 1));
     searchParams.append('page', String(params?.page ?? 1));
     searchParams.append('limit', String(params?.limit ?? 15));
-    
+
     return apiClient.get<ProductApiResponse>(`/api/products/search/grouped?${searchParams.toString()}`);
   },
   getOffers: () =>
@@ -214,6 +214,8 @@ export const productEndpoints = {
     apiClient.delete<void>(
       `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
     ),
+  getCandidateStores: (data: { skus: string[]; user_id: string }) =>
+    apiClient.post<CandidateStoresResponse>('/api/products/candidate-stores', data),
 };
 
 // Categories API endpoints
@@ -486,4 +488,27 @@ export interface TradeInValueResponse {
   categoria: string;
   grado: 'A' | 'B' | 'C';
   valorRetoma: number;
+}
+
+// Candidate stores types
+export interface CandidateStore {
+  codBodega: string;
+  nombre_tienda: string;
+  direccion: string;
+  place_ID: string;
+  distance: number;
+  horario: string;
+}
+
+export interface DefaultDirection {
+  id: string;
+  google_place_id: string;
+  linea_uno: string;
+  ciudad: string;
+}
+
+export interface CandidateStoresResponse {
+  stores: Record<string, CandidateStore[]>;
+  canPickUp: boolean;
+  default_direction: DefaultDirection;
 }

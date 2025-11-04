@@ -58,110 +58,143 @@ export default function ProductSelectors({
     onTradeInChange?.(option === "yes");
   };
 
-  const renderStorageOptions = () => {
-    if (variantsLoading) {
-      return <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>;
-    }
-    
-    if (storageOptions && storageOptions.length > 0) {
-      return storageOptions.map((storage) => {
-        // Calcular el precio de esta opción de almacenamiento
-        const storagePrice = storage.variants[0]?.precioeccommerce > 0
-          ? storage.variants[0].precioeccommerce
-          : storage.variants[0]?.precioNormal;
+  // Filtrar valores "NO APLICA", "NO", "N/A", "NA" para opciones de RAM
+  const validMemoriaramOptions = memoriaramOptions.filter(ram => {
+    if (!ram || ram.trim() === '') return false;
+    const normalizedRam = ram.toLowerCase().trim();
+    return !normalizedRam.includes('no aplica') &&
+           normalizedRam !== 'n/a' &&
+           normalizedRam !== 'na' &&
+           normalizedRam !== 'no';
+  });
 
-        return (
-          <button
-            key={storage.capacidad}
-            className={`rounded-xl border-2 px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none flex flex-col items-center justify-center ${
-              selectedStorage?.capacidad === storage.capacidad
-                ? "border-[#222] bg-white text-[#222]"
-                : "border-gray-300 text-[#222] bg-white hover:border-[#222]"
-            }`}
-            onClick={() => onStorageChange(storage)}
-          >
-            <span className="font-semibold text-base mb-1">{storage.capacidad}</span>
-            {Boolean(storagePrice) && (
-              <span className="text-sm text-[#222] font-normal">
-                ${storagePrice.toLocaleString('es-CO')}
-              </span>
-            )}
-          </button>
-        );
-      });
-    }
-    
-    return null;
-  };
+  // Filtrar valores "NO APLICA", "NO", etc. para opciones de color
+  const validColorOptions = colorOptions.filter(color => {
+    const normalizedLabel = color.color?.toLowerCase().trim() || '';
+    return !normalizedLabel.includes('no aplica') &&
+           normalizedLabel !== 'n/a' &&
+           normalizedLabel !== 'na' &&
+           normalizedLabel !== 'no' &&
+           normalizedLabel !== '';
+  });
+
+  // Filtrar valores "NO APLICA", "NO", etc. para opciones de almacenamiento
+  const validStorageOptions = storageOptions.filter(storage => {
+    const normalizedLabel = storage.capacidad?.toLowerCase().trim() || '';
+    return !normalizedLabel.includes('no aplica') &&
+           normalizedLabel !== 'n/a' &&
+           normalizedLabel !== 'na' &&
+           normalizedLabel !== 'no' &&
+           normalizedLabel !== '';
+  });
 
   return (
     <>
-      {/* Selector de color */}
-      <section className="mb-8">
-        <p className="block text-base text-[#222] font-semibold mb-4">
-          Elige tu Color
-        </p>
-        {selectedColor && (
-          <div className="text-sm text-[#222] mb-4">
-            Color : <span className="font-normal">{selectedColor.nombreColorDisplay || selectedColor.color}</span>
-          </div>
-        )}
-        <div className="flex gap-3 items-center">
-          <ColorSelector
-            colorOptions={colorOptions}
-            selectedColor={selectedColor}
-            handleColorSelection={onColorChange}
-            hasStock={hasStock}
-          />
-        </div>
-      </section>
+      {/* Selector de color - Solo mostrar si hay opciones válidas */}
+      {validColorOptions.length > 0 && (
+        <>
+          <section className="mb-8">
+            <p className="block text-base text-[#222] font-semibold mb-4">
+              Elige tu Color
+            </p>
+            {selectedColor && (
+              <div className="text-sm text-[#222] mb-4">
+                Color : <span className="font-normal">{selectedColor.nombreColorDisplay || selectedColor.color}</span>
+              </div>
+            )}
+            <div className="flex gap-3 items-center">
+              <ColorSelector
+                colorOptions={validColorOptions}
+                selectedColor={selectedColor}
+                handleColorSelection={onColorChange}
+                hasStock={hasStock}
+              />
+            </div>
+          </section>
 
-      {/* Línea separadora */}
-      <div className="h-px bg-gray-200 mb-8"></div>
+          {/* Línea separadora */}
+          <div className="h-px bg-gray-200 mb-8"></div>
+        </>
+      )}
 
-      {/* Selector de almacenamiento */}
-      <section className="mb-8">
-        <p className="block text-base text-[#222] font-semibold mb-5">
-          Elige tu Almacenamiento
-        </p>
-        <div className="grid grid-cols-2 gap-4">
-          {renderStorageOptions()}
-        </div>
-      </section>
+      {/* Selector de almacenamiento - Solo mostrar si hay opciones válidas */}
+      {validStorageOptions.length > 0 && (
+        <>
+          <section className="mb-8">
+            <p className="block text-base text-[#222] font-semibold mb-5">
+              Elige tu Almacenamiento
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {variantsLoading ? (
+                <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+              ) : (
+                validStorageOptions.map((storage) => {
+                  const storagePrice = storage.variants[0]?.precioeccommerce > 0
+                    ? storage.variants[0].precioeccommerce
+                    : storage.variants[0]?.precioNormal;
 
-      {/* Línea separadora */}
-      <div className="h-px bg-gray-200 mb-8"></div>
+                  return (
+                    <button
+                      key={storage.capacidad}
+                      className={`rounded-xl border-2 px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none flex flex-col items-center justify-center ${
+                        selectedStorage?.capacidad === storage.capacidad
+                          ? "border-[#222] bg-white text-[#222]"
+                          : "border-gray-300 text-[#222] bg-white hover:border-[#222]"
+                      }`}
+                      onClick={() => onStorageChange(storage)}
+                    >
+                      <span className="font-semibold text-base mb-1">{storage.capacidad}</span>
+                      {Boolean(storagePrice) && (
+                        <span className="text-sm text-[#222] font-normal">
+                          ${storagePrice.toLocaleString('es-CO')}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </section>
 
-      {/* Selector de memoria RAM */}
-      <section className="mb-8">
-        <p className="block text-base text-[#222] font-semibold mb-5">
-          Elige tu Memoria Ram
-        </p>
-        <div className="grid grid-cols-2 gap-4">
-          {variantsLoading ? (
-            <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
-          ) : memoriaramOptions && memoriaramOptions.length > 0 ? (
-            memoriaramOptions.map((memoriaram) => {
-              return (
-                <button
-                  key={memoriaram}
-                  className={`rounded-xl border-2 px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none flex flex-col items-center justify-center ${
-                    selectedMemoriaram === memoriaram
-                      ? "border-[#222] bg-white text-[#222]"
-                      : "border-gray-300 text-[#222] bg-white hover:border-[#222]"
-                  }`}
-                  onClick={() => onMemoriaramChange(memoriaram)}
-                >
-                  <span className="font-semibold text-base mb-1">{memoriaram}</span>
-                </button>
-              );
-            })
-          ) : null}
-        </div>
-      </section>
+          {/* Línea separadora */}
+          <div className="h-px bg-gray-200 mb-8"></div>
+        </>
+      )}
 
-      {/* Línea separadora */}
-      <div className="h-px bg-gray-200 mb-8"></div>
+      {/* Selector de memoria RAM - Solo mostrar si hay opciones válidas */}
+      {validMemoriaramOptions.length > 0 && (
+        <>
+          <section className="mb-8">
+            <p className="block text-base text-[#222] font-semibold mb-5">
+              Elige tu Memoria Ram
+            </p>
+            <div className="grid grid-cols-2 gap-4">
+              {variantsLoading ? (
+                <div className="h-24 bg-gray-200 rounded-xl animate-pulse"></div>
+              ) : (
+                validMemoriaramOptions.map((memoriaram) => {
+                  return (
+                    <button
+                      key={memoriaram}
+                      className={`rounded-xl border-2 px-6 py-6 font-normal text-base transition-all duration-200 ease-in-out focus:outline-none flex flex-col items-center justify-center ${
+                        selectedMemoriaram === memoriaram
+                          ? "border-[#222] bg-white text-[#222]"
+                          : "border-gray-300 text-[#222] bg-white hover:border-[#222]"
+                      }`}
+                      onClick={() => onMemoriaramChange(memoriaram)}
+                    >
+                      <span className="font-semibold text-base mb-1">{memoriaram}</span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </section>
+
+          {/* Línea separadora */}
+          <div className="h-px bg-gray-200 mb-8"></div>
+        </>
+      )}
 
       {/* Trade-in selector - Solo se muestra si el producto acepta retoma */}
       {acceptsTradeIn && (

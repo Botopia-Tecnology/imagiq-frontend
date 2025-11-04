@@ -340,6 +340,7 @@ const DetailsProductSection: React.FC<{
                     isFavorite={isFavorite}
                     onToggleFavorite={handleToggleFavorite}
                   />
+                  {/* ProductSelectors - Filtrado data-driven interno */}
                   <ProductSelectors
                     colorOptions={productSelection.getColorOptions()}
                     selectedColor={productSelection.getSelectedColorOption()}
@@ -420,6 +421,7 @@ const DetailsProductSection: React.FC<{
               onBuyNow={handleBuyNow}
               onAddToCart={handleAddToCart}
             />
+            {/* ProductSelectors - Filtrado data-driven interno */}
             <ProductSelectors
               colorOptions={productSelection.getColorOptions()}
               selectedColor={productSelection.getSelectedColorOption()}

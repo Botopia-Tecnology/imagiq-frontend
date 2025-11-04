@@ -105,7 +105,20 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         </div>
 
         {/* Almacenamiento */}
-        {product.capacities && product.capacities.length > 0 && (
+        {(() => {
+          // Verificar si hay capacidades válidas (no "NO APLICA", "NO", etc.)
+          const validCapacities = product.capacities?.filter(cap => {
+            const normalizedLabel = cap.label?.toLowerCase().trim() || '';
+            return !normalizedLabel.includes('no aplica') &&
+                   normalizedLabel !== 'n/a' &&
+                   normalizedLabel !== 'na' &&
+                   normalizedLabel !== 'no' &&
+                   normalizedLabel !== '';
+          }) || [];
+
+          if (validCapacities.length === 0) return null;
+
+          return (
           <div className="mb-6 mt-8">
             <div className="flex items-center gap-2 mb-3">
               <h3 className="text-2xl font-bold text-black">Almacenamiento</h3>
@@ -113,7 +126,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             <p className="text-sm text-black mb-4">Compra tu smartphone de mayor capacidad a menor precio</p>
 
             <div className="space-y-3">
-              {product.capacities.map((capacity, index) => {
+              {validCapacities.map((capacity, index) => {
                 const isSelected = capacity.value === selectedStorage;
                 const priceStr = capacity.price || "0";
                 const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
@@ -159,16 +172,25 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               </p>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* Memoria RAM */}
         {(() => {
           // Obtener opciones únicas de RAM del producto
           const ramOptions = product.apiProduct?.memoriaram
-            ? Array.from(new Set(product.apiProduct.memoriaram)).filter(ram => ram && ram.trim() !== '')
+            ? Array.from(new Set(product.apiProduct.memoriaram)).filter(ram => {
+                if (!ram || ram.trim() === '') return false;
+                // Filtrar valores "NO APLICA", "NO", "N/A", "NA" (case insensitive)
+                const normalizedRam = ram.toLowerCase().trim();
+                return !normalizedRam.includes('no aplica') &&
+                       normalizedRam !== 'n/a' &&
+                       normalizedRam !== 'na' &&
+                       normalizedRam !== 'no';
+              })
             : [];
 
-          // Solo mostrar si hay opciones de RAM
+          // Solo mostrar si hay opciones de RAM válidas
           if (ramOptions.length === 0) return null;
 
           return (
@@ -202,7 +224,20 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         })()}
 
         {/* Color */}
-        {product.colors && product.colors.length > 0 && (
+        {(() => {
+          // Verificar si hay colores válidos (no "NO APLICA", "NO", etc.)
+          const validColors = product.colors?.filter(color => {
+            const normalizedLabel = color.label?.toLowerCase().trim() || '';
+            return !normalizedLabel.includes('no aplica') &&
+                   normalizedLabel !== 'n/a' &&
+                   normalizedLabel !== 'na' &&
+                   normalizedLabel !== 'no' &&
+                   normalizedLabel !== '';
+          }) || [];
+
+          if (validColors.length === 0) return null;
+
+          return (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-2">
               <h3 className="text-base font-semibold text-gray-900">Color</h3>
@@ -211,7 +246,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
             {/* Selectores de color - SOLO DESKTOP */}
             <div className="hidden lg:flex gap-4 justify-center">
-              {product.colors.map((color, index) => {
+              {validColors.map((color, index) => {
                 const isSelected = color.name === selectedColor;
 
                 return (
@@ -298,7 +333,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
                 {/* Selectores de color - SOLO MOBILE - Debajo de Ver más */}
                 <div className="flex gap-4 justify-center mb-6">
-                  {product.colors.map((color, index) => {
+                  {validColors.map((color, index) => {
                     const isSelected = color.name === selectedColor;
 
                     return (
@@ -349,7 +384,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* Entregas */}
         <div className="mb-4 pb-32 md:pb-4 lg:border-b border-gray-200">

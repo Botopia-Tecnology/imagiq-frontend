@@ -53,7 +53,6 @@ function convertProductForView(product: ProductCardProps) {
       { label: "Categoría", value: safeValue(product.apiProduct?.categoria, "None") },
       { label: "Subcategoría", value: safeValue(product.apiProduct?.subcategoria, "None") },
       { label: "Capacidad", value: safeValue(product.selectedCapacity?.value || product.capacities?.[0]?.value, "None") },
-      { label: "Stock", value: safeValue(product.stock, "None") },
       { label: "SKU", value: safeValue(product.selectedColor?.sku || product.colors?.[0]?.sku, "None") },
     ],
   };

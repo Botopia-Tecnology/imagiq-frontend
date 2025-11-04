@@ -63,7 +63,6 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     originalPrice,
     discount,
     segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
-    stock: apiProduct.stockTotal?.reduce((sum, s) => sum + s, 0) || 0, // Usar stockTotal en lugar de stock
     apiProduct: apiProduct, // Incluir el producto original de la API para acceso a campos adicionales
     acceptsTradeIn, // Indicador de si acepta retoma
   };

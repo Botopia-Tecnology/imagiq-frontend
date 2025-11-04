@@ -28,6 +28,7 @@ interface ProductSelectorsProps {
   tradeInCompleted?: boolean;
   tradeInDeviceName?: string;
   tradeInValue?: number;
+  acceptsTradeIn?: boolean; // Indica si el producto acepta retoma
 }
 
 export default function ProductSelectors({
@@ -48,6 +49,7 @@ export default function ProductSelectors({
   tradeInCompleted,
   tradeInDeviceName,
   tradeInValue,
+  acceptsTradeIn = true, // Por defecto true para compatibilidad con productos existentes
 }: Readonly<ProductSelectorsProps>) {
   // Convertir boolean a "yes" | "no"
   const tradeInOption: "no" | "yes" = tradeInSelected ? "yes" : "no";
@@ -161,18 +163,22 @@ export default function ProductSelectors({
       {/* Línea separadora */}
       <div className="h-px bg-gray-200 mb-8"></div>
 
-      {/* Trade-in selector */}
-      <TradeInSelector
-        selectedOption={tradeInOption}
-        onSelectionChange={handleTradeInChange}
-        onOpenModal={onOpenTradeInModal}
-        isCompleted={tradeInCompleted}
-        completedDeviceName={tradeInDeviceName}
-        completedTradeInValue={tradeInValue}
-      />
+      {/* Trade-in selector - Solo se muestra si el producto acepta retoma */}
+      {acceptsTradeIn && (
+        <>
+          <TradeInSelector
+            selectedOption={tradeInOption}
+            onSelectionChange={handleTradeInChange}
+            onOpenModal={onOpenTradeInModal}
+            isCompleted={tradeInCompleted}
+            completedDeviceName={tradeInDeviceName}
+            completedTradeInValue={tradeInValue}
+          />
 
-      {/* Línea separadora */}
-      <div className="h-px bg-gray-200 mb-8"></div>
+          {/* Línea separadora */}
+          <div className="h-px bg-gray-200 mb-8"></div>
+        </>
+      )}
     </>
   );
 }

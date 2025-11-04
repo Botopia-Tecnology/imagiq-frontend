@@ -7,12 +7,15 @@
 
 /**
  * Categorías que deben mostrar selector de color
+ * Incluye tanto nombres completos como códigos del backend (ej: "IM" = Informática/Dispositivos Móviles)
  */
 const CATEGORIES_WITH_COLOR_SELECTOR = [
   'Dispositivos móviles',
   'Dispositivos Móviles',
   'dispositivos-moviles',
   'dispositivos moviles',
+  'IM', // Código del backend para Dispositivos Móviles/Informática
+  'im',
 ] as const;
 
 /**

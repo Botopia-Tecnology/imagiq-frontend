@@ -64,7 +64,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
-    console.log('sii')
     const product = cartProducts[idx];
     console.log(product)
     if (product) {

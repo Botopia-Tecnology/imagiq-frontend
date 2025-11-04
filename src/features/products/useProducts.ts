@@ -413,7 +413,8 @@ export const useProducts = (
       } catch (err) {
         // Ignorar aborts como errores visibles
         // @ts-expect-error 'name' puede existir si es AbortError
-        if (err?.name === 'AbortError') {
+        if (err?.name === 'AbortError' || (err instanceof Error && err.message.includes('aborted'))) {
+          // Silenciar errores de abort - son esperados cuando el usuario cambia de filtros rápidamente
           return;
         }
         console.error("Error fetching products:", err);

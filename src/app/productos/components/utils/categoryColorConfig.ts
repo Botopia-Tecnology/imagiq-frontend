@@ -55,16 +55,17 @@ export function shouldShowColorSelector(
   categoria?: string | null,
   subcategoria?: string | null
 ): boolean {
-  // Si no hay categoría, no mostrar selector por defecto
+  // Si no hay categoría ni subcategoría, MOSTRAR selector por defecto
+  // Esto mantiene compatibilidad con productos legacy y dispositivos móviles
   if (!categoria && !subcategoria) {
-    return false;
+    return true;
   }
 
   // Normalizar para comparación
   const normalizedCategoria = categoria ? normalizeString(categoria) : '';
   const normalizedSubcategoria = subcategoria ? normalizeString(subcategoria) : '';
 
-  // Verificar si la categoría está en la lista
+  // Verificar si la categoría está en la lista permitida
   const categoryMatch = CATEGORIES_WITH_COLOR_SELECTOR.some(cat =>
     normalizeString(cat) === normalizedCategoria
   );
@@ -73,7 +74,7 @@ export function shouldShowColorSelector(
     return true;
   }
 
-  // Verificar si la subcategoría está en la lista
+  // Verificar si la subcategoría está en la lista permitida
   const subcategoryMatch = SUBCATEGORIES_WITH_COLOR_SELECTOR.some(subcat =>
     normalizeString(subcat) === normalizedSubcategoria
   );

@@ -270,7 +270,7 @@ export function useCart(): UseCartReturn {
       addProductTimeoutRef.current[productId] = now;
       setProducts((currentProducts) => {
         const existingIndex = currentProducts.findIndex(
-          (p) => p.id === product.id
+          (p) => p.sku === product.sku
         );
         let newProducts: CartProduct[];
         let wasUpdated = false;
@@ -334,7 +334,7 @@ export function useCart(): UseCartReturn {
   const removeProduct = useCallback(
     (productId: string) => {
       // Prevenir múltiples eliminaciones del mismo producto
-      const productToRemove = products.find((p) => p.id === productId);
+      const productToRemove = products.find((p) => p.sku === productId);
       if (!productToRemove) return; // Producto ya no existe
 
       // Usar una flag temporal para evitar notificaciones duplicadas
@@ -345,7 +345,7 @@ export function useCart(): UseCartReturn {
       const productName = productToRemove.name;
 
       // Actualizar productos localmente
-      const newProducts = products.filter((p) => p.id !== productId);
+      const newProducts = products.filter((p) => p.sku !== productId);
 
       // Actualizar estado inmediatamente para UI responsiva
       setProducts(newProducts);
@@ -409,7 +409,7 @@ export function useCart(): UseCartReturn {
 
       // Actualizar productos localmente
       const newProducts = products.map((p) =>
-        p.id === productId ? { ...p, quantity } : p
+        p.sku === productId ? { ...p, quantity } : p
       );
 
       // Actualizar estado inmediatamente

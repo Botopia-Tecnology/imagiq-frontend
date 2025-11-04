@@ -51,7 +51,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
   // Verificar condiciones para mostrar origen de envío
   const { shouldShowShippingOrigin } = useShippingOrigin();
   const mostrarOrigen = shouldShowShippingOrigin && ubicacionEnvio;
-
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
@@ -69,8 +68,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
             {/* Detalles de variante */}
             {(color || capacity || ram) && (
-              <div className="text-xs text-gray-600 mb-1 flex flex-wrap gap-1">
-                {color && <span>{color}</span>}
+              <div className="text-xs text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
+                {color && (
+                  <div
+                    className="w-4 h-4 rounded-full ring-1 ring-gray-300"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                )}
                 {color && (capacity || ram) && <span>•</span>}
                 {capacity && <span>{capacity}</span>}
                 {capacity && ram && <span>•</span>}
@@ -139,8 +144,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
             <h3 className="text-base font-semibold text-gray-900 line-clamp-2 mb-1">{nombre}</h3>
             {/* Detalles de variante */}
             {(color || capacity || ram) && (
-              <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1">
-                {color && <span>{color}</span>}
+              <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
+                {color && (
+                  <div
+                    className="w-5 h-5 rounded-full ring-1 ring-gray-300"
+                    style={{ backgroundColor: color }}
+                    title={color}
+                  />
+                )}
                 {color && (capacity || ram) && <span>•</span>}
                 {capacity && <span>{capacity}</span>}
                 {capacity && ram && <span>•</span>}

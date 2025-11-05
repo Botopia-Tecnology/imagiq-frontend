@@ -18,6 +18,8 @@ export interface ProductCardProps {
   color?: string;
   capacity?: string;
   ram?: string;
+  /** Indica si se está cargando la información de envío */
+  isLoadingShippingInfo?: boolean;
   onQuantityChange: (cantidad: number) => void;
   onRemove: () => void;
 }
@@ -46,6 +48,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   color,
   capacity,
   ram,
+  isLoadingShippingInfo,
   onQuantityChange,
   onRemove,
 }) => {
@@ -55,7 +58,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
   // Verificar condiciones para mostrar origen de envío
   const { shouldShowShippingOrigin } = useShippingOrigin();
-  const mostrarOrigen = shouldShowShippingOrigin && (shippingCity || shippingStore);
+  const mostrarOrigen = shouldShowShippingOrigin && (shippingCity || shippingStore || isLoadingShippingInfo);
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
@@ -163,11 +166,21 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 {ram && <span>{ram}</span>}
               </div>
             )}
+
             {mostrarOrigen && (
               <div className="mt-1">
-                <p className="text-sm text-gray-500">Enviado desde {shippingCity}</p>
-                {shippingStore && (
-                  <p className="text-xs text-gray-400 mt-0.5">{shippingStore}</p>
+                {isLoadingShippingInfo ? (
+                  <>
+                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-1"></div>
+                    <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-500">Enviado desde {shippingCity}</p>
+                    {shippingStore && (
+                      <p className="text-xs text-gray-400 mt-0.5">{shippingStore}</p>
+                    )}
+                  </>
                 )}
               </div>
             )}

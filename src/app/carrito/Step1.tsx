@@ -33,6 +33,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     updateQuantity,
     removeProduct,
     calculations,
+    loadingShippingInfo,
   } = useCart();
 
   // Cargar datos de Trade-In desde localStorage
@@ -143,6 +144,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     color={product.color}
                     capacity={product.capacity}
                     ram={product.ram}
+                    isLoadingShippingInfo={loadingShippingInfo[product.sku] || false}
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
                     }

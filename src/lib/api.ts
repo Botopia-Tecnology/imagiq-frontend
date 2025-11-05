@@ -118,8 +118,30 @@ export type { ProductFilterParams } from "./sharedInterfaces";
 export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
   getFiltered: (() => {
-    const inFlightByUrl: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
+    const inFlightByKey: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
+    
+    // Función para normalizar parámetros y crear clave de deduplicación
+    // Ignora parámetros no críticos que no afectan qué productos se obtienen
+    const normalizeParams = (params: ProductFilterParams): string => {
+      const critical: Record<string, string> = {};
+      
+      // Solo incluir parámetros críticos que afectan qué productos se obtienen
+      if (params.categoria) critical.categoria = String(params.categoria);
+      if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
+      if (params.submenuUuid) critical.submenuUuid = String(params.submenuUuid);
+      if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
+      if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
+      if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
+      
+      // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
+      
+      return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
+    };
+    
     return (params: ProductFilterParams, init?: RequestInit) => {
+      const normalizedKey = normalizeParams(params);
+      
+      // Construir URL completa para la petición real (con todos los parámetros)
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
@@ -128,15 +150,16 @@ export const productEndpoints = {
       });
       const url = `/api/products/filtered?${searchParams.toString()}`;
 
-      if (inFlightByUrl[url]) {
-        return inFlightByUrl[url] as Promise<ApiResponse<ProductApiResponse>>;
+      // Usar clave normalizada para deduplicación
+      if (inFlightByKey[normalizedKey]) {
+        return inFlightByKey[normalizedKey] as Promise<ApiResponse<ProductApiResponse>>;
       }
 
       const p = apiClient.get<ProductApiResponse>(url, init).finally(() => {
         // liberar inmediatamente al resolver/rechazar para no cachear respuestas
-        delete inFlightByUrl[url];
+        delete inFlightByKey[normalizedKey];
       });
-      inFlightByUrl[url] = p;
+      inFlightByKey[normalizedKey] = p;
       return p;
     };
   })(),

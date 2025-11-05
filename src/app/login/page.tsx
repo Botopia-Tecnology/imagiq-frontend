@@ -112,7 +112,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="w-full py-2 rounded-full bg-[#002142] text-white text-base font-semibold mt-3 shadow hover:bg-[#003366] transition-all duration-200"
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.push("/perfil")}
               >
                 Ir al Dashboard
               </button>

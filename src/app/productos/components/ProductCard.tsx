@@ -293,6 +293,7 @@ export default function ProductCard({
         color: productSelection.selection.selectedColor || selectedColor?.label || undefined,
         capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
+        skuPostback: productSelection.selectedSkuPostback || '',
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos

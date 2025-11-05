@@ -13,6 +13,7 @@ export interface Item {
   name: string;
   quantity: string;
   unitPrice: string;
+  skupostback: string;
 }
 
 export interface UserInfo {

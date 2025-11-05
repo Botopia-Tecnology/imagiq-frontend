@@ -227,14 +227,22 @@ export default function Navbar() {
                 navbar.showWhiteItemsMobile ? "text-white" : "text-black"
               }
             />
-            <button className="p-2" aria-label="Usuario">
-              <User
-                className={cn(
-                  "w-6 h-6 transition-colors duration-300",
-                  navbar.showWhiteItemsMobile ? "text-white" : "text-black"
-                )}
-              />
-            </button>
+            {navbar.isAuthenticated && navbar.user?.nombre ? (
+              <UserOptionsDropdown showWhiteItems={navbar.showWhiteItemsMobile} />
+            ) : (
+              <button
+                className="p-2 cursor-pointer active:scale-95 transition-transform duration-150 ease-out"
+                aria-label="Usuario"
+                onClick={() => window.location.replace("/login")}
+              >
+                <User
+                  className={cn(
+                    "w-6 h-6 transition-colors duration-300",
+                    navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                  )}
+                />
+              </button>
+            )}
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="p-2"
@@ -383,7 +391,7 @@ export default function Navbar() {
                 <button
                   type="button"
                   className={cn(
-                    "flex items-center justify-center w-10 h-10",
+                    "flex items-center justify-center w-10 h-10 cursor-pointer active:scale-95 transition-transform duration-150 ease-out",
                     getIconColorClasses()
                   )}
                   onClick={() => window.location.replace("/login")}

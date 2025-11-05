@@ -26,8 +26,10 @@ export interface CartProduct {
   shippingCity?: string;
   /** Nombre de la tienda (ej: "Ses Bogotá C.C. Andino") */
   shippingStore?: string;
-  /** Color del producto */
+  /** Color del producto (código hexadecimal) */
   color?: string;
+  /** Nombre del color del producto */
+  colorName?: string;
   /** Capacidad del producto (ej: "128GB", "256GB") */
   capacity?: string;
   /** Memoria RAM del producto (ej: "8GB", "12GB") */
@@ -141,12 +143,14 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       const shippingStore = typeof p.shippingStore === "string" ? p.shippingStore : undefined;
       // color
       const color = typeof p.color === "string" ? p.color : undefined;
+      // colorName
+      const colorName = typeof p.colorName === "string" ? p.colorName : undefined;
       // capacity
       const capacity = typeof p.capacity === "string" ? p.capacity : undefined;
       // ram
       const ram = typeof p.ram === "string" ? p.ram : undefined;
 
-      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color, capacity, ram };
+      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color, colorName, capacity, ram };
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }

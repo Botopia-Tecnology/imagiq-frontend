@@ -63,11 +63,37 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
   const { recalculatePoints } = usePointsContext();
   const [activeTab, setActiveTab] = useState(0);
 
-  // Usar datos del producto si están disponibles
-  const skuToUse = undefined;
-  const eanToUse = undefined;
-  const skuArrayToUse: string[] = [];
-  const eanArrayToUse: string[] = [];
+  // Usar flix si está disponible, sino usar product
+  const productToUse = flix || product;
+
+  // Extraer TODOS los SKUs y EANs del producto desde los colores/capacidades
+  const allSkus = productToUse.colors?.map(color => color.sku).filter(Boolean) || [];
+  const allEans = productToUse.colors?.map(color => color.ean).filter(Boolean) || [];
+
+  // Agregar SKUs de capacidades si existen
+  if (productToUse.capacities) {
+    productToUse.capacities.forEach(capacity => {
+      if (capacity.sku) allSkus.push(capacity.sku);
+      if (capacity.ean) allEans.push(capacity.ean);
+    });
+  }
+
+  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaDetails)
+  const skuToUse = allSkus.length > 0 ? allSkus.join(',') : undefined;
+  const eanToUse = allEans.length > 0 ? allEans.join(',') : undefined;
+
+  // Debug: Log para ver qué datos tenemos
+  console.log('🔍 Specifications Debug:', {
+    hasProduct: !!product,
+    hasFlix: !!flix,
+    productToUse: productToUse?.name,
+    colorsCount: productToUse.colors?.length,
+    capacitiesCount: productToUse.capacities?.length,
+    skuToUse,
+    eanToUse,
+    allSkus,
+    allEans
+  });
 
   // --- VISUAL: Precio formateado y mostrado dentro del botón ---
   // Usar el precio real del producto, formateado
@@ -104,14 +130,14 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
   return (
     <section
       id="especificaciones-section"
-      className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-8 md:py-12 mt-8 md:mt-12"
+      className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-4 md:py-6 mt-2 md:mt-4"
       aria-label="Especificaciones técnicas"
     >
       <FlixmediaDetails
-          mpn={skuArrayToUse?.join(', ') || skuToUse}
-          ean={eanArrayToUse?.join(', ') || eanToUse}
+          mpn={skuToUse}
+          ean={eanToUse}
           productName={product.name}
-          className="w-full "
+          className="w-full"
         />
      
 

@@ -9,6 +9,7 @@
  */
 
 import type { ProductFilterParams } from "./sharedInterfaces";
+import type { StoresApiResponse } from "@/types/store";
 
 // API Client configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
@@ -344,8 +345,45 @@ export const menusEndpoints = {
 // Trade-in (Entrego y Estreno) API endpoints
 export const tradeInEndpoints = {
   getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/trade-in/hierarchy'),
-  calculateValue: (data: TradeInValueRequest) => 
+  calculateValue: (data: TradeInValueRequest) =>
     apiClient.post<TradeInValueResponse>('/api/trade-in/value', data)
+};
+
+// Stores API endpoints
+export const storesEndpoints = {
+  getAll: (() => {
+    let cache: StoresApiResponse | undefined;
+    let inFlight: Promise<void> | null = null;
+    let lastError: string | null = null;
+
+    return async (): Promise<ApiResponse<StoresApiResponse>> => {
+      // Return from cache if available
+      if (cache) {
+        return { data: cache, success: true };
+      }
+
+      // Deduplicate concurrent calls
+      if (inFlight) {
+        await inFlight;
+        return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+      }
+
+      inFlight = (async () => {
+        const resp = await apiClient.get<StoresApiResponse>('/api/stores');
+        if (resp.success && resp.data) {
+          cache = resp.data;
+          lastError = null;
+        } else {
+          cache = cache || [];
+          lastError = resp.message || 'Error al cargar tiendas';
+        }
+      })();
+
+      await inFlight;
+      inFlight = null;
+      return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+    };
+  })()
 };
 
 // Favorite filter

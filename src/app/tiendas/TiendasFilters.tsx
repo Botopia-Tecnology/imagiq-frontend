@@ -7,17 +7,13 @@
  * - Código limpio, escalable y documentado
  */
 
-import { useState } from "react";
-import { stores } from "@/components/LocationsArray";
+import { useState, useMemo } from "react";
+import { useStores } from "@/hooks/useStores";
+import type { FormattedStore } from "@/types/store";
 
 interface TiendasFiltersProps {
-  onUpdateStores: (filtered: typeof stores) => void;
+  onUpdateStores: (filtered: FormattedStore[]) => void;
 }
-
-// Extraer ciudades únicas, ignorando mayúsculas y espacios
-const ciudades = Array.from(
-  new Set(stores.map((s) => s.city?.trim()).filter(Boolean))
-);
 
 // Utilidad para extraer todos los rangos horarios de un string de horarios
 function getHourRanges(hours: string): Array<{ start: number; end: number }> {
@@ -42,12 +38,22 @@ function getHourRanges(hours: string): Array<{ start: number; end: number }> {
 export default function TiendasFilters({
   onUpdateStores,
 }: TiendasFiltersProps) {
+  // Obtener todas las tiendas usando el hook
+  const { stores, loading: loadingStores } = useStores();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ciudad, setCiudad] = useState<string>("");
   const [horario, setHorario] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Extraer ciudades únicas de las tiendas cargadas
+  const ciudades = useMemo(() => {
+    return Array.from(
+      new Set(stores.map((s) => s.ciudad?.trim()).filter(Boolean))
+    ).sort();
+  }, [stores]);
 
   // Buscar tiendas cercanas usando geolocalización
   const handleCercaDeMi = () => {
@@ -61,8 +67,15 @@ export default function TiendasFilters({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
+
+        // Filtrar solo tiendas con coordenadas válidas
+        const storesWithCoords = stores.filter(
+          (store) => store.latitud !== 0 && store.longitud !== 0 &&
+                     !isNaN(store.latitud) && !isNaN(store.longitud)
+        );
+
         // Calcular distancia a cada tienda
-        const tiendasCercanas = stores
+        const tiendasCercanas = storesWithCoords
           .map((store) => ({
             ...store,
             distancia: getDistance(
@@ -92,15 +105,15 @@ export default function TiendasFilters({
       filtradas = filtradas.filter((s) => {
         // Permitir filtrar aunque el usuario seleccione el nombre capitalizado
         return (
-          s.city && s.city.trim().toLowerCase() === ciudad.trim().toLowerCase()
+          s.ciudad && s.ciudad.trim().toLowerCase() === ciudad.trim().toLowerCase()
         );
       });
     }
     // Filtro robusto por horario (analiza todos los rangos de la cadena de horarios)
     if (horario) {
       filtradas = filtradas.filter((s) => {
-        if (!s.hours) return false;
-        const h = s.hours.toLowerCase();
+        if (!s.horario) return false;
+        const h = s.horario.toLowerCase();
         const ranges = getHourRanges(h);
         // Si el string contiene la palabra clave (mañana, tarde, noche), lo acepta
         if (h.includes(horario)) return true;
@@ -118,9 +131,9 @@ export default function TiendasFilters({
       const q = search.trim().toLowerCase();
       filtradas = filtradas.filter(
         (s) =>
-          s.name?.toLowerCase().includes(q) ||
+          s.descripcion?.toLowerCase().includes(q) ||
           false ||
-          s.address?.toLowerCase().includes(q) ||
+          s.direccion?.toLowerCase().includes(q) ||
           false
       );
     }

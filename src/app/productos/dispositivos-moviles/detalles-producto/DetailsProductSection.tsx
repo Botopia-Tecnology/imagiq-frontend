@@ -285,7 +285,11 @@ const DetailsProductSection: React.FC<{
         deviceName={product.name}
         basePrice={getCurrentPrice()}
         originalPrice={originalPrice}
-        selectedColor={productSelection.selection.selectedColor || undefined}
+        selectedColor={
+          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          undefined
+        }
         selectedStorage={
           productSelection.selection.selectedCapacity || undefined
         }

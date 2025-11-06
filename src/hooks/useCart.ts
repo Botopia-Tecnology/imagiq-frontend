@@ -87,83 +87,86 @@ const TAX_RATE = 0.09;
 function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
   if (!Array.isArray(rawProducts)) return [];
 
+  const randId = () => Math.random().toString(36).slice(2, 10);
+
+  const toId = (val: unknown): string => {
+    if (typeof val === "string") return val;
+    if (typeof val === "number") return String(val);
+    if (val !== null && val !== undefined) {
+      if (typeof val === "boolean" || typeof val === "bigint") return String(val);
+    }
+    return "";
+  };
+
+  const asString = (val: unknown, fallback = undefined as string | undefined) =>
+    typeof val === "string" ? val : fallback;
+
+  const asNumber = (val: unknown, fallback = 0) =>
+    Number(val ?? fallback);
+
+  const parseProduct = (p: Record<string, unknown>): CartProduct => {
+    const id = toId(p.id);
+    const name = asString(p.nombre, asString(p.name, "Producto")) || "Producto";
+    const image = asString(p.imagen, asString(p.image, "/img/logo_imagiq.png")) || "/img/logo_imagiq.png";
+
+    const sku =
+      typeof p.sku === "string"
+        ? p.sku
+        : `SKU-${typeof p.id === "string" ? p.id : randId()}`;
+
+    const ean =
+      typeof p.ean === "string"
+        ? p.ean
+        : `EAN-${typeof p.id === "string" ? p.id : randId()}`;
+
+    const skuPostback =
+      typeof p.skuPostback === "string"
+        ? p.skuPostback
+        : `SKU-${typeof p.id === "string" ? p.id : randId()}`;
+
+    const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 4;
+    const price = asNumber(p.precio ?? p.price ?? 0, 0);
+    const quantity = Number(p.cantidad ?? p.quantity ?? 1);
+
+    const stock = typeof p.stock === "number" ? p.stock : undefined;
+    const originalPrice = typeof p.originalPrice === "number" ? p.originalPrice : undefined;
+    const shippingFrom = asString(p.shippingFrom);
+    const shippingCity = asString(p.shippingCity);
+    const shippingStore = asString(p.shippingStore);
+    const color = asString(p.color);
+    const colorName = asString(p.colorName);
+    const capacity = asString(p.capacity);
+    const ram = asString(p.ram);
+    const desDetallada = asString(p.desDetallada);
+
+    return {
+      id,
+      name,
+      image,
+      price,
+      quantity,
+      sku,
+      ean,
+      puntos_q,
+      stock,
+      originalPrice,
+      shippingFrom,
+      shippingCity,
+      shippingStore,
+      color,
+      colorName,
+      capacity,
+      ram,
+      skuPostback,
+      desDetallada,
+    };
+  };
+
   return rawProducts
     .filter(
       (p): p is Record<string, unknown> => typeof p === "object" && p !== null
     )
-    .map((p) => {
-      // id
-      let id = "";
-      if (typeof p.id === "string") id = p.id;
-      else if (typeof p.id === "number") id = String(p.id);
-      else if (p.id !== null && p.id !== undefined) {
-        // Solo convertir si es primitivo, evitar objetos
-        const idValue = p.id;
-        if (typeof idValue === "boolean" || typeof idValue === "bigint") {
-          id = String(idValue);
-        }
-      }
-      // name
-      let name = "Producto";
-      if (typeof p.nombre === "string") name = p.nombre;
-      else if (typeof p.name === "string") name = p.name;
-      // image
-      let image = "/img/logo_imagiq.png";
-      if (typeof p.imagen === "string") image = p.imagen;
-      else if (typeof p.image === "string") image = p.image;
-      // sku
-      let sku = "";
-      if (typeof p.sku === "string") sku = p.sku;
-      else
-        sku = `SKU-${
-          typeof p.id === "string"
-            ? p.id
-            : Math.random().toString(36).slice(2, 10)
-        }`;
-      let ean = "";
-      if (typeof p.ean === "string") ean = p.ean;
-      else
-        ean = `EAN-${
-          typeof p.id === "string"
-            ? p.id
-            : Math.random().toString(36).slice(2, 10)
-        }`;
-        // skuPostback
-      let skuPostback = "";
-      if (typeof p.skuPostback === "string") skuPostback = p.skuPostback;
-      else
-        skuPostback = `SKU-${
-          typeof p.id === "string"
-            ? p.id
-            : Math.random().toString(36).slice(2, 10)
-        }`;
-      // puntos_q - valor por defecto 4 como especificado
-      const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 4;
-      // price
-      const price = Number(p.precio || p.price || 0);
-      // quantity
-      const quantity = Number(p.cantidad || p.quantity || 1);
-      // stock - del backend
-      const stock = typeof p.stock === "number" ? p.stock : undefined;
-      // originalPrice - del backend
-      const originalPrice = typeof p.originalPrice === "number" ? p.originalPrice : undefined;
-      // shippingFrom 
-      const shippingFrom = typeof p.shippingFrom === "string" ? p.shippingFrom : undefined;
-      // shippingCity y shippingStore
-      const shippingCity = typeof p.shippingCity === "string" ? p.shippingCity : undefined;
-      const shippingStore = typeof p.shippingStore === "string" ? p.shippingStore : undefined;
-      // color
-      const color = typeof p.color === "string" ? p.color : undefined;
-      // colorName
-      const colorName = typeof p.colorName === "string" ? p.colorName : undefined;
-      // capacity
-      const capacity = typeof p.capacity === "string" ? p.capacity : undefined;
-      // ram
-      const ram = typeof p.ram === "string" ? p.ram : undefined;
-
-      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color,colorName,  capacity, ram, skuPostback  };
-
-    })
+    .map(parseProduct)
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }
 

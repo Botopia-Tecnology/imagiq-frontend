@@ -9,6 +9,7 @@ interface PersonalInfoData {
   apellido: string;
   email: string;
   telefono: string;
+  codigo_pais: string;
   tipo_documento: string;
   numero_documento: string;
   fecha_nacimiento: string;
@@ -25,7 +26,6 @@ interface PersonalInfoStepProps {
 export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoStepProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [countryCode, setCountryCode] = useState('+57'); // Colombia por defecto
 
   // Validar requisitos de seguridad de la contraseña
   const passwordRequirements = {
@@ -131,8 +131,8 @@ export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoS
           <Label htmlFor="telefono">Teléfono *</Label>
           <div className="flex gap-2">
             <select
-              value={countryCode}
-              onChange={(e) => setCountryCode(e.target.value)}
+              value={`+${formData.codigo_pais}`}
+              onChange={(e) => onChange({ codigo_pais: e.target.value.replace('+', '') })}
               disabled={disabled}
               style={{ backgroundColor: '#ffffff' }}
               className="w-[110px] h-9 rounded-md border border-gray-300 px-3 py-1 text-sm focus:outline-none focus:border-black focus:ring-1 focus:ring-black"

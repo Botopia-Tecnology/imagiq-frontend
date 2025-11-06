@@ -290,7 +290,8 @@ const DetailsProductSection: React.FC<{
           productSelection.selection.selectedCapacity || undefined
         }
         onBuyClick={handleBuyNow}
-        hasAddiFinancing={true}
+        indcerointeres={productSelection.selectedVariant?.indcerointeres ?? 0}
+        allPrices={product.apiProduct?.precioeccommerce || []}
         isVisible={showStickyBar}
       />
       <ImageGalleryModal
@@ -413,6 +414,8 @@ const DetailsProductSection: React.FC<{
                   }
                   currentPrice={getCurrentPrice()}
                   originalPrice={originalPrice}
+                  indcerointeres={productSelection.selectedVariant?.indcerointeres ?? 0}
+                  allPrices={product.apiProduct?.precioeccommerce || []}
                 />
               </div>
             </div>

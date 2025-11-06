@@ -21,7 +21,7 @@ export function OTPStep({
   onSendOTP,
   disabled,
 }: OTPStepProps) {
-  const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('email');
+  const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('whatsapp');
 
   return (
     <div className="space-y-4 text-center">
@@ -36,15 +36,14 @@ export function OTPStep({
           <button
             type="button"
             onClick={() => setSendMethod('email')}
-            disabled={disabled}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
-              sendMethod === 'email'
-                ? 'border-black bg-black text-white'
-                : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-            }`}
+            disabled={true}
+            className="flex-1 flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
           >
-            <Mail className="w-5 h-5" />
-            <span className="font-medium">Email</span>
+            <div className="flex items-center gap-2">
+              <Mail className="w-5 h-5" />
+              <span className="font-medium">Email</span>
+            </div>
+            <span className="text-xs">Próximamente</span>
           </button>
           <button
             type="button"

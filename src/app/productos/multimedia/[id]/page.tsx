@@ -161,7 +161,21 @@ export default function MultimediaPage({
   const numericOriginalPrice = product.originalPrice
     ? parsePrice(product.originalPrice)
     : undefined;
-  
+
+  // Obtener indcerointeres del producto (puede venir como array del API)
+  const getIndcerointeres = (): number => {
+    // Si el producto tiene apiProduct (datos del API)
+    if (product.apiProduct?.indcerointeres) {
+      const indcerointeresArray = product.apiProduct.indcerointeres;
+      // Tomar el primer valor del array, si no existe usar 0
+      return indcerointeresArray[0] ?? 0;
+    }
+    // Fallback a 0 si no existe
+    return 0;
+  };
+
+  const indcerointeres = getIndcerointeres();
+
   // Función helper para verificar si el producto es premium
   const isPremiumProduct = (segmento?: string | string[]): boolean => {
     if (!segmento) return false;
@@ -171,8 +185,8 @@ export default function MultimediaPage({
 
   // Determinar la ruta según el segmento del producto
   const isPremium = isPremiumProduct(product.segmento);
-  const viewRoute = isPremium 
-    ? `/productos/viewpremium/${id}` 
+  const viewRoute = isPremium
+    ? `/productos/viewpremium/${id}`
     : `/productos/view/${id}`;
 
   return (
@@ -182,6 +196,8 @@ export default function MultimediaPage({
         productName={product.name}
         price={numericPrice}
         originalPrice={numericOriginalPrice}
+        indcerointeres={indcerointeres}
+        allPrices={product.apiProduct?.precioeccommerce || []}
         onViewDetailsClick={() => router.push(viewRoute)}
         isVisible={true}
       />

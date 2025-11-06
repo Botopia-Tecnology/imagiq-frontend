@@ -70,6 +70,7 @@ export interface UseProductSelectionReturn {
   selectColor: (color: string) => void;
   selectCapacity: (capacity: string) => void;
   selectMemoriaram: (memoriaram: string) => void;
+  selectVariant: (variant: ProductVariant) => void;
   resetSelection: () => void;
   
   // Funciones helper para compatibilidad con componentes legacy
@@ -326,6 +327,19 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     setActiveRamFilter(undefined);
   }, []);
 
+  // Función para seleccionar una variante completa directamente
+  const selectVariant = useCallback((variant: ProductVariant) => {
+    setSelection({
+      selectedColor: variant.color,
+      selectedCapacity: variant.capacity,
+      selectedMemoriaram: variant.memoriaram,
+      selectedVariant: variant
+    });
+    // Actualizar filtros activos
+    setActiveCapacityFilter(variant.capacity);
+    setActiveRamFilter(variant.memoriaram);
+  }, []);
+
   // Funciones helper para compatibilidad con componentes legacy
   const getColorOptions = useCallback((): ColorOption[] => {
     return availableColorsFiltered.map(color => {
@@ -397,6 +411,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     selectColor,
     selectCapacity,
     selectMemoriaram,
+    selectVariant,
     resetSelection,
     getColorOptions,
     getStorageOptions,

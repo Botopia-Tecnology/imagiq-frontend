@@ -1,9 +1,10 @@
 "use client";
 
-import React, { forwardRef } from "react";
+import React, { forwardRef, useEffect } from "react";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 import { useCeroInteres } from "@/hooks/useCeroInteres";
+import { useProductSelection } from "@/hooks/useProductSelection";
 
 interface ProductInfoProps {
   product: ProductCardProps;
@@ -34,10 +35,42 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   productImages,
   onOpenModal,
 }, ref) => {
-  // Obtener precio actual
+  // Hook para manejo inteligente de selección de productos
+  const productSelection = useProductSelection(product.apiProduct || {
+    codigoMarketBase: product.id,
+    codigoMarket: [],
+    nombreMarket: product.name,
+    categoria: '',
+    subcategoria: '',
+    modelo: '',
+    color: [],
+    capacidad: [],
+    memoriaram: [],
+    descGeneral: null,
+    sku: [],
+    ean: [],
+    desDetallada: [],
+    stockTotal: [],
+    urlImagenes: [],
+    urlRender3D: [],
+    imagePreviewUrl: [],
+    imageDetailsUrls: [],
+    precioNormal: [],
+    precioeccommerce: [],
+    fechaInicioVigencia: [],
+    fechaFinalVigencia: [],
+    indRetoma: [],
+    indcerointeres: [],
+    skuPostback: [],
+  });
+
+  // Obtener precio actual desde el hook de selección o usar el fallback legacy
   const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
   const priceStr = selectedCapacity?.price || product.price || "0";
-  const currentPrice = Number.parseInt(priceStr.replaceAll(/[^\d]/g, ''), 10);
+  const legacyPrice = Number.parseInt(priceStr.replaceAll(/[^\d]/g, ''), 10);
+
+  // Usar precio del sistema de selección si está disponible
+  const currentPrice = productSelection.selectedPrice || legacyPrice;
 
   // Hook para cuotas sin interés (solo cuando indcerointeres === 1)
   const ceroInteres = useCeroInteres(
@@ -46,6 +79,31 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
     indcerointeres,
     true
   );
+
+  // Sincronizar los estados del padre cuando cambie la selección del hook
+  useEffect(() => {
+    if (product.apiProduct && productSelection.selectedVariant) {
+      // Actualizar los estados del padre para mantener sincronización
+      const variant = productSelection.selectedVariant;
+
+      // Encontrar el color correspondiente en product.colors
+      const colorObj = product.colors?.find(c => c.label === variant.color);
+      if (colorObj && colorObj.name !== selectedColor) {
+        setSelectedColor(colorObj.name);
+      }
+
+      // Actualizar capacidad
+      if (variant.capacity !== selectedStorage) {
+        const capacityObj = product.capacities?.find(c => c.label === variant.capacity);
+        setSelectedStorage(capacityObj?.value || variant.capacity);
+      }
+
+      // Actualizar RAM
+      if (variant.memoriaram !== selectedRam) {
+        setSelectedRam(variant.memoriaram);
+      }
+    }
+  }, [productSelection.selectedVariant, product.apiProduct, product.colors, product.capacities, selectedColor, selectedStorage, selectedRam, setSelectedColor, setSelectedStorage, setSelectedRam]);
 
   return (
     <div ref={ref} className="w-full lg:col-span-3">
@@ -58,42 +116,21 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         <div className="mb-20">
           {/* Información de SKU, Código y Stock */}
           <div className="mb-4 space-y-1">
-            {(() => {
-              // Buscar el índice de variante correspondiente al color seleccionado
-              let variantSku = '';
-              let variantCodigoMarket = '';
-              let variantStockTotal = 0;
-
-              if (product.apiProduct && selectedColor) {
-                const variantIndex = product.apiProduct.color.findIndex(
-                  (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
-                );
-
-                if (variantIndex !== -1) {
-                  variantSku = product.apiProduct.sku?.[variantIndex] || '';
-                  variantCodigoMarket = product.apiProduct.codigoMarket?.[variantIndex] || '';
-                  variantStockTotal = product.apiProduct.stockTotal?.[variantIndex] || 0;
-                }
-              }
-
-              return (
-                <>
-                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && variantSku && (
-                    <p className="text-sm text-gray-600">
-                      SKU: {variantSku}
-                    </p>
-                  )}
-                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && variantCodigoMarket && (
-                    <p className="text-sm text-gray-600">
-                      Código: {variantCodigoMarket}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-600">
-                    Stock Total: {variantStockTotal}
-                  </p>
-                </>
-              );
-            })()}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedSku && (
+              <p className="text-sm text-gray-600">
+                SKU: {productSelection.selectedSku}
+              </p>
+            )}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedCodigoMarket && (
+              <p className="text-sm text-gray-600">
+                Código: {productSelection.selectedCodigoMarket}
+              </p>
+            )}
+            {productSelection.selectedStockTotal !== null && (
+              <p className="text-sm text-gray-600">
+                Stock Total: {productSelection.selectedStockTotal}
+              </p>
+            )}
           </div>
 
           <div className="border-2 border-blue-600 rounded-md p-4 bg-blue-50/30">
@@ -101,8 +138,10 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               <div className="font-bold text-black text-lg flex-1 self-center">{product.name}</div>
               <div className="text-right self-center">
                 {(() => {
-                  const selectedCapacityPrice = product.capacities?.find(c => c.value === selectedStorage);
-                  const priceDisplay = selectedCapacityPrice?.price || product.price || "Precio no disponible";
+                  // Usar precio del sistema de selección si está disponible
+                  const priceDisplay = productSelection.selectedPrice
+                    ? `$ ${Math.round(productSelection.selectedPrice).toLocaleString('es-CO')}`
+                    : (product.capacities?.find(c => c.value === selectedStorage)?.price || product.price || "Precio no disponible");
                   const monthlyPrice = Math.round(currentPrice / 12);
 
                   // Renderizar según indcerointeres
@@ -168,17 +207,28 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Almacenamiento */}
         {(() => {
-          // Verificar si hay capacidades válidas (no "NO APLICA", "NO", etc.)
-          const validCapacities = product.capacities?.filter(cap => {
-            const normalizedLabel = cap.label?.toLowerCase().trim() || '';
-            return !normalizedLabel.includes('no aplica') &&
-                   normalizedLabel !== 'n/a' &&
-                   normalizedLabel !== 'na' &&
-                   normalizedLabel !== 'no' &&
-                   normalizedLabel !== '';
-          }) || [];
+          // Mostrar TODAS las capacidades disponibles para el color seleccionado (sin filtrar por RAM)
+          const availableCapacities = product.apiProduct
+            ? Array.from(new Set(
+                productSelection.allVariants
+                  .filter(v =>
+                    v.color === productSelection.selection.selectedColor &&
+                    v.capacity &&
+                    v.capacity.trim() !== '' &&
+                    v.capacity.toLowerCase() !== 'no aplica'
+                  )
+                  .map(v => v.capacity)
+              ))
+            : product.capacities?.filter(cap => {
+                const normalizedLabel = cap.label?.toLowerCase().trim() || '';
+                return !normalizedLabel.includes('no aplica') &&
+                       normalizedLabel !== 'n/a' &&
+                       normalizedLabel !== 'na' &&
+                       normalizedLabel !== 'no' &&
+                       normalizedLabel !== '';
+              }).map(c => c.label) || [];
 
-          if (validCapacities.length === 0) return null;
+          if (availableCapacities.length === 0) return null;
 
           return (
           <div className="mb-6 mt-8">
@@ -188,18 +238,56 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             <p className="text-sm text-black mb-4">Compra tu smartphone de mayor capacidad a menor precio</p>
 
             <div className="space-y-3">
-              {validCapacities.map((capacity, index) => {
-                const isSelected = capacity.value === selectedStorage;
-                const priceStr = capacity.price || "0";
-                const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
+              {availableCapacities.map((capacityLabel, index) => {
+                // Buscar información de la capacidad desde product.capacities o desde el hook
+                const capacityInfo = product.capacities?.find(c => c.label === capacityLabel);
+                const isSelected = product.apiProduct
+                  ? productSelection.selection.selectedCapacity === capacityLabel
+                  : capacityInfo?.value === selectedStorage;
+
+                // Obtener precio: buscar cualquier variante con esta capacidad para mostrar su precio
+                let priceStr = "0";
+                if (product.apiProduct) {
+                  // Si es la capacidad seleccionada actualmente, usar el precio seleccionado
+                  if (isSelected && productSelection.selectedPrice) {
+                    priceStr = `$ ${Math.round(productSelection.selectedPrice).toLocaleString('es-CO')}`;
+                  } else {
+                    // Si no, buscar cualquier variante con esta capacidad para obtener su precio
+                    const variantWithCapacity = productSelection.allVariants.find(v => v.capacity === capacityLabel);
+                    if (variantWithCapacity && variantWithCapacity.precioeccommerce) {
+                      priceStr = `$ ${Math.round(variantWithCapacity.precioeccommerce).toLocaleString('es-CO')}`;
+                    }
+                  }
+                } else if (capacityInfo?.price) {
+                  priceStr = capacityInfo.price;
+                }
+
+                const priceNumber = typeof priceStr === 'string'
+                  ? parseInt(priceStr.replace(/[^\d]/g, ''))
+                  : priceStr;
                 const monthlyPrice = Math.round(priceNumber / 12);
-                const formattedLabel = String(capacity.label || "")
+                const formattedLabel = String(capacityLabel || "")
                   .replace(/(\d+)\s*gb\b/i, '$1 GB');
 
                 return (
                   <div key={index}>
                     <div
-                      onClick={() => setSelectedStorage(capacity.value)}
+                      onClick={() => {
+                        if (product.apiProduct) {
+                          // Buscar la primera variante válida con esta capacidad y color
+                          const targetVariant = productSelection.allVariants.find(
+                            v => v.capacity === capacityLabel &&
+                                 v.color === productSelection.selection.selectedColor
+                          );
+
+                          if (targetVariant) {
+                            // Seleccionar la variante completa en una sola operación
+                            productSelection.selectVariant(targetVariant);
+                          }
+                        } else {
+                          setSelectedStorage(capacityInfo?.value || capacityLabel);
+                        }
+                      }}
                       className={`border-2 rounded-md p-4 cursor-pointer transition-all ${isSelected
                         ? "border-blue-600 bg-blue-50/30"
                         : "border-gray-300 hover:border-gray-400"
@@ -214,7 +302,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                             $ {monthlyPrice.toLocaleString('es-CO')} al mes o
                           </div>
                           <div className="text-lg text-black">
-                            {capacity.price || "Precio no disponible"}
+                            {priceStr !== "0" ? priceStr : "Precio no disponible"}
                           </div>
                         </div>
                       </div>
@@ -239,21 +327,22 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Memoria RAM */}
         {(() => {
-          // Obtener opciones únicas de RAM del producto
-          const ramOptions = product.apiProduct?.memoriaram
-            ? Array.from(new Set(product.apiProduct.memoriaram)).filter(ram => {
-                if (!ram || ram.trim() === '') return false;
-                // Filtrar valores "NO APLICA", "NO", "N/A", "NA" (case insensitive)
-                const normalizedRam = ram.toLowerCase().trim();
-                return !normalizedRam.includes('no aplica') &&
-                       normalizedRam !== 'n/a' &&
-                       normalizedRam !== 'na' &&
-                       normalizedRam !== 'no';
-              })
+          // Mostrar TODAS las opciones de RAM disponibles para el color seleccionado (sin filtrar por capacidad)
+          const availableRamOptions = product.apiProduct
+            ? Array.from(new Set(
+                productSelection.allVariants
+                  .filter(v =>
+                    v.color === productSelection.selection.selectedColor &&
+                    v.memoriaram &&
+                    v.memoriaram.trim() !== '' &&
+                    v.memoriaram.toLowerCase() !== 'no aplica'
+                  )
+                  .map(v => v.memoriaram)
+              ))
             : [];
 
           // Solo mostrar si hay opciones de RAM válidas
-          if (ramOptions.length === 0) return null;
+          if (availableRamOptions.length === 0) return null;
 
           return (
             <div className="mb-6 mt-8">
@@ -263,13 +352,30 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               <p className="text-sm text-black mb-4">Elige tu Memoria Ram</p>
 
               <div className="grid grid-cols-2 gap-4">
-                {ramOptions.map((ram, index) => {
-                  const isSelected = ram === selectedRam;
+                {availableRamOptions.map((ram, index) => {
+                  const isSelected = product.apiProduct
+                    ? productSelection.selection.selectedMemoriaram === ram
+                    : ram === selectedRam;
 
                   return (
                     <div
                       key={index}
-                      onClick={() => setSelectedRam(ram)}
+                      onClick={() => {
+                        if (product.apiProduct) {
+                          // Buscar la primera variante válida con esta RAM y color
+                          const targetVariant = productSelection.allVariants.find(
+                            v => v.memoriaram === ram &&
+                                 v.color === productSelection.selection.selectedColor
+                          );
+
+                          if (targetVariant) {
+                            // Seleccionar la variante completa en una sola operación
+                            productSelection.selectVariant(targetVariant);
+                          }
+                        } else {
+                          setSelectedRam(ram);
+                        }
+                      }}
                       className={`border-2 rounded-md px-6 py-6 cursor-pointer transition-all ${
                         isSelected
                           ? "border-blue-600 bg-blue-50/30"
@@ -287,15 +393,43 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Color */}
         {(() => {
-          // Verificar si hay colores válidos (no "NO APLICA", "NO", etc.)
-          const validColors = product.colors?.filter(color => {
-            const normalizedLabel = color.label?.toLowerCase().trim() || '';
-            return !normalizedLabel.includes('no aplica') &&
-                   normalizedLabel !== 'n/a' &&
-                   normalizedLabel !== 'na' &&
-                   normalizedLabel !== 'no' &&
-                   normalizedLabel !== '';
-          }) || [];
+          // Mostrar TODOS los colores disponibles (sin filtrar por capacidad/RAM)
+          const availableColorNames = product.apiProduct
+            ? Array.from(new Set(productSelection.allVariants.map(v => v.color).filter(c => c && c.trim() !== '')))
+            : product.colors?.filter(color => {
+                const normalizedLabel = color.label?.toLowerCase().trim() || '';
+                return !normalizedLabel.includes('no aplica') &&
+                       normalizedLabel !== 'n/a' &&
+                       normalizedLabel !== 'na' &&
+                       normalizedLabel !== 'no' &&
+                       normalizedLabel !== '';
+              }).map(c => c.name) || [];
+
+          // Mapear nombres de colores disponibles a objetos de color completos
+          const validColors = availableColorNames.map(colorName => {
+            if (product.apiProduct) {
+              // Buscar el color en el array de colors del producto
+              const colorInfo = product.colors?.find(c => c.label === colorName);
+              if (colorInfo) return colorInfo;
+
+              // Si no se encuentra, crear un color básico
+              return {
+                name: colorName.toLowerCase().replace(/\s+/g, '-'),
+                hex: '#808080',
+                label: colorName,
+                sku: '',
+                ean: ''
+              };
+            }
+            // Legacy: buscar por name
+            return product.colors?.find(c => c.name === colorName) || {
+              name: colorName,
+              hex: '#808080',
+              label: colorName,
+              sku: '',
+              ean: ''
+            };
+          });
 
           if (validColors.length === 0) return null;
 
@@ -309,13 +443,19 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             {/* Selectores de color - SOLO DESKTOP */}
             <div className="hidden lg:flex gap-4 justify-center">
               {validColors.map((color, index) => {
-                const isSelected = color.name === selectedColor;
+                const isSelected = product.apiProduct
+                  ? productSelection.selection.selectedColor === color.label
+                  : color.name === selectedColor;
 
                 return (
                   <div
                     key={index}
                     onClick={() => {
-                      setSelectedColor(color.name);
+                      if (product.apiProduct) {
+                        productSelection.selectColor(color.label);
+                      } else {
+                        setSelectedColor(color.name);
+                      }
                       setCurrentImageIndex(0);
                     }}
                     className="flex flex-col items-center cursor-pointer transition-all"
@@ -345,14 +485,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
             {/* Botón AR Experience - SOLO DESKTOP Y TABLET */}
             {(() => {
-              const variantIndex = product.apiProduct && selectedColor
-                ? product.apiProduct.color.findIndex(
-                    (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
-                  )
-                : -1;
-
-              const urlRender3D = variantIndex !== -1 && product.apiProduct?.urlRender3D?.[variantIndex]
-                ? product.apiProduct.urlRender3D[variantIndex]
+              const urlRender3D = product.apiProduct && productSelection.selectedVariant?.urlRender3D
+                ? productSelection.selectedVariant.urlRender3D
                 : null;
 
               return urlRender3D && urlRender3D.trim() !== "" ? (
@@ -396,13 +530,19 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 {/* Selectores de color - SOLO MOBILE - Debajo de Ver más */}
                 <div className="flex gap-4 justify-center mb-6">
                   {validColors.map((color, index) => {
-                    const isSelected = color.name === selectedColor;
+                    const isSelected = product.apiProduct
+                      ? productSelection.selection.selectedColor === color.label
+                      : color.name === selectedColor;
 
                     return (
                       <div
                         key={index}
                         onClick={() => {
-                          setSelectedColor(color.name);
+                          if (product.apiProduct) {
+                            productSelection.selectColor(color.label);
+                          } else {
+                            setSelectedColor(color.name);
+                          }
                           setCurrentImageIndex(0);
                         }}
                         className="flex flex-col items-center cursor-pointer transition-all"
@@ -424,14 +564,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 </div>
                 {/* Botón AR Experience - Solo mobile, justo después de "Ver más" */}
                 {(() => {
-                  const variantIndex = product.apiProduct && selectedColor
-                    ? product.apiProduct.color.findIndex(
-                        (color: string) => color.toLowerCase().trim() === selectedColor.toLowerCase().trim()
-                      )
-                    : -1;
-
-                  const urlRender3D = variantIndex !== -1 && product.apiProduct?.urlRender3D?.[variantIndex]
-                    ? product.apiProduct.urlRender3D[variantIndex]
+                  const urlRender3D = product.apiProduct && productSelection.selectedVariant?.urlRender3D
+                    ? productSelection.selectedVariant.urlRender3D
                     : null;
 
                   return urlRender3D && urlRender3D.trim() !== "" ? (

@@ -2,8 +2,23 @@
 import { useState, useEffect } from "react";
 import { stores, Store } from "../../../components/LocationsArray";
 import { Direccion } from "@/types/user";
+import { addressesService } from "@/services/addresses.service";
+import type { Address } from "@/types/address";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+/**
+ * Helper para convertir Address a Direccion (legacy)
+ */
+const addressToDireccion = (address: Address): Direccion => {
+  return {
+    id: address.id,
+    usuario_id: address.usuarioId,
+    email: '', // Se llenará del localStorage si es necesario
+    linea_uno: address.direccionFormateada,
+    codigo_dane: '', // Backend lo llena
+    ciudad: address.ciudad || '',
+    pais: address.pais,
+  };
+};
 
 export const useDelivery = () => {
   const [address, setAddress] = useState<Direccion | null>(null);
@@ -14,16 +29,20 @@ export const useDelivery = () => {
   const [addresses, setAddresses] = useState<Direccion[]>([]);
   const [deliveryMethod, setDeliveryMethod] = useState("domicilio");
 
-  // Cargar direcciones del usuario
+  // Cargar direcciones del usuario usando AddressesService
   useEffect(() => {
     const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-    if (userInfo && userInfo.id) {
-      fetch(
-        `${API_BASE_URL}/api/users/${userInfo.id || userInfo.email}/addresses`
-      )
-        .then((res) => res.json())
-        .then((data) => setAddresses(data))
-        .catch((error) => console.error("Error loading addresses:", error));
+    if (userInfo && (userInfo.id || userInfo.email)) {
+      addressesService.getUserAddresses()
+        .then((addresses: Address[]) => {
+          // Convertir Address[] a Direccion[] para mantener compatibilidad
+          const direcciones = addresses.map(addressToDireccion);
+          setAddresses(direcciones);
+        })
+        .catch((error) => {
+          console.error("Error loading addresses:", error);
+          setAddresses([]);
+        });
     }
   }, []);
 
@@ -63,17 +82,19 @@ export const useDelivery = () => {
     (deliveryMethod === "tienda" && selectedStore !== null);
 
   // Función para refrescar direcciones después de agregar una nueva
-  const addAddress = (userIdentifier: string) => {
+  const addAddress = () => {
     // Esta función solo refresca la lista de direcciones
     // La creación real se hace en AddNewAddressForm
-    fetch(`${API_BASE_URL}/api/users/${userIdentifier}/addresses`)
-      .then((res) => res.json())
-      .then((data) => {
-        setAddresses(data);
-        return data;
+    addressesService.getUserAddresses()
+      .then((addresses: Address[]) => {
+        // Convertir Address[] a Direccion[] para mantener compatibilidad
+        const direcciones = addresses.map(addressToDireccion);
+        setAddresses(direcciones);
+        return direcciones;
       })
       .catch((error) => {
         console.error("Error refreshing addresses:", error);
+        setAddresses([]);
         return [];
       });
   };

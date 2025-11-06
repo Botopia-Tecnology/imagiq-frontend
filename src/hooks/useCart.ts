@@ -26,13 +26,16 @@ export interface CartProduct {
   shippingCity?: string;
   /** Nombre de la tienda (ej: "Ses Bogotá C.C. Andino") */
   shippingStore?: string;
-  /** Color del producto */
+  /** Color del producto (código hexadecimal) */
   color?: string;
+  /** Nombre del color del producto */
+  colorName?: string;
   /** Capacidad del producto (ej: "128GB", "256GB") */
   capacity?: string;
   /** Memoria RAM del producto (ej: "8GB", "12GB") */
   ram?: string;
   skuPostback?: string;
+  desDetallada?:string;
 }
 
 interface CartCalculations {
@@ -49,6 +52,7 @@ interface UseCartReturn {
   products: CartProduct[];
   appliedDiscount: number;
   isLoading: boolean;
+  loadingShippingInfo: Record<string, boolean>;
 
   // Cálculos
   calculations: CartCalculations;
@@ -150,12 +154,15 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       const shippingStore = typeof p.shippingStore === "string" ? p.shippingStore : undefined;
       // color
       const color = typeof p.color === "string" ? p.color : undefined;
+      // colorName
+      const colorName = typeof p.colorName === "string" ? p.colorName : undefined;
       // capacity
       const capacity = typeof p.capacity === "string" ? p.capacity : undefined;
       // ram
       const ram = typeof p.ram === "string" ? p.ram : undefined;
 
-      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color, capacity, ram, skuPostback  };
+      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color,colorName,  capacity, ram, skuPostback  };
+
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }
@@ -199,11 +206,77 @@ export function useCart(): UseCartReturn {
   const [products, setProducts] = useState<CartProduct[]>([]);
   const [appliedDiscount, setAppliedDiscount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadingShippingInfo, setLoadingShippingInfo] = useState<Record<string, boolean>>({});
 
   // Ref para prevenir múltiples clics del mismo producto en un corto período
   const addProductTimeoutRef = useRef<Record<string, number>>({});
   // Ref para evitar duplicidad de alertas (toast)
   const toastActiveRef = useRef<Record<string, boolean>>({});
+
+  // Función helper para obtener userId
+  const getUserId = useCallback((): string | undefined => {
+    try {
+      const userStr = localStorage.getItem("imagiq_user");
+      if (!userStr) return undefined;
+      const user = JSON.parse(userStr);
+      return user?.id || user?.user_id;
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  // Función para cargar información de envío de un producto
+  const loadShippingInfoForProduct = useCallback(async (sku: string, userId: string) => {
+    setLoadingShippingInfo((prev) => ({ ...prev, [sku]: true }));
+
+    try {
+      const response = await productEndpoints.getCandidateStores({
+        skus: [sku],
+        user_id: userId,
+      });
+
+      if (response.success && response.data) {
+        const { stores, default_direction } = response.data;
+
+        let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
+        let shippingStore = "";
+
+        const storeEntries = Object.entries(stores);
+        if (storeEntries.length > 0) {
+          const [firstCity, firstCityStores] = storeEntries[0];
+          shippingCity = firstCity;
+          if (firstCityStores.length > 0) {
+            shippingStore = firstCityStores[0].nombre_tienda.trim();
+          }
+        }
+
+        setProducts((currentProducts) => {
+          const updatedProducts = currentProducts.map(p =>
+            p.sku === sku ? { ...p, shippingCity, shippingStore } : p
+          );
+
+          try {
+            localStorage.setItem(
+              STORAGE_KEYS.CART_ITEMS,
+              JSON.stringify(updatedProducts)
+            );
+          } catch (error) {
+            console.error("Error saving updated shipping location:", error);
+          }
+
+          return updatedProducts;
+        });
+      }
+    } catch (error) {
+      console.error('Error al obtener tienda candidata:', error);
+    } finally {
+      setLoadingShippingInfo((prev) => {
+        const newState = { ...prev };
+        delete newState[sku];
+        return newState;
+      });
+    }
+  }, []);
 
   // Inicializar datos del carrito
   useEffect(() => {
@@ -211,6 +284,22 @@ export function useCart(): UseCartReturn {
     setAppliedDiscount(getStoredDiscount());
     setIsLoading(false);
   }, []);
+
+  // Cargar información de envío para productos sin ella al montar
+  useEffect(() => {
+    const userId = getUserId();
+    if (!userId) return;
+
+    const storedProducts = getStoredProducts();
+    const productsWithoutShipping = storedProducts.filter(p => !p.shippingCity);
+
+    if (productsWithoutShipping.length > 0) {
+      // Cargar shipping info para cada producto que no la tenga
+      productsWithoutShipping.forEach(product => {
+        loadShippingInfoForProduct(product.sku, userId);
+      });
+    }
+  }, [getUserId, loadShippingInfoForProduct]);
 
   // Sincronizar cambios en localStorage
   useEffect(() => {
@@ -289,6 +378,9 @@ export function useCart(): UseCartReturn {
       }
       addProductTimeoutRef.current[productId] = now;
 
+      // Obtener userId automáticamente si no se proporciona
+      const effectiveUserId = userId || getUserId();
+
       // Agregar producto inmediatamente sin bloquear
       setProducts((currentProducts) => {
         const existingIndex = currentProducts.findIndex(
@@ -341,19 +433,22 @@ export function useCart(): UseCartReturn {
       });
 
       // Obtener ubicación de envío en segundo plano si tenemos userId
-      if (userId) {
+      if (effectiveUserId) {
+        // Marcar este SKU específico como cargando
+        setLoadingShippingInfo((prev) => ({ ...prev, [product.sku]: true }));
+
         setTimeout(async () => {
           try {
             const response = await productEndpoints.getCandidateStores({
               skus: [product.sku],
-              user_id: userId,
+              user_id: effectiveUserId,
             });
 
             if (response.success && response.data) {
               const { stores, default_direction } = response.data;
 
               // Obtener la primera ciudad y tienda disponible
-              let shippingCity = default_direction.ciudad || "BOGOTÁ";
+              let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
               let shippingStore = "";
 
               // Si stores no está vacío, obtener la primera ciudad y su primera tienda
@@ -388,6 +483,13 @@ export function useCart(): UseCartReturn {
           } catch (error) {
             console.error('Error al obtener tienda candidata:', error);
             // No hacer nada si falla, el producto ya está en el carrito
+          } finally {
+            // Marcar este SKU como ya no cargando
+            setLoadingShippingInfo((prev) => {
+              const newState = { ...prev };
+              delete newState[product.sku];
+              return newState;
+            });
           }
         }, 0);
       }
@@ -399,7 +501,7 @@ export function useCart(): UseCartReturn {
         }
       }, 500);
     },
-    []
+    [getUserId, loadShippingInfoForProduct]
   );
 
   /**
@@ -606,6 +708,7 @@ export function useCart(): UseCartReturn {
     products,
     appliedDiscount,
     isLoading,
+    loadingShippingInfo,
 
     // Cálculos
     calculations,

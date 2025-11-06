@@ -133,17 +133,27 @@ export default function FlixmediaDetails({
       console.log('✅ Script de Flixmedia cargado');
       setScriptLoaded(true);
 
-      // Verificar contenido después de un delay
-      setTimeout(() => {
-        const inpageContent = document.getElementById('flix-specifications-inpage');
-        if (inpageContent && inpageContent.children.length > 0) {
-          console.log("✅ Contenido de Flixmedia renderizado:", inpageContent.children.length, "elementos");
-          setHasContent(true);
-        } else {
-          console.warn("⚠️ No se encontró contenido de Flixmedia");
-          setHasContent(false);
-        }
-      }, 3000);
+      // Verificar contenido varias veces con delays incrementales
+      const checkContent = (attempt = 1, maxAttempts = 5) => {
+        const delay = attempt * 1000; // 1s, 2s, 3s, 4s, 5s
+
+        setTimeout(() => {
+          const inpageContent = document.getElementById('flix-specifications-inpage');
+
+          if (inpageContent && inpageContent.children.length > 0) {
+            console.log(`✅ Contenido de Flixmedia encontrado (intento ${attempt}):`, inpageContent.children.length, "elementos");
+            setHasContent(true);
+          } else if (attempt < maxAttempts) {
+            console.log(`⏳ Intento ${attempt}/${maxAttempts} - Esperando contenido...`);
+            checkContent(attempt + 1, maxAttempts);
+          } else {
+            console.warn("⚠️ No se encontró contenido de Flixmedia después de", maxAttempts, "intentos");
+            setHasContent(false);
+          }
+        }, delay);
+      };
+
+      checkContent();
     };
 
     script.onerror = () => {
@@ -310,13 +320,44 @@ export default function FlixmediaDetails({
     );
   }
 
+  // Skeleton mientras carga el script de Flixmedia o mientras busca contenido
+  const showSkeleton = isSearching || (!hasContent && scriptLoaded);
+
   return (
     <div ref={containerRef} className={`${className} w-full`}>
+      {/* Skeleton mientras carga - solo si tiene SKU/EAN */}
+      {(isSearching || (scriptLoaded && !hasContent)) && (actualMpn || actualEan) && (
+        <div className="w-full animate-pulse space-y-6 py-8">
+          {/* Título skeleton */}
+          <div className="h-8 bg-gray-200 rounded-lg w-1/3 mx-auto" />
+
+          {/* Especificaciones skeleton */}
+          <div className="space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/4" />
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-100 rounded w-full" />
+              <div className="h-4 bg-gray-100 rounded w-5/6" />
+              <div className="h-4 bg-gray-100 rounded w-4/6" />
+            </div>
+          </div>
+
+          {/* Más especificaciones */}
+          <div className="space-y-4">
+            <div className="h-6 bg-gray-200 rounded w-1/4" />
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-100 rounded w-full" />
+              <div className="h-4 bg-gray-100 rounded w-3/4" />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Contenedor para las especificaciones y galería de Flixmedia */}
       <div
         id="flix-specifications-inpage"
         className="w-full"
         style={{
+          display: showSkeleton ? 'none' : 'block',
           minHeight: hasContent ? 'auto' : '0',
           opacity: hasContent ? 1 : 0,
           transition: 'opacity 0.3s ease-in-out',

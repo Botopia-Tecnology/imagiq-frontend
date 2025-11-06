@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Direccion } from "@/types/user";
 import type { Address } from "@/types/address";
 import AddNewAddressForm from "./AddNewAddressForm";
@@ -9,7 +9,7 @@ interface AddressSelectorProps {
   addressEdit: boolean;
   onAddressChange: (address: Direccion) => void;
   onEditToggle: (edit: boolean) => void;
-  onAddressAdded?: (userIdentifier: string) => void;
+  onAddressAdded?: () => void;
 }
 
 /**
@@ -36,14 +36,6 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
   onAddressAdded,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [userIdentifier, setUserIdentifier] = useState<string>("");
-
-  useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-    if (userInfo && (userInfo.id || userInfo.email)) {
-      setUserIdentifier(userInfo.id || userInfo.email);
-    }
-  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,7 +45,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
   };
 
   const handleAddressAdded = (newAddress: Address) => {
-    onAddressAdded?.(userIdentifier);
+    onAddressAdded?.();
     // Convertir Address a Direccion para mantener compatibilidad
     const direccion = addressToDireccion(newAddress);
     onAddressChange(direccion);

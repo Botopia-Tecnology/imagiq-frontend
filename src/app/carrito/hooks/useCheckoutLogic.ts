@@ -160,6 +160,7 @@ export function useCheckoutLogic() {
               quantity: String(p.quantity),
               unitPrice: String(p.price),
               skupostback: String(p.skuPostback),
+              desDetallada: String(p.desDetallada),
             })),
             metodo_envio: 1,
             shippingAmount: String(envio),
@@ -172,9 +173,9 @@ export function useCheckoutLogic() {
           if (res === null) {
             redirectToError();
           } else {
-            router.push(res.redirectUrl)
+            router.push(res.redirectUrl);
           }
-          
+
           break;
 
         case "tarjeta":
@@ -190,6 +191,7 @@ export function useCheckoutLogic() {
               quantity: String(p.quantity),
               unitPrice: String(p.price),
               skupostback: String(p.skuPostback),
+              desDetallada: String(p.desDetallada),
             })),
             metodo_envio: 1,
             shippingAmount: String(envio),
@@ -218,6 +220,7 @@ export function useCheckoutLogic() {
               quantity: String(p.quantity),
               unitPrice: String(p.price),
               skupostback: String(p.skuPostback),
+              desDetallada: String(p.desDetallada),
             })),
             metodo_envio: 1,
             shippingAmount: String(envio),

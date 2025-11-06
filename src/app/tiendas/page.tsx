@@ -52,7 +52,7 @@ export default function TiendasPage() {
   }, [search, filteredStores, stores]);
 
   return (
-    <div className="min-h-screen w-full bg-gray-50 flex flex-col">
+    <div className="min-h-screen w-full bg-white flex flex-col">
       {/* Header centrado arriba */}
       <header
         className="w-full flex flex-col items-center pt-8 pb-2"
@@ -71,7 +71,7 @@ export default function TiendasPage() {
       </header>
       <main
         className="relative flex-1 w-full flex justify-center items-start"
-        style={{ minHeight: 1400 }}
+        style={{ minHeight: 1000 }}
       >
         <MapSection stores={visibleStores} />
         <aside
@@ -156,7 +156,7 @@ export default function TiendasPage() {
                   {/* Botones de navegación arriba */}
                   <div className="flex gap-2 w-full">
                     <button
-                      className="flex-1 bg-gray-500 text-white rounded-[12px] px-4 py-2 font-bold text-[14px] border-none shadow-sm hover:bg-gray-600 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 bg-gray-400 text-white rounded-[12px] px-4 py-2 font-bold text-[14px] border-none shadow-sm hover:bg-gray-500 transition-all flex items-center justify-center gap-2"
                       style={{
                         fontFamily: "Samsung Sharp Sans, sans-serif",
                       }}
@@ -174,7 +174,7 @@ export default function TiendasPage() {
                         height={16}
                         className="w-3.5 h-4"
                       />
-                      Google Maps
+                      Maps
                     </button>
                     <button
                       className="flex-1 bg-[#33CCFF] text-white rounded-[12px] px-4 py-2 font-bold text-[14px] border-none shadow-sm hover:bg-[#00B8E6] transition-all flex items-center justify-center gap-2"

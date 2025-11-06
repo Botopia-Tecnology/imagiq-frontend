@@ -15,36 +15,15 @@ interface TiendasFiltersProps {
   onUpdateStores: (filtered: FormattedStore[]) => void;
 }
 
-// Utilidad para extraer todos los rangos horarios de un string de horarios
-function getHourRanges(hours: string): Array<{ start: number; end: number }> {
-  // Ejemplo: "Lunes a Jueves 10:00am- 9:00pm; Viernes a Sábado 10:00am - 9:00pm; Domingos y Festivos 10:00am-8:00pm"
-  const regex =
-    /(\d{1,2}):(\d{2})\s*(am|pm)?\s*-\s*(\d{1,2}):(\d{2})\s*(am|pm)?/gi;
-  const ranges: Array<{ start: number; end: number }> = [];
-  let match;
-  while ((match = regex.exec(hours))) {
-    let start = parseInt(match[1], 10);
-    let end = parseInt(match[4], 10);
-    const ampmStart = match[3] || "";
-    const ampmEnd = match[6] || "";
-    // Convertir a 24h
-    if (ampmStart === "pm" && start < 12) start += 12;
-    if (ampmEnd === "pm" && end < 12) end += 12;
-    ranges.push({ start, end });
-  }
-  return ranges;
-}
-
 export default function TiendasFilters({
   onUpdateStores,
 }: TiendasFiltersProps) {
   // Obtener todas las tiendas usando el hook
-  const { stores, loading: loadingStores } = useStores();
+  const { stores } = useStores();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ciudad, setCiudad] = useState<string>("");
-  const [horario, setHorario] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -107,23 +86,6 @@ export default function TiendasFilters({
         return (
           s.ciudad && s.ciudad.trim().toLowerCase() === ciudad.trim().toLowerCase()
         );
-      });
-    }
-    // Filtro robusto por horario (analiza todos los rangos de la cadena de horarios)
-    if (horario) {
-      filtradas = filtradas.filter((s) => {
-        if (!s.horario) return false;
-        const h = s.horario.toLowerCase();
-        const ranges = getHourRanges(h);
-        // Si el string contiene la palabra clave (mañana, tarde, noche), lo acepta
-        if (h.includes(horario)) return true;
-        // Si no, verifica los rangos horarios
-        return ranges.some((r) => {
-          if (horario === "mañana") return r.start < 12 && r.end > 6;
-          if (horario === "tarde") return r.start < 19 && r.end > 12;
-          if (horario === "noche") return r.start < 24 && r.end > 18;
-          return true;
-        });
       });
     }
     // Filtro robusto por búsqueda de nombre/dirección
@@ -232,21 +194,6 @@ export default function TiendasFilters({
                   {c.charAt(0).toUpperCase() + c.slice(1)}
                 </option>
               ))}
-            </select>
-            {/* Filtro Horario */}
-            <select
-              className="flex-1 bg-[#E5E5E5] rounded-[16px] px-2 py-1 text-gray-900 font-bold text-[15px] border-none shadow-none"
-              style={{
-                fontFamily: "Samsung Sharp Sans, sans-serif",
-                height: "28px",
-              }}
-              value={horario}
-              onChange={(e) => setHorario(e.target.value)}
-            >
-              <option value="">Horario</option>
-              <option value="mañana">Mañana</option>
-              <option value="tarde">Tarde</option>
-              <option value="noche">Noche</option>
             </select>
             <button
               className="bg-[#1D8AFF] text-white rounded-[16px] px-4 py-1 font-bold text-[15px] border-none shadow-none"

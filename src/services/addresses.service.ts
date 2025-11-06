@@ -195,7 +195,18 @@ export class AddressesService {
    */
   public async getDefaultAddress(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<Address | null> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/default/${tipo}`, {
+      // Obtener información del usuario del localStorage
+      const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
+
+      if (!userInfo.id && !userInfo.email) {
+        console.warn('No hay información de usuario para obtener dirección predeterminada');
+        return null;
+      }
+
+      const usuarioId = userInfo.id || userInfo.email;
+      const url = `${BASE_CONFIG.API_URL}/api/addresses/default/${tipo}?usuarioId=${encodeURIComponent(usuarioId)}`;
+
+      const response = await fetch(url, {
         method: 'GET',
         headers: this.getHeaders(),
       });
@@ -290,7 +301,17 @@ export class AddressesService {
    */
   public async setDefaultAddress(addressId: string): Promise<Address> {
     try {
-      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}/set-default`, {
+      // Obtener información del usuario del localStorage
+      const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
+
+      if (!userInfo.id && !userInfo.email) {
+        throw new Error('No se encontró información del usuario. Por favor, inicia sesión nuevamente.');
+      }
+
+      const usuarioId = userInfo.id || userInfo.email;
+      const url = `${BASE_CONFIG.API_URL}/api/addresses/${addressId}/set-default?usuarioId=${encodeURIComponent(usuarioId)}`;
+
+      const response = await fetch(url, {
         method: 'POST',
         headers: this.getHeaders(),
       });

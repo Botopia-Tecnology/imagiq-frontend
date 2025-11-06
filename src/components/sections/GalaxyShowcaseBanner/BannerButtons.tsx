@@ -27,7 +27,7 @@ export function BannerButtons() {
         className="group relative inline-block"
         onClick={() => handleButtonClick("Galaxy Watch8", "conoce_mas")}
       >
-        <button className="pb-2 text-xs md:text-sm font-semibold text-black transition-all duration-300 relative inline-block">
+        <button className="pb-2 text-xs md:text-sm font-semibold text-black transition-all duration-300 relative inline-block active:scale-95">
           <span style={{ fontFamily: "'Samsung Sharp Sans', sans-serif", fontWeight: 700 }}>
             Conoce más Galaxy Watch8
           </span>

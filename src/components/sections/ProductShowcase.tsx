@@ -1,71 +1,55 @@
 /**
  * 📱 PRODUCT SHOWCASE - 4 Product Cards
  *
- * Muestra 2 celulares y 2 relojes premium
- * Ahora con productos reales del backend
+ * Muestra Z Fold 7, Z Flip 7, S25 Ultra y Watch 8
+ * Productos específicos con búsqueda por SKU
  */
 
 "use client";
 
 import { useMemo } from "react";
 import { useProducts } from "@/features/products/useProducts";
-import ProductCard from "@/app/productos/components/ProductCard";
+import ProductCard, { ProductCardProps } from "@/app/productos/components/ProductCard";
 import SkeletonCard from "@/components/SkeletonCard";
 
 export default function ProductShowcase() {
-  // Memoizar filtros para evitar re-renders infinitos
-  // Top productos de mayor precio con stock disponible
+  // Obtener productos con límite amplio que incluya diferentes categorías
   const filters = useMemo(() => ({
-    limit: 30, // Traer más productos para filtrar manualmente
+    limit: 300, // Límite muy alto para asegurar que incluya todos los productos
     page: 1,
-    minStock: 1, // Solo productos con stock
-    sortBy: "precio",
-    sortOrder: "desc", // Mayor a menor precio
+    minStock: 1,
   }), []);
 
-  // Obtener productos
   const { products: allProducts, loading } = useProducts(filters);
 
-  // Filtrar y combinar 2 celulares + hasta 2 relojes (completar con celulares si faltan)
+  // Filtrar productos específicos: Z Fold 7, Z Flip 7, S25 Ultra, Watch 8
   const products = useMemo(() => {
-    if (!allProducts) return [];
+    if (!allProducts || allProducts.length === 0) return [];
 
-    // Filtrar celulares/smartphones
-    const todosLosCelulares = allProducts
-      .filter(p =>
-        p.apiProduct?.subcategoria?.toLowerCase().includes('movil') ||
-        p.apiProduct?.subcategoria?.toLowerCase().includes('dispositivo') ||
-        p.apiProduct?.subcategoria?.toLowerCase().includes('celular') ||
-        p.apiProduct?.subcategoria?.toLowerCase().includes('smartphone')
-      );
+    // Función auxiliar: verifica si un producto tiene un SKU que coincide
+    const hasMatchingSKU = (product: ProductCardProps, skuPrefix: string): boolean => {
+      const skuArray = product.apiProduct?.sku;
+      if (!Array.isArray(skuArray)) return false;
+      return skuArray.some(sku => sku?.includes(skuPrefix));
+    };
 
-    // Filtrar relojes
-    const relojes = allProducts
-      .filter(p =>
-        p.apiProduct?.subcategoria?.toLowerCase().includes('reloj') ||
-        p.apiProduct?.subcategoria?.toLowerCase().includes('watch') ||
-        p.apiProduct?.subcategoria?.toLowerCase().includes('wearable') ||
-        p.name?.toLowerCase().includes('watch') ||
-        p.name?.toLowerCase().includes('galaxy watch')
-      )
-      .slice(0, 2); // Intentar tomar hasta 2 relojes
+    // Buscar cada producto por su SKU específico
+    const zFold7 = allProducts.find(p => hasMatchingSKU(p, 'SM-F966B'));
+    const zFlip7 = allProducts.find(p => hasMatchingSKU(p, 'SM-F766B'));
+    const s25Ultra = allProducts.find(p => hasMatchingSKU(p, 'SM-S938B'));
+    const watch8 = allProducts.find(p =>
+      hasMatchingSKU(p, 'SM-L500') ||
+      hasMatchingSKU(p, 'SM-L500N')
+    );
 
-    // Tomar 2 celulares iniciales
-    const celularesIniciales = todosLosCelulares.slice(0, 2);
+    // Combinar productos encontrados en orden
+    const foundProducts: ProductCardProps[] = [];
+    if (zFold7) foundProducts.push(zFold7);
+    if (zFlip7) foundProducts.push(zFlip7);
+    if (s25Ultra) foundProducts.push(s25Ultra);
+    if (watch8) foundProducts.push(watch8);
 
-    // Si faltan relojes para completar 4 productos, agregar más celulares
-    const relojesDisponibles = relojes.length;
-    const celularesAdicionales = 4 - 2 - relojesDisponibles; // Total necesario para llegar a 4
-
-    // Tomar celulares adicionales (empezar desde el índice 2, después de los 2 iniciales)
-    const celularesExtra = celularesAdicionales > 0
-      ? todosLosCelulares.slice(2, 2 + celularesAdicionales)
-      : [];
-
-    // Combinar: 2 celulares + relojes disponibles + celulares extra si es necesario
-    const combined = [...celularesIniciales, ...relojes, ...celularesExtra];
-
-    return combined.slice(0, 4); // Asegurar máximo 4 productos
+    return foundProducts;
   }, [allProducts]);
 
   // Mostrar skeletons mientras carga
@@ -86,7 +70,7 @@ export default function ProductShowcase() {
           <div className="md:hidden overflow-x-auto scrollbar-hide">
             <div className="flex gap-[25px] px-4">
               {Array.from({ length: 4 }, (_, i) => (
-                <div key={`skeleton-mobile-${i}`} className="flex-shrink-0 w-[280px]">
+                <div key={`skeleton-mobile-${i}`} className="shrink-0 w-[280px]">
                   <SkeletonCard />
                 </div>
               ))}
@@ -102,15 +86,12 @@ export default function ProductShowcase() {
     return null;
   }
 
-  // Asegurar que tengamos exactamente 4 productos (o los que haya)
-  const displayProducts = products.slice(0, 4);
-
   return (
     <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
       <div className="w-full" style={{ maxWidth: "1440px" }}>
         {/* Desktop: Grid 4 columnas */}
         <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
-          {displayProducts.map((product) => (
+          {products.map((product) => (
             <ProductCard
               key={product.id}
               {...product}
@@ -121,10 +102,10 @@ export default function ProductShowcase() {
         {/* Mobile: Scroll horizontal */}
         <div className="md:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-[25px] px-4">
-            {displayProducts.map((product) => (
+            {products.map((product) => (
               <div
                 key={product.id}
-                className="flex-shrink-0 w-[280px]"
+                className="shrink-0 w-[280px]"
               >
                 <ProductCard
                   {...product}

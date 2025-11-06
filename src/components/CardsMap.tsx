@@ -1,4 +1,4 @@
-import { MapPin, Navigation } from "lucide-react";
+import Image from "next/image";
 
 export interface Location {
   id: number;
@@ -34,9 +34,7 @@ export const StoreCard: React.FC<StoreCardProps> = ({ store }) => {
   const wazeUrl = `https://waze.com/ul?ll=${store.lat},${store.lng}&navigate=yes`;
 
   return (
-    <div className="bg-white rounded-xl shadow-xl border border-gray-200 p-4 min-w-[300px] max-w-[350px] relative backdrop-blur-md overflow-hidden animate-fade-in">
-      {/* Flecha decorativa para el popup */}
-      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-gray-200 rotate-45 z-10 shadow-sm"></div>
+    <div className="p-2 min-w-[280px] max-w-[320px]">
       <div className="space-y-2">
         {/* Título */}
         <h3 className="font-bold text-[#002142] text-base leading-tight mb-1 drop-shadow-sm tracking-tight">
@@ -98,23 +96,37 @@ export const StoreCard: React.FC<StoreCardProps> = ({ store }) => {
             href={googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 bg-[#eaf3e7] hover:bg-[#d2e3c7] text-[#222] py-2 rounded-lg text-xs font-bold shadow transition-colors duration-200 border border-gray-200"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-gray-400 hover:bg-gray-500 py-2 rounded-lg text-[11px] font-bold shadow transition-colors duration-200"
             tabIndex={0}
             aria-label="Abrir en Google Maps"
+            style={{ color: 'white', textDecoration: 'none' }}
           >
-            <MapPin className="w-5 h-5 text-green-600" />
-            Ir con Maps
+            <Image 
+              src="https://res.cloudinary.com/dgnqk0ucm/image/upload/v1762445116/Google_Maps_icon__2020.svg_r4s0ks.png" 
+              alt="Google Maps"
+              width={12}
+              height={14}
+              className="w-3 h-3.5 flex-shrink-0"
+            />
+            <span className="leading-[1]" style={{ color: 'white' }}>Maps</span>
           </a>
           <a
             href={wazeUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 bg-[#f3f3f3] hover:bg-[#e0e0e0] text-[#222] py-2 rounded-lg text-xs font-bold shadow transition-colors duration-200 border border-gray-200"
+            className="flex-1 flex items-center justify-center gap-1.5 bg-[#33CCFF] hover:bg-[#2BB8E6] py-2 rounded-lg text-[11px] font-bold shadow transition-colors duration-200"
             tabIndex={0}
             aria-label="Abrir en Waze"
+            style={{ color: 'white', textDecoration: 'none' }}
           >
-            <Navigation className="w-5 h-5 text-blue-600" />
-            Ir con Waze
+            <Image 
+              src="https://res.cloudinary.com/dgnqk0ucm/image/upload/v1762445166/unnamed_jfcf46.png" 
+              alt="Waze"
+              width={14}
+              height={14}
+              className="w-3.5 h-3.5 flex-shrink-0"
+            />
+            <span className="leading-[1]" style={{ color: 'white' }}>Waze</span>
           </a>
         </div>
       </div>

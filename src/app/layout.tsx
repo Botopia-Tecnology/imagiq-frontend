@@ -24,6 +24,7 @@ import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityCont
 import { ProductProvider } from "@/features/products/ProductContext";
 import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
+import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 // Si necesitas Inter desde Google Fonts en entornos con internet,
 // reactivar la importación desde next/font/google o agregar el CSS manual.
 
@@ -141,26 +142,28 @@ export default function RootLayout({
                       <CartProvider>
                         <SelectedColorProvider>
                           <PointsProvider>
-                            <ClientLayout>{safeChildren}</ClientLayout>
+                            <SelectedStoreProvider>
+                              <ClientLayout>{safeChildren}</ClientLayout>
+                            </SelectedStoreProvider>
+                            {/* Widget del chatbot */}
+                            <ChatbotWidget />
+                            {/* Toast notifications */}
+                            <Toaster
+                              position="top-center"
+                              expand={true}
+                              richColors
+                              closeButton
+                              toastOptions={{
+                                duration: 4000,
+                                style: {
+                                  background: "white",
+                                  border: "1px solid #e2e8f0",
+                                  color: "#1e293b",
+                                  fontFamily: "var(--font-inter)",
+                                },
+                              }}
+                            />
                           </PointsProvider>
-                          {/* Widget del chatbot */}
-                          <ChatbotWidget />
-                          {/* Toast notifications */}
-                          <Toaster
-                            position="top-center"
-                            expand={true}
-                            richColors
-                            closeButton
-                            toastOptions={{
-                              duration: 4000,
-                              style: {
-                                background: "white",
-                                border: "1px solid #e2e8f0",
-                                color: "#1e293b",
-                                fontFamily: "var(--font-inter)",
-                              },
-                            }}
-                          />
                         </SelectedColorProvider>
                       </CartProvider>
                     </UserPreferencesProvider>

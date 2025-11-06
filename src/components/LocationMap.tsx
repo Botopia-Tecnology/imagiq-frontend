@@ -6,10 +6,12 @@
 
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Filter } from "lucide-react";
-import { stores, type Store } from "./LocationsArray";
+import { useStores } from "@/hooks/useStores";
+import type { FormattedStore } from "@/types/store";
 import { posthogUtils } from "@/lib/posthogClient";
 import dynamic from "next/dynamic";
 import { StoreCard } from "./CardsMap";
+import { useSelectedStore } from "@/contexts/SelectedStoreContext";
 
 // Dynamically import react-leaflet components
 const MapContainer = dynamic(
@@ -40,6 +42,9 @@ const MapController = dynamic(
         cityCoordinates,
         scrollWheelEnabled,
         onMapClick,
+        selectedStoreCode,
+        stores,
+        shouldZoomToStore,
       }: {
         selectedCity: string;
         cityCoordinates: Record<
@@ -48,6 +53,9 @@ const MapController = dynamic(
         >;
         scrollWheelEnabled: boolean;
         onMapClick: () => void;
+        selectedStoreCode: number | null;
+        stores: FormattedStore[];
+        shouldZoomToStore: boolean;
       }) {
         const map = mod.useMap();
 
@@ -61,6 +69,19 @@ const MapController = dynamic(
             }
           }
         }, [map, selectedCity, cityCoordinates]);
+
+        // Zoom to selected store from carousel only
+        useEffect(() => {
+          if (map && selectedStoreCode !== null && shouldZoomToStore) {
+            const store = stores.find(s => s.codigo === selectedStoreCode);
+            if (store) {
+              map.setView([store.position[0], store.position[1]], 16, {
+                animate: true,
+                duration: 1,
+              });
+            }
+          }
+        }, [map, selectedStoreCode, stores, shouldZoomToStore]);
 
         // Control scroll wheel zoom based on state
         useEffect(() => {
@@ -108,13 +129,27 @@ const initializeLeaflet = async () => {
 };
 
 export default function LocationMap() {
+  // Obtener tiendas desde el endpoint usando el hook
+  const { stores: apiStores, loading: loadingStores } = useStores();
+  const { selectedStoreCode, setSelectedStoreCode } = useSelectedStore();
+
   const [selectedCity, setSelectedCity] =
     useState<string>("Todas las ciudades");
-  const [hoveredStore, setHoveredStore] = useState<Store | null>(null);
+  const [hoveredStore, setHoveredStore] = useState<FormattedStore | null>(null);
+  const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(null);
   const [isClient, setIsClient] = useState(false);
   const [leafletReady, setLeafletReady] = useState(false);
   const [mapKey, setMapKey] = useState(0);
   const [scrollWheelEnabled, setScrollWheelEnabled] = useState(false);
+  const [shouldZoomToStore, setShouldZoomToStore] = useState(false);
+
+  // Filtrar solo tiendas con coordenadas válidas
+  const stores = useMemo(() => {
+    return apiStores.filter(
+      (store) => store.latitud !== 0 && store.longitud !== 0 &&
+                 !isNaN(store.latitud) && !isNaN(store.longitud)
+    );
+  }, [apiStores]);
 
   // Initialize Leaflet
   useEffect(() => {
@@ -130,13 +165,27 @@ export default function LocationMap() {
     setMapKey((prev) => prev + 1);
   }, [selectedCity]);
 
+  // Detect when selectedStoreCode changes from carousel (external source)
+  // Enable zoom only when selection comes from outside the map
+  useEffect(() => {
+    if (selectedStoreCode !== null) {
+      // Check if this selection is different from current map selection
+      if (selectedStore?.codigo !== selectedStoreCode) {
+        setShouldZoomToStore(true);
+        // Reset after zoom is triggered
+        const timer = setTimeout(() => setShouldZoomToStore(false), 100);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [selectedStoreCode, selectedStore]);
+
   // Get unique cities for filter
   const cities = useMemo(
     () => [
       "Todas las ciudades",
-      ...Array.from(new Set(stores.map((store) => store.city))).sort(),
+      ...Array.from(new Set(stores.map((store) => store.ciudad))).sort(),
     ],
-    []
+    [stores]
   );
 
   // Filter stores based on selected city
@@ -144,8 +193,8 @@ export default function LocationMap() {
     if (selectedCity === "Todas las ciudades") {
       return stores;
     }
-    return stores.filter((store) => store.city === selectedCity);
-  }, [selectedCity]);
+    return stores.filter((store) => store.ciudad === selectedCity);
+  }, [selectedCity, stores]);
 
   // City coordinates for map centering with proper typing
   const cityCoordinates: Record<
@@ -172,22 +221,10 @@ export default function LocationMap() {
     posthogUtils.capture("city_filter_change", {
       selected_city: city,
       stores_count: stores.filter(
-        (store) => city === "Todas las ciudades" || store.city === city
+        (store) => city === "Todas las ciudades" || store.ciudad === city
       ).length,
     });
-  }, []);
-
-  // Handle store hover
-  const handleStoreHover = useCallback((store: Store | null) => {
-    setHoveredStore(store);
-    if (store) {
-      posthogUtils.capture("store_marker_hover", {
-        store_name: store.name,
-        store_city: store.city,
-        store_mall: store.mall || "N/A",
-      });
-    }
-  }, []);
+  }, [stores]);
 
   // Handle map click to enable scroll wheel zoom
   const handleMapClick = useCallback(() => {
@@ -199,16 +236,11 @@ export default function LocationMap() {
     }
   }, [scrollWheelEnabled]);
 
-  // If not ready, show loading state
-  if (!isClient || !leafletReady) {
+  // If loading stores, show loading state
+  if (loadingStores || !isClient || !leafletReady) {
     return (
       <div className="w-full relative z-10">
-        {/* Header */}
-        <div className="text-center mb-6">
-          <h1 className="text-2xl font-normal text-gray-900">
-            Encuentra tu tienda mas cercana
-          </h1>
-        </div>
+        {/* Header eliminado */}
 
         {/* City Filter - Always visible */}
         <div className="mb-6 flex justify-center">
@@ -224,7 +256,7 @@ export default function LocationMap() {
                   <option key={city} value={city}>
                     {city}{" "}
                     {city !== "Todas las ciudades" &&
-                      `(${stores.filter((s) => s.city === city).length})`}
+                      `(${stores.filter((s) => s.ciudad === city).length})`}
                   </option>
                 ))}
               </select>
@@ -251,29 +283,24 @@ export default function LocationMap() {
     );
   }
 
-  // Convert Store to Location for StoreCard compatibility
-  const convertStoreToLocation = (store: Store) => ({
-    id: store.id || 0,
-    name: store.name,
-    address: store.address,
-    hours: store.hours,
-    phone: store.phone,
+  // Convert FormattedStore to Location for StoreCard compatibility
+  const convertStoreToLocation = (store: FormattedStore) => ({
+    id: store.codigo || 0,
+    name: store.descripcion,
+    address: store.direccion + (store.ubicacion_cc ? ` - ${store.ubicacion_cc}` : ''),
+    hours: store.horario,
+    phone: store.telefono + (store.extension ? ` Ext ${store.extension}` : ''),
     lat: store.position[0],
     lng: store.position[1],
-    city: store.city,
-    mall: store.mall,
+    city: store.ciudad,
+    mall: store.ubicacion_cc,
   });
 
   const center: [number, number] = [4.5709, -74.2973];
 
   return (
     <div className="w-full relative z-10 flex flex-col items-center px-2 sm:px-4 md:px-0">
-      {/* Header */}
-      <div className="text-center mb-4 md:mb-6 animate-fade-in w-full">
-        <h1 className="text-xl md:text-3xl font-bold text-black tracking-tight drop-shadow-sm leading-tight md:leading-normal">
-           Encuentra tu tienda más cercana
-        </h1>
-      </div>
+      {/* Header eliminado - ya está en el carrusel */}
 
       {/* City Filter - Responsive: móvil y desktop/tablet */}
 
@@ -287,7 +314,7 @@ export default function LocationMap() {
       )}
 
       {/* Interactive Map Container - Responsive: móvil y desktop/tablet */}
-      <div className="relative rounded-xl overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-1 md:mt-4 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
+      <div className="relative rounded-xl overflow-hidden z-10 animate-fade-in w-full max-w-[99vw] mx-auto mt-0 md:mt-2 px-1 md:px-0 md:max-w-none md:rounded-2xl flex justify-center items-center">
         <div className="relative h-[220px] xs:h-[260px] sm:h-[280px] md:h-[500px] lg:h-[600px] md:w-[1200px] lg:w-[1400px] w-full flex justify-center items-center">
           {/* Mensaje para indicar al usuario que haga clic para interactuar */}
           {!scrollWheelEnabled && (
@@ -320,32 +347,50 @@ export default function LocationMap() {
               cityCoordinates={cityCoordinates}
               scrollWheelEnabled={scrollWheelEnabled}
               onMapClick={handleMapClick}
+              selectedStoreCode={selectedStoreCode}
+              stores={filteredStores}
+              shouldZoomToStore={shouldZoomToStore}
             />
 
-            {filteredStores.map((store, index) => (
+            {filteredStores.map((store, index) => {
+              const isHovered = hoveredStore?.codigo === store.codigo;
+              const isSelected = selectedStore?.codigo === store.codigo || selectedStoreCode === store.codigo;
+              const isHighlighted = isHovered || isSelected;
+              return (
               <Marker
-                key={`store-${store.name}-${index}-${mapKey}`}
+                key={`store-${store.codigo}-${index}-${mapKey}`}
                 position={[store.position[0], store.position[1]]}
                 icon={
                   typeof window !== "undefined" && window.L && window.L.divIcon
                     ? window.L.divIcon({
                         className: "custom-samsung-pin",
-                        html: `<div style='width:32px;height:40px;display:flex;align-items:center;justify-content:center;'>
-                    <svg width='32' height='40' viewBox='0 0 32 40' fill='none' xmlns='http://www.w3.org/2000/svg'>
-                      <path d='M16 0C7.27 0 0 7.56 0 16.9C0 27.1 16 40 16 40C16 40 32 27.1 32 16.9C32 7.56 24.73 0 16 0Z' fill='#1D8AFF'/>
-                      <text x='50%' y='56%' text-anchor='middle' dominant-baseline='middle' font-family='Samsung Sharp Sans, Arial, sans-serif' font-size='18' font-weight='bold' fill='white'>S</text>
+                        html: `<div style='width:36px;height:44px;display:flex;align-items:center;justify-content:center;'>
+                    <svg width='36' height='44' viewBox='0 0 36 44' fill='none' xmlns='http://www.w3.org/2000/svg'>
+                      <path d='M18 0C8.06 0 0 8.5 0 19C0 30.5 18 44 18 44C18 44 36 30.5 36 19C36 8.5 27.94 0 18 0Z' fill='${isHighlighted ? 'white' : '#1D8AFF'}' stroke='${isHighlighted ? '#1D8AFF' : 'white'}' stroke-width='2'/>
+                      <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-family='Samsung Sharp Sans, Arial, sans-serif' font-size='20' font-weight='bold' fill='${isHighlighted ? '#1D8AFF' : 'white'}'>S</text>
                     </svg>
                   </div>`,
-                        iconSize: [32, 40],
-                        iconAnchor: [16, 40],
-                        popupAnchor: [0, -40],
+                        iconSize: [36, 44],
+                        iconAnchor: [18, 44],
+                        popupAnchor: [0, -44],
                       })
                     : undefined
                 }
                 eventHandlers={{
-                  mouseover: () => handleStoreHover(store),
-                  mouseout: () => handleStoreHover(null),
-                  click: () => handleStoreHover(store),
+                  mouseover: () => setHoveredStore(store),
+                  mouseout: () => setHoveredStore(null),
+                  click: () => {
+                    // Si la tienda ya está seleccionada, la deseleccionamos
+                    if (selectedStore?.codigo === store.codigo) {
+                      setSelectedStore(null);
+                      setSelectedStoreCode(null);
+                    } else {
+                      // Si no, la seleccionamos
+                      setSelectedStore(store);
+                      setSelectedStoreCode(store.codigo);
+                    }
+                    setHoveredStore(store);
+                  },
                 }}
               >
                 {/* Popup solo en desktop/tablet */}
@@ -353,7 +398,8 @@ export default function LocationMap() {
                   <StoreCard store={convertStoreToLocation(store)} />
                 </Popup>
               </Marker>
-            ))}
+            );
+            })}
           </MapContainer>
         </div>
       </div>

@@ -3,12 +3,14 @@
 import React, { forwardRef } from "react";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
+import { useCeroInteres } from "@/hooks/useCeroInteres";
 
 interface ProductInfoProps {
   product: ProductCardProps;
   selectedColor: string | null;
   selectedStorage: string | null;
   selectedRam: string | null;
+  indcerointeres: number; // 0 = sin cuotas, 1 = mostrar "test"
   setSelectedColor: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedStorage: React.Dispatch<React.SetStateAction<string | null>>;
   setSelectedRam: React.Dispatch<React.SetStateAction<string | null>>;
@@ -23,6 +25,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   selectedColor,
   selectedStorage,
   selectedRam,
+  indcerointeres,
   setSelectedColor,
   setSelectedStorage,
   setSelectedRam,
@@ -31,6 +34,19 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   productImages,
   onOpenModal,
 }, ref) => {
+  // Obtener precio actual
+  const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
+  const priceStr = selectedCapacity?.price || product.price || "0";
+  const currentPrice = Number.parseInt(priceStr.replaceAll(/[^\d]/g, ''), 10);
+
+  // Hook para cuotas sin interés (solo cuando indcerointeres === 1)
+  const ceroInteres = useCeroInteres(
+    product.apiProduct?.precioeccommerce || [],
+    currentPrice,
+    indcerointeres,
+    true
+  );
+
   return (
     <div ref={ref} className="w-full lg:col-span-3">
       <div className="lg:sticky lg:top-20">
@@ -84,21 +100,67 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             <div className="flex items-center justify-between gap-3">
               <div className="font-bold text-black text-lg flex-1 self-center">{product.name}</div>
               <div className="text-right self-center">
-                <div className="text-sm text-black">
-                  {(() => {
-                    const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-                    const priceStr = selectedCapacity?.price || product.price || "0";
-                    const priceNumber = parseInt(priceStr.replace(/[^\d]/g, ''));
-                    const monthlyPrice = Math.round(priceNumber / 12);
-                    return `Desde $ ${monthlyPrice.toLocaleString('es-CO')} al mes o`;
-                  })()}
-                </div>
-                <div className="text-2xl text-black">
-                  {(() => {
-                    const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-                    return selectedCapacity?.price || product.price || "Precio no disponible";
-                  })()}
-                </div>
+                {(() => {
+                  const selectedCapacityPrice = product.capacities?.find(c => c.value === selectedStorage);
+                  const priceDisplay = selectedCapacityPrice?.price || product.price || "Precio no disponible";
+                  const monthlyPrice = Math.round(currentPrice / 12);
+
+                  // Renderizar según indcerointeres
+                  if (indcerointeres === 0) {
+                    // CASO 0: Solo precio de contado (SIN cuotas)
+                    return (
+                      <div className="text-2xl text-black font-bold">
+                        {priceDisplay}
+                      </div>
+                    );
+                  }
+
+                  if (indcerointeres === 1) {
+                    // CASO 1: Cuotas sin interés (0%)
+                    const textoInteresCompleto = ceroInteres.formatText();
+                    const textoInteresSimple = ceroInteres.formatTextSimple();
+                    
+                    // Si hay error o está cargando, solo mostrar precio
+                    if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
+                      return (
+                        <div className="text-xl sm:text-2xl text-black font-bold">
+                          {priceDisplay}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <>
+                        {/* Layout limpio - simplificado en móvil */}
+                        <div className="flex flex-col items-end gap-1">
+                          {/* Móvil: Texto simplificado - Desktop: Texto completo */}
+                          <div className="text-xs sm:text-sm md:text-base font-bold text-[#222] leading-tight text-right">
+                            <span className="md:hidden">{textoInteresSimple}</span>
+                            <span className="hidden md:inline">{textoInteresCompleto}</span>
+                          </div>
+                          {/* Separador "o" solo en móvil */}
+                          <span className="text-[10px] text-gray-500 md:hidden">o</span>
+                          {/* Precio de contado */}
+                          <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-black font-bold">
+                            {priceDisplay}
+                          </div>
+                        </div>
+                      </>
+                    );
+                  }
+
+                  // DEFAULT: Con financiación Addi
+                  return (
+                    <>
+                      <div className="text-sm text-black">
+                        Desde $ {monthlyPrice.toLocaleString('es-CO')} al mes o
+                      </div>
+                      <div className="text-2xl text-black">
+                        {priceDisplay}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
           </div>

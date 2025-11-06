@@ -10,11 +10,14 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
+import { useCeroInteres } from "@/hooks/useCeroInteres";
 
 interface MultimediaBottomBarProps {
   productName: string;
   price: number;
   originalPrice?: number;
+  indcerointeres: number; // 0 = sin cuotas, 1 = mostrar "test"
+  allPrices?: number[]; // Todos los precios del producto (precioeccommerce)
   onViewDetailsClick?: () => void;
   isVisible?: boolean;
 }
@@ -34,11 +37,115 @@ export default function MultimediaBottomBar({
   productName,
   price,
   originalPrice,
+  indcerointeres,
+  allPrices = [],
   onViewDetailsClick,
   isVisible = true,
 }: MultimediaBottomBarProps) {
+  // Hook para cuotas sin interés (solo cuando indcerointeres === 1)
+  const ceroInteres = useCeroInteres(
+    allPrices,
+    price,
+    indcerointeres,
+    true
+  );
+
   const monthlyPayment = price / 12;
   const savings = originalPrice && originalPrice > price ? originalPrice - price : 0;
+
+  // Renderizar información de precio según indcerointeres
+  const renderPriceInfo = () => {
+    if (indcerointeres === 0) {
+      // CASO 0: Solo precio de contado (SIN cuotas)
+      return (
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-lg md:text-xl font-bold text-[#222]">
+            {formatPrice(price)}
+          </span>
+          {originalPrice && originalPrice > price && (
+            <>
+              <span className="text-sm text-gray-400 line-through">
+                {formatPrice(originalPrice)}
+              </span>
+              <span className="text-sm text-green-600 font-semibold">
+                Ahorra {formatPrice(savings)}
+              </span>
+            </>
+          )}
+        </div>
+      );
+    }
+
+    if (indcerointeres === 1) {
+      // CASO 1: Cuotas sin interés (0%)
+      const textoInteresCompleto = ceroInteres.formatText();
+      const textoInteresSimple = ceroInteres.formatTextSimple();
+      
+      // Si hay error o está cargando, solo mostrar precio
+      if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
+        return (
+          <div className="flex items-baseline gap-2 flex-wrap">
+            <span className="text-lg md:text-xl font-bold text-[#222]">
+              {formatPrice(price)}
+            </span>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex items-center justify-center w-full px-2">
+          {/* Layout limpio - simplificado en móvil */}
+          <div className="flex flex-col items-center gap-1">
+            {/* Móvil: Texto simplificado - Desktop: Texto completo */}
+            <span className="text-xs sm:text-sm md:text-base font-bold text-[#222] leading-tight text-center">
+              <span className="md:hidden">{textoInteresSimple}</span>
+              <span className="hidden md:inline">{textoInteresCompleto}</span>
+            </span>
+            {/* Separador "o" solo en móvil */}
+            <span className="text-[10px] text-gray-500 md:hidden">o</span>
+            {/* Precio de contado */}
+            <span className="text-[13px] sm:text-sm md:text-base font-bold text-[#222]">
+              {formatPrice(price)}
+            </span>
+          </div>
+        </div>
+      );
+    }
+
+    // DEFAULT: Con financiación Addi (para otros valores)
+    return (
+      <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center">
+        {/* Precio de contado con descuento */}
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="text-lg md:text-xl font-bold text-[#222]">
+            {formatPrice(price)}
+          </span>
+          {originalPrice && originalPrice > price && (
+            <>
+              <span className="text-sm text-gray-400 line-through">
+                {formatPrice(originalPrice)}
+              </span>
+              <span className="text-sm text-green-600 font-semibold">
+                Ahorra {formatPrice(savings)}
+              </span>
+            </>
+          )}
+        </div>
+
+        {/* Separador minimalista */}
+        <span className="hidden sm:block text-gray-200">•</span>
+
+        {/* Cuotas Addi simplificadas */}
+        <div className="hidden sm:flex items-baseline gap-1">
+          <span className="text-sm text-gray-600">desde</span>
+          <span className="text-sm font-semibold text-[#0066CC]">
+            {formatPrice(monthlyPayment)}/mes
+          </span>
+          <span className="text-xs text-gray-500">con Addi</span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -64,36 +171,7 @@ export default function MultimediaBottomBar({
 
               {/* CENTRO: Precio completo pero minimalista */}
               <div className="flex-1 flex justify-center items-center">
-                <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-center">
-                  {/* Precio de contado con descuento */}
-                  <div className="flex items-baseline gap-2 flex-wrap">
-                    <span className="text-lg md:text-xl font-bold text-[#222]">
-                      {formatPrice(price)}
-                    </span>
-                    {originalPrice && originalPrice > price && (
-                      <>
-                        <span className="text-sm text-gray-400 line-through">
-                          {formatPrice(originalPrice)}
-                        </span>
-                        <span className="text-sm text-green-600 font-semibold">
-                          Ahorra {formatPrice(savings)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Separador minimalista */}
-                  <span className="hidden sm:block text-gray-200">•</span>
-
-                  {/* Cuotas Addi simplificadas */}
-                  <div className="hidden sm:flex items-baseline gap-1">
-                    <span className="text-sm text-gray-600">desde</span>
-                    <span className="text-sm font-semibold text-[#0066CC]">
-                      {formatPrice(monthlyPayment)}/mes
-                    </span>
-                    <span className="text-xs text-gray-500">con Addi</span>
-                  </div>
-                </div>
+                {renderPriceInfo()}
               </div>
 
               {/* DERECHA: CTA minimalista */}

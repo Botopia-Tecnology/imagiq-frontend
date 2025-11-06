@@ -110,6 +110,21 @@ export default function ProductViewPage({ params }) {
       </div>
     );
   }
+
+  // Obtener indcerointeres del producto (puede venir como array del API)
+  const getIndcerointeres = (): number => {
+    // Si el producto tiene apiProduct (datos del API)
+    if (product.apiProduct?.indcerointeres) {
+      const indcerointeresArray = product.apiProduct.indcerointeres;
+      // Tomar el primer valor del array, si no existe usar 0
+      return indcerointeresArray[0] ?? 0;
+    }
+    // Fallback a 0 si no existe
+    return 0;
+  };
+
+  const indcerointeres = getIndcerointeres();
+
   return (
     <>
       {/* StickyPriceBar exacto de la página view normal */}
@@ -122,7 +137,8 @@ export default function ProductViewPage({ params }) {
         })()}
         selectedStorage={(selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB')}
         selectedColor={selectedColor || undefined}
-        hasAddiFinancing={true}
+        indcerointeres={indcerointeres}
+        allPrices={product.apiProduct?.precioeccommerce || []}
         isVisible={showStickyBar}
       />
 
@@ -160,6 +176,7 @@ export default function ProductViewPage({ params }) {
                 selectedColor={selectedColor}
                 selectedStorage={selectedStorage}
                 selectedRam={selectedRam}
+                indcerointeres={indcerointeres}
                 setSelectedColor={setSelectedColor}
                 setSelectedStorage={setSelectedStorage}
                 setSelectedRam={setSelectedRam}

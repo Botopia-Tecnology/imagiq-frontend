@@ -34,6 +34,7 @@ export interface CartProduct {
   capacity?: string;
   /** Memoria RAM del producto (ej: "8GB", "12GB") */
   ram?: string;
+  skuPostback?: string;
 }
 
 interface CartCalculations {
@@ -126,6 +127,15 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
             ? p.id
             : Math.random().toString(36).slice(2, 10)
         }`;
+        // skuPostback
+      let skuPostback = "";
+      if (typeof p.skuPostback === "string") skuPostback = p.skuPostback;
+      else
+        skuPostback = `SKU-${
+          typeof p.id === "string"
+            ? p.id
+            : Math.random().toString(36).slice(2, 10)
+        }`;
       // puntos_q - valor por defecto 4 como especificado
       const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 4;
       // price
@@ -150,7 +160,8 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       // ram
       const ram = typeof p.ram === "string" ? p.ram : undefined;
 
-      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color, colorName, capacity, ram };
+      return { id, name, image, price, quantity, sku, ean, puntos_q, stock, originalPrice, shippingFrom, shippingCity, shippingStore, color,colorName,  capacity, ram, skuPostback  };
+
     })
     .filter((p) => p.id && p.price > 0); // Filtrar productos inválidos
 }

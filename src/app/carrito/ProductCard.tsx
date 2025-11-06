@@ -38,6 +38,16 @@ const calcularDescuento = (original?: number, actual?: number): number | null =>
     : null;
 
 /**
+ * Valida si un valor de capacidad o RAM es válido para mostrar
+ * Retorna false si el valor es "No Aplica" o "No" (case-insensitive)
+ */
+const esValorValido = (valor?: string): boolean => {
+  if (!valor) return false;
+  const valorNormalizado = valor.toLowerCase().trim();
+  return valorNormalizado !== "no aplica" && valorNormalizado !== "no";
+};
+
+/**
  * Componente ProductCard para el carrito - Diseño Desktop/Mobile
  * Desktop: Imagen izquierda (20%) + Detalles derecha (80%)
  * Mobile: Layout vertical compacto
@@ -62,6 +72,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const limiteMax = calcularLimiteMaximo(stock);
   const disponible = calcularDisponible(stock, cantidad);
   const descuento = calcularDescuento(precioOriginal, precio);
+
+  // Validar capacity y ram
+  const capacityValida = esValorValido(capacity);
+  const ramValida = esValorValido(ram);
+
   // Verificar condiciones para mostrar origen de envío
   const { shouldShowShippingOrigin } = useShippingOrigin();
   const mostrarOrigen =
@@ -100,7 +115,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             </h3>
 
             {/* Detalles de variante */}
-            {(color || capacity || ram) && (
+            {(color || capacityValida || ramValida) && (
               <div className="text-xs text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
                 {color && (
                   <div
@@ -109,10 +124,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     title={colorName || color}
                   />
                 )}
-                {color && (capacity || ram) && <span>•</span>}
-                {capacity && <span>{capacity}</span>}
-                {capacity && ram && <span>•</span>}
-                {ram && <span>{ram}</span>}
+                {color && (capacityValida || ramValida) && <span>•</span>}
+                {capacityValida && <span>{capacity}</span>}
+                {capacityValida && ramValida && <span>•</span>}
+                {ramValida && <span>{ram}</span>}
               </div>
             )}
              {mostrarOrigen && (
@@ -206,7 +221,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               {nombre} - {colorName && <span>{colorName}</span>}
             </h3>
             {/* Detalles de variante */}
-            {(color || capacity || ram) && (
+            {(color || capacityValida || ramValida) && (
               <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
                 {color && (
                   <div
@@ -215,10 +230,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     title={colorName || color}
                   />
                 )}
-                {color && (capacity || ram) && <span>•</span>}
-                {capacity && <span>{capacity}</span>}
-                {capacity && ram && <span>•</span>}
-                {ram && <span>{ram}</span>}
+                {color && (capacityValida || ramValida) && <span>•</span>}
+                {capacityValida && <span>{capacity}</span>}
+                {capacityValida && ramValida && <span>•</span>}
+                {ramValida && <span>{ram}</span>}
               </div>
             )}
 

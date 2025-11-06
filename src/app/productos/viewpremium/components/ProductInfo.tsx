@@ -211,10 +211,19 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                   ? productSelection.selection.selectedCapacity === capacityLabel
                   : capacityInfo?.value === selectedStorage;
 
-                // Obtener precio: si usamos el sistema de selección y esta capacidad está seleccionada, usar su precio
+                // Obtener precio: buscar cualquier variante con esta capacidad para mostrar su precio
                 let priceStr = "0";
-                if (product.apiProduct && isSelected && productSelection.selectedPrice) {
-                  priceStr = `$ ${Math.round(productSelection.selectedPrice).toLocaleString('es-CO')}`;
+                if (product.apiProduct) {
+                  // Si es la capacidad seleccionada actualmente, usar el precio seleccionado
+                  if (isSelected && productSelection.selectedPrice) {
+                    priceStr = `$ ${Math.round(productSelection.selectedPrice).toLocaleString('es-CO')}`;
+                  } else {
+                    // Si no, buscar cualquier variante con esta capacidad para obtener su precio
+                    const variantWithCapacity = productSelection.allVariants.find(v => v.capacity === capacityLabel);
+                    if (variantWithCapacity && variantWithCapacity.precioeccommerce) {
+                      priceStr = `$ ${Math.round(variantWithCapacity.precioeccommerce).toLocaleString('es-CO')}`;
+                    }
+                  }
                 } else if (capacityInfo?.price) {
                   priceStr = capacityInfo.price;
                 }

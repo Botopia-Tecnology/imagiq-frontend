@@ -18,9 +18,7 @@ import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import LocationMap from "@/components/LocationMap";
 import StoresCarousel from "@/components/StoresCarousel";
-import UltimosProductos from "@/components/sections/UltimosProductos";
 import ProductShowcase from "@/components/sections/ProductShowcase";
-import Historias from "@/components/sections/Historias";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import CookieConsentBar from "@/components/CookieConsentBar";
@@ -63,16 +61,6 @@ export default function HomePage() {
   //   direction: "up",
   // });
   const showcaseReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
-  const historiasReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
-  const ultimosReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
     direction: "up",
@@ -145,10 +133,6 @@ export default function HomePage() {
         >
           <Beneficios />
         </motion.div> */}
-        {/* Sección de Historias */}
-        <motion.div ref={historiasReveal.ref} {...historiasReveal.motionProps}>
-          <Historias />
-        </motion.div>
         {/* Sección de reseñas de clientes - arriba del mapa */}
         <motion.section
           ref={reviewsReveal.ref}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { forwardRef } from "react";
+import React, { forwardRef, useEffect } from "react";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 import { useCeroInteres } from "@/hooks/useCeroInteres";
@@ -79,6 +79,31 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
     indcerointeres,
     true
   );
+
+  // Sincronizar los estados del padre cuando cambie la selección del hook
+  useEffect(() => {
+    if (product.apiProduct && productSelection.selectedVariant) {
+      // Actualizar los estados del padre para mantener sincronización
+      const variant = productSelection.selectedVariant;
+
+      // Encontrar el color correspondiente en product.colors
+      const colorObj = product.colors?.find(c => c.label === variant.color);
+      if (colorObj && colorObj.name !== selectedColor) {
+        setSelectedColor(colorObj.name);
+      }
+
+      // Actualizar capacidad
+      if (variant.capacity !== selectedStorage) {
+        const capacityObj = product.capacities?.find(c => c.label === variant.capacity);
+        setSelectedStorage(capacityObj?.value || variant.capacity);
+      }
+
+      // Actualizar RAM
+      if (variant.memoriaram !== selectedRam) {
+        setSelectedRam(variant.memoriaram);
+      }
+    }
+  }, [productSelection.selectedVariant, product.apiProduct, product.colors, product.capacities, selectedColor, selectedStorage, selectedRam, setSelectedColor, setSelectedStorage, setSelectedRam]);
 
   return (
     <div ref={ref} className="w-full lg:col-span-3">
@@ -182,9 +207,18 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Almacenamiento */}
         {(() => {
-          // Usar capacidades disponibles del hook de selección
+          // Mostrar TODAS las capacidades disponibles para el color seleccionado (sin filtrar por RAM)
           const availableCapacities = product.apiProduct
-            ? productSelection.availableCapacities
+            ? Array.from(new Set(
+                productSelection.allVariants
+                  .filter(v =>
+                    v.color === productSelection.selection.selectedColor &&
+                    v.capacity &&
+                    v.capacity.trim() !== '' &&
+                    v.capacity.toLowerCase() !== 'no aplica'
+                  )
+                  .map(v => v.capacity)
+              ))
             : product.capacities?.filter(cap => {
                 const normalizedLabel = cap.label?.toLowerCase().trim() || '';
                 return !normalizedLabel.includes('no aplica') &&
@@ -241,8 +275,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       onClick={() => {
                         if (product.apiProduct) {
                           productSelection.selectCapacity(capacityLabel);
+                        } else {
+                          setSelectedStorage(capacityInfo?.value || capacityLabel);
                         }
-                        setSelectedStorage(capacityInfo?.value || capacityLabel);
                       }}
                       className={`border-2 rounded-md p-4 cursor-pointer transition-all ${isSelected
                         ? "border-blue-600 bg-blue-50/30"
@@ -283,9 +318,18 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Memoria RAM */}
         {(() => {
-          // Usar opciones de RAM disponibles del hook de selección
+          // Mostrar TODAS las opciones de RAM disponibles para el color seleccionado (sin filtrar por capacidad)
           const availableRamOptions = product.apiProduct
-            ? productSelection.availableMemoriaram
+            ? Array.from(new Set(
+                productSelection.allVariants
+                  .filter(v =>
+                    v.color === productSelection.selection.selectedColor &&
+                    v.memoriaram &&
+                    v.memoriaram.trim() !== '' &&
+                    v.memoriaram.toLowerCase() !== 'no aplica'
+                  )
+                  .map(v => v.memoriaram)
+              ))
             : [];
 
           // Solo mostrar si hay opciones de RAM válidas
@@ -310,8 +354,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       onClick={() => {
                         if (product.apiProduct) {
                           productSelection.selectMemoriaram(ram);
+                        } else {
+                          setSelectedRam(ram);
                         }
-                        setSelectedRam(ram);
                       }}
                       className={`border-2 rounded-md px-6 py-6 cursor-pointer transition-all ${
                         isSelected
@@ -390,8 +435,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     onClick={() => {
                       if (product.apiProduct) {
                         productSelection.selectColor(color.label);
+                      } else {
+                        setSelectedColor(color.name);
                       }
-                      setSelectedColor(color.name);
                       setCurrentImageIndex(0);
                     }}
                     className="flex flex-col items-center cursor-pointer transition-all"
@@ -476,8 +522,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                         onClick={() => {
                           if (product.apiProduct) {
                             productSelection.selectColor(color.label);
+                          } else {
+                            setSelectedColor(color.name);
                           }
-                          setSelectedColor(color.name);
                           setCurrentImageIndex(0);
                         }}
                         className="flex flex-col items-center cursor-pointer transition-all"

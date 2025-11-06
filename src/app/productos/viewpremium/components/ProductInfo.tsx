@@ -274,21 +274,16 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     <div
                       onClick={() => {
                         if (product.apiProduct) {
-                          productSelection.selectCapacity(capacityLabel);
-                          // Si no existe variante con la capacidad seleccionada y el color/RAM actual,
-                          // buscar la primera variante válida con esta capacidad y el color actual
-                          setTimeout(() => {
-                            if (!productSelection.selectedVariant ||
-                                productSelection.selectedVariant.capacity !== capacityLabel) {
-                              const variantWithCapacity = productSelection.allVariants.find(
-                                v => v.capacity === capacityLabel &&
-                                     v.color === productSelection.selection.selectedColor
-                              );
-                              if (variantWithCapacity) {
-                                productSelection.selectMemoriaram(variantWithCapacity.memoriaram);
-                              }
-                            }
-                          }, 0);
+                          // Buscar la primera variante válida con esta capacidad y color
+                          const targetVariant = productSelection.allVariants.find(
+                            v => v.capacity === capacityLabel &&
+                                 v.color === productSelection.selection.selectedColor
+                          );
+
+                          if (targetVariant) {
+                            // Seleccionar la variante completa en una sola operación
+                            productSelection.selectVariant(targetVariant);
+                          }
                         } else {
                           setSelectedStorage(capacityInfo?.value || capacityLabel);
                         }
@@ -367,21 +362,16 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       key={index}
                       onClick={() => {
                         if (product.apiProduct) {
-                          productSelection.selectMemoriaram(ram);
-                          // Si no existe variante con la RAM seleccionada y el color/capacidad actual,
-                          // buscar la primera variante válida con esta RAM y el color actual
-                          setTimeout(() => {
-                            if (!productSelection.selectedVariant ||
-                                productSelection.selectedVariant.memoriaram !== ram) {
-                              const variantWithRam = productSelection.allVariants.find(
-                                v => v.memoriaram === ram &&
-                                     v.color === productSelection.selection.selectedColor
-                              );
-                              if (variantWithRam) {
-                                productSelection.selectCapacity(variantWithRam.capacity);
-                              }
-                            }
-                          }, 0);
+                          // Buscar la primera variante válida con esta RAM y color
+                          const targetVariant = productSelection.allVariants.find(
+                            v => v.memoriaram === ram &&
+                                 v.color === productSelection.selection.selectedColor
+                          );
+
+                          if (targetVariant) {
+                            // Seleccionar la variante completa en una sola operación
+                            productSelection.selectVariant(targetVariant);
+                          }
                         } else {
                           setSelectedRam(ram);
                         }

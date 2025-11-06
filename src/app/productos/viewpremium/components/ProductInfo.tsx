@@ -275,6 +275,20 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       onClick={() => {
                         if (product.apiProduct) {
                           productSelection.selectCapacity(capacityLabel);
+                          // Si no existe variante con la capacidad seleccionada y el color/RAM actual,
+                          // buscar la primera variante válida con esta capacidad y el color actual
+                          setTimeout(() => {
+                            if (!productSelection.selectedVariant ||
+                                productSelection.selectedVariant.capacity !== capacityLabel) {
+                              const variantWithCapacity = productSelection.allVariants.find(
+                                v => v.capacity === capacityLabel &&
+                                     v.color === productSelection.selection.selectedColor
+                              );
+                              if (variantWithCapacity) {
+                                productSelection.selectMemoriaram(variantWithCapacity.memoriaram);
+                              }
+                            }
+                          }, 0);
                         } else {
                           setSelectedStorage(capacityInfo?.value || capacityLabel);
                         }
@@ -354,6 +368,20 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       onClick={() => {
                         if (product.apiProduct) {
                           productSelection.selectMemoriaram(ram);
+                          // Si no existe variante con la RAM seleccionada y el color/capacidad actual,
+                          // buscar la primera variante válida con esta RAM y el color actual
+                          setTimeout(() => {
+                            if (!productSelection.selectedVariant ||
+                                productSelection.selectedVariant.memoriaram !== ram) {
+                              const variantWithRam = productSelection.allVariants.find(
+                                v => v.memoriaram === ram &&
+                                     v.color === productSelection.selection.selectedColor
+                              );
+                              if (variantWithRam) {
+                                productSelection.selectCapacity(variantWithRam.capacity);
+                              }
+                            }
+                          }, 0);
                         } else {
                           setSelectedRam(ram);
                         }
@@ -375,9 +403,9 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
         {/* Color */}
         {(() => {
-          // Usar colores disponibles del hook de selección
+          // Mostrar TODOS los colores disponibles (sin filtrar por capacidad/RAM)
           const availableColorNames = product.apiProduct
-            ? productSelection.availableColors
+            ? Array.from(new Set(productSelection.allVariants.map(v => v.color).filter(c => c && c.trim() !== '')))
             : product.colors?.filter(color => {
                 const normalizedLabel = color.label?.toLowerCase().trim() || '';
                 return !normalizedLabel.includes('no aplica') &&

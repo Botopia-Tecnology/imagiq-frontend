@@ -477,7 +477,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     ></div>
                     <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
                       }`}>
-                      {color.label}
+                      {color.nombreColorDisplay || color.label}
                     </div>
                   </div>
                 );
@@ -556,7 +556,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                         ></div>
                         <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
                           }`}>
-                          {color.label}
+                          {color.nombreColorDisplay || color.label}
                         </div>
                       </div>
                     );

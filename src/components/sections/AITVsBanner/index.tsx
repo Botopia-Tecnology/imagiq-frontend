@@ -58,7 +58,7 @@ export default function AITVsBanner() {
 
           {/* Action Button */}
           <Link
-            href="/productos/tv-audio-video?categoria=televisores"
+            href="/productos/tv-y-audio"
             className="group inline-block"
             onClick={handleButtonClick}
             onMouseEnter={() => setIsHovering(true)}

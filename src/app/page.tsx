@@ -17,9 +17,8 @@ import Reviews from "@/components/sections/Reviews";
 import { CTASection } from "@/components/sections/CTASection";
 import SEO from "@/components/SEO";
 import LocationMap from "@/components/LocationMap";
-import UltimosProductos from "@/components/sections/UltimosProductos";
+import StoresCarousel from "@/components/StoresCarousel";
 import ProductShowcase from "@/components/sections/ProductShowcase";
-import Historias from "@/components/sections/Historias";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import CookieConsentBar from "@/components/CookieConsentBar";
@@ -66,22 +65,17 @@ export default function HomePage() {
     duration: 600,
     direction: "up",
   });
-  const historiasReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
-  const ultimosReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
   const reviewsReveal = useScrollReveal<HTMLElement>({
     offset: 80,
     duration: 600,
     direction: "up",
   });
   const tiendasReveal = useScrollReveal<HTMLElement>({
+    offset: 80,
+    duration: 600,
+    direction: "up",
+  });
+  const carouselReveal = useScrollReveal<HTMLElement>({
     offset: 80,
     duration: 600,
     direction: "up",
@@ -139,10 +133,6 @@ export default function HomePage() {
         >
           <Beneficios />
         </motion.div> */}
-        {/* Sección de Historias */}
-        <motion.div ref={historiasReveal.ref} {...historiasReveal.motionProps}>
-          <Historias />
-        </motion.div>
         {/* Sección de reseñas de clientes - arriba del mapa */}
         <motion.section
           ref={reviewsReveal.ref}
@@ -152,12 +142,21 @@ export default function HomePage() {
         >
           <Reviews />
         </motion.section>
+        {/* Sección de carrusel de tiendas */}
+        <motion.section
+          ref={carouselReveal.ref}
+          {...carouselReveal.motionProps}
+          id="tiendas-carrusel"
+          className="bg-white"
+        >
+          <StoresCarousel />
+        </motion.section>
         {/* Sección de ubicaciones de tiendas - coincide exactamente con la imagen */}
         <motion.section
           ref={tiendasReveal.ref}
           {...tiendasReveal.motionProps}
           id="tiendas"
-          className="py-16 bg-white"
+          className="py-2 bg-white"
         >
           <div className="container mx-auto px-6">
             <LocationMap />

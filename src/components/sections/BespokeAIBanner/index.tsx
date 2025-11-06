@@ -70,7 +70,7 @@ export default function BespokeAIBanner() {
 
           {/* Action Button */}
           <Link
-            href="/productos/electrodomesticos?categoria=lavado-secado"
+            href="/productos/multimedia/WD26DB8995BZCO"
             className="group inline-block"
             onClick={handleButtonClick}
             onMouseEnter={() => setIsHovering(true)}

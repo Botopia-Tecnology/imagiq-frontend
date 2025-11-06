@@ -273,10 +273,6 @@ export default function AddNewAddressForm({
     <form onSubmit={handleSubmit} className="space-y-4">
         {/* Sección de dirección de envío */}
         <div className="space-y-4">
-          <h5 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-1">
-            Dirección de Envío
-          </h5>
-
           {/* Campos básicos para envío */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -334,32 +330,34 @@ export default function AddNewAddressForm({
 
         {/* Campos adicionales para dirección de envío */}
         <div className="space-y-4">
-          <div>
-            <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
-              Complemento (Opcional)
-            </label>
-            <input
-              id="complemento"
-              type="text"
-              value={formData.complemento}
-              onChange={(e) => handleInputChange("complemento", e.target.value)}
-              placeholder="ej: Apartamento 301, Torre B, Piso 2"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="complemento" className="block text-sm font-medium text-gray-700 mb-1">
+                Complemento (Opcional)
+              </label>
+              <input
+                id="complemento"
+                type="text"
+                value={formData.complemento}
+                onChange={(e) => handleInputChange("complemento", e.target.value)}
+                placeholder="ej: Apartamento 301, Torre B, Piso 2"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="instruccionesEntrega" className="block text-sm font-medium text-gray-700 mb-1">
-              Instrucciones de entrega (Opcional)
-            </label>
-            <textarea
-              id="instruccionesEntrega"
-              value={formData.instruccionesEntrega}
-              onChange={(e) => handleInputChange("instruccionesEntrega", e.target.value)}
-              placeholder="ej: Portería 24 horas, llamar al celular al llegar"
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            />
+            <div>
+              <label htmlFor="instruccionesEntrega" className="block text-sm font-medium text-gray-700 mb-1">
+                Instrucciones de entrega (Opcional)
+              </label>
+              <textarea
+                id="instruccionesEntrega"
+                value={formData.instruccionesEntrega}
+                onChange={(e) => handleInputChange("instruccionesEntrega", e.target.value)}
+                placeholder="ej: Portería 24 horas, llamar al llegar"
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+              />
+            </div>
           </div>
 
           <div>
@@ -456,32 +454,34 @@ export default function AddNewAddressForm({
 
             {/* Campos adicionales para facturación */}
             <div className="space-y-4">
-              <div>
-                <label htmlFor="complementoFacturacion" className="block text-sm font-medium text-gray-700 mb-1">
-                  Complemento (Opcional)
-                </label>
-                <input
-                  id="complementoFacturacion"
-                  type="text"
-                  value={formData.complementoFacturacion}
-                  onChange={(e) => handleInputChange("complementoFacturacion", e.target.value)}
-                  placeholder="ej: Apartamento 301, Torre B, Piso 2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="complementoFacturacion" className="block text-sm font-medium text-gray-700 mb-1">
+                    Complemento (Opcional)
+                  </label>
+                  <input
+                    id="complementoFacturacion"
+                    type="text"
+                    value={formData.complementoFacturacion}
+                    onChange={(e) => handleInputChange("complementoFacturacion", e.target.value)}
+                    placeholder="ej: Apartamento 301, Torre B, Piso 2"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                  />
+                </div>
 
-              <div>
-                <label htmlFor="instruccionesEntregaFacturacion" className="block text-sm font-medium text-gray-700 mb-1">
-                  Instrucciones de entrega (Opcional)
-                </label>
-                <textarea
-                  id="instruccionesEntregaFacturacion"
-                  value={formData.instruccionesEntregaFacturacion}
-                  onChange={(e) => handleInputChange("instruccionesEntregaFacturacion", e.target.value)}
-                  placeholder="ej: Horario de oficina, llamar antes de llegar"
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                />
+                <div>
+                  <label htmlFor="instruccionesEntregaFacturacion" className="block text-sm font-medium text-gray-700 mb-1">
+                    Instrucciones de entrega (Opcional)
+                  </label>
+                  <textarea
+                    id="instruccionesEntregaFacturacion"
+                    value={formData.instruccionesEntregaFacturacion}
+                    onChange={(e) => handleInputChange("instruccionesEntregaFacturacion", e.target.value)}
+                    placeholder="ej: Horario de oficina, llamar antes de llegar"
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+                  />
+                </div>
               </div>
 
               <div>

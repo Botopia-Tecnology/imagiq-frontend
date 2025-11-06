@@ -328,8 +328,8 @@ export default function ProductCard({
       productName: apiProduct?.modelo || name,
       productId: id,
       email,
-      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor,
-      storage: productSelection.selection.selectedCapacity,
+      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
+      storage: productSelection.selection.selectedCapacity || undefined,
     });
   };
 
@@ -390,8 +390,8 @@ export default function ProductCard({
         onClose={stockNotification.closeModal}
         productName={apiProduct?.modelo || name}
         productImage={typeof currentImage === "string" ? currentImage : (typeof image === "string" ? image : image.src ?? "")}
-        selectedColor={displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor}
-        selectedStorage={productSelection.selection.selectedCapacity}
+        selectedColor={displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
+        selectedStorage={productSelection.selection.selectedCapacity || undefined}
         onNotificationRequest={handleRequestStockNotification}
       />
 

@@ -338,8 +338,8 @@ const DetailsProductSection: React.FC<{
             ? product.image
             : fallbackImage.src)
         }
-        selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor}
-        selectedStorage={productSelection.selection.selectedCapacity}
+        selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
+        selectedStorage={productSelection.selection.selectedCapacity || undefined}
         onNotificationRequest={handleRequestStockNotification}
       />
 

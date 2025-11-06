@@ -4,6 +4,7 @@
  */
 
 import { PlaceDetails } from '@/types/places.types';
+import type { Address } from '@/types/address';
 
 /**
  * Interface para crear una nueva dirección
@@ -21,41 +22,10 @@ export interface CreateAddressRequest {
 }
 
 /**
- * Interface para la respuesta de dirección
+ * Interface para la respuesta de dirección (compatibilidad)
+ * @deprecated Use Address type from @/types/address instead
  */
-export interface AddressResponse {
-  id: string;
-  usuarioId: string;
-  nombreDireccion: string;
-  tipoDireccion: string;
-  tipo: string;
-  esPredeterminada: boolean;
-  googlePlaceId: string;
-  direccionFormateada: string;
-  latitud: number;
-  longitud: number;
-  googleUrl?: string;
-  vicinity?: string;
-  departamento?: string;
-  codigoPostal?: string;
-  ciudad?: string;
-  localidad?: string;
-  barrio?: string;
-  // Removed: numeroCalle, nombreCalle, nomenclaturaTipo, nomenclaturaNumero, nomenclaturaAdicional
-  complemento?: string;
-  instruccionesEntrega?: string;
-  puntoReferencia?: string;
-  pais: string;
-  lineaUno: string;
-  activa: boolean;
-  zonaCobertura?: string;
-  // Removed: tiempoEntregaEstimado, costoEnvioBase, vecesUtilizada
-  fechaCreacion: Date;
-  fechaUltimaActualizacion?: Date;
-  fechaUltimaValidacion?: Date;
-  validadaGoogle: boolean;
-  enZonaCobertura: boolean;
-}
+export type AddressResponse = Address;
 
 /**
  * Configuración base del servicio
@@ -108,7 +78,7 @@ export class AddressesService {
   /**
    * Crea una nueva dirección
    */
-  public async createAddress(addressData: CreateAddressRequest): Promise<AddressResponse> {
+  public async createAddress(addressData: CreateAddressRequest): Promise<Address> {
     try {
       // Obtener información del usuario del localStorage
       const userInfo = JSON.parse(localStorage.getItem('imagiq_user') || '{}');
@@ -159,7 +129,7 @@ export class AddressesService {
   /**
    * Obtiene todas las direcciones del usuario
    */
-  public async getUserAddresses(): Promise<AddressResponse[]> {
+  public async getUserAddresses(): Promise<Address[]> {
     try {
       let url = `${BASE_CONFIG.API_URL}/api/addresses`;
 
@@ -202,7 +172,7 @@ export class AddressesService {
   /**
    * Obtiene direcciones por tipo
    */
-  public async getUserAddressesByType(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<AddressResponse[]> {
+  public async getUserAddressesByType(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<Address[]> {
     try {
       const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/by-type/${tipo}`, {
         method: 'GET',
@@ -223,7 +193,7 @@ export class AddressesService {
   /**
    * Obtiene la dirección predeterminada por tipo
    */
-  public async getDefaultAddress(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<AddressResponse | null> {
+  public async getDefaultAddress(tipo: 'ENVIO' | 'FACTURACION' | 'AMBOS'): Promise<Address | null> {
     try {
       const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/default/${tipo}`, {
         method: 'GET',
@@ -247,7 +217,7 @@ export class AddressesService {
   /**
    * Actualiza una dirección existente
    */
-  public async updateAddress(addressId: string, updateData: Partial<CreateAddressRequest>): Promise<AddressResponse> {
+  public async updateAddress(addressId: string, updateData: Partial<CreateAddressRequest>): Promise<Address> {
     try {
       const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}`, {
         method: 'PUT',
@@ -307,6 +277,32 @@ export class AddressesService {
       return await response.json();
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error incrementando contador de uso';
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Establece una dirección como predeterminada
+   * Desmarca otras direcciones predeterminadas del mismo tipo automáticamente
+   *
+   * @param addressId - ID de la dirección a establecer como predeterminada
+   * @returns Dirección actualizada
+   */
+  public async setDefaultAddress(addressId: string): Promise<Address> {
+    try {
+      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses/${addressId}/set-default`, {
+        method: 'POST',
+        headers: this.getHeaders(),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+      }
+
+      return await response.json();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Error estableciendo dirección predeterminada';
       throw new Error(errorMessage);
     }
   }

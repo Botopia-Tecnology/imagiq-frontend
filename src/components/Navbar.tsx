@@ -198,10 +198,9 @@ export default function Navbar() {
             </Link>
 
             {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
-            {isAuthenticated && user?.defaultAddress ? (
+            {isAuthenticated ? (
               <AddressDropdown
                 showWhiteItems={navbar.showWhiteItemsMobile}
-                currentAddress={user.defaultAddress}
               />
             ) : (
               <Image
@@ -349,10 +348,9 @@ export default function Navbar() {
           <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
             <div className="w-full flex items-center justify-between">
               {/* Dirección predeterminada del usuario con dropdown */}
-              {isAuthenticated && user?.defaultAddress && (
+              {isAuthenticated && (
                 <AddressDropdown
                   showWhiteItems={navbar.showWhiteItems}
-                  currentAddress={user.defaultAddress}
                 />
               )}
 

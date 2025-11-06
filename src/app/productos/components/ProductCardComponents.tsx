@@ -87,7 +87,7 @@ export const ColorSelector = ({
                 ? "border-black p-0.5"
                 : "border-gray-300 hover:border-gray-400"
             )}
-            title={color.label}
+            title={color.nombreColorDisplay || color.label}
           >
             <div
               className="w-full h-full rounded-full"

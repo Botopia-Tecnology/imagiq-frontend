@@ -136,7 +136,10 @@ export default function ProductViewPage({ params }) {
           return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
         })()}
         selectedStorage={(selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB')}
-        selectedColor={selectedColor || undefined}
+        selectedColor={(() => {
+          const colorObj = product.colors?.find(c => c.name === selectedColor);
+          return colorObj?.nombreColorDisplay || colorObj?.label || selectedColor || undefined;
+        })()}
         indcerointeres={indcerointeres}
         allPrices={product.apiProduct?.precioeccommerce || []}
         isVisible={showStickyBar}

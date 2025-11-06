@@ -301,6 +301,10 @@ export default function Navbar() {
                       >
                         <Link
                           href={item.href}
+                          onClick={() => {
+                            // Cerrar dropdown al hacer clic en la categoría
+                            navbar.setActiveDropdown(null);
+                          }}
                           className={cn(
                             "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block",
                             navbar.showWhiteItems

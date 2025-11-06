@@ -60,7 +60,7 @@ export default function LoginPage() {
           <p className="text-sm text-gray-600">
             Si deseas acceder a tu panel, haz clic en el botón.
           </p>
-          <Button onClick={() => router.push("/dashboard")} className="w-full">
+          <Button onClick={() => router.push("/perfil")} className="w-full">
             Ir al Dashboard
           </Button>
         </div>

@@ -72,7 +72,8 @@ export interface ProductCardProps {
   selectedCapacity?: ProductCapacity;
   puntos_q?: number;
   apiProduct?: ProductApiData;
-  acceptsTradeIn?: boolean; // Indica si el producto acepta retoma (basado en indRetoma)
+  acceptsTradeIn?: boolean;
+  desDetallada?:string; // Indica si el producto acepta retoma (basado en indRetoma)
 }
 
 
@@ -290,10 +291,12 @@ export default function ProductCard({
         sku: currentSku || '', // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
-        color: productSelection.selection.selectedColor || selectedColor?.label || undefined,
+        color: displayedSelectedColor?.hex || undefined,
+        colorName: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || selectedColor?.label || undefined,
         capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
         skuPostback: productSelection.selectedSkuPostback || '',
+        desDetallada: productSelection.selectedVariant?.desDetallada
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos

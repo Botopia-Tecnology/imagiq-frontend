@@ -291,20 +291,21 @@ export default function CreateAccountPage() {
                     Atrás
                   </Button>
                 )}
-                <Button
-                  type="button"
-                  onClick={handleNextStep}
-                  disabled={isLoading}
-                  className="flex-1 bg-black text-white hover:bg-gray-800"
-                >
-                  {isLoading
-                    ? "Procesando..."
-                    : currentStep === 4
-                    ? "Finalizar"
-                    : currentStep === 2 && !otpSent
-                    ? "Enviar código"
-                    : "Continuar"}
-                </Button>
+                {/* Ocultar botón Continuar en step 2 si no se ha enviado el OTP */}
+                {!(currentStep === 2 && !otpSent) && (
+                  <Button
+                    type="button"
+                    onClick={handleNextStep}
+                    disabled={isLoading}
+                    className="flex-1 bg-black text-white hover:bg-gray-800"
+                  >
+                    {isLoading
+                      ? "Procesando..."
+                      : currentStep === 4
+                      ? "Finalizar"
+                      : "Continuar"}
+                  </Button>
+                )}
                 {!STEPS[currentStep - 1].required && (
                   <Button type="button" variant="ghost" onClick={handleSkipStep} disabled={isLoading}>
                     Omitir

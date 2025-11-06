@@ -35,6 +35,7 @@ export default function CreateAccountPage() {
     apellido: "",
     email: "",
     telefono: "",
+    codigo_pais: "57", // Colombia por defecto (sin el +)
     tipo_documento: "CC",
     numero_documento: "",
     fecha_nacimiento: "",
@@ -81,10 +82,29 @@ export default function CreateAccountPage() {
     setIsLoading(true);
     setError("");
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const response = await fetch(`${API_BASE_URL}/api/auth/otp/send-register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          telefono: formData.telefono,
+          metodo: "whatsapp",
+        }),
+      });
+
+      if (!response || typeof response.status !== "number") {
+        throw new Error("No se pudo conectar con el servidor");
+      }
+
+      const result = await response.json() as { message?: string };
+
+      if (!response.ok) {
+        throw new Error(result.message || "Error al enviar código");
+      }
+
       setOtpSent(true);
     } catch (err) {
-      setError("Error al enviar código de verificación");
+      const msg = err instanceof Error ? err.message : "Error al enviar código de verificación";
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -103,88 +123,114 @@ export default function CreateAccountPage() {
 
     if (currentStep === 1) {
       if (!validateStep1()) return;
-      setCurrentStep(2);
+
+      // Crear usuario sin verificar antes de pasar al step 2
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/register-unverified`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+            nombre: formData.nombre,
+            apellido: formData.apellido,
+            contrasena: formData.contrasena,
+            fecha_nacimiento: formData.fecha_nacimiento,
+            telefono: formData.telefono,
+            codigo_pais: formData.codigo_pais,
+            tipo_documento: formData.tipo_documento,
+            numero_documento: formData.numero_documento,
+          }),
+        });
+
+        if (!response || typeof response.status !== "number") {
+          throw new Error("No se pudo conectar con el servidor");
+        }
+
+        const result = await response.json() as { message?: string; userId?: string };
+
+        if (!response.ok) {
+          throw new Error(result.message || "Error al crear el usuario");
+        }
+
+        setCurrentStep(2);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al crear usuario";
+        setError(msg);
+        await notifyError(msg, "Registro fallido");
+      } finally {
+        setIsLoading(false);
+      }
     } else if (currentStep === 2) {
       if (!otpSent) {
         setError("Debes enviar el código de verificación primero");
         return;
       }
       if (!validateOTP()) return;
-      setCurrentStep(3);
+
+      // Verificar OTP con el backend y completar registro
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/auth/otp/verify-register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telefono: formData.telefono,
+            codigo: otpCode,
+          }),
+        });
+
+        if (!response || typeof response.status !== "number") {
+          throw new Error("No se pudo conectar con el servidor");
+        }
+
+        const result = await response.json() as {
+          access_token: string;
+          user: Usuario;
+          message?: string;
+        };
+
+        if (!response.ok) {
+          throw new Error(result.message || "Código OTP inválido");
+        }
+
+        // Guardar token y usuario - registro completado
+        if (result.access_token && result.user) {
+          localStorage.setItem("imagiq_token", result.access_token);
+          localStorage.setItem("imagiq_user", JSON.stringify(result.user));
+
+          await login({
+            id: result.user.id,
+            email: result.user.email,
+            nombre: result.user.nombre,
+            apellido: result.user.apellido,
+            numero_documento: result.user.numero_documento,
+            telefono: result.user.telefono,
+          });
+        }
+
+        await notifyRegisterSuccess(formData.email);
+
+        // Opcional: ir a paso 3 para dirección o saltar directo
+        setCurrentStep(3);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Error al verificar código";
+        setError(msg);
+      } finally {
+        setIsLoading(false);
+      }
     } else if (currentStep === 3) {
-      setCurrentStep(4);
+      // Paso 3: dirección - solo avanzar o ir a home
+      router.push("/");
     } else if (currentStep === 4) {
-      await handleSubmit();
+      // Paso 4: pago - ir a home
+      router.push("/");
     }
   };
 
   const handleSkipStep = () => {
-    if (currentStep === 3) {
-      setCurrentStep(4);
-    } else if (currentStep === 4) {
-      handleSubmit();
-    }
-  };
-
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    setError("");
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          contrasena: formData.contrasena,
-          fecha_nacimiento: formData.fecha_nacimiento,
-          telefono: formData.telefono,
-          tipo_documento: formData.tipo_documento,
-          numero_documento: formData.numero_documento,
-        }),
-      });
-
-      if (!response || typeof response.status !== "number") {
-        throw new Error("No se pudo conectar con el servidor");
-      }
-
-      const result = (await response.json()) as {
-        access_token: string;
-        user: Usuario;
-        message?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(result.message || "Error al registrar");
-      }
-
-      if (result.access_token && result.user) {
-        localStorage.setItem("imagiq_token", result.access_token);
-        localStorage.setItem("imagiq_user", JSON.stringify(result.user));
-
-        await login({
-          id: result.user.id,
-          email: result.user.email,
-          nombre: result.user.nombre,
-          apellido: result.user.apellido,
-          numero_documento: result.user.numero_documento,
-          telefono: result.user.telefono,
-        });
-      }
-
-      await notifyRegisterSuccess(formData.email);
-      setTimeout(() => {
-        router.push("/");
-      }, 500);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Error de conexión";
-      setError(msg);
-      await notifyError(msg, "Registro fallido");
-    } finally {
-      setIsLoading(false);
-    }
+    // Los pasos 3 y 4 son opcionales, ir directo a home
+    router.push("/");
   };
 
   const renderStepContent = () => {

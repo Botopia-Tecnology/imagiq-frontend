@@ -35,6 +35,7 @@ export interface CartProduct {
   /** Memoria RAM del producto (ej: "8GB", "12GB") */
   ram?: string;
   skuPostback?: string;
+  desDetallada?:string;
 }
 
 interface CartCalculations {

@@ -23,6 +23,7 @@ export interface ProductCardProps {
   isLoadingShippingInfo?: boolean;
   onQuantityChange: (cantidad: number) => void;
   onRemove: () => void;
+  desDetallada?:string;
 }
 
 // Funciones puras para cálculos (SRP)

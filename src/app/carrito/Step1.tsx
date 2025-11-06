@@ -144,6 +144,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     colorName={product.colorName}
                     capacity={product.capacity}
                     ram={product.ram}
+                    desDetallada={product.desDetallada}
                     isLoadingShippingInfo={loadingShippingInfo[product.sku] || false}
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)

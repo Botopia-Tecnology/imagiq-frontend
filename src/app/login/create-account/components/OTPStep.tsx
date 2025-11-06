@@ -62,7 +62,7 @@ export function OTPStep({
         </div>
       )}
 
-      {otpSent ? (
+      {otpSent && (
         <div className="max-w-xs mx-auto space-y-4">
           <div className="space-y-2">
             <Label htmlFor="otp">Código de verificación</Label>
@@ -86,10 +86,6 @@ export function OTPStep({
             Reenviar código
           </Button>
         </div>
-      ) : (
-        <Button onClick={onSendOTP} disabled={disabled}>
-          Enviar código
-        </Button>
       )}
     </div>
   );

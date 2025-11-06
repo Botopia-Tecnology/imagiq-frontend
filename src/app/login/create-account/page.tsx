@@ -291,8 +291,17 @@ export default function CreateAccountPage() {
                     Atrás
                   </Button>
                 )}
-                {/* Ocultar botón Continuar en step 2 si no se ha enviado el OTP */}
-                {!(currentStep === 2 && !otpSent) && (
+                {/* En step 2: mostrar "Enviar código" si no se ha enviado, o "Continuar" si ya se envió */}
+                {currentStep === 2 && !otpSent ? (
+                  <Button
+                    type="button"
+                    onClick={handleSendOTP}
+                    disabled={isLoading}
+                    className="flex-1 bg-black text-white hover:bg-gray-800"
+                  >
+                    {isLoading ? "Enviando..." : "Enviar código"}
+                  </Button>
+                ) : (
                   <Button
                     type="button"
                     onClick={handleNextStep}

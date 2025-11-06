@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Direccion } from "@/types/user";
+import type { Address } from "@/types/address";
 import AddNewAddressForm from "./AddNewAddressForm";
 
 interface AddressSelectorProps {
@@ -10,6 +11,21 @@ interface AddressSelectorProps {
   onEditToggle: (edit: boolean) => void;
   onAddressAdded?: (userIdentifier: string) => void;
 }
+
+/**
+ * Helper para convertir Address a Direccion (legacy)
+ */
+const addressToDireccion = (address: Address): Direccion => {
+  return {
+    id: address.id,
+    usuario_id: address.usuarioId,
+    email: '', // Se llenará del localStorage si es necesario
+    linea_uno: address.direccionFormateada,
+    codigo_dane: '', // Backend lo llena
+    ciudad: address.ciudad || '',
+    pais: address.pais,
+  };
+};
 
 export const AddressSelector: React.FC<AddressSelectorProps> = ({
   address,
@@ -36,9 +52,11 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
     setShowAddForm(false);
   };
 
-  const handleAddressAdded = (newAddress: Direccion) => {
+  const handleAddressAdded = (newAddress: Address) => {
     onAddressAdded?.(userIdentifier);
-    onAddressChange(newAddress);
+    // Convertir Address a Direccion para mantener compatibilidad
+    const direccion = addressToDireccion(newAddress);
+    onAddressChange(direccion);
     setShowAddForm(false);
     onEditToggle(false);
   };

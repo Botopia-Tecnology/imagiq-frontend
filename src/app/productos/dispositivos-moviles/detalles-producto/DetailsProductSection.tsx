@@ -25,6 +25,8 @@ import PriceAndActions from "./PriceAndActions";
 import DeviceCarousel from "./DeviceCarousel";
 import AddiFinancing from "./AddiFinancing";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
+import StockNotificationModal from "@/components/StockNotificationModal";
+import { useStockNotification } from "@/hooks/useStockNotification";
 
 const DetailsProductSection: React.FC<{
   product: ProductCardProps;
@@ -94,6 +96,9 @@ const DetailsProductSection: React.FC<{
   const [tradeInCompleted, setTradeInCompleted] = React.useState(false);
   const [tradeInDeviceName, setTradeInDeviceName] = React.useState<string>("");
   const [tradeInValue, setTradeInValue] = React.useState<number>(0);
+
+  // Stock notification hook
+  const stockNotification = useStockNotification();
 
   // Handlers
   const handleToggleFavorite = () => {
@@ -197,6 +202,16 @@ const DetailsProductSection: React.FC<{
     router.push("/cart");
   };
 
+  const handleRequestStockNotification = async (email: string) => {
+    await stockNotification.requestNotification({
+      productName: product.name,
+      productId: product.id,
+      email,
+      color: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
+      storage: productSelection.selection.selectedCapacity || undefined,
+    });
+  };
+
   // Helper functions for price calculations
   const getCurrentPrice = () => {
     if (typeof productSelection.selectedPrice === "number") {
@@ -297,6 +312,8 @@ const DetailsProductSection: React.FC<{
         indcerointeres={productSelection.selectedVariant?.indcerointeres ?? 0}
         allPrices={product.apiProduct?.precioeccommerce || []}
         isVisible={showStickyBar}
+        hasStock={hasStock()}
+        onNotifyStock={stockNotification.openModal}
       />
       <ImageGalleryModal
         isOpen={isGalleryOpen}
@@ -310,6 +327,20 @@ const DetailsProductSection: React.FC<{
         onClose={handleCloseTradeInModal}
         onCancelWithoutCompletion={handleCancelTradeIn}
         onCompleteTradeIn={handleCompleteTradeIn}
+      />
+      <StockNotificationModal
+        isOpen={stockNotification.isModalOpen}
+        onClose={stockNotification.closeModal}
+        productName={product.name}
+        productImage={
+          productSelection.selectedVariant?.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : fallbackImage.src)
+        }
+        selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
+        selectedStorage={productSelection.selection.selectedCapacity || undefined}
+        onNotificationRequest={handleRequestStockNotification}
       />
 
       <main
@@ -470,6 +501,8 @@ const DetailsProductSection: React.FC<{
               loading={loading}
               onBuyNow={handleBuyNow}
               onAddToCart={handleAddToCart}
+              hasStock={hasStock()}
+              onNotifyStock={stockNotification.openModal}
             />
             {/* ProductSelectors - Filtrado data-driven interno */}
             <ProductSelectors

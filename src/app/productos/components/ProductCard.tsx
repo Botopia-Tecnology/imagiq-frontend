@@ -28,6 +28,8 @@ import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { ProductApiData } from "@/lib/api";
 import { shouldShowColorSelector, shouldShowCapacitySelector } from "./utils/categoryColorConfig";
+import StockNotificationModal from "@/components/StockNotificationModal";
+import { useStockNotification } from "@/hooks/useStockNotification";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -99,6 +101,9 @@ export default function ProductCard({
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageIndex] = useState(0);
 
+  // Hook para notificaciones de stock
+  const stockNotification = useStockNotification();
+
   // Hook para manejo inteligente de selección de productos
   const productSelection = useProductSelection(apiProduct || {
     codigoMarketBase: id,
@@ -128,7 +133,8 @@ export default function ProductCard({
     skuPostback: [],
   });
 
-  // Verificar si el producto está sin stock
+  // Verificar si la VARIANTE SELECCIONADA está sin stock
+  // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
   const isOutOfStock = productSelection.selectedStockTotal === 0;
 
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
@@ -317,6 +323,16 @@ export default function ProductCard({
     });
   };
 
+  const handleRequestStockNotification = async (email: string) => {
+    await stockNotification.requestNotification({
+      productName: apiProduct?.modelo || name,
+      productId: id,
+      email,
+      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor,
+      storage: productSelection.selection.selectedCapacity,
+    });
+  };
+
   const handleMoreInfo = () => {
     // Navega a la página de multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
@@ -368,10 +384,21 @@ export default function ProductCard({
   }, [apiProduct, colors, productSelection.selection.selectedColor, selectedColor]);
 
   return (
-    // eslint-disable-next-line jsx-a11y/prefer-tag-over-role
-    <div
-      role="button"
-      onClick={handleCardClick}
+    <>
+      <StockNotificationModal
+        isOpen={stockNotification.isModalOpen}
+        onClose={stockNotification.closeModal}
+        productName={apiProduct?.modelo || name}
+        productImage={typeof currentImage === "string" ? currentImage : (typeof image === "string" ? image : image.src ?? "")}
+        selectedColor={displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor}
+        selectedStorage={productSelection.selection.selectedCapacity}
+        onNotificationRequest={handleRequestStockNotification}
+      />
+
+      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
+      <div
+        role="button"
+        onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       tabIndex={0}
       aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
@@ -591,7 +618,7 @@ export default function ProductCard({
               onClick={(e) => {
                 e.stopPropagation();
                 if (isOutOfStock) {
-                  alert("Te notificaremos cuando este producto esté disponible");
+                  stockNotification.openModal();
                 } else {
                   handleAddToCart();
                 }
@@ -624,6 +651,7 @@ export default function ProductCard({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

@@ -16,6 +16,8 @@ interface StickyPriceBarProps {
   allPrices?: number[]; // Todos los precios del producto (precioeccommerce)
   onBuyClick?: () => void;
   isVisible?: boolean;
+  hasStock?: boolean;
+  onNotifyStock?: () => void;
 }
 
 /**
@@ -36,6 +38,8 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
   allPrices = [],
   onBuyClick,
   isVisible = false,
+  hasStock = true,
+  onNotifyStock,
 }) => {
   // Hook para cuotas sin interés (solo cuando indcerointeres === 1)
   const ceroInteres = useCeroInteres(
@@ -182,25 +186,47 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
 
           {/* DERECHA: CTA */}
           <div className="flex-shrink-0">
-            <motion.button
-              onClick={onBuyClick}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="
-                flex items-center gap-2
-                bg-[#0066CC] hover:bg-[#0052A3]
-                text-white
-                px-5 md:px-6 py-2 md:py-2.5
-                rounded-full
-                font-semibold text-sm
-                transition-colors duration-200
-                whitespace-nowrap
-              "
-            >
-              <FiShoppingCart className="text-lg" />
-              <span className="hidden sm:inline">Añadir al carrito</span>
-              <span className="sm:hidden">Añadir</span>
-            </motion.button>
+            {hasStock ? (
+              <motion.button
+                onClick={onBuyClick}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="
+                  flex items-center gap-2
+                  bg-[#0066CC] hover:bg-[#0052A3]
+                  text-white
+                  px-5 md:px-6 py-2 md:py-2.5
+                  rounded-full
+                  font-semibold text-sm
+                  transition-colors duration-200
+                  whitespace-nowrap
+                "
+              >
+                <FiShoppingCart className="text-lg" />
+                <span className="hidden sm:inline">Añadir al carrito</span>
+                <span className="sm:hidden">Añadir</span>
+              </motion.button>
+            ) : (
+              <motion.button
+                onClick={onNotifyStock}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="
+                  flex items-center gap-2
+                  bg-gray-800 hover:bg-gray-700
+                  text-white
+                  px-5 md:px-6 py-2 md:py-2.5
+                  rounded-full
+                  font-semibold text-sm
+                  transition-colors duration-200
+                  whitespace-nowrap
+                "
+              >
+                <FiShoppingCart className="text-lg" />
+                <span className="hidden sm:inline">Notificarme</span>
+                <span className="sm:hidden">Avisar</span>
+              </motion.button>
+            )}
           </div>
         </div>
       </div>

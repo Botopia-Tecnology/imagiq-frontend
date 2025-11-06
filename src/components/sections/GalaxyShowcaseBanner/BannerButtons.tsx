@@ -9,7 +9,6 @@ import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
 
 export function BannerButtons() {
-  const [isHoveringWatch, setIsHoveringWatch] = useState(false);
   const [isHoveringFlip, setIsHoveringFlip] = useState(false);
 
   const handleButtonClick = (product: string, action: string) => {
@@ -24,11 +23,9 @@ export function BannerButtons() {
     <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-center">
       {/* Galaxy Watch8 Button - Underlined Style */}
       <Link
-        href="/productos/dispositivos-moviles?seccion=wearables&producto=galaxy-watch8"
+        href="/productos/multimedia/BSM-L500"
         className="group relative inline-block"
         onClick={() => handleButtonClick("Galaxy Watch8", "conoce_mas")}
-        onMouseEnter={() => setIsHoveringWatch(true)}
-        onMouseLeave={() => setIsHoveringWatch(false)}
       >
         <button className="pb-2 text-xs md:text-sm font-semibold text-black transition-all duration-300 relative inline-block">
           <span style={{ fontFamily: "'Samsung Sharp Sans', sans-serif", fontWeight: 700 }}>
@@ -36,18 +33,14 @@ export function BannerButtons() {
           </span>
           {/* Animated Underline */}
           <span
-            className={`
-              absolute bottom-0 left-0 h-[1px] bg-black
-              transition-all duration-500 ease-out
-              ${isHoveringWatch ? "w-full" : "w-full"}
-            `}
+            className="absolute bottom-0 left-0 h-px bg-black w-full transition-all duration-500 ease-out"
           />
         </button>
       </Link>
 
       {/* Galaxy Z Flip7 Button - Border with Hover Effect */}
       <Link
-        href="/productos/dispositivos-moviles?seccion=smartphones&producto=galaxy-z-flip7"
+        href="/productos/multimedia/BSM-F766BE"
         className="group inline-block"
         onClick={() => handleButtonClick("Galaxy Z Flip7", "conoce_mas")}
         onMouseEnter={() => setIsHoveringFlip(true)}

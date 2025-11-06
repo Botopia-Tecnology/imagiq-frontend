@@ -6,22 +6,49 @@
  * - Panel lateral con buscador, filtros y cards de tiendas
  * - UX premium, responsivo, animado y escalable
  * - Código limpio y documentado
+ * - Datos dinámicos desde el endpoint del backend
  */
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
-import { stores } from "@/components/LocationsArray";
+import { useStores } from "@/hooks/useStores";
+import type { FormattedStore } from "@/types/store";
 import TiendasFilters from "./TiendasFilters";
+import StoreCardSkeleton from "./StoreCardSkeleton";
+import MapSkeleton from "./MapSkeleton";
 
-const MapSection = dynamic(() => import("./MapSection"), { ssr: false });
+const MapSection = dynamic(() => import("./MapSection"), {
+  ssr: false,
+  loading: () => <MapSkeleton />
+});
 
 export default function TiendasPage() {
+  // Obtener tiendas desde el endpoint usando el hook
+  const { stores, loading, error } = useStores();
+
   // Estado de búsqueda y filtro
   const [search, setSearch] = useState("");
-  const [filteredStores, setFilteredStores] = useState(stores);
+  const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
 
-  // Mostrar directamente los resultados filtrados por TiendasFilters
-  const visibleStores = filteredStores;
+  // Filtrar tiendas por búsqueda de texto y coordenadas válidas
+  const visibleStores = useMemo(() => {
+    // Primero filtrar solo tiendas con coordenadas válidas
+    const storesWithCoords = (filteredStores.length > 0 ? filteredStores : stores).filter(
+      (store) => store.latitud !== 0 && store.longitud !== 0 &&
+                 !isNaN(store.latitud) && !isNaN(store.longitud)
+    );
+
+    // Luego aplicar búsqueda de texto si existe
+    if (!search.trim()) return storesWithCoords;
+
+    const query = search.trim().toLowerCase();
+    return storesWithCoords.filter(
+      (store) =>
+        store.descripcion?.toLowerCase().includes(query) ||
+        store.direccion?.toLowerCase().includes(query) ||
+        store.ciudad?.toLowerCase().includes(query)
+    );
+  }, [search, filteredStores, stores]);
 
   return (
     <div className="min-h-screen w-full bg-gray-50 flex flex-col">
@@ -94,14 +121,27 @@ export default function TiendasPage() {
             className="flex flex-col gap-5 overflow-y-auto px-4 pb-4 pt-2"
             style={{ maxHeight: 650, minHeight: 320 }}
           >
-            {visibleStores.length === 0 ? (
+            {loading ? (
+              // Mostrar skeleton mientras carga
+              <>
+                <StoreCardSkeleton />
+                <StoreCardSkeleton />
+                <StoreCardSkeleton />
+              </>
+            ) : error ? (
+              // Mostrar error si hay problema
+              <div className="text-center text-red-500 py-8">
+                <p className="font-semibold mb-2">Error al cargar tiendas</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            ) : visibleStores.length === 0 ? (
               <div className="text-center text-gray-500 py-8">
                 No se encontraron tiendas.
               </div>
             ) : (
               visibleStores.map((store) => (
                 <div
-                  key={store.id}
+                  key={store.codigo}
                   className="bg-white rounded-[16px] border border-black px-4 py-3 flex flex-col gap-1"
                   style={{ boxShadow: "none" }}
                 >
@@ -109,38 +149,57 @@ export default function TiendasPage() {
                     className="font-bold text-[16px] mb-1 flex items-center gap-2 text-gray-900"
                     style={{ fontFamily: "Samsung Sharp Sans, sans-serif" }}
                   >
-                    {store.name}
+                    {store.descripcion}
                   </h2>
                   <div className="text-[14px] text-gray-700 mb-1">
-                    <b>Dirección:</b> {store.address}
+                    <b>Dirección:</b> {store.direccion}
+                    {store.ubicacion_cc && ` - ${store.ubicacion_cc}`}
                   </div>
                   <div className="text-[14px] text-gray-700">
-                    <b>Teléfono:</b> {store.phone}
+                    <b>Ciudad:</b> {store.ciudad}, {store.departamento}
+                  </div>
+                  <div className="text-[14px] text-gray-700">
+                    <b>Teléfono:</b> {store.telefono}
+                    {store.extension && ` Ext ${store.extension}`}
                   </div>
                   <div className="text-[14px] text-gray-700">
                     <b>Correo Electrónico:</b> {store.email}
                   </div>
                   <div className="text-[14px] text-gray-700">
-                    <b>Horario de atención:</b> {store.hours}
+                    <b>Horario de atención:</b> {store.horario}
                   </div>
                   <div className="flex gap-2 mt-2 justify-center">
                     <button
-                      className="bg-[#E5E5E5] text-gray-900 rounded-[16px] px-4 py-1 font-bold text-[15px] border-none shadow-none"
+                      className="bg-[#E5E5E5] text-gray-900 rounded-[16px] px-3 py-1 font-bold text-[14px] border-none shadow-none hover:bg-gray-300 transition-colors"
                       style={{
                         fontFamily: "Samsung Sharp Sans, sans-serif",
-                        minWidth: "110px",
+                        minWidth: "90px",
+                      }}
+                      onClick={() => {
+                        // Abrir en Google Maps usando coordenadas
+                        window.open(
+                          `https://www.google.com/maps/search/?api=1&query=${store.latitud},${store.longitud}`,
+                          "_blank"
+                        );
                       }}
                     >
-                      Ver más
+                      Google Maps
                     </button>
                     <button
-                      className="bg-[#E5E5E5] text-gray-900 rounded-[16px] px-4 py-1 font-bold text-[15px] border-none shadow-none"
+                      className="bg-[#E5E5E5] text-gray-900 rounded-[16px] px-3 py-1 font-bold text-[14px] border-none shadow-none hover:bg-gray-300 transition-colors"
                       style={{
                         fontFamily: "Samsung Sharp Sans, sans-serif",
-                        minWidth: "110px",
+                        minWidth: "70px",
+                      }}
+                      onClick={() => {
+                        // Abrir en Waze usando coordenadas
+                        window.open(
+                          `https://waze.com/ul?ll=${store.latitud},${store.longitud}&navigate=yes`,
+                          "_blank"
+                        );
                       }}
                     >
-                      Agendar visita
+                      Waze
                     </button>
                   </div>
                 </div>

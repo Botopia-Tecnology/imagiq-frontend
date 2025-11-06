@@ -1,21 +1,10 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-type Store = {
-  id: number;
-  name: string;
-  address: string;
-  phone: string;
-  email: string;
-  hours: string;
-  city: string;
-  position: [number, number];
-};
+import type { FormattedStore } from "@/types/store";
 
 interface MapSectionProps {
-  city: string;
-  stores: Store[];
+  stores: FormattedStore[];
 }
 
 // Custom Samsung pin icon
@@ -34,7 +23,13 @@ const samsungIcon = L.divIcon({
   popupAnchor: [0, -40],
 });
 
-export default function MapSection({ stores }: Omit<MapSectionProps, "city">) {
+export default function MapSection({ stores }: MapSectionProps) {
+  // Filtrar solo tiendas con coordenadas válidas para mostrar en el mapa
+  const storesWithValidCoords = stores.filter(
+    (store) => store.latitud !== 0 && store.longitud !== 0 &&
+               !isNaN(store.latitud) && !isNaN(store.longitud)
+  );
+
   return (
     <div
       className="absolute z-0"
@@ -63,12 +58,18 @@ export default function MapSection({ stores }: Omit<MapSectionProps, "city">) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {stores.map((store) => (
-          <Marker key={store.id} position={store.position} icon={samsungIcon}>
+        {storesWithValidCoords.map((store) => (
+          <Marker key={store.codigo} position={store.position} icon={samsungIcon}>
             <Popup>
-              <b>{store.name}</b>
+              <b>{store.descripcion}</b>
               <br />
-              {store.address}
+              {store.direccion}
+              {store.ubicacion_cc && (
+                <>
+                  <br />
+                  <small>{store.ubicacion_cc}</small>
+                </>
+              )}
             </Popup>
           </Marker>
         ))}

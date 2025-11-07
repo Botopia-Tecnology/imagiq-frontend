@@ -1,7 +1,5 @@
 // Sección principal de detalles de producto - Refactorizado
 import React from "react";
-import { motion } from "framer-motion";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
@@ -289,12 +287,7 @@ const DetailsProductSection: React.FC<{
     };
   }, [showStickyBar]);
 
-  // Animations and effects
-  const desktopReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80, //80
-    duration: 600,
-    direction: "up",
-  });
+ 
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
@@ -391,9 +384,7 @@ const DetailsProductSection: React.FC<{
         className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
         style={{ fontFamily: "SamsungSharpSans" }}
       >
-        <motion.section
-          ref={desktopReveal.ref}
-          {...desktopReveal.motionProps}
+        <div
           className="hidden lg:block"
         >
           <div className="max-w-[1400px] mx-auto px-8 py-12">
@@ -499,10 +490,10 @@ const DetailsProductSection: React.FC<{
               </div>
             </div>
           </div>
-        </motion.section>
+        </div>
 
         {/* MOBILE: Stack vertical */}
-        <motion.section className="lg:hidden">
+        <div className="lg:hidden">
           <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
             {/* Breadcrumb móvil */}
             <div className="mb-4">
@@ -574,7 +565,7 @@ const DetailsProductSection: React.FC<{
               acceptsTradeIn={product.acceptsTradeIn}
             />
           </div>
-        </motion.section>
+        </div>
       </main>
 
       {/* Estilos CSS globales optimizados para transiciones cinematográficas */}

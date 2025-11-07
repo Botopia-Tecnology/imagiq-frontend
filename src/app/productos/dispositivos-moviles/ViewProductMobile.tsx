@@ -15,7 +15,6 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
-import { AnimatePresence, motion } from "framer-motion";
 import Image, { StaticImageData } from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -287,29 +286,6 @@ export default function ViewProduct({
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
         <Specifications product={productCard} flix={flix}  />
       </div>
-
-      {/* Características destacadas (nuevo componente) */}
-      {/* <Destacados /> */}
-
-      {/* Sección de beneficios (responsive) */}
-      
-
-      {/* Componente de videos */}
-      {/* <motion.div
-        ref={videosReveal.ref}
-        {...videosReveal.motionProps}
-        className="mt-0"
-      >
-        <VideosSection />
-      </motion.div> */}
-      {/* Componente de comparación justo debajo de VideosSection */}
-      {/* <motion.div
-        ref={comparationReveal.ref}
-        {...comparationReveal.motionProps}
-        className="mt-0"
-      >
-        <ComparationProduct />
-      </motion.div> */}
     </div>
   );
 }

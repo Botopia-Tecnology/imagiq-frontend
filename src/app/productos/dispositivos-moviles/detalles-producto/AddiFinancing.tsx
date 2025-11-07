@@ -13,6 +13,7 @@ interface AddiFinancingProps {
   onAddToCart?: () => void;
   isLoading?: boolean;
   hasStock?: boolean;
+  onNotifyStock?: () => void;
 }
 
 export default function AddiFinancing({
@@ -27,6 +28,7 @@ export default function AddiFinancing({
   onAddToCart,
   isLoading = false,
   hasStock = true,
+  onNotifyStock,
 }: AddiFinancingProps) {
   // Hook para cuotas sin interés (solo cuando indcerointeres === 1)
   const ceroInteres = useCeroInteres(
@@ -165,13 +167,22 @@ export default function AddiFinancing({
           <span>Entregas: en 1-3 días laborables</span>
         </div>
 
-        <button
-          onClick={onAddToCart}
-          disabled={isLoading || !hasStock}
-          className="w-full rounded-full bg-[#4A90E2] text-white px-6 py-3 sm:py-4 font-bold text-base sm:text-lg shadow-lg hover:bg-[#357ABD] transition-all duration-200 hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          {isLoading ? "Añadiendo..." : hasStock ? "Añadir al carrito" : "Sin stock"}
-        </button>
+        {hasStock ? (
+          <button
+            onClick={onAddToCart}
+            disabled={isLoading}
+            className="w-full rounded-full bg-[#4A90E2] text-white px-6 py-3 sm:py-4 font-bold text-base sm:text-lg shadow-lg hover:bg-[#357ABD] transition-all duration-200 hover:shadow-xl disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isLoading ? "Añadiendo..." : "Añadir al carrito"}
+          </button>
+        ) : (
+          <button
+            onClick={onNotifyStock}
+            className="w-full rounded-full bg-gray-800 text-white px-6 py-3 sm:py-4 font-bold text-base sm:text-lg shadow-lg hover:bg-gray-700 transition-all duration-200 hover:shadow-xl"
+          >
+            Notificarme cuando haya stock
+          </button>
+        )}
 
         <p className="text-[10px] sm:text-xs text-[#999] text-center mt-3">
           *Financiación sujeta a aprobación

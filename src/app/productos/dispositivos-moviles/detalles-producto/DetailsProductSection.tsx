@@ -489,6 +489,7 @@ const DetailsProductSection: React.FC<{
                   onAddToCart={handleAddToCart}
                   isLoading={loading}
                   hasStock={hasStock()}
+                  onNotifyStock={stockNotification.openModal}
                 />
               </div>
             </div>

@@ -159,10 +159,14 @@ export default function ProductViewPage({ params }) {
     // Obtener el SKU del color seleccionado
     const selectedColorSku = productSelection.selectedSku || undefined;
 
+    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const codigoMarket = productSelection.selectedCodigoMarket || product.apiProduct?.codigoMarketBase || '';
+
     await stockNotification.requestNotification({
       productName: product.name,
       email,
       sku: selectedColorSku,
+      codigoMarket,
     });
   };
 

@@ -327,10 +327,14 @@ export default function ProductCard({
     // Obtener el SKU del color seleccionado
     const selectedColorSku = displayedSelectedColor?.sku;
 
+    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const codigoMarket = productSelection.selectedCodigoMarket || apiProduct?.codigoMarketBase || '';
+
     await stockNotification.requestNotification({
       productName: apiProduct?.modelo || name,
       email,
       sku: selectedColorSku,
+      codigoMarket,
     });
   };
 

@@ -11,6 +11,7 @@ interface StockNotificationData {
   productName: string; // Solo para mostrar en el toast
   email: string;
   sku?: string;
+  codigoMarket: string; // Código de mercado del producto (OBLIGATORIO)
 }
 
 export function useStockNotification() {
@@ -24,10 +25,16 @@ export function useStockNotification() {
         throw new Error('No se pudo identificar el producto seleccionado');
       }
 
+      // Validar que el codigoMarket esté presente
+      if (!data.codigoMarket) {
+        throw new Error('No se pudo identificar el código de mercado del producto');
+      }
+
       // Preparar datos según la especificación del backend
       const payload = {
         sku: data.sku,
         email: data.email,
+        codigoMarket: data.codigoMarket,
         userId: user?.id || null,
       };
 

@@ -206,10 +206,14 @@ const DetailsProductSection: React.FC<{
     // Obtener el SKU del producto seleccionado actualmente
     const selectedSku = productSelection.selectedSku;
 
+    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const codigoMarket = productSelection.selectedCodigoMarket || product.apiProduct?.codigoMarketBase || '';
+
     await stockNotification.requestNotification({
       productName: product.name,
       email,
       sku: selectedSku || undefined,
+      codigoMarket,
     });
   };
 

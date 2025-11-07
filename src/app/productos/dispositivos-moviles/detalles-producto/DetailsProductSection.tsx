@@ -185,9 +185,12 @@ const DetailsProductSection: React.FC<{
         sku: productSelection.selectedSku,
         ean: productSelection.selectedVariant?.ean || "",
         puntos_q: product.puntos_q ?? 4,
-        color: productSelection.selection.selectedColor || undefined,
+        color: productSelection.getSelectedColorOption()?.hex || undefined,
+        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
         capacity: productSelection.selection.selectedCapacity || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
+        skuPostback: productSelection.selectedSkuPostback || '',
+        desDetallada: productSelection.selectedVariant?.desDetallada
       });
      
     } catch (error) {

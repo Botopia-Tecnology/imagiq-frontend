@@ -58,14 +58,6 @@ function convertProductForView(product: ProductCardProps) {
   };
 }
 
-// Mantiene la integración con el contexto de tipo de producto
-function SetApplianceFlag({ isRefrigerador }: { isRefrigerador: boolean }) {
-  const { setIsAppliance } = useProductContext();
-  useEffect(() => {
-    setIsAppliance(isRefrigerador);
-  }, [isRefrigerador, setIsAppliance]);
-  return null;
-}
 
 // Wrapper para manejar el estado de carga de variantes
 function ProductContentWithVariants({

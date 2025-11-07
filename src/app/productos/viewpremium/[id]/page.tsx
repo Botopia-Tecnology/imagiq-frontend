@@ -8,6 +8,9 @@ import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-produc
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { useProductSelection } from "@/hooks/useProductSelection";
+import { useCartContext } from "@/features/cart/CartContext";
+import { useRouter } from "next/navigation";
+import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 
 // Componentes
 import ProductCarousel from "../components/ProductCarousel";
@@ -89,6 +92,61 @@ export default function ProductViewPage({ params }) {
     }
   );
 
+  // Hooks para carrito y navegación
+  const { addProduct } = useCartContext();
+  const router = useRouter();
+  const [loadingCart, setLoadingCart] = React.useState(false);
+
+  // Handler para añadir al carrito con los datos correctos del productSelection
+  const handleAddToCart = async () => {
+    if (!product) return;
+
+    if (!productSelection.selectedSku) {
+      alert("Por favor selecciona todas las opciones del producto");
+      return;
+    }
+
+    setLoadingCart(true);
+    try {
+      await addProduct({
+        id: product.id,
+        name: product.name,
+        price: productSelection.selectedPrice || 0,
+        originalPrice: productSelection.selectedOriginalPrice || undefined,
+        stock: productSelection.selectedStockTotal ?? 1,
+        quantity: 1,
+        image:
+          productSelection.selectedVariant?.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : fallbackImage.src),
+        sku: productSelection.selectedSku,
+        ean: productSelection.selectedVariant?.ean || "",
+        puntos_q: product.puntos_q ?? 4,
+        color: productSelection.getSelectedColorOption()?.hex || undefined,
+        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
+        capacity: productSelection.selection.selectedCapacity || undefined,
+        ram: productSelection.selection.selectedMemoriaram || undefined,
+        skuPostback: productSelection.selectedSkuPostback || '',
+        desDetallada: productSelection.selectedVariant?.desDetallada
+      });
+    } finally {
+      setLoadingCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+    await handleAddToCart();
+    //router.push("/cart");
+  };
+
+  const hasStock = () => {
+    return (
+      productSelection.selectedStockTotal !== null &&
+      productSelection.selectedStockTotal > 0
+    );
+  };
+
   // Barra sticky superior con la misma animación/estilo de la vista normal
   const showStickyBar = useScrollNavbar(150, 50, true);
 
@@ -163,19 +221,25 @@ export default function ProductViewPage({ params }) {
       {/* StickyPriceBar exacto de la página view normal */}
       <StickyPriceBar
         deviceName={product.name}
-        basePrice={(() => {
+        basePrice={productSelection.selectedPrice || (() => {
           const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
           const priceStr = selectedCapacity?.price || product.price || "0";
           return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
         })()}
-        selectedStorage={(selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB')}
-        selectedColor={(() => {
-          const colorObj = product.colors?.find(c => c.name === selectedColor);
-          return colorObj?.nombreColorDisplay || colorObj?.label || selectedColor || undefined;
-        })()}
+        selectedStorage={productSelection.selection.selectedCapacity || ((selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB'))}
+        selectedColor={
+          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          (() => {
+            const colorObj = product.colors?.find(c => c.name === selectedColor);
+            return colorObj?.nombreColorDisplay || colorObj?.label || selectedColor || undefined;
+          })()
+        }
         indcerointeres={indcerointeres}
         allPrices={product.apiProduct?.precioeccommerce || []}
         isVisible={showStickyBar}
+        onBuyClick={handleBuyNow}
+        hasStock={hasStock()}
       />
 
       {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}

@@ -19,6 +19,7 @@ interface ProductInfoProps {
   currentImageIndex: number;
   productImages: string[];
   onOpenModal: () => void;
+  productSelection?: ReturnType<typeof useProductSelection>; // Opcional para backward compatibility
 }
 
 const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
@@ -34,9 +35,11 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
   currentImageIndex,
   productImages,
   onOpenModal,
+  productSelection: productSelectionProp,
 }, ref) => {
   // Hook para manejo inteligente de selección de productos
-  const productSelection = useProductSelection(product.apiProduct || {
+  // Si se pasa productSelection como prop, usarlo; si no, crear uno local
+  const localProductSelection = useProductSelection(product.apiProduct || {
     codigoMarketBase: product.id,
     codigoMarket: [],
     nombreMarket: product.name,
@@ -63,6 +66,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
     indcerointeres: [],
     skuPostback: [],
   });
+
+  const productSelection = productSelectionProp || localProductSelection;
 
   // Obtener precio actual desde el hook de selección o usar el fallback legacy
   const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);

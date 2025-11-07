@@ -7,6 +7,7 @@ import ViewPremiumSkeleton from "./ViewPremiumSkeleton";
 import StickyPriceBar from "@/app/productos/dispositivos-moviles/detalles-producto/StickyPriceBar";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { useProductSelection } from "@/hooks/useProductSelection";
 
 // Componentes
 import ProductCarousel from "../components/ProductCarousel";
@@ -16,6 +17,7 @@ import TradeInSection from "../components/sections/TradeInSection";
 import { useProductLogic } from "../hooks/useProductLogic";
 import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
 import Specifications from "../../dispositivos-moviles/detalles-producto/Specifications";
+import AddToCartButton from "../components/AddToCartButton";
 
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
@@ -55,6 +57,37 @@ export default function ProductViewPage({ params }) {
     goToPrevImage,
     goToImage,
   } = useProductLogic(product);
+
+  // Hook para manejo inteligente de selección de productos - compartido entre componentes
+  const productSelection = useProductSelection(
+    product?.apiProduct || {
+      codigoMarketBase: product?.id || "",
+      codigoMarket: [],
+      nombreMarket: product?.name || "",
+      categoria: "",
+      subcategoria: "",
+      modelo: "",
+      color: [],
+      capacidad: [],
+      memoriaram: [],
+      descGeneral: null,
+      sku: [],
+      ean: [],
+      desDetallada: [],
+      stockTotal: [],
+      urlImagenes: [],
+      urlRender3D: [],
+      imagePreviewUrl: [],
+      imageDetailsUrls: [],
+      precioNormal: [],
+      precioeccommerce: [],
+      fechaInicioVigencia: [],
+      fechaFinalVigencia: [],
+      indRetoma: [],
+      indcerointeres: [],
+      skuPostback: [],
+    }
+  );
 
   // Barra sticky superior con la misma animación/estilo de la vista normal
   const showStickyBar = useScrollNavbar(150, 50, true);
@@ -187,6 +220,7 @@ export default function ProductViewPage({ params }) {
                 currentImageIndex={currentImageIndex}
                 productImages={productImages}
                 onOpenModal={openModal}
+                productSelection={productSelection}
               />
             </div>
           </div>
@@ -214,6 +248,9 @@ export default function ProductViewPage({ params }) {
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
         <Specifications product={product} flix={product} />
       </div>
+
+      {/* Botón de añadir al carrito al final de la página */}
+      <AddToCartButton product={product} productSelection={productSelection} />
 
       {/* Modal para fotos del color seleccionado */}
       <ImageModal

@@ -156,12 +156,13 @@ export default function ProductViewPage({ params }) {
   const handleRequestStockNotification = async (email: string) => {
     if (!product) return;
 
+    // Obtener el SKU del color seleccionado
+    const selectedColorSku = productSelection.selectedSku || undefined;
+
     await stockNotification.requestNotification({
       productName: product.name,
-      productId: product.id,
       email,
-      color: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-      storage: productSelection.selection.selectedCapacity || undefined,
+      sku: selectedColorSku,
     });
   };
 

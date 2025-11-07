@@ -31,7 +31,21 @@ import { useStockNotification } from "@/hooks/useStockNotification";
 const DetailsProductSection: React.FC<{
   product: ProductCardProps;
   onVariantsReady?: (ready: boolean) => void;
-}> = ({ product, onVariantsReady }) => {
+  onProductSelectionChange?: (selection: {
+    selectedSku: string | null;
+    selectedPrice: number | null;
+    selectedOriginalPrice: number | null;
+    selectedStockTotal: number | null;
+    selectedVariant: any;
+    selectedSkuPostback: string | null;
+    selection: {
+      selectedColor: string | null;
+      selectedCapacity: string | null;
+      selectedMemoriaram: string | null;
+    };
+    getSelectedColorOption: () => any;
+  }) => void;
+}> = ({ product, onVariantsReady, onProductSelectionChange }) => {
   // Hooks - Usar el mismo sistema que ProductCard
   const productSelection = useProductSelection(
     product.apiProduct || {
@@ -67,6 +81,33 @@ const DetailsProductSection: React.FC<{
       onVariantsReady(true);
     }
   }, [productSelection.selectedVariant, onVariantsReady]);
+
+  // Notificar cambios en productSelection al padre (solo valores primitivos para evitar bucle infinito)
+  React.useEffect(() => {
+    if (onProductSelectionChange) {
+      onProductSelectionChange({
+        selectedSku: productSelection.selectedSku,
+        selectedPrice: productSelection.selectedPrice,
+        selectedOriginalPrice: productSelection.selectedOriginalPrice,
+        selectedStockTotal: productSelection.selectedStockTotal,
+        selectedVariant: productSelection.selectedVariant,
+        selectedSkuPostback: productSelection.selectedSkuPostback,
+        selection: productSelection.selection,
+        getSelectedColorOption: productSelection.getSelectedColorOption,
+      });
+    }
+  }, [
+    productSelection.selectedSku,
+    productSelection.selectedPrice,
+    productSelection.selectedOriginalPrice,
+    productSelection.selectedStockTotal,
+    productSelection.selectedVariant,
+    productSelection.selectedSkuPostback,
+    productSelection.selection.selectedColor,
+    productSelection.selection.selectedCapacity,
+    productSelection.selection.selectedMemoriaram,
+    onProductSelectionChange,
+  ]);
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();

@@ -11,7 +11,7 @@ import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 
 interface AddToCartButtonProps {
   product: ProductCardProps;
-  productSelection: ReturnType<typeof useProductSelection>;
+  productSelection: ReturnType<typeof useProductSelection> | null;
   onNotifyStock?: () => void;
 }
 
@@ -20,11 +20,11 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
   const { recalculatePoints } = usePointsContext();
   const [loading, setLoading] = React.useState(false);
 
-  // Verificar si hay stock
-  const hasStock = productSelection.selectedStockTotal !== null && productSelection.selectedStockTotal > 0;
+  // Verificar si hay stock (con null check para productSelection)
+  const hasStock = productSelection?.selectedStockTotal !== null && productSelection?.selectedStockTotal > 0;
 
   const handleAddToCart = async () => {
-    if (!productSelection.selectedSku) {
+    if (!productSelection || !productSelection.selectedSku) {
       alert("Por favor selecciona todas las opciones del producto");
       return;
     }
@@ -71,6 +71,9 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
       maximumFractionDigits: 0,
     }).format(price);
   };
+
+  // No renderizar si productSelection es null
+  if (!productSelection) return null;
 
   const currentPrice = productSelection.selectedPrice || 0;
   const displayPrice = formatPrice(currentPrice);

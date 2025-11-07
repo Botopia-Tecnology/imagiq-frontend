@@ -13,6 +13,7 @@ import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import { useProductContext } from "@/features/products/ProductContext";
+import AddToCartButton from "../../viewpremium/components/AddToCartButton";
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
 function convertProductForView(product: ProductCardProps) {
@@ -62,17 +63,26 @@ function convertProductForView(product: ProductCardProps) {
 // Wrapper para manejar el estado de carga de variantes
 function ProductContentWithVariants({
   product,
-  onVariantsReady
+  onVariantsReady,
+  onProductSelectionChange,
+  productSelection
 }: {
   product: ProductCardProps;
   onVariantsReady: (ready: boolean) => void;
+  onProductSelectionChange?: (selection: any) => void;
+  productSelection: any;
 }) {
   const convertedProduct = convertProductForView(product);
 
   return (
     <>
-      <DetailsProductSection product={product} onVariantsReady={onVariantsReady} />
+      <DetailsProductSection
+        product={product}
+        onVariantsReady={onVariantsReady}
+        onProductSelectionChange={onProductSelectionChange}
+      />
       <ViewProduct product={convertedProduct} flix={product} />
+      <AddToCartButton product={product} productSelection={productSelection} />
     </>
   );
 }
@@ -89,11 +99,17 @@ export default function ProductViewPage({ params }) {
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
   const [variantsReady, setVariantsReady] = React.useState(false);
+  const [productSelection, setProductSelection] = React.useState<any>(null);
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
     setVariantsReady(false);
   }, [id]);
+
+  // Callback para recibir productSelection desde DetailsProductSection
+  const handleProductSelectionChange = React.useCallback((selection: any) => {
+    setProductSelection(selection);
+  }, []);
 
   if (!id) {
     return notFound();
@@ -136,6 +152,8 @@ export default function ProductViewPage({ params }) {
         <ProductContentWithVariants
           product={product}
           onVariantsReady={setVariantsReady}
+          onProductSelectionChange={handleProductSelectionChange}
+          productSelection={productSelection}
         />
       </div>
     </>

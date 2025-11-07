@@ -203,14 +203,13 @@ const DetailsProductSection: React.FC<{
   };
 
   const handleRequestStockNotification = async (email: string) => {
-    // Obtener el SKU del color seleccionado
-    const selectedColor = productSelection.getSelectedColorOption();
-    const selectedColorSku = selectedColor?.sku;
+    // Obtener el SKU del producto seleccionado actualmente
+    const selectedSku = productSelection.selectedSku;
 
     await stockNotification.requestNotification({
       productName: product.name,
       email,
-      sku: selectedColorSku,
+      sku: selectedSku || undefined,
     });
   };
 

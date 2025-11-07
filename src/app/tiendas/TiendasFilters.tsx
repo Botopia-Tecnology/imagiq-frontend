@@ -13,10 +13,12 @@ import type { FormattedStore } from "@/types/store";
 
 interface TiendasFiltersProps {
   onUpdateStores: (filtered: FormattedStore[]) => void;
+  onLoadingChange?: (isLoading: boolean) => void;
 }
 
 export default function TiendasFilters({
   onUpdateStores,
+  onLoadingChange,
 }: TiendasFiltersProps) {
   // Obtener todas las tiendas usando el hook
   const { stores } = useStores();
@@ -37,10 +39,12 @@ export default function TiendasFilters({
   // Buscar tiendas cercanas usando geolocalización
   const handleCercaDeMi = () => {
     setLoading(true);
+    onLoadingChange?.(true);
     setError(null);
     if (!navigator.geolocation) {
       setError("La geolocalización no está soportada en este navegador.");
       setLoading(false);
+      onLoadingChange?.(false);
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -68,10 +72,12 @@ export default function TiendasFilters({
           .slice(0, 5); // Mostrar las 5 más cercanas
         onUpdateStores(tiendasCercanas);
         setLoading(false);
+        onLoadingChange?.(false);
       },
       (err) => {
         setError("No se pudo obtener la ubicación: " + err.message);
         setLoading(false);
+        onLoadingChange?.(false);
       }
     );
   };

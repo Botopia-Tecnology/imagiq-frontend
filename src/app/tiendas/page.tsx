@@ -30,6 +30,7 @@ export default function TiendasPage() {
   // Estado de búsqueda y filtro
   const [search, setSearch] = useState("");
   const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
+  const [isFilterLoading, setIsFilterLoading] = useState(false);
 
   // Filtrar tiendas por búsqueda de texto y coordenadas válidas
   const visibleStores = useMemo(() => {
@@ -116,14 +117,17 @@ export default function TiendasPage() {
               </span>
             </div>
             {/* Filtros y Cerca de mí */}
-            <TiendasFilters onUpdateStores={setFilteredStores} />
+            <TiendasFilters
+              onUpdateStores={setFilteredStores}
+              onLoadingChange={setIsFilterLoading}
+            />
           </div>
           <div
             className="flex flex-col gap-5 overflow-y-auto px-4 pb-4 pt-2"
             style={{ maxHeight: 650, minHeight: 320 }}
           >
-            {loading ? (
-              // Mostrar skeleton mientras carga
+            {(loading || isFilterLoading) ? (
+              // Mostrar skeleton mientras carga (inicial o filtros)
               <>
                 <StoreCardSkeleton />
                 <StoreCardSkeleton />

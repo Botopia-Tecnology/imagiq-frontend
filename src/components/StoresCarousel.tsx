@@ -10,11 +10,14 @@ import { useStores } from "@/hooks/useStores";
 import { ChevronLeft, ChevronRight, Navigation, Search } from "lucide-react";
 import Image from "next/image";
 import { useSelectedStore } from "@/contexts/SelectedStoreContext";
+import StoreCarouselSkeleton from "./StoreCarouselSkeleton";
 
 export default function StoresCarousel() {
   const { stores: apiStores, loading } = useStores();
   const [selectedCity, setSelectedCity] = useState<string>("Todas las ciudades");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isSearchingNearby, setIsSearchingNearby] = useState(false);
+  const [nearbyStores, setNearbyStores] = useState<typeof apiStores>([]);
   const { selectedStoreCode, setSelectedStoreCode } = useSelectedStore();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -40,6 +43,11 @@ export default function StoresCarousel() {
 
   // Filtrar tiendas por ciudad y búsqueda
   const filteredStores = useMemo(() => {
+    // Si hay tiendas cercanas (de "Cerca de mí"), mostrar solo esas
+    if (nearbyStores.length > 0) {
+      return nearbyStores;
+    }
+
     let result = stores;
 
     // Filtrar por ciudad
@@ -58,7 +66,7 @@ export default function StoresCarousel() {
     }
 
     return result;
-  }, [selectedCity, searchQuery, stores]);
+  }, [selectedCity, searchQuery, stores, nearbyStores]);
 
   // Buscar tiendas cercanas usando geolocalización
   const handleCercaDeMi = useCallback(() => {
@@ -66,6 +74,8 @@ export default function StoresCarousel() {
       alert("La geolocalización no está soportada en este navegador.");
       return;
     }
+
+    setIsSearchingNearby(true);
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
@@ -86,7 +96,8 @@ export default function StoresCarousel() {
           return R * c;
         };
 
-        const nearestStore = stores
+        // Obtener las 5 tiendas más cercanas (igual que en /tiendas)
+        const nearestStores = stores
           .map((store) => ({
             ...store,
             distancia: getDistance(
@@ -96,15 +107,22 @@ export default function StoresCarousel() {
               store.position[1]
             ),
           }))
-          .sort((a, b) => a.distancia - b.distancia)[0];
+          .sort((a, b) => a.distancia - b.distancia)
+          .slice(0, 5);
 
-        if (nearestStore) {
-          setSelectedCity(nearestStore.ciudad);
-          setSearchQuery(nearestStore.descripcion);
+        if (nearestStores.length > 0) {
+          // Guardar las tiendas cercanas en el estado
+          setNearbyStores(nearestStores);
+          // Resetear filtros
+          setSelectedCity("Todas las ciudades");
+          setSearchQuery("");
         }
+
+        setIsSearchingNearby(false);
       },
       (err) => {
         alert("No se pudo obtener la ubicación: " + err.message);
+        setIsSearchingNearby(false);
       }
     );
   }, [stores]);
@@ -129,6 +147,13 @@ export default function StoresCarousel() {
       });
     }
   }, [selectedCity, searchQuery, filteredStores.length]);
+
+  // Limpiar tiendas cercanas cuando el usuario cambia filtros manualmente
+  useEffect(() => {
+    if (nearbyStores.length > 0 && (selectedCity !== "Todas las ciudades" || searchQuery.trim())) {
+      setNearbyStores([]);
+    }
+  }, [selectedCity, searchQuery, nearbyStores.length]);
 
   if (loading) {
     return (
@@ -186,17 +211,41 @@ export default function StoresCarousel() {
             {/* Cerca de mí */}
             <button
               onClick={handleCercaDeMi}
-              className="w-full md:w-auto bg-black hover:bg-gray-800 text-white rounded-lg px-5 py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition-colors"
+              disabled={isSearchingNearby}
+              className="w-full md:w-auto bg-black hover:bg-gray-800 text-white rounded-lg px-5 py-2.5 text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
               style={{ fontFamily: "Samsung Sharp Sans, sans-serif" }}
             >
-              <Navigation className="w-4 h-4" />
-              Cerca de mí
+              {isSearchingNearby ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  Buscando...
+                </>
+              ) : (
+                <>
+                  <Navigation className="w-4 h-4" />
+                  Cerca de mí
+                </>
+              )}
             </button>
           </div>
         </div>
 
         {/* Carrusel */}
-        {filteredStores.length === 0 ? (
+        {isSearchingNearby ? (
+          <div className="relative">
+            <div
+              className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide justify-start"
+              style={{
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+            >
+              <StoreCarouselSkeleton />
+              <StoreCarouselSkeleton />
+              <StoreCarouselSkeleton />
+            </div>
+          </div>
+        ) : filteredStores.length === 0 ? (
           <div className="text-center text-gray-500 py-12">
             No se encontraron tiendas
           </div>

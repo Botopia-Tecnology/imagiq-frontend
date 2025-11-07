@@ -324,12 +324,13 @@ export default function ProductCard({
   };
 
   const handleRequestStockNotification = async (email: string) => {
+    // Obtener el SKU del color seleccionado
+    const selectedColorSku = displayedSelectedColor?.sku;
+
     await stockNotification.requestNotification({
       productName: apiProduct?.modelo || name,
-      productId: id,
       email,
-      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-      storage: productSelection.selection.selectedCapacity || undefined,
+      sku: selectedColorSku,
     });
   };
 

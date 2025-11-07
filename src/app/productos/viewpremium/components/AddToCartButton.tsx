@@ -21,7 +21,9 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
   const [loading, setLoading] = React.useState(false);
 
   // Verificar si hay stock (con null check para productSelection)
-  const hasStock = productSelection?.selectedStockTotal !== null && productSelection?.selectedStockTotal > 0;
+  const hasStock = productSelection?.selectedStockTotal !== null &&
+                   productSelection?.selectedStockTotal !== undefined &&
+                   productSelection?.selectedStockTotal > 0;
 
   const handleAddToCart = async () => {
     if (!productSelection || !productSelection.selectedSku) {

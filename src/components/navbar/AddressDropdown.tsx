@@ -5,27 +5,28 @@ import { createPortal } from "react-dom";
 import { MapPin, Check, Plus, X, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/features/auth/context";
-import type { DefaultAddress, Direccion } from "@/types/user";
+import type { Address } from "@/types/address";
 import AddNewAddressForm from "../../app/carrito/components/AddNewAddressForm";
 import { invalidateShippingOriginCache } from "@/hooks/useShippingOrigin";
+import { useDefaultAddress } from "@/hooks/useDefaultAddress";
+import { addressesService } from "@/services/addresses.service";
 
 interface AddressDropdownProps {
   showWhiteItems: boolean;
-  currentAddress: DefaultAddress;
 }
 
 const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   showWhiteItems,
-  currentAddress,
 }) => {
   const { user, login } = useAuthContext();
+  const { address: currentAddress, isLoading: loadingDefault, invalidate } = useDefaultAddress('ENVIO');
   const [open, setOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [addresses, setAddresses] = useState<DefaultAddress[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const isFetchingRef = useRef(false); // Ref para evitar múltiples llamadas simultáneas
+  const isFetchingRef = useRef(false);
 
   // Verificar si estamos en el cliente
   useEffect(() => {
@@ -45,13 +46,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     isFetchingRef.current = true;
     setLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses?usuarioId=${user.id}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setAddresses(data || []);
-      }
+      const data = await addressesService.getUserAddresses();
+      setAddresses(data || []);
     } catch (error) {
       console.error("Error fetching addresses:", error);
     } finally {
@@ -60,39 +56,41 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     }
   };
 
-  const handleSelectAddress = async (address: DefaultAddress) => {
-    if (address.id === currentAddress.id) {
+  const handleSelectAddress = async (address: Address) => {
+    if (address.id === currentAddress?.id) {
       setOpen(false);
       return;
     }
 
     try {
       console.log('🔄 Cambiando dirección predeterminada:', address);
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/addresses/${address.id}/set-default?usuarioId=${user?.id}`,
-        { method: "POST" }
-      );
+      const result = await addressesService.setDefaultAddress(address.id);
+      console.log('✅ Dirección actualizada correctamente:', result);
 
-      console.log('📡 Respuesta del servidor:', response.status);
+      // Invalidar cache del hook useDefaultAddress
+      invalidate();
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Dirección actualizada correctamente:', result);
+      // Invalidar cache del hook useShippingOrigin
+      invalidateShippingOriginCache();
 
-        // Actualizar user en context con nueva dirección
-        if (user) {
-          await login({
-            ...user,
-            defaultAddress: address,
-          });
-          console.log('✅ Context actualizado con nueva dirección');
-        }
-        setOpen(false);
-      } else {
-        const errorData = await response.json();
-        console.error('❌ Error al actualizar dirección:', errorData);
-        alert('Error al cambiar la dirección predeterminada. Por favor intenta de nuevo.');
+      // Actualizar user en context con nueva dirección
+      if (user) {
+        const defaultAddressFormat = {
+          id: address.id,
+          nombreDireccion: address.nombreDireccion,
+          direccionFormateada: address.direccionFormateada,
+          ciudad: address.ciudad,
+          departamento: address.departamento,
+          esPredeterminada: true,
+        };
+
+        await login({
+          ...user,
+          defaultAddress: defaultAddressFormat,
+        });
+        console.log('✅ Context actualizado con nueva dirección');
       }
+      setOpen(false);
     } catch (error) {
       console.error("❌ Error setting default address:", error);
       alert('Error al cambiar la dirección predeterminada. Por favor intenta de nuevo.');
@@ -104,9 +102,12 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     setShowModal(true);
   };
 
-  const handleAddressAdded = async (newAddress: Direccion) => {
+  const handleAddressAdded = async (newAddress: Address) => {
     console.log('🆕 Nueva dirección agregada:', newAddress);
     setShowModal(false);
+
+    // Invalidar cache del hook useDefaultAddress
+    invalidate();
 
     // Invalidar cache del hook useShippingOrigin
     invalidateShippingOriginCache();
@@ -114,18 +115,23 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     // Refrescar lista de direcciones
     await fetchAddresses();
 
-    // Convertir Direccion a DefaultAddress y establecerla como predeterminada
-    const defaultAddressFormat: DefaultAddress = {
-      id: newAddress.id,
-      nombreDireccion: newAddress.linea_uno || 'Nueva dirección',
-      direccionFormateada: newAddress.linea_uno,
-      ciudad: newAddress.ciudad,
-      departamento: undefined,
-      esPredeterminada: true,
-    };
+    // La nueva dirección ya es predeterminada por defecto en el backend
+    // Actualizar context con nueva dirección
+    if (user) {
+      const defaultAddressFormat = {
+        id: newAddress.id,
+        nombreDireccion: newAddress.lineaUno || 'Nueva dirección',
+        direccionFormateada: newAddress.lineaUno,
+        ciudad: newAddress.ciudad,
+        departamento: newAddress.departamento,
+        esPredeterminada: true,
+      };
 
-    // Siempre establecer la nueva dirección como predeterminada
-    await handleSelectAddress(defaultAddressFormat);
+      await login({
+        ...user,
+        defaultAddress: defaultAddressFormat,
+      });
+    }
   };
 
   // Cerrar al hacer click fuera
@@ -155,6 +161,32 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [open]);
+
+  // Skeleton mientras carga la dirección predeterminada
+  if (loadingDefault || !currentAddress) {
+    return (
+      <div className="relative" ref={dropdownRef}>
+        {/* Skeleton para Desktop (>= 1280px) */}
+        <div className="hidden xl:flex items-center gap-1.5 max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
+          <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0" />
+          <div className="h-4 bg-gray-300 rounded animate-pulse flex-1" />
+          <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0 ml-1" />
+        </div>
+
+        {/* Skeleton para Mobile/Tablet (< 1280px) */}
+        <div className="xl:hidden flex items-center gap-2 max-w-[200px] sm:max-w-[280px] pr-4">
+          <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
+            <div className="flex items-center gap-1 w-full">
+              <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0" />
+              <div className="h-3 bg-gray-300 rounded animate-pulse flex-1" />
+            </div>
+            <div className="h-3 bg-gray-300 rounded animate-pulse w-3/4" />
+          </div>
+          <div className="w-4 h-4 bg-gray-300 rounded animate-pulse flex-shrink-0" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -215,7 +247,15 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
 
             <div className="max-h-[60vh] xl:max-h-96 overflow-y-auto bg-white">
               {loading ? (
-                <div className="p-6 text-center text-gray-500 text-sm">Cargando...</div>
+                <div className="p-6 space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-4 bg-gray-300 rounded w-1/3 mb-2" />
+                      <div className="h-3 bg-gray-200 rounded w-full mb-1" />
+                      <div className="h-3 bg-gray-200 rounded w-2/3" />
+                    </div>
+                  ))}
+                </div>
               ) : addresses.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 text-sm">
                   No hay direcciones registradas

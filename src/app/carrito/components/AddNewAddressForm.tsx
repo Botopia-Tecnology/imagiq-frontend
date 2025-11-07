@@ -1,10 +1,10 @@
 "use client";
-import { Direccion } from "@/types/user";
 import React, { useState } from "react";
 import AddressAutocomplete from "@/components/forms/AddressAutocomplete";
 import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
 import { addressesService, CreateAddressRequest } from "@/services/addresses.service";
+import type { Address } from "@/types/address";
 
 // Tipo extendido para manejar diferentes estructuras de PlaceDetails
 type ExtendedPlaceDetails = PlaceDetails & {
@@ -17,7 +17,7 @@ type ExtendedPlaceDetails = PlaceDetails & {
 };
 
 interface AddNewAddressFormProps {
-  onAddressAdded?: (address: Direccion) => void;
+  onAddressAdded?: (address: Address) => void;
   onCancel?: () => void;
   withContainer?: boolean; // Si debe mostrar el contenedor con padding y border
 }
@@ -180,18 +180,8 @@ export default function AddNewAddressForm({
         console.log('✅ Dirección de facturación creada:', billingResponse);
       }
 
-      // Convert AddressResponse to Direccion format for compatibility
-      const direccionFormat: Direccion = {
-        id: shippingResponse.id,
-        usuario_id: shippingResponse.usuarioId,
-        email: '', // This will be filled by the backend
-        linea_uno: shippingResponse.direccionFormateada,
-        codigo_dane: '', // This will be filled by the backend
-        ciudad: shippingResponse.ciudad || 'N/A',
-        pais: 'Colombia'
-      };
-
-      onAddressAdded?.(direccionFormat);
+      // Callback with the created address
+      onAddressAdded?.(shippingResponse);
 
       // Reset form
       setFormData({

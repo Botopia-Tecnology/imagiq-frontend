@@ -58,6 +58,7 @@ const SPEC_CATEGORIES = [
   { key: "Diseño y Características" },
 ];
 
+
 const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selectedSku, selectedEan }) => {
   // Usar datos del producto si están disponibles
   const skuToUse = selectedSku;
@@ -65,18 +66,19 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
   const skuArrayToUse: string[] = selectedSku ? [selectedSku] : [];
   const eanArrayToUse: string[] = selectedEan ? [selectedEan] : [];
 
+
   // --- VISUAL: UX mejorada, tabs y contenido ---
   return (
     <section
       id="especificaciones-section"
-      className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-8 md:py-12 mt-8 md:mt-12"
+      className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-4 md:py-6 mt-2 md:mt-4"
       aria-label="Especificaciones técnicas"
     >
       <FlixmediaDetails
-          mpn={skuArrayToUse?.join(', ') || skuToUse}
-          ean={eanArrayToUse?.join(', ') || eanToUse}
+          mpn={skuToUse}
+          ean={eanToUse}
           productName={product.name}
-          className="w-full "
+          className="w-full"
         />
     </section>
   );

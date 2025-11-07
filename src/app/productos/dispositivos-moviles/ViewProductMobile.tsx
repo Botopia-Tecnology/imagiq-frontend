@@ -12,20 +12,15 @@
  */
 
 import { useCartContext } from "@/features/cart/CartContext";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
-import Image, { StaticImageData } from "next/image";
-import Link from "next/link";
+import  { StaticImageData } from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 import { productsMock } from "../components/productsMock";
-import ComparationProduct from "./ComparationProduct";
 import Specifications from "@/app/productos/dispositivos-moviles/detalles-producto/Specifications";
-import VideosSection from "./VideosSection";
-import Destacados from "./detalles-producto/Destacados";
 import BenefitsSection from "./detalles-producto/BenefitsSection";
 
 // Tipo auxiliar para producto de entrada (raw)
@@ -104,24 +99,7 @@ export default function ViewProduct({
   product: RawProduct;
   flix?: ProductCardProps;
 }>) {
-  // Animación scroll reveal para especificaciones
-  const specsReveal = useScrollReveal<HTMLDivElement>({
-    offset: 60,
-    duration: 500,
-    direction: "up",
-  });
-  // Animación scroll reveal para videos
-  const videosReveal = useScrollReveal<HTMLDivElement>({
-    offset: 60,
-    duration: 500,
-    direction: "up",
-  });
-  // Animación scroll reveal para comparación
-  const comparationReveal = useScrollReveal<HTMLDivElement>({
-    offset: 60,
-    duration: 500,
-    direction: "up",
-  });
+
 
   // Si no hay producto, busca el primero del mock para desarrollo
   const safeProduct = product || productsMock[0];

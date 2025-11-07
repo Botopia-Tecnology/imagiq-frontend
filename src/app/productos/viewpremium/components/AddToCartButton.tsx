@@ -12,12 +12,16 @@ import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 interface AddToCartButtonProps {
   product: ProductCardProps;
   productSelection: ReturnType<typeof useProductSelection>;
+  onNotifyStock?: () => void;
 }
 
-const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelection }) => {
+const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelection, onNotifyStock }) => {
   const { addProduct } = useCartContext();
   const { recalculatePoints } = usePointsContext();
   const [loading, setLoading] = React.useState(false);
+
+  // Verificar si hay stock
+  const hasStock = productSelection.selectedStockTotal !== null && productSelection.selectedStockTotal > 0;
 
   const handleAddToCart = async () => {
     if (!productSelection.selectedSku) {
@@ -74,29 +78,53 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
   return (
     <div className="w-full max-w-5xl mx-auto px-4 sm:px-8 py-8 md:py-12">
       <div className="flex flex-col items-center gap-4">
-        <motion.button
-          onClick={handleAddToCart}
-          disabled={loading || !productSelection.selectedSku}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="
-            w-full max-w-md
-            flex items-center justify-center gap-3
-            bg-[#0066CC] hover:bg-[#0052A3]
-            disabled:bg-gray-400 disabled:cursor-not-allowed
-            text-white
-            px-8 py-4
-            rounded-full
-            font-bold text-lg
-            transition-all duration-200
-            shadow-lg hover:shadow-xl
-          "
-        >
-          <FiShoppingCart className="text-2xl" />
-          <span>
-            {loading ? "Añadiendo..." : `Añadir al carrito - ${displayPrice}`}
-          </span>
-        </motion.button>
+        {hasStock ? (
+          // Botón con stock: Añadir al carrito
+          <motion.button
+            onClick={handleAddToCart}
+            disabled={loading || !productSelection.selectedSku}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="
+              w-full max-w-md
+              flex items-center justify-center gap-3
+              bg-[#0066CC] hover:bg-[#0052A3]
+              disabled:bg-gray-400 disabled:cursor-not-allowed
+              text-white
+              px-8 py-4
+              rounded-full
+              font-bold text-lg
+              transition-all duration-200
+              shadow-lg hover:shadow-xl
+            "
+          >
+            <FiShoppingCart className="text-2xl" />
+            <span>
+              {loading ? "Añadiendo..." : `Añadir al carrito - ${displayPrice}`}
+            </span>
+          </motion.button>
+        ) : (
+          // Botón sin stock: Notificarme
+          <motion.button
+            onClick={onNotifyStock}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="
+              w-full max-w-md
+              flex items-center justify-center gap-3
+              bg-gray-800 hover:bg-gray-700
+              text-white
+              px-8 py-4
+              rounded-full
+              font-bold text-lg
+              transition-all duration-200
+              shadow-lg hover:shadow-xl
+            "
+          >
+            <FiShoppingCart className="text-2xl" />
+            <span>Notificarme cuando haya stock</span>
+          </motion.button>
+        )}
 
         {productSelection.selectedVariant && (
           <div className="text-center text-sm text-gray-600">

@@ -11,6 +11,8 @@ import { useProductSelection } from "@/hooks/useProductSelection";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
+import StockNotificationModal from "@/components/StockNotificationModal";
+import { useStockNotification } from "@/hooks/useStockNotification";
 
 // Componentes
 import ProductCarousel from "../components/ProductCarousel";
@@ -97,6 +99,9 @@ export default function ProductViewPage({ params }) {
   const router = useRouter();
   const [loadingCart, setLoadingCart] = React.useState(false);
 
+  // Hook para notificación de stock
+  const stockNotification = useStockNotification();
+
   // Handler para añadir al carrito con los datos correctos del productSelection
   const handleAddToCart = async () => {
     if (!product) return;
@@ -145,6 +150,19 @@ export default function ProductViewPage({ params }) {
       productSelection.selectedStockTotal !== null &&
       productSelection.selectedStockTotal > 0
     );
+  };
+
+  // Handler para solicitar notificación de stock
+  const handleRequestStockNotification = async (email: string) => {
+    if (!product) return;
+
+    await stockNotification.requestNotification({
+      productName: product.name,
+      productId: product.id,
+      email,
+      color: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
+      storage: productSelection.selection.selectedCapacity || undefined,
+    });
   };
 
   // Barra sticky superior con la misma animación/estilo de la vista normal
@@ -240,6 +258,7 @@ export default function ProductViewPage({ params }) {
         isVisible={showStickyBar}
         onBuyClick={handleBuyNow}
         hasStock={hasStock()}
+        onNotifyStock={stockNotification.openModal}
       />
 
       {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
@@ -314,7 +333,27 @@ export default function ProductViewPage({ params }) {
       </div>
 
       {/* Botón de añadir al carrito al final de la página */}
-      <AddToCartButton product={product} productSelection={productSelection} />
+      <AddToCartButton
+        product={product}
+        productSelection={productSelection}
+        onNotifyStock={stockNotification.openModal}
+      />
+
+      {/* Modal de notificación de stock */}
+      <StockNotificationModal
+        isOpen={stockNotification.isModalOpen}
+        onClose={stockNotification.closeModal}
+        productName={product.name}
+        productImage={
+          productSelection.selectedVariant?.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : fallbackImage.src)
+        }
+        selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
+        selectedStorage={productSelection.selection.selectedCapacity || undefined}
+        onNotificationRequest={handleRequestStockNotification}
+      />
 
       {/* Modal para fotos del color seleccionado */}
       <ImageModal

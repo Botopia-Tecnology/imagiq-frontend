@@ -486,6 +486,9 @@ const DetailsProductSection: React.FC<{
                   originalPrice={originalPrice}
                   indcerointeres={productSelection.selectedVariant?.indcerointeres ?? 0}
                   allPrices={product.apiProduct?.precioeccommerce || []}
+                  onAddToCart={handleAddToCart}
+                  isLoading={loading}
+                  hasStock={hasStock()}
                 />
               </div>
             </div>

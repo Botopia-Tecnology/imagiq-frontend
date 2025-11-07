@@ -1,12 +1,12 @@
-import React, { useState } from "react";
-import { useCartContext } from "@/features/cart/CartContext";
-import { usePointsContext } from "@/contexts/PointsContext";
+import React from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import FlixmediaDetails from "@/components/FlixmediaDetails";
 
 interface SpecificationsProps {
   product: ProductCardProps;
   flix?: ProductCardProps;
+  selectedSku?: string;
+  selectedEan?: string;
 }
 
 // --- DATOS MOCK para visualización UX ---
@@ -58,73 +58,14 @@ const SPEC_CATEGORIES = [
   { key: "Diseño y Características" },
 ];
 
-const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
-  const { addProduct } = useCartContext();
-  const { recalculatePoints } = usePointsContext();
-  const [activeTab, setActiveTab] = useState(0);
 
-  // Usar flix si está disponible, sino usar product
-  const productToUse = flix || product;
+const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selectedSku, selectedEan }) => {
+  // Usar datos del producto si están disponibles
+  const skuToUse = selectedSku;
+  const eanToUse = selectedEan;
+  const skuArrayToUse: string[] = selectedSku ? [selectedSku] : [];
+  const eanArrayToUse: string[] = selectedEan ? [selectedEan] : [];
 
-  // Extraer TODOS los SKUs y EANs del producto desde los colores/capacidades
-  const allSkus = productToUse.colors?.map(color => color.sku).filter(Boolean) || [];
-  const allEans = productToUse.colors?.map(color => color.ean).filter(Boolean) || [];
-
-  // Agregar SKUs de capacidades si existen
-  if (productToUse.capacities) {
-    productToUse.capacities.forEach(capacity => {
-      if (capacity.sku) allSkus.push(capacity.sku);
-      if (capacity.ean) allEans.push(capacity.ean);
-    });
-  }
-
-  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaDetails)
-  const skuToUse = allSkus.length > 0 ? allSkus.join(',') : undefined;
-  const eanToUse = allEans.length > 0 ? allEans.join(',') : undefined;
-
-  // Debug: Log para ver qué datos tenemos
-  console.log('🔍 Specifications Debug:', {
-    hasProduct: !!product,
-    hasFlix: !!flix,
-    productToUse: productToUse?.name,
-    colorsCount: productToUse.colors?.length,
-    capacitiesCount: productToUse.capacities?.length,
-    skuToUse,
-    eanToUse,
-    allSkus,
-    allEans
-  });
-
-  // --- VISUAL: Precio formateado y mostrado dentro del botón ---
-  // Usar el precio real del producto, formateado
-  const priceNumber =
-    typeof product.price === "number"
-      ? product.price
-      : parseInt((product.price || "0").toString().replace(/[^\d]/g, ""));
-  const displayPrice = priceNumber.toLocaleString("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  });
-
-  // Handler para añadir al carrito y actualizar puntos Q (no cambia lógica)
-  const handleAddToCart = () => {
-    const image =
-      typeof product.image === "string"
-        ? product.image
-        : product.image?.src || "";
-    addProduct({
-      id: product.id,
-      name: product.name,
-      image,
-      price: priceNumber,
-      sku: skuToUse || "SKU",
-      ean: eanToUse || "EAN",
-      quantity: 1,
-      puntos_q: product.puntos_q ?? 4,
-    });
-    recalculatePoints();
-  };
 
   // --- VISUAL: UX mejorada, tabs y contenido ---
   return (
@@ -139,20 +80,6 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix }) => {
           productName={product.name}
           className="w-full"
         />
-     
-
-      {/* Botón grande con feedback visual y animación */}
-      <div className="flex flex-col items-center w-full px-0 sm:px-0">
-        <button
-          type="button"
-          className="w-full max-w-xs sm:max-w-md bg-[#0099FF] hover:bg-[#007ACC] active:scale-95 text-white font-bold py-3 sm:py-4 rounded-full shadow-lg text-base sm:text-lg lg:text-xl transition-all duration-200 focus:outline-none focus-visible:ring-4 focus-visible:ring-blue-300 focus-visible:ring-offset-2 mb-2"
-          onClick={handleAddToCart}
-          aria-label={`Añadir al carrito por ${displayPrice}`}
-        >
-          Añadir al carrito – {displayPrice}
-        </button>
-
-      </div>
     </section>
   );
 };

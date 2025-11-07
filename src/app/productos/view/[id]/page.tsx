@@ -14,6 +14,8 @@ import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import { useProductContext } from "@/features/products/ProductContext";
 import AddToCartButton from "../../viewpremium/components/AddToCartButton";
+import StockNotificationModal from "@/components/StockNotificationModal";
+import { useStockNotification } from "@/hooks/useStockNotification";
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
 function convertProductForView(product: ProductCardProps) {
@@ -65,12 +67,14 @@ function ProductContentWithVariants({
   product,
   onVariantsReady,
   onProductSelectionChange,
-  productSelection
+  productSelection,
+  onNotifyStock
 }: {
   product: ProductCardProps;
   onVariantsReady: (ready: boolean) => void;
   onProductSelectionChange?: (selection: any) => void;
   productSelection: any;
+  onNotifyStock?: () => void;
 }) {
   const convertedProduct = convertProductForView(product);
 
@@ -82,7 +86,11 @@ function ProductContentWithVariants({
         onProductSelectionChange={onProductSelectionChange}
       />
       <ViewProduct product={convertedProduct} flix={product} />
-      <AddToCartButton product={product} productSelection={productSelection} />
+      <AddToCartButton
+        product={product}
+        productSelection={productSelection}
+        onNotifyStock={onNotifyStock}
+      />
     </>
   );
 }
@@ -100,6 +108,7 @@ export default function ProductViewPage({ params }) {
   const { product, loading, error } = useProduct(id ?? "");
   const [variantsReady, setVariantsReady] = React.useState(false);
   const [productSelection, setProductSelection] = React.useState<any>(null);
+  const stockNotification = useStockNotification();
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
@@ -110,6 +119,19 @@ export default function ProductViewPage({ params }) {
   const handleProductSelectionChange = React.useCallback((selection: any) => {
     setProductSelection(selection);
   }, []);
+
+  // Handler para notificación de stock
+  const handleRequestStockNotification = async (email: string) => {
+    if (!product || !productSelection) return;
+
+    await stockNotification.requestNotification({
+      productName: product.name,
+      productId: product.id,
+      email,
+      color: productSelection.getSelectedColorOption?.()?.nombreColorDisplay || productSelection.selection?.selectedColor || undefined,
+      storage: productSelection.selection?.selectedCapacity || undefined,
+    });
+  };
 
   if (!id) {
     return notFound();
@@ -147,6 +169,22 @@ export default function ProductViewPage({ params }) {
       {/* Mostrar skeleton mientras carga */}
       {!isFullyLoaded && <ProductDetailSkeleton />}
 
+      {/* Modal de notificación de stock */}
+      <StockNotificationModal
+        isOpen={stockNotification.isModalOpen}
+        onClose={stockNotification.closeModal}
+        productName={product.name}
+        productImage={
+          productSelection?.selectedVariant?.imagePreviewUrl ||
+          (typeof product.image === "string"
+            ? product.image
+            : smartphonesImg.src)
+        }
+        selectedColor={productSelection?.getSelectedColorOption?.()?.nombreColorDisplay || productSelection?.selection?.selectedColor || undefined}
+        selectedStorage={productSelection?.selection?.selectedCapacity || undefined}
+        onNotificationRequest={handleRequestStockNotification}
+      />
+
       {/* Renderizar contenido (oculto o visible según estado) */}
       <div style={{ display: isFullyLoaded ? 'block' : 'none' }}>
         <ProductContentWithVariants
@@ -154,6 +192,7 @@ export default function ProductViewPage({ params }) {
           onVariantsReady={setVariantsReady}
           onProductSelectionChange={handleProductSelectionChange}
           productSelection={productSelection}
+          onNotifyStock={stockNotification.openModal}
         />
       </div>
     </>

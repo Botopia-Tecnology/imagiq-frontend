@@ -142,7 +142,7 @@ export default function ProductViewPage({ params }) {
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    //router.push("/cart");
+    
   };
 
   const hasStock = () => {

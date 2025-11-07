@@ -189,9 +189,9 @@ const DetailsProductSection: React.FC<{
         capacity: productSelection.selection.selectedCapacity || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
       });
-      alert("Producto añadido al carrito");
+     
     } catch (error) {
-      alert("Error al añadir al carrito");
+      
     } finally {
       setLoading(false);
     }
@@ -199,7 +199,7 @@ const DetailsProductSection: React.FC<{
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    router.push("/cart");
+    
   };
 
   const handleRequestStockNotification = async (email: string) => {

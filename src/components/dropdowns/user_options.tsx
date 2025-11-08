@@ -66,7 +66,7 @@ const UserOptionsDropdown: React.FC<UserOptionsDropdownProps> = ({
       {/* Botón del usuario */}
       <button
         className={cn(
-          "flex flex-col items-center justify-center px-3 py-2 text-xs md:text-sm font-medium leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md transition-colors duration-300 hover:opacity-80",
+          "flex flex-col items-end justify-center py-2 text-xs md:text-sm font-medium leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 rounded-md transition-colors duration-300 hover:opacity-80",
           showWhiteItems ? "text-white" : "text-black"
         )}
         aria-label={`Opciones de usuario para ${primerNombre}`}

@@ -15,6 +15,7 @@ export interface Item {
   unitPrice: string;
   skupostback: string;
   desDetallada: string;
+  ean: string;
 }
 
 export interface UserInfo {

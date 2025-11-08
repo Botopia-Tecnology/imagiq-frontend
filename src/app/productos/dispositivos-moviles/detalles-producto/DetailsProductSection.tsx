@@ -1,7 +1,5 @@
 // Sección principal de detalles de producto - Refactorizado
 import React from "react";
-import { motion } from "framer-motion";
-import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
@@ -10,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
+import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
@@ -31,7 +30,21 @@ import { useStockNotification } from "@/hooks/useStockNotification";
 const DetailsProductSection: React.FC<{
   product: ProductCardProps;
   onVariantsReady?: (ready: boolean) => void;
-}> = ({ product, onVariantsReady }) => {
+  onProductSelectionChange?: (selection: {
+    selectedSku: string | null;
+    selectedPrice: number | null;
+    selectedOriginalPrice: number | null;
+    selectedStockTotal: number | null;
+    selectedVariant: ProductVariant | null;
+    selectedSkuPostback: string | null;
+    selection: {
+      selectedColor: string | null;
+      selectedCapacity: string | null;
+      selectedMemoriaram: string | null;
+    };
+    getSelectedColorOption: () => ColorOption | null;
+  }) => void;
+}> = ({ product, onVariantsReady, onProductSelectionChange }) => {
   // Hooks - Usar el mismo sistema que ProductCard
   const productSelection = useProductSelection(
     product.apiProduct || {
@@ -67,6 +80,33 @@ const DetailsProductSection: React.FC<{
       onVariantsReady(true);
     }
   }, [productSelection.selectedVariant, onVariantsReady]);
+
+  // Notificar cambios en productSelection al padre (solo valores primitivos para evitar bucle infinito)
+  React.useEffect(() => {
+    if (onProductSelectionChange) {
+      onProductSelectionChange({
+        selectedSku: productSelection.selectedSku,
+        selectedPrice: productSelection.selectedPrice,
+        selectedOriginalPrice: productSelection.selectedOriginalPrice,
+        selectedStockTotal: productSelection.selectedStockTotal,
+        selectedVariant: productSelection.selectedVariant,
+        selectedSkuPostback: productSelection.selectedSkuPostback,
+        selection: productSelection.selection,
+        getSelectedColorOption: productSelection.getSelectedColorOption,
+      });
+    }
+  }, [
+    productSelection.selectedSku,
+    productSelection.selectedPrice,
+    productSelection.selectedOriginalPrice,
+    productSelection.selectedStockTotal,
+    productSelection.selectedVariant,
+    productSelection.selectedSkuPostback,
+    productSelection.selection.selectedColor,
+    productSelection.selection.selectedCapacity,
+    productSelection.selection.selectedMemoriaram,
+    onProductSelectionChange,
+  ]);
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
@@ -185,9 +225,12 @@ const DetailsProductSection: React.FC<{
         sku: productSelection.selectedSku,
         ean: productSelection.selectedVariant?.ean || "",
         puntos_q: product.puntos_q ?? 4,
-        color: productSelection.selection.selectedColor || undefined,
+        color: productSelection.getSelectedColorOption()?.hex || undefined,
+        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
         capacity: productSelection.selection.selectedCapacity || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
+        skuPostback: productSelection.selectedSkuPostback || '',
+        desDetallada: productSelection.selectedVariant?.desDetallada
       });
      
     } catch (error) {
@@ -250,12 +293,7 @@ const DetailsProductSection: React.FC<{
     };
   }, [showStickyBar]);
 
-  // Animations and effects
-  const desktopReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80, //80
-    duration: 600,
-    direction: "up",
-  });
+ 
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
@@ -352,9 +390,7 @@ const DetailsProductSection: React.FC<{
         className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
         style={{ fontFamily: "SamsungSharpSans" }}
       >
-        <motion.section
-          ref={desktopReveal.ref}
-          {...desktopReveal.motionProps}
+        <div
           className="hidden lg:block"
         >
           <div className="max-w-[1400px] mx-auto px-8 py-12">
@@ -456,14 +492,18 @@ const DetailsProductSection: React.FC<{
                   originalPrice={originalPrice}
                   indcerointeres={productSelection.selectedVariant?.indcerointeres ?? 0}
                   allPrices={product.apiProduct?.precioeccommerce || []}
+                  onAddToCart={handleAddToCart}
+                  isLoading={loading}
+                  hasStock={hasStock()}
+                  onNotifyStock={stockNotification.openModal}
                 />
               </div>
             </div>
           </div>
-        </motion.section>
+        </div>
 
         {/* MOBILE: Stack vertical */}
-        <motion.section className="lg:hidden">
+        <div className="lg:hidden">
           <div className="px-4 pt-8 pb-8 max-w-md mx-auto">
             {/* Breadcrumb móvil */}
             <div className="mb-4">
@@ -535,7 +575,7 @@ const DetailsProductSection: React.FC<{
               acceptsTradeIn={product.acceptsTradeIn}
             />
           </div>
-        </motion.section>
+        </div>
       </main>
 
       {/* Estilos CSS globales optimizados para transiciones cinematográficas */}

@@ -136,9 +136,9 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     if (allVariants.length > 0) {
       const firstVariant = allVariants[0];
       return {
-        selectedColor: firstVariant.color,
-        selectedCapacity: firstVariant.capacity,
-        selectedMemoriaram: firstVariant.memoriaram,
+        selectedColor: firstVariant.color || null,
+        selectedCapacity: firstVariant.capacity || null,
+        selectedMemoriaram: firstVariant.memoriaram || null,
         selectedVariant: firstVariant
       };
     }
@@ -154,16 +154,16 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   // Actualizar la selección cuando cambien las variantes disponibles
   useEffect(() => {
     // Si no hay selección actual y hay variantes disponibles, seleccionar la primera
-    if (!selection.selectedColor && !selection.selectedCapacity && !selection.selectedMemoriaram && allVariants.length > 0) {
+    if (!selection.selectedColor && allVariants.length > 0) {
       const firstVariant = allVariants[0];
       setSelection({
-        selectedColor: firstVariant.color,
-        selectedCapacity: firstVariant.capacity,
-        selectedMemoriaram: firstVariant.memoriaram,
+        selectedColor: firstVariant.color || null,
+        selectedCapacity: firstVariant.capacity || null,
+        selectedMemoriaram: firstVariant.memoriaram || null,
         selectedVariant: firstVariant
       });
     }
-  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
+  }, [allVariants, selection.selectedColor]);
 
   // Colores disponibles basado en SOLO los filtros activos (no en la selección actual)
   const availableColorsFiltered = useMemo(() => {
@@ -239,11 +239,11 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   }, [allVariants, selection.selectedColor, activeCapacityFilter]);
 
   // Función auxiliar para encontrar la variante exacta que coincida con los parámetros
-  const findVariant = useCallback((color: string, capacity?: string, memoriaram?: string) => {
+  const findVariant = useCallback((color: string, capacity?: string | null, memoriaram?: string | null) => {
     return allVariants.find((variant) => {
       const matchesColor = variant.color === color;
-      const matchesCapacity = !capacity || variant.capacity === capacity;
-      const matchesMemoriaram = !memoriaram || variant.memoriaram === memoriaram;
+      const matchesCapacity = !capacity || capacity === '' || variant.capacity === capacity;
+      const matchesMemoriaram = !memoriaram || memoriaram === '' || variant.memoriaram === memoriaram;
 
       return matchesColor && matchesCapacity && matchesMemoriaram;
     });
@@ -251,15 +251,27 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
 
   // Variante seleccionada actualmente
   const selectedVariant = useMemo(() => {
-    if (!selection.selectedColor || !selection.selectedCapacity || !selection.selectedMemoriaram) {
+    // Si no hay color seleccionado, no podemos seleccionar una variante
+    if (!selection.selectedColor) {
       return null;
     }
 
-    return allVariants.find(variant =>
-      variant.color === selection.selectedColor &&
-      variant.capacity === selection.selectedCapacity &&
-      variant.memoriaram === selection.selectedMemoriaram
-    ) || null;
+    // Buscar variante que coincida con los campos que SÍ tienen valores
+    return allVariants.find(variant => {
+      const matchesColor = variant.color === selection.selectedColor;
+
+      // Solo verificar capacity si está definida en la selección y no es vacía/null
+      const matchesCapacity = !selection.selectedCapacity ||
+                            selection.selectedCapacity === '' ||
+                            variant.capacity === selection.selectedCapacity;
+
+      // Solo verificar memoriaram si está definida en la selección y no es vacía/null
+      const matchesMemoriaram = !selection.selectedMemoriaram ||
+                               selection.selectedMemoriaram === '' ||
+                               variant.memoriaram === selection.selectedMemoriaram;
+
+      return matchesColor && matchesCapacity && matchesMemoriaram;
+    }) || null;
   }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
 
   // Información del producto seleccionado

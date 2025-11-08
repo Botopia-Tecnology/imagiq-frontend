@@ -13,13 +13,11 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useDeviceType } from "@/components/responsive";
 import { useCurrentMenu } from "@/hooks/useCurrentMenu";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
-import { findCategoryBySlug, findMenuBySlug, toSlug } from "./utils/slugUtils";
+import { findCategoryBySlug } from "./utils/slugUtils";
 
 import CategorySection from "./components/CategorySection";
 import OfertasSection from "./components/OfertasSection";
 
-// Solo ofertas se mantiene estático
-const STATIC_CATEGORIES = ["ofertas"] as const;
 
 interface CategoriaPageContentProps {
   readonly categoria: string;
@@ -41,19 +39,19 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
 
   // Obtener nombre de la categoría para useCurrentMenu (espera el código de API)
   const categoryApiName = dynamicCategory?.nombre;
-  
-  const { currentMenu, loading: menuLoading } = useCurrentMenu(
+
+  const { currentMenu } = useCurrentMenu(
     categoryApiName,
     seccionParam || undefined
   );
   
   // Resolver sección activa dinámicamente
   const activeSection = useMemo(() => {
-    if (!seccionParam) return null;
-    
+    if (!seccionParam) return "";
+
     // Si tenemos menú actual, usar su UUID como sección
-    if (currentMenu) return currentMenu.uuid;
-    
+    if (currentMenu?.uuid) return currentMenu.uuid;
+
     // Usar directamente el parámetro de sección
     return seccionParam;
   }, [seccionParam, currentMenu]);
@@ -69,20 +67,22 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
     return categoria;
   }, [currentMenu, dynamicCategory, categoria]);
   
-  const devicePaddingClass = 
-    device === "mobile" ? "px-2" : 
-    device === "tablet" ? "px-4" : 
-    "px-0";
+  let devicePaddingClass = "px-0";
+  if (device === "mobile") {
+    devicePaddingClass = "px-2";
+  } else if (device === "tablet") {
+    devicePaddingClass = "px-4";
+  }
 
   // Tracking de vista de página (debe estar antes de returns condicionales)
   useEffect(() => {
-    if (dynamicCategory && activeSection !== null) {
-    posthogUtils.capture("page_view", {
-      page: "productos_categoria",
+    if (dynamicCategory) {
+      posthogUtils.capture("page_view", {
+        page: "productos_categoria",
         categoria: dynamicCategory.nombre,
-      section: activeSection,
-      device,
-    });
+        section: activeSection,
+        device,
+      });
     }
   }, [dynamicCategory, activeSection, device]);
 
@@ -123,9 +123,9 @@ function CategoriaPageContent({ categoria }: CategoriaPageContentProps) {
   return (
     <div className={`bg-white ${devicePaddingClass}`}>
       <CategorySection
-        categoria={categoria}  // Usar slug de la URL para mapear filtros estáticos
-        categoriaApiCode={dynamicCategory.nombre}  // Código de API para llamadas
-        seccion={activeSection || ""}
+        categoria={categoria}
+        categoriaApiCode={dynamicCategory.nombre}
+        seccion={activeSection}
         sectionTitle={sectionTitle}
       />
     </div>

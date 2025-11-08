@@ -245,12 +245,17 @@ const DetailsProductSection: React.FC<{
   };
 
   const handleRequestStockNotification = async (email: string) => {
+    // Obtener el SKU del producto seleccionado actualmente
+    const selectedSku = productSelection.selectedSku;
+
+    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const codigoMarket = productSelection.selectedCodigoMarket || product.apiProduct?.codigoMarketBase || '';
+
     await stockNotification.requestNotification({
       productName: product.name,
-      productId: product.id,
       email,
-      color: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-      storage: productSelection.selection.selectedCapacity || undefined,
+      sku: selectedSku || undefined,
+      codigoMarket,
     });
   };
 

@@ -324,12 +324,17 @@ export default function ProductCard({
   };
 
   const handleRequestStockNotification = async (email: string) => {
+    // Obtener el SKU del color seleccionado
+    const selectedColorSku = displayedSelectedColor?.sku;
+
+    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const codigoMarket = productSelection.selectedCodigoMarket || apiProduct?.codigoMarketBase || '';
+
     await stockNotification.requestNotification({
       productName: apiProduct?.modelo || name,
-      productId: id,
       email,
-      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-      storage: productSelection.selection.selectedCapacity || undefined,
+      sku: selectedColorSku,
+      codigoMarket,
     });
   };
 

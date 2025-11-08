@@ -120,8 +120,8 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
         : `EAN-${typeof p.id === "string" ? p.id : randId()}`;
 
     const skuPostback =
-      typeof p.skuPostback === "string"
-        ? p.skuPostback
+      typeof p.skuPostback === "string" && p.skuPostback.trim() !== ""
+        ? p.skuPostback.trim()
         : `SKU-${typeof p.id === "string" ? p.id : randId()}`;
 
     const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 4;

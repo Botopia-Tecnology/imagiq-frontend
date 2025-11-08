@@ -171,7 +171,7 @@ export default function SeriesSlider({
               type="button"
               aria-pressed={isActive}
               aria-label={`${isActive ? 'Deseleccionar' : 'Seleccionar'} serie ${serie.name}`}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{
                 duration: prefersReducedMotion ? 0.01 : 0.4,
@@ -181,7 +181,7 @@ export default function SeriesSlider({
               whileHover={
                 prefersReducedMotion
                   ? {}
-                  : { y: -4, transition: { duration: 0.2 } }
+                  : { scale: 1.02, transition: { duration: 0.2 } }
               }
               whileTap={
                 prefersReducedMotion

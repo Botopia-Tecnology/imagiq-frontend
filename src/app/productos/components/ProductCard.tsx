@@ -409,7 +409,7 @@ export default function ProductCard({
       tabIndex={0}
       aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
       whileHover={{
-        y: -4,
+        scale: 1.02,
         transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }
       }}
       className={cn(

@@ -177,8 +177,8 @@ export default function FilterSidebar({
         className
       )}
       style={stickyStyle}
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
       transition={{
         duration: prefersReducedMotion ? 0.01 : 0.4,
         ease: [0.25, 0.1, 0.25, 1],
@@ -276,8 +276,8 @@ export default function FilterSidebar({
                                   filters[filterKey]?.includes(range.label) &&
                                     "bg-blue-50 font-semibold text-blue-700"
                                 )}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{
                                   duration: prefersReducedMotion ? 0.01 : 0.3,
                                   delay: prefersReducedMotion ? 0 : index * 0.05,
@@ -286,7 +286,7 @@ export default function FilterSidebar({
                                 whileHover={
                                   prefersReducedMotion
                                     ? {}
-                                    : { x: 4, transition: { duration: 0.2 } }
+                                    : { scale: 1.02, transition: { duration: 0.2 } }
                                 }
                               >
                                 <input
@@ -319,8 +319,8 @@ export default function FilterSidebar({
                                   filters[filterKey]?.includes(option) &&
                                     "bg-blue-50 font-semibold text-blue-700"
                                 )}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{
                                   duration: prefersReducedMotion ? 0.01 : 0.3,
                                   delay: prefersReducedMotion ? 0 : index * 0.05,
@@ -329,7 +329,7 @@ export default function FilterSidebar({
                                 whileHover={
                                   prefersReducedMotion
                                     ? {}
-                                    : { x: 4, transition: { duration: 0.2 } }
+                                    : { scale: 1.02, transition: { duration: 0.2 } }
                                 }
                               >
                                 <input

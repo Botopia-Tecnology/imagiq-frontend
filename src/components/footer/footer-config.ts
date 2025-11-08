@@ -159,14 +159,18 @@ export const legalLinks: FooterLink[] = [
 ];
 
 export const socialLinks = [
-  { name: "Facebook", href: "https://facebook.com/imagiq", icon: "facebook" },
-  { name: "Twitter", href: "https://twitter.com/imagiq", icon: "twitter" },
+  {
+    name: "Facebook",
+    href: "https://www.facebook.com/p/ImagiQ-100063440750636/?locale=es_LA",
+    icon: "facebook",
+  },
+  //{ name: "Twitter", href: "https://twitter.com/imagiq", icon: "twitter" },
   {
     name: "Instagram",
     href: "https://www.instagram.com/imagiq_colombia?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
     icon: "instagram",
   },
-  { name: "YouTube", href: "https://youtube.com/imagiq", icon: "youtube" },
+  //{ name: "YouTube", href: "https://youtube.com/imagiq", icon: "youtube" },
 ] as const;
 
 export const companyInfo = {

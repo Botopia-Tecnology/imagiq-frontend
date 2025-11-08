@@ -3,7 +3,9 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { MessageCircle } from "lucide-react";
 
-export default function ChatbotButton({ onClick }: Readonly<{ onClick?: () => void }>) {
+export default function ChatbotButton({
+  onClick,
+}: Readonly<{ onClick?: () => void }>) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [imageError, setImageError] = useState(false);
 
@@ -25,7 +27,8 @@ export default function ChatbotButton({ onClick }: Readonly<{ onClick?: () => vo
     <div
       className="fixed right-6 z-50 flex items-end gap-3"
       style={{
-        bottom: 'max(1.5rem, env(safe-area-inset-bottom, 1.5rem))',
+        bottom:
+          "calc(max(1.5rem, env(safe-area-inset-bottom, 1.5rem)) + 170px)",
       }}
     >
       {/* Burbuja de mensaje mejorada */}

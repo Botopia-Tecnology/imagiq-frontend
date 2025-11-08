@@ -157,6 +157,7 @@ export function useCheckoutLogic() {
             items: cartProducts.map((p) => ({
               name: String(p.name),
               sku: String(p.sku),
+              ean: String(p.ean || ""),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
               skupostback: String(p.skuPostback),
@@ -189,6 +190,7 @@ export function useCheckoutLogic() {
             items: cartProducts.map((p) => ({
               name: String(p.name),
               sku: String(p.sku),
+              ean: String(p.ean || ""),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
               skupostback: String(p.skuPostback),
@@ -219,6 +221,7 @@ export function useCheckoutLogic() {
             items: cartProducts.map((p) => ({
               name: String(p.name),
               sku: String(p.sku),
+              ean: String(p.ean || ""),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
               skupostback: String(p.skuPostback),

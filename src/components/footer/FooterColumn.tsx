@@ -20,7 +20,9 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
   // Estado para acordeón principal
   const [isExpanded, setIsExpanded] = useState(false);
   // Estados para subsecciones (cuando no hay título principal)
-  const [expandedSubsections, setExpandedSubsections] = useState<Record<string, boolean>>({});
+  const [expandedSubsections, setExpandedSubsections] = useState<
+    Record<string, boolean>
+  >({});
 
   const handleLinkClick = (linkName: string, href: string) => {
     posthogUtils.capture("footer_link_click", {
@@ -31,7 +33,7 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
   };
 
   const toggleSubsection = (subsectionTitle: string) => {
-    setExpandedSubsections(prev => ({
+    setExpandedSubsections((prev) => ({
       ...prev,
       [subsectionTitle]: !prev[subsectionTitle],
     }));
@@ -52,7 +54,10 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
             href={link.href}
             className="text-base text-gray-600 hover:text-blue-600 hover:underline transition-colors inline-block"
             onClick={() => handleLinkClick(link.name, link.href)}
-            {...(link.external && { target: "_blank", rel: "noopener noreferrer" })}
+            {...(link.external && {
+              target: "_blank",
+              rel: "noopener noreferrer",
+            })}
           >
             {link.name}
             {link.external && " ↗"}
@@ -66,12 +71,18 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
   const renderMobileLinks = (links: typeof section.links) => (
     <>
       {links?.map((link) => (
-        <li key={link.name} className="border-b border-gray-100 last:border-b-0">
+        <li
+          key={link.name}
+          className="border-b border-gray-100 last:border-b-0"
+        >
           <Link
             href={link.href}
             className="block text-base text-gray-600 hover:text-blue-600 py-3 px-4 transition-colors"
             onClick={() => handleLinkClick(link.name, link.href)}
-            {...(link.external && { target: "_blank", rel: "noopener noreferrer" })}
+            {...(link.external && {
+              target: "_blank",
+              rel: "noopener noreferrer",
+            })}
           >
             {link.name}
             {link.external && " ↗"}
@@ -114,9 +125,7 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
                       <h4 className="font-bold text-gray-900 text-sm px-4 mb-2">
                         {subsection.title}
                       </h4>
-                      <ul>
-                        {renderMobileLinks(subsection.links)}
-                      </ul>
+                      <ul>{renderMobileLinks(subsection.links)}</ul>
                     </li>
                   ))}
                 </>
@@ -129,9 +138,13 @@ export function FooterColumn({ section, index, isVisible }: FooterColumnProps) {
           // Si no hay título, mostrar subsecciones directamente como acordeones separados
           <div>
             {section.subsections?.map((subsection, subIndex) => {
-              const isSubExpanded = expandedSubsections[subsection.title] || false;
+              const isSubExpanded =
+                expandedSubsections[subsection.title] || false;
               return (
-                <div key={subsection.title} className={subIndex > 0 ? "border-t border-gray-200" : ""}>
+                <div
+                  key={subsection.title}
+                  className={subIndex > 0 ? "border-t border-gray-200" : ""}
+                >
                   <button
                     type="button"
                     className="w-full flex justify-between items-center py-4 px-4 text-left text-base font-semibold text-gray-900"

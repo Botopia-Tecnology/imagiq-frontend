@@ -88,9 +88,34 @@ export function shouldShowColorSelector(
 }
 
 /**
+ * Categorías que deben mostrar selector de capacidad (almacenamiento/pulgadas)
+ * Incluye dispositivos móviles (GB), TVs (pulgadas) y electrodomésticos (capacidad)
+ */
+const CATEGORIES_WITH_CAPACITY_SELECTOR = [
+  'Dispositivos móviles',
+  'Dispositivos Móviles',
+  'dispositivos-moviles',
+  'dispositivos moviles',
+  'IM', // Dispositivos Móviles
+  'im',
+  'Televisores',
+  'televisores',
+  'TV', // Televisores
+  'tv',
+  'Electrodomésticos',
+  'Electrodomesticos',
+  'electrodomesticos',
+  'electrodomésticos',
+  'EL', // Electrodomésticos
+  'el',
+] as const;
+
+/**
  * Determina si un producto debe mostrar selector de capacidad
- * Por ahora, sigue la misma lógica que el selector de color
- * pero se mantiene como función separada para futura customización
+ * Incluye:
+ * - Dispositivos móviles: almacenamiento (128GB, 256GB, etc.)
+ * - Televisores: pulgadas (43", 55", 65", etc.)
+ * - Electrodomésticos: capacidad (según el producto)
  *
  * @param categoria - Categoría del producto
  * @param subcategoria - Subcategoría del producto (opcional)
@@ -100,9 +125,21 @@ export function shouldShowCapacitySelector(
   categoria?: string | null,
   subcategoria?: string | null
 ): boolean {
-  // Por ahora, misma lógica que color selector
-  // Puede ser customizada en el futuro si necesitan lógica diferente
-  return shouldShowColorSelector(categoria, subcategoria);
+  // Si no hay categoría, MOSTRAR selector por defecto para compatibilidad
+  if (!categoria && !subcategoria) {
+    return true;
+  }
+
+  // Normalizar para comparación
+  const normalizedCategoria = categoria ? normalizeString(categoria) : '';
+
+  // Verificar si la categoría está en la lista permitida
+  const categoryMatch = CATEGORIES_WITH_CAPACITY_SELECTOR.some(cat => {
+    const normalized = normalizeString(cat);
+    return normalized === normalizedCategoria;
+  });
+
+  return categoryMatch;
 }
 
 /**

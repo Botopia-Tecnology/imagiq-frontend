@@ -191,7 +191,18 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const memoriaramMatch = !activeRamFilter || variant.memoriaram === activeRamFilter;
 
-      if (colorMatch && memoriaramMatch && variant.capacity && variant.capacity.trim() !== '' && variant.capacity.toLowerCase() !== 'no aplica') {
+      // Filtrar valores inválidos de capacidad
+      // Excluir: vacíos, "no aplica", guiones solos, "N/A", etc.
+      const capacityValue = variant.capacity?.trim();
+      const isValidCapacity = capacityValue &&
+                             capacityValue !== '' &&
+                             capacityValue !== '-' &&
+                             capacityValue.toLowerCase() !== 'no aplica' &&
+                             capacityValue.toLowerCase() !== 'n/a' &&
+                             capacityValue.toLowerCase() !== 'no especifica' &&
+                             capacityValue.toLowerCase() !== 'no especificado';
+
+      if (colorMatch && memoriaramMatch && isValidCapacity) {
         capacities.add(variant.capacity);
       }
     }
@@ -208,7 +219,18 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       const colorMatch = !selection.selectedColor || variant.color === selection.selectedColor;
       const capacityMatch = !activeCapacityFilter || variant.capacity === activeCapacityFilter;
 
-      if (colorMatch && capacityMatch && variant.memoriaram && variant.memoriaram.trim() !== '' && variant.memoriaram.toLowerCase() !== 'no aplica') {
+      // Filtrar valores inválidos de memoria RAM
+      // Excluir: vacíos, "no aplica", guiones solos, "N/A", etc.
+      const memoriaramValue = variant.memoriaram?.trim();
+      const isValidMemoriaram = memoriaramValue &&
+                               memoriaramValue !== '' &&
+                               memoriaramValue !== '-' &&
+                               memoriaramValue.toLowerCase() !== 'no aplica' &&
+                               memoriaramValue.toLowerCase() !== 'n/a' &&
+                               memoriaramValue.toLowerCase() !== 'no especifica' &&
+                               memoriaramValue.toLowerCase() !== 'no especificado';
+
+      if (colorMatch && capacityMatch && isValidMemoriaram) {
         memoriaram.add(variant.memoriaram);
       }
     }

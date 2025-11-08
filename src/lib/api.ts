@@ -76,6 +76,15 @@ export class ApiClient {
         errors: responseData.errors,
       };
     } catch (error) {
+      // Silenciar errores de abort - son esperados cuando el usuario cambia de filtros rápidamente
+      if (error instanceof Error && (error.name === 'AbortError' || error.message.includes('aborted'))) {
+        return {
+          data: {} as T,
+          success: false,
+          message: "Request aborted",
+        };
+      }
+
       console.error("API request failed:", error);
       return {
         data: {} as T,

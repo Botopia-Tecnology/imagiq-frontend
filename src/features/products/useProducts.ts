@@ -299,7 +299,7 @@ export const useProducts = (
 
         // Solo abortar si la solicitud anterior es para una URL DIFERENTE
         if (abortRef.current && lastUrlRef.current && lastUrlRef.current !== nextUrl) {
-          abortRef.current.abort();
+          abortRef.current.abort('New request initiated');
         }
         const controller = new AbortController();
         abortRef.current = controller;

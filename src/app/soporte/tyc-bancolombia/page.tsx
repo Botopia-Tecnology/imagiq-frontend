@@ -1,4 +1,12 @@
+import { Metadata } from "next";
 import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
+
+export const metadata: Metadata = {
+  title: "Términos y Condiciones 0% Interés Bancolombia - IMAGIQ",
+  description:
+    "Términos de la promoción 0% interés con tarjetas Bancolombia en productos Samsung Galaxy",
+  robots: "index, follow",
+};
 
 const sections = [
   { id: "identificacion", title: "Identificación de la Promoción", level: 1 },
@@ -87,7 +95,7 @@ export default function TyCBancolombiaPage() {
           <div className="grid md:grid-cols-2 gap-6">
             <div className="border border-gray-200 p-6 hover:border-gray-400 transition-colors">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold shrink-0">
                   1
                 </div>
                 <div>
@@ -106,7 +114,7 @@ export default function TyCBancolombiaPage() {
 
             <div className="border border-gray-200 p-6 hover:border-gray-400 transition-colors">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
+                <div className="w-10 h-10 bg-black text-white rounded-full flex items-center justify-center font-bold shrink-0">
                   2
                 </div>
                 <div>
@@ -135,12 +143,15 @@ export default function TyCBancolombiaPage() {
 
           <div className="border border-gray-200 overflow-hidden">
             <table className="w-full">
+              <caption className="sr-only">
+                Productos participantes en la promoción 0% interés Bancolombia
+              </caption>
               <thead>
                 <tr className="bg-black text-white">
-                  <th className="px-6 py-4 text-left font-semibold">
+                  <th scope="col" className="px-6 py-4 text-left font-semibold">
                     Categoría
                   </th>
-                  <th className="px-6 py-4 text-left font-semibold">
+                  <th scope="col" className="px-6 py-4 text-left font-semibold">
                     Productos Incluidos
                   </th>
                 </tr>
@@ -203,7 +214,7 @@ export default function TyCBancolombiaPage() {
           </p>
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gradient-to-br from-gray-800 to-black text-white p-8 shadow-lg">
+            <div className="bg-linear-to-br from-gray-800 to-black text-white p-8 shadow-lg">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-12 h-8 bg-white/20 rounded"></div>
                 <h3 className="text-xl font-bold">Visa</h3>
@@ -213,7 +224,7 @@ export default function TyCBancolombiaPage() {
               </p>
             </div>
 
-            <div className="bg-gradient-to-br from-gray-700 to-gray-900 text-white p-8 shadow-lg">
+            <div className="bg-linear-to-br from-gray-700 to-gray-900 text-white p-8 shadow-lg">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-12 h-8 bg-white/20 rounded"></div>
                 <h3 className="text-xl font-bold">Mastercard</h3>
@@ -230,27 +241,27 @@ export default function TyCBancolombiaPage() {
             </h4>
             <ul className="space-y-3 text-gray-700">
               <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                 <span>
                   Ser titular de una tarjeta de crédito Bancolombia Visa o
                   Mastercard
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                 <span>
                   Contar con cupo disponible suficiente para la compra
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                 <span>
                   Realizar la compra durante el período de vigencia de la
                   promoción
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 flex-shrink-0"></span>
+                <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                 <span>La tarjeta debe estar al día en sus pagos</span>
               </li>
             </ul>
@@ -342,7 +353,7 @@ export default function TyCBancolombiaPage() {
           <div className="bg-gray-50 border border-gray-300 p-6">
             <ul className="space-y-4 text-gray-800">
               <li className="flex items-start gap-3">
-                <span className="text-xl font-bold text-gray-400 flex-shrink-0">
+                <span className="text-xl font-bold text-gray-400 shrink-0">
                   ✗
                 </span>
                 <span>
@@ -350,7 +361,7 @@ export default function TyCBancolombiaPage() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-xl font-bold text-gray-400 flex-shrink-0">
+                <span className="text-xl font-bold text-gray-400 shrink-0">
                   ✗
                 </span>
                 <span>
@@ -358,7 +369,7 @@ export default function TyCBancolombiaPage() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-xl font-bold text-gray-400 flex-shrink-0">
+                <span className="text-xl font-bold text-gray-400 shrink-0">
                   ✗
                 </span>
                 <span>
@@ -367,7 +378,7 @@ export default function TyCBancolombiaPage() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-xl font-bold text-gray-400 flex-shrink-0">
+                <span className="text-xl font-bold text-gray-400 shrink-0">
                   ✗
                 </span>
                 <span>
@@ -376,7 +387,7 @@ export default function TyCBancolombiaPage() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-xl font-bold text-gray-400 flex-shrink-0">
+                <span className="text-xl font-bold text-gray-400 shrink-0">
                   ✗
                 </span>
                 <span>
@@ -385,7 +396,7 @@ export default function TyCBancolombiaPage() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="text-xl font-bold text-gray-400 flex-shrink-0">
+                <span className="text-xl font-bold text-gray-400 shrink-0">
                   ✗
                 </span>
                 <span>

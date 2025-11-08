@@ -39,6 +39,17 @@ export const ADMIN_ROUTES = {
   ORDERS_ADMIN: "/dashboard/pedidos",
 } as const;
 
+// Legal and support routes
+export const LEGAL_ROUTES = {
+  AVISO_LEGAL: "/soporte/aviso-legal",
+  POLITICAS_GENERALES: "/soporte/politicas-generales",
+  POLITICA_ANTICORRUPCION: "/soporte/politica-anticorrupcion",
+  POLITICA_COOKIES: "/soporte/politica-cookies",
+  TRATAMIENTO_DATOS_PERSONALES: "/soporte/tratamiento-datos-personales",
+  TYC_DAVIVIENDA: "/soporte/tyc-davivienda",
+  TYC_BANCOLOMBIA: "/soporte/tyc-bancolombia",
+} as const;
+
 // API routes
 export const API_ROUTES = {
   AUTH: {

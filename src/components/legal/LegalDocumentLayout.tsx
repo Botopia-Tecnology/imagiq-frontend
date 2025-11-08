@@ -38,7 +38,10 @@ export function LegalDocumentLayout({
         const element = document.getElementById(section.id);
         if (element) {
           const { offsetTop, offsetHeight } = element;
-          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+          if (
+            scrollPosition >= offsetTop &&
+            scrollPosition < offsetTop + offsetHeight
+          ) {
             setActiveSection(section.id);
             break;
           }
@@ -72,17 +75,26 @@ export function LegalDocumentLayout({
         <div className="h-16 flex items-center justify-between px-6 lg:px-12">
           {/* Breadcrumbs */}
           <nav className="flex items-center space-x-2 text-sm">
-            <Link href="/" className="text-gray-500 hover:text-black transition-colors">
+            <Link
+              href="/"
+              className="text-gray-500 hover:text-black transition-colors"
+            >
               <Home className="w-4 h-4" />
             </Link>
             <ChevronRight className="w-3 h-3 text-gray-300" />
-            <Link href="/soporte/inicio_de_soporte" className="text-gray-500 hover:text-black transition-colors">
+            <Link
+              href="/soporte/inicio_de_soporte"
+              className="text-gray-500 hover:text-black transition-colors"
+            >
               Soporte
             </Link>
             {breadcrumbs.map((crumb, index) => (
               <div key={index} className="flex items-center space-x-2">
                 <ChevronRight className="w-3 h-3 text-gray-300" />
-                <Link href={crumb.href} className="text-gray-500 hover:text-black transition-colors">
+                <Link
+                  href={crumb.href}
+                  className="text-gray-500 hover:text-black transition-colors"
+                >
                   {crumb.label}
                 </Link>
               </div>
@@ -94,7 +106,11 @@ export function LegalDocumentLayout({
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="lg:hidden p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
-            {isSidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {isSidebarOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
           </button>
         </div>
       </header>
@@ -102,8 +118,10 @@ export function LegalDocumentLayout({
       <div className="flex pt-16">
         {/* Sidebar de navegación */}
         <aside
-          className={`fixed lg:sticky top-16 left-0 h-[calc(100vh-4rem)] w-72 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-300 z-30 ${
-            isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          className={`fixed lg:sticky top-24 left-0 h-[calc(100vh-6rem)] w-72 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-300 z-30 ${
+            isSidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full lg:translate-x-0"
           }`}
         >
           <div className="p-6 lg:p-8">
@@ -111,7 +129,9 @@ export function LegalDocumentLayout({
               <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
                 {documentType}
               </div>
-              <h1 className="text-xl font-bold text-black leading-tight">{title}</h1>
+              <h1 className="text-xl font-bold text-black leading-tight">
+                {title}
+              </h1>
               {lastUpdated && (
                 <div className="text-xs text-gray-500 mt-2">
                   Actualizado: {lastUpdated}
@@ -128,9 +148,10 @@ export function LegalDocumentLayout({
                     onClick={() => scrollToSection(section.id)}
                     className={`
                       w-full text-left text-sm py-2.5 px-3 rounded-lg transition-all duration-200
-                      ${isActive
-                        ? "bg-black text-white font-medium"
-                        : "text-gray-700 hover:bg-gray-100"
+                      ${
+                        isActive
+                          ? "bg-black text-white font-medium"
+                          : "text-gray-700 hover:bg-gray-100"
                       }
                       ${section.level > 1 ? "pl-6 text-xs" : ""}
                     `}
@@ -159,9 +180,7 @@ export function LegalDocumentLayout({
         {/* Contenido principal */}
         <main className="flex-1 min-w-0">
           <article className="w-full px-8 lg:px-16 xl:px-24 py-12 lg:py-16">
-            <div className="max-w-full">
-              {children}
-            </div>
+            <div className="max-w-full">{children}</div>
           </article>
 
           {/* Footer */}

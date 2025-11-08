@@ -1,4 +1,13 @@
+import Link from "next/link";
+import { Metadata } from "next";
 import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
+
+export const metadata: Metadata = {
+  title: "Términos y Condiciones 0% Interés Davivienda - IMAGIQ",
+  description:
+    "Términos de la promoción 0% interés con tarjetas Davivienda en productos Samsung Galaxy",
+  robots: "index, follow",
+};
 
 const sections = [
   { id: "identificacion", title: "Identificación de la Promoción", level: 1 },
@@ -94,12 +103,12 @@ export default function TyCDaviviendaPage() {
                   <h3 className="text-lg font-semibold text-black mb-2">
                     Tienda Virtual
                   </h3>
-                  <a
+                  <Link
                     href="https://imagiq.com"
                     className="text-gray-900 hover:text-gray-600 underline font-medium"
                   >
                     www.imagiq.com
-                  </a>
+                  </Link>
                 </div>
               </div>
             </div>
@@ -135,12 +144,15 @@ export default function TyCDaviviendaPage() {
 
           <div className="border border-gray-200 overflow-hidden">
             <table className="w-full">
+              <caption className="sr-only">
+                Productos participantes en la promoción 0% interés Davivienda
+              </caption>
               <thead>
                 <tr className="bg-black text-white">
-                  <th className="px-6 py-4 text-left font-semibold">
+                  <th scope="col" className="px-6 py-4 text-left font-semibold">
                     Categoría
                   </th>
-                  <th className="px-6 py-4 text-left font-semibold">
+                  <th scope="col" className="px-6 py-4 text-left font-semibold">
                     Productos Incluidos
                   </th>
                 </tr>

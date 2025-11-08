@@ -1,4 +1,12 @@
+import { Metadata } from "next";
 import { LegalDocumentLayout } from "@/components/legal/LegalDocumentLayout";
+
+export const metadata: Metadata = {
+  title: "Política de Tratamiento de Datos Personales - IMAGIQ",
+  description:
+    "Política general de tratamiento y protección de datos personales según Ley 1581 de 2012",
+  robots: "index, follow",
+};
 
 const sections = [
   { id: "introduccion", title: "Introducción", level: 1 },
@@ -111,10 +119,15 @@ export default function TratamientoDatosPage() {
           </h2>
           <div className="border border-gray-200 overflow-hidden">
             <table className="w-full">
+              <caption className="sr-only">
+                Definiciones sobre tratamiento de datos personales
+              </caption>
               <thead>
                 <tr className="bg-black text-white">
-                  <th className="px-6 py-4 text-left font-semibold">Término</th>
-                  <th className="px-6 py-4 text-left font-semibold">
+                  <th scope="col" className="px-6 py-4 text-left font-semibold">
+                    Término
+                  </th>
+                  <th scope="col" className="px-6 py-4 text-left font-semibold">
                     Definición
                   </th>
                 </tr>

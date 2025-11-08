@@ -104,20 +104,9 @@ export const CategoryProductsGrid = forwardRef<
     }
 
     return (
-      <motion.div
+      <div
         ref={ref}
         className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}
-        initial="hidden"
-        animate="visible"
-        variants={{
-          hidden: { opacity: 0 },
-          visible: {
-            opacity: 1,
-            transition: {
-              staggerChildren: 0.08,
-            },
-          },
-        }}
       >
         {/* Mostrar skeletons iniciales solo cuando loading es true Y no hay productos */}
         {loading && products.length === 0 && (
@@ -146,16 +135,12 @@ export const CategoryProductsGrid = forwardRef<
                 <motion.div
                   key={product.id}
                   className="w-full"
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: {
-                      opacity: 1,
-                      y: 0,
-                      transition: {
-                        duration: 0.4,
-                        ease: [0.25, 0.1, 0.25, 1],
-                      },
-                    },
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{
+                    duration: 0.4,
+                    delay: index * 0.08,
+                    ease: [0.25, 0.1, 0.25, 1],
                   }}
                 >
                   <ProductCard
@@ -192,7 +177,7 @@ export const CategoryProductsGrid = forwardRef<
             }}
           />
         )}
-      </motion.div>
+      </div>
     );
   }
 );

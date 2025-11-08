@@ -30,6 +30,7 @@ import { ProductApiData } from "@/lib/api";
 import { shouldShowColorSelector, shouldShowCapacitySelector } from "./utils/categoryColorConfig";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
+import { motion } from "framer-motion";
 
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
@@ -401,12 +402,16 @@ export default function ProductCard({
       />
 
       {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
-      <div
+      <motion.div
         role="button"
         onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       tabIndex={0}
       aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
+      whileHover={{
+        y: -4,
+        transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }
+      }}
       className={cn(
         "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
         className
@@ -656,7 +661,7 @@ export default function ProductCard({
           </div>
         </div>
       </div>
-      </div>
+      </motion.div>
     </>
   );
 }

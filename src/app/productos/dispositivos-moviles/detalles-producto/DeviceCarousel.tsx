@@ -1,7 +1,10 @@
 // Carrusel de imágenes del dispositivo
 // Componente reutilizable para mostrar la imagen principal del dispositivo y navegación
+'use client';
+
 import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import emptyImg from "@/img/empty.jpeg";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 
@@ -67,7 +70,12 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   const remainingCount = images.length - maxVisibleThumbnails;
 
   return (
-    <div className="w-full">
+    <motion.div
+      className="w-full"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+    >
       {/* Carrusel con fondo gris */}
       <div className="relative rounded-2xl px-4 py-4 w-full bg-gray-50 overflow-hidden">
         {/* Flechas de navegación */}
@@ -98,16 +106,25 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
           aria-label={`Mostrar imagen ${currentImageIndex + 1} de ${alt}`}
         >
           {/* Use `fill` so the image is positioned/centered by CSS and won't be cropped; ensure object-contain + object-center */}
-          <div className="relative w-full h-full">
-            <Image
-              src={cloudinaryImage.src}
-              alt={`${alt} - Imagen ${currentImageIndex + 1}`}
-              fill
-              className="object-contain object-center"
-              sizes={cloudinaryImage.imageProps.sizes}
-              priority={currentImageIndex === 0}
-            />
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentImageIndex}
+              className="relative w-full h-full"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              <Image
+                src={cloudinaryImage.src}
+                alt={`${alt} - Imagen ${currentImageIndex + 1}`}
+                fill
+                className="object-contain object-center"
+                sizes={cloudinaryImage.imageProps.sizes}
+                priority={currentImageIndex === 0}
+              />
+            </motion.div>
+          </AnimatePresence>
         </button>
       </div>
       
@@ -154,7 +171,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
           )}
         </div>
       )}
-    </div>
+    </motion.div>
   );
 };
 

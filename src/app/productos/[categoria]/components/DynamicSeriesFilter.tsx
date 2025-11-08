@@ -99,8 +99,8 @@ export default function DynamicSeriesFilter({
   }
 
   return (
-    <section>
-      <div className="">
+    <section className="overflow-visible">
+      <div className="overflow-visible">
         <h1
           className="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold text-black py-4 sm:mb-6 md:mb-8 lg:mb-10"
           style={{ fontFamily: "'Samsung Sharp Sans', sans-serif" }}

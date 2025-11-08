@@ -531,8 +531,12 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Selector de colores - Solo para categorías específicas */}
+        {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
         {showColorSelector && (
+          apiProduct ?
+            productSelection.availableColors.length > 0 :
+            (colors && colors.length > 0)
+        ) && (
           <div className="h-[40px] px-3">
             <ColorSelector
               colors={apiProduct ?
@@ -554,8 +558,12 @@ export default function ProductCard({
           </div>
         )}
 
-        {/* Selector de capacidad - Solo para categorías específicas */}
+        {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
         {showCapacitySelector && (
+          apiProduct ?
+            productSelection.availableCapacities.length > 0 :
+            (capacities && capacities.length > 0)
+        ) && (
           <div className="h-[40px] px-3">
             <CapacitySelector
               capacities={apiProduct ?

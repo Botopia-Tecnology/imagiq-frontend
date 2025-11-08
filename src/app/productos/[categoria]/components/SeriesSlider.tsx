@@ -120,12 +120,12 @@ export default function SeriesSlider({
   }, [series]);
 
   return (
-    <div className="relative overflow-visible pt-8">
+    <div className="relative">
       <ScrollButton direction="left" onClick={() => scroll("left")} visible={canScrollLeft} />
 
       <div
         ref={scrollContainerRef}
-        className="flex gap-3 sm:gap-4 overflow-x-auto overflow-y-visible scrollbar-hide scroll-smooth pb-2"
+        className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2"
         style={{
           scrollbarWidth: "none",
           msOverflowStyle: "none",
@@ -171,8 +171,8 @@ export default function SeriesSlider({
               type="button"
               aria-pressed={isActive}
               aria-label={`${isActive ? 'Deseleccionar' : 'Seleccionar'} serie ${serie.name}`}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
               transition={{
                 duration: prefersReducedMotion ? 0.01 : 0.4,
                 delay: prefersReducedMotion ? 0 : index * 0.1,

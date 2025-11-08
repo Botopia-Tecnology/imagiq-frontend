@@ -86,8 +86,8 @@ export default function UniversalSeriesFilter({
   const hasSeries = config.series && config.series.length > 0;
 
   return (
-    <section className="overflow-visible">
-      <div className="overflow-visible">
+    <section>
+      <div className="">
         <SeriesFilterBreadcrumb
           config={config}
           activeFilters={activeFilters}

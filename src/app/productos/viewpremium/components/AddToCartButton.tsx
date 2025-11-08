@@ -5,13 +5,29 @@ import { motion } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 import { useCartContext } from "@/features/cart/CartContext";
 import { usePointsContext } from "@/contexts/PointsContext";
-import { useProductSelection } from "@/hooks/useProductSelection";
+import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 
+// Type for the product selection data - subset of UseProductSelectionReturn
+type ProductSelectionData = {
+  selectedSku: string | null;
+  selectedPrice: number | null;
+  selectedOriginalPrice: number | null;
+  selectedStockTotal: number | null;
+  selectedVariant: ProductVariant | null;
+  selectedSkuPostback: string | null;
+  selection: {
+    selectedColor: string | null;
+    selectedCapacity: string | null;
+    selectedMemoriaram: string | null;
+  };
+  getSelectedColorOption: () => ColorOption | null;
+};
+
 interface AddToCartButtonProps {
   product: ProductCardProps;
-  productSelection: ReturnType<typeof useProductSelection> | null;
+  productSelection: ProductSelectionData | null;
   onNotifyStock?: () => void;
 }
 

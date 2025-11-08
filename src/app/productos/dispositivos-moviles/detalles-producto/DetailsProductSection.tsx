@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
+import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
@@ -34,14 +35,14 @@ const DetailsProductSection: React.FC<{
     selectedPrice: number | null;
     selectedOriginalPrice: number | null;
     selectedStockTotal: number | null;
-    selectedVariant: any;
+    selectedVariant: ProductVariant | null;
     selectedSkuPostback: string | null;
     selection: {
       selectedColor: string | null;
       selectedCapacity: string | null;
       selectedMemoriaram: string | null;
     };
-    getSelectedColorOption: () => any;
+    getSelectedColorOption: () => ColorOption | null;
   }) => void;
 }> = ({ product, onVariantsReady, onProductSelectionChange }) => {
   // Hooks - Usar el mismo sistema que ProductCard

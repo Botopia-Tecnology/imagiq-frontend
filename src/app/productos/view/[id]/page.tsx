@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect } from "react";
+import React, { use } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
@@ -9,13 +9,29 @@ import {
   ProductCardProps,
   ProductColor,
 } from "@/app/productos/components/ProductCard";
-import ViewProductAppliance from "../../electrodomesticos/ViewProductAppliance";
+import type { ProductVariant, ColorOption, UseProductSelectionReturn } from "@/hooks/useProductSelection";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
-import { useProductContext } from "@/features/products/ProductContext";
 import AddToCartButton from "../../viewpremium/components/AddToCartButton";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
+
+// Type for the product selection data passed from DetailsProductSection
+// This is a subset of UseProductSelectionReturn with only the properties passed by the callback
+type ProductSelectionData = {
+  selectedSku: string | null;
+  selectedPrice: number | null;
+  selectedOriginalPrice: number | null;
+  selectedStockTotal: number | null;
+  selectedVariant: ProductVariant | null;
+  selectedSkuPostback: string | null;
+  selection: {
+    selectedColor: string | null;
+    selectedCapacity: string | null;
+    selectedMemoriaram: string | null;
+  };
+  getSelectedColorOption: () => ColorOption | null;
+};
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
 function convertProductForView(product: ProductCardProps) {
@@ -72,8 +88,8 @@ function ProductContentWithVariants({
 }: {
   product: ProductCardProps;
   onVariantsReady: (ready: boolean) => void;
-  onProductSelectionChange?: (selection: any) => void;
-  productSelection: any;
+  onProductSelectionChange?: (selection: ProductSelectionData) => void;
+  productSelection: ProductSelectionData | null;
   onNotifyStock?: () => void;
 }) {
   const convertedProduct = convertProductForView(product);
@@ -107,7 +123,7 @@ export default function ProductViewPage({ params }) {
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
   const [variantsReady, setVariantsReady] = React.useState(false);
-  const [productSelection, setProductSelection] = React.useState<any>(null);
+  const [productSelection, setProductSelection] = React.useState<ProductSelectionData | null>(null);
   const stockNotification = useStockNotification();
 
   // Reset variants ready cuando cambia el producto
@@ -116,7 +132,7 @@ export default function ProductViewPage({ params }) {
   }, [id]);
 
   // Callback para recibir productSelection desde DetailsProductSection
-  const handleProductSelectionChange = React.useCallback((selection: any) => {
+  const handleProductSelectionChange = React.useCallback((selection: ProductSelectionData) => {
     setProductSelection(selection);
   }, []);
 
@@ -124,12 +140,17 @@ export default function ProductViewPage({ params }) {
   const handleRequestStockNotification = async (email: string) => {
     if (!product || !productSelection) return;
 
+    // Obtener el SKU del producto seleccionado
+    const selectedSku = productSelection.selectedSku;
+
+    // Obtener el codigoMarket correspondiente a la variante seleccionada
+    const codigoMarket = productSelection.selectedVariant?.codigoMarket || product.apiProduct?.codigoMarketBase || '';
+
     await stockNotification.requestNotification({
       productName: product.name,
-      productId: product.id,
       email,
-      color: productSelection.getSelectedColorOption?.()?.nombreColorDisplay || productSelection.selection?.selectedColor || undefined,
-      storage: productSelection.selection?.selectedCapacity || undefined,
+      sku: selectedSku || undefined,
+      codigoMarket,
     });
   };
 

@@ -120,7 +120,7 @@ export default function SeriesSlider({
   }, [series]);
 
   return (
-    <div className="relative overflow-y-visible">
+    <div className="relative overflow-y-visible pt-6">
       <ScrollButton direction="left" onClick={() => scroll("left")} visible={canScrollLeft} />
 
       <div

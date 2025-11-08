@@ -30,7 +30,7 @@ function Footer() {
       }`}
     >
       <div className="px-4 xl:px-10 py-8 md:py-12">
-        {/* Columnas principales - Mobile: Acordeón */}
+        {/* Columnas principales - Mobile: Acordeón (< md) */}
         <div className="md:hidden">
           {footerSections.map((section, index) => (
             <FooterColumn
@@ -42,10 +42,13 @@ function Footer() {
           ))}
         </div>
 
-        {/* Columnas principales - Desktop: Grid de 5 columnas con divisores */}
-        <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8 lg:gap-6 divide-x divide-gray-200 items-start">
+        {/* Columnas principales - Tablet y Desktop: Grid responsive */}
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-[1fr_1.5fr_1.5fr_1fr] gap-8 lg:gap-10 xl:gap-12">
           {footerSections.map((section, index) => (
-            <div key={section.title || `section-${index}`} className={index === 0 ? "" : "pl-8 lg:pl-6"}>
+            <div
+              key={section.title || `section-${index}`}
+              className="border-l border-gray-200 first:border-l-0 pl-8 lg:pl-10 xl:pl-12 first:pl-0"
+            >
               <FooterColumn
                 section={section}
                 index={index}

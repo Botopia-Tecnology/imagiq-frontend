@@ -8,14 +8,17 @@
  * - Animaciones suaves y fluidas
  * - Sin barras de scroll visibles
  * - Tracking de interacciones
+ * - Accesibilidad mejorada con ARIA
  */
 
 "use client";
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 
 interface FilterOption {
   label: string;
@@ -61,6 +64,7 @@ export default function FilterSidebar({
 }: FilterSidebarProps) {
   const [internalExpandedFilters, setInternalExpandedFilters] =
     useState<Set<string>>(expandedFilters);
+  const prefersReducedMotion = useReducedMotion();
 
   const handleToggleFilter = (filterKey: string) => {
     if (onToggleFilter) {
@@ -166,13 +170,19 @@ export default function FilterSidebar({
   };
 
   return (
-    <div
+    <motion.div
       className={cn(
         "bg-white rounded-none border-0 shadow-none",
         stickyContainerClasses,
         className
       )}
       style={stickyStyle}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{
+        duration: prefersReducedMotion ? 0.01 : 0.4,
+        ease: [0.25, 0.1, 0.25, 1],
+      }}
     >
       <div className={cn(stickyWrapperClasses)}>
         {/* Header igual a la imagen */}
@@ -186,6 +196,7 @@ export default function FilterSidebar({
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
                 className="text-black"
+                aria-hidden="true"
               >
                 <path
                   d="M3.75 6.75H14.25"
@@ -204,7 +215,11 @@ export default function FilterSidebar({
               </svg>
               Filtros
             </span>
-            <span className="text-base text-black font-medium border-l border-gray-300 pl-4">
+            <span
+              className="text-base text-black font-medium border-l border-gray-300 pl-4"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               {resultCount} resultados
             </span>
           </div>
@@ -219,110 +234,133 @@ export default function FilterSidebar({
                 className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
                 aria-expanded={currentExpandedFilters.has(filterKey)}
                 aria-controls={`filter-panel-${filterKey}`}
+                aria-label={`${currentExpandedFilters.has(filterKey) ? 'Contraer' : 'Expandir'} filtro de ${formatFilterKey(filterKey)}`}
               >
                 <span className="font-semibold text-black text-sm tracking-wide">
                   {formatFilterKey(filterKey)}
                 </span>
-                <div className="transform transition-transform duration-300 ease-in-out">
-                  {currentExpandedFilters.has(filterKey) ? (
-                    <ChevronUp className="w-4 h-4 text-gray-600" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-gray-600" />
-                  )}
-                </div>
+                <motion.div
+                  animate={{ rotate: currentExpandedFilters.has(filterKey) ? 180 : 0 }}
+                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.3 }}
+                >
+                  <ChevronDown className="w-4 h-4 text-gray-600" aria-hidden="true" />
+                </motion.div>
               </button>
-              <div
-                id={`filter-panel-${filterKey}`}
-                className={cn(
-                  "overflow-hidden transition-all duration-500 ease-in-out",
-                  currentExpandedFilters.has(filterKey)
-                    ? "max-h-[600px] opacity-100"
-                    : "max-h-0 opacity-0"
-                )}
-                tabIndex={-1}
-              >
-                <div className="px-4 pb-4">
-                  <div
-                    className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
-                    style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+              <AnimatePresence initial={false}>
+                {currentExpandedFilters.has(filterKey) && (
+                  <motion.div
+                    id={`filter-panel-${filterKey}`}
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{
+                      duration: prefersReducedMotion ? 0.01 : 0.3,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
+                    className="overflow-hidden"
+                    role="region"
+                    aria-labelledby={`filter-header-${filterKey}`}
                   >
-                    {isRangeFilter(options)
-                      ? options.map((range, index) => (
-                          <label
-                            key={`${filterKey}-${index}`}
-                            className={cn(
-                              "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
-                              "hover:bg-blue-50 hover:translate-x-1 transform",
-                              "opacity-0 animate-fadeInUp",
-                              filters[filterKey]?.includes(range.label) &&
-                                "bg-blue-50 font-semibold text-blue-700"
-                            )}
-                            style={{
-                              animationDelay: `${index * 50}ms`,
-                              animationFillMode: "forwards",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={
-                                filters[filterKey]?.includes(range.label) ||
-                                false
-                              }
-                              onChange={(e) =>
-                                handleFilterChange(
-                                  filterKey,
-                                  range.label,
-                                  e.target.checked
-                                )
-                              }
-                              className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
-                            />
-                            <span className="ml-3 text-sm transition-colors duration-200">
-                              {range.label}
-                            </span>
-                          </label>
-                        ))
-                      : (options as string[]).map((option, index) => (
-                          <label
-                            key={`${filterKey}-${option}`}
-                            className={cn(
-                              "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-300 ease-in-out",
-                              "hover:bg-blue-50 hover:translate-x-1 transform",
-                              "opacity-0 animate-fadeInUp",
-                              filters[filterKey]?.includes(option) &&
-                                "bg-blue-50 font-semibold text-blue-700"
-                            )}
-                            style={{
-                              animationDelay: `${index * 50}ms`,
-                              animationFillMode: "forwards",
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={
-                                filters[filterKey]?.includes(option) || false
-                              }
-                              onChange={(e) =>
-                                handleFilterChange(
-                                  filterKey,
-                                  option,
-                                  e.target.checked
-                                )
-                              }
-                              className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-1 transition-all duration-200"
-                            />
-                            <span className="ml-3 text-sm transition-colors duration-200">
-                              {option}
-                            </span>
-                          </label>
-                        ))}
-                  </div>
-                </div>
-              </div>
+                    <div className="px-4 pb-4">
+                      <div
+                        className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
+                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                      >
+                        {isRangeFilter(options)
+                          ? options.map((range, index) => (
+                              <motion.label
+                                key={`${filterKey}-${index}`}
+                                className={cn(
+                                  "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-200",
+                                  "hover:bg-blue-50",
+                                  filters[filterKey]?.includes(range.label) &&
+                                    "bg-blue-50 font-semibold text-blue-700"
+                                )}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{
+                                  duration: prefersReducedMotion ? 0.01 : 0.3,
+                                  delay: prefersReducedMotion ? 0 : index * 0.05,
+                                  ease: [0.25, 0.1, 0.25, 1],
+                                }}
+                                whileHover={
+                                  prefersReducedMotion
+                                    ? {}
+                                    : { x: 4, transition: { duration: 0.2 } }
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    filters[filterKey]?.includes(range.label) ||
+                                    false
+                                  }
+                                  onChange={(e) =>
+                                    handleFilterChange(
+                                      filterKey,
+                                      range.label,
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                                  aria-label={range.label}
+                                />
+                                <span className="ml-3 text-sm transition-colors duration-200">
+                                  {range.label}
+                                </span>
+                              </motion.label>
+                            ))
+                          : (options as string[]).map((option, index) => (
+                              <motion.label
+                                key={`${filterKey}-${option}`}
+                                className={cn(
+                                  "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-200",
+                                  "hover:bg-blue-50",
+                                  filters[filterKey]?.includes(option) &&
+                                    "bg-blue-50 font-semibold text-blue-700"
+                                )}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{
+                                  duration: prefersReducedMotion ? 0.01 : 0.3,
+                                  delay: prefersReducedMotion ? 0 : index * 0.05,
+                                  ease: [0.25, 0.1, 0.25, 1],
+                                }}
+                                whileHover={
+                                  prefersReducedMotion
+                                    ? {}
+                                    : { x: 4, transition: { duration: 0.2 } }
+                                }
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={
+                                    filters[filterKey]?.includes(option) || false
+                                  }
+                                  onChange={(e) =>
+                                    handleFilterChange(
+                                      filterKey,
+                                      option,
+                                      e.target.checked
+                                    )
+                                  }
+                                  className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
+                                  aria-label={option}
+                                />
+                                <span className="ml-3 text-sm transition-colors duration-200">
+                                  {option}
+                                </span>
+                              </motion.label>
+                            ))}
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>
-        {/* Estilos CSS personalizados para ocultar scrollbars y animaciones */}
+        {/* Estilos CSS personalizados para ocultar scrollbars */}
         <style jsx>{`
           .scrollbar-hide {
             -webkit-overflow-scrolling: touch;
@@ -330,22 +368,9 @@ export default function FilterSidebar({
           .scrollbar-hide::-webkit-scrollbar {
             display: none;
           }
-          @keyframes fadeInUp {
-            from {
-              opacity: 0;
-              transform: translateY(10px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-          .animate-fadeInUp {
-            animation: fadeInUp 0.4s ease-out;
-          }
         `}</style>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

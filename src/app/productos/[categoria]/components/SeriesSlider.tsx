@@ -1,12 +1,15 @@
 /**
  * 🎢 SERIES SLIDER - Slider horizontal con series
+ * Con animaciones suaves y accesibilidad mejorada
  */
 
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { useReducedMotion } from "@/hooks/useReducedMotion";
 import type { SeriesItem } from "../config/series-configs";
 import type { FilterState } from "../../components/FilterSidebar";
 
@@ -27,17 +30,33 @@ const ScrollButton = ({
   onClick: () => void;
   visible: boolean;
 }) => {
+  const prefersReducedMotion = useReducedMotion();
+
   if (!visible) return null;
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
       className="hidden md:block absolute top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white shadow-lg rounded-full p-2 transition-all"
       style={{ [direction]: 0 }}
       type="button"
-      aria-label={`Scroll ${direction}`}
+      aria-label={direction === "left" ? "Desplazar hacia la izquierda" : "Desplazar hacia la derecha"}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8 }}
+      transition={{ duration: prefersReducedMotion ? 0.01 : 0.2 }}
+      whileHover={
+        prefersReducedMotion
+          ? {}
+          : { scale: 1.1, transition: { duration: 0.2 } }
+      }
+      whileTap={
+        prefersReducedMotion
+          ? {}
+          : { scale: 0.95, transition: { duration: 0.1 } }
+      }
     >
-      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -45,13 +64,13 @@ const ScrollButton = ({
           d={direction === "left" ? "M15 19l-7-7 7-7" : "M9 5l7 7-7 7"}
         />
       </svg>
-    </button>
+    </motion.button>
   );
 };
 
-export default function SeriesSlider({ 
-  series, 
-  activeFilters, 
+export default function SeriesSlider({
+  series,
+  activeFilters,
   onSerieClick,
   onSerieHover,
   onSerieLeave
@@ -60,6 +79,7 @@ export default function SeriesSlider({
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const updateScrollButtons = () => {
     if (scrollContainerRef.current) {
@@ -112,11 +132,11 @@ export default function SeriesSlider({
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {series.map((serie) => {
+        {series.map((serie, index) => {
           const isActive = activeFilters.serie?.includes(serie.id) || false;
 
           return (
-            <button
+            <motion.button
               key={serie.id}
               onClick={() => onSerieClick(serie.id)}
               onMouseEnter={() => {
@@ -133,6 +153,7 @@ export default function SeriesSlider({
                 "px-4 md:px-6 md:py-2",
                 "min-w-[220px] max-w-[450px]",
                 "min-h-[100px] sm:min-h-[110px] lg:min-h-[120px]",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2",
                 // Estilos cuando NO está activo
                 !isActive && [
                   "bg-gray-100",
@@ -149,6 +170,24 @@ export default function SeriesSlider({
               )}
               type="button"
               aria-pressed={isActive}
+              aria-label={`${isActive ? 'Deseleccionar' : 'Seleccionar'} serie ${serie.name}`}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: prefersReducedMotion ? 0.01 : 0.4,
+                delay: prefersReducedMotion ? 0 : index * 0.1,
+                ease: [0.25, 0.1, 0.25, 1],
+              }}
+              whileHover={
+                prefersReducedMotion
+                  ? {}
+                  : { y: -4, transition: { duration: 0.2 } }
+              }
+              whileTap={
+                prefersReducedMotion
+                  ? {}
+                  : { scale: 0.98, transition: { duration: 0.1 } }
+              }
             >
               {serie.image ? (
                 <div className="relative w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 flex-shrink-0">
@@ -182,7 +221,7 @@ export default function SeriesSlider({
               >
                 {serie.name}
               </h3>
-            </button>
+            </motion.button>
           );
         })}
       </div>

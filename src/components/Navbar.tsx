@@ -346,18 +346,20 @@ export default function Navbar() {
           </div>
 
           <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
-            <div className="w-full flex items-center justify-between">
+            <div className="w-full flex items-center justify-end gap-4">
               {/* Dirección predeterminada del usuario con dropdown */}
               {isAuthenticated && (
-                <AddressDropdown
-                  showWhiteItems={navbar.showWhiteItems}
-                />
+                <div className="flex-1 min-w-0">
+                  <AddressDropdown
+                    showWhiteItems={navbar.showWhiteItems}
+                  />
+                </div>
               )}
 
               <Link
                 href="/ventas-corporativas"
                 className={cn(
-                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap ml-auto",
+                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap flex-shrink-0",
                   navbar.showWhiteItems
                     ? "text-white/90 hover:text-white"
                     : "text-black"
@@ -368,7 +370,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            <div className="w-full flex items-center gap-2">
+            <div className="w-full flex items-center justify-end gap-2">
               <SearchBar
                 value={navbar.searchQuery}
                 onChange={navbar.setSearchQuery}
@@ -391,21 +393,23 @@ export default function Navbar() {
               >
                 <Heart className={cn("w-5 h-5", getIconColorClasses())} />
               </Link>
-              {navbar.isAuthenticated && navbar.user?.nombre ? (
-                <UserOptionsDropdown showWhiteItems={navbar.showWhiteItems} />
-              ) : (
-                <button
-                  type="button"
-                  className={cn(
-                    "flex items-center justify-center w-10 h-10 cursor-pointer active:scale-95 transition-transform duration-150 ease-out",
-                    getIconColorClasses()
-                  )}
-                  onClick={() => window.location.replace("/login")}
-                  aria-label="Ingresar"
-                >
-                  <User className={cn("w-5 h-5", getIconColorClasses())} />
-                </button>
-              )}
+              <div className="flex items-center justify-end">
+                {navbar.isAuthenticated && navbar.user?.nombre ? (
+                  <UserOptionsDropdown showWhiteItems={navbar.showWhiteItems} />
+                ) : (
+                  <button
+                    type="button"
+                    className={cn(
+                      "flex items-center justify-center w-10 h-10 cursor-pointer active:scale-95 transition-transform duration-150 ease-out",
+                      getIconColorClasses()
+                    )}
+                    onClick={() => window.location.replace("/login")}
+                    aria-label="Ingresar"
+                  >
+                    <User className={cn("w-5 h-5", getIconColorClasses())} />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

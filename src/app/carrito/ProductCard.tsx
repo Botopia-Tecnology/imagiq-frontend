@@ -29,12 +29,14 @@ export interface ProductCardProps {
 
 // Funciones puras para cálculos (SRP)
 // IMPORTANTE: stock ya viene como stockDisponible (stockTotal - cantidadTiendasReserva)
-// desde ProductCard.tsx:299, no necesita más cálculos
+// El "Disponible" que se muestra al usuario es: stockDisponible - cantidadEnCarrito
+// Esto muestra cuántas unidades MÁS puede agregar al carrito
 const calcularLimiteMaximo = (stock?: number): number =>
   Math.min(stock ?? 5, 5);
 const calcularDisponible = (
-  stock: number | undefined
-): number => stock ?? 0; // stock ya es stockDisponible, solo retornarlo
+  stock: number | undefined,
+  cantidadActual: number
+): number => Math.max(0, (stock ?? 5) - cantidadActual);
 const calcularDescuento = (original?: number, actual?: number): number | null =>
   original && actual && original > actual
     ? Math.round(((original - actual) / original) * 100)
@@ -73,7 +75,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   onRemove,
 }) => {
   const limiteMax = calcularLimiteMaximo(stock);
-  const disponible = calcularDisponible(stock); // stock ya es stockDisponible
+  const disponible = calcularDisponible(stock, cantidad);
   const descuento = calcularDescuento(precioOriginal, precio);
 
   // Validar capacity y ram

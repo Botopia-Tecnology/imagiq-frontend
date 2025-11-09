@@ -15,6 +15,7 @@ type ProductSelectionData = {
   selectedPrice: number | null;
   selectedOriginalPrice: number | null;
   selectedStockTotal: number | null;
+  selectedStockDisponible: number | null;
   selectedVariant: ProductVariant | null;
   selectedSkuPostback: string | null;
   selection: {
@@ -54,7 +55,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
         name: product.name,
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
-        stock: productSelection.selectedStockTotal ?? 1,
+        stock: productSelection.selectedStockDisponible ?? 0,
         quantity: 1,
         image:
           productSelection.selectedVariant?.imagePreviewUrl ||

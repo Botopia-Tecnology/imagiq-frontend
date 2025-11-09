@@ -217,7 +217,7 @@ const DetailsProductSection: React.FC<{
         name: product.name,
         price: productSelection.selectedPrice || 0,
         originalPrice: productSelection.selectedOriginalPrice || undefined,
-        stock: productSelection.selectedStockTotal ?? 1,
+        stock: productSelection.selectedStockDisponible ?? 0,
         quantity: 1,
         image:
           productSelection.selectedVariant?.imagePreviewUrl ||

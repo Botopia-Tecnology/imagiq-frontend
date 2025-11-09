@@ -66,6 +66,7 @@ export interface UseProductSelectionReturn {
   selectedOriginalPrice: number | null;
   selectedDiscount: number | null;
   selectedStockTotal: number | null;
+  selectedStockDisponible: number | null;
   selectedVariant: ProductVariant | null;
   
   // Funciones de selección
@@ -413,6 +414,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     ? Math.round(((selectedOriginalPrice - selectedPrice) / selectedOriginalPrice) * 100)
     : null;
   const selectedStockTotal = selectedVariant?.stockTotal ?? null;
+  const selectedStockDisponible = selectedVariant?.stockDisponible ?? null;
 
   // Funciones de selección con lógica de filtros activos
   const selectColor = useCallback((color: string) => {
@@ -571,6 +573,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     selectedOriginalPrice,
     selectedDiscount,
     selectedStockTotal,
+    selectedStockDisponible,
     selectedVariant,
     selectColor,
     selectCapacity,

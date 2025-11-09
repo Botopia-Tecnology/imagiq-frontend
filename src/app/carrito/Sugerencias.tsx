@@ -9,7 +9,7 @@ import { getCloudinaryUrl } from "@/lib/cloudinary";
 export default function Sugerencias({
   onAdd,
 }: {
-  onAdd?: (nombre: string) => void;
+  onAdd?: (producto: ProductApiData) => void;
 }) {
   const [sugerencias, setSugerencias] = useState<ProductApiData[]>([]);
   const [loading, setLoading] = useState(true);
@@ -76,7 +76,7 @@ export default function Sugerencias({
               <button
                 className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-blue-600 transition"
                 aria-label={`Agregar ${producto.desDetallada[0] || producto.nombreMarket}`}
-                onClick={() => onAdd?.(producto.desDetallada[0] || producto.nombreMarket)}
+                onClick={() => onAdd?.(producto)}
               >
                 <Plus className="w-5 h-5" />
               </button>

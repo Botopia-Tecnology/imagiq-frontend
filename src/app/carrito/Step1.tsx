@@ -4,6 +4,8 @@ import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
+import { type ProductApiData } from "@/lib/api";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 /**
  * Paso 1 del carrito de compras
@@ -32,6 +34,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     products: cartProducts,
     updateQuantity,
     removeProduct,
+    addProduct,
     calculations,
     loadingShippingInfo,
   } = useCart();
@@ -98,11 +101,24 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   };
 
   // UX: feedback visual al agregar sugerencia usando el hook centralizado
-  const handleAddSugerencia = (nombre: string) => {
-    // Nota: La función onAdd del componente Sugerencias ahora pasa el nombre del producto real
-    // Por ahora solo mostramos un alert, más adelante se puede integrar con el carrito
-    console.log("Producto agregado:", nombre);
-    alert(`"${nombre}" agregado a tu compra`);
+  const handleAddSugerencia = async (producto: ProductApiData) => {
+    try {
+      // Mapear ProductApiData a CartProduct
+      const cartProduct = {
+        id: producto.codigoMarketBase,
+        name: producto.desDetallada[0] || producto.nombreMarket,
+        image: getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog"),
+        price: producto.precioeccommerce[0] || producto.precioNormal[0],
+        sku: producto.sku[0] || "",
+        ean: producto.ean[0] || "",
+        desDetallada: producto.desDetallada[0] || producto.nombreMarket,
+      };
+
+      // Agregar al carrito
+      await addProduct(cartProduct, 1);
+    } catch (error) {
+      console.error("Error al agregar producto sugerido:", error);
+    }
   };
 
   // Handler para remover plan de Trade-In (usado en el banner mobile)

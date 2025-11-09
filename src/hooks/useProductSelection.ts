@@ -21,6 +21,8 @@ export interface ProductVariant {
   precioNormal: number;
   precioeccommerce: number;
   stockTotal: number;
+  cantidadTiendas: number; // Cantidad de tiendas con stock > 0
+  stockDisponible: number; // Stock ajustado: stockTotal - cantidadTiendasReserva, donde cantidadTiendasReserva excluye bodega 001
   imagePreviewUrl?: string;
   urlRender3D?: string;
   desDetallada?: string;
@@ -99,10 +101,16 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       apiProduct.codigoMarket.length,
       apiProduct.precioNormal.length,
       apiProduct.precioeccommerce.length,
-      apiProduct.stockTotal.length
+      apiProduct.stockTotal.length,
+      apiProduct.cantidadTiendas?.length ?? 0
     );
-    
+
     for (let i = 0; i < maxLength; i++) {
+      const stockTotal = apiProduct.stockTotal[i] || 0;
+      const cantidadTiendas = apiProduct.cantidadTiendas?.[i] || 0;
+      const cantidadTiendasReserva = apiProduct.cantidadTiendasReserva?.[i] || 0;
+      const stockDisponible = Math.max(0, stockTotal - cantidadTiendasReserva);
+
       variants.push({
         index: i,
         color: apiProduct.color[i] || '',
@@ -114,7 +122,9 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         codigoMarket: apiProduct.codigoMarket[i] || '',
         precioNormal: apiProduct.precioNormal[i] || 0,
         precioeccommerce: apiProduct.precioeccommerce[i] || 0,
-        stockTotal: apiProduct.stockTotal[i] || 0,
+        stockTotal,
+        cantidadTiendas,
+        stockDisponible,
         imagePreviewUrl: apiProduct.imagePreviewUrl?.[i],
         urlRender3D: apiProduct.urlRender3D?.[i],
         desDetallada: apiProduct.desDetallada?.[i] || '',
@@ -125,24 +135,135 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     return variants;
   }, [apiProduct]);
 
+  /**
+   * Helper function para encontrar la mejor variante a mostrar inicialmente
+   * PRIORIDAD ABSOLUTA: Solo mostrar variantes con stockDisponible > 0
+   *
+   * Priorización:
+   * 1. FILTRO OBLIGATORIO: stockDisponible > 0 (nunca mostrar productos sin stock)
+   * 2. Dentro de las variantes con stock, priorizar por:
+   *    - Mayor stock disponible (más unidades = mejor disponibilidad)
+   *    - Precio más bajo (mejor oferta para el usuario)
+   *    - Características más comunes (capacidad, RAM)
+   * 3. Si NO hay ninguna variante con stock, fallback a la primera variante
+   */
+  const findBestVariantToDisplay = (variants: ProductVariant[]): ProductVariant | null => {
+    if (variants.length === 0) return null;
+
+    // FILTRO CRÍTICO: Solo considerar variantes con stock disponible > 0
+    const variantsWithStock = variants.filter(v => v.stockDisponible > 0);
+
+
+    // Si NO hay variantes con stock, retornar la primera como fallback
+    // (esto solo debería pasar si el producto completo está agotado)
+    if (variantsWithStock.length === 0) {
+      console.warn('⚠️ No variants with available stock found, falling back to first variant');
+      return variants[0];
+    }
+
+    // Si solo hay una variante con stock, retornarla inmediatamente
+    if (variantsWithStock.length === 1) {
+      return variantsWithStock[0];
+    }
+
+    // Para múltiples variantes con stock, aplicar criterios de priorización:
+
+    // 1. Ordenar por STOCK DISPONIBLE (de mayor a menor) como prioridad principal
+    const sortedByStock = [...variantsWithStock].sort((a, b) =>
+      b.stockDisponible - a.stockDisponible
+    );
+
+    // 2. Tomar las variantes con mayor stock (top 30% o al menos 3 variantes)
+    const topStockCount = Math.max(3, Math.ceil(sortedByStock.length * 0.3));
+    const topStockVariants = sortedByStock.slice(0, topStockCount);
+
+    // 3. Dentro de las variantes con mejor stock, ordenar por precio (menor primero)
+    const sortedByPrice = [...topStockVariants].sort((a, b) =>
+      a.precioeccommerce - b.precioeccommerce
+    );
+
+    // 4. Entre las variantes de precio similar (±10%), elegir por características más comunes
+    const lowestPrice = sortedByPrice[0].precioeccommerce;
+    const similarPriceVariants = sortedByPrice.filter(v =>
+      Math.abs(v.precioeccommerce - lowestPrice) <= lowestPrice * 0.1
+    );
+
+    // Si hay múltiples variantes con precio similar, elegir por características más comunes
+    if (similarPriceVariants.length > 1) {
+      // Contar frecuencia de características en TODAS las variantes con stock
+      const capacityCount = new Map<string, number>();
+      const ramCount = new Map<string, number>();
+
+      variantsWithStock.forEach(v => {
+        // Contar capacidades válidas
+        if (v.capacity && v.capacity !== '-' && v.capacity.toLowerCase() !== 'no aplica') {
+          capacityCount.set(v.capacity, (capacityCount.get(v.capacity) || 0) + 1);
+        }
+        // Contar RAM válidas
+        if (v.memoriaram && v.memoriaram !== '-' && v.memoriaram.toLowerCase() !== 'no aplica') {
+          ramCount.set(v.memoriaram, (ramCount.get(v.memoriaram) || 0) + 1);
+        }
+      });
+
+      // Encontrar la capacidad más común
+      let mostCommonCapacity = '';
+      let maxCapacityCount = 0;
+      capacityCount.forEach((count, capacity) => {
+        if (count > maxCapacityCount) {
+          maxCapacityCount = count;
+          mostCommonCapacity = capacity;
+        }
+      });
+
+      // Encontrar la RAM más común
+      let mostCommonRam = '';
+      let maxRamCount = 0;
+      ramCount.forEach((count, ram) => {
+        if (count > maxRamCount) {
+          maxRamCount = count;
+          mostCommonRam = ram;
+        }
+      });
+
+      // Buscar variante que tenga la capacidad y RAM más comunes
+      const bestMatch = similarPriceVariants.find(v =>
+        (mostCommonCapacity === '' || v.capacity === mostCommonCapacity) &&
+        (mostCommonRam === '' || v.memoriaram === mostCommonRam)
+      );
+
+      if (bestMatch) return bestMatch;
+
+      // Si no hay coincidencia perfecta, buscar por capacidad más común
+      const capacityMatch = similarPriceVariants.find(v =>
+        mostCommonCapacity === '' || v.capacity === mostCommonCapacity
+      );
+
+      if (capacityMatch) return capacityMatch;
+    }
+
+    // Retornar la variante de mejor precio del top de stock
+    return sortedByPrice[0];
+  };
+
   // Estados para rastrear qué filtros están activos (seleccionados explícitamente por el usuario)
   // Al inicio, aunque selectedColor tenga valores, estos filtros están inactivos hasta que el usuario los seleccione
   const [activeCapacityFilter, setActiveCapacityFilter] = useState<string | undefined>();
   const [activeRamFilter, setActiveRamFilter] = useState<string | undefined>();
 
-  // Estado de selección - inicializar con la primera variante disponible
+  // Estado de selección - inicializar con la mejor variante disponible
   const [selection, setSelection] = useState<SelectionState>(() => {
-    // Si hay variantes disponibles, seleccionar la primera
+    // Si hay variantes disponibles, seleccionar la mejor (stock > 0, mejor precio, características comunes)
     if (allVariants.length > 0) {
-      const firstVariant = allVariants[0];
-      return {
-        selectedColor: firstVariant.color || null,
-        selectedCapacity: firstVariant.capacity || null,
-        selectedMemoriaram: firstVariant.memoriaram || null,
-        selectedVariant: firstVariant
-      };
+      const bestVariant = findBestVariantToDisplay(allVariants);
+      if (bestVariant) {
+        return {
+          selectedColor: bestVariant.color || null,
+          selectedCapacity: bestVariant.capacity || null,
+          selectedMemoriaram: bestVariant.memoriaram || null,
+          selectedVariant: bestVariant
+        };
+      }
     }
-
     return {
       selectedColor: null,
       selectedCapacity: null,
@@ -153,15 +274,17 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
 
   // Actualizar la selección cuando cambien las variantes disponibles
   useEffect(() => {
-    // Si no hay selección actual y hay variantes disponibles, seleccionar la primera
+    // Si no hay selección actual y hay variantes disponibles, seleccionar la mejor
     if (!selection.selectedColor && allVariants.length > 0) {
-      const firstVariant = allVariants[0];
-      setSelection({
-        selectedColor: firstVariant.color || null,
-        selectedCapacity: firstVariant.capacity || null,
-        selectedMemoriaram: firstVariant.memoriaram || null,
-        selectedVariant: firstVariant
-      });
+      const bestVariant = findBestVariantToDisplay(allVariants);
+      if (bestVariant) {
+        setSelection({
+          selectedColor: bestVariant.color || null,
+          selectedCapacity: bestVariant.capacity || null,
+          selectedMemoriaram: bestVariant.memoriaram || null,
+          selectedVariant: bestVariant
+        });
+      }
     }
   }, [allVariants, selection.selectedColor]);
 
@@ -250,13 +373,20 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
   }, [allVariants]);
 
   // Variante seleccionada actualmente
+  // IMPORTANTE: Usar directamente selection.selectedVariant en lugar de recalcular
+  // para preservar la selección inteligente hecha por findBestVariantToDisplay
   const selectedVariant = useMemo(() => {
-    // Si no hay color seleccionado, no podemos seleccionar una variante
+    // Si ya tenemos una variante seleccionada en el state, usarla directamente
+    if (selection.selectedVariant) {
+      return selection.selectedVariant;
+    }
+
+    // Fallback: Si no hay color seleccionado, no podemos seleccionar una variante
     if (!selection.selectedColor) {
       return null;
     }
 
-    // Buscar variante que coincida con los campos que SÍ tienen valores
+    // Fallback: Buscar variante que coincida con los campos que SÍ tienen valores
     return allVariants.find(variant => {
       const matchesColor = variant.color === selection.selectedColor;
 
@@ -272,7 +402,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
 
       return matchesColor && matchesCapacity && matchesMemoriaram;
     }) || null;
-  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram]);
+  }, [allVariants, selection.selectedColor, selection.selectedCapacity, selection.selectedMemoriaram, selection.selectedVariant]);
 
   // Información del producto seleccionado
   const selectedSku = selectedVariant?.sku || null;

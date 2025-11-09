@@ -80,6 +80,8 @@ export default function ProductViewPage({ params }) {
       ean: [],
       desDetallada: [],
       stockTotal: [],
+      cantidadTiendas: [],
+      cantidadTiendasReserva: [],
       urlImagenes: [],
       urlRender3D: [],
       imagePreviewUrl: [],

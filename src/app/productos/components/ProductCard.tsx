@@ -121,6 +121,8 @@ export default function ProductCard({
     ean: [],
     desDetallada: [],
     stockTotal: [],
+    cantidadTiendas: [],
+    cantidadTiendasReserva: [],
     urlImagenes: [],
     urlRender3D: [],
     imagePreviewUrl: [],
@@ -134,9 +136,10 @@ export default function ProductCard({
     skuPostback: [],
   });
 
-  // Verificar si la VARIANTE SELECCIONADA está sin stock
+  // Verificar si la VARIANTE SELECCIONADA está sin stock (usando stock ajustado)
   // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
-  const isOutOfStock = productSelection.selectedStockTotal === 0;
+  // Stock ajustado = stockTotal - cantidadTiendasReserva, excluyendo bodega 001
+  const isOutOfStock = (productSelection.selectedVariant?.stockDisponible ?? 0) <= 0;
 
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
   const showColorSelector = shouldShowColorSelector(
@@ -293,7 +296,7 @@ export default function ProductCard({
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentOriginalPrice,
-        stock: productSelection.selectedStockTotal ?? 0,
+        stock: productSelection.selectedVariant?.stockDisponible ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: currentSku || '', // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
@@ -505,15 +508,18 @@ export default function ProductCard({
               </div>
               )}
 
-              {/* Mostrar stock disponible - AGREGAR ESTO */}
-              {productSelection.selectedStockTotal !== null && (
+              {/* Mostrar stock disponible ajustado */}
+              {productSelection.selectedVariant && (
                 <div className="text-sm text-gray-600 mt-2">
                   Stock disponible:{" "}
                   <span className={cn(
                     "ml-1 font-semibold",
-                    productSelection.selectedStockTotal > 0 ? "text-green-600" : "text-red-600"
+                    productSelection.selectedVariant.stockDisponible > 0 ? "text-green-600" : "text-red-600"
                   )}>
-                    {productSelection.selectedStockTotal}
+                    {productSelection.selectedVariant.stockDisponible}
+                  </span>
+                  <span className="text-xs text-gray-500 ml-1">
+                    (Total: {productSelection.selectedVariant.stockTotal} en {productSelection.selectedVariant.cantidadTiendas} {productSelection.selectedVariant.cantidadTiendas === 1 ? 'tienda' : 'tiendas'})
                   </span>
                 </div>
               )}

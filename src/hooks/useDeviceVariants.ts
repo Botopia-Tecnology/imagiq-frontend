@@ -76,6 +76,8 @@ export function useDeviceVariants(productId: string): UseDeviceVariantsReturn {
       ean: [],
       desDetallada: [],
       stockTotal: [],
+      cantidadTiendas: [],
+      cantidadTiendasReserva: [],
       urlImagenes: [],
       urlRender3D: [],
       imagePreviewUrl: [],

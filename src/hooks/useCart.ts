@@ -229,12 +229,12 @@ export function useCart(): UseCartReturn {
   }, []);
 
   // Función para cargar información de envío de un producto
-  const loadShippingInfoForProduct = useCallback(async (sku: string, userId: string) => {
+  const loadShippingInfoForProduct = useCallback(async (sku: string, userId: string, quantity: number) => {
     setLoadingShippingInfo((prev) => ({ ...prev, [sku]: true }));
-
+ 
     try {
       const response = await productEndpoints.getCandidateStores({
-        products: [{ sku, quantity: 1 }],
+        products: [{ sku, quantity }],
         user_id: userId,
       });
 
@@ -299,7 +299,7 @@ export function useCart(): UseCartReturn {
     if (productsWithoutShipping.length > 0) {
       // Cargar shipping info para cada producto que no la tenga
       productsWithoutShipping.forEach(product => {
-        loadShippingInfoForProduct(product.sku, userId);
+        loadShippingInfoForProduct(product.sku, userId, product.quantity);
       });
     }
   }, [getUserId, loadShippingInfoForProduct]);
@@ -384,6 +384,9 @@ export function useCart(): UseCartReturn {
       // Obtener userId automáticamente si no se proporciona
       const effectiveUserId = userId || getUserId();
 
+      // Variable para capturar la cantidad final que quedará en el carrito
+      let totalQuantityInCart = quantity;
+
       // Agregar producto inmediatamente sin bloquear
       setProducts((currentProducts) => {
         const existingIndex = currentProducts.findIndex(
@@ -405,6 +408,10 @@ export function useCart(): UseCartReturn {
           newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom , }];
           finalQuantity = quantity;
         }
+
+        // Capturar la cantidad final para usarla fuera del setProducts
+        totalQuantityInCart = finalQuantity;
+
         // Guardar productos en localStorage
         try {
           localStorage.setItem(
@@ -439,11 +446,11 @@ export function useCart(): UseCartReturn {
       if (effectiveUserId) {
         // Marcar este SKU específico como cargando
         setLoadingShippingInfo((prev) => ({ ...prev, [product.sku]: true }));
-
+        
         setTimeout(async () => {
           try {
             const response = await productEndpoints.getCandidateStores({
-              products: [{ sku: product.sku, quantity }],
+              products: [{ sku: product.sku, quantity: totalQuantityInCart }],
               user_id: effectiveUserId,
             });
 
@@ -595,6 +602,9 @@ export function useCart(): UseCartReturn {
       // Actualizar estado inmediatamente
       setProducts(newProducts);
 
+      // Obtener userId para actualizar información de envío
+      const userId = getUserId();
+
       // Guardar en localStorage de manera asíncrona
       setTimeout(() => {
         try {
@@ -609,6 +619,11 @@ export function useCart(): UseCartReturn {
           } catch (error) {
             console.debug("Error dispatching storage event", error);
           }
+
+          // Recargar información de envío con la nueva cantidad si tenemos userId
+          if (userId) {
+            loadShippingInfoForProduct(productId, userId, quantity);
+          }
         } catch (error) {
           console.error(
             "Error updating product quantity in localStorage:",
@@ -617,7 +632,7 @@ export function useCart(): UseCartReturn {
         }
       }, 0);
     },
-    [products, removeProduct]
+    [products, removeProduct, getUserId, loadShippingInfoForProduct]
   );
 
   /**

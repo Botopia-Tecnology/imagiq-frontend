@@ -13,6 +13,7 @@ const sections = [
   { id: "autorizacion", title: "Autorización para el Uso", level: 1 },
   { id: "datos-personales", title: "Tratamiento de Datos", level: 1 },
   { id: "tipos", title: "Tipos de Cookies", level: 1 },
+  { id: "servicios-terceros", title: "Servicios de Terceros", level: 1 },
   { id: "deshabilitar", title: "Cómo Deshabilitar Cookies", level: 1 },
   { id: "cambios", title: "Cambios en la Política", level: 1 },
 ];
@@ -23,7 +24,7 @@ export default function PoliticaCookiesPage() {
       title="Política de Uso de Cookies"
       sections={sections}
       documentType="Política de Cookies"
-      lastUpdated="Octubre 2017"
+      lastUpdated="9 de Noviembre de 2025"
     >
       <div className="space-y-16">
         <section id="que-son">
@@ -237,6 +238,202 @@ export default function PoliticaCookiesPage() {
                 </tr>
               </tbody>
             </table>
+          </div>
+        </section>
+
+        <section id="servicios-terceros">
+          <h2 className="text-3xl font-bold text-black mb-6 tracking-tight">
+            Servicios de Terceros Utilizados
+          </h2>
+          <p className="text-gray-700 leading-relaxed mb-6 text-lg">
+            IMAGIQ S.A.S. utiliza los siguientes servicios de terceros para
+            análisis y publicidad. Estos servicios solo se activan si el usuario
+            acepta el uso de cookies en nuestro banner de consentimiento.
+          </p>
+
+          <div className="space-y-6">
+            <div className="bg-blue-50 border border-blue-200 p-6">
+              <h3 className="font-semibold text-black text-xl mb-4">
+                Cookies de Análisis
+              </h3>
+              <div className="space-y-4">
+                <div className="bg-white p-4 border-l-4 border-blue-500">
+                  <h4 className="font-semibold text-black mb-2">
+                    Microsoft Clarity
+                  </h4>
+                  <p className="text-gray-700 mb-3">
+                    Servicio de análisis de comportamiento que proporciona mapas
+                    de calor y grabaciones de sesión para mejorar la experiencia
+                    del usuario.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>ID del Proyecto:</strong> tnnqbxjgre
+                  </p>
+                  <a
+                    href="https://privacy.microsoft.com/privacystatement"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 underline mt-2 text-sm"
+                  >
+                    Ver Política de Privacidad de Microsoft
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                    >
+                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-purple-50 border border-purple-200 p-6">
+              <h3 className="font-semibold text-black text-xl mb-4">
+                Cookies de Publicidad y Marketing
+              </h3>
+              <div className="space-y-4">
+                <div className="bg-white p-4 border-l-4 border-purple-500">
+                  <h4 className="font-semibold text-black mb-2">
+                    Google Tag Manager
+                  </h4>
+                  <p className="text-gray-700 mb-3">
+                    Plataforma de gestión de etiquetas que permite administrar y
+                    desplegar etiquetas de marketing sin modificar el código.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>ID del Contenedor:</strong> GTM-MS5J6DQT
+                  </p>
+                  <a
+                    href="https://policies.google.com/privacy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 underline mt-2 text-sm"
+                  >
+                    Ver Política de Privacidad de Google
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                    >
+                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
+                    </svg>
+                  </a>
+                </div>
+
+                <div className="bg-white p-4 border-l-4 border-purple-500">
+                  <h4 className="font-semibold text-black mb-2">
+                    Meta Pixel (Facebook Pixel)
+                  </h4>
+                  <p className="text-gray-700 mb-3">
+                    Herramienta de análisis que ayuda a medir la efectividad de
+                    la publicidad mediante el seguimiento de las acciones que
+                    realizan los usuarios.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>ID del Pixel:</strong> 25730530136536207
+                  </p>
+                  <a
+                    href="https://www.facebook.com/privacy/policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 underline mt-2 text-sm"
+                  >
+                    Ver Política de Privacidad de Meta
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                    >
+                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
+                    </svg>
+                  </a>
+                </div>
+
+                <div className="bg-white p-4 border-l-4 border-purple-500">
+                  <h4 className="font-semibold text-black mb-2">TikTok Pixel</h4>
+                  <p className="text-gray-700 mb-3">
+                    Código de seguimiento que ayuda a medir el rendimiento de las
+                    campañas publicitarias y optimizar los anuncios en TikTok.
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    <strong>ID del Pixel:</strong> Pendiente por configurar
+                  </p>
+                  <a
+                    href="https://www.tiktok.com/legal/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 underline mt-2 text-sm"
+                  >
+                    Ver Política de Privacidad de TikTok
+                    <svg
+                      width="12"
+                      height="12"
+                      fill="currentColor"
+                      viewBox="0 0 16 16"
+                    >
+                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
+                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-green-50 border-l-4 border-green-500 p-6">
+              <div className="flex gap-3">
+                <span className="text-green-600 font-bold text-lg">✓</span>
+                <div>
+                  <p className="font-semibold text-green-900 mb-1">
+                    Control de Consentimiento
+                  </p>
+                  <p className="text-green-800">
+                    Todos estos servicios solo se cargan si el usuario acepta
+                    explícitamente el uso de cookies a través de nuestro banner
+                    de consentimiento. El usuario puede rechazar el uso de estas
+                    cookies sin afectar las funcionalidades básicas del sitio.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 p-6">
+              <h4 className="font-semibold text-black mb-3">
+                Cookies Necesarias (Siempre Activas)
+              </h4>
+              <p className="text-gray-700 mb-3">
+                Adicionalmente, utilizamos cookies técnicas esenciales que son
+                necesarias para el funcionamiento básico del sitio web:
+              </p>
+              <ul className="space-y-2 text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-gray-600">•</span>
+                  <span>Gestión de sesión de usuario</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gray-600">•</span>
+                  <span>Carrito de compras</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gray-600">•</span>
+                  <span>Autenticación y seguridad</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gray-600">•</span>
+                  <span>Preferencias de consentimiento de cookies</span>
+                </li>
+              </ul>
+              <p className="text-gray-600 text-sm mt-3 italic">
+                Estas cookies no requieren consentimiento ya que son
+                estrictamente necesarias para proporcionar el servicio solicitado.
+              </p>
+            </div>
           </div>
         </section>
 

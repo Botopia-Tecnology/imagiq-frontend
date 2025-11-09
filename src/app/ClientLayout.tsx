@@ -9,7 +9,6 @@ import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
-import { LocationPermissionBanner } from "@/components/LocationPermissionBanner";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -58,29 +57,13 @@ export default function ClientLayout({
   }, []);
 
   return (
-    <>
-      <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
-        {/* Solo monta el Navbar si no debe ocultarse por ruta ni por scroll dinámico */}
-        {!hideNavbar && !hideNavbarDynamic && isClient && <Navbar />}
-        <main className="flex-1" id="main-content">
-          {safeChildren}
-        </main>
-        {!hideFooter && <Footer />}
-      </div>
-
-      {/* Banner de geolocalización no invasivo - FUERA del main-layout para evitar stacking context */}
-      {isClient && (
-        <LocationPermissionBanner
-          autoShow={true}
-          onLocationGranted={(lat, lon, accuracy) => {
-            console.log('✅ Ubicación del usuario:', { lat, lon, accuracy });
-            // TODO: Enviar al backend si es necesario
-          }}
-          onLocationDenied={() => {
-            console.log('❌ Usuario rechazó la ubicación');
-          }}
-        />
-      )}
-    </>
+    <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
+      {/* Solo monta el Navbar si no debe ocultarse por ruta ni por scroll dinámico */}
+      {!hideNavbar && !hideNavbarDynamic && isClient && <Navbar />}
+      <main className="flex-1" id="main-content">
+        {safeChildren}
+      </main>
+      {!hideFooter && <Footer />}
+    </div>
   );
 }

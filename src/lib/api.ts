@@ -247,7 +247,7 @@ export const productEndpoints = {
     apiClient.delete<void>(
       `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
     ),
-  getCandidateStores: (data: { skus: string[]; user_id: string }) =>
+  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string }) =>
     apiClient.post<CandidateStoresResponse>('/api/products/candidate-stores', data),
 };
 

@@ -62,6 +62,8 @@ const DetailsProductSection: React.FC<{
       ean: [],
       desDetallada: [],
       stockTotal: [],
+      cantidadTiendas: [],
+      cantidadTiendasReserva: [],
       urlImagenes: [],
       urlRender3D: [],
       imagePreviewUrl: [],

@@ -54,6 +54,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
     ean: [],
     desDetallada: [],
     stockTotal: [],
+    cantidadTiendas: [],
+    cantidadTiendasReserva: [],
     urlImagenes: [],
     urlRender3D: [],
     imagePreviewUrl: [],

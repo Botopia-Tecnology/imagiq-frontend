@@ -234,7 +234,7 @@ export function useCart(): UseCartReturn {
 
     try {
       const response = await productEndpoints.getCandidateStores({
-        skus: [sku],
+        products: [{ sku, quantity: 1 }],
         user_id: userId,
       });
 
@@ -443,7 +443,7 @@ export function useCart(): UseCartReturn {
         setTimeout(async () => {
           try {
             const response = await productEndpoints.getCandidateStores({
-              skus: [product.sku],
+              products: [{ sku: product.sku, quantity }],
               user_id: effectiveUserId,
             });
 

@@ -15,6 +15,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useFavorites } from "@/features/products/useProducts";
 
 // Tipo para resultados de búsqueda
 export interface SearchResult {
@@ -62,8 +63,24 @@ export function useNavbarLogic() {
       ? cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
       : 0;
   }, [cartItems, itemCount]);
-  // Estado para animación del badge
+  
+  // Hook para obtener favoritos
+  const { favorites } = useFavorites();
+  
+  // Contador de favoritos - basado directamente en el estado del hook
+  // El hook useFavorites ya lee del localStorage y se actualiza automáticamente
+  const favoritesCount = useMemo(() => {
+    if (favorites && Array.isArray(favorites)) {
+      return favorites.length;
+    }
+    return 0;
+  }, [favorites]);
+  
+  // Estado para animación del badge del carrito
   const [bump, setBump] = useState(false);
+  // Estado para animación del badge de favoritos
+  const [favoritesBump, setFavoritesBump] = useState(false);
+  
   // Efecto: activa animación cuando cambia cartCount
   useEffect(() => {
     if (cartCount > 0) {
@@ -74,6 +91,17 @@ export function useNavbarLogic() {
       setBump(false);
     }
   }, [cartCount]);
+  
+  // Efecto: activa animación cuando cambia favoritesCount
+  useEffect(() => {
+    if (favoritesCount > 0) {
+      setFavoritesBump(true);
+      const timer = setTimeout(() => setFavoritesBump(false), 200);
+      return () => clearTimeout(timer);
+    } else {
+      setFavoritesBump(false);
+    }
+  }, [favoritesCount]);
   // Sincronización multi-tab: escucha storage para actualizar contador en tiempo real
   useEffect(() => {
     const syncCart = () => {
@@ -240,6 +268,15 @@ export function useNavbarLogic() {
     router.push("/carrito");
   }, [cartCount, isAuthenticated, router]);
 
+  // Handler para click en favoritos (envía analytics y navega)
+  const handleFavoritesClick = useCallback(() => {
+    posthogUtils.capture("favorites_icon_click", {
+      favorites_count: favoritesCount,
+      user_authenticated: isAuthenticated,
+    });
+    router.push("/favoritos");
+  }, [favoritesCount, isAuthenticated, router]);
+
   // Handler para click en item de navbar (envía analytics y cierra menú móvil)
   const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
     posthogUtils.capture("navbar_click", {
@@ -277,6 +314,11 @@ export function useNavbarLogic() {
     isOfertas,
     debouncedSearch,
     itemCount,
+    cartCount,
+    bump,
+    favoritesCount,
+    favoritesBump,
+    handleFavoritesClick,
     isAuthenticated,
     user, // Nuevo: datos del usuario para saludo
     router,
@@ -300,7 +342,5 @@ export function useNavbarLogic() {
     handleSearchSubmit,
     handleCartClick,
     handleNavClick,
-    cartCount, // Nuevo: fuente de verdad del contador
-    bump, // Estado para animación del badge
   };
 }

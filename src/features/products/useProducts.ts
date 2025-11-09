@@ -743,12 +743,55 @@ export const useFavorites = (userId?: string,
     [currentPage]
   );
 
-  // Cargar favoritos desde localStorage
+  // Cargar favoritos desde localStorage y sincronizar cambios
   useEffect(() => {
-    const savedFavorites = localStorage.getItem("imagiq_favorites");
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
+    const loadFavorites = () => {
+      try {
+        const savedFavorites = localStorage.getItem("imagiq_favorites");
+        if (savedFavorites) {
+          const parsed = JSON.parse(savedFavorites);
+          if (Array.isArray(parsed)) {
+            setFavorites(parsed);
+          } else {
+            setFavorites([]);
+          }
+        } else {
+          setFavorites([]);
+        }
+      } catch (error) {
+        console.error("Error loading favorites from localStorage:", error);
+        setFavorites([]);
+      }
+    };
+    
+    // Cargar favoritos al montar
+    loadFavorites();
+    
+    // Escuchar cambios en el localStorage (para sincronización entre pestañas)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "imagiq_favorites") {
+        if (e.newValue === null) {
+          setFavorites([]);
+        } else {
+          loadFavorites();
+        }
+      }
+    };
+    
+    // Escuchar eventos personalizados de favoritos actualizados (misma pestaña)
+    const handleFavoritesUpdated = () => {
+      requestAnimationFrame(() => {
+        loadFavorites();
+      });
+    };
+    
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("favorites-updated", handleFavoritesUpdated);
+    
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("favorites-updated", handleFavoritesUpdated);
+    };
   }, []);
 
   const fetchFavorites = useCallback(
@@ -835,20 +878,19 @@ export const useFavorites = (userId?: string,
       productId: string,
       guestUserData?: {
         id?:string,
-        nombre: string;
-        apellido: string;
-        email: string;
-        telefono: string;
+        nombre?: string;
+        apellido?: string;
+        email?: string;
+        telefono?: string;
+        tipo_documento?: string;
+        numero_documento?: string;
       }
     ) => {
-     
-
       try {
         let payload;
-     console.log('gess', guestUserData?.id)
+        
         if (guestUserData?.id) {
-          console.log('si tengo')
-          // 2. Si ya tenemos el id guardado
+          // Si ya tenemos el id guardado, solo enviar el id
           payload = {
             productSKU: productId,
             userInfo: {
@@ -856,11 +898,26 @@ export const useFavorites = (userId?: string,
             },
           };
         } else {
-          // 3. Si no hay user guardado, enviar datos completos
-
+          // Si no hay user guardado, enviar solo los campos que el backend acepta
+          // El backend NO acepta tipo_documento ni numero_documento en userInfo
+          // Filtrar explícitamente estos campos y cualquier otro campo no permitido
+          const userInfoAllowed: {
+            nombre?: string;
+            apellido?: string;
+            email?: string;
+            telefono?: string;
+          } = {};
+          
+          if (guestUserData) {
+            if (guestUserData.nombre) userInfoAllowed.nombre = guestUserData.nombre;
+            if (guestUserData.apellido) userInfoAllowed.apellido = guestUserData.apellido;
+            if (guestUserData.email) userInfoAllowed.email = guestUserData.email;
+            if (guestUserData.telefono) userInfoAllowed.telefono = guestUserData.telefono;
+          }
+          
           payload = {
             productSKU: productId,
-            userInfo: guestUserData || {},
+            userInfo: userInfoAllowed,
           };
         }
 
@@ -869,25 +926,37 @@ export const useFavorites = (userId?: string,
        
         if (response.success) {
           setFavorites((prev) => {
+            // Evitar duplicados
+            if (prev.includes(productId)) {
+              return prev;
+            }
             const newFavorites = [...prev, productId];
             localStorage.setItem(
               "imagiq_favorites",
               JSON.stringify(newFavorites)
             );
+            // Disparar evento para sincronizar navbar y otros componentes
+            if (typeof window !== 'undefined') {
+              requestAnimationFrame(() => {
+                window.dispatchEvent(new Event('favorites-updated'));
+              });
+            }
             return newFavorites;
           });
-        }
-        const userNombreFromResponse = response?.data?.userInfo?.nombre;
-        console.log(response.data)
-        // 5. Si recibes un id lo guardo en el local, para que no cree de nuevo un user
-        if (userNombreFromResponse) {
           
-          const newUserInfo = response.data.userInfo;
-          localStorage.setItem("imagiq_user", JSON.stringify(newUserInfo));
-          return newUserInfo;
+          // Si recibimos un id del backend, guardarlo en localStorage
+          const userInfoFromResponse = response?.data?.userInfo;
+          if (userInfoFromResponse?.id || userInfoFromResponse?.nombre) {
+            localStorage.setItem("imagiq_user", JSON.stringify(userInfoFromResponse));
+            return userInfoFromResponse;
+          }
+        } else {
+          console.error("Error al agregar favorito:", response.message);
+          throw new Error(response.message || "Error al agregar favorito");
         }
       } catch (err) {
         console.error("Error al agregar favorito en servidor", err);
+        throw err;
       }
     },
     []
@@ -903,27 +972,84 @@ export const useFavorites = (userId?: string,
       }) => {
      
       try {
-     
-        if (guestUserData?.id) {
+        // Intentar obtener el ID del usuario del localStorage si no se proporciona
+        let userId = guestUserData?.id;
+        if (!userId) {
+          const rawUser = localStorage.getItem("imagiq_user");
+          const parsed = rawUser ? JSON.parse(rawUser) : null;
+          userId = parsed?.id;
+        }
+        
+        // Si tenemos userId, intentar remover del servidor
+        if (userId) {
           const response = await productEndpoints.removeFavorite(
-            guestUserData.id,
+            userId,
             productSKU
           );
           
           if (response.success) {
-        
             setFavorites((prev) => {
               const newFavorites = prev.filter((id) => id !== productSKU);
+              // Si no quedan favoritos, limpiar el localStorage
+              if (newFavorites.length === 0) {
+                localStorage.removeItem("imagiq_favorites");
+              } else {
+                localStorage.setItem(
+                  "imagiq_favorites",
+                  JSON.stringify(newFavorites)
+                );
+              }
+              // Disparar evento para sincronizar navbar y otros componentes
+              if (typeof window !== 'undefined') {
+                requestAnimationFrame(() => {
+                  window.dispatchEvent(new Event('favorites-updated'));
+                });
+              }
+              return newFavorites;
+            });
+          }
+        } else {
+          // Si no hay userId, remover solo del localStorage
+          setFavorites((prev) => {
+            const newFavorites = prev.filter((id) => id !== productSKU);
+            if (newFavorites.length === 0) {
+              localStorage.removeItem("imagiq_favorites");
+            } else {
               localStorage.setItem(
                 "imagiq_favorites",
                 JSON.stringify(newFavorites)
               );
-              return newFavorites;
-            });
-          }
+            }
+            // Disparar evento para sincronizar navbar y otros componentes
+            if (typeof window !== 'undefined') {
+              requestAnimationFrame(() => {
+                window.dispatchEvent(new Event('favorites-updated'));
+              });
+            }
+            return newFavorites;
+          });
         }
       } catch (err) {
         console.error("Error al quitar favorito en servidor", err);
+        // Aún así, remover del localStorage para mantener consistencia UI
+        setFavorites((prev) => {
+          const newFavorites = prev.filter((id) => id !== productSKU);
+          if (newFavorites.length === 0) {
+            localStorage.removeItem("imagiq_favorites");
+          } else {
+            localStorage.setItem(
+              "imagiq_favorites",
+              JSON.stringify(newFavorites)
+            );
+          }
+          // Disparar evento para sincronizar navbar y otros componentes
+          if (typeof window !== 'undefined') {
+            requestAnimationFrame(() => {
+              window.dispatchEvent(new Event('favorites-updated'));
+            });
+          }
+          return newFavorites;
+        });
       }
     },
     []

@@ -532,15 +532,14 @@ export default function RefrigeradoresSection() {
           trackingPrefix="refrigerador_filter"
         />
       )}
-      {showGuestModal && (
-        <GuestDataModal
-          onSubmit={handleGuestSubmit}
-          onCancel={() => {
-            setShowGuestModal(false);
-            setPendingFavorite(null);
-          }}
-        />
-      )}
+      <GuestDataModal
+        isOpen={showGuestModal}
+        onSubmit={handleGuestSubmit}
+        onClose={() => {
+          setShowGuestModal(false);
+          setPendingFavorite(null);
+        }}
+      />
     </div>
   );
 }

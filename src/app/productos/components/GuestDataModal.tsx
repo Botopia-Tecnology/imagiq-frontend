@@ -12,12 +12,14 @@ interface GuestUserData {
 
 interface GuestDataModalProps {
   onSubmit: (data: GuestUserData) => void;
-  onCancel: () => void;
+  onClose: () => void;
+  isOpen?: boolean;
 }
 
 const GuestDataModal: React.FC<GuestDataModalProps> = ({
   onSubmit,
-  onCancel,
+  onClose,
+  isOpen = true,
 }) => {
   const [formData, setFormData] = useState<GuestUserData>({
     nombre: "",
@@ -29,6 +31,9 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({
   });
 
   const [errors, setErrors] = useState<Partial<GuestUserData>>({});
+  
+  // Los hooks deben llamarse antes de cualquier return condicional
+  if (!isOpen) return null;
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -63,9 +68,9 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({
   };
 
   return (
-    <button
+    <div
       className="fixed inset-0 backdrop-blur-sm bg-white/10 flex items-center justify-center z-50"
-      onClick={onCancel}
+      onClick={onClose}
     >
       <div
         className="bg-white p-6 rounded-lg w-full max-w-2xl shadow-xl relative border border-gray-200"
@@ -179,16 +184,16 @@ const GuestDataModal: React.FC<GuestDataModalProps> = ({
           <button
             onClick={handleSubmit}
             className={cn(
-              "w-full bg-sky-600 text-white py-3 px-4 rounded-md text-sm font-medium cursor-pointer",
+              "w-full bg-black text-white py-3 px-4 rounded-md text-sm font-medium cursor-pointer",
               "transition-all duration-200 flex items-center justify-center gap-2",
-              "hover:bg-sky-700 active:bg-sky-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+              "hover:bg-gray-800 active:bg-gray-900 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
             )}
           >
             Guardar
           </button>
         </div>
       </div>
-    </button>
+    </div>
   );
 };
 

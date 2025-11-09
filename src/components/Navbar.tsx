@@ -29,13 +29,11 @@ export default function Navbar() {
   const navbar = useNavbarLogic();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { getNavbarRoutes, loading } = useVisibleCategories();
-  const { user, isAuthenticated } = useAuthContext();
-
-  const [isIntermediateScreen, setIsIntermediateScreen] = useState(false);
+  const { isAuthenticated } = useAuthContext();
 
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
-  const { preloadedMenus, loadingStates, getMenus, isLoading, prioritizeCategory } = usePreloadCategoryMenus();
+  const { getMenus, isLoading, prioritizeCategory } = usePreloadCategoryMenus();
 
   // Función para obtener el componente dropdown apropiado
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
@@ -54,7 +52,7 @@ export default function Navbar() {
         <DynamicDropdown
           menus={cachedMenus}
           categoryName={item.name}
-          categoryCode={item.categoryCode || ''}
+          categoryCode={item.categoryCode || ""}
           categoryVisibleName={item.categoryVisibleName}
           isMobile={false}
           loading={menusLoading}
@@ -75,12 +73,10 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleResize = () => {
-      const width = window.innerWidth;
+      const width = globalThis.innerWidth;
       if (width >= 1280) {
         setMobileMenuOpen(false);
       }
-      // Detectar pantallas entre 1280px (xl) y 1536px (2xl) - más pequeño que desktop pero más grande que tablet
-      setIsIntermediateScreen(width >= 1280 && width < 1536);
     };
 
     // Listener para cerrar dropdown cuando se dispara el evento personalizado
@@ -91,15 +87,15 @@ export default function Navbar() {
     // Ejecutar una vez al montar
     handleResize();
 
-    window.addEventListener("resize", handleResize);
-    window.addEventListener(
+    globalThis.addEventListener("resize", handleResize);
+    globalThis.addEventListener(
       "close-dropdown",
       handleCloseDropdown as EventListener
     );
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener(
+      globalThis.removeEventListener("resize", handleResize);
+      globalThis.removeEventListener(
         "close-dropdown",
         handleCloseDropdown as EventListener
       );
@@ -168,7 +164,7 @@ export default function Navbar() {
         {/* Mobile/Tablet Header con hamburguesa - Mostrar en pantallas < 1280px */}
         <div
           className={cn(
-            "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 min-h-[64px]",
+            "xl:hidden px-4 py-3 flex items-center justify-between transition-colors duration-300 min-h-16",
             mobileMenuOpen && "hidden"
           )}
         >
@@ -181,7 +177,7 @@ export default function Navbar() {
                 navbar.router.push("/");
               }}
               aria-label="Inicio"
-              className="flex-shrink-0"
+              className="shrink-0"
             >
               <Image
                 src={
@@ -199,9 +195,7 @@ export default function Navbar() {
 
             {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
             {isAuthenticated ? (
-              <AddressDropdown
-                showWhiteItems={navbar.showWhiteItemsMobile}
-              />
+              <AddressDropdown showWhiteItems={navbar.showWhiteItemsMobile} />
             ) : (
               <Image
                 src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
@@ -216,7 +210,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <CartIcon
               count={navbar.itemCount}
               showBump={false}
@@ -227,12 +221,14 @@ export default function Navbar() {
               }
             />
             {navbar.isAuthenticated && navbar.user?.nombre ? (
-              <UserOptionsDropdown showWhiteItems={navbar.showWhiteItemsMobile} />
+              <UserOptionsDropdown
+                showWhiteItems={navbar.showWhiteItemsMobile}
+              />
             ) : (
               <button
                 className="p-2 cursor-pointer active:scale-95 transition-transform duration-150 ease-out"
                 aria-label="Usuario"
-                onClick={() => window.location.replace("/login")}
+                onClick={() => globalThis.location.replace("/login")}
               >
                 <User
                   className={cn(
@@ -278,68 +274,75 @@ export default function Navbar() {
                   </>
                 ) : (
                   menuRoutes.map((item) => {
-                  const dropdownKey = item.dropdownName || item.name;
+                    const dropdownKey = item.dropdownName || item.name;
 
-                  return (
-                    <li key={item.name} className="relative shrink-0">
-                      <div
-                        data-item-name={dropdownKey}
-                        ref={navbar.setNavItemRef}
-                        onMouseEnter={() => {
-                          if (hasDropdownMenu(dropdownKey, item)) {
-                            navbar.handleDropdownEnter(dropdownKey as DropdownName);
-                            // Priorizar la carga del menú si es una categoría dinámica
-                            // Esto asegura que el menú se cargue inmediatamente al hacer hover
-                            if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
-                              prioritizeCategory(item.uuid);
+                    return (
+                      <li key={item.name} className="relative shrink-0">
+                        <div
+                          data-item-name={dropdownKey}
+                          ref={navbar.setNavItemRef}
+                          onMouseEnter={() => {
+                            if (hasDropdownMenu(dropdownKey, item)) {
+                              navbar.handleDropdownEnter(
+                                dropdownKey as DropdownName
+                              );
+                              // Priorizar la carga del menú si es una categoría dinámica
+                              // Esto asegura que el menú se cargue inmediatamente al hacer hover
+                              if (
+                                item.uuid &&
+                                !isStaticCategoryUuid(item.uuid)
+                              ) {
+                                prioritizeCategory(item.uuid);
+                              }
                             }
-                          }
-                        }}
-                        onMouseLeave={navbar.handleDropdownLeave}
-                        className="relative inline-block"
-                      >
-                        <Link
-                          href={item.href}
-                          onClick={(e) => {
-                            // Prevenir navegación por defecto del Link
-                            e.preventDefault();
-                            // Cerrar dropdown inmediatamente
-                            navbar.setActiveDropdown(null);
-                            // Navegar de forma programática (instantáneo)
-                            navbar.router.push(item.href);
                           }}
-                          className={cn(
-                            "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block",
-                            navbar.showWhiteItems
-                              ? "text-white hover:opacity-90"
-                              : "text-black hover:text-blue-600",
-                            !navbar.showWhiteItems &&
-                              "after:absolute after:left-0 after:right-0 after:-bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
-                          )}
+                          onMouseLeave={navbar.handleDropdownLeave}
+                          className="relative inline-block"
                         >
-                          {item.name}
-                        </Link>
+                          <Link
+                            href={item.href}
+                            onClick={(e) => {
+                              // Prevenir navegación por defecto del Link
+                              e.preventDefault();
+                              // Cerrar dropdown inmediatamente
+                              navbar.setActiveDropdown(null);
+                              // Navegar de forma programática (instantáneo)
+                              navbar.router.push(item.href);
+                            }}
+                            className={cn(
+                              "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block",
+                              navbar.showWhiteItems
+                                ? "text-white hover:opacity-90"
+                                : "text-black hover:text-blue-600",
+                              !navbar.showWhiteItems &&
+                                "after:absolute after:left-0 after:right-0 after:bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
+                            )}
+                          >
+                            {item.name}
+                          </Link>
 
-                        {navbar.activeDropdown === dropdownKey &&
-                          hasDropdownMenu(dropdownKey, item) && (
-                            <div
-                              className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
-                              style={{
-                                top: `${getDropdownPosition(dropdownKey).top}px`,
-                              }}
-                            >
-                              <div className="mx-auto max-w-screen-2xl">
-                                {getDropdownComponent(
-                                  dropdownKey as DropdownName,
-                                  item
-                                )}
+                          {navbar.activeDropdown === dropdownKey &&
+                            hasDropdownMenu(dropdownKey, item) && (
+                              <div
+                                className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
+                                style={{
+                                  top: `${
+                                    getDropdownPosition(dropdownKey).top
+                                  }px`,
+                                }}
+                              >
+                                <div className="mx-auto max-w-screen-2xl">
+                                  {getDropdownComponent(
+                                    dropdownKey as DropdownName,
+                                    item
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          )}
-                      </div>
-                    </li>
-                  );
-                })
+                            )}
+                        </div>
+                      </li>
+                    );
+                  })
                 )}
               </ul>
             </nav>
@@ -350,16 +353,14 @@ export default function Navbar() {
               {/* Dirección predeterminada del usuario con dropdown */}
               {isAuthenticated && (
                 <div className="flex-1 min-w-0">
-                  <AddressDropdown
-                    showWhiteItems={navbar.showWhiteItems}
-                  />
+                  <AddressDropdown showWhiteItems={navbar.showWhiteItems} />
                 </div>
               )}
 
               <Link
                 href="/ventas-corporativas"
                 className={cn(
-                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap flex-shrink-0",
+                  "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap shrink-0",
                   navbar.showWhiteItems
                     ? "text-white/90 hover:text-white"
                     : "text-black"
@@ -403,7 +404,7 @@ export default function Navbar() {
                       "flex items-center justify-center w-10 h-10 cursor-pointer active:scale-95 transition-transform duration-150 ease-out",
                       getIconColorClasses()
                     )}
-                    onClick={() => window.location.replace("/login")}
+                    onClick={() => globalThis.location.replace("/login")}
                     aria-label="Ingresar"
                   >
                     <User className={cn("w-5 h-5", getIconColorClasses())} />

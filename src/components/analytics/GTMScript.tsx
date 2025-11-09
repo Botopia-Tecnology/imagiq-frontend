@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { hasAdsConsent } from '@/lib/consent';
 
 /**
  * Componente que carga Google Tag Manager de forma first-party
@@ -9,6 +10,7 @@ import { useEffect, useState } from 'react';
  * - El Container ID vive solo en el backend
  * - Soporta consentimiento a través del header x-analytics-consent
  * - Totalmente first-party para evitar ad-blockers
+ * - SOLO SE CARGA SI EL USUARIO ACEPTA COOKIES DE MARKETING
  *
  * IMPORTANTE: Este componente carga el script de GTM de forma dinámica
  * ejecutando el código JavaScript que viene del backend.
@@ -24,6 +26,12 @@ export default function GTMScript() {
     // Solo ejecutar en el cliente después de montar
     if (!mounted) return;
     if (globalThis.window === undefined) return;
+
+    // ✅ VERIFICAR CONSENTIMIENTO DE MARKETING
+    if (!hasAdsConsent()) {
+      console.debug('[GTM] No ads consent, skipping load');
+      return;
+    }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
     const gtmUrl = `${apiUrl}/api/custommer/analytics/gtm.js`;

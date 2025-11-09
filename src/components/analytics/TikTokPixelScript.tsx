@@ -4,26 +4,26 @@ import { useEffect, useState } from 'react';
 import { hasAdsConsent } from '@/lib/consent';
 
 /**
- * Componente que carga el bootstrap script de Meta Pixel (Facebook Pixel)
+ * Componente que carga el bootstrap script de TikTok Pixel
  * desde nuestro backend proxy (first-party).
  *
  * El script solo se carga si:
- * 1. ENABLE_META_PIXEL=true en el backend
+ * 1. ENABLE_TIKTOK_PIXEL=true en el backend
  * 2. El usuario ha dado consentimiento de cookies de marketing
  * 3. SOLO SE CARGA SI EL USUARIO ACEPTA COOKIES DE MARKETING
  *
- * IMPORTANTE: Este componente carga el script de Meta Pixel de forma dinámica
+ * IMPORTANTE: Este componente carga el script de TikTok Pixel de forma dinámica
  * ejecutando el código JavaScript que viene del backend.
  *
  * @example
  * ```tsx
  * // En layout.tsx
  * <body>
- *   <MetaPixelScript />
+ *   <TikTokPixelScript />
  * </body>
  * ```
  */
-export default function MetaPixelScript() {
+export default function TikTokPixelScript() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -37,35 +37,35 @@ export default function MetaPixelScript() {
 
     // ✅ VERIFICAR CONSENTIMIENTO DE MARKETING
     if (!hasAdsConsent()) {
-      console.debug('[Meta Pixel] No ads consent, skipping load');
+      console.debug('[TikTok Pixel] No ads consent, skipping load');
       return;
     }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const metaPixelUrl = `${apiUrl}/api/custommer/analytics/meta-pixel.js`;
+    const tiktokPixelUrl = `${apiUrl}/api/custommer/analytics/tiktok-pixel.js`;
 
     // Verificar si ya existe el script
     const existingScript = document.querySelector(
-      `script[src="${metaPixelUrl}"]`
+      `script[src="${tiktokPixelUrl}"]`
     );
     if (existingScript) {
-      console.debug('[Meta Pixel] Script already exists in DOM');
+      console.debug('[TikTok Pixel] Script already exists in DOM');
       return;
     }
 
     // Crear y cargar el script de forma dinámica
     const script = document.createElement('script');
-    script.src = metaPixelUrl;
+    script.src = tiktokPixelUrl;
     script.async = true;
-    script.id = 'meta-pixel-bootstrap';
+    script.id = 'tiktok-pixel-bootstrap';
 
     script.onload = () => {
-      console.debug('[Meta Pixel] Script loaded successfully');
+      console.debug('[TikTok Pixel] Script loaded successfully');
     };
 
     script.onerror = () => {
       console.warn(
-        '[Meta Pixel] Failed to load from backend. Ensure the API is running at:',
+        '[TikTok Pixel] Failed to load from backend. Ensure the API is running at:',
         apiUrl
       );
     };
@@ -73,20 +73,20 @@ export default function MetaPixelScript() {
     // Insertar el script en el head
     document.head.appendChild(script);
 
-    // Agregar noscript fallback para Meta Pixel
+    // Agregar noscript fallback para TikTok Pixel
     const noscript = document.createElement('noscript');
     const img = document.createElement('img');
     img.height = 1;
     img.width = 1;
     img.style.display = 'none';
-    img.src = `${apiUrl}/api/custommer/analytics/meta-pixel/noscript`;
+    img.src = `${apiUrl}/api/custommer/analytics/tiktok-pixel/noscript`;
     img.alt = '';
     noscript.appendChild(img);
     document.body.appendChild(noscript);
 
     // Cleanup
     return () => {
-      const scriptToRemove = document.getElementById('meta-pixel-bootstrap');
+      const scriptToRemove = document.getElementById('tiktok-pixel-bootstrap');
       scriptToRemove?.remove();
       noscript?.remove();
     };

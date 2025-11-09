@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { hasAnalyticsConsent } from '@/lib/consent';
 
 /**
  * Componente que carga Microsoft Clarity de forma first-party
@@ -9,6 +10,7 @@ import { useEffect, useState } from 'react';
  * - El Project ID vive solo en el backend
  * - Soporta consentimiento a través del header x-analytics-consent
  * - Totalmente first-party para evitar ad-blockers
+ * - SOLO SE CARGA SI EL USUARIO ACEPTA COOKIES DE ANALYTICS
  *
  * IMPORTANTE: Este componente carga el script de Clarity de forma dinámica
  * ejecutando el código JavaScript que viene del backend, el cual contiene
@@ -25,6 +27,12 @@ export default function ClarityScript() {
     // Solo ejecutar en el cliente después de montar
     if (!mounted) return;
     if (globalThis.window === undefined) return;
+
+    // ✅ VERIFICAR CONSENTIMIENTO DE ANALYTICS
+    if (!hasAnalyticsConsent()) {
+      console.debug('[Clarity] No analytics consent, skipping load');
+      return;
+    }
 
     // Prevenir múltiples cargas
     if (globalThis.window.clarity) {

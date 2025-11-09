@@ -140,15 +140,14 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
           ))
         )}
 
-        {showGuestModal && (
-          <GuestDataModal
-            onSubmit={handleGuestSubmit}
-            onCancel={() => {
-              setShowGuestModal(false);
-              setPendingFavorite(null);
-            }}
-          />
-        )}
+        <GuestDataModal
+          isOpen={showGuestModal}
+          onSubmit={handleGuestSubmit}
+          onClose={() => {
+            setShowGuestModal(false);
+            setPendingFavorite(null);
+          }}
+        />
       </div>
     );
   }

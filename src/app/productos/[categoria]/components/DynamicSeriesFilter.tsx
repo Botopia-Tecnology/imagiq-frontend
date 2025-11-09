@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { posthogUtils } from "@/lib/posthogClient";
 import type { FilterState } from "../../components/FilterSidebar";
 import type { SeriesItem } from "../config/series-configs";

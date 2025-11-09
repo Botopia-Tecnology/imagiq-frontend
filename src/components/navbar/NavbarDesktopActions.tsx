@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
@@ -8,12 +7,6 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { Search } from "lucide-react";
-import carritoIconBlack from "@/img/navbar-icons/carrito-icon-black.png";
-import carritoIconWhite from "@/img/navbar-icons/carrito-icon-white.png";
-import userIconBlack from "@/img/navbar-icons/user-icon-black.png";
-import userIconWhite from "@/img/navbar-icons/user-icon-white.png";
-import favoritoIconBlack from "@/img/navbar-icons/favoritos-icon-black.png";
-import favoritoIconWhite from "@/img/navbar-icons/favorito-icon-white.png";
 
 interface NavbarDesktopActionsProps {
   searchQuery: string;
@@ -43,7 +36,7 @@ export default function NavbarDesktopActions({
   };
 
   return (
-    <div className="hidden md:flex items-center space-x-8 flex-shrink-0">
+    <div className="hidden md:flex items-center space-x-8 shrink-0">
       {/* Buscador */}
       <div
         className="relative flex items-center group"
@@ -101,13 +94,7 @@ export default function NavbarDesktopActions({
           window.location.replace("/login");
         }}
       >
-        <Image
-          src={showWhiteItems ? userIconWhite : userIconBlack}
-          alt="Usuario"
-          width={28}
-          height={28}
-          priority
-        />
+        {/* Icono de usuario eliminado. */}
       </button>
 
       {/* Carrito */}
@@ -120,13 +107,7 @@ export default function NavbarDesktopActions({
         title="Carrito de compras"
         onClick={handleCartClick}
       >
-        <Image
-          src={showWhiteItems ? carritoIconWhite : carritoIconBlack}
-          alt="Carrito"
-          width={34}
-          height={34}
-          priority
-        />
+        {/* Icono de carrito eliminado. */}
         {isClient && itemCount > 0 && (
           <span
             className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold"
@@ -147,13 +128,7 @@ export default function NavbarDesktopActions({
         title="Favoritos"
         onClick={() => router.push("/favoritos")}
       >
-        <Image
-          src={showWhiteItems ? favoritoIconWhite : favoritoIconBlack}
-          alt="Favoritos"
-          width={20}
-          height={21}
-          priority
-        />
+        {/* Icono de favoritos eliminado. */}
       </button>
     </div>
   );

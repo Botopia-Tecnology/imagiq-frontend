@@ -5,7 +5,7 @@
  */
 
 import type { Category } from "../../components/CategorySlider";
-import smartphonesImg from "../../../../img/categorias/Smartphones.png";
+
 import tabletasImg from "../../../../img/categorias/Tabletas.png";
 import galaxyBudsImg from "../../../../img/categorias/galaxy_buds.png";
 import galaxyWatchImg from "../../../../img/categorias/galaxy_watch.png";
@@ -17,7 +17,7 @@ export const deviceCategories: Category[] = [
     id: "galaxy-smartphone",
     name: "Galaxy",
     subtitle: "Smartphone",
-    image: smartphonesImg,
+    image: "",
     href: "/productos/dispositivos-moviles?seccion=smartphones",
   },
   {

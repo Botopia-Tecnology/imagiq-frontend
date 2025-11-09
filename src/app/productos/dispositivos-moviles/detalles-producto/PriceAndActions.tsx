@@ -7,7 +7,6 @@ interface PriceAndActionsProps {
   discount?: number;
   selectedVariant?: ProductVariant | null;
   loading: boolean;
-  onBuyNow: () => void;
   onAddToCart: () => void;
   hasStock: boolean;
   onNotifyStock?: () => void;
@@ -18,7 +17,6 @@ export default function PriceAndActions({
   discount,
   selectedVariant,
   loading,
-  onBuyNow,
   onAddToCart,
   hasStock,
   onNotifyStock,

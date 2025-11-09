@@ -1,7 +1,5 @@
 import React from "react";
-import Image from "next/image";
 import { useCartContext } from "@/features/cart/CartContext";
-import puntosQLogoRed from "@/img/puntos_q_logored.jpg";
 
 /**
  * PointsQCard - Mini card de puntos Q acumulados
@@ -100,7 +98,7 @@ export const PointsQCard: React.FC<PointsQCardProps> = ({
       }}
     >
       {/* Logo de Puntos Q */}
-      <div className="flex-shrink-0">
+      <div className="shrink-0">
         <div
           className={`
           relative rounded-full overflow-hidden bg-white p-0.5 shadow-sm
@@ -112,14 +110,7 @@ export const PointsQCard: React.FC<PointsQCardProps> = ({
           }
         `}
         >
-          <Image
-            src={puntosQLogoRed}
-            alt="Logo Puntos Q"
-            width={sizeConfig.logo}
-            height={sizeConfig.logo}
-            className="rounded-full object-cover transition-transform duration-300 ease-in-out"
-            priority
-          />
+          {/* Espacio para logo o SVG futuro. */}
         </div>
       </div>
 

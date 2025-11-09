@@ -1,7 +1,7 @@
 // src/app/productos/data_product/products.ts
 // Centraliza todos los datos de productos por categoría
 import { ProductColor } from "../components/ProductCard";
-import smartphonesImg from "../../../img/categorias/Smartphones.png";
+
 import tabletasImg from "../../../img/categorias/Tabletas.png";
 import galaxyWatchImg from "../../../img/categorias/galaxy_watch.png";
 import galaxyBudsImg from "../../../img/categorias/galaxy_buds.png";
@@ -23,7 +23,7 @@ export const productsData = {
     {
       id: "cargador-rapido-25w",
       name: "Samsung Cargador Rápido 25W USB-C",
-      image: smartphonesImg,
+      image: "",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
         { name: "black", hex: "#000000", label: "Negro" },
@@ -202,7 +202,7 @@ export const productsData = {
     {
       id: "galaxy-a16",
       name: "Samsung Galaxy A16",
-      image: smartphonesImg,
+      image: "",
       category: "smartphone",
       colors: [
         { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
@@ -218,7 +218,7 @@ export const productsData = {
     {
       id: "galaxy-a25",
       name: "Samsung Galaxy A25",
-      image: smartphonesImg,
+      image: "",
       category: "smartphone",
       colors: [
         { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
@@ -232,7 +232,7 @@ export const productsData = {
     {
       id: "galaxy-a26",
       name: "Samsung Galaxy A26",
-      image: smartphonesImg,
+      image: "",
       category: "smartphone",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
@@ -248,7 +248,7 @@ export const productsData = {
     {
       id: "galaxy-a15-256gb",
       name: "Samsung Galaxy A15 256 GB",
-      image: smartphonesImg,
+      image: "",
       category: "smartphone",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
@@ -261,7 +261,7 @@ export const productsData = {
     {
       id: "galaxy-a15-4gb",
       name: "Samsung Galaxy A15 4GB 128GB",
-      image: smartphonesImg,
+      image: "",
       category: "smartphone",
       colors: [
         { name: "yellow", hex: "#FCD34D", label: "Amarillo" },
@@ -275,7 +275,7 @@ export const productsData = {
     {
       id: "galaxy-a15-128gb",
       name: "Samsung Galaxy A15 4GB 128GB",
-      image: smartphonesImg,
+      image: "",
       category: "smartphone",
       colors: [
         { name: "white", hex: "#FFFFFF", label: "Blanco" },
@@ -590,4 +590,3 @@ export const productsData = {
     },
   ],
 };
-

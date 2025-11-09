@@ -14,23 +14,11 @@
  */
 
 import React, { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 // Importar iconos para beneficios
-import settingIcon from "@/img/iconos/Setting_line.png";
-import addiIcon from "@/img/iconos/addi_logo.png";
-import packageIcon from "@/img/iconos/package_car.png";
-import percentIcon from "@/img/iconos/Percent_light.png";
-
-// Importar imagen del dispositivo por defecto
-import deviceImage from "@/img/dispositivosmoviles/cel1.png";
-
-// Importar imagen de Entrego y Estreno
-import entregoEstrenoLogo from "@/img/entrego-estreno/entrego-estreno-logo.png";
-import gifEntregoEstreno from "@/img/gif/gif-entrego-estreno.gif";
 
 /**
  * Componente principal de especificaciones del producto
@@ -92,22 +80,22 @@ const DetailsProduct: React.FC = () => {
   // Beneficios de Imagiq
   const benefits = [
     {
-      icon: packageIcon,
+      icon: "",
       title: "Envío gratis a",
       subtitle: "toda Colombia",
     },
     {
-      icon: percentIcon,
+      icon: "",
       title: "0% de interés en",
       subtitle: "tarjetas débito",
     },
     {
-      icon: settingIcon,
+      icon: "",
       title: "Soporte técnico",
       subtitle: "garantizado",
     },
     {
-      icon: addiIcon,
+      icon: "",
       title: "Retira en más de 14",
       subtitle: "ciudades de Colombia",
     },
@@ -156,31 +144,15 @@ const DetailsProduct: React.FC = () => {
       >
         {/* Imagen GIF por defecto, cambia a logo en hover con fondo blanco animado, escala y opacidad premium */}
         <span className="absolute inset-0 flex items-center justify-center">
-          <Image
-            src={gifEntregoEstreno}
-            alt="Entrego y Estreno GIF"
-            width={56}
-            height={56}
-            className={`object-contain transition-all duration-500 ease-[cubic-bezier(.4,0,.2,1)] ${
-              isFloatingHovered ? "opacity-0 scale-90" : "opacity-100 scale-100"
-            }`}
-            priority
-          />
+          {/* GIF Entrego y Estreno eliminado. */}
         </span>
         <span
-          className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-[cubic-bezier(.4,0,.2,1)] ${
+          className={`absolute inset-0 flex items-center justify-center transition-all duration-500 ease-in-out ${
             isFloatingHovered ? "opacity-100 scale-100" : "opacity-0 scale-110"
           }`}
         >
           <span className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-white shadow-2xl flex items-center justify-center">
-            <Image
-              src={entregoEstrenoLogo}
-              alt="Entrego y Estreno Logo"
-              width={80}
-              height={80}
-              className="object-contain drop-shadow-2xl transition-all duration-500 ease-[cubic-bezier(.4,0,.2,1)]"
-              priority
-            />
+            {/* Logo Entrego y Estreno eliminado. */}
           </span>
         </span>
       </button>
@@ -217,14 +189,7 @@ const DetailsProduct: React.FC = () => {
 
                   {/* Imagen del dispositivo */}
                   <div className="flex justify-center">
-                    <Image
-                      src={deviceImage}
-                      alt="Samsung Galaxy S25"
-                      width={1000}
-                      height={1600}
-                      className="object-contain drop-shadow-2xl"
-                      priority
-                    />
+                    {/* Imagen dispositivo eliminada. */}
                   </div>
 
                   {/* Puntos indicadores */}
@@ -308,13 +273,7 @@ const DetailsProduct: React.FC = () => {
                           </div>
                         </div>
                         <div className="flex items-center py-1">
-                          <Image
-                            src={deviceImage}
-                            alt={device.name}
-                            width={56}
-                            height={80}
-                            className="object-contain"
-                          />
+                          {/* Imagen dispositivo eliminada. */}
                         </div>
                       </button>
                     ))}
@@ -440,14 +399,7 @@ const DetailsProduct: React.FC = () => {
             <div className="flex flex-col items-center space-y-6">
               <div className="relative bg-gray-100 rounded-2xl p-6 w-full max-w-sm">
                 <div className="flex justify-center">
-                  <Image
-                    src={deviceImage}
-                    alt="Samsung Galaxy S25"
-                    width={270}
-                    height={420}
-                    className="object-contain"
-                    priority
-                  />
+                  {/* Imagen dispositivo eliminada. */}
                 </div>
                 <div className="flex justify-center space-x-2 mt-4">
                   {[0, 1, 2, 3].map((index) => (
@@ -524,13 +476,7 @@ const DetailsProduct: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center py-1">
-                        <Image
-                          src={deviceImage}
-                          alt={device.name}
-                          width={56}
-                          height={80}
-                          className="object-contain"
-                        />
+                        {/* Imagen dispositivo eliminada. */}
                       </div>
                     </button>
                   ))}
@@ -666,28 +612,7 @@ const DetailsProduct: React.FC = () => {
                   key={benefit.title}
                   className="flex flex-col items-center text-center"
                 >
-                  <div
-                    className="w-16 h-16 rounded-full flex items-center justify-center mb-3"
-                    style={{ backgroundColor: "#002142" }}
-                  >
-                    {benefit.icon === addiIcon ? (
-                      <Image
-                        src={benefit.icon}
-                        alt={benefit.title}
-                        width={32}
-                        height={32}
-                        className="object-contain "
-                      />
-                    ) : (
-                      <Image
-                        src={benefit.icon}
-                        alt={benefit.title}
-                        width={32}
-                        height={32}
-                        className="object-contain filter brightness-0 invert"
-                      />
-                    )}
-                  </div>
+                  {/* Icono de beneficio eliminado. */}
                   <h3
                     className="font-semibold text-gray-900 text-sm"
                     style={{ fontFamily: "SamsungSharpSans" }}

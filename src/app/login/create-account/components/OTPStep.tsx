@@ -5,7 +5,6 @@ import { Mail, MessageCircle } from "lucide-react";
 import { useState } from "react";
 
 interface OTPStepProps {
-  email: string;
   otpCode: string;
   otpSent: boolean;
   onOTPChange: (code: string) => void;
@@ -14,7 +13,6 @@ interface OTPStepProps {
 }
 
 export function OTPStep({
-  email,
   otpCode,
   otpSent,
   onOTPChange,

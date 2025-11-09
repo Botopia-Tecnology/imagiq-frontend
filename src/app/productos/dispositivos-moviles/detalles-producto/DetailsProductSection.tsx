@@ -4,12 +4,10 @@ import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
 import { useCartContext } from "@/features/cart/CartContext";
-import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
 import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
-import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
 // Components
@@ -110,7 +108,6 @@ const DetailsProductSection: React.FC<{
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
-  const router = useRouter();
   const {
     addToFavorites,
     removeFromFavorites,
@@ -219,22 +216,21 @@ const DetailsProductSection: React.FC<{
         quantity: 1,
         image:
           productSelection.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
-            : fallbackImage.src),
+          (typeof product.image === "string" ? product.image : ""),
         sku: productSelection.selectedSku,
         ean: productSelection.selectedVariant?.ean || "",
         puntos_q: product.puntos_q ?? 4,
         color: productSelection.getSelectedColorOption()?.hex || undefined,
-        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
+        colorName:
+          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          undefined,
         capacity: productSelection.selection.selectedCapacity || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
-        skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
+        skuPostback: productSelection.selectedSkuPostback || "",
+        desDetallada: productSelection.selectedVariant?.desDetallada,
       });
-     
-    } catch (error) {
-      
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -242,7 +238,6 @@ const DetailsProductSection: React.FC<{
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    
   };
 
   const handleRequestStockNotification = async (email: string) => {
@@ -250,7 +245,10 @@ const DetailsProductSection: React.FC<{
     const selectedSku = productSelection.selectedSku;
 
     // Obtener el codigoMarket correspondiente a la variante seleccionada
-    const codigoMarket = productSelection.selectedCodigoMarket || product.apiProduct?.codigoMarketBase || '';
+    const codigoMarket =
+      productSelection.selectedCodigoMarket ||
+      product.apiProduct?.codigoMarketBase ||
+      "";
 
     await stockNotification.requestNotification({
       productName: product.name,
@@ -292,8 +290,6 @@ const DetailsProductSection: React.FC<{
       document.body.classList.remove("hide-main-navbar");
     };
   }, [showStickyBar]);
-
- 
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
@@ -377,12 +373,16 @@ const DetailsProductSection: React.FC<{
         productName={product.name}
         productImage={
           productSelection.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
-            : fallbackImage.src)
+          (typeof product.image === "string" ? product.image : "")
         }
-        selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
-        selectedStorage={productSelection.selection.selectedCapacity || undefined}
+        selectedColor={
+          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          undefined
+        }
+        selectedStorage={
+          productSelection.selection.selectedCapacity || undefined
+        }
         onNotificationRequest={handleRequestStockNotification}
       />
 
@@ -390,9 +390,7 @@ const DetailsProductSection: React.FC<{
         className="w-full bg-white min-h-screen pt-[75px] xl:pt-[75px]"
         style={{ fontFamily: "SamsungSharpSans" }}
       >
-        <div
-          className="hidden lg:block"
-        >
+        <div className="hidden lg:block">
           <div className="max-w-[1400px] mx-auto px-8 py-12">
             {/* Breadcrumb */}
             <div className="mb-8">
@@ -490,7 +488,9 @@ const DetailsProductSection: React.FC<{
                   }
                   currentPrice={getCurrentPrice()}
                   originalPrice={originalPrice}
-                  indcerointeres={productSelection.selectedVariant?.indcerointeres ?? 0}
+                  indcerointeres={
+                    productSelection.selectedVariant?.indcerointeres ?? 0
+                  }
                   allPrices={product.apiProduct?.precioeccommerce || []}
                   onAddToCart={handleAddToCart}
                   isLoading={loading}
@@ -544,7 +544,6 @@ const DetailsProductSection: React.FC<{
               discount={discountAmount}
               selectedVariant={productSelection.selectedVariant}
               loading={loading}
-              onBuyNow={handleBuyNow}
               onAddToCart={handleAddToCart}
               hasStock={hasStock()}
               onNotifyStock={stockNotification.openModal}

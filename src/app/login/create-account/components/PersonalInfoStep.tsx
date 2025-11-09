@@ -36,8 +36,6 @@ export function PersonalInfoStep({ formData, onChange, disabled }: PersonalInfoS
     hasSpecialChar: /[!@#$%^&*(),.?":{}|<>]/.test(formData.contrasena),
   };
 
-  const allRequirementsMet = Object.values(passwordRequirements).every(Boolean);
-
   // Parse fecha_nacimiento (YYYY-MM-DD) into day, month, year
   const parsedDate = formData.fecha_nacimiento ? formData.fecha_nacimiento.split('-') : ['', '', ''];
   const [year, month, day] = parsedDate;

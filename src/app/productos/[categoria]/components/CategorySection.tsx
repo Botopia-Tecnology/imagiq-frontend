@@ -20,7 +20,6 @@ import HeaderSection from "./HeaderSection";
 import SubmenuCarousel from "./SubmenuCarousel";
 import MenuCarousel from "./MenuCarousel";
 import SeriesFilterSkeleton from "./SeriesFilterSkeleton";
-import SkeletonCard from "@/components/SkeletonCard"; // Aún se usa para carga inicial
 import MobileFilterSidebar from "./MobileFilterSidebar";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";

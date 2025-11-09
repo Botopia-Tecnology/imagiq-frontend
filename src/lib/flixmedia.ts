@@ -56,7 +56,7 @@ export async function checkFlixmediaAvailabilityByEan(
     } else {
       return { available: false };
     }
-  } catch (error) {
+  } catch {
     return { available: false };
   }
 }
@@ -81,7 +81,7 @@ export async function findAvailableSku(skus: string[]): Promise<string | null> {
     // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
     const availableSku = await Promise.any(promises);
     return availableSku;
-  } catch (error) {
+  } catch {
     // Solo llega aquí si TODOS los SKUs fallaron (AggregateError)
     return null;
   }
@@ -107,7 +107,7 @@ export async function findAvailableEan(eans: string[]): Promise<string | null> {
     // Todas las peticiones se hacen en paralelo, reduciendo el tiempo total
     const availableEan = await Promise.any(promises);
     return availableEan;
-  } catch (error) {
+  } catch {
     // Solo llega aquí si TODOS los EANs fallaron (AggregateError)
     return null;
   }

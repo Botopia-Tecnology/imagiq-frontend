@@ -1,18 +1,20 @@
 // Carrusel de imágenes del dispositivo
 // Componente reutilizable para mostrar la imagen principal del dispositivo y navegación
-'use client';
+"use client";
 
 import React, { useState } from "react";
 import Image, { StaticImageData } from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import emptyImg from "@/img/empty.jpeg";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 
 interface DeviceCarouselProps {
   alt: string;
   imagePreviewUrl?: string;
   imageDetailsUrls?: string[];
-  onImageClick?: (images: (string | StaticImageData)[], currentIndex: number) => void;
+  onImageClick?: (
+    images: (string | StaticImageData)[],
+    currentIndex: number
+  ) => void;
 }
 
 /**
@@ -30,35 +32,40 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   const images: (string | StaticImageData)[] = [];
 
   // Agregar imagePreviewUrl como primera imagen si existe y no está vacío
-  if (imagePreviewUrl && imagePreviewUrl.trim() !== '') {
+  if (imagePreviewUrl && imagePreviewUrl.trim() !== "") {
     images.push(imagePreviewUrl);
   }
 
   // Agregar imageDetailsUrls, filtrando URLs vacías
-  const validDetailUrls = imageDetailsUrls.filter(url => url && url.trim() !== '');
+  const validDetailUrls = imageDetailsUrls.filter(
+    (url) => url && url.trim() !== ""
+  );
   images.push(...validDetailUrls);
 
   // Si no hay imágenes válidas del backend, usar empty.jpg
   if (images.length === 0) {
-    images.push(emptyImg);
+    images.push("");
   }
 
   // Obtener imagen actual optimizada con Cloudinary para detalles de producto
   const currentImageSrc = images[currentImageIndex];
   const cloudinaryImage = useCloudinaryImage({
-    src: typeof currentImageSrc === "string" ? currentImageSrc : currentImageSrc.src,
+    src:
+      typeof currentImageSrc === "string"
+        ? currentImageSrc
+        : currentImageSrc.src,
     transformType: "product-detail",
     responsive: true,
   });
-  
+
   const goToPrevious = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
   };
-  
+
   const goToNext = () => {
     setCurrentImageIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
   };
-  
+
   const goToImage = (index: number) => {
     setCurrentImageIndex(index);
   };
@@ -66,7 +73,9 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
   // Máximo de miniaturas visibles antes de mostrar "+X más"
   const maxVisibleThumbnails = 5;
   const hasMoreImages = images.length > maxVisibleThumbnails;
-  const visibleImages = hasMoreImages ? images.slice(0, maxVisibleThumbnails) : images;
+  const visibleImages = hasMoreImages
+    ? images.slice(0, maxVisibleThumbnails)
+    : images;
   const remainingCount = images.length - maxVisibleThumbnails;
 
   return (
@@ -127,20 +136,22 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
           </AnimatePresence>
         </button>
       </div>
-      
+
       {/* Miniaturas de imágenes - Fuera del fondo gris */}
       {images.length > 1 && (
         <div className="flex justify-center gap-2 mt-4 px-4">
           {visibleImages.map((image, index) => {
             // Obtener src de la imagen
-            const thumbnailSrc = typeof image === 'string' ? image : image.src;
+            const thumbnailSrc = typeof image === "string" ? image : image.src;
 
             return (
               <button
-                key={`thumbnail-${index}-${typeof image === 'string' ? image : 'static'}`}
+                key={`thumbnail-${index}-${
+                  typeof image === "string" ? image : "static"
+                }`}
                 className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden transition-all border-2 flex-shrink-0 ${
-                  index === currentImageIndex 
-                    ? "border-black shadow-md scale-105" 
+                  index === currentImageIndex
+                    ? "border-black shadow-md scale-105"
                     : "border-gray-200 hover:border-gray-400 opacity-70 hover:opacity-100"
                 }`}
                 onClick={() => goToImage(index)}
@@ -156,7 +167,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
               </button>
             );
           })}
-          
+
           {/* Indicador de más imágenes */}
           {hasMoreImages && (
             <button

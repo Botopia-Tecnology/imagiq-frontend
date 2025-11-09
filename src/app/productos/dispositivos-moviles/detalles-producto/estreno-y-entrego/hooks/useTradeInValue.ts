@@ -45,7 +45,7 @@ export function useTradeInValue({
             } else {
               setTradeInValue(0);
             }
-          } catch (error) {
+          } catch {
             setTradeInValue(0);
           } finally {
             setCalculatingValue(false);

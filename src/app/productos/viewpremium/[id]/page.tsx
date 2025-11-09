@@ -9,8 +9,6 @@ import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { useProductSelection } from "@/hooks/useProductSelection";
 import { useCartContext } from "@/features/cart/CartContext";
-import { useRouter } from "next/navigation";
-import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 
@@ -30,8 +28,8 @@ export default function ProductViewPage({ params }) {
   type ParamsWithId = { id: string };
   const id =
     resolvedParams &&
-      typeof resolvedParams === "object" &&
-      "id" in resolvedParams
+    typeof resolvedParams === "object" &&
+    "id" in resolvedParams
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
@@ -96,8 +94,6 @@ export default function ProductViewPage({ params }) {
 
   // Hooks para carrito y navegación
   const { addProduct } = useCartContext();
-  const router = useRouter();
-  const [loadingCart, setLoadingCart] = React.useState(false);
 
   // Hook para notificación de stock
   const stockNotification = useStockNotification();
@@ -111,38 +107,33 @@ export default function ProductViewPage({ params }) {
       return;
     }
 
-    setLoadingCart(true);
-    try {
-      await addProduct({
-        id: product.id,
-        name: product.name,
-        price: productSelection.selectedPrice || 0,
-        originalPrice: productSelection.selectedOriginalPrice || undefined,
-        stock: productSelection.selectedStockTotal ?? 1,
-        quantity: 1,
-        image:
-          productSelection.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
-            : fallbackImage.src),
-        sku: productSelection.selectedSku,
-        ean: productSelection.selectedVariant?.ean || "",
-        puntos_q: product.puntos_q ?? 4,
-        color: productSelection.getSelectedColorOption()?.hex || undefined,
-        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-        capacity: productSelection.selection.selectedCapacity || undefined,
-        ram: productSelection.selection.selectedMemoriaram || undefined,
-        skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
-      });
-    } finally {
-      setLoadingCart(false);
-    }
+    await addProduct({
+      id: product.id,
+      name: product.name,
+      price: productSelection.selectedPrice || 0,
+      originalPrice: productSelection.selectedOriginalPrice || undefined,
+      stock: productSelection.selectedStockTotal ?? 1,
+      quantity: 1,
+      image:
+        productSelection.selectedVariant?.imagePreviewUrl ||
+        (typeof product.image === "string" ? product.image : ""),
+      sku: productSelection.selectedSku,
+      ean: productSelection.selectedVariant?.ean || "",
+      puntos_q: product.puntos_q ?? 4,
+      color: productSelection.getSelectedColorOption()?.hex || undefined,
+      colorName:
+        productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+        productSelection.selection.selectedColor ||
+        undefined,
+      capacity: productSelection.selection.selectedCapacity || undefined,
+      ram: productSelection.selection.selectedMemoriaram || undefined,
+      skuPostback: productSelection.selectedSkuPostback || "",
+      desDetallada: productSelection.selectedVariant?.desDetallada,
+    });
   };
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    
   };
 
   const hasStock = () => {
@@ -160,7 +151,10 @@ export default function ProductViewPage({ params }) {
     const selectedColorSku = productSelection.selectedSku || undefined;
 
     // Obtener el codigoMarket correspondiente a la variante seleccionada
-    const codigoMarket = productSelection.selectedCodigoMarket || product.apiProduct?.codigoMarketBase || '';
+    const codigoMarket =
+      productSelection.selectedCodigoMarket ||
+      product.apiProduct?.codigoMarketBase ||
+      "";
 
     await stockNotification.requestNotification({
       productName: product.name,
@@ -244,18 +238,34 @@ export default function ProductViewPage({ params }) {
       {/* StickyPriceBar exacto de la página view normal */}
       <StickyPriceBar
         deviceName={product.name}
-        basePrice={productSelection.selectedPrice || (() => {
-          const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-          const priceStr = selectedCapacity?.price || product.price || "0";
-          return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
-        })()}
-        selectedStorage={productSelection.selection.selectedCapacity || ((selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB'))}
+        basePrice={
+          productSelection.selectedPrice ||
+          (() => {
+            const selectedCapacity = product.capacities?.find(
+              (c) => c.value === selectedStorage
+            );
+            const priceStr = selectedCapacity?.price || product.price || "0";
+            return Number.parseInt(String(priceStr).replaceAll(/\D/g, ""), 10);
+          })()
+        }
+        selectedStorage={
+          productSelection.selection.selectedCapacity ||
+          ((selectedStorage || undefined) &&
+            String(selectedStorage).replace(/(\d+)\s*gb\b/i, "$1 GB"))
+        }
         selectedColor={
           productSelection.getSelectedColorOption()?.nombreColorDisplay ||
           productSelection.selection.selectedColor ||
           (() => {
-            const colorObj = product.colors?.find(c => c.name === selectedColor);
-            return colorObj?.nombreColorDisplay || colorObj?.label || selectedColor || undefined;
+            const colorObj = product.colors?.find(
+              (c) => c.name === selectedColor
+            );
+            return (
+              colorObj?.nombreColorDisplay ||
+              colorObj?.label ||
+              selectedColor ||
+              undefined
+            );
           })()
         }
         indcerointeres={indcerointeres}
@@ -321,7 +331,7 @@ export default function ProductViewPage({ params }) {
           <div className="max-w-7xl mx-auto">
             <TradeInSection
               onTradeInComplete={(deviceName, value) => {
-                console.log('Trade-in completado:', deviceName, value);
+                console.log("Trade-in completado:", deviceName, value);
                 // Aquí puedes agregar lógica adicional si necesitas hacer algo cuando se completa el trade-in
               }}
             />
@@ -334,7 +344,7 @@ export default function ProductViewPage({ params }) {
 
       {/* Especificaciones y Flix Media */}
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0 -mt-8">
-        <Specifications product={product} flix={product} />
+        <Specifications product={product} />
       </div>
 
       {/* Botón de añadir al carrito al final de la página */}
@@ -351,12 +361,16 @@ export default function ProductViewPage({ params }) {
         productName={product.name}
         productImage={
           productSelection.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
-            : fallbackImage.src)
+          (typeof product.image === "string" ? product.image : "")
         }
-        selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
-        selectedStorage={productSelection.selection.selectedCapacity || undefined}
+        selectedColor={
+          productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          undefined
+        }
+        selectedStorage={
+          productSelection.selection.selectedCapacity || undefined
+        }
         onNotificationRequest={handleRequestStockNotification}
       />
 

@@ -1,7 +1,4 @@
 "use client";
-import Image from "next/image";
-import pseLogo from "@/img/iconos/logo-pse.png";
-import addiLogo from "@/img/iconos/addi_negro.png";
 import { PaymentMethod } from "../types";
 import { useEffect, useState } from "react";
 import { fetchBanks } from "../utils";
@@ -25,9 +22,9 @@ export default function AlternativePaymentMethods({
   );
   useEffect(() => {
     fetchBanks().then((res) => {
-      setBanks(res)
-    })
-  }, [])
+      setBanks(res);
+    });
+  }, []);
   return (
     <div
       className="px-6 pb-2 flex flex-col gap-2"
@@ -46,20 +43,17 @@ export default function AlternativePaymentMethods({
           <span className="font-medium text-black">PSE - Débito bancario</span>
         </span>
         <div className="flex items-center justify-center">
-          <Image
-            src={pseLogo}
-            alt="PSE"
-            width={35}
-            height={35}
-            className="object-contain"
-          />
+          {/* Logo PSE eliminado. */}
         </div>
       </label>
 
       {/* Bank selector for PSE */}
       {selectedMethod === "pse" && (
         <div className="ml-7 mt-2 mb-4">
-          <label htmlFor="bank-select" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="bank-select"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Selecciona tu banco
           </label>
           <select
@@ -92,13 +86,7 @@ export default function AlternativePaymentMethods({
           <span className="font-medium text-black">Addi - Paga después</span>
         </span>
         <div className="flex items-center justify-center">
-          <Image
-            src={addiLogo}
-            alt="Addi"
-            width={35}
-            height={35}
-            className="object-contain"
-          />
+          {/* Logo Addi eliminado. */}
         </div>
       </label>
     </div>

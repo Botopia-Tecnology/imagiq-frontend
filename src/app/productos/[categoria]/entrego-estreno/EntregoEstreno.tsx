@@ -1,11 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
-import entregoEstrenoLogo from "@/img/entrego-estreno/entrego-estreno-logo.png";
-import phoneIcon from "@/img/entrego-estreno/phone-icon.png";
-import tabletIcon from "@/img/entrego-estreno/tablet-icon.png";
-import contenidoCajaProducto from "@/img/entrego-estreno/contenido-caja-producto.png";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
@@ -69,14 +64,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = () => {
     >
       {/* Logo superior */}
       <div className="w-full flex justify-center -mb-18">
-        <Image
-          src={entregoEstrenoLogo}
-          alt="Logo Entrego y estreno"
-          width={260}
-          height={90}
-          className="object-contain"
-          priority
-        />
+        {/* Logo eliminado. */}
       </div>
       {/* Título y subtítulo */}
       <div className="w-full max-w-[1000px] flex flex-col items-center mb-4">
@@ -187,13 +175,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = () => {
               <span className="font-semibold text-[16px] text-[#222] mb-1 sm:mb-0">
                 Smartphone
               </span>
-              <Image
-                src={phoneIcon}
-                alt="Smartphone"
-                width={40}
-                height={40}
-                className="sm:w-[65px] sm:h-[65px] sm:ml-2"
-              />
+              {/* Icono Smartphone eliminado. */}
             </button>
             {/* Tablet button */}
             <button
@@ -206,13 +188,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = () => {
               <span className="font-semibold text-[16px] text-[#222] mb-1 sm:mb-0">
                 Tablet
               </span>
-              <Image
-                src={tabletIcon}
-                alt="Tablet"
-                width={40}
-                height={40}
-                className="sm:w-[65px] sm:h-[65px] sm:ml-2"
-              />
+              {/* Icono Tablet eliminado. */}
             </button>
           </div>
         </div>
@@ -560,14 +536,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = () => {
         {/* Desktop/tablet layout (horizontal) */}
         <div className="w-full flex flex-row justify-between items-end mb-4 hidden sm:flex">
           <div className="flex flex-row items-end" style={{ minWidth: 480 }}>
-            <Image
-              src={contenidoCajaProducto}
-              alt="Contenido de la caja"
-              width={440}
-              height={160}
-              className="object-contain"
-              priority
-            />
+            {/* Imagen contenido de la caja eliminada. */}
           </div>
           <div
             className="flex flex-col items-start justify-end text-[14px] text-[#222]"
@@ -589,14 +558,7 @@ const EntregoEstreno: React.FC<{ product: Product }> = () => {
         {/* Mobile layout (vertical) */}
         <div className="w-full flex flex-col items-center mb-4 sm:hidden">
           <div className="w-full flex justify-center mb-3">
-            <Image
-              src={contenidoCajaProducto}
-              alt="Contenido de la caja"
-              width={260}
-              height={95}
-              className="object-contain"
-              priority
-            />
+            {/* Imagen contenido de la caja eliminada. */}
           </div>
           <div
             className="w-full flex flex-col items-start justify-center text-[14px] text-[#222]"

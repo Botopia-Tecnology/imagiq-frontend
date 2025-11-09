@@ -7,7 +7,6 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { usePointsContext } from "@/contexts/PointsContext";
 import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
-import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 
 // Type for the product selection data - subset of UseProductSelectionReturn
 type ProductSelectionData = {
@@ -31,53 +30,53 @@ interface AddToCartButtonProps {
   onNotifyStock?: () => void;
 }
 
-const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelection, onNotifyStock }) => {
+const AddToCartButton: React.FC<AddToCartButtonProps> = ({
+  product,
+  productSelection,
+  onNotifyStock,
+}) => {
   const { addProduct } = useCartContext();
   const { recalculatePoints } = usePointsContext();
   const [loading, setLoading] = React.useState(false);
 
   // Verificar si hay stock (con null check para productSelection)
-  const hasStock = productSelection?.selectedStockTotal !== null &&
-                   productSelection?.selectedStockTotal !== undefined &&
-                   productSelection?.selectedStockTotal > 0;
+  const hasStock =
+    productSelection?.selectedStockTotal !== null &&
+    productSelection?.selectedStockTotal !== undefined &&
+    productSelection?.selectedStockTotal > 0;
 
   const handleAddToCart = async () => {
-    if (!productSelection || !productSelection.selectedSku) {
+    if (!productSelection?.selectedSku) {
       alert("Por favor selecciona todas las opciones del producto");
       return;
     }
 
     setLoading(true);
-    try {
-      await addProduct({
-        id: product.id,
-        name: product.name,
-        price: productSelection.selectedPrice || 0,
-        originalPrice: productSelection.selectedOriginalPrice || undefined,
-        stock: productSelection.selectedStockTotal ?? 1,
-        quantity: 1,
-        image:
-          productSelection.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
-            : fallbackImage.src),
-        sku: productSelection.selectedSku,
-        ean: productSelection.selectedVariant?.ean || "",
-        puntos_q: product.puntos_q ?? 4,
-        color: productSelection.getSelectedColorOption()?.hex || undefined,
-        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-        capacity: productSelection.selection.selectedCapacity || undefined,
-        ram: productSelection.selection.selectedMemoriaram || undefined,
-        skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
-      });
-      recalculatePoints();
-      
-    } catch (error) {
-      
-    } finally {
-      setLoading(false);
-    }
+    await addProduct({
+      id: product.id,
+      name: product.name,
+      price: productSelection.selectedPrice || 0,
+      originalPrice: productSelection.selectedOriginalPrice || undefined,
+      stock: productSelection.selectedStockTotal ?? 1,
+      quantity: 1,
+      image:
+        productSelection.selectedVariant?.imagePreviewUrl ||
+        (typeof product.image === "string" ? product.image : ""),
+      sku: productSelection.selectedSku,
+      ean: productSelection.selectedVariant?.ean || "",
+      puntos_q: product.puntos_q ?? 4,
+      color: productSelection.getSelectedColorOption()?.hex || undefined,
+      colorName:
+        productSelection.getSelectedColorOption()?.nombreColorDisplay ||
+        productSelection.selection.selectedColor ||
+        undefined,
+      capacity: productSelection.selection.selectedCapacity || undefined,
+      ram: productSelection.selection.selectedMemoriaram || undefined,
+      skuPostback: productSelection.selectedSkuPostback || "",
+      desDetallada: productSelection.selectedVariant?.desDetallada,
+    });
+    recalculatePoints();
+    setLoading(false);
   };
 
   // Formatear precio
@@ -151,7 +150,10 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
           <div className="text-center text-sm text-gray-600">
             {productSelection.selection.selectedColor && (
               <span className="mr-2">
-                Color: {productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor}
+                Color:{" "}
+                {productSelection.getSelectedColorOption()
+                  ?.nombreColorDisplay ||
+                  productSelection.selection.selectedColor}
               </span>
             )}
             {productSelection.selection.selectedCapacity && (
@@ -160,7 +162,9 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
               </span>
             )}
             {productSelection.selection.selectedMemoriaram && (
-              <span>| RAM: {productSelection.selection.selectedMemoriaram}</span>
+              <span>
+                | RAM: {productSelection.selection.selectedMemoriaram}
+              </span>
             )}
           </div>
         )}

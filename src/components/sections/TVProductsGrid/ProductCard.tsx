@@ -11,7 +11,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { posthogUtils } from "@/lib/posthogClient";
 import type { ProductCardProps as ProductData } from "@/app/productos/components/ProductCard";
-import emptyImg from "@/img/empty.jpeg";
 
 interface ProductCardProps {
   product: ProductData;
@@ -29,11 +28,12 @@ export function ProductCard({ product }: ProductCardProps) {
   };
 
   // Determinar la URL del producto
-  const productSku = product.selectedColor?.sku || product.colors?.[0]?.sku || product.id;
+  const productSku =
+    product.selectedColor?.sku || product.colors?.[0]?.sku || product.id;
   const productUrl = `/productos/viewpremium/${productSku}`;
 
   // Usar la imagen (puede ser base64 o URL) o empty como fallback
-  const imageUrl = product.image || emptyImg;
+  const imageUrl = product.image || "";
 
   return (
     <Link

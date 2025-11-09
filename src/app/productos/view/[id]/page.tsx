@@ -4,12 +4,15 @@ import React, { use } from "react";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
-import smartphonesImg from "@/img/dispositivosmoviles/cel1.png";
+
 import {
   ProductCardProps,
   ProductColor,
 } from "@/app/productos/components/ProductCard";
-import type { ProductVariant, ColorOption, UseProductSelectionReturn } from "@/hooks/useProductSelection";
+import type {
+  ProductVariant,
+  ColorOption,
+} from "@/hooks/useProductSelection";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import AddToCartButton from "../../viewpremium/components/AddToCartButton";
@@ -35,8 +38,7 @@ type ProductSelectionData = {
 
 // Convierte ProductCardProps a formato esperado por ViewProduct
 function convertProductForView(product: ProductCardProps) {
-  const image =
-    typeof product.image === "string" ? smartphonesImg : product.image;
+  const image = typeof product.image === "string" ? "" : product.image;
   const safeValue = (
     value: string | number | null | undefined,
     fallback: string = "None"
@@ -69,14 +71,31 @@ function convertProductForView(product: ProductCardProps) {
     specs: [
       { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
       { label: "Modelo", value: safeValue(product.apiProduct?.modelo, "None") },
-      { label: "Categoría", value: safeValue(product.apiProduct?.categoria, "None") },
-      { label: "Subcategoría", value: safeValue(product.apiProduct?.subcategoria, "None") },
-      { label: "Capacidad", value: safeValue(product.selectedCapacity?.value || product.capacities?.[0]?.value, "None") },
-      { label: "SKU", value: safeValue(product.selectedColor?.sku || product.colors?.[0]?.sku, "None") },
+      {
+        label: "Categoría",
+        value: safeValue(product.apiProduct?.categoria, "None"),
+      },
+      {
+        label: "Subcategoría",
+        value: safeValue(product.apiProduct?.subcategoria, "None"),
+      },
+      {
+        label: "Capacidad",
+        value: safeValue(
+          product.selectedCapacity?.value || product.capacities?.[0]?.value,
+          "None"
+        ),
+      },
+      {
+        label: "SKU",
+        value: safeValue(
+          product.selectedColor?.sku || product.colors?.[0]?.sku,
+          "None"
+        ),
+      },
     ],
   };
 }
-
 
 // Wrapper para manejar el estado de carga de variantes
 function ProductContentWithVariants({
@@ -84,7 +103,7 @@ function ProductContentWithVariants({
   onVariantsReady,
   onProductSelectionChange,
   productSelection,
-  onNotifyStock
+  onNotifyStock,
 }: {
   product: ProductCardProps;
   onVariantsReady: (ready: boolean) => void;
@@ -123,7 +142,8 @@ export default function ProductViewPage({ params }) {
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
   const [variantsReady, setVariantsReady] = React.useState(false);
-  const [productSelection, setProductSelection] = React.useState<ProductSelectionData | null>(null);
+  const [productSelection, setProductSelection] =
+    React.useState<ProductSelectionData | null>(null);
   const stockNotification = useStockNotification();
 
   // Reset variants ready cuando cambia el producto
@@ -132,9 +152,12 @@ export default function ProductViewPage({ params }) {
   }, [id]);
 
   // Callback para recibir productSelection desde DetailsProductSection
-  const handleProductSelectionChange = React.useCallback((selection: ProductSelectionData) => {
-    setProductSelection(selection);
-  }, []);
+  const handleProductSelectionChange = React.useCallback(
+    (selection: ProductSelectionData) => {
+      setProductSelection(selection);
+    },
+    []
+  );
 
   // Handler para notificación de stock
   const handleRequestStockNotification = async (email: string) => {
@@ -144,7 +167,10 @@ export default function ProductViewPage({ params }) {
     const selectedSku = productSelection.selectedSku;
 
     // Obtener el codigoMarket correspondiente a la variante seleccionada
-    const codigoMarket = productSelection.selectedVariant?.codigoMarket || product.apiProduct?.codigoMarketBase || '';
+    const codigoMarket =
+      productSelection.selectedVariant?.codigoMarket ||
+      product.apiProduct?.codigoMarketBase ||
+      "";
 
     await stockNotification.requestNotification({
       productName: product.name,
@@ -197,17 +223,21 @@ export default function ProductViewPage({ params }) {
         productName={product.name}
         productImage={
           productSelection?.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
-            : smartphonesImg.src)
+          (typeof product.image === "string" ? product.image : "")
         }
-        selectedColor={productSelection?.getSelectedColorOption?.()?.nombreColorDisplay || productSelection?.selection?.selectedColor || undefined}
-        selectedStorage={productSelection?.selection?.selectedCapacity || undefined}
+        selectedColor={
+          productSelection?.getSelectedColorOption?.()?.nombreColorDisplay ||
+          productSelection?.selection?.selectedColor ||
+          undefined
+        }
+        selectedStorage={
+          productSelection?.selection?.selectedCapacity || undefined
+        }
         onNotificationRequest={handleRequestStockNotification}
       />
 
       {/* Renderizar contenido (oculto o visible según estado) */}
-      <div style={{ display: isFullyLoaded ? 'block' : 'none' }}>
+      <div style={{ display: isFullyLoaded ? "block" : "none" }}>
         <ProductContentWithVariants
           product={product}
           onVariantsReady={setVariantsReady}

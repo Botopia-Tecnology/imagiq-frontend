@@ -11,12 +11,11 @@
  * - Datos quemados (mock) para desarrollo
  */
 
-import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
 import  { StaticImageData } from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import React, { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
+import React, { useEffect } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 import { productsMock } from "../components/productsMock";
@@ -50,19 +49,6 @@ type RawProduct = {
 
 // Utilidad para convertir RawProduct a ProductCardProps compatible
 function convertToProductCardProps(product: RawProduct): ProductCardProps {
-  // Convertir sku y ean a arrays si son strings
-  const skuArray = typeof product.sku === 'string'
-    ? product.sku.split(',').map(s => s.trim()).filter(Boolean)
-    : Array.isArray(product.skuArray)
-      ? product.skuArray
-      : [];
-
-  const eanArray = typeof product.ean === 'string'
-    ? product.ean.split(',').map(e => e.trim()).filter(Boolean)
-    : Array.isArray(product.eanArray)
-      ? product.eanArray
-      : [];
-
   return {
     id: String(product.id ?? ""),
     name: String(product.name ?? ""),
@@ -94,7 +80,6 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
 
 export default function ViewProduct({
   product,
-  flix,
 }: Readonly<{
   product: RawProduct;
   flix?: ProductCardProps;
@@ -108,11 +93,8 @@ export default function ViewProduct({
     () => convertToProductCardProps(safeProduct),
     [safeProduct]
   );
-  const router = useRouter();
   const pathname = usePathname();
   const isProductDetailView = pathname?.startsWith("/productos/view/") ?? false;
-  const { addProduct } = useCartContext();
-  const [cartFeedback, setCartFeedback] = useState<string | null>(null);
 
   /**
    * Hook personalizado para control avanzado del navbar fijo - ANTI-FLICKER
@@ -162,53 +144,8 @@ export default function ViewProduct({
     );
   }
 
-  // Handlers
-  // Mejorado: Añadir al carrito igual que ProductCard
-  const handleAddToCart = () => {
-    // Validación estricta: debe existir un SKU válido del color seleccionado
-    if (!productCard.selectedColor?.sku) {
-      console.error('Error al agregar al carrito:', {
-        product_id: safeProduct.id,
-        product_name: safeProduct.name,
-        selectedColor: productCard.selectedColor,
-        available_colors: productCard.colors,
-        error: 'No se ha seleccionado un color válido con SKU'
-      });
-      alert('Por favor selecciona un color antes de agregar al carrito');
-      return;
-    }
-
-    addProduct({
-      id: safeProduct.id,
-      name: safeProduct.name,
-      image:
-        typeof safeProduct.image === "string"
-          ? safeProduct.image
-          : safeProduct.image.src || "",
-      price:
-        typeof safeProduct.price === "string"
-          ? parseInt(safeProduct.price.replace(/[^\d]/g, ""))
-          : safeProduct.price || 0,
-      quantity: 1,
-      sku: productCard.selectedColor.sku, // SKU estricto del color seleccionado
-      ean: productCard.selectedColor.ean,
-    });
-    setCartFeedback("Producto añadido al carrito");
-    setTimeout(() => setCartFeedback(null), 1200);
-  };
-  // Mejorado: Comprar, navega al carrito
-  const handleBuy = () => {
-    router.push("/carrito");
-  };
-
   return (
     <div className="min-h-screen w-full flex flex-col mt-0 pt-0">
-      {/* Feedback UX al añadir al carrito */}
-      {cartFeedback && (
-        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50 animate-fadeInContent font-bold text-lg">
-          {cartFeedback}
-        </div>
-      )}
 {/*  */}
 
       {/* Estilos CSS globales optimizados para transiciones cinematográficas */}
@@ -257,12 +194,12 @@ export default function ViewProduct({
         `,
         }}
       />
-      <div className="h-[1px] w-full" />
+      <div className="h-px w-full" />
       <BenefitsSection />
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
 
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
-        <Specifications product={productCard} flix={flix}  />
+        <Specifications product={productCard} />
       </div>
     </div>
   );

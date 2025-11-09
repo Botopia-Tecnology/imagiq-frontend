@@ -2,8 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import type { FC } from "react";
 import { posthogUtils } from "@/lib/posthogClient";
-import logoSamsungWhite from "@/img/logo_Samsung.png";
-import logoSamsungBlack from "@/img/Samsung_black.png";
 
 type Props = {
   showWhiteLogo: boolean;
@@ -30,7 +28,9 @@ export const NavbarLogo: FC<Props> = ({ showWhiteLogo, onNavigate }) => (
       priority
     />
     <Image
-      src={showWhiteLogo ? logoSamsungWhite : logoSamsungBlack}
+      src={
+        "https://res.cloudinary.com/dqsdl9bwv/image/upload/Dise%C3%B1o_sin_t%C3%ADtulo_-_2025-11-08T184830.515_zsqkiu"
+      }
       alt="Samsung"
       height={42}
       width={118}

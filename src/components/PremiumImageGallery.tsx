@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import Image, { StaticImageData } from "next/image";
-import emptyImg from "@/img/empty.jpeg";
+
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -38,12 +38,12 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
 
   // 1. PRIMERO: Videos premium (si existen)
   if (video_premium && video_premium.length > 0) {
-    images.push(...video_premium.filter(url => url && url.trim() !== ""));
+    images.push(...video_premium.filter((url) => url && url.trim() !== ""));
   }
 
   // 2. SEGUNDO: Imágenes premium (si existen)
   if (imagen_premium && imagen_premium.length > 0) {
-    images.push(...imagen_premium.filter(url => url && url.trim() !== ""));
+    images.push(...imagen_premium.filter((url) => url && url.trim() !== ""));
   }
 
   // 3. TERCERO: Imagen principal (fallback)
@@ -52,25 +52,27 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
   }
 
   // 4. CUARTO: Imágenes adicionales (fallback)
-  const validDetailUrls = (imageDetailsUrls || []).filter((url) => {
-    // Si es un array, tomar el primer elemento
-    if (Array.isArray(url)) {
-      return url[0] && typeof url[0] === 'string' && url[0].trim() !== "";
-    }
-    // Si es un string
-    return url && typeof url === 'string' && url.trim() !== "";
-  }).map((url) => {
-    // Si es un array, devolver el primer elemento
-    if (Array.isArray(url)) {
-      return url[0];
-    }
-    return url;
-  });
-  
+  const validDetailUrls = (imageDetailsUrls || [])
+    .filter((url) => {
+      // Si es un array, tomar el primer elemento
+      if (Array.isArray(url)) {
+        return url[0] && typeof url[0] === "string" && url[0].trim() !== "";
+      }
+      // Si es un string
+      return url && typeof url === "string" && url.trim() !== "";
+    })
+    .map((url) => {
+      // Si es un array, devolver el primer elemento
+      if (Array.isArray(url)) {
+        return url[0];
+      }
+      return url;
+    });
+
   images.push(...validDetailUrls);
 
   if (images.length === 0) {
-    images.push(emptyImg);
+    images.push("");
   }
 
   // Auto-play del carrusel (cambia cada 4 segundos)
@@ -142,7 +144,10 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
 
   const currentImageSrc = images[currentImageIndex];
   const cloudinaryImage = useCloudinaryImage({
-    src: typeof currentImageSrc === "string" ? currentImageSrc : currentImageSrc.src,
+    src:
+      typeof currentImageSrc === "string"
+        ? currentImageSrc
+        : currentImageSrc.src,
     transformType: "product-detail",
     responsive: true,
   });
@@ -229,7 +234,8 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
         {images.length > 1 && (
           <div className="flex justify-center gap-3 mt-6 px-4">
             {visibleImages.map((image, index) => {
-              const thumbnailSrc = typeof image === "string" ? image : image.src;
+              const thumbnailSrc =
+                typeof image === "string" ? image : image.src;
 
               return (
                 <button
@@ -260,7 +266,9 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
                 onClick={() => openModal(maxVisibleThumbnails)}
                 aria-label={`Ver ${remainingCount} imágenes más`}
               >
-                <span className="text-sm font-bold text-gray-700">+{remainingCount}</span>
+                <span className="text-sm font-bold text-gray-700">
+                  +{remainingCount}
+                </span>
                 <span className="text-xs text-gray-600">más</span>
               </button>
             )}
@@ -377,4 +385,3 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
 };
 
 export default PremiumImageGallery;
-

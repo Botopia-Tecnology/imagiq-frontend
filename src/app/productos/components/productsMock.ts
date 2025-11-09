@@ -1,11 +1,10 @@
 // Mock global de productos para desarrollo
-import smartphonesImg from "@/img/categorias/Smartphones.png";
 
 export const productsMock = [
   {
     id: "galaxy-a16",
     name: "Samsung Galaxy A16",
-    image: smartphonesImg,
+    image: "",
     colors: [
       { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
       { name: "black", hex: "#000000", label: "Negro" },
@@ -25,7 +24,7 @@ export const productsMock = [
   {
     id: "galaxy-a25",
     name: "Samsung Galaxy A25",
-    image: smartphonesImg,
+    image: "",
     colors: [
       { name: "navy", hex: "#1E3A8A", label: "Azul Marino" },
       { name: "black", hex: "#000000", label: "Negro" },
@@ -43,7 +42,7 @@ export const productsMock = [
   {
     id: "galaxy-a26",
     name: "Samsung Galaxy A26",
-    image: smartphonesImg,
+    image: "",
     colors: [
       { name: "white", hex: "#FFFFFF", label: "Blanco" },
       { name: "black", hex: "#000000", label: "Negro" },
@@ -63,7 +62,7 @@ export const productsMock = [
   {
     id: "galaxy-a15-256gb",
     name: "Samsung Galaxy A15 256 GB",
-    image: smartphonesImg,
+    image: "",
     colors: [
       { name: "white", hex: "#FFFFFF", label: "Blanco" },
       { name: "black", hex: "#000000", label: "Negro" },
@@ -80,7 +79,7 @@ export const productsMock = [
   {
     id: "galaxy-a15-4gb",
     name: "Samsung Galaxy A15 4GB 128GB",
-    image: smartphonesImg,
+    image: "",
     colors: [
       { name: "yellow", hex: "#FCD34D", label: "Amarillo" },
       { name: "black", hex: "#000000", label: "Negro" },
@@ -98,7 +97,7 @@ export const productsMock = [
   {
     id: "galaxy-a15-128gb",
     name: "Samsung Galaxy A15 4GB 128GB",
-    image: smartphonesImg,
+    image: "",
     colors: [
       { name: "blue", hex: "#3B82F6", label: "Azul" },
       { name: "black", hex: "#000000", label: "Negro" },

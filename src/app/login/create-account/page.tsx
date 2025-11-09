@@ -246,7 +246,6 @@ export default function CreateAccountPage() {
       case 2:
         return (
           <OTPStep
-            email={formData.email}
             otpCode={otpCode}
             otpSent={otpSent}
             onOTPChange={setOtpCode}

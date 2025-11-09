@@ -7,28 +7,24 @@
 "use client";
 
 import Image from "next/image";
-import SamsungHealth from "@/img/hero/Samsung_health.png";
-import CambiateGalaxy from "@/img/hero/Cambiate_Galaxy.png";
-import OneUI from "@/img/hero/One_UI.png";
-import SamsungVisionAI from "@/img/hero/Samsung_Vision.png";
 
 // Datos escalables para las historias
 const historias = [
   {
     title: "Samsung Health",
-    image: SamsungHealth,
+    image: "",
   },
   {
     title: "Cambiate a Galaxy",
-    image: CambiateGalaxy,
+    image: "",
   },
   {
     title: "One UI",
-    image: OneUI,
+    image: "",
   },
   {
     title: "Samsung Vision AI",
-    image: SamsungVisionAI,
+    image: "",
   },
 ];
 

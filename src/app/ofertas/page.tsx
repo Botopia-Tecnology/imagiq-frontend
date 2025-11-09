@@ -6,10 +6,6 @@
  */
 import Image from "next/image";
 import React from "react";
-import audifonosIcon from "@/img/ofertas/audifonos_icon.png";
-import tvIcon from "@/img/ofertas/tv_icon.png";
-import phoneIcon from "@/img/ofertas/phone_icon.png";
-import lavadoraIcon from "@/img/ofertas/lavadora_icon.png";
 
 // Opcional: Si el Navbar requiere prop para transparencia, se debe pasar desde layout o contexto
 
@@ -18,28 +14,28 @@ import Link from "next/link";
 const ofertas = [
   {
     title: "Accesorios",
-    icon: audifonosIcon,
+    icon: "",
     info: "Más información",
     bg: "bg-[#1A407A]",
     href: "/productos/ofertas?seccion=accesorios",
   },
   {
     title: "TV, Monitores y Audio",
-    icon: tvIcon,
+    icon: "",
     info: "Más información",
     bg: "bg-[#285CA8]",
     href: "/productos/ofertas?seccion=tv-monitores-audio",
   },
   {
     title: "Smartphones y Tablets",
-    icon: phoneIcon,
+    icon: "",
     info: "Más información",
     bg: "bg-[#4A7DC3]",
     href: "/productos/ofertas?seccion=smartphones-tablets",
   },
   {
     title: "Electrodomésticos",
-    icon: lavadoraIcon,
+    icon: "",
     info: "Más información",
     bg: "bg-[#7CA6D6]",
     whiteIcon: true,

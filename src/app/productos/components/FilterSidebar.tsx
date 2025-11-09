@@ -14,7 +14,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, ChevronUp, X } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";

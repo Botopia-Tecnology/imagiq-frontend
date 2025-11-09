@@ -5,7 +5,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export async function payWithAddi(
   props: AddiPaymentData
-): Promise<{ redirectUrl: string } | null> {
+): Promise<{ redirectUrl: string } | { error: string; message: string }> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/payments/addi/apply`, {
       method: "POST",
@@ -15,19 +15,20 @@ export async function payWithAddi(
       body: JSON.stringify(props),
     });
     if (!res.ok) {
-      throw new Error("Failed to initiate Addi payment");
+      const errorData = await res.json();
+      return { error: "payment_failed", message: errorData.message || "Failed to initiate Addi payment" };
     }
     const data = (await res.json()) as { redirectUrl: string };
     return data;
   } catch (error) {
     console.error("Error initiating Addi payment:", error);
-    return null;
+    return { error: "network_error", message: "Error de conexión al procesar el pago" };
   }
 }
 
 export async function payWithCard(
   props: CardPaymentData
-): Promise<{ redirectionUrl: string } | null> {
+): Promise<{ redirectionUrl: string } | { error: string; message: string }> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/payments/epayco/credit-card`, {
       method: "POST",
@@ -40,17 +41,18 @@ export async function payWithCard(
       }),
     });
     if (!res.ok) {
-      throw new Error("Failed to process card payment");
+      const errorData = await res.json();
+      return { error: "payment_failed", message: errorData.message || "Failed to process card payment" };
     }
     const data = (await res.json()) as { redirectionUrl: string };
     return data;
   } catch (error) {
     console.error("Error processing card payment:", error);
-    return null;
+    return { error: "network_error", message: "Error de conexión al procesar el pago" };
   }
 }
 
-export async function payWithPse(props: PsePaymentData) {
+export async function payWithPse(props: PsePaymentData): Promise<{ redirectUrl: string } | { error: string; message: string }> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/payments/epayco/pse`, {
       method: "POST",
@@ -60,13 +62,14 @@ export async function payWithPse(props: PsePaymentData) {
       body: JSON.stringify(props),
     });
     if (!res.ok) {
-      throw new Error("Failed to process PSE payment");
+      const errorData = await res.json();
+      return { error: "payment_failed", message: errorData.message || "Failed to process PSE payment" };
     }
     const data = await res.json();
     return data;
   } catch (error) {
     console.error("Error processing PSE payment:", error);
-    return null;
+    return { error: "network_error", message: "Error de conexión al procesar el pago" };
   }
 }
 

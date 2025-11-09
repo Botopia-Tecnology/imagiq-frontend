@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
@@ -171,12 +172,23 @@ export function useCheckoutLogic() {
               direccionId: direction.id,
             },
           });
-          if (res === null) {
+          if ("error" in res) {
+            // Check if it's an out-of-stock error
+            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
+                res.message.includes("no está disponible") ||
+                res.message.includes("not available")) {
+              toast.error("Producto(s) no disponible(s)", {
+                description: res.message,
+                duration: 5000,
+              });
+              setIsProcessing(false);
+              return;
+            }
+            // For other errors, redirect to error page
             redirectToError();
           } else {
             router.push(res.redirectUrl);
           }
-
           break;
 
         case "tarjeta":
@@ -204,7 +216,19 @@ export function useCheckoutLogic() {
               direccionId: direction.id,
             },
           });
-          if (res === null) {
+          if ("error" in res) {
+            // Check if it's an out-of-stock error
+            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
+                res.message.includes("no está disponible") ||
+                res.message.includes("not available")) {
+              toast.error("Producto(s) no disponible(s)", {
+                description: res.message,
+                duration: 5000,
+              });
+              setIsProcessing(false);
+              return;
+            }
+            // For other errors, redirect to error page
             redirectToError();
             break;
           }
@@ -233,8 +257,21 @@ export function useCheckoutLogic() {
               direccionId: direction.id,
             },
           });
-          if (!res) {
+          if ("error" in res) {
+            // Check if it's an out-of-stock error
+            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
+                res.message.includes("no está disponible") ||
+                res.message.includes("not available")) {
+              toast.error("Producto(s) no disponible(s)", {
+                description: res.message,
+                duration: 5000,
+              });
+              setIsProcessing(false);
+              return;
+            }
+            // For other errors, redirect to error page
             redirectToError();
+            break;
           }
           router.push(res.redirectUrl);
           break;

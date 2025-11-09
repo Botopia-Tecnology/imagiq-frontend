@@ -428,6 +428,8 @@ export interface ProductApiData {
   ean:string[];
   desDetallada: string[];
   stockTotal: number[];
+  cantidadTiendas: number[];
+  cantidadTiendasReserva: number[];
   urlImagenes: string[];
   urlRender3D: string[];
   imagePreviewUrl: string[];

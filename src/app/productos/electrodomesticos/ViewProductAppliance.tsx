@@ -19,7 +19,6 @@ import { motion } from "framer-motion";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import setingLogo from "@/img/iconos/Setting_line_negro.png";
 import packageCar from "@/img/iconos/package_car_negro.png";
-import samsungLogo from "@/img/Samsung_black.png";
 import EspecificacionesProduct from "./EspecificacionesProduct";
 import medidas from "../../../img/electrodomesticos/medidas.png";
 import VideosSection from "./VideosSection";
@@ -144,7 +143,7 @@ export default function ViewProductAppliance({
           : safeProduct.price || 0,
       quantity: 1,
       sku: safeProduct.id, // Add required sku property
-      ean: safeProduct.id, 
+      ean: safeProduct.id,
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);
@@ -356,7 +355,7 @@ export default function ViewProductAppliance({
                 onClick={() => (window.location.href = "/")}
               >
                 <Image
-                  src={samsungLogo}
+                  src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
                   alt="Samsung Logo"
                   width={110}
                   height={32}

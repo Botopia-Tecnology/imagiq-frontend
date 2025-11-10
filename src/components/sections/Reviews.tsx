@@ -307,7 +307,7 @@ const Reviews = () => {
             <div
               ref={scrollRef}
               className="flex flex-nowrap gap-20 w-[calc(70vw_*_16)] animate-reviews-infinito-mobile"
-              style={{ animationDuration: `${reviewsWithColors.length * 12}s` }}
+              style={{ animationDuration: `${reviewsWithColors.length * 15}s` }}
               role="list"
               aria-label="Opiniones de clientes"
             >
@@ -320,18 +320,19 @@ const Reviews = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "relative flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg cursor-pointer"
+                      "relative flex flex-col items-center transition-all duration-500 cursor-pointer hover:shadow-xl"
                     )}
                     style={{
                       height: "340px",
                       padding: "32px 16px",
-                      boxShadow: "0 12px 36px rgba(0,0,0,0.13)",
+                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "flex-start",
                       opacity: 1,
                       zIndex: 10,
+                      border:"1px solid #E5E7EB",
                       transform: "scale(1)",
                       transition:
                         "box-shadow 0.3s, transform 0.3s, opacity 0.3s",

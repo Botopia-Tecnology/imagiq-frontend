@@ -37,37 +37,6 @@ const getInitial = (name: string) => {
   return name.charAt(0).toUpperCase();
 };
 
-// Datos de las reseñas (pueden venir de props, API, etc.)
-// const reviews = [
-//   {
-//     id: 1,
-//     name: "Carlos P.",
-//     initial: "C",
-//     color: "bg-green-200 text-gray-700",
-//     text: "Llevo dos semanas con mi nuevo Galaxy y me parece increíble la batería. Dura todo el día sin problema. Además, el diseño es espectacular.",
-//   },
-//   {
-//     id: 2,
-//     name: "Laura M.",
-//     initial: "L",
-//     color: "bg-blue-500 text-white",
-//     text: "Excelente experiencia de compra, la atención fue rápida y pude resolver todas mis dudas con el asistente virtual. El Galaxy S25 superó mis expectativas.",
-//   },
-//   {
-//     id: 3,
-//     name: "Andrés R.",
-//     initial: "A",
-//     color: "bg-orange-600 text-white",
-//     text: "El proceso de entrega fue muy ágil y el celular llegó en perfectas condiciones. Me encantó la pantalla y la cámara, realmente impresionantes.",
-//   },
-//   {
-//     id: 4,
-//     name: "Valentina C.",
-//     initial: "V",
-//     color: "bg-pink-300 text-white",
-//     text: "Muy buen producto, aunque me costó un poco configurar algunas funciones al inicio. El soporte técnico me ayudó en minutos. ¡Muy recomendados!",
-//   },
-// ];
 
 const Reviews = () => {
   const [active, setActive] = useState(0); // Index de la card central

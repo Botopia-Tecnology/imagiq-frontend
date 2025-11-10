@@ -8,380 +8,64 @@
  * - Experiencia de usuario premium
  */
 
-import { useState, useRef } from "react";
-import { cn } from "@/lib/utils";
-
-// Datos de las reseñas (pueden venir de props, API, etc.)
-const reviews = [
-  {
-    id: 1,
-    name: "Carlos P.",
-    initial: "C",
-    color: "bg-green-200 text-gray-700",
-    text: "Llevo dos semanas con mi nuevo Galaxy y me parece increíble la batería. Dura todo el día sin problema. Además, el diseño es espectacular.",
-  },
-  {
-    id: 2,
-    name: "Laura M.",
-    initial: "L",
-    color: "bg-blue-500 text-white",
-    text: "Excelente experiencia de compra, la atención fue rápida y pude resolver todas mis dudas con el asistente virtual. El Galaxy S25 superó mis expectativas.",
-  },
-  {
-    id: 3,
-    name: "Andrés R.",
-    initial: "A",
-    color: "bg-orange-600 text-white",
-    text: "El proceso de entrega fue muy ágil y el celular llegó en perfectas condiciones. Me encantó la pantalla y la cámara, realmente impresionantes.",
-  },
-  {
-    id: 4,
-    name: "Valentina C.",
-    initial: "V",
-    color: "bg-pink-300 text-white",
-    text: "Muy buen producto, aunque me costó un poco configurar algunas funciones al inicio. El soporte técnico me ayudó en minutos. ¡Muy recomendados!",
-  },
-];
+import { useState, useMemo } from "react";
+import reviews from "@/app/productos/components/utils/reviews";
+import { getRandomColor, getFirstName, getInitial, GOOGLE_REVIEWS_URL } from "./reviews/utils";
+import { ReviewsHeader } from "./reviews/ReviewsHeader";
+import { DesktopSlider } from "./reviews/DesktopSlider";
+import { MobileSlider } from "./reviews/MobileSlider";
 
 const Reviews = () => {
-  const [active, setActive] = useState(2); // Centrar la segunda reseña por defecto
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
 
-  // Slider navigation
-  const handlePrev = () =>
-    setActive((prev) => (prev === 1 ? reviews.length : prev - 1));
-  const handleNext = () =>
-    setActive((prev) => (prev === reviews.length ? 1 : prev + 1));
+  // Filtrar solo reviews con rating >= 4 y agregar datos procesados
+  const reviewsWithColors = useMemo(() => {
+    return reviews
+      .filter((review) => review.review_rating >= 4)
+      .map((review) => ({
+        ...review,
+        color: getRandomColor(),
+        firstName: getFirstName(review.author_title),
+        initial: getInitial(review.author_title),
+      }));
+  }, []);
+
+  // Obtener 3 cards para mostrar en el carrusel desktop
+  const getVisibleCards = () => {
+    const total = reviewsWithColors.length;
+    if (total === 0) return [];
+
+    const prevIndex = (active - 1 + total) % total;
+    const nextIndex = (active + 1) % total;
+
+    return [
+      reviewsWithColors[prevIndex],
+      reviewsWithColors[active],
+      reviewsWithColors[nextIndex],
+    ];
+  };
+
+  const handlePrev = () => {
+    setActive((prev) => (prev - 1 + reviewsWithColors.length) % reviewsWithColors.length);
+  };
+
+  const handleNext = () => {
+    setActive((prev) => (prev + 1) % reviewsWithColors.length);
+  };
 
   return (
     <section className="w-full py-14 bg-white md:mb-0 pb-10">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Títulos */}
-        <h2
-          className="text-4xl font-bold text-center mb-2 tracking-tight"
-          style={{ fontFamily: "Samsung Sharp Sans, sans-serif" }}
-        >
-          Lo que dicen nuestros clientes
-        </h2>
-        <p className="text-center text-xl text-gray-600 mb-10">
-          Opiniones verificadas de usuarios en Google
-        </p>
+        <ReviewsHeader />
 
-        {/* Slider */}
+        {/* Sliders */}
         <div className="w-full">
-          {/* Desktop/tablet slider */}
-          <div className="md:flex items-center justify-center min-h-[370px] w-full hidden">
-            {/* Prev button fuera del slider */}
-            <div className="flex items-center h-full">
-              <button
-                aria-label="Anterior"
-                onClick={handlePrev}
-                className="md:flex hidden items-center justify-center shadow-lg hover:brightness-95 transition"
-                style={{
-                  zIndex: 30,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                  width: 40,
-                  height: 40,
-                  backgroundColor: "#ffffff",
-                  color: "#222",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M15 19l-7-7 7-7"
-                    stroke="#222"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-            {/* Cards desktop/tablet */}
-            <div className="flex gap-8 w-full justify-center items-end">
-              {reviews.map((review) => {
-                let opacity = 1;
-                let scale = 1;
-                let zIndex = 1;
-                let shadow = "0 2px 8px rgba(0,0,0,0.04)";
-                let border = "1px solid #E5E7EB";
-                const bg = active === review.id ? "bg-white" : "bg-gray-50";
-                if (review.id === active) {
-                  scale = 1.08;
-                  zIndex = 10;
-                  shadow = "0 8px 32px rgba(0,0,0,0.10)";
-                  opacity = 1;
-                  border = "1.5px solid #E5E7EB";
-                } else if (
-                  review.id === active - 1 ||
-                  (active === 1 && review.id === reviews.length)
-                ) {
-                  scale = 0.95;
-                  zIndex = 5;
-                  shadow = "0 2px 8px rgba(0,0,0,0.04)";
-                  opacity = 0.7;
-                } else if (
-                  review.id === active + 1 ||
-                  (active === reviews.length && review.id === 1)
-                ) {
-                  scale = 0.95;
-                  zIndex = 5;
-                  shadow = "0 2px 8px rgba(0,0,0,0.04)";
-                  opacity = 0.7;
-                } else {
-                  scale = 0.9;
-                  zIndex = 1;
-                  opacity = 0.4;
-                }
-                return (
-                  <div
-                    key={review.id}
-                    className={cn(
-                      "relative flex flex-col items-center transition-all duration-500",
-                      bg
-                    )}
-                    aria-current={active === review.id ? "true" : undefined}
-                    style={{
-                      boxShadow: shadow,
-                      border,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                      padding: "32px 24px",
-                      minHeight: "340px",
-                      maxWidth: "340px",
-                      width: "340px",
-                      opacity,
-                      zIndex,
-                      transform: `scale(${scale})`,
-                      transition:
-                        "box-shadow 0.3s, transform 0.3s, opacity 0.3s",
-                    }}
-                  >
-                    {/* Initial circle */}
-                    <div
-                      className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold mb-3",
-                        review.color
-                      )}
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.35rem",
-                      }}
-                    >
-                      {review.initial}
-                    </div>
-                    {/* Name */}
-                    <div
-                      className="font-bold text-gray-800 mb-2 text-center text-lg"
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.15rem",
-                      }}
-                    >
-                      {review.name}
-                    </div>
-                    {/* Stars */}
-                    <div className="flex justify-center mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <svg
-                          key={i}
-                          width="24"
-                          height="24"
-                          fill="none"
-                          stroke="#BDBDBD"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          className="mx-0.5"
-                        >
-                          <polygon
-                            points="12,2 15,8.5 22,9.3 17,14.1 18.5,21 12,17.7 5.5,21 7,14.1 2,9.3 9,8.5"
-                            fill="#BDBDBD"
-                          />
-                        </svg>
-                      ))}
-                    </div>
-                    {/* Text */}
-                    <div
-                      className="text-base text-gray-700 text-center leading-relaxed mt-2"
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.08rem",
-                        marginTop: 8,
-                        lineHeight: 1.4,
-                        maxWidth: 260,
-                        minHeight: 110,
-                        display: "flex",
-                        alignItems: "flex-end",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {review.text}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            {/* Next button fuera del slider */}
-            <div className="flex items-center h-full">
-              <button
-                aria-label="Siguiente"
-                onClick={handleNext}
-                className="md:flex hidden items-center justify-center shadow-lg hover:brightness-95 transition"
-                style={{
-                  zIndex: 30,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                  width: 40,
-                  height: 40,
-                  backgroundColor: "#ffffff",
-                  color: "#222",
-                  border: "1px solid #e5e7eb",
-                }}
-              >
-                <svg
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M9 5l7 7-7 7"
-                    stroke="#222"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-          {/* Mobile slider: carrusel auto-scroll infinito real, sin repetir manualmente las cards */}
-          <div className="md:hidden w-full overflow-x-hidden p-0 m-0">
-            {/* Carrusel infinito mobile: animación fluida y continua */}
-            <div
-              ref={scrollRef}
-              className="flex flex-nowrap gap-20 w-[calc(70vw_*_16)] animate-reviews-infinito-mobile"
-              style={{ animationDuration: `${reviews.length * 12}s` }}
-              role="list"
-              aria-label="Opiniones de clientes"
-            >
-              {/* Duplicamos las reviews para loop infinito, sin cortes */}
-              {[...reviews, ...reviews, ...reviews, ...reviews].map(
-                (review, idx) => (
-                  <div
-                    key={idx}
-                    className={cn(
-                      "relative flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg"
-                    )}
-                    style={{
-                      minHeight: "340px",
-                      padding: "32px 16px",
-                      boxShadow: "0 12px 36px rgba(0,0,0,0.13)",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "flex-end",
-                      opacity: 1,
-                      zIndex: 10,
-                      transform: "scale(1)",
-                      transition:
-                        "box-shadow 0.3s, transform 0.3s, opacity 0.3s",
-                    }}
-                    role="listitem"
-                    tabIndex={0}
-                    aria-label={review.name}
-                  >
-                    {/* Initial circle */}
-                    <div
-                      className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold mb-3",
-                        review.color
-                      )}
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.35rem",
-                      }}
-                    >
-                      {review.initial}
-                    </div>
-                    {/* Name */}
-                    <div
-                      className="font-bold text-gray-800 mb-2 text-center text-lg"
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.15rem",
-                      }}
-                    >
-                      {review.name}
-                    </div>
-                    {/* Stars */}
-                    <div className="flex justify-center mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <svg
-                          key={i}
-                          width="24"
-                          height="24"
-                          fill="none"
-                          stroke="#BDBDBD"
-                          strokeWidth="2"
-                          viewBox="0 0 24 24"
-                          className="mx-0.5"
-                        >
-                          <polygon
-                            points="12,2 15,8.5 22,9.3 17,14.1 18.5,21 12,17.7 5.5,21 7,14.1 2,9.3 9,8.5"
-                            fill="#BDBDBD"
-                          />
-                        </svg>
-                      ))}
-                    </div>
-                    {/* Text */}
-                    <div
-                      className="text-base text-gray-700 text-center leading-relaxed mt-2"
-                      style={{
-                        fontFamily: "Samsung Sharp Sans, sans-serif",
-                        fontSize: "1.08rem",
-                        marginTop: 8,
-                        lineHeight: 1.4,
-                        maxWidth: 260,
-                        minHeight: 110,
-                        display: "flex",
-                        alignItems: "flex-end",
-                        justifyContent: "center",
-                      }}
-                    >
-                      {review.text}
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-            {/* Animación infinita mobile */}
-            <style jsx>{`
-              @keyframes reviews-infinito-mobile {
-                0% {
-                  transform: translateX(0);
-                }
-                100% {
-                  transform: translateX(-50%);
-                }
-              }
-              .animate-reviews-infinito-mobile {
-                animation: reviews-infinito-mobile linear infinite;
-                width: max-content;
-              }
-            `}</style>
-          </div>
+          <DesktopSlider
+            visibleCards={getVisibleCards()}
+            onPrev={handlePrev}
+            onNext={handleNext}
+          />
+          <MobileSlider reviews={reviewsWithColors} />
         </div>
 
         {/* CTA Button */}
@@ -397,12 +81,7 @@ const Reviews = () => {
               backgroundColor: "#000000",
               color: "#ffffff",
             }}
-            onClick={() =>
-              window.open(
-                "https://www.google.com/search?q=samsung+store+reviews",
-                "_blank"
-              )
-            }
+            onClick={() => window.open(GOOGLE_REVIEWS_URL, "_blank")}
           >
             Ver más reseñas
           </button>

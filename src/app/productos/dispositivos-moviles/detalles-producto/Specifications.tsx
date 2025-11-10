@@ -60,11 +60,47 @@ const SPEC_CATEGORIES = [
 
 
 const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selectedSku, selectedEan }) => {
-  // Usar datos del producto si están disponibles
-  const skuToUse = selectedSku;
-  const eanToUse = selectedEan;
-  const skuArrayToUse: string[] = selectedSku ? [selectedSku] : [];
-  const eanArrayToUse: string[] = selectedEan ? [selectedEan] : [];
+  // Recopilar TODOS los SKUs y EANs del producto (como en multimedia)
+  const allSkus: string[] = [];
+  const allEans: string[] = [];
+
+  // Agregar SKUs del apiProduct si existen
+  if (product.apiProduct?.sku) {
+    product.apiProduct.sku.forEach(sku => {
+      if (sku && sku.trim()) allSkus.push(sku.trim());
+    });
+  }
+
+  // Agregar EANs del apiProduct si existen
+  if (product.apiProduct?.ean) {
+    product.apiProduct.ean.forEach(ean => {
+      if (ean && ean.trim()) allEans.push(ean.trim());
+    });
+  }
+
+  // Agregar SKUs de capacidades si existen
+  if (product.capacities) {
+    product.capacities.forEach(capacity => {
+      if (capacity.sku && capacity.sku.trim()) allSkus.push(capacity.sku.trim());
+      if (capacity.ean && capacity.ean.trim()) allEans.push(capacity.ean.trim());
+    });
+  }
+
+  // Agregar el SKU seleccionado al inicio si existe (para que sea el primero en intentarse)
+  if (selectedSku && selectedSku.trim() && !allSkus.includes(selectedSku.trim())) {
+    allSkus.unshift(selectedSku.trim());
+  }
+
+  if (selectedEan && selectedEan.trim() && !allEans.includes(selectedEan.trim())) {
+    allEans.unshift(selectedEan.trim());
+  }
+
+  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por Flixmedia)
+  const productSku = allSkus.length > 0 ? allSkus.join(',') : null;
+  const productEan = allEans.length > 0 ? allEans.join(',') : null;
+
+  console.log('🎬 Specifications - SKUs para Flixmedia:', productSku);
+  console.log('🎬 Specifications - EANs para Flixmedia:', productEan);
 
 
   // --- VISUAL: UX mejorada, tabs y contenido ---
@@ -75,8 +111,8 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
       aria-label="Especificaciones técnicas"
     >
       <FlixmediaDetails
-          mpn={skuToUse}
-          ean={eanToUse}
+          mpn={productSku}
+          ean={productEan}
           productName={product.name}
           className="w-full"
         />

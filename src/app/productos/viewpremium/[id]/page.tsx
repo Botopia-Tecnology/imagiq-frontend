@@ -336,7 +336,12 @@ export default function ProductViewPage({ params }) {
 
       {/* Especificaciones y Flix Media */}
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0 -mt-8">
-        <Specifications product={product} flix={product} />
+        <Specifications 
+          product={product} 
+          flix={product}
+          selectedSku={productSelection.selectedSku || undefined}
+          selectedEan={productSelection.selectedVariant?.ean || undefined}
+        />
       </div>
 
       {/* Botón de añadir al carrito al final de la página */}

@@ -133,9 +133,17 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 Código: {productSelection.selectedCodigoMarket}
               </p>
             )}
-            {productSelection.selectedStockTotal !== null && (
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedSkuPostback && (
               <p className="text-sm text-gray-600">
-                Stock Total: {productSelection.selectedStockTotal}
+                SKU Postback: {productSelection.selectedSkuPostback}
+              </p>
+            )}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedStockTotal !== null && (
+              <p className="text-sm text-gray-600">
+                Stock disponible: {productSelection.selectedStockTotal}
+                {productSelection.selectedVariant?.cantidadTiendas ? 
+                  ` (Total: ${productSelection.selectedStockTotal} en ${productSelection.selectedVariant.cantidadTiendas} tiendas)` 
+                  : ''}
               </p>
             )}
           </div>

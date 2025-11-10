@@ -28,8 +28,6 @@ interface OrderData {
   orden_id: string;
   fecha_creacion: string;
   usuario_id: string;
-  whatsapp_template_id?: string;
-  template_id?: string;
   envios?: Array<{
     numero_guia: string;
     tiempo_entrega_estimado: string;
@@ -268,70 +266,55 @@ export default function SuccessCheckoutPage({
           userInfo.nombre.charAt(0).toUpperCase() +
           userInfo.nombre.slice(1).toLowerCase();
 
-        // Obtener template_id desde la respuesta del backend
-        console.log("🔍 [WhatsApp] Buscando template_id en orderData...", {
-          tieneWhatsappTemplateId: !!orderData.whatsapp_template_id,
-          tieneTemplateId: !!orderData.template_id,
-          whatsappTemplateId: orderData.whatsapp_template_id,
-          templateId: orderData.template_id
-        });
-        
-        const templateId = orderData.whatsapp_template_id || orderData.template_id;
-        
-        if (!templateId || templateId.trim() === "") {
-          console.error("❌ [WhatsApp] Template ID de WhatsApp no encontrado en la respuesta del backend");
-          console.error("💡 [WhatsApp] El backend debe incluir 'whatsapp_template_id' o 'template_id' en la respuesta de /api/orders/shipping-info");
-          console.error("💡 [WhatsApp] OrderData recibido:", {
-            orden_id: orderData.orden_id,
-            keys: Object.keys(orderData)
+        console.log("✂️ [WhatsApp] Validando y truncando datos antes de enviar...");
+
+        // Validar y truncar productos si excede 30 caracteres
+        let productosFinal = productosDesc;
+        if (productosDesc.length > 30) {
+          productosFinal = "tus productos";
+          console.log("⚠️ [WhatsApp] Productos truncados (excedían 30 chars):", {
+            original: productosDesc,
+            length: productosDesc.length,
+            truncado: productosFinal
           });
-          // No retornar, permitir que continúe el flujo aunque falle el WhatsApp
-          // El usuario ya completó la compra exitosamente
-          return;
         }
 
-        console.log("✅ [WhatsApp] Template ID obtenido:", templateId);
+        // Validar y truncar fechaEntrega si excede 30 caracteres
+        let fechaEntregaFinal = fechaEntrega;
+        if (fechaEntrega.length > 30) {
+          fechaEntregaFinal = "Próximamente";
+          console.log("⚠️ [WhatsApp] Fecha de entrega truncada (excedía 30 chars):", {
+            original: fechaEntrega,
+            length: fechaEntrega.length,
+            truncado: fechaEntregaFinal
+          });
+        }
 
-        // Construir URL completa para el botón del template
-        // El endpoint requiere URL completa según la documentación
-        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
-        const trackingUrl = `${baseUrl}/tracking-service/${pathParams.orderId}`;
-
-        // Construir array de variables en el orden correcto según el template:
-        // Template "pedido_confirmado" (UUID BD: 49ccd22f-bee0-4e70-b294-eaddb38445ac, ID Meta: 1247542063805988):
-        // BODY:
-        //   {{1}}: nombre del cliente
-        //   {{2}}: tipo de transacción ("compra")
-        //   {{3}}: número de pedido/guía
-        //   {{4}}: descripción de productos (máx 30 chars)
-        //   {{5}}: fecha de entrega estimada
-        // BUTTON URL:
-        //   {{1}}: URL completa del tracking (ej: "https://example.com/tracking-service/{orderId}")
-        const variables = [
-          nombreCapitalizado,  // Body {{1}} - Nombre del cliente
-          "compra",            // Body {{2}} - Tipo de transacción
-          numeroGuia,          // Body {{3}} - Número de guía
-          productosDesc,       // Body {{4}} - Descripción de productos
-          fechaEntrega,        // Body {{5}} - Fecha de entrega
-          trackingUrl,         // Button URL {{1}} - URL completa
-        ];
-
-        // Preparar payload según la especificación del endpoint
-        const payload = {
-          to: telefono,
-          template_id: templateId,
-          variables: variables,
-        };
-
-        console.log("📦 [WhatsApp] Payload preparado:", {
-          to: telefono,
-          template_id: templateId,
-          variablesCount: variables.length,
-          variables: variables
+        console.log("✅ [WhatsApp] Datos validados y preparados:", {
+          nombre: nombreCapitalizado,
+          productos: productosFinal,
+          productosLength: productosFinal.length,
+          fechaEntrega: fechaEntregaFinal,
+          fechaEntregaLength: fechaEntregaFinal.length,
+          numeroGuia: numeroGuia,
+          ordenId: pathParams.orderId
         });
 
+        // Preparar payload para el endpoint /api/messaging/pedido-confirmado
+        // El backend maneja el template_id internamente, no necesitamos enviarlo
+        const payload = {
+          to: telefono,
+          nombre: nombreCapitalizado,
+          ordenId: pathParams.orderId,
+          numeroGuia: numeroGuia,
+          productos: productosFinal,
+          fechaEntrega: fechaEntregaFinal,
+        };
+
+        console.log("📦 [WhatsApp] Payload preparado:", payload);
+
         // Enviar mensaje de WhatsApp al backend
-        const apiUrl = `${API_BASE_URL}/api/messaging/send-template`;
+        const apiUrl = `${API_BASE_URL}/api/messaging/pedido-confirmado`;
         console.log("📤 [WhatsApp] Enviando request al backend...", {
           method: "POST",
           url: apiUrl,

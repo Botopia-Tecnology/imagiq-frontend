@@ -46,11 +46,6 @@ interface UserData {
   telefono: string;
 }
 
-interface CartItem {
-  quantity?: number;
-  name?: string;
-  sku?: string;
-}
 
 export default function SuccessCheckoutPage({
   params,
@@ -108,17 +103,12 @@ export default function SuccessCheckoutPage({
   // Enviar mensaje de WhatsApp cuando se carga la página
   useEffect(() => {
     const sendWhatsAppMessage = async () => {
-      console.log("🚀 [WhatsApp] Iniciando proceso de envío de mensaje...");
-      
       if (whatsappSentRef.current) {
-        console.log("⚠️ [WhatsApp] Ya se intentó enviar el mensaje anteriormente, omitiendo...");
         return; // Evitar envíos duplicados
       }
       whatsappSentRef.current = true; // Marcar como enviado inmediatamente
 
       try {
-        console.log("📦 [WhatsApp] Obteniendo datos de la orden...", pathParams.orderId);
-        
         // Obtener datos de la orden
         const orderResponse = await apiClient.get<OrderData>(
           `/api/orders/shipping-info/${pathParams.orderId}`
@@ -129,51 +119,32 @@ export default function SuccessCheckoutPage({
           return;
         }
 
-        console.log("✅ [WhatsApp] Datos de la orden obtenidos exitosamente");
         const orderData = orderResponse.data;
 
         // Obtener datos del usuario desde localStorage (misma clave que en checkout)
-        console.log("👤 [WhatsApp] Obteniendo datos del usuario desde localStorage...");
         const userData = localStorage.getItem("imagiq_user");
         let userInfo: UserData | null = null;
 
         if (userData) {
           try {
             userInfo = JSON.parse(userData);
-            console.log("✅ [WhatsApp] Usuario obtenido del localStorage:", {
-              id: userInfo?.id,
-              nombre: userInfo?.nombre,
-              tieneTelefono: !!userInfo?.telefono
-            });
           } catch (e) {
             console.error("❌ [WhatsApp] Error al parsear datos del usuario:", e);
           }
-        } else {
-          console.warn("⚠️ [WhatsApp] No se encontró 'imagiq_user' en localStorage");
         }
 
         if (!userInfo || !userInfo.telefono) {
-          console.error("❌ [WhatsApp] No hay información de usuario o teléfono disponible", {
-            tieneUserInfo: !!userInfo,
-            tieneTelefono: !!userInfo?.telefono,
-            telefono: userInfo?.telefono
-          });
+          console.error("❌ [WhatsApp] No hay información de usuario o teléfono disponible");
           return;
         }
 
-        console.log("✅ [WhatsApp] Información de usuario válida");
-
         // Limpiar y formatear el teléfono (quitar espacios, guiones, paréntesis, etc.)
         let telefono = userInfo.telefono.toString().replace(/[\s+\-()]/g, "");
-        console.log("📞 [WhatsApp] Teléfono original:", userInfo.telefono, "→ Limpiado:", telefono);
         
         // Asegurar que el teléfono tenga el código de país 57
         if (!telefono.startsWith("57")) {
           telefono = "57" + telefono;
-          console.log("📞 [WhatsApp] Agregado código de país 57:", telefono);
         }
-        
-        console.log("✅ [WhatsApp] Teléfono formateado:", telefono);
 
         // Obtener datos del envío
         const envioData =
@@ -257,7 +228,7 @@ export default function SuccessCheckoutPage({
               }
             }
           } catch (e) {
-            console.error("Error al parsear cart-items:", e);
+            // Error al parsear cart-items, continuar con valor por defecto
           }
         }
 
@@ -266,39 +237,17 @@ export default function SuccessCheckoutPage({
           userInfo.nombre.charAt(0).toUpperCase() +
           userInfo.nombre.slice(1).toLowerCase();
 
-        console.log("✂️ [WhatsApp] Validando y truncando datos antes de enviar...");
-
         // Validar y truncar productos si excede 30 caracteres
         let productosFinal = productosDesc;
         if (productosDesc.length > 30) {
           productosFinal = "tus productos";
-          console.log("⚠️ [WhatsApp] Productos truncados (excedían 30 chars):", {
-            original: productosDesc,
-            length: productosDesc.length,
-            truncado: productosFinal
-          });
         }
 
         // Validar y truncar fechaEntrega si excede 30 caracteres
         let fechaEntregaFinal = fechaEntrega;
         if (fechaEntrega.length > 30) {
           fechaEntregaFinal = "Próximamente";
-          console.log("⚠️ [WhatsApp] Fecha de entrega truncada (excedía 30 chars):", {
-            original: fechaEntrega,
-            length: fechaEntrega.length,
-            truncado: fechaEntregaFinal
-          });
         }
-
-        console.log("✅ [WhatsApp] Datos validados y preparados:", {
-          nombre: nombreCapitalizado,
-          productos: productosFinal,
-          productosLength: productosFinal.length,
-          fechaEntrega: fechaEntregaFinal,
-          fechaEntregaLength: fechaEntregaFinal.length,
-          numeroGuia: numeroGuia,
-          ordenId: pathParams.orderId
-        });
 
         // Preparar payload para el endpoint /api/messaging/pedido-confirmado
         // El backend maneja el template_id internamente, no necesitamos enviarlo
@@ -311,16 +260,8 @@ export default function SuccessCheckoutPage({
           fechaEntrega: fechaEntregaFinal,
         };
 
-        console.log("📦 [WhatsApp] Payload preparado:", payload);
-
         // Enviar mensaje de WhatsApp al backend
         const apiUrl = `${API_BASE_URL}/api/messaging/pedido-confirmado`;
-        console.log("📤 [WhatsApp] Enviando request al backend...", {
-          method: "POST",
-          url: apiUrl,
-          payload: payload
-        });
-
         const whatsappResponse = await fetch(apiUrl, {
           method: "POST",
           headers: {
@@ -329,66 +270,37 @@ export default function SuccessCheckoutPage({
           body: JSON.stringify(payload),
         });
 
-        console.log("📥 [WhatsApp] Respuesta recibida del backend:", {
-          status: whatsappResponse.status,
-          statusText: whatsappResponse.statusText,
-          ok: whatsappResponse.ok
-        });
-
         // Verificar respuesta del backend
         if (!whatsappResponse.ok) {
-          const errorData = await whatsappResponse.json().catch((parseError) => {
-            console.error("❌ [WhatsApp] Error al parsear respuesta de error:", parseError);
-            return {};
-          });
-          
+          const errorData = await whatsappResponse.json().catch(() => ({}));
           console.error("❌ [WhatsApp] Error al enviar mensaje de WhatsApp:", {
             status: whatsappResponse.status,
             statusText: whatsappResponse.statusText,
             error: errorData.error || errorData,
-            details: errorData.details,
-            fullResponse: errorData
+            details: errorData.details
           });
-          
           // Resetear el flag para permitir reintento en caso de error
           whatsappSentRef.current = false;
-          console.log("🔄 [WhatsApp] Flag reseteado, se puede reintentar");
           return;
         }
 
-        const whatsappData = await whatsappResponse.json().catch((parseError) => {
-          console.error("❌ [WhatsApp] Error al parsear respuesta exitosa:", parseError);
-          return { success: false };
-        });
-
-        console.log("📄 [WhatsApp] Datos de respuesta parseados:", whatsappData);
+        const whatsappData = await whatsappResponse.json().catch(() => ({ success: false }));
 
         // Verificar respuesta exitosa según la especificación del endpoint
-        if (whatsappData.success) {
-          console.log("✅ [WhatsApp] Mensaje de WhatsApp enviado exitosamente", {
-            messageId: whatsappData.messageId,
-            message: whatsappData.message,
-            fullResponse: whatsappData
-          });
-        } else {
-          console.error("❌ [WhatsApp] Error en respuesta de WhatsApp (success: false):", {
+        if (!whatsappData.success) {
+          console.error("❌ [WhatsApp] Error en respuesta de WhatsApp:", {
             success: whatsappData.success,
             error: whatsappData.error,
-            details: whatsappData.details,
-            fullResponse: whatsappData
+            details: whatsappData.details
           });
           whatsappSentRef.current = false;
-          console.log("🔄 [WhatsApp] Flag reseteado debido a success: false");
         }
       } catch (error) {
-        console.error("❌ [WhatsApp] Error al procesar envío de WhatsApp (catch):", error);
-        console.error("❌ [WhatsApp] Stack trace:", error instanceof Error ? error.stack : "No stack available");
+        console.error("❌ [WhatsApp] Error al procesar envío de WhatsApp:", error);
         whatsappSentRef.current = false;
-        console.log("🔄 [WhatsApp] Flag reseteado debido a excepción");
       }
     };
 
-    console.log("🎬 [WhatsApp] useEffect ejecutado, llamando sendWhatsAppMessage...");
     sendWhatsAppMessage();
   }, [pathParams.orderId]); // Solo depende del orderId, useRef previene duplicados
 

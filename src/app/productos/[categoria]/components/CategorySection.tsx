@@ -82,7 +82,7 @@ export default function CategorySection({
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
-  const { products, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages } = useCategoryProducts(
+  const { products, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -222,6 +222,7 @@ export default function CategorySection({
             categoryName={effectiveTitle}
             showLazySkeletons={hasMore}
             lazySkeletonCount={3}
+            hasLoadedOnce={hasLoadedOnce}
           />
 
           {/* Elemento invisible para detectar scroll */}

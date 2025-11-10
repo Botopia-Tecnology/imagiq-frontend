@@ -9,12 +9,17 @@ import {
   ProductCardProps,
   ProductColor,
 } from "@/app/productos/components/ProductCard";
-import type { ProductVariant, ColorOption, UseProductSelectionReturn } from "@/hooks/useProductSelection";
+import type {
+  ProductVariant,
+  ColorOption,
+  UseProductSelectionReturn,
+} from "@/hooks/useProductSelection";
 import DetailsProductSection from "@/app/productos/dispositivos-moviles/detalles-producto/DetailsProductSection";
 import ProductDetailSkeleton from "@/app/productos/dispositivos-moviles/detalles-producto/ProductDetailSkeleton";
 import AddToCartButton from "../../viewpremium/components/AddToCartButton";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
+import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 
 // Type for the product selection data passed from DetailsProductSection
 // This is a subset of UseProductSelectionReturn with only the properties passed by the callback
@@ -69,14 +74,31 @@ function convertProductForView(product: ProductCardProps) {
     specs: [
       { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
       { label: "Modelo", value: safeValue(product.apiProduct?.modelo, "None") },
-      { label: "Categoría", value: safeValue(product.apiProduct?.categoria, "None") },
-      { label: "Subcategoría", value: safeValue(product.apiProduct?.subcategoria, "None") },
-      { label: "Capacidad", value: safeValue(product.selectedCapacity?.value || product.capacities?.[0]?.value, "None") },
-      { label: "SKU", value: safeValue(product.selectedColor?.sku || product.colors?.[0]?.sku, "None") },
+      {
+        label: "Categoría",
+        value: safeValue(product.apiProduct?.categoria, "None"),
+      },
+      {
+        label: "Subcategoría",
+        value: safeValue(product.apiProduct?.subcategoria, "None"),
+      },
+      {
+        label: "Capacidad",
+        value: safeValue(
+          product.selectedCapacity?.value || product.capacities?.[0]?.value,
+          "None"
+        ),
+      },
+      {
+        label: "SKU",
+        value: safeValue(
+          product.selectedColor?.sku || product.colors?.[0]?.sku,
+          "None"
+        ),
+      },
     ],
   };
 }
-
 
 // Wrapper para manejar el estado de carga de variantes
 function ProductContentWithVariants({
@@ -84,7 +106,7 @@ function ProductContentWithVariants({
   onVariantsReady,
   onProductSelectionChange,
   productSelection,
-  onNotifyStock
+  onNotifyStock,
 }: {
   product: ProductCardProps;
   onVariantsReady: (ready: boolean) => void;
@@ -123,18 +145,44 @@ export default function ProductViewPage({ params }) {
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
   const [variantsReady, setVariantsReady] = React.useState(false);
-  const [productSelection, setProductSelection] = React.useState<ProductSelectionData | null>(null);
+  const [productSelection, setProductSelection] =
+    React.useState<ProductSelectionData | null>(null);
   const stockNotification = useStockNotification();
+  const { trackViewItem } = useAnalytics();
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
     setVariantsReady(false);
   }, [id]);
 
+  // 🔥 Track View Item apenas el producto carga (solo una vez por producto)
+  React.useEffect(() => {
+    if (product && !loading) {
+      const productPrice =
+        typeof product.price === "number"
+          ? product.price
+          : Number.parseFloat(String(product.price)) || 0;
+
+      trackViewItem({
+        item_id: product.id,
+        item_name: product.name,
+        item_brand: "Samsung",
+        item_category: product.apiProduct?.categoria || "Sin categoría",
+        price: productPrice,
+        currency: "COP",
+      });
+    }
+    // Solo ejecutar cuando el producto carga, NO cuando cambia la selección de variante
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [product?.id, loading]);
+
   // Callback para recibir productSelection desde DetailsProductSection
-  const handleProductSelectionChange = React.useCallback((selection: ProductSelectionData) => {
-    setProductSelection(selection);
-  }, []);
+  const handleProductSelectionChange = React.useCallback(
+    (selection: ProductSelectionData) => {
+      setProductSelection(selection);
+    },
+    []
+  );
 
   // Handler para notificación de stock
   const handleRequestStockNotification = async (email: string) => {
@@ -144,7 +192,10 @@ export default function ProductViewPage({ params }) {
     const selectedSku = productSelection.selectedSku;
 
     // Obtener el codigoMarket correspondiente a la variante seleccionada
-    const codigoMarket = productSelection.selectedVariant?.codigoMarket || product.apiProduct?.codigoMarketBase || '';
+    const codigoMarket =
+      productSelection.selectedVariant?.codigoMarket ||
+      product.apiProduct?.codigoMarketBase ||
+      "";
 
     await stockNotification.requestNotification({
       productName: product.name,
@@ -201,13 +252,19 @@ export default function ProductViewPage({ params }) {
             ? product.image
             : smartphonesImg.src)
         }
-        selectedColor={productSelection?.getSelectedColorOption?.()?.nombreColorDisplay || productSelection?.selection?.selectedColor || undefined}
-        selectedStorage={productSelection?.selection?.selectedCapacity || undefined}
+        selectedColor={
+          productSelection?.getSelectedColorOption?.()?.nombreColorDisplay ||
+          productSelection?.selection?.selectedColor ||
+          undefined
+        }
+        selectedStorage={
+          productSelection?.selection?.selectedCapacity || undefined
+        }
         onNotificationRequest={handleRequestStockNotification}
       />
 
       {/* Renderizar contenido (oculto o visible según estado) */}
-      <div style={{ display: isFullyLoaded ? 'block' : 'none' }}>
+      <div style={{ display: isFullyLoaded ? "block" : "none" }}>
         <ProductContentWithVariants
           product={product}
           onVariantsReady={setVariantsReady}

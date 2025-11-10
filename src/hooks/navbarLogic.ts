@@ -16,6 +16,7 @@ import {
   useState,
 } from "react";
 import { useFavorites } from "@/features/products/useProducts";
+import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 
 // Tipo para resultados de búsqueda
 export interface SearchResult {
@@ -47,6 +48,7 @@ export function useNavbarLogic() {
   const isOfertas = pathname === "/ofertas"; // ¿Está en ofertas?
   const debouncedSearch = useDebounce(searchQuery, 300); // Query de búsqueda con debounce
   const { cart: cartItems, itemCount } = useCartContext();
+  const { trackSearch, trackCategoryClick } = useAnalytics();
   // Derivar cartCount con useMemo para evitar stale closures
   // Usa itemCount como fuente de verdad para garantizar sincronización con el estado global del carrito
   const cartCount = useMemo(() => {
@@ -63,10 +65,10 @@ export function useNavbarLogic() {
       ? cartItems.reduce((sum, item) => sum + (item.quantity || 0), 0)
       : 0;
   }, [cartItems, itemCount]);
-  
+
   // Hook para obtener favoritos
   const { favorites } = useFavorites();
-  
+
   // Contador de favoritos - basado directamente en el estado del hook
   // El hook useFavorites ya lee del localStorage y se actualiza automáticamente
   const favoritesCount = useMemo(() => {
@@ -75,12 +77,12 @@ export function useNavbarLogic() {
     }
     return 0;
   }, [favorites]);
-  
+
   // Estado para animación del badge del carrito
   const [bump, setBump] = useState(false);
   // Estado para animación del badge de favoritos
   const [favoritesBump, setFavoritesBump] = useState(false);
-  
+
   // Efecto: activa animación cuando cambia cartCount
   useEffect(() => {
     if (cartCount > 0) {
@@ -91,7 +93,7 @@ export function useNavbarLogic() {
       setBump(false);
     }
   }, [cartCount]);
-  
+
   // Efecto: activa animación cuando cambia favoritesCount
   useEffect(() => {
     if (favoritesCount > 0) {
@@ -198,7 +200,7 @@ export function useNavbarLogic() {
   // Determina si mostrar logo blanco y estilos claros
   // CAMBIO: En home siempre usar logo NEGRO para que se vea sobre el video oscuro
   // Solo en ofertas mantener el logo blanco cuando está arriba
-  const isAtTop = typeof window !== 'undefined' ? window.scrollY < 100 : true;
+  const isAtTop = typeof window !== "undefined" ? window.scrollY < 100 : true;
   const showWhiteLogo = isOfertas && !activeDropdown && isAtTop && !isScrolled;
   // Forzar texto blanco en ofertas cuando está arriba, negro en home
   const showWhiteItems = isOfertas && !activeDropdown && isAtTop && !isScrolled;
@@ -248,6 +250,9 @@ export function useNavbarLogic() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
+      // 🔥 Track Search Event para GA4
+      trackSearch(searchQuery.trim(), searchResults.length);
+
       posthogUtils.capture("search_submit", {
         query: searchQuery.trim(),
         source: "navbar",
@@ -278,7 +283,14 @@ export function useNavbarLogic() {
   }, [favoritesCount, isAuthenticated, router]);
 
   // Handler para click en item de navbar (envía analytics y cierra menú móvil)
-  const handleNavClick = (item: (typeof navbarRoutes)[0]) => {
+  const handleNavClick = (item: {
+    name: string;
+    category: string;
+    href: string;
+  }) => {
+    // 🔥 Track Category Click Event para GA4
+    trackCategoryClick(item.category, item.name);
+
     posthogUtils.capture("navbar_click", {
       nav_item: item.name,
       nav_category: item.category,

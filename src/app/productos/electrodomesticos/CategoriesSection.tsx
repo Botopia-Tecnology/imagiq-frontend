@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 import refrigeradorImg from "../../../img/electrodomesticos/electrodomesticos1.png";
 import lavadoraImg from "../../../img/electrodomesticos/electrodomesticos2.png";
 import aspiradoraImg from "../../../img/electrodomesticos/electrodomesticos3.png";
@@ -43,6 +44,15 @@ const categories = [
 ];
 
 export default function CategoriesSection() {
+  const { trackCategoryClick } = useAnalytics();
+
+  const handleCategoryClick = (cat: (typeof categories)[0]) => {
+    // 🔥 Track Category Click Event para GA4
+    trackCategoryClick(cat.id, cat.title);
+
+    posthogUtils.capture("category_click", { category: cat.title });
+  };
+
   return (
     <div className="container mx-auto px-6 py-12">
       <h1 className="text-3xl font-bold mb-8 text-center">
@@ -54,9 +64,7 @@ export default function CategoriesSection() {
             key={cat.id}
             href={cat.href}
             className="block bg-white rounded-xl shadow-lg hover:shadow-xl transition-all p-6 text-center"
-            onClick={() =>
-              posthogUtils.capture("category_click", { category: cat.title })
-            }
+            onClick={() => handleCategoryClick(cat)}
           >
             <div className="flex justify-center mb-4">
               <Image

@@ -15,6 +15,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 
 // Importar las imágenes reales de categorías
 import smartphoneImage from "../../img/categorias/Smartphones.png";
@@ -56,8 +57,12 @@ const categories = [
 
 export const CategoriesSection = () => {
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
+  const { trackCategoryClick } = useAnalytics();
 
   const handleCategoryClick = (category: (typeof categories)[0]) => {
+    // 🔥 Track Category Click Event para GA4
+    trackCategoryClick(category.id.toString(), category.title);
+
     posthogUtils.capture("category_card_click", {
       category_name: category.title,
       category_href: category.href,

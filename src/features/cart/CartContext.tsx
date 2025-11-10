@@ -13,6 +13,7 @@
 import React, { createContext, useContext, useCallback } from "react";
 import { useCart, CartProduct } from "@/hooks/useCart";
 import { useAuthContext } from "@/features/auth/context";
+import { useAnalytics } from "@/lib/analytics";
 
 /**
  * CartContextType
@@ -68,6 +69,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Obtener el usuario autenticado
   const { user } = useAuthContext();
 
+  // Hook de analytics para tracking
+  const { trackAddToCart } = useAnalytics();
+
   // Usar el hook centralizado useCart
   const {
     products,
@@ -92,8 +96,18 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       // Extraer quantity del producto y pasarlo por separado para evitar problemas de tipo
       const { quantity, ...productWithoutQuantity } = product;
       await addToCart(productWithoutQuantity, quantity || 1, user?.id);
+
+      // Track del evento add_to_cart para analytics
+      trackAddToCart({
+        item_id: product.sku || product.id,
+        item_name: product.name,
+        item_brand: "Samsung",
+        price: Number(product.price),
+        quantity: quantity || 1,
+        currency: "COP",
+      });
     },
-    [addToCart, user?.id]
+    [addToCart, user?.id, trackAddToCart]
   );
 
   const updateQuantity = useCallback(

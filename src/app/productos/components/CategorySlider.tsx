@@ -10,6 +10,7 @@ import Image, { StaticImageData } from "next/image";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 
 // Helper to safely access global window in different environments
 function getWindow(): Window | undefined {
@@ -107,6 +108,7 @@ export default function CategorySlider({
 
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { trackCategoryClick } = useAnalytics();
   const sectionParam = searchParams?.get("seccion");
   const hash = getWindow()?.location?.hash ?? "";
 
@@ -234,6 +236,9 @@ export default function CategorySlider({
   }, [activeCategoryId, categories, isDesktop, itemsPerView]);
 
   const handleCategoryClick = (category: Category) => {
+    // 🔥 Track Category Click Event para GA4
+    trackCategoryClick(category.id, category.name);
+
     posthogUtils.capture(`${trackingPrefix}_click`, {
       category_id: category.id,
       category_name: category.name,

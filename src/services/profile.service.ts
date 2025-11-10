@@ -225,6 +225,49 @@ export class ProfileService {
   }
 
   /**
+   * Obtiene las tarjetas de pago encriptadas del usuario
+   * Llama al endpoint /api/payments/cards/:userId que devuelve datos encriptados
+   * IMPORTANTE: Los datos vienen encriptados y deben ser desencriptados con encryptionService
+   */
+  public async getUserPaymentMethodsEncrypted(userId?: string): Promise<import('../features/profile/types').EncryptedCard[]> {
+    try {
+      const id = userId || this.getUserId();
+      if (!id) {
+        throw new Error("No se encontró el ID del usuario");
+      }
+
+      console.log("📤 Solicitando tarjetas encriptadas para usuario:", id);
+
+      const response = await fetch(
+        `${BASE_CONFIG.API_URL}/api/payments/cards/${id}`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Error response from API:", errorText);
+        throw new Error(
+          `Error ${response.status}: ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ Tarjetas encriptadas obtenidas:", result);
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ Error obteniendo tarjetas encriptadas:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido obteniendo tarjetas";
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Actualiza información del perfil del usuario
    */
   public async updateProfile(

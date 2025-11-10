@@ -435,7 +435,7 @@ const Reviews = () => {
             }}
             onClick={() =>
               window.open(
-                "https://www.google.com/search?q=samsung+store+reviews",
+                "https://search.google.com/local/reviews?placeid=ChIJz-9BQ5qaP44Rw2bfo6bHRLo&q=*&authuser=0&hl=en&gl=US",
                 "_blank"
               )
             }

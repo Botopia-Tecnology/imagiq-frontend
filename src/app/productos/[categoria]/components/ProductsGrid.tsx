@@ -108,8 +108,8 @@ export const CategoryProductsGrid = forwardRef<
         ref={ref}
         className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}
       >
-        {/* Mostrar skeletons iniciales solo cuando loading es true Y no hay productos */}
-        {loading && products.length === 0 && (
+        {/* Mostrar skeletons cuando loading es true (incluyendo cambio de página) */}
+        {loading && (
           <>
             {Array.from({ length: 12 }, (_, i) => (
               <div key={`skeleton-${i}`} className="w-full">
@@ -127,8 +127,8 @@ export const CategoryProductsGrid = forwardRef<
           </div>
         )}
 
-        {/* Mostrar productos si existen (independientemente del estado de loading) */}
-        {products.length > 0 && (
+        {/* Ocultar productos antiguos durante carga de nueva página */}
+        {products.length > 0 && !loading && (
           <>
             {products.map((product, index) => {
               return (

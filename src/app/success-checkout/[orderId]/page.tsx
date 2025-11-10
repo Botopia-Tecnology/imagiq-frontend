@@ -21,6 +21,9 @@ import { useCart } from "@/hooks/useCart";
 import { apiClient } from "@/lib/api";
 import { useAnalytics } from "@/lib/analytics";
 
+// API Base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 interface OrderData {
   orden_id: string;
   fecha_creacion: string;
@@ -134,8 +137,10 @@ export default function SuccessCheckoutPage({
           return;
         }
 
+        // Limpiar y formatear el teléfono (quitar espacios, guiones, paréntesis, etc.)
+        let telefono = userInfo.telefono.toString().replace(/[\s+\-()]/g, "");
+        
         // Asegurar que el teléfono tenga el código de país 57
-        let telefono = userInfo.telefono.toString();
         if (!telefono.startsWith("57")) {
           telefono = "57" + telefono;
         }
@@ -155,7 +160,7 @@ export default function SuccessCheckoutPage({
 
         if (envioData?.tiempo_entrega_estimado) {
           const fechaCreacion = new Date(orderData.fecha_creacion);
-          const dias = parseInt(envioData.tiempo_entrega_estimado);
+          const dias = Number.parseInt(envioData.tiempo_entrega_estimado);
 
           // Fecha inicial
           fechaCreacion.setDate(fechaCreacion.getDate() + dias);
@@ -231,21 +236,54 @@ export default function SuccessCheckoutPage({
           userInfo.nombre.charAt(0).toUpperCase() +
           userInfo.nombre.slice(1).toLowerCase();
 
-        // Enviar mensaje de WhatsApp
-        const whatsappResponse = await fetch("/api/whatsapp", {
+        // Obtener template_id de variable de entorno
+        const templateId = process.env.NEXT_PUBLIC_WHATSAPP_ORDER_TEMPLATE_ID;
+        
+        if (!templateId) {
+          console.error("Template ID de WhatsApp no configurado");
+          return;
+        }
+
+        // Construir URL completa para el botón del template
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        const trackingUrl = `${baseUrl}/tracking-service/${pathParams.orderId}`;
+
+        // Construir array de variables en el orden correcto según el template:
+        // 1. nombre (body variable {{1}})
+        // 2. "compra" (body variable {{2}})
+        // 3. numeroGuia (body variable {{3}})
+        // 4. productos (body variable {{4}})
+        // 5. fechaEntrega (body variable {{5}})
+        // 6. ordenId/trackingUrl (button URL variable)
+        const variables = [
+          nombreCapitalizado,
+          "compra",
+          numeroGuia,
+          productosDesc,
+          fechaEntrega,
+          trackingUrl, // URL completa para el botón del template
+        ];
+
+        // Enviar mensaje de WhatsApp al backend
+        const whatsappResponse = await fetch(`${API_BASE_URL}/api/messaging/send-template`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
             to: telefono,
-            nombre: nombreCapitalizado,
-            ordenId: pathParams.orderId,
-            numeroGuia: numeroGuia,
-            productos: productosDesc,
-            fechaEntrega: fechaEntrega,
+            template_id: templateId,
+            variables: variables,
           }),
         });
+
+        if (!whatsappResponse.ok) {
+          const errorData = await whatsappResponse.json().catch(() => ({}));
+          console.error("Error al enviar mensaje de WhatsApp:", errorData);
+          // Resetear el flag para permitir reintento en caso de error
+          whatsappSentRef.current = false;
+          return;
+        }
 
         const whatsappData = await whatsappResponse.json();
 
@@ -253,6 +291,7 @@ export default function SuccessCheckoutPage({
           console.log("Mensaje de WhatsApp enviado exitosamente");
         } else {
           console.error("Error al enviar mensaje de WhatsApp:", whatsappData);
+          whatsappSentRef.current = false;
         }
       } catch (error) {
         console.error("Error al procesar envío de WhatsApp:", error);

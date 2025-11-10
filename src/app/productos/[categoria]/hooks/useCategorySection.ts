@@ -82,6 +82,7 @@ export function useCategoryProducts(
   useEffect(() => {
     if (previousSeccion !== seccion || previousMenuUuid !== menuUuid) {
       setIsTransitioning(true);
+      setHasLoadedOnce(false); // Resetear cuando cambia la categoría/sección
       setPreviousSeccion(seccion);
       setPreviousMenuUuid(menuUuid);
     }
@@ -186,10 +187,12 @@ export function useCategoryProducts(
     // Esto permite que el caché muestre productos sin esperar la transición
     if (productsResult.products && productsResult.products.length > 0) {
       setIsTransitioning(false);
-        setHasLoadedOnce(true);
+      setHasLoadedOnce(true);
     } else if (!productsResult.loading && isTransitioning) {
       // Si no hay productos pero terminó de cargar, también finalizar transición
       setIsTransitioning(false);
+      // Marcar que ya se cargó al menos una vez, incluso si no hay productos
+      setHasLoadedOnce(true);
     }
   }, [productsResult.loading, isTransitioning, productsResult.products]);
 
@@ -201,7 +204,9 @@ export function useCategoryProducts(
     ...productsResult,
     loading: finalLoading,
     // isLoadingMore se mantiene separado, no se afecta por la transición
-    isLoadingMore: productsResult.isLoadingMore
+    isLoadingMore: productsResult.isLoadingMore,
+    // hasLoadedOnce indica si ya se completó al menos una carga
+    hasLoadedOnce
   };
 }
 

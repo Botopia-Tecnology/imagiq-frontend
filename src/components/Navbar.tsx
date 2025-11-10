@@ -9,6 +9,7 @@ import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
+import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 import OfertasDropdown from "./dropdowns/ofertas";
 import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
@@ -34,6 +35,9 @@ export default function Navbar() {
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
   const { getMenus, isLoading, prioritizeCategory } = usePreloadCategoryMenus();
+  
+  // Hook para prefetch de productos cuando el usuario hace hover sobre categorías
+  const { prefetchWithDebounce, cancelPrefetch } = usePrefetchProducts();
 
   // Función para obtener el componente dropdown apropiado
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
@@ -295,8 +299,28 @@ export default function Navbar() {
                                 prioritizeCategory(item.uuid);
                               }
                             }
+                            
+                            // Prefetch productos de la categoría base cuando hay categoryCode
+                            // Esto mejora la velocidad percibida al hacer clic en la categoría
+                            if (item.categoryCode) {
+                              prefetchWithDebounce(
+                                {
+                                  categoryCode: item.categoryCode,
+                                },
+                                200 // Debounce de 200ms
+                              );
+                            }
                           }}
-                          onMouseLeave={navbar.handleDropdownLeave}
+                          onMouseLeave={() => {
+                            navbar.handleDropdownLeave();
+                            
+                            // Cancelar prefetch cuando el usuario deja de hacer hover
+                            if (item.categoryCode) {
+                              cancelPrefetch({
+                                categoryCode: item.categoryCode,
+                              });
+                            }
+                          }}
                           className="relative inline-block"
                         >
                           <Link

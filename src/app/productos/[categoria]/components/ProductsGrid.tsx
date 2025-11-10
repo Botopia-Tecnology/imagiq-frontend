@@ -24,6 +24,7 @@ interface CategoryProductsGridProps {
   categoryName: string;
   showLazySkeletons?: boolean; // Mostrar skeletons de lazy loading
   lazySkeletonCount?: number; // Cantidad de skeletons
+  hasLoadedOnce?: boolean; // Indica si ya se completó al menos una carga
 }
 
 
@@ -31,7 +32,7 @@ export const CategoryProductsGrid = forwardRef<
   HTMLDivElement,
   CategoryProductsGridProps
 >(
-  (
+    (
     {
       products,
       loading,
@@ -42,6 +43,7 @@ export const CategoryProductsGrid = forwardRef<
       categoryName,
       showLazySkeletons = false,
       lazySkeletonCount = 3,
+      hasLoadedOnce = false,
     },
     ref
   ) => {
@@ -119,8 +121,9 @@ export const CategoryProductsGrid = forwardRef<
           </>
         )}
 
-        {/* Mostrar mensaje solo cuando terminó de cargar y NO hay productos */}
-        {products.length === 0 && !loading && (
+        {/* Mostrar mensaje solo cuando terminó de cargar, NO hay productos Y ya se cargó al menos una vez */}
+        {/* Esto evita mostrar el mensaje durante la carga inicial, incluso cuando se carga desde caché */}
+        {products.length === 0 && !loading && hasLoadedOnce && (
           <div className="col-span-full w-full text-center py-12 text-gray-500">
             No se encontraron {categoryName.toLowerCase()} con los filtros
             seleccionados.

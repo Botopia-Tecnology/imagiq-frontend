@@ -61,8 +61,5 @@ declare namespace NodeJS {
     NEXT_PUBLIC_SITE_NAME: string;
     NEXT_PUBLIC_SITE_DESCRIPTION: string;
     NEXT_PUBLIC_SITE_URL: string;
-
-    // WhatsApp Templates
-    NEXT_PUBLIC_WHATSAPP_ORDER_TEMPLATE_ID: string;
   }
 }

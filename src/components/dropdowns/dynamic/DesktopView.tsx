@@ -1,9 +1,10 @@
 import type { FC } from "react";
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { MenuItemCard } from "./MenuItemCard";
 import { CloseButton } from "@/components/navbar/components/CloseButton";
 import type { MenuItem } from "./types";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
+import { menusEndpoints } from "@/lib/api";
 
 
 type Props = {
@@ -16,6 +17,9 @@ type Props = {
 
 export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onItemClick, loading = false }) => {
   const { prefetchWithDebounce, cancelPrefetch } = usePrefetchProducts();
+  
+  // Ref para manejar timers de debounce de submenús
+  const submenuPrefetchTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Prefetch productos cuando el usuario hace hover sobre un menú
   const handleMenuHover = useCallback((menuUuid: string) => {
@@ -28,6 +32,26 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
       menuUuid,
       // categoria es opcional y solo se usa como metadata
     }, 200); // Debounce de 200ms
+    
+    // Precargar submenús del menú con debounce
+    // Limpiar timer anterior si existe
+    const existingTimer = submenuPrefetchTimers.current.get(menuUuid);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    
+    // Crear nuevo timer para precargar submenús
+    const timer = setTimeout(() => {
+      // Llamada silenciosa para precargar submenús
+      // El endpoint ya maneja caché y deduplicación automáticamente
+      menusEndpoints.getSubmenus(menuUuid).catch((error) => {
+        // Silenciar errores en prefetch - no afectar la UX
+        console.debug("[SubmenuPrefetch] Error silencioso:", error);
+      });
+      submenuPrefetchTimers.current.delete(menuUuid);
+    }, 200); // Debounce de 200ms
+    
+    submenuPrefetchTimers.current.set(menuUuid, timer);
   }, [categoryCode, prefetchWithDebounce]);
 
   // Cancelar prefetch cuando el usuario deja de hacer hover
@@ -38,6 +62,13 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
       categoryCode,
       menuUuid,
     });
+    
+    // Limpiar timer de precarga de submenús si existe
+    const timer = submenuPrefetchTimers.current.get(menuUuid);
+    if (timer) {
+      clearTimeout(timer);
+      submenuPrefetchTimers.current.delete(menuUuid);
+    }
   }, [categoryCode, cancelPrefetch]);
 
   // Filtrar solo items activos

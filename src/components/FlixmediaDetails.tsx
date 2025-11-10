@@ -128,6 +128,7 @@ export default function FlixmediaDetails({
     script.setAttribute('data-flix-button-image', '');
     script.setAttribute('data-flix-price', '');
     script.setAttribute('data-flix-fallback-language', '');
+    script.setAttribute('data-flix-lazy-load', 'false'); // Desactivar lazy loading para carga inmediata
 
     script.onload = () => {
       console.log('✅ Script de Flixmedia cargado');

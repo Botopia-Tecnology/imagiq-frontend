@@ -8,50 +8,109 @@
  * - Experiencia de usuario premium
  */
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import reviews from "@/app/productos/components/utils/reviews";
+
+// Función para generar colores aleatorios para las iniciales
+const getRandomColor = () => {
+  const colors = [
+    "bg-blue-500 text-white",
+    "bg-green-500 text-white",
+    "bg-purple-500 text-white",
+    "bg-pink-500 text-white",
+    "bg-orange-500 text-white",
+    "bg-teal-500 text-white",
+    "bg-indigo-500 text-white",
+    "bg-red-500 text-white",
+  ];
+  return colors[Math.floor(Math.random() * colors.length)];
+};
+
+// Función para obtener el primer nombre
+const getFirstName = (fullName: string) => {
+  return fullName.split(" ")[0];
+};
+
+// Función para obtener la inicial
+const getInitial = (name: string) => {
+  return name.charAt(0).toUpperCase();
+};
 
 // Datos de las reseñas (pueden venir de props, API, etc.)
-const reviews = [
-  {
-    id: 1,
-    name: "Carlos P.",
-    initial: "C",
-    color: "bg-green-200 text-gray-700",
-    text: "Llevo dos semanas con mi nuevo Galaxy y me parece increíble la batería. Dura todo el día sin problema. Además, el diseño es espectacular.",
-  },
-  {
-    id: 2,
-    name: "Laura M.",
-    initial: "L",
-    color: "bg-blue-500 text-white",
-    text: "Excelente experiencia de compra, la atención fue rápida y pude resolver todas mis dudas con el asistente virtual. El Galaxy S25 superó mis expectativas.",
-  },
-  {
-    id: 3,
-    name: "Andrés R.",
-    initial: "A",
-    color: "bg-orange-600 text-white",
-    text: "El proceso de entrega fue muy ágil y el celular llegó en perfectas condiciones. Me encantó la pantalla y la cámara, realmente impresionantes.",
-  },
-  {
-    id: 4,
-    name: "Valentina C.",
-    initial: "V",
-    color: "bg-pink-300 text-white",
-    text: "Muy buen producto, aunque me costó un poco configurar algunas funciones al inicio. El soporte técnico me ayudó en minutos. ¡Muy recomendados!",
-  },
-];
+// const reviews = [
+//   {
+//     id: 1,
+//     name: "Carlos P.",
+//     initial: "C",
+//     color: "bg-green-200 text-gray-700",
+//     text: "Llevo dos semanas con mi nuevo Galaxy y me parece increíble la batería. Dura todo el día sin problema. Además, el diseño es espectacular.",
+//   },
+//   {
+//     id: 2,
+//     name: "Laura M.",
+//     initial: "L",
+//     color: "bg-blue-500 text-white",
+//     text: "Excelente experiencia de compra, la atención fue rápida y pude resolver todas mis dudas con el asistente virtual. El Galaxy S25 superó mis expectativas.",
+//   },
+//   {
+//     id: 3,
+//     name: "Andrés R.",
+//     initial: "A",
+//     color: "bg-orange-600 text-white",
+//     text: "El proceso de entrega fue muy ágil y el celular llegó en perfectas condiciones. Me encantó la pantalla y la cámara, realmente impresionantes.",
+//   },
+//   {
+//     id: 4,
+//     name: "Valentina C.",
+//     initial: "V",
+//     color: "bg-pink-300 text-white",
+//     text: "Muy buen producto, aunque me costó un poco configurar algunas funciones al inicio. El soporte técnico me ayudó en minutos. ¡Muy recomendados!",
+//   },
+// ];
 
 const Reviews = () => {
-  const [active, setActive] = useState(2); // Centrar la segunda reseña por defecto
+  const [active, setActive] = useState(0); // Index de la card central
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Filtrar solo reviews con rating >= 4
+  const filteredReviews = useMemo(() => {
+    return reviews.filter(review => review.review_rating >= 4);
+  }, []);
+
+  // Generar colores aleatorios una sola vez para cada review
+  const reviewsWithColors = useMemo(() => {
+    return filteredReviews.map(review => ({
+      ...review,
+      color: getRandomColor(),
+      firstName: getFirstName(review.author_title),
+      initial: getInitial(review.author_title)
+    }));
+  }, [filteredReviews]);
+
+  // Obtener 3 cards para mostrar en el carrusel
+  const getVisibleCards = () => {
+    const total = reviewsWithColors.length;
+    if (total === 0) return [];
+
+    const prevIndex = (active - 1 + total) % total;
+    const nextIndex = (active + 1) % total;
+
+    return [
+      reviewsWithColors[prevIndex],
+      reviewsWithColors[active],
+      reviewsWithColors[nextIndex]
+    ];
+  };
+
   // Slider navigation
-  const handlePrev = () =>
-    setActive((prev) => (prev === 1 ? reviews.length : prev - 1));
-  const handleNext = () =>
-    setActive((prev) => (prev === reviews.length ? 1 : prev + 1));
+  const handlePrev = () => {
+    setActive((prev) => (prev - 1 + reviewsWithColors.length) % reviewsWithColors.length);
+  };
+
+  const handleNext = () => {
+    setActive((prev) => (prev + 1) % reviewsWithColors.length);
+  };
 
   return (
     <section className="w-full py-14 bg-white md:mb-0 pb-10">
@@ -106,58 +165,34 @@ const Reviews = () => {
               </button>
             </div>
             {/* Cards desktop/tablet */}
-            <div className="flex gap-8 w-full justify-center items-end">
-              {reviews.map((review) => {
-                let opacity = 1;
-                let scale = 1;
-                let zIndex = 1;
-                let shadow = "0 2px 8px rgba(0,0,0,0.04)";
+            <div className="flex gap-8 w-full justify-center items-center">
+              {getVisibleCards().map((review, index) => {
+                const isActive = index === 1; // La card del medio (index 1) es la activa
+
+                let opacity = isActive ? 1 : 0.4;
+                let scale = isActive ? 1 : 0.9;
+                let zIndex = isActive ? 10 : 1;
+                let shadow = isActive ? "0 4px 16px rgba(0,0,0,0.1)" : "0 2px 8px rgba(0,0,0,0.04)";
                 let border = "1px solid #E5E7EB";
-                const bg = active === review.id ? "bg-white" : "bg-gray-50";
-                if (review.id === active) {
-                  scale = 1.08;
-                  zIndex = 10;
-                  shadow = "0 8px 32px rgba(0,0,0,0.10)";
-                  opacity = 1;
-                  border = "1.5px solid #E5E7EB";
-                } else if (
-                  review.id === active - 1 ||
-                  (active === 1 && review.id === reviews.length)
-                ) {
-                  scale = 0.95;
-                  zIndex = 5;
-                  shadow = "0 2px 8px rgba(0,0,0,0.04)";
-                  opacity = 0.7;
-                } else if (
-                  review.id === active + 1 ||
-                  (active === reviews.length && review.id === 1)
-                ) {
-                  scale = 0.95;
-                  zIndex = 5;
-                  shadow = "0 2px 8px rgba(0,0,0,0.04)";
-                  opacity = 0.7;
-                } else {
-                  scale = 0.9;
-                  zIndex = 1;
-                  opacity = 0.4;
-                }
+
                 return (
-                  <div
-                    key={review.id}
+                  <a
+                    key={`${review.author_id}-${index}`}
+                    href={review.review_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={cn(
-                      "relative flex flex-col items-center transition-all duration-500",
-                      bg
+                      "relative flex flex-col items-center transition-all duration-500 cursor-pointer hover:shadow-xl",
                     )}
-                    aria-current={active === review.id ? "true" : undefined}
                     style={{
                       boxShadow: shadow,
                       border,
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      justifyContent: "flex-end",
+                      justifyContent: "flex-start",
                       padding: "32px 24px",
-                      minHeight: "340px",
+                      height: "340px",
                       maxWidth: "340px",
                       width: "340px",
                       opacity,
@@ -188,7 +223,7 @@ const Reviews = () => {
                         fontSize: "1.15rem",
                       }}
                     >
-                      {review.name}
+                      {review.firstName}
                     </div>
                     {/* Stars */}
                     <div className="flex justify-center mb-3">
@@ -197,37 +232,37 @@ const Reviews = () => {
                           key={i}
                           width="24"
                           height="24"
-                          fill="none"
-                          stroke="#BDBDBD"
-                          strokeWidth="2"
+                          fill="#FFD700"
+                          stroke="#FFD700"
+                          strokeWidth="1"
                           viewBox="0 0 24 24"
                           className="mx-0.5"
                         >
                           <polygon
                             points="12,2 15,8.5 22,9.3 17,14.1 18.5,21 12,17.7 5.5,21 7,14.1 2,9.3 9,8.5"
-                            fill="#BDBDBD"
                           />
                         </svg>
                       ))}
                     </div>
                     {/* Text */}
                     <div
-                      className="text-base text-gray-700 text-center leading-relaxed mt-2"
+                      className="text-base text-gray-700 text-center leading-relaxed mt-2 overflow-hidden"
                       style={{
                         fontFamily: "Samsung Sharp Sans, sans-serif",
                         fontSize: "1.08rem",
                         marginTop: 8,
                         lineHeight: 1.4,
                         maxWidth: 260,
-                        minHeight: 110,
-                        display: "flex",
-                        alignItems: "flex-end",
-                        justifyContent: "center",
+                        height: "120px",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 5,
+                        WebkitBoxOrient: "vertical",
+                        textOverflow: "ellipsis",
                       }}
                     >
-                      {review.text}
+                      {review.review_text}
                     </div>
-                  </div>
+                  </a>
                 );
               })}
             </div>
@@ -272,35 +307,36 @@ const Reviews = () => {
             <div
               ref={scrollRef}
               className="flex flex-nowrap gap-20 w-[calc(70vw_*_16)] animate-reviews-infinito-mobile"
-              style={{ animationDuration: `${reviews.length * 12}s` }}
+              style={{ animationDuration: `${reviewsWithColors.length * 12}s` }}
               role="list"
               aria-label="Opiniones de clientes"
             >
               {/* Duplicamos las reviews para loop infinito, sin cortes */}
-              {[...reviews, ...reviews, ...reviews, ...reviews].map(
+              {[...reviewsWithColors, ...reviewsWithColors, ...reviewsWithColors, ...reviewsWithColors].map(
                 (review, idx) => (
-                  <div
+                  <a
                     key={idx}
+                    href={review.review_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={cn(
-                      "relative flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg"
+                      "relative flex flex-col items-center transition-all duration-500 bg-gray-100 border border-gray-200 min-w-[70vw] w-[70vw] max-w-[70vw] snap-center shadow-lg cursor-pointer"
                     )}
                     style={{
-                      minHeight: "340px",
+                      height: "340px",
                       padding: "32px 16px",
                       boxShadow: "0 12px 36px rgba(0,0,0,0.13)",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      justifyContent: "flex-end",
+                      justifyContent: "flex-start",
                       opacity: 1,
                       zIndex: 10,
                       transform: "scale(1)",
                       transition:
                         "box-shadow 0.3s, transform 0.3s, opacity 0.3s",
                     }}
-                    role="listitem"
-                    tabIndex={0}
-                    aria-label={review.name}
+                    aria-label={review.firstName}
                   >
                     {/* Initial circle */}
                     <div
@@ -323,7 +359,7 @@ const Reviews = () => {
                         fontSize: "1.15rem",
                       }}
                     >
-                      {review.name}
+                      {review.firstName}
                     </div>
                     {/* Stars */}
                     <div className="flex justify-center mb-3">
@@ -332,37 +368,37 @@ const Reviews = () => {
                           key={i}
                           width="24"
                           height="24"
-                          fill="none"
-                          stroke="#BDBDBD"
-                          strokeWidth="2"
+                          fill="#FFD700"
+                          stroke="#FFD700"
+                          strokeWidth="1"
                           viewBox="0 0 24 24"
                           className="mx-0.5"
                         >
                           <polygon
                             points="12,2 15,8.5 22,9.3 17,14.1 18.5,21 12,17.7 5.5,21 7,14.1 2,9.3 9,8.5"
-                            fill="#BDBDBD"
                           />
                         </svg>
                       ))}
                     </div>
                     {/* Text */}
                     <div
-                      className="text-base text-gray-700 text-center leading-relaxed mt-2"
+                      className="text-base text-gray-700 text-center leading-relaxed mt-2 overflow-hidden"
                       style={{
                         fontFamily: "Samsung Sharp Sans, sans-serif",
                         fontSize: "1.08rem",
                         marginTop: 8,
                         lineHeight: 1.4,
                         maxWidth: 260,
-                        minHeight: 110,
-                        display: "flex",
-                        alignItems: "flex-end",
-                        justifyContent: "center",
+                        height: "120px",
+                        display: "-webkit-box",
+                        WebkitLineClamp: 5,
+                        WebkitBoxOrient: "vertical",
+                        textOverflow: "ellipsis",
                       }}
                     >
-                      {review.text}
+                      {review.review_text}
                     </div>
-                  </div>
+                  </a>
                 )
               )}
             </div>

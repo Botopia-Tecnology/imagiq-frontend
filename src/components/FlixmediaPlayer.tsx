@@ -116,82 +116,72 @@ export default function FlixmediaPlayer({
   }, [mpn, ean, productName, productId, segmento, router]);
 
   useEffect(() => {
-    // Cargar el script de Flixmedia solo cuando tengamos MPN o EAN
+    // El script ya está precargado en el layout, solo configuramos los atributos
     if ((actualMpn || actualEan) && !scriptLoaded) {
       const scriptStartTime = performance.now();
-      console.log(`🚀 [PASO 4] Agregando script de Flixmedia (MPN: ${actualMpn || 'N/A'}, EAN: ${actualEan || 'N/A'})`);
+      console.log(`🚀 [PASO 4] Configurando Flixmedia (MPN: ${actualMpn || 'N/A'}, EAN: ${actualEan || 'N/A'})`);
 
-      // Limpiar scripts anteriores si existen
-      const existingScripts = document.querySelectorAll('script[src*="flixfacts.com"]');
-      existingScripts.forEach(script => script.remove());
-
-      const script = document.createElement('script');
-      script.type = 'text/javascript';
-      script.src = '//media.flixfacts.com/js/loader.js';
-      script.async = true;
-
-      // Configurar atributos data según la guía de Flixmedia
-      script.setAttribute('data-flix-distributor', '17257');
-      script.setAttribute('data-flix-language', 'f5');
-      script.setAttribute('data-flix-brand', 'Samsung');
-      script.setAttribute('data-flix-mpn', actualMpn || '');
-      script.setAttribute('data-flix-ean', actualEan || '');
-      script.setAttribute('data-flix-sku', '');
-      script.setAttribute('data-flix-inpage', 'flix-inpage');
-      script.setAttribute('data-flix-button-image', '');
-      script.setAttribute('data-flix-price', '');
-      script.setAttribute('data-flix-fallback-language', '');
-
-      script.onload = () => {
-        const scriptEndTime = performance.now();
-        console.log(`✅ [PASO 5] Script de Flixmedia cargado (${(scriptEndTime - scriptStartTime).toFixed(2)}ms)`);
-        console.log('🔄 [PASO 6] Flixmedia procesando contenido... (monitoreando cada 500ms)');
-        setScriptLoaded(true);
-
-        // Monitorear cuando el contenido realmente aparece
-        let checkCount = 0;
-        const contentCheckInterval = setInterval(() => {
-          checkCount++;
-          const inpageDiv = document.getElementById('flix-inpage');
-
-          if (inpageDiv) {
-            const children = inpageDiv.children.length;
-            const height = inpageDiv.offsetHeight;
-            const hasContent = children > 1 || height > 100;
-
-            console.log(`🔍 [MONITOREO ${checkCount}] Children: ${children}, Height: ${height}px, Contenido visible: ${hasContent ? 'SÍ ✅' : 'NO ⏳'}`);
-
-            if (hasContent) {
-              const totalTime = performance.now() - scriptStartTime;
-              console.log(`🎉 [PASO 7 COMPLETADO] ¡Contenido Flixmedia visible en pantalla! Tiempo total desde script: ${(totalTime).toFixed(2)}ms`);
-              clearInterval(contentCheckInterval);
-            }
-          } else {
-            console.log(`🔍 [MONITOREO ${checkCount}] Div #flix-inpage aún no existe`);
-          }
-
-          // Timeout después de 20 intentos (10 segundos)
-          if (checkCount >= 20) {
-            console.warn('⚠️ [TIMEOUT] Se alcanzó el límite de 10 segundos esperando contenido');
-            clearInterval(contentCheckInterval);
-          }
-        }, 500);
-      };
-
-      script.onerror = () => {
-        console.error('❌ [ERROR] No se pudo cargar el script de Flixmedia');
-      };
+      // Crear un contenedor invisible con los atributos data-flix-*
+      const configDiv = document.createElement('div');
+      configDiv.setAttribute('data-flix-distributor', '17257');
+      configDiv.setAttribute('data-flix-language', 'f5');
+      configDiv.setAttribute('data-flix-brand', 'Samsung');
+      configDiv.setAttribute('data-flix-mpn', actualMpn || '');
+      configDiv.setAttribute('data-flix-ean', actualEan || '');
+      configDiv.setAttribute('data-flix-sku', '');
+      configDiv.setAttribute('data-flix-inpage', 'flix-inpage');
+      configDiv.setAttribute('data-flix-button-image', '');
+      configDiv.setAttribute('data-flix-price', '');
+      configDiv.setAttribute('data-flix-fallback-language', '');
+      configDiv.style.display = 'none';
 
       if (containerRef.current) {
-        containerRef.current.appendChild(script);
-      } else {
-        console.error('❌ [ERROR] containerRef.current no existe');
+        containerRef.current.appendChild(configDiv);
       }
+
+      // Disparar el evento que Flixmedia escucha (si ya está cargado)
+      if (typeof window !== 'undefined' && (window as any).flixInit) {
+        (window as any).flixInit();
+      }
+
+      setScriptLoaded(true);
+      console.log(`✅ [PASO 5] Flixmedia configurado`);
+      console.log('🔄 [PASO 6] Flixmedia procesando contenido... (monitoreando cada 500ms)');
+
+      // Monitorear cuando el contenido realmente aparece
+      let checkCount = 0;
+      const contentCheckInterval = setInterval(() => {
+        checkCount++;
+        const inpageDiv = document.getElementById('flix-inpage');
+
+        if (inpageDiv) {
+          const children = inpageDiv.children.length;
+          const height = inpageDiv.offsetHeight;
+          const hasContent = children > 1 || height > 100;
+
+          console.log(`🔍 [MONITOREO ${checkCount}] Children: ${children}, Height: ${height}px, Contenido visible: ${hasContent ? 'SÍ ✅' : 'NO ⏳'}`);
+
+          if (hasContent) {
+            const totalTime = performance.now() - scriptStartTime;
+            console.log(`🎉 [PASO 7 COMPLETADO] ¡Contenido Flixmedia visible en pantalla! Tiempo total: ${(totalTime).toFixed(2)}ms`);
+            clearInterval(contentCheckInterval);
+          }
+        } else {
+          console.log(`🔍 [MONITOREO ${checkCount}] Div #flix-inpage aún no existe`);
+        }
+
+        // Timeout después de 20 intentos (10 segundos)
+        if (checkCount >= 20) {
+          console.warn('⚠️ [TIMEOUT] Se alcanzó el límite de 10 segundos esperando contenido');
+          clearInterval(contentCheckInterval);
+        }
+      }, 500);
 
       // Cleanup al desmontar
       return () => {
-        if (containerRef.current && script.parentNode === containerRef.current) {
-          containerRef.current.removeChild(script);
+        clearInterval(contentCheckInterval);
+        if (configDiv.parentNode) {
+          configDiv.parentNode.removeChild(configDiv);
         }
       };
     }

@@ -131,19 +131,15 @@ export default function RootLayout({
       }
     >
       <head>
-    
         <link rel="dns-prefetch" href="https://media.flixfacts.com" />
         <link
           rel="preconnect"
           href="https://media.flixfacts.com"
           crossOrigin="anonymous"
         />
-
-
-        <link
-          rel="preload"
-          as="script"
-          href="//media.flixfacts.com/js/loader.js"
+        <script
+          src="https://media.flixfacts.com/js/loader.js"
+          defer
           crossOrigin="anonymous"
         />
       </head>

@@ -14,6 +14,7 @@ interface OrderSummaryProps {
   canContinue: boolean;
   onContinue: () => void;
   onBack?: () => void;
+  deliveryMethod?: string; // Método de entrega: "domicilio" o "tienda"
 }
 
 // Utilidad para formatear precios
@@ -26,6 +27,8 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
   canContinue,
   onContinue,
   onBack,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  deliveryMethod: _deliveryMethod, // No usado por ahora
 }) => {
   // Calcular totales
   const subtotal = cartProducts.reduce((acc, p) => {
@@ -36,11 +39,11 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
     return acc + safePrice * safeQuantity;
   }, 0);
 
-  const envio = 20000;
+  // Sin costo de envío
   const safeSubtotal = isNaN(subtotal) ? 0 : subtotal;
   const safeDiscount = isNaN(appliedDiscount) ? 0 : appliedDiscount;
   const impuestos = Math.round(safeSubtotal * 0.09);
-  const total = safeSubtotal - safeDiscount + envio;
+  const total = safeSubtotal - safeDiscount;
 
   const totalQuantity = cartProducts.reduce((acc, p) => {
     const qty = Number(p.quantity);

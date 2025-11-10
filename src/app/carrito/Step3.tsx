@@ -130,6 +130,7 @@ export default function Step3({
               canContinue={canContinue}
               onContinue={handleContinue}
               onBack={onBack}
+              deliveryMethod={deliveryMethod}
             />
           </div>
         </div>

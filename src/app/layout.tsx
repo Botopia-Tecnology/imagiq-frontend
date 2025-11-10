@@ -130,7 +130,23 @@ export default function RootLayout({
         } as React.CSSProperties
       }
     >
-      <head></head>
+      <head>
+    
+        <link rel="dns-prefetch" href="https://media.flixfacts.com" />
+        <link
+          rel="preconnect"
+          href="https://media.flixfacts.com"
+          crossOrigin="anonymous"
+        />
+
+
+        <link
+          rel="preload"
+          as="script"
+          href="//media.flixfacts.com/js/loader.js"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className="antialiased">
         <AnalyticsScripts />
         <AnalyticsInit />

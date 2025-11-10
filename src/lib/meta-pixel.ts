@@ -7,23 +7,6 @@
  * @see https://developers.facebook.com/docs/meta-pixel/reference
  */
 
-declare global {
-  interface Window {
-    fbq?: {
-      (command: 'track', eventName: string, parameters?: import('@/types/meta-pixel').MetaPixelEventParams): void;
-      (command: 'trackCustom', eventName: string, parameters?: import('@/types/meta-pixel').MetaPixelEventParams): void;
-      (command: 'init', pixelId: string, options?: { [key: string]: string | number | boolean | undefined }): void;
-      (command: 'consent', action: 'grant' | 'revoke'): void;
-      callMethod?: (...args: [command: string, ...params: unknown[]]) => void;
-      queue?: [command: string, ...params: unknown[]][];
-      loaded?: boolean;
-      version?: string;
-      push?: (...args: [command: string, ...params: unknown[]]) => void;
-    };
-    _fbq?: Window['fbq'];
-  }
-}
-
 /**
  * Verifica si Meta Pixel está disponible
  */

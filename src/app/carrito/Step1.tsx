@@ -6,6 +6,7 @@ import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import { type ProductApiData } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
+import { useAnalytics } from "@/lib/analytics";
 
 /**
  * Paso 1 del carrito de compras
@@ -21,6 +22,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const [validationError, setValidationError] = useState<string>("");
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+  const { trackBeginCheckout } = useAnalytics();
 
   // Estado para Trade-In
   const [tradeInData, setTradeInData] = useState<{
@@ -40,21 +42,21 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   } = useCart();
   // Cargar datos de Trade-In desde localStorage
   useEffect(() => {
-    const storedTradeIn = localStorage.getItem('imagiq_trade_in');
-    console.log('🔍 Verificando Trade-In en localStorage:', storedTradeIn);
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+    console.log("🔍 Verificando Trade-In en localStorage:", storedTradeIn);
     if (storedTradeIn) {
       try {
         const data = JSON.parse(storedTradeIn);
-        console.log('📦 Datos de Trade-In cargados:', data);
+        console.log("📦 Datos de Trade-In cargados:", data);
         if (data.completed) {
           setTradeInData(data);
-          console.log('✅ Trade-In aplicado al carrito');
+          console.log("✅ Trade-In aplicado al carrito");
         }
       } catch (error) {
-        console.error('❌ Error al cargar datos de Trade-In:', error);
+        console.error("❌ Error al cargar datos de Trade-In:", error);
       }
     } else {
-      console.log('ℹ️ No hay datos de Trade-In guardados');
+      console.log("ℹ️ No hay datos de Trade-In guardados");
     }
   }, []);
 
@@ -68,7 +70,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
-    console.log(product)
+    console.log(product);
     if (product) {
       updateQuantity(product.sku, cantidad);
     }
@@ -97,6 +99,18 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       return;
     }
     setValidationError("");
+
+    // Track del evento begin_checkout para analytics
+    trackBeginCheckout(
+      cartProducts.map((p) => ({
+        item_id: p.sku,
+        item_name: p.name,
+        price: Number(p.price),
+        quantity: p.quantity,
+      })),
+      total
+    );
+
     onContinue();
   };
 
@@ -124,7 +138,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Handler para remover plan de Trade-In (usado en el banner mobile)
   const handleRemoveTradeIn = () => {
     setTradeInData(null);
-    localStorage.removeItem('imagiq_trade_in');
+    localStorage.removeItem("imagiq_trade_in");
   };
 
   return (
@@ -132,11 +146,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       {/* Grid principal: productos y resumen de compra */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {/* Productos */}
-        <section
-          id="carrito-productos"
-          className="p-0 md:p-4"
-        >
-          <h2 className="font-bold text-lg mb-3 md:mb-6 px-2 md:px-0">Productos</h2>
+        <section id="carrito-productos" className="p-0 md:p-4">
+          <h2 className="font-bold text-lg mb-3 md:mb-6 px-2 md:px-0">
+            Productos
+          </h2>
 
           {cartProducts.length === 0 ? (
             <div className="text-gray-500 text-center py-16 text-lg">
@@ -161,7 +174,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     capacity={product.capacity}
                     ram={product.ram}
                     desDetallada={product.desDetallada}
-                    isLoadingShippingInfo={loadingShippingInfo[product.sku] || false}
+                    isLoadingShippingInfo={
+                      loadingShippingInfo[product.sku] || false
+                    }
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
                     }
@@ -174,9 +189,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               <div className="mt-6 bg-white rounded-lg p-4 border border-gray-200">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="h-2 flex-1 bg-green-500 rounded-full"></div>
-                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">Envío GRATIS</span>
+                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">
+                    Envío GRATIS
+                  </span>
                 </div>
-                <p className="text-xs text-gray-600">Tu compra califica para envío gratuito</p>
+                <p className="text-xs text-gray-600">
+                  Tu compra califica para envío gratuito
+                </p>
               </div>
 
               {/* Banner de Trade-In - Debajo de productos */}
@@ -208,8 +227,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 </span>
               </div>
               <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
-                Este es un valor aproximado del<br />
-                beneficio Estreno y Entrego al que<br />
+                Este es un valor aproximado del
+                <br />
+                beneficio Estreno y Entrego al que
+                <br />
                 aplicaste. Aplican TyC*
               </p>
             </div>
@@ -271,24 +292,24 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               {validationError}
             </div>
           )}
-            <button
-              className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
+          <button
+            className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
               cartProducts.length === 0
                 ? "bg-gray-400 text-gray-600 cursor-not-allowed"
                 : "text-black hover:brightness-95"
-              }`}
-              style={
+            }`}
+            style={
               cartProducts.length === 0
                 ? undefined
                 : { backgroundColor: "#87CEEB" }
-              }
-              onClick={handleContinue}
-              disabled={cartProducts.length === 0}
-            >
-              {cartProducts.length === 0
+            }
+            onClick={handleContinue}
+            disabled={cartProducts.length === 0}
+          >
+            {cartProducts.length === 0
               ? "Agrega productos para continuar"
               : "Continuar pago"}
-            </button>
+          </button>
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
@@ -303,8 +324,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             {/* Resumen compacto */}
             <div className="flex items-center justify-between mb-3">
               <div>
-                <p className="text-xs text-gray-500">Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)} productos)</p>
-                <p className="text-2xl font-bold text-gray-900">$ {Number(total).toLocaleString()}</p>
+                <p className="text-xs text-gray-500">
+                  Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                  productos)
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  $ {Number(total).toLocaleString()}
+                </p>
               </div>
               <button
                 onClick={() => setShowCouponModal(true)}

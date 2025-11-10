@@ -10,6 +10,7 @@ import {
   OrderSummary,
 } from "./components";
 import { Direccion } from "@/types/user";
+import { useAnalytics } from "@/lib/analytics";
 
 export default function Step3({
   onBack,
@@ -18,7 +19,8 @@ export default function Step3({
   onBack?: () => void;
   onContinue?: () => void;
 }) {
-  const { products, appliedDiscount } = useCart();
+  const { products, appliedDiscount, calculations } = useCart();
+  const { trackAddPaymentInfo } = useAnalytics();
   const {
     address,
     setAddress,
@@ -43,6 +45,18 @@ export default function Step3({
       address,
       selectedStore,
     });
+
+    // Track del evento add_payment_info para analytics
+    trackAddPaymentInfo(
+      products.map((p) => ({
+        item_id: p.sku,
+        item_name: p.name,
+        price: Number(p.price),
+        quantity: p.quantity,
+      })),
+      calculations.subtotal
+    );
+
     if (typeof onContinue === "function") {
       onContinue();
     }

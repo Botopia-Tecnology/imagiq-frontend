@@ -18,6 +18,7 @@ import Image, { StaticImageData } from "next/image";
 import { Heart, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
+import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
 import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { useProductSelection } from "@/hooks/useProductSelection";
 import {
@@ -27,7 +28,10 @@ import {
 import { ColorSelector, CapacitySelector } from "./ProductCardComponents";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { ProductApiData } from "@/lib/api";
-import { shouldShowColorSelector, shouldShowCapacitySelector } from "./utils/categoryColorConfig";
+import {
+  shouldShowColorSelector,
+  shouldShowCapacitySelector,
+} from "./utils/categoryColorConfig";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { motion } from "framer-motion";
@@ -76,9 +80,8 @@ export interface ProductCardProps {
   puntos_q?: number;
   apiProduct?: ProductApiData;
   acceptsTradeIn?: boolean;
-  desDetallada?:string; // Indica si el producto acepta retoma (basado en indRetoma)
+  desDetallada?: string; // Indica si el producto acepta retoma (basado en indRetoma)
 }
-
 
 export default function ProductCard({
   id,
@@ -101,45 +104,49 @@ export default function ProductCard({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageIndex] = useState(0);
+  const { trackViewItem } = useAnalytics();
 
   // Hook para notificaciones de stock
   const stockNotification = useStockNotification();
 
   // Hook para manejo inteligente de selección de productos
-  const productSelection = useProductSelection(apiProduct || {
-    codigoMarketBase: id,
-    codigoMarket: [],
-    nombreMarket: name,
-    categoria: '',
-    subcategoria: '',
-    modelo: '',
-    color: [],
-    capacidad: [],
-    memoriaram: [],
-    descGeneral: null,
-    sku: [],
-    ean: [],
-    desDetallada: [],
-    stockTotal: [],
-    cantidadTiendas: [],
-    cantidadTiendasReserva: [],
-    urlImagenes: [],
-    urlRender3D: [],
-    imagePreviewUrl: [],
-    imageDetailsUrls: [],
-    precioNormal: [],
-    precioeccommerce: [],
-    fechaInicioVigencia: [],
-    fechaFinalVigencia: [],
-    indRetoma: [],
-    indcerointeres: [],
-    skuPostback: [],
-  });
+  const productSelection = useProductSelection(
+    apiProduct || {
+      codigoMarketBase: id,
+      codigoMarket: [],
+      nombreMarket: name,
+      categoria: "",
+      subcategoria: "",
+      modelo: "",
+      color: [],
+      capacidad: [],
+      memoriaram: [],
+      descGeneral: null,
+      sku: [],
+      ean: [],
+      desDetallada: [],
+      stockTotal: [],
+      cantidadTiendas: [],
+      cantidadTiendasReserva: [],
+      urlImagenes: [],
+      urlRender3D: [],
+      imagePreviewUrl: [],
+      imageDetailsUrls: [],
+      precioNormal: [],
+      precioeccommerce: [],
+      fechaInicioVigencia: [],
+      fechaFinalVigencia: [],
+      indRetoma: [],
+      indcerointeres: [],
+      skuPostback: [],
+    }
+  );
 
   // Verificar si la VARIANTE SELECCIONADA está sin stock (usando stock ajustado)
   // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
   // Stock ajustado = stockTotal - cantidadTiendasReserva, excluyendo bodega 001
-  const isOutOfStock = (productSelection.selectedVariant?.stockDisponible ?? 0) <= 0;
+  const isOutOfStock =
+    (productSelection.selectedVariant?.stockDisponible ?? 0) <= 0;
 
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
   const showColorSelector = shouldShowColorSelector(
@@ -176,7 +183,6 @@ export default function ProductCard({
 
   // Obtener la imagen del color seleccionado o usar la imagen por defecto
   const currentImage = useMemo(() => {
-
     // Si hay datos de API, usar la imagen de la variante seleccionada
     if (apiProduct && productSelection.selectedVariant?.imagePreviewUrl) {
       return productSelection.selectedVariant.imagePreviewUrl;
@@ -191,7 +197,14 @@ export default function ProductCard({
 
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
   const productImages = useMemo(
-    () => [currentImage, currentImage, currentImage, currentImage, currentImage, currentImage],
+    () => [
+      currentImage,
+      currentImage,
+      currentImage,
+      currentImage,
+      currentImage,
+      currentImage,
+    ],
     [currentImage]
   );
 
@@ -243,18 +256,24 @@ export default function ProductCard({
   };
 
   // Calcular precios dinámicos: usar el nuevo sistema si está disponible, sino usar el legacy
-  const { currentPrice: legacyPrice, currentOriginalPrice: legacyOriginalPrice } =
-    calculateDynamicPrices(
-      selectedCapacity,
-      selectedColor,
-      price,
-      originalPrice,
-      discount
-    );
+  const {
+    currentPrice: legacyPrice,
+    currentOriginalPrice: legacyOriginalPrice,
+  } = calculateDynamicPrices(
+    selectedCapacity,
+    selectedColor,
+    price,
+    originalPrice,
+    discount
+  );
 
   // Usar precios del nuevo sistema si están disponibles
-  const finalCurrentPrice = currentPrice ? `$ ${Math.round(currentPrice).toLocaleString('es-CO')}` : legacyPrice;
-  const finalCurrentOriginalPrice = currentOriginalPrice ? `$${Math.round(currentOriginalPrice).toLocaleString('es-CO')}` : legacyOriginalPrice;
+  const finalCurrentPrice = currentPrice
+    ? `$ ${Math.round(currentPrice).toLocaleString("es-CO")}`
+    : legacyPrice;
+  const finalCurrentOriginalPrice = currentOriginalPrice
+    ? `$${Math.round(currentOriginalPrice).toLocaleString("es-CO")}`
+    : legacyOriginalPrice;
 
   const handleAddToCart = async () => {
     if (isLoading) {
@@ -266,7 +285,8 @@ export default function ProductCard({
     try {
       // Validación estricta: debe existir un SKU válido
       const skuToUse = currentSku || selectedColor?.sku;
-      const eanToUse = productSelection.selectedVariant?.ean || selectedColor?.ean || '';
+      const eanToUse =
+        productSelection.selectedVariant?.ean || selectedColor?.ean || "";
 
       if (!skuToUse) {
         setIsLoading(false);
@@ -276,8 +296,9 @@ export default function ProductCard({
       posthogUtils.capture("add_to_cart_click", {
         product_id: id,
         product_name: name,
-        selected_color: selectedColor?.name || productSelection.selection.selectedColor,
-        selected_color_sku: currentSku || '',
+        selected_color:
+          selectedColor?.name || productSelection.selection.selectedColor,
+        selected_color_sku: currentSku || "",
         selected_color_ean: eanToUse,
         source: "product_card",
       });
@@ -287,26 +308,40 @@ export default function ProductCard({
       await addProduct({
         id,
         name,
-        image: typeof currentImage === "string" ? currentImage : (typeof image === "string" ? image : image.src ?? ""),
+        image:
+          typeof currentImage === "string"
+            ? currentImage
+            : typeof image === "string"
+            ? image
+            : image.src ?? "",
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentPrice ?? 0,
         originalPrice:
           typeof finalCurrentOriginalPrice === "string"
-            ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
+            ? Number.parseInt(
+                finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+              )
             : finalCurrentOriginalPrice,
         stock: productSelection.selectedVariant?.stockDisponible ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
-        sku: currentSku || '', // SKU del sistema seleccionado
+        sku: currentSku || "", // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
         color: displayedSelectedColor?.hex || undefined,
-        colorName: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || selectedColor?.label || undefined,
-        capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label || undefined,
+        colorName:
+          displayedSelectedColor?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          selectedColor?.label ||
+          undefined,
+        capacity:
+          productSelection.selection.selectedCapacity ||
+          selectedCapacity?.label ||
+          undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
-        skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
+        skuPostback: productSelection.selectedSkuPostback || "",
+        desDetallada: productSelection.selectedVariant?.desDetallada,
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -332,7 +367,10 @@ export default function ProductCard({
     const selectedColorSku = displayedSelectedColor?.sku;
 
     // Obtener el codigoMarket correspondiente a la variante seleccionada
-    const codigoMarket = productSelection.selectedCodigoMarket || apiProduct?.codigoMarketBase || '';
+    const codigoMarket =
+      productSelection.selectedCodigoMarket ||
+      apiProduct?.codigoMarketBase ||
+      "";
 
     await stockNotification.requestNotification({
       productName: apiProduct?.modelo || name,
@@ -365,6 +403,19 @@ export default function ProductCard({
 
     // Si NO es un botón ni checkbox, navegar a multimedia
     if (!isButton && !isCheckbox) {
+      // 🔥 Track View Item Event para GA4
+      trackViewItem({
+        item_id: currentSku || id,
+        item_name: name,
+        item_brand: "Samsung",
+        item_category: apiProduct?.categoria || "Sin categoría",
+        price:
+          typeof finalCurrentPrice === "string"
+            ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
+            : finalCurrentPrice ?? 0,
+        currency: "COP",
+      });
+
       handleMoreInfo();
     }
   };
@@ -387,10 +438,19 @@ export default function ProductCard({
   // Color seleccionado para UI (coincide con el selector de colores)
   const displayedSelectedColor = useMemo(() => {
     if (apiProduct) {
-      return colors.find(c => c.label === productSelection.selection.selectedColor) || null;
+      return (
+        colors.find(
+          (c) => c.label === productSelection.selection.selectedColor
+        ) || null
+      );
     }
     return selectedColor;
-  }, [apiProduct, colors, productSelection.selection.selectedColor, selectedColor]);
+  }, [
+    apiProduct,
+    colors,
+    productSelection.selection.selectedColor,
+    selectedColor,
+  ]);
 
   return (
     <>
@@ -398,9 +458,21 @@ export default function ProductCard({
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
         productName={apiProduct?.modelo || name}
-        productImage={typeof currentImage === "string" ? currentImage : (typeof image === "string" ? image : image.src ?? "")}
-        selectedColor={displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
-        selectedStorage={productSelection.selection.selectedCapacity || undefined}
+        productImage={
+          typeof currentImage === "string"
+            ? currentImage
+            : typeof image === "string"
+            ? image
+            : image.src ?? ""
+        }
+        selectedColor={
+          displayedSelectedColor?.nombreColorDisplay ||
+          productSelection.selection.selectedColor ||
+          undefined
+        }
+        selectedStorage={
+          productSelection.selection.selectedCapacity || undefined
+        }
         onNotificationRequest={handleRequestStockNotification}
       />
 
@@ -408,273 +480,323 @@ export default function ProductCard({
       <motion.div
         role="button"
         onClick={handleCardClick}
-      onKeyDown={handleCardKeyDown}
-      tabIndex={0}
-      aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
-      whileHover={{
-        scale: 1.02,
-        transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }
-      }}
-      className={cn(
-        "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
-        className
-      )}
-    >
-      {/* Sección de imagen con carrusel */}
-      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-        <button
-          onClick={(e) => {
-            e.stopPropagation(); // Prevenir que se active el click de la card
-            handleToggleFavorite();
-          }}
-          className={cn(
-            "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer",
-            "bg-white shadow-md hover:shadow-lg",
-            isFavorite ? "text-red-500" : "text-gray-400"
-          )}
-        >
-          <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
-        </button>
-        {/* Carrusel de imágenes */}
-        <div className="relative w-full h-full">
-          {transformedImages.map((transformedSrc, index) => {
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "absolute inset-0 flex items-center justify-center p-4",
-                  index === currentImageIndex ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <div className="relative w-full h-full">
-                  <Image
-                    src={transformedSrc}
-                    alt={`${name} - imagen ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes={cloudinaryImage.imageProps.sizes}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
-        {isOutOfStock && (
-          <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
-            <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
-              <p className="text-xs text-gray-600 text-center font-medium">Sin unidades</p>
-            </div>
-          </div>
+        onKeyDown={handleCardKeyDown}
+        tabIndex={0}
+        aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
+        whileHover={{
+          scale: 1.02,
+          transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
+        }}
+        className={cn(
+          "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
+          className
         )}
-      </div>
-
-      {/* Contenido del producto */}
-      <div className="py-2 space-y-2">
-        {/* Título del producto */}
-        <div className="px-3">
-          <h3
-            className="text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap text-black"
+      >
+        {/* Sección de imagen con carrusel */}
+        <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          <button
+            onClick={(e) => {
+              e.stopPropagation(); // Prevenir que se active el click de la card
+              handleToggleFavorite();
+            }}
+            className={cn(
+              "absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 cursor-pointer",
+              "bg-white shadow-md hover:shadow-lg",
+              isFavorite ? "text-red-500" : "text-gray-400"
+            )}
           >
-            <button
-              type="button"
-              onClick={(event) => {
-                event.stopPropagation();
-                handleMoreInfo();
-              }}
-              className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
-            >
-              {apiProduct?.modelo || name}
-            </button>
-          </h3>
-          {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
-          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (currentSku || currentCodigoMarket || currentskuPostback) && (
-            <div className="mt-1 space-y-0.5">
-              {currentSku && (
-                <p className="text-xs text-gray-500 font-medium">
-                  SKU: {currentSku}
-                </p>
-              )}
-              {currentCodigoMarket && (
-                <p className="text-xs text-gray-500 font-medium">
-                  Código: {currentCodigoMarket}
-                </p>
-              )}
-              {currentskuPostback && (<div>
-                <p className="text-xs text-gray-500 font-medium">
-                  SKU Postback: {currentskuPostback}
+            <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+          </button>
+          {/* Carrusel de imágenes */}
+          <div className="relative w-full h-full">
+            {transformedImages.map((transformedSrc, index) => {
+              return (
+                <div
+                  key={index}
+                  className={cn(
+                    "absolute inset-0 flex items-center justify-center p-4",
+                    index === currentImageIndex ? "opacity-100" : "opacity-0"
+                  )}
+                >
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={transformedSrc}
+                      alt={`${name} - imagen ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes={cloudinaryImage.imageProps.sizes}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
+          {isOutOfStock && (
+            <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
+              <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
+                <p className="text-xs text-gray-600 text-center font-medium">
+                  Sin unidades
                 </p>
               </div>
-              )}
-
-              {/* Mostrar stock disponible ajustado */}
-              {productSelection.selectedVariant && (
-                <div className="text-sm text-gray-600 mt-2">
-                  Stock disponible:{" "}
-                  <span className={cn(
-                    "ml-1 font-semibold",
-                    productSelection.selectedVariant.stockDisponible > 0 ? "text-green-600" : "text-red-600"
-                  )}>
-                    {productSelection.selectedVariant.stockDisponible}
-                  </span>
-                  <span className="text-xs text-gray-500 ml-1">
-                    (Total: {productSelection.selectedVariant.stockTotal} en {productSelection.selectedVariant.cantidadTiendas} {productSelection.selectedVariant.cantidadTiendas === 1 ? 'tienda' : 'tiendas'})
-                  </span>
-                </div>
-              )}
-
             </div>
           )}
         </div>
 
-        {/* Nombre de color del API (antes del selector) - Solo si debe mostrar selector */}
-        {showColorSelector && displayedSelectedColor?.nombreColorDisplay && (
-          <div className="px-3 mb-1">
-            <p className="text-xs text-gray-600 font-medium">
-              {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
-            </p>
+        {/* Contenido del producto */}
+        <div className="py-2 space-y-2">
+          {/* Título del producto */}
+          <div className="px-3">
+            <h3 className="text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap text-black">
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  handleMoreInfo();
+                }}
+                className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+              >
+                {apiProduct?.modelo || name}
+              </button>
+            </h3>
+            {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" &&
+              (currentSku || currentCodigoMarket || currentskuPostback) && (
+                <div className="mt-1 space-y-0.5">
+                  {currentSku && (
+                    <p className="text-xs text-gray-500 font-medium">
+                      SKU: {currentSku}
+                    </p>
+                  )}
+                  {currentCodigoMarket && (
+                    <p className="text-xs text-gray-500 font-medium">
+                      Código: {currentCodigoMarket}
+                    </p>
+                  )}
+                  {currentskuPostback && (
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">
+                        SKU Postback: {currentskuPostback}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Mostrar stock disponible ajustado */}
+                  {productSelection.selectedVariant && (
+                    <div className="text-sm text-gray-600 mt-2">
+                      Stock disponible:{" "}
+                      <span
+                        className={cn(
+                          "ml-1 font-semibold",
+                          productSelection.selectedVariant.stockDisponible > 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        )}
+                      >
+                        {productSelection.selectedVariant.stockDisponible}
+                      </span>
+                      <span className="text-xs text-gray-500 ml-1">
+                        (Total: {productSelection.selectedVariant.stockTotal} en{" "}
+                        {productSelection.selectedVariant.cantidadTiendas}{" "}
+                        {productSelection.selectedVariant.cantidadTiendas === 1
+                          ? "tienda"
+                          : "tiendas"}
+                        )
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
           </div>
-        )}
 
-        {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
-        {showColorSelector && (
-          apiProduct ?
-            productSelection.availableColors.length > 0 :
-            (colors && colors.length > 0)
-        ) && (
-          <div className="h-[40px] px-3">
-            <ColorSelector
-              colors={apiProduct ?
-                productSelection.availableColors.map(colorName => {
-                  // Crear un ProductColor basado en el nombre del color
-                  const normalizedColor = colorName.toLowerCase().trim();
-                  const colorInfo = colors.find(c => c.label.toLowerCase() === normalizedColor) ||
-                    { name: normalizedColor.replaceAll(/\s+/g, '-'), hex: '#808080', label: colorName, sku: '', ean: '' };
-                  return colorInfo;
-                }) : colors
-              }
-              selectedColor={apiProduct ?
-                colors.find(c => c.label === productSelection.selection.selectedColor) || null :
-                selectedColor
-              }
-              onColorSelect={handleColorSelect}
-              onShowMore={handleCardClick}
-            />
-          </div>
-        )}
+          {/* Nombre de color del API (antes del selector) - Solo si debe mostrar selector */}
+          {showColorSelector && displayedSelectedColor?.nombreColorDisplay && (
+            <div className="px-3 mb-1">
+              <p className="text-xs text-gray-600 font-medium">
+                {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
+              </p>
+            </div>
+          )}
 
-        {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
-        {showCapacitySelector && (
-          apiProduct ?
-            productSelection.availableCapacities.length > 0 :
-            (capacities && capacities.length > 0)
-        ) && (
-          <div className="h-[40px] px-3">
-            <CapacitySelector
-              capacities={apiProduct ?
-                productSelection.availableCapacities.map(capacityName => {
-                  // Crear un ProductCapacity basado en el nombre de la capacidad
-                  const capacityInfo = capacities?.find(c => c.label === capacityName) ||
-                    { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
-                  return capacityInfo;
-                }) : (capacities || [])
-              }
-              selectedCapacity={apiProduct ?
-                productSelection.availableCapacities.map(capacityName => {
-                  const capacityInfo = capacities?.find(c => c.label === capacityName) ||
-                    { value: capacityName.toLowerCase().replaceAll(/\s+/g, ''), label: capacityName, sku: '', ean: '' };
-                  return capacityInfo;
-                }).find(c => c.label === productSelection.selection.selectedCapacity) || null :
-                selectedCapacity
-              }
-              onCapacitySelect={handleCapacitySelect}
-            />
-          </div>
-        )}
+          {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
+          {showColorSelector &&
+            (apiProduct
+              ? productSelection.availableColors.length > 0
+              : colors && colors.length > 0) && (
+              <div className="h-[40px] px-3">
+                <ColorSelector
+                  colors={
+                    apiProduct
+                      ? productSelection.availableColors.map((colorName) => {
+                          // Crear un ProductColor basado en el nombre del color
+                          const normalizedColor = colorName
+                            .toLowerCase()
+                            .trim();
+                          const colorInfo = colors.find(
+                            (c) => c.label.toLowerCase() === normalizedColor
+                          ) || {
+                            name: normalizedColor.replaceAll(/\s+/g, "-"),
+                            hex: "#808080",
+                            label: colorName,
+                            sku: "",
+                            ean: "",
+                          };
+                          return colorInfo;
+                        })
+                      : colors
+                  }
+                  selectedColor={
+                    apiProduct
+                      ? colors.find(
+                          (c) =>
+                            c.label === productSelection.selection.selectedColor
+                        ) || null
+                      : selectedColor
+                  }
+                  onColorSelect={handleColorSelect}
+                  onShowMore={handleCardClick}
+                />
+              </div>
+            )}
 
-        {/* Precio */}
-        <div className="px-3 space-y-3">
-          {finalCurrentPrice && (
-            <div className="space-y-1">
-              {(() => {
-                const { hasSavings, savings } = calculateSavings(
-                  finalCurrentPrice,
-                  finalCurrentOriginalPrice
-                );
+          {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
+          {showCapacitySelector &&
+            (apiProduct
+              ? productSelection.availableCapacities.length > 0
+              : capacities && capacities.length > 0) && (
+              <div className="h-[40px] px-3">
+                <CapacitySelector
+                  capacities={
+                    apiProduct
+                      ? productSelection.availableCapacities.map(
+                          (capacityName) => {
+                            // Crear un ProductCapacity basado en el nombre de la capacidad
+                            const capacityInfo = capacities?.find(
+                              (c) => c.label === capacityName
+                            ) || {
+                              value: capacityName
+                                .toLowerCase()
+                                .replaceAll(/\s+/g, ""),
+                              label: capacityName,
+                              sku: "",
+                              ean: "",
+                            };
+                            return capacityInfo;
+                          }
+                        )
+                      : capacities || []
+                  }
+                  selectedCapacity={
+                    apiProduct
+                      ? productSelection.availableCapacities
+                          .map((capacityName) => {
+                            const capacityInfo = capacities?.find(
+                              (c) => c.label === capacityName
+                            ) || {
+                              value: capacityName
+                                .toLowerCase()
+                                .replaceAll(/\s+/g, ""),
+                              label: capacityName,
+                              sku: "",
+                              ean: "",
+                            };
+                            return capacityInfo;
+                          })
+                          .find(
+                            (c) =>
+                              c.label ===
+                              productSelection.selection.selectedCapacity
+                          ) || null
+                      : selectedCapacity
+                  }
+                  onCapacitySelect={handleCapacitySelect}
+                />
+              </div>
+            )}
 
-                if (!hasSavings) {
-                  // Sin descuento: solo precio
+          {/* Precio */}
+          <div className="px-3 space-y-3">
+            {finalCurrentPrice && (
+              <div className="space-y-1">
+                {(() => {
+                  const { hasSavings, savings } = calculateSavings(
+                    finalCurrentPrice,
+                    finalCurrentOriginalPrice
+                  );
+
+                  if (!hasSavings) {
+                    // Sin descuento: solo precio
+                    return (
+                      <div className="text-xl font-bold text-black">
+                        {finalCurrentPrice}
+                      </div>
+                    );
+                  }
+
+                  // Con descuento: precio + info de descuento a la derecha
                   return (
-                    <div className="text-xl font-bold text-black">
-                      {finalCurrentPrice}
+                    <div className="flex items-end gap-3">
+                      {/* Precio final */}
+                      <div className="text-xl font-bold text-black leading-tight">
+                        {finalCurrentPrice}
+                      </div>
+
+                      {/* Info de descuento a la derecha */}
+                      <div className="flex flex-col items-start justify-end">
+                        {/* Precio anterior tachado */}
+                        <span className="text-xs line-through text-gray-500 leading-tight">
+                          {finalCurrentOriginalPrice}
+                        </span>
+                        {/* Ahorro */}
+                        <span className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">
+                          Ahorra ${savings.toLocaleString("es-CO")}
+                        </span>
+                      </div>
                     </div>
                   );
-                }
+                })()}
+              </div>
+            )}
+            {/* Botones de acción - Horizontal */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isOutOfStock) {
+                    stockNotification.openModal();
+                  } else {
+                    handleAddToCart();
+                  }
+                }}
+                disabled={isLoading}
+                className={cn(
+                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
+                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                  isLoading && "animate-pulse"
+                )}
+              >
+                {isLoading ? (
+                  <Loader className="w-4 h-4 mx-auto" />
+                ) : isOutOfStock ? (
+                  "Notifícame"
+                ) : (
+                  "Añadir al carrito"
+                )}
+              </button>
 
-                // Con descuento: precio + info de descuento a la derecha
-                return (
-                  <div className="flex items-end gap-3">
-                    {/* Precio final */}
-                    <div className="text-xl font-bold text-black leading-tight">
-                      {finalCurrentPrice}
-                    </div>
-
-                    {/* Info de descuento a la derecha */}
-                    <div className="flex flex-col items-start justify-end">
-                      {/* Precio anterior tachado */}
-                      <span className="text-xs line-through text-gray-500 leading-tight">
-                        {finalCurrentOriginalPrice}
-                      </span>
-                      {/* Ahorro */}
-                      <span className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">
-                        Ahorra ${savings.toLocaleString("es-CO")}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleMoreInfo();
+                }}
+                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+              >
+                Más información
+              </button>
             </div>
-          )}
-          {/* Botones de acción - Horizontal */}
-          <div className="flex items-center gap-3">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                if (isOutOfStock) {
-                  stockNotification.openModal();
-                } else {
-                  handleAddToCart();
-                }
-              }}
-              disabled={isLoading}
-              className={cn(
-                "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
-                "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                isLoading && "animate-pulse"
-              )}
-            >
-              {isLoading ? (
-                <Loader className="w-4 h-4 mx-auto" />
-              ) : isOutOfStock ? (
-                "Notifícame"
-              ) : (
-                "Añadir al carrito"
-              )}
-            </button>
-
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleMoreInfo();
-              }}
-              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
-            >
-              Más información
-            </button>
           </div>
         </div>
-      </div>
       </motion.div>
     </>
   );

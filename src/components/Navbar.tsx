@@ -304,6 +304,8 @@ export default function Navbar() {
                             onClick={(e) => {
                               // Prevenir navegación por defecto del Link
                               e.preventDefault();
+                              // 🔥 Disparar analytics antes de navegar
+                              navbar.handleNavClick(item);
                               // Cerrar dropdown inmediatamente
                               navbar.setActiveDropdown(null);
                               // Navegar de forma programática (instantáneo)

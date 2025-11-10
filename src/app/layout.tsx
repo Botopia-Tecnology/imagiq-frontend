@@ -19,6 +19,7 @@ import ChatbotWidget from "@/components/chatbotWidget";
 import { Toaster } from "@/components/ui/sonner";
 import ClientLayout from "./ClientLayout";
 import AnalyticsScripts from "@/components/analytics/AnalyticsScripts";
+import AnalyticsInit from "@/components/analytics/AnalyticsInit";
 import { ResponsiveProvider } from "@/components/responsive"; // Importa el provider
 import { NavbarVisibilityProvider } from "@/features/layout/NavbarVisibilityContext";
 import { ProductProvider } from "@/features/products/ProductContext";
@@ -132,6 +133,7 @@ export default function RootLayout({
       <head></head>
       <body className="antialiased">
         <AnalyticsScripts />
+        <AnalyticsInit />
         <ResponsiveProvider>
           <ProductProvider>
             <NavbarVisibilityProvider>

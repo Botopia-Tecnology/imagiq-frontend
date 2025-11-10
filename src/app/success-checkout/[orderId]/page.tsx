@@ -28,6 +28,8 @@ interface OrderData {
   orden_id: string;
   fecha_creacion: string;
   usuario_id: string;
+  whatsapp_template_id?: string;
+  template_id?: string;
   envios?: Array<{
     numero_guia: string;
     tiempo_entrega_estimado: string;
@@ -108,42 +110,72 @@ export default function SuccessCheckoutPage({
   // Enviar mensaje de WhatsApp cuando se carga la página
   useEffect(() => {
     const sendWhatsAppMessage = async () => {
-      if (whatsappSentRef.current) return; // Evitar envíos duplicados
+      console.log("🚀 [WhatsApp] Iniciando proceso de envío de mensaje...");
+      
+      if (whatsappSentRef.current) {
+        console.log("⚠️ [WhatsApp] Ya se intentó enviar el mensaje anteriormente, omitiendo...");
+        return; // Evitar envíos duplicados
+      }
       whatsappSentRef.current = true; // Marcar como enviado inmediatamente
 
       try {
+        console.log("📦 [WhatsApp] Obteniendo datos de la orden...", pathParams.orderId);
+        
         // Obtener datos de la orden
         const orderResponse = await apiClient.get<OrderData>(
           `/api/orders/shipping-info/${pathParams.orderId}`
         );
 
         if (!orderResponse.success || !orderResponse.data) {
-          console.error("Error al obtener datos de la orden");
+          console.error("❌ [WhatsApp] Error al obtener datos de la orden:", orderResponse);
           return;
         }
 
+        console.log("✅ [WhatsApp] Datos de la orden obtenidos exitosamente");
         const orderData = orderResponse.data;
 
         // Obtener datos del usuario desde localStorage (misma clave que en checkout)
+        console.log("👤 [WhatsApp] Obteniendo datos del usuario desde localStorage...");
         const userData = localStorage.getItem("imagiq_user");
         let userInfo: UserData | null = null;
 
         if (userData) {
-          userInfo = JSON.parse(userData);
+          try {
+            userInfo = JSON.parse(userData);
+            console.log("✅ [WhatsApp] Usuario obtenido del localStorage:", {
+              id: userInfo?.id,
+              nombre: userInfo?.nombre,
+              tieneTelefono: !!userInfo?.telefono
+            });
+          } catch (e) {
+            console.error("❌ [WhatsApp] Error al parsear datos del usuario:", e);
+          }
+        } else {
+          console.warn("⚠️ [WhatsApp] No se encontró 'imagiq_user' en localStorage");
         }
 
         if (!userInfo || !userInfo.telefono) {
-          console.log("No hay información de usuario o teléfono disponible");
+          console.error("❌ [WhatsApp] No hay información de usuario o teléfono disponible", {
+            tieneUserInfo: !!userInfo,
+            tieneTelefono: !!userInfo?.telefono,
+            telefono: userInfo?.telefono
+          });
           return;
         }
 
+        console.log("✅ [WhatsApp] Información de usuario válida");
+
         // Limpiar y formatear el teléfono (quitar espacios, guiones, paréntesis, etc.)
         let telefono = userInfo.telefono.toString().replace(/[\s+\-()]/g, "");
+        console.log("📞 [WhatsApp] Teléfono original:", userInfo.telefono, "→ Limpiado:", telefono);
         
         // Asegurar que el teléfono tenga el código de país 57
         if (!telefono.startsWith("57")) {
           telefono = "57" + telefono;
+          console.log("📞 [WhatsApp] Agregado código de país 57:", telefono);
         }
+        
+        console.log("✅ [WhatsApp] Teléfono formateado:", telefono);
 
         // Obtener datos del envío
         const envioData =
@@ -236,68 +268,144 @@ export default function SuccessCheckoutPage({
           userInfo.nombre.charAt(0).toUpperCase() +
           userInfo.nombre.slice(1).toLowerCase();
 
-        // Obtener template_id de variable de entorno
-        const templateId = process.env.NEXT_PUBLIC_WHATSAPP_ORDER_TEMPLATE_ID;
+        // Obtener template_id desde la respuesta del backend
+        console.log("🔍 [WhatsApp] Buscando template_id en orderData...", {
+          tieneWhatsappTemplateId: !!orderData.whatsapp_template_id,
+          tieneTemplateId: !!orderData.template_id,
+          whatsappTemplateId: orderData.whatsapp_template_id,
+          templateId: orderData.template_id
+        });
         
-        if (!templateId) {
-          console.error("Template ID de WhatsApp no configurado");
+        const templateId = orderData.whatsapp_template_id || orderData.template_id;
+        
+        if (!templateId || templateId.trim() === "") {
+          console.error("❌ [WhatsApp] Template ID de WhatsApp no encontrado en la respuesta del backend");
+          console.error("💡 [WhatsApp] El backend debe incluir 'whatsapp_template_id' o 'template_id' en la respuesta de /api/orders/shipping-info");
+          console.error("💡 [WhatsApp] OrderData recibido:", {
+            orden_id: orderData.orden_id,
+            keys: Object.keys(orderData)
+          });
+          // No retornar, permitir que continúe el flujo aunque falle el WhatsApp
+          // El usuario ya completó la compra exitosamente
           return;
         }
 
+        console.log("✅ [WhatsApp] Template ID obtenido:", templateId);
+
         // Construir URL completa para el botón del template
+        // El endpoint requiere URL completa según la documentación
         const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
         const trackingUrl = `${baseUrl}/tracking-service/${pathParams.orderId}`;
 
         // Construir array de variables en el orden correcto según el template:
-        // 1. nombre (body variable {{1}})
-        // 2. "compra" (body variable {{2}})
-        // 3. numeroGuia (body variable {{3}})
-        // 4. productos (body variable {{4}})
-        // 5. fechaEntrega (body variable {{5}})
-        // 6. ordenId/trackingUrl (button URL variable)
+        // Template "pedido_confirmado" (UUID BD: 49ccd22f-bee0-4e70-b294-eaddb38445ac, ID Meta: 1247542063805988):
+        // BODY:
+        //   {{1}}: nombre del cliente
+        //   {{2}}: tipo de transacción ("compra")
+        //   {{3}}: número de pedido/guía
+        //   {{4}}: descripción de productos (máx 30 chars)
+        //   {{5}}: fecha de entrega estimada
+        // BUTTON URL:
+        //   {{1}}: URL completa del tracking (ej: "https://example.com/tracking-service/{orderId}")
         const variables = [
-          nombreCapitalizado,
-          "compra",
-          numeroGuia,
-          productosDesc,
-          fechaEntrega,
-          trackingUrl, // URL completa para el botón del template
+          nombreCapitalizado,  // Body {{1}} - Nombre del cliente
+          "compra",            // Body {{2}} - Tipo de transacción
+          numeroGuia,          // Body {{3}} - Número de guía
+          productosDesc,       // Body {{4}} - Descripción de productos
+          fechaEntrega,        // Body {{5}} - Fecha de entrega
+          trackingUrl,         // Button URL {{1}} - URL completa
         ];
 
+        // Preparar payload según la especificación del endpoint
+        const payload = {
+          to: telefono,
+          template_id: templateId,
+          variables: variables,
+        };
+
+        console.log("📦 [WhatsApp] Payload preparado:", {
+          to: telefono,
+          template_id: templateId,
+          variablesCount: variables.length,
+          variables: variables
+        });
+
         // Enviar mensaje de WhatsApp al backend
-        const whatsappResponse = await fetch(`${API_BASE_URL}/api/messaging/send-template`, {
+        const apiUrl = `${API_BASE_URL}/api/messaging/send-template`;
+        console.log("📤 [WhatsApp] Enviando request al backend...", {
+          method: "POST",
+          url: apiUrl,
+          payload: payload
+        });
+
+        const whatsappResponse = await fetch(apiUrl, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            to: telefono,
-            template_id: templateId,
-            variables: variables,
-          }),
+          body: JSON.stringify(payload),
         });
 
+        console.log("📥 [WhatsApp] Respuesta recibida del backend:", {
+          status: whatsappResponse.status,
+          statusText: whatsappResponse.statusText,
+          ok: whatsappResponse.ok
+        });
+
+        // Verificar respuesta del backend
         if (!whatsappResponse.ok) {
-          const errorData = await whatsappResponse.json().catch(() => ({}));
-          console.error("Error al enviar mensaje de WhatsApp:", errorData);
+          const errorData = await whatsappResponse.json().catch((parseError) => {
+            console.error("❌ [WhatsApp] Error al parsear respuesta de error:", parseError);
+            return {};
+          });
+          
+          console.error("❌ [WhatsApp] Error al enviar mensaje de WhatsApp:", {
+            status: whatsappResponse.status,
+            statusText: whatsappResponse.statusText,
+            error: errorData.error || errorData,
+            details: errorData.details,
+            fullResponse: errorData
+          });
+          
           // Resetear el flag para permitir reintento en caso de error
           whatsappSentRef.current = false;
+          console.log("🔄 [WhatsApp] Flag reseteado, se puede reintentar");
           return;
         }
 
-        const whatsappData = await whatsappResponse.json();
+        const whatsappData = await whatsappResponse.json().catch((parseError) => {
+          console.error("❌ [WhatsApp] Error al parsear respuesta exitosa:", parseError);
+          return { success: false };
+        });
 
+        console.log("📄 [WhatsApp] Datos de respuesta parseados:", whatsappData);
+
+        // Verificar respuesta exitosa según la especificación del endpoint
         if (whatsappData.success) {
-          console.log("Mensaje de WhatsApp enviado exitosamente");
+          console.log("✅ [WhatsApp] Mensaje de WhatsApp enviado exitosamente", {
+            messageId: whatsappData.messageId,
+            message: whatsappData.message,
+            fullResponse: whatsappData
+          });
         } else {
-          console.error("Error al enviar mensaje de WhatsApp:", whatsappData);
+          console.error("❌ [WhatsApp] Error en respuesta de WhatsApp (success: false):", {
+            success: whatsappData.success,
+            error: whatsappData.error,
+            details: whatsappData.details,
+            fullResponse: whatsappData
+          });
           whatsappSentRef.current = false;
+          console.log("🔄 [WhatsApp] Flag reseteado debido a success: false");
         }
       } catch (error) {
-        console.error("Error al procesar envío de WhatsApp:", error);
+        console.error("❌ [WhatsApp] Error al procesar envío de WhatsApp (catch):", error);
+        console.error("❌ [WhatsApp] Stack trace:", error instanceof Error ? error.stack : "No stack available");
+        whatsappSentRef.current = false;
+        console.log("🔄 [WhatsApp] Flag reseteado debido a excepción");
       }
     };
 
+    console.log("🎬 [WhatsApp] useEffect ejecutado, llamando sendWhatsAppMessage...");
     sendWhatsAppMessage();
   }, [pathParams.orderId]); // Solo depende del orderId, useRef previene duplicados
 

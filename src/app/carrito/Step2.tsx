@@ -4,7 +4,7 @@
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
 import React, { useEffect, useState } from "react";
-import { useCart, ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
+import { useCart } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
 import AddressAutocomplete from "@/components/forms/AddressAutocomplete";
 import AddressMap3D from "@/components/AddressMap3D";
@@ -861,24 +861,6 @@ export default function Step2({
                   ? String(formatPrice(appliedDiscount))
                   : "0"}
               </span>
-            </div>
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between text-base">
-                <span>Envío</span>
-                <span>
-                  {cartProducts.length > 0 && (
-                    <span className="line-through mr-2 text-gray-400">
-                      {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
-                    </span>
-                  )}
-                  <span className="font-bold">0</span>
-                </span>
-              </div>
-              {cartProducts.length > 0 && (
-                <div className="text-xs text-green-600">
-                  tienes envío gratis en esta compra
-                </div>
-              )}
             </div>
             <div className="flex justify-between text-lg font-bold mt-2">
               <span>Total</span>

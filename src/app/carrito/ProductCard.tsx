@@ -141,7 +141,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 ) : (
                   <>
                     <p className="text-sm text-gray-500">
-                      Enviado desde {shippingCity}
+                      En {shippingCity}
                     </p>
                     {shippingStore && (
                       <p className="text-xs text-gray-400 mt-0.5">
@@ -248,7 +248,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 ) : (
                   <>
                     <p className="text-sm text-gray-500">
-                      Enviado desde {shippingCity}
+                      En {shippingCity}
                     </p>
                     {shippingStore && (
                       <p className="text-xs text-gray-400 mt-0.5">

@@ -1,5 +1,4 @@
 import React from "react";
-import { ORIGINAL_SHIPPING_COST } from "@/hooks/useCart";
 
 interface Product {
   id: string;
@@ -68,25 +67,6 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
             <span className="font-semibold text-red-600">
               - {safeDiscount > 0 ? String(formatPrice(safeDiscount)) : "0"}
             </span>
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600">Envío</span>
-              <div className="text-right">
-                {cartProducts.length > 0 && (
-                  <span className="line-through text-sm text-gray-400 mr-2">
-                    {String(Number(ORIGINAL_SHIPPING_COST).toLocaleString())}
-                  </span>
-                )}
-                <span className="font-semibold text-gray-900">Gratis</span>
-              </div>
-            </div>
-            {cartProducts.length > 0 && (
-              <p className="text-sm text-green-600">
-                Tienes envío gratis en esta compra
-              </p>
-            )}
           </div>
         </div>
 

@@ -5,16 +5,7 @@
  * ningún Container ID en el frontend.
  */
 
-/**
- * Tipo para el DataLayer de GTM
- */
-type DataLayerObject = Record<string, unknown>;
-
-declare global {
-  interface Window {
-    dataLayer?: DataLayerObject[];
-  }
-}
+import type { DataLayerObject } from './analytics/types/dataLayer';
 
 /**
  * Push de datos al dataLayer de GTM

@@ -19,6 +19,7 @@ import { use, useEffect, useRef, useState } from "react";
 import CheckoutSuccessOverlay from "../../carrito/CheckoutSuccessOverlay";
 import { useCart } from "@/hooks/useCart";
 import { apiClient } from "@/lib/api";
+import { useAnalytics } from "@/lib/analytics";
 
 interface OrderData {
   orden_id: string;
@@ -55,7 +56,51 @@ export default function SuccessCheckoutPage({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const { clearCart } = useCart();
+  const { trackPurchase } = useAnalytics();
   const whatsappSentRef = useRef(false);
+  const analyticsSentRef = useRef(false);
+
+  // Enviar evento de purchase a analytics
+  useEffect(() => {
+    const sendPurchaseEvent = async () => {
+      if (analyticsSentRef.current) return;
+      analyticsSentRef.current = true;
+
+      try {
+        const orderResponse = await apiClient.get<OrderData>(
+          `/api/orders/shipping-info/${pathParams.orderId}`
+        );
+
+        if (orderResponse.success && orderResponse.data) {
+          const orderData = orderResponse.data;
+          const items = orderData.order_items || [];
+
+          // Calcular el valor total de la orden
+          const totalValue = items.reduce(
+            (sum, item) => sum + (item.quantity || 0) * 1000000,
+            0
+          ); // Estimado
+
+          // Enviar evento de purchase
+          trackPurchase(
+            pathParams.orderId,
+            items.map((item) => ({
+              item_id: item.sku || "unknown",
+              item_name: item.product_name || "Producto",
+              item_brand: "Samsung",
+              price: 1000000, // Precio estimado, idealmente debería venir de la orden
+              quantity: item.quantity || 1,
+            })),
+            totalValue
+          );
+        }
+      } catch (error) {
+        console.error("[Analytics] Error sending purchase event:", error);
+      }
+    };
+
+    sendPurchaseEvent();
+  }, [pathParams.orderId, trackPurchase]);
 
   // Enviar mensaje de WhatsApp cuando se carga la página
   useEffect(() => {
@@ -65,7 +110,9 @@ export default function SuccessCheckoutPage({
 
       try {
         // Obtener datos de la orden
-        const orderResponse = await apiClient.get<OrderData>(`/api/orders/shipping-info/${pathParams.orderId}`);
+        const orderResponse = await apiClient.get<OrderData>(
+          `/api/orders/shipping-info/${pathParams.orderId}`
+        );
 
         if (!orderResponse.success || !orderResponse.data) {
           console.error("Error al obtener datos de la orden");
@@ -94,10 +141,14 @@ export default function SuccessCheckoutPage({
         }
 
         // Obtener datos del envío
-        const envioData = orderData.envios && orderData.envios.length > 0 ? orderData.envios[0] : null;
+        const envioData =
+          orderData.envios && orderData.envios.length > 0
+            ? orderData.envios[0]
+            : null;
 
         // Obtener número de guía
-        const numeroGuia = envioData?.numero_guia || orderData.orden_id.substring(0, 8);
+        const numeroGuia =
+          envioData?.numero_guia || orderData.orden_id.substring(0, 8);
 
         // Calcular fechas de entrega estimada (formato corto para WhatsApp)
         let fechaEntrega = "Próximamente";
@@ -109,12 +160,16 @@ export default function SuccessCheckoutPage({
           // Fecha inicial
           fechaCreacion.setDate(fechaCreacion.getDate() + dias);
           const diaInicio = fechaCreacion.getDate();
-          const mesInicio = fechaCreacion.toLocaleDateString("es-ES", { month: "short" });
+          const mesInicio = fechaCreacion.toLocaleDateString("es-ES", {
+            month: "short",
+          });
 
           // Fecha final (2 días después)
           fechaCreacion.setDate(fechaCreacion.getDate() + 2);
           const diaFin = fechaCreacion.getDate();
-          const mesFin = fechaCreacion.toLocaleDateString("es-ES", { month: "short" });
+          const mesFin = fechaCreacion.toLocaleDateString("es-ES", {
+            month: "short",
+          });
 
           // Formato corto: "29-31 de oct" o "29 oct - 1 nov"
           if (mesInicio === mesFin) {
@@ -134,22 +189,36 @@ export default function SuccessCheckoutPage({
             const items = JSON.parse(cartItems);
             if (Array.isArray(items) && items.length > 0) {
               // Calcular cantidad total de productos
-              cantidadTotal = items.reduce((total: number, item: { quantity?: number }) => {
-                return total + (item.quantity || 1);
-              }, 0);
+              cantidadTotal = items.reduce(
+                (total: number, item: { quantity?: number }) => {
+                  return total + (item.quantity || 1);
+                },
+                0
+              );
 
-              const descripcion = items.map((item: { quantity?: number; name?: string; sku?: string }) => {
-                const quantity = item.quantity || 1;
-                const name = item.name || item.sku || "producto";
-                return `${quantity} ${name}`;
-              }).join(", ");
+              const descripcion = items
+                .map(
+                  (item: {
+                    quantity?: number;
+                    name?: string;
+                    sku?: string;
+                  }) => {
+                    const quantity = item.quantity || 1;
+                    const name = item.name || item.sku || "producto";
+                    return `${quantity} ${name}`;
+                  }
+                )
+                .join(", ");
 
               // WhatsApp tiene límite de 30 caracteres para este campo
               if (descripcion.length <= 30) {
                 productosDesc = descripcion;
               } else {
                 // Si excede, usar "tus X productos" o "tu producto"
-                productosDesc = cantidadTotal === 1 ? "tu producto" : `tus ${cantidadTotal} productos`;
+                productosDesc =
+                  cantidadTotal === 1
+                    ? "tu producto"
+                    : `tus ${cantidadTotal} productos`;
               }
             }
           } catch (e) {
@@ -158,13 +227,15 @@ export default function SuccessCheckoutPage({
         }
 
         // Capitalizar la primera letra del nombre
-        const nombreCapitalizado = userInfo.nombre.charAt(0).toUpperCase() + userInfo.nombre.slice(1).toLowerCase();
+        const nombreCapitalizado =
+          userInfo.nombre.charAt(0).toUpperCase() +
+          userInfo.nombre.slice(1).toLowerCase();
 
         // Enviar mensaje de WhatsApp
         const whatsappResponse = await fetch("/api/whatsapp", {
           method: "POST",
           headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
             to: telefono,
@@ -172,8 +243,8 @@ export default function SuccessCheckoutPage({
             ordenId: pathParams.orderId,
             numeroGuia: numeroGuia,
             productos: productosDesc,
-            fechaEntrega: fechaEntrega
-          })
+            fechaEntrega: fechaEntrega,
+          }),
         });
 
         const whatsappData = await whatsappResponse.json();
@@ -189,7 +260,7 @@ export default function SuccessCheckoutPage({
     };
 
     sendWhatsAppMessage();
-  }, [pathParams.orderId]) // Solo depende del orderId, useRef previene duplicados
+  }, [pathParams.orderId]); // Solo depende del orderId, useRef previene duplicados
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {

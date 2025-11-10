@@ -9,6 +9,7 @@ import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
+import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -33,6 +34,9 @@ export default function ClientLayout({
   const pathname = usePathname();
   const hideNavbar = shouldHideNavbar(pathname || '');
   const { hideNavbar: hideNavbarDynamic } = useNavbarVisibility();
+  
+  // Precargar productos de todas las combinaciones posibles en background
+  usePreloadAllProducts();
 
   // Validar children para evitar NaN
   const safeChildren =

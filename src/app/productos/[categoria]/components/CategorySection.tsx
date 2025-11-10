@@ -52,7 +52,8 @@ export default function CategorySection({
   sectionTitle,
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion);
+  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
+  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid);
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,
@@ -70,7 +71,6 @@ export default function CategorySection({
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
   const { currentMenu, loading: menuLoading } = useCurrentMenu(categoriaApiCode, seccion);
   const { menus: categoryMenus, loading: categoryMenusLoading } = useCategoryMenus(categoriaApiCode);
-  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
   const { visibleCategories, mapCategoryToNavbarName } = useVisibleCategories();
 
   // Determinar nombre visible de la categoría para título cuando no hay sección

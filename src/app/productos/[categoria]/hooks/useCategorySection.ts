@@ -24,14 +24,19 @@ export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion)
   return { filters, setFilters };
 }
 
-export function useCategoryPagination(categoria?: CategoriaParams, seccion?: Seccion) {
+export function useCategoryPagination(
+  categoria?: CategoriaParams, 
+  seccion?: Seccion,
+  menuUuid?: string,
+  submenuUuid?: string
+) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
-  // Resetear página cuando cambia categoría o sección
+  // Resetear página cuando cambia categoría, sección, menú o submenú
   useEffect(() => {
     setCurrentPage(1);
-  }, [categoria, seccion]);
+  }, [categoria, seccion, menuUuid, submenuUuid]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);

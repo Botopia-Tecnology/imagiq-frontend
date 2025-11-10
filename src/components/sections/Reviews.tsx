@@ -129,43 +129,41 @@ const Reviews = () => {
         {/* Slider */}
         <div className="w-full">
           {/* Desktop/tablet slider */}
-          <div className="md:flex items-center justify-center min-h-[370px] w-full hidden">
+          <div className="md:flex items-center justify-center min-h-[370px] w-full hidden gap-4">
             {/* Prev button fuera del slider */}
-            <div className="flex items-center h-full">
-              <button
-                aria-label="Anterior"
-                onClick={handlePrev}
-                className="md:flex hidden items-center justify-center shadow-lg hover:brightness-95 transition"
-                style={{
-                  zIndex: 30,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                  width: 40,
-                  height: 40,
-                  backgroundColor: "#ffffff",
-                  color: "#222",
-                  border: "1px solid #e5e7eb",
-                }}
+            <button
+              aria-label="Anterior"
+              onClick={handlePrev}
+              className="flex items-center justify-center shadow-lg hover:brightness-95 transition rounded flex-shrink-0"
+              style={{
+                zIndex: 30,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                width: 40,
+                height: 40,
+                backgroundColor: "#ffffff",
+                color: "#222",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
+                <path
+                  d="M15 19l-7-7 7-7"
+                  stroke="#222"
                   strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M15 19l-7-7 7-7"
-                    stroke="#222"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
             {/* Cards desktop/tablet */}
-            <div className="flex gap-8 w-full justify-center items-center">
+            <div className="flex gap-4 md:gap-6 lg:gap-8 justify-center items-center flex-1 max-w-5xl">
               {getVisibleCards().map((review, index) => {
                 const isActive = index === 1; // La card del medio (index 1) es la activa
 
@@ -182,7 +180,7 @@ const Reviews = () => {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "relative flex flex-col items-center transition-all duration-500 cursor-pointer hover:shadow-xl",
+                      "relative flex flex-col items-center transition-all duration-500 cursor-pointer hover:shadow-xl"
                     )}
                     style={{
                       boxShadow: shadow,
@@ -191,10 +189,10 @@ const Reviews = () => {
                       flexDirection: "column",
                       alignItems: "center",
                       justifyContent: "flex-start",
-                      padding: "32px 24px",
+                      padding: "24px 16px",
                       height: "340px",
-                      maxWidth: "340px",
-                      width: "340px",
+                      maxWidth: "280px",
+                      width: "100%",
                       opacity,
                       zIndex,
                       transform: `scale(${scale})`,
@@ -267,39 +265,37 @@ const Reviews = () => {
               })}
             </div>
             {/* Next button fuera del slider */}
-            <div className="flex items-center h-full">
-              <button
-                aria-label="Siguiente"
-                onClick={handleNext}
-                className="md:flex hidden items-center justify-center shadow-lg hover:brightness-95 transition"
-                style={{
-                  zIndex: 30,
-                  boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
-                  width: 40,
-                  height: 40,
-                  backgroundColor: "#ffffff",
-                  color: "#222",
-                  border: "1px solid #e5e7eb",
-                }}
+            <button
+              aria-label="Siguiente"
+              onClick={handleNext}
+              className="flex items-center justify-center shadow-lg hover:brightness-95 transition rounded flex-shrink-0"
+              style={{
+                zIndex: 30,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                width: 40,
+                height: 40,
+                backgroundColor: "#ffffff",
+                color: "#222",
+                border: "1px solid #e5e7eb",
+              }}
+            >
+              <svg
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
               >
-                <svg
-                  width="18"
-                  height="18"
-                  fill="none"
-                  stroke="currentColor"
+                <path
+                  d="M9 5l7 7-7 7"
+                  stroke="#222"
                   strokeWidth="2"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    d="M9 5l7 7-7 7"
-                    stroke="#222"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </button>
-            </div>
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
           </div>
           {/* Mobile slider: carrusel auto-scroll infinito real, sin repetir manualmente las cards */}
           <div className="md:hidden w-full overflow-x-hidden p-0 m-0">

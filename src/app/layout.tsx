@@ -26,6 +26,7 @@ import { ProductProvider } from "@/features/products/ProductContext";
 import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
+import { HeroProvider } from "@/contexts/HeroContext";
 // Si necesitas Inter desde Google Fonts en entornos con internet,
 // reactivar la importación desde next/font/google o agregar el CSS manual.
 
@@ -135,45 +136,47 @@ export default function RootLayout({
         <AnalyticsScripts />
         <AnalyticsInit />
         <ResponsiveProvider>
-          <ProductProvider>
-            <NavbarVisibilityProvider>
-              <PostHogProvider>
-                <AnalyticsProvider>
-                  <AuthProvider>
-                    <UserPreferencesProvider>
-                      <CartProvider>
-                        <SelectedColorProvider>
-                          <PointsProvider>
-                            <SelectedStoreProvider>
-                              <ClientLayout>{safeChildren}</ClientLayout>
-                            </SelectedStoreProvider>
-                            {/* Widget del chatbot */}
-                            <ChatbotWidget />
-                            {/* Toast notifications */}
-                            <Toaster
-                              position="top-center"
-                              expand={true}
-                              richColors
-                              closeButton
-                              toastOptions={{
-                                duration: 4000,
-                                style: {
-                                  background: "white",
-                                  border: "1px solid #e2e8f0",
-                                  color: "#1e293b",
-                                  fontFamily: "var(--font-inter)",
-                                },
-                              }}
-                            />
-                          </PointsProvider>
-                        </SelectedColorProvider>
-                      </CartProvider>
-                    </UserPreferencesProvider>
-                  </AuthProvider>
-                </AnalyticsProvider>
-              </PostHogProvider>
-            </NavbarVisibilityProvider>
-          </ProductProvider>
+          <HeroProvider>
+            <ProductProvider>
+              <NavbarVisibilityProvider>
+                <PostHogProvider>
+                  <AnalyticsProvider>
+                    <AuthProvider>
+                      <UserPreferencesProvider>
+                        <CartProvider>
+                          <SelectedColorProvider>
+                            <PointsProvider>
+                              <SelectedStoreProvider>
+                                <ClientLayout>{safeChildren}</ClientLayout>
+                              </SelectedStoreProvider>
+                              {/* Widget del chatbot */}
+                              <ChatbotWidget />
+                              {/* Toast notifications */}
+                              <Toaster
+                                position="top-center"
+                                expand={true}
+                                richColors
+                                closeButton
+                                toastOptions={{
+                                  duration: 4000,
+                                  style: {
+                                    background: "white",
+                                    border: "1px solid #e2e8f0",
+                                    color: "#1e293b",
+                                    fontFamily: "var(--font-inter)",
+                                  },
+                                }}
+                              />
+                            </PointsProvider>
+                          </SelectedColorProvider>
+                        </CartProvider>
+                      </UserPreferencesProvider>
+                    </AuthProvider>
+                  </AnalyticsProvider>
+                </PostHogProvider>
+              </NavbarVisibilityProvider>
+            </ProductProvider>
+          </HeroProvider>
         </ResponsiveProvider>
       </body>
     </html>

@@ -43,7 +43,7 @@ class EncryptionService {
 
       // Desencriptar usando AES-256-CBC
       const decrypted = CryptoJS.AES.decrypt(
-        { ciphertext: ciphertext } as any,
+        { ciphertext: ciphertext } as CryptoJS.lib.CipherParams,
         key,
         {
           iv: iv,

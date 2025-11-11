@@ -360,6 +360,72 @@ export class ProfileService {
       return [];
     }
   }
+
+  /**
+   * Tokeniza una nueva tarjeta de crédito/débito
+   * Llama al endpoint /api/payments/cards/tokenize
+   */
+  public async tokenizeCard(data: {
+    userId: string;
+    cardNumber: string;
+    cardHolder: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log("📤 Tokenizando tarjeta para usuario:", data.userId);
+
+      // Mapear cardHolder a cardHolderName para el backend
+      const payload = {
+        userId: data.userId,
+        cardNumber: data.cardNumber,
+        cardHolderName: data.cardHolder,
+        cardExpMonth: data.expiryMonth,
+        cardExpYear: data.expiryYear,
+        cardCvc: data.cvv,
+      };
+
+      const response = await fetch(
+        `${BASE_CONFIG.API_URL}/api/payments/cards/tokenize`,
+        {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Error response from API:", errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+
+          // El backend puede devolver { status, message: { statusCode, message, errorCode, ... } }
+          // Extraer el objeto anidado si existe
+          if (errorData.message && typeof errorData.message === 'object') {
+            errorData = errorData.message;
+          }
+        } catch {
+          errorData = { message: errorText };
+        }
+        // Stringify the entire error object to preserve errorCode, errorMessage, etc.
+        throw new Error(JSON.stringify(errorData));
+      }
+
+      const result = await response.json();
+      console.log("✅ Tarjeta tokenizada exitosamente:", result);
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ Error tokenizando tarjeta:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido tokenizando tarjeta";
+      throw new Error(errorMessage);
+    }
+  }
 }
 
 // Exportar instancia única

@@ -102,7 +102,7 @@ console.log("Rendering CategoryProductsGrid with products:", products);
     onLoadMore: loadMore,
     hasMore: hasMore,
     isLoading: loading || isLoadingMore,
-    threshold: 800, // Disparar la carga cuando esté a 2000px del final (cerca del final de los 50 productos)
+    threshold: 3000, // Disparar la carga cuando esté a 2000px del final (cerca del final de los 50 productos)
   });
 
   useCategoryAnalytics(categoria, seccion, totalItems);

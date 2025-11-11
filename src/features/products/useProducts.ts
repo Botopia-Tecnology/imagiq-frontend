@@ -129,7 +129,6 @@ export const useProducts = (
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
   const previousMenuUuidRef = useRef<string | undefined>(undefined);
   const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
-  const previousPageRef = useRef<number | undefined>(undefined);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -222,56 +221,43 @@ export const useProducts = (
       
       try {
         if (!append) {
-          // Detectar cambio de página: comparar filters.page con currentPage
-          const isPageChange = filters.page !== undefined && filters.page !== currentPage;
-          
-          if (isPageChange) {
-            // Cambio de página: limpiar productos y mostrar skeletons inmediatamente
-            setProducts([]);
-            productsRef.current = [];
+          // Carga inicial o cambio de filtros: usar caché si existe
+          const cachedResponse = productCache.get(apiParams);
+          if (cachedResponse && cachedResponse.success && cachedResponse.data) {
+            hasCachedData = true;
+            // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
+            const apiData = cachedResponse.data;
+            const mappedProducts = mapApiProductsToFrontend(apiData.products);
+
+            // IMPORTANTE: Establecer todos los estados de forma síncrona
+            // React batch automáticamente los setState en el mismo render,
+            // pero establecer loading en false primero asegura que no se muestren skeletons
+            setError(null);
+
+            // Establecer productos y metadatos de forma síncrona
+            setProducts(mappedProducts);
+            productsRef.current = mappedProducts; // Actualizar ref
+            setGroupedProducts(groupProductsByCategory(mappedProducts));
+            setTotalItems(apiData.totalItems);
+            setTotalPages(apiData.totalPages);
+            setCurrentPage(apiData.currentPage);
+            setHasNextPage(apiData.hasNextPage);
+            setHasPreviousPage(apiData.hasPreviousPage);
+
+            // IMPORTANTE: Establecer loading en false AL FINAL para que React
+            // actualice todos los estados juntos, evitando mostrar skeletons
+            setLoading(false);
+
+            // Si hay datos en caché, aún así hacer la llamada API en background
+            // para actualizar datos frescos (stale-while-revalidate)
+            // Pero NO limpiar productos ni mostrar loading
+          } else {
+            // No hay caché, mostrar loading normalmente
+            // Limpiar productos para mostrar skeletons
             setLoading(true);
             setError(null);
-            // NO usar caché en cambio de página para mostrar skeletons
-            hasCachedData = false;
-          } else {
-            // Carga inicial o cambio de filtros (no página): usar caché si existe
-            const cachedResponse = productCache.get(apiParams);
-            if (cachedResponse && cachedResponse.success && cachedResponse.data) {
-              hasCachedData = true;
-              // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
-              const apiData = cachedResponse.data;
-              const mappedProducts = mapApiProductsToFrontend(apiData.products);
-              
-              // IMPORTANTE: Establecer todos los estados de forma síncrona
-              // React batch automáticamente los setState en el mismo render,
-              // pero establecer loading en false primero asegura que no se muestren skeletons
-              setError(null);
-              
-              // Establecer productos y metadatos de forma síncrona
-              setProducts(mappedProducts);
-              productsRef.current = mappedProducts; // Actualizar ref
-              setGroupedProducts(groupProductsByCategory(mappedProducts));
-              setTotalItems(apiData.totalItems);
-              setTotalPages(apiData.totalPages);
-              setCurrentPage(apiData.currentPage);
-              setHasNextPage(apiData.hasNextPage);
-              setHasPreviousPage(apiData.hasPreviousPage);
-
-              // IMPORTANTE: Establecer loading en false AL FINAL para que React
-              // actualice todos los estados juntos, evitando mostrar skeletons
-              setLoading(false);
-              
-              // Si hay datos en caché, aún así hacer la llamada API en background
-              // para actualizar datos frescos (stale-while-revalidate)
-              // Pero NO limpiar productos ni mostrar loading
-            } else {
-              // No hay caché, mostrar loading normalmente
-              // Limpiar productos para mostrar skeletons
-              setLoading(true);
-              setError(null);
-              setProducts([]);
-              productsRef.current = []; // Actualizar ref
-            }
+            setProducts([]);
+            productsRef.current = []; // Actualizar ref
           }
         } else {
           // Para scroll infinito (append), mostrar loading de "cargando más"
@@ -288,13 +274,20 @@ export const useProducts = (
         });
         const nextUrl = `/api/products/filtered?${sp.toString()}`;
 
-        // Solo abortar si la solicitud anterior es para una URL DIFERENTE
-        if (abortRef.current && lastUrlRef.current && lastUrlRef.current !== nextUrl) {
-          abortRef.current.abort('New request initiated');
-        }
+        // Crear AbortController para esta petición
         const controller = new AbortController();
-        abortRef.current = controller;
-        lastUrlRef.current = nextUrl;
+
+        // Solo abortar y actualizar referencias si NO estamos en modo append (scroll infinito)
+        // En scroll infinito, cada página debe completarse independientemente
+        if (!append) {
+          // Abortar petición anterior si existe y es diferente
+          if (abortRef.current && lastUrlRef.current && lastUrlRef.current !== nextUrl) {
+            abortRef.current.abort('New request initiated');
+          }
+          // Solo actualizar el ref del abort controller cuando NO es append
+          abortRef.current = controller;
+          lastUrlRef.current = nextUrl;
+        }
 
         const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
 
@@ -475,7 +468,7 @@ export const useProducts = (
       } else {
         // Scroll infinito normal: cargar siguiente página y agregar productos
         const filtersWithNextPage = { ...currentFilters, page: nextPage };
-        setCurrentPage(nextPage);
+        // NO llamar setCurrentPage aquí - fetchProducts ya actualiza currentPage cuando procesa la respuesta
         await fetchProducts(filtersWithNextPage, true); // append=true para agregar productos
       }
     }
@@ -531,18 +524,7 @@ export const useProducts = (
     const apiParams = convertFiltersToApiParams(filtersToUse);
     const currentMenuUuid = apiParams.menuUuid;
     const currentSubmenuUuid = apiParams.submenuUuid;
-    const requestedPage = filtersToUse.page || 1;
-    
-    // Detectar cambio de página
-    const pageChanged = previousPageRef.current !== undefined && previousPageRef.current !== requestedPage;
-    
-    if (pageChanged) {
-      // Cambio de página: abortar petición anterior si existe
-      if (abortRef.current) {
-        abortRef.current.abort('Page changed');
-      }
-    }
-    
+
     // Detectar si seccion cambia a vacía (navegación a categoría base)
     // Cuando menuUuid y submenuUuid cambian a undefined, significa que navegamos de menu/submenu a categoría base
     // Esto es crítico porque necesitamos reemplazar los filtros completamente
@@ -578,8 +560,7 @@ export const useProducts = (
     // Esto asegura que la próxima vez detectemos cambios correctamente, incluso cuando cambia a undefined
     previousMenuUuidRef.current = currentMenuUuid;
     previousSubmenuUuidRef.current = currentSubmenuUuid;
-    previousPageRef.current = requestedPage;
-    
+
     // Llamar fetchProducts - este verificará el caché internamente y mostrará datos inmediatamente si existen
     fetchProducts(filtersToUse, false);
   }, [initialFilters, fetchProducts, convertFiltersToApiParams]);

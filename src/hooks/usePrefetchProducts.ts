@@ -41,9 +41,9 @@ export function usePrefetchProducts() {
 
       const params: ProductFilterParams = {
         page: 1,
-        limit: 15, // Valor por defecto de itemsPerPage (verificado en useCategoryPagination)
+        limit: 50, // Valor por defecto de itemsPerPage (verificado en useCategoryPagination)
         precioMin: 1,
-        lazyLimit: 6, // Primer grupo de 6 productos
+        lazyLimit: 50, // Primer grupo de 6 productos
         lazyOffset: 0,
         // Usar sortBy por defecto "precio-mayor" que es el valor inicial en useCategorySorting
         sortBy: "precio",

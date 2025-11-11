@@ -12,8 +12,6 @@ import { useDeviceType } from "@/components/responsive";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 
-import Pagination from "../../dispositivos-moviles/components/Pagination";
-import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import FilterSidebar from "../../components/FilterSidebar";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
@@ -53,7 +51,7 @@ export default function CategorySection({
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid);
+  const { currentPage, itemsPerPage, setCurrentPage } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid);
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,
@@ -82,7 +80,7 @@ export default function CategorySection({
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
-  const { products, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce } = useCategoryProducts(
+  const { products, loading, isLoadingMore, error, totalItems, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -97,14 +95,14 @@ export default function CategorySection({
 
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
   const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
-
+console.log("Rendering CategoryProductsGrid with products:", products);
   // Configurar scroll infinito
   // Usar isLoadingMore en lugar de loading para evitar bloquear mientras se cargan productos adicionales
   const loadMoreRef = useInfiniteScroll({
     onLoadMore: loadMore,
     hasMore: hasMore,
     isLoading: loading || isLoadingMore,
-    threshold: 800, // Disparar la carga cuando esté a 800px del final
+    threshold: 800, // Disparar la carga cuando esté a 2000px del final (cerca del final de los 50 productos)
   });
 
   useCategoryAnalytics(categoria, seccion, totalItems);
@@ -230,27 +228,12 @@ export default function CategorySection({
             <div ref={loadMoreRef} className="h-4" />
           )}
 
-          {/* Paginación tradicional */}
-          {!error && products.length > 0 && (
-            <div className="mt-8">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
-                <ItemsPerPageSelector
-                  itemsPerPage={itemsPerPage}
-                  onItemsPerPageChange={handleItemsPerPageChange}
-                />
-                {!hasMore && !hasMorePages && (
-                  <p className="text-gray-500 text-sm">
-                    Has visto todos los productos de esta página
-                  </p>
-                )}
-              </div>
-              <Pagination
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={handlePageChange}
-                totalItems={totalItems}
-                itemsPerPage={itemsPerPage}
-              />
+          {/* Mensaje cuando se han visto todos los productos */}
+          {!error && products.length > 0 && !hasMore && !hasMorePages && (
+            <div className="mt-8 text-center">
+              <p className="text-gray-500 text-sm">
+                Has visto todos los productos disponibles
+              </p>
             </div>
           )}
         </div>

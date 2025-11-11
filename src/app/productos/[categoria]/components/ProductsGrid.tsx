@@ -49,6 +49,7 @@ export const CategoryProductsGrid = forwardRef<
   ) => {
     const [showGuestModal, setShowGuestModal] = useState(false);
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
+    
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 

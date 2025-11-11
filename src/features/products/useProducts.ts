@@ -124,8 +124,6 @@ export const useProducts = (
   );
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
   const [requestId, setRequestId] = useState(0);
-  const [lazyOffset, setLazyOffset] = useState(0);
-  const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
   const lastUrlRef = useRef<string | null>(null);
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
@@ -135,22 +133,12 @@ export const useProducts = (
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
-    (filters: ProductFilters, offset?: number): ProductFilterParams => {
+    (filters: ProductFilters): ProductFilterParams => {
       const params: ProductFilterParams = {
         page: filters.page || currentPage,
         limit: filters.limit || 20,
         precioMin: 1, // Siempre filtrar productos con precio mayor a 0 por defecto
       };
-
-      // Agregar parámetros de lazy loading si están definidos
-      if (filters.lazyLimit !== undefined) {
-        params.lazyLimit = filters.lazyLimit;
-      }
-      if (offset !== undefined) {
-        params.lazyOffset = offset;
-      } else if (filters.lazyOffset !== undefined) {
-        params.lazyOffset = filters.lazyOffset;
-      }
 
       // Aplicar filtros específicos (pueden sobrescribir el precioMin por defecto)
       if (filters.category) params.categoria = filters.category;
@@ -191,18 +179,12 @@ export const useProducts = (
 
   // Función principal para obtener productos
   const fetchProducts = useCallback(
-    async (filters: ProductFilters = {}, append = false, customOffset?: number) => {
+    async (filters: ProductFilters = {}, append = false) => {
       // Incrementar el ID de la petición para invalidar peticiones anteriores
       const currentRequestId = Date.now();
       setRequestId(currentRequestId);
 
-      // Si no es append (carga inicial o cambio de filtros), resetear lazyOffset
-      if (!append && customOffset === undefined) {
-        setLazyOffset(0);
-        setHasMoreInCurrentPage(true);
-      }
-
-      const apiParams = convertFiltersToApiParams(filters, customOffset);
+      const apiParams = convertFiltersToApiParams(filters);
       
       // Detectar cambios en menuUuid o submenuUuid para invalidación selectiva de caché
       const currentMenuUuid = apiParams.menuUuid;
@@ -274,13 +256,7 @@ export const useProducts = (
               setCurrentPage(apiData.currentPage);
               setHasNextPage(apiData.hasNextPage);
               setHasPreviousPage(apiData.hasPreviousPage);
-              
-              // Resetear estados
-              if (!filters.lazyOffset && customOffset === undefined) {
-                setLazyOffset(0);
-                setHasMoreInCurrentPage(true);
-              }
-              
+
               // IMPORTANTE: Establecer loading en false AL FINAL para que React
               // actualice todos los estados juntos, evitando mostrar skeletons
               setLoading(false);
@@ -298,7 +274,7 @@ export const useProducts = (
             }
           }
         } else {
-          // Para lazy loading, mostrar loading normalmente
+          // Para scroll infinito (append), mostrar loading de "cargando más"
           setIsLoadingMore(true);
           setError(null);
         }
@@ -344,6 +320,7 @@ export const useProducts = (
             const mappedProducts = mapApiProductsToFrontend(apiData.products);
 
             if (append) {
+              // Modo append: agregar productos de la siguiente página
               setProducts((prev) => {
                 // Crear un Set con los IDs existentes para evitar duplicados
                 const existingIds = new Set(prev.map(p => p.id));
@@ -351,18 +328,6 @@ export const useProducts = (
                 const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
                 const updatedProducts = [...prev, ...newProducts];
                 productsRef.current = updatedProducts; // Actualizar ref
-                
-                // Verificar si todavía hay más productos que cargar
-                const lazyLimit = filters.lazyLimit || 6;
-                const limit = filters.limit || 20;
-                const currentOffset = customOffset !== undefined ? customOffset : (filters.lazyOffset || 0);
-                const nextOffset = currentOffset + lazyLimit;
-                
-                // Si no hay productos nuevos o se alcanzó el límite, no hay más
-                if (newProducts.length === 0 || nextOffset >= limit || (apiData.totalItems > 0 && nextOffset >= apiData.totalItems)) {
-                  setHasMoreInCurrentPage(false);
-                }
-                
                 return updatedProducts;
               });
             } else {
@@ -372,11 +337,6 @@ export const useProducts = (
                 setProducts(mappedProducts);
                 productsRef.current = mappedProducts; // Actualizar ref
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
-                // Resetear offset y estado cuando no es append
-                if (!filters.lazyOffset && customOffset === undefined) {
-                  setLazyOffset(0);
-                  setHasMoreInCurrentPage(true);
-                }
               } else {
                 // Si había caché, solo actualizar si los datos son realmente diferentes
                 // Comparar por cantidad de productos o IDs para evitar actualizaciones innecesarias
@@ -384,24 +344,20 @@ export const useProducts = (
                   // Si los productos son diferentes, actualizar
                   const prevIds = new Set(prev.map(p => p.id));
                   const newIds = new Set(mappedProducts.map(p => p.id));
-                  const areDifferent = 
+                  const areDifferent =
                     prev.length !== mappedProducts.length ||
                     !Array.from(prevIds).every(id => newIds.has(id)) ||
                     !Array.from(newIds).every(id => prevIds.has(id));
-                  
+
                   if (areDifferent) {
                     productsRef.current = mappedProducts; // Actualizar ref
                     return mappedProducts;
                   }
                   return prev; // Mantener productos actuales si son los mismos
                 });
-                
+
                 // Siempre actualizar metadatos (totalItems, paginación, etc.)
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
-                if (!filters.lazyOffset && customOffset === undefined) {
-                  setLazyOffset(0);
-                  setHasMoreInCurrentPage(true);
-                }
               }
             }
 
@@ -502,45 +458,28 @@ export const useProducts = (
       if (!filters.page) {
         setCurrentPage(1);
       }
-      // Resetear offset y estado cuando se cambian filtros
-      setLazyOffset(0);
-      setHasMoreInCurrentPage(true);
-      await fetchProducts(filters, false, 0);
+      await fetchProducts(filters, false);
     },
     [fetchProducts]
   );
 
-  // Función para cargar más productos (paginación con lazy loading)
+  // Función para cargar más productos (scroll infinito con paginación automática)
   const loadMore = useCallback(async () => {
-    if (!loading && !isLoadingMore) {
+    if (!loading && !isLoadingMore && hasNextPage) {
+      // Cargar la siguiente página automáticamente
+      const nextPage = currentPage + 1;
+
       if (currentSearchQuery) {
-        // Si estamos en modo búsqueda, usar paginación tradicional
-        if (hasNextPage) {
-          const nextPage = currentPage + 1;
-          await searchProducts(currentSearchQuery, nextPage);
-        }
+        // Si estamos en modo búsqueda
+        await searchProducts(currentSearchQuery, nextPage);
       } else {
-        // Si usamos lazy loading dentro de la página actual
-        const lazyLimit = currentFilters.lazyLimit || 6;
-        const limit = currentFilters.limit || 20;
-
-        // Calcular el nuevo offset
-        const newOffset = lazyOffset + lazyLimit;
-
-        // Verificar tanto el límite de la página como el total de items disponibles
-        // Si el nuevo offset alcanza el límite de la página actual O supera totalItems, DETENER
-        // El usuario debe usar los botones de paginación para ir a la siguiente página
-        if (newOffset < limit && (totalItems === 0 || newOffset < totalItems)) {
-          // Continuar en la misma página con nuevo offset
-          setLazyOffset(newOffset);
-          await fetchProducts(currentFilters, true, newOffset);
-        } else {
-          // Ya no hay más productos en la página actual
-          setHasMoreInCurrentPage(false);
-        }
+        // Scroll infinito normal: cargar siguiente página y agregar productos
+        const filtersWithNextPage = { ...currentFilters, page: nextPage };
+        setCurrentPage(nextPage);
+        await fetchProducts(filtersWithNextPage, true); // append=true para agregar productos
       }
     }
-  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -550,12 +489,9 @@ export const useProducts = (
           // Si estamos en modo búsqueda, usar searchProducts
           await searchProducts(currentSearchQuery, page);
         } else {
-          // Resetear offset y estado al cambiar de página manualmente
-          setLazyOffset(0);
-          setHasMoreInCurrentPage(true);
           const filtersWithPage = { ...currentFilters, page };
           setCurrentFilters(filtersWithPage);
-          await fetchProducts(filtersWithPage, false, 0);
+          await fetchProducts(filtersWithPage, false);
         }
       }
     },
@@ -568,17 +504,14 @@ export const useProducts = (
       // Si estamos en modo búsqueda, refrescar la búsqueda actual
       await searchProducts(currentSearchQuery, currentPage);
     } else {
-      // Resetear offset y estado al refrescar
-      setLazyOffset(0);
-      setHasMoreInCurrentPage(true);
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
-      
+
       // Invalidar caché para los filtros actuales para forzar actualización fresca
-      const apiParams = convertFiltersToApiParams(filtersToUse, 0);
+      const apiParams = convertFiltersToApiParams(filtersToUse);
       productCache.invalidate(apiParams);
-      
-      await fetchProducts(filtersToUse, false, 0);
+
+      await fetchProducts(filtersToUse, false);
     }
   }, [initialFilters, currentFilters, currentSearchQuery, currentPage, fetchProducts, searchProducts, convertFiltersToApiParams]);
 
@@ -667,7 +600,7 @@ export const useProducts = (
     loadMore,
     goToPage,
     refreshProducts,
-    hasMore: hasMoreInCurrentPage, // Hay más productos en la página actual (para lazy scroll)
+    hasMore: hasNextPage, // Hay más páginas disponibles (scroll infinito)
     hasMorePages: hasNextPage, // Hay más páginas (para paginación)
   };
 };

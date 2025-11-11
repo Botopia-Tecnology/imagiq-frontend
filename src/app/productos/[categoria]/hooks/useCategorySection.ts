@@ -25,13 +25,13 @@ export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion)
 }
 
 export function useCategoryPagination(
-  categoria?: CategoriaParams, 
+  categoria?: CategoriaParams,
   seccion?: Seccion,
   menuUuid?: string,
   submenuUuid?: string
 ) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Resetear página cuando cambia categoría, sección, menú o submenú
   useEffect(() => {
@@ -175,9 +175,7 @@ export function useCategoryProducts(
       return applySortToFilters({
         ...filtersWithoutUndefined,
         page: currentPage,
-        limit: itemsPerPage,
-        lazyLimit: 6, // Cargar 6 productos por scroll
-        lazyOffset: 0
+        limit: itemsPerPage
       }, sortBy);
     },
     // Incluir menuUuid y submenuUuid explícitamente para detectar cambios

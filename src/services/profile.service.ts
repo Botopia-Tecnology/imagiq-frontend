@@ -225,6 +225,49 @@ export class ProfileService {
   }
 
   /**
+   * Obtiene las tarjetas de pago encriptadas del usuario
+   * Llama al endpoint /api/payments/cards/:userId que devuelve datos encriptados
+   * IMPORTANTE: Los datos vienen encriptados y deben ser desencriptados con encryptionService
+   */
+  public async getUserPaymentMethodsEncrypted(userId?: string): Promise<import('../features/profile/types').EncryptedCard[]> {
+    try {
+      const id = userId || this.getUserId();
+      if (!id) {
+        throw new Error("No se encontró el ID del usuario");
+      }
+
+      console.log("📤 Solicitando tarjetas encriptadas para usuario:", id);
+
+      const response = await fetch(
+        `${BASE_CONFIG.API_URL}/api/payments/cards/${id}`,
+        {
+          method: "GET",
+          headers: this.getHeaders(),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Error response from API:", errorText);
+        throw new Error(
+          `Error ${response.status}: ${response.statusText}`
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ Tarjetas encriptadas obtenidas:", result);
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ Error obteniendo tarjetas encriptadas:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido obteniendo tarjetas";
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Actualiza información del perfil del usuario
    */
   public async updateProfile(
@@ -315,6 +358,72 @@ export class ProfileService {
       console.error("❌ Error obteniendo métodos de pago desde perfil:", error);
       // Fallback: retornar array vacío
       return [];
+    }
+  }
+
+  /**
+   * Tokeniza una nueva tarjeta de crédito/débito
+   * Llama al endpoint /api/payments/cards/tokenize
+   */
+  public async tokenizeCard(data: {
+    userId: string;
+    cardNumber: string;
+    cardHolder: string;
+    expiryMonth: string;
+    expiryYear: string;
+    cvv: string;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      console.log("📤 Tokenizando tarjeta para usuario:", data.userId);
+
+      // Mapear cardHolder a cardHolderName para el backend
+      const payload = {
+        userId: data.userId,
+        cardNumber: data.cardNumber,
+        cardHolderName: data.cardHolder,
+        cardExpMonth: data.expiryMonth,
+        cardExpYear: data.expiryYear,
+        cardCvc: data.cvv,
+      };
+
+      const response = await fetch(
+        `${BASE_CONFIG.API_URL}/api/payments/cards/tokenize`,
+        {
+          method: "POST",
+          headers: this.getHeaders(),
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Error response from API:", errorText);
+        let errorData;
+        try {
+          errorData = JSON.parse(errorText);
+
+          // El backend puede devolver { status, message: { statusCode, message, errorCode, ... } }
+          // Extraer el objeto anidado si existe
+          if (errorData.message && typeof errorData.message === 'object') {
+            errorData = errorData.message;
+          }
+        } catch {
+          errorData = { message: errorText };
+        }
+        // Stringify the entire error object to preserve errorCode, errorMessage, etc.
+        throw new Error(JSON.stringify(errorData));
+      }
+
+      const result = await response.json();
+      console.log("✅ Tarjeta tokenizada exitosamente:", result);
+      return result;
+    } catch (error: unknown) {
+      console.error("❌ Error tokenizando tarjeta:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido tokenizando tarjeta";
+      throw new Error(errorMessage);
     }
   }
 }

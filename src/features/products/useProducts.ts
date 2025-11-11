@@ -127,11 +127,12 @@ export const useProducts = (
   const [lazyOffset, setLazyOffset] = useState(0);
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
   const abortRef = useRef<AbortController | null>(null);
-  const lastUrlRef = useRef<string | null>(null);
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
   const previousMenuUuidRef = useRef<string | undefined>(undefined);
   const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
   const previousPageRef = useRef<number | undefined>(undefined);
+  const previousFiltersRef = useRef<string | null>(null); // Para detectar cambios en filtros
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -168,7 +169,9 @@ export const useProducts = (
       }
 
       if (filters.color) params.color = filters.color;
+      if (filters.nombreColor) params.nombreColor = filters.nombreColor;
       if (filters.capacity) params.capacidad = filters.capacity;
+      if (filters.memoriaram) params.memoriaram = filters.memoriaram;
       if (filters.name) params.nombre = filters.name;
       if (filters.withDiscount !== undefined)
         params.conDescuento = filters.withDiscount;
@@ -203,8 +206,8 @@ export const useProducts = (
       }
 
       const apiParams = convertFiltersToApiParams(filters, customOffset);
-      
-      // Detectar cambios en menuUuid o submenuUuid para invalidación selectiva de caché
+        
+        // Detectar cambios en menuUuid o submenuUuid para invalidación selectiva de caché
       const currentMenuUuid = apiParams.menuUuid;
       const currentSubmenuUuid = apiParams.submenuUuid;
       
@@ -240,19 +243,42 @@ export const useProducts = (
       
       try {
         if (!append) {
+          // Crear una clave única para los filtros (excluyendo page, limit, lazyLimit, lazyOffset)
+          const filterKey = JSON.stringify({
+            categoria: apiParams.categoria,
+            menuUuid: apiParams.menuUuid,
+            submenuUuid: apiParams.submenuUuid,
+            precioMin: apiParams.precioMin,
+            precioMax: apiParams.precioMax,
+            nombreColor: apiParams.nombreColor,
+            capacidad: apiParams.capacidad,
+            memoriaram: apiParams.memoriaram,
+            nombre: apiParams.nombre,
+            desDetallada: apiParams.desDetallada,
+            modelo: apiParams.modelo,
+            color: apiParams.color,
+            conDescuento: apiParams.conDescuento,
+            stockMinimo: apiParams.stockMinimo,
+          });
+          
           // Detectar cambio de página: comparar filters.page con currentPage
           const isPageChange = filters.page !== undefined && filters.page !== currentPage;
           
-          if (isPageChange) {
-            // Cambio de página: limpiar productos y mostrar skeletons inmediatamente
+          // Detectar cambio de filtros (no solo página)
+          const filtersChanged = previousFiltersRef.current !== null && previousFiltersRef.current !== filterKey;
+          
+          if (isPageChange || filtersChanged) {
+            // Cambio de página o filtros: limpiar productos y mostrar skeletons inmediatamente
             setProducts([]);
             productsRef.current = [];
             setLoading(true);
             setError(null);
-            // NO usar caché en cambio de página para mostrar skeletons
+            // NO usar caché en cambio de página/filtros para mostrar skeletons
             hasCachedData = false;
+            // Actualizar referencia de filtros
+            previousFiltersRef.current = filterKey;
           } else {
-            // Carga inicial o cambio de filtros (no página): usar caché si existe
+            // Primera carga: usar caché si existe
             const cachedResponse = productCache.get(apiParams);
             if (cachedResponse && cachedResponse.success && cachedResponse.data) {
               hasCachedData = true;
@@ -295,6 +321,8 @@ export const useProducts = (
               setError(null);
               setProducts([]);
               productsRef.current = []; // Actualizar ref
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
             }
           }
         } else {
@@ -303,22 +331,10 @@ export const useProducts = (
           setError(null);
         }
 
-        // Construir URL de esta solicitud para decidir si abortamos la previa
-        const sp = new URLSearchParams();
-        (Object.entries(apiParams) as Array<[string, unknown]>).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== "") {
-            sp.append(key, String(value as string | number | boolean));
-          }
-        });
-        const nextUrl = `/api/products/filtered?${sp.toString()}`;
-
-        // Solo abortar si la solicitud anterior es para una URL DIFERENTE
-        if (abortRef.current && lastUrlRef.current && lastUrlRef.current !== nextUrl) {
-          abortRef.current.abort('New request initiated');
-        }
+        // No abortar peticiones anteriores - permitir que se completen
+        // La verificación de requestId asegura que solo se procesen respuestas de peticiones recientes
         const controller = new AbortController();
         abortRef.current = controller;
-        lastUrlRef.current = nextUrl;
 
         const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
 
@@ -589,66 +605,74 @@ export const useProducts = (
       return;
     }
 
-    const filtersToUse =
-      typeof initialFilters === "function"
-        ? initialFilters()
-        : initialFilters || {};
+    // Limpiar timer de debounce anterior si existe
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
 
-    // Detectar si cambian parámetros críticos (menuUuid, submenuUuid)
-    const apiParams = convertFiltersToApiParams(filtersToUse);
-    const currentMenuUuid = apiParams.menuUuid;
-    const currentSubmenuUuid = apiParams.submenuUuid;
-    const requestedPage = filtersToUse.page || 1;
-    
-    // Detectar cambio de página
-    const pageChanged = previousPageRef.current !== undefined && previousPageRef.current !== requestedPage;
-    
-    if (pageChanged) {
-      // Cambio de página: abortar petición anterior si existe
-      if (abortRef.current) {
-        abortRef.current.abort('Page changed');
+    // Debounce para evitar múltiples peticiones cuando cambian filtros rápidamente
+    debounceTimerRef.current = setTimeout(() => {
+      const filtersToUse =
+        typeof initialFilters === "function"
+          ? initialFilters()
+          : initialFilters || {};
+
+      // Detectar si cambian parámetros críticos (menuUuid, submenuUuid)
+      const apiParams = convertFiltersToApiParams(filtersToUse);
+      const currentMenuUuid = apiParams.menuUuid;
+      const currentSubmenuUuid = apiParams.submenuUuid;
+      const requestedPage = filtersToUse.page || 1;
+      
+      // Detectar cambio de página
+      const pageChanged = previousPageRef.current !== undefined && previousPageRef.current !== requestedPage;
+      
+      // Detectar si seccion cambia a vacía (navegación a categoría base)
+      // Cuando menuUuid y submenuUuid cambian a undefined, significa que navegamos de menu/submenu a categoría base
+      // Esto es crítico porque necesitamos reemplazar los filtros completamente
+      const seccionBecameEmpty = 
+        previousMenuUuidRef.current !== undefined && 
+        currentMenuUuid === undefined;
+      
+      // Detectar cambios críticos usando comparación estricta que maneja undefined correctamente
+      // Necesitamos detectar cuando cambia de valor a undefined, o de undefined a valor, o entre valores diferentes
+      const menuUuidChanged = 
+        (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
+        (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
+      
+      const submenuUuidChanged = 
+        (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
+        (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
+      
+      // Si seccion se vuelve vacía (navegación a categoría base), también es un cambio crítico
+      const criticalParamsChanged = menuUuidChanged || submenuUuidChanged || seccionBecameEmpty;
+      
+      if (criticalParamsChanged) {
+        // Reemplazar completamente los filtros cuando cambian parámetros críticos
+        setCurrentFilters(filtersToUse);
+      } else {
+        // Para cambios menores (paginación, ordenamiento, filtros), hacer merge
+        setCurrentFilters((prevFilters) => ({
+          ...prevFilters,
+          ...filtersToUse,
+        }));
       }
-    }
-    
-    // Detectar si seccion cambia a vacía (navegación a categoría base)
-    // Cuando menuUuid y submenuUuid cambian a undefined, significa que navegamos de menu/submenu a categoría base
-    // Esto es crítico porque necesitamos reemplazar los filtros completamente
-    const seccionBecameEmpty = 
-      previousMenuUuidRef.current !== undefined && 
-      currentMenuUuid === undefined;
-    
-    // Detectar cambios críticos usando comparación estricta que maneja undefined correctamente
-    // Necesitamos detectar cuando cambia de valor a undefined, o de undefined a valor, o entre valores diferentes
-    const menuUuidChanged = 
-      (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
-      (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
-    
-    const submenuUuidChanged = 
-      (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
-      (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
-    
-    // Si seccion se vuelve vacía (navegación a categoría base), también es un cambio crítico
-    const criticalParamsChanged = menuUuidChanged || submenuUuidChanged || seccionBecameEmpty;
-    
-    if (criticalParamsChanged) {
-      // Reemplazar completamente los filtros cuando cambian parámetros críticos
-      setCurrentFilters(filtersToUse);
-    } else {
-      // Para cambios menores (paginación, ordenamiento), hacer merge
-      setCurrentFilters((prevFilters) => ({
-        ...prevFilters,
-        ...filtersToUse,
-      }));
-    }
-    
-    // Actualizar referencias siempre después de procesar
-    // Esto asegura que la próxima vez detectemos cambios correctamente, incluso cuando cambia a undefined
-    previousMenuUuidRef.current = currentMenuUuid;
-    previousSubmenuUuidRef.current = currentSubmenuUuid;
-    previousPageRef.current = requestedPage;
-    
-    // Llamar fetchProducts - este verificará el caché internamente y mostrará datos inmediatamente si existen
-    fetchProducts(filtersToUse, false);
+      
+      // Actualizar referencias siempre después de procesar
+      // Esto asegura que la próxima vez detectemos cambios correctamente, incluso cuando cambia a undefined
+      previousMenuUuidRef.current = currentMenuUuid;
+      previousSubmenuUuidRef.current = currentSubmenuUuid;
+      previousPageRef.current = requestedPage;
+      
+      // Llamar fetchProducts - este limpiará productos y mostrará skeletons si cambian los filtros
+      fetchProducts(filtersToUse, false);
+    }, 300); // Debounce de 300ms para cambios de filtros
+
+    // Cleanup: limpiar timer si el componente se desmonta o cambian las dependencias
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
   }, [initialFilters, fetchProducts, convertFiltersToApiParams]);
 
   return {

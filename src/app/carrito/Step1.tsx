@@ -119,7 +119,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             });
 
             if (response.success && response.data) {
-              const { stores, default_direction, canPickUp } = response.data;
+              const { stores, canPickUp } = response.data;
 
               let shippingCity = "BOGOTÁ";
               let shippingStore = "";
@@ -148,8 +148,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         const results = await Promise.all(promises);
         
         // Actualizar localStorage una sola vez con todos los cambios
-        const storedProducts = JSON.parse(localStorage.getItem("cart-items") || "[]");
-        const updatedProducts = storedProducts.map((p: any) => {
+        const storedProducts = JSON.parse(localStorage.getItem("cart-items") || "[]") as Array<Record<string, unknown>>;
+        const updatedProducts = storedProducts.map((p) => {
           const result = results.find(r => r && r.sku === p.sku);
           if (result) {
             return { ...p, shippingCity: result.shippingCity, shippingStore: result.shippingStore, canPickUp: result.canPickUp };

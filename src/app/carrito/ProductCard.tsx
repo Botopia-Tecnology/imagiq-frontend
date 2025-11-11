@@ -24,6 +24,8 @@ export interface ProductCardProps {
   onQuantityChange: (cantidad: number) => void;
   onRemove: () => void;
   desDetallada?:string;
+  /** Indica si el producto puede ser recogido en tienda */
+  canPickUp?: boolean;
 }
 
 // Funciones puras para cálculos (SRP)
@@ -67,6 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   capacity,
   ram,
   isLoadingShippingInfo,
+  canPickUp,
   onQuantityChange,
   onRemove,
 }) => {
@@ -171,6 +174,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-xs text-gray-500">
                 Disponibles: {disponible}
               </span>
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && (
+                <span className="text-xs text-gray-400">
+                  canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
             </div>
 
             {/* Precios */}
@@ -290,6 +298,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-xs text-gray-500 text-center">
                 Disponibles: {disponible}
               </span>
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && (
+                <span className="text-xs text-gray-400 text-center">
+                  canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
             </div>
 
             {/* Precios */}

@@ -41,7 +41,30 @@ export interface DBCard {
   es_predeterminada?: boolean;
   activa?: boolean;
   marca?: string;
+  banco?: string;
   alias?: string;
+}
+
+/**
+ * Tarjeta encriptada del backend (/api/payments/cards/:userId)
+ * TODO viene encriptado en un solo bloque
+ */
+export interface EncryptedCard {
+  encryptedData: string; // Contiene: {cardId, last4Digits, brand, banco, cardHolderName, createdAt}
+}
+
+/**
+ * Tarjeta desencriptada
+ * Formato después de desencriptar encryptedData
+ */
+export interface DecryptedCardData {
+  cardId: string;          // UUID de la tarjeta
+  last4Digits: string;     // Últimos 4 dígitos
+  brand: string | null;    // VISA, Mastercard, etc.
+  tipo: string | null;     // credit/debit
+  banco: string | null;    // Banco emisor
+  cardHolderName: string;  // Nombre del titular de la tarjeta
+  createdAt: string;       // ISO string
 }
 
 /**

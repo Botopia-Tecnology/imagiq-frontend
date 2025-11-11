@@ -15,9 +15,9 @@ type LogoReloadAnimationProps = {
   onFinish?: () => void;
 };
 
-// Logo Samsung desde Cloudinary
+// Logo Samsung desde Cloudinary (SVG vectorial - mejor calidad)
 const LOGO_SRC =
-  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_white_logo.png";
+  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg";
 
 /**
  * LogoReloadAnimation
@@ -149,7 +149,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               />
             </rect>
           </g>
-          {/* Logo Samsung PNG visible encima de la ola, con opacidad animada */}
+          {/* Logo Samsung SVG visible encima de la ola, con opacidad animada y filtro blanco */}
           <image
             href={LOGO_SRC}
             x="0"
@@ -158,7 +158,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             height="420"
             style={{
               filter:
-                "drop-shadow(0 32px 160px #0057B7) drop-shadow(0 0px 80px #fff8)",
+                "brightness(0) invert(1) drop-shadow(0 32px 160px #0057B7) drop-shadow(0 0px 80px #fff8)",
               opacity: 0,
               transform: "scale(1)",
               transition: "transform 1.2s cubic-bezier(0.77,0,0.175,1)",

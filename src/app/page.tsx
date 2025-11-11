@@ -7,6 +7,7 @@
 import HeroSection from "@/components/sections/HeroSection";
 import GalaxyShowcaseBanner from "@/components/sections/GalaxyShowcaseBanner/index";
 import AITVsBanner from "@/components/sections/AITVsBanner";
+import DynamicBanner from "@/components/banners/DynamicBannerClean";
 import TVProductsGrid from "@/components/sections/TVProductsGrid";
 import BespokeAIBanner from "@/components/sections/BespokeAIBanner";
 import AppliancesProductsGrid from "@/components/sections/AppliancesProductsGrid";
@@ -105,17 +106,25 @@ export default function HomePage() {
           ref={galaxyShowcaseReveal.ref}
           {...galaxyShowcaseReveal.motionProps}
         >
-          <GalaxyShowcaseBanner />
+          <DynamicBanner placement="home-2" className="mt-6 md:mt-8 lg:mt-12">
+            <GalaxyShowcaseBanner />
+          </DynamicBanner>
         </motion.div>
         <motion.div ref={showcaseReveal.ref} {...showcaseReveal.motionProps}>
           <ProductShowcase />
         </motion.div>
         <motion.div ref={aiTVsReveal.ref} {...aiTVsReveal.motionProps}>
-          <AITVsBanner />
+          <DynamicBanner placement="home-3" className="mt-6 md:mt-8 lg:mt-12">
+            <AITVsBanner />
+          </DynamicBanner>
         </motion.div>
         <TVProductsGrid />
         <motion.div ref={bespokeAIReveal.ref} {...bespokeAIReveal.motionProps}>
-          <BespokeAIBanner />
+          {/* Usar banner dinámico desde el placement "home-4".
+              Si no hay banner en el API, renderizamos el fallback `BespokeAIBanner`. */}
+          <DynamicBanner placement="home-4" className="mt-6 md:mt-8 lg:mt-12">
+            <BespokeAIBanner />
+          </DynamicBanner>
         </motion.div>
         <AppliancesProductsGrid />
         {/* <motion.div

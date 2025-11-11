@@ -10,6 +10,7 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
+import { useHeroContext } from "@/contexts/HeroContext";
 import OfertasDropdown from "./dropdowns/ofertas";
 import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
@@ -28,6 +29,7 @@ import type { DropdownName, NavItem } from "./navbar/types";
 
 export default function Navbar() {
   const navbar = useNavbarLogic();
+  const { theme } = useHeroContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { getNavbarRoutes, loading } = useVisibleCategories();
   const { isAuthenticated } = useAuthContext();
@@ -106,7 +108,33 @@ export default function Navbar() {
     };
   }, [navbar]);
 
+  // Variables derivadas para sincronizar con HeroContext
+  const useHeroTheme = (navbar.isOfertas || navbar.isHome) && !navbar.isScrolled;
+
+  // Si hay un dropdown activo, forzar todo a negro
+  const shouldShowWhiteLogo = navbar.activeDropdown
+    ? false
+    : useHeroTheme
+      ? theme === 'light'
+      : navbar.showWhiteLogo;
+
+  const shouldShowWhiteItems = navbar.activeDropdown
+    ? false
+    : useHeroTheme
+      ? theme === 'light'
+      : navbar.showWhiteItems;
+
+  const shouldShowWhiteItemsMobile = useHeroTheme
+    ? theme === 'light'
+    : navbar.showWhiteItemsMobile;
+
   const getIconColorClasses = (forMobile = false): string => {
+    // Si hay un dropdown activo, siempre negro
+    if (navbar.activeDropdown) {
+      return "text-black";
+    }
+
+    // Siempre negro en páginas de productos
     if (
       navbar.isElectrodomesticos ||
       navbar.isDispositivosMoviles ||
@@ -114,10 +142,17 @@ export default function Navbar() {
     ) {
       return "text-black";
     }
-    if (forMobile) {
-      return navbar.showWhiteItemsMobile ? "text-white" : "text-black";
+
+    // Si estamos en home u ofertas sin scroll, usar tema del Hero
+    if (useHeroTheme) {
+      return theme === 'light' ? "text-white" : "text-black";
     }
-    return navbar.showWhiteItems ? "text-white" : "text-black";
+
+    // Fallback a comportamiento por defecto
+    if (forMobile) {
+      return shouldShowWhiteItemsMobile ? "text-white" : "text-black";
+    }
+    return shouldShowWhiteItems ? "text-white" : "text-black";
   };
 
   // Obtener las rutas dinámicas desde el hook
@@ -185,7 +220,7 @@ export default function Navbar() {
             >
               <Image
                 src={
-                  navbar.showWhiteItemsMobile
+                  shouldShowWhiteItemsMobile
                     ? "/frame_white.png"
                     : "/frame_black.png"
                 }
@@ -199,7 +234,7 @@ export default function Navbar() {
 
             {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
             {isAuthenticated ? (
-              <AddressDropdown showWhiteItems={navbar.showWhiteItemsMobile} />
+              <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
             ) : (
               <Image
                 src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
@@ -208,7 +243,7 @@ export default function Navbar() {
                 height={32}
                 className={cn(
                   "h-8 w-auto transition-all duration-300",
-                  navbar.showWhiteItemsMobile ? "brightness-0 invert" : ""
+                  shouldShowWhiteItemsMobile ? "brightness-0 invert" : ""
                 )}
               />
             )}
@@ -221,12 +256,12 @@ export default function Navbar() {
               isClient={navbar.isClient}
               onClick={navbar.handleCartClick}
               colorClass={
-                navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                shouldShowWhiteItemsMobile ? "text-white" : "text-black"
               }
             />
             {navbar.isAuthenticated && navbar.user?.nombre ? (
               <UserOptionsDropdown
-                showWhiteItems={navbar.showWhiteItemsMobile}
+                showWhiteItems={shouldShowWhiteItemsMobile}
               />
             ) : (
               <button
@@ -237,7 +272,7 @@ export default function Navbar() {
                 <User
                   className={cn(
                     "w-6 h-6 transition-colors duration-300",
-                    navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                    shouldShowWhiteItemsMobile ? "text-white" : "text-black"
                   )}
                 />
               </button>
@@ -250,7 +285,7 @@ export default function Navbar() {
               <Menu
                 className={cn(
                   "w-6 h-6 transition-colors duration-300",
-                  navbar.showWhiteItemsMobile ? "text-white" : "text-black"
+                  shouldShowWhiteItemsMobile ? "text-white" : "text-black"
                 )}
               />
             </button>
@@ -261,7 +296,7 @@ export default function Navbar() {
         <div className="hidden xl:flex px-4 sm:px-6 lg:px-8 py-4 min-h-[100px] items-end justify-between gap-4 2xl:gap-8">
           <div className="flex items-center gap-3 xl:gap-4 2xl:gap-6 min-w-0 flex-1">
             <NavbarLogo
-              showWhiteLogo={navbar.showWhiteLogo}
+              showWhiteLogo={shouldShowWhiteLogo}
               onNavigate={() => navbar.router.push("/")}
             />
 
@@ -336,11 +371,13 @@ export default function Navbar() {
                               navbar.router.push(item.href);
                             }}
                             className={cn(
-                              "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block",
-                              navbar.showWhiteItems
-                                ? "text-white hover:opacity-90"
+                              "whitespace-nowrap px-0.5 py-1 pb-2 text-[13px] xl:text-[13.5px] 2xl:text-[15.5px] leading-6 font-semibold  tracking-tight relative inline-block transition-colors duration-200",
+                              shouldShowWhiteItems
+                                ? navbar.activeDropdown
+                                  ? "text-black hover:text-blue-600"
+                                  : "text-white hover:opacity-90"
                                 : "text-black hover:text-blue-600",
-                              !navbar.showWhiteItems &&
+                              !shouldShowWhiteItems &&
                                 "after:absolute after:left-0 after:right-0 after:bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                             )}
                           >
@@ -379,7 +416,7 @@ export default function Navbar() {
               {/* Dirección predeterminada del usuario con dropdown */}
               {isAuthenticated && (
                 <div className="flex-1 min-w-0">
-                  <AddressDropdown showWhiteItems={navbar.showWhiteItems} />
+                  <AddressDropdown showWhiteItems={shouldShowWhiteItems} />
                 </div>
               )}
 
@@ -387,7 +424,7 @@ export default function Navbar() {
                 href="/ventas-corporativas"
                 className={cn(
                   "text-[13px] md:text-[13.5px] font-bold whitespace-nowrap shrink-0",
-                  navbar.showWhiteItems
+                  shouldShowWhiteItems
                     ? "text-white/90 hover:text-white"
                     : "text-black"
                 )}
@@ -422,7 +459,7 @@ export default function Navbar() {
               </Link>
               <div className="flex items-center justify-end">
                 {navbar.isAuthenticated && navbar.user?.nombre ? (
-                  <UserOptionsDropdown showWhiteItems={navbar.showWhiteItems} />
+                  <UserOptionsDropdown showWhiteItems={shouldShowWhiteItems} />
                 ) : (
                   <button
                     type="button"

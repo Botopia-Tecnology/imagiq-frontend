@@ -102,6 +102,8 @@ const CATEGORIES_WITH_CAPACITY_SELECTOR = [
   'televisores',
   'TV', // Televisores
   'tv',
+  'AV', // TV y Audio
+  'av',
   'Electrodomésticos',
   'Electrodomesticos',
   'electrodomesticos',

@@ -36,6 +36,29 @@ import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { motion } from "framer-motion";
 
+/**
+ * Formatea la capacidad para mostrar correctamente GB o pulgadas
+ * - Para almacenamiento: mantiene el formato original (128GB, 256GB, etc.)
+ * - Para pulgadas: agrega comillas si es solo un número (75 -> 75")
+ */
+function formatCapacityLabel(capacity: string): string {
+  if (!capacity) return capacity;
+
+  // Si ya tiene GB, TB, o comillas, retornar tal cual
+  if (capacity.includes('GB') || capacity.includes('TB') || capacity.includes('"') || capacity.includes('pulgada')) {
+    return capacity;
+  }
+
+  // Si es solo un número (probablemente pulgadas de TV), agregar comillas
+  const numericValue = capacity.trim();
+  if (/^\d+$/.test(numericValue)) {
+    return `${numericValue}"`;
+  }
+
+  // En cualquier otro caso, retornar tal cual
+  return capacity;
+}
+
 export interface ProductColor {
   name: string; // Nombre técnico del color (ej: "black", "white")
   hex: string; // Código hexadecimal del color (ej: "#000000")
@@ -157,6 +180,17 @@ export default function ProductCard({
     apiProduct?.categoria,
     apiProduct?.subcategoria
   );
+
+  // DEBUG: Log para verificar capacidades en TV
+  if (apiProduct?.categoria === 'AV' && process.env.NODE_ENV === 'development') {
+    console.log('🔍 TV Product Debug:', {
+      modelo: apiProduct?.modelo,
+      categoria: apiProduct?.categoria,
+      showCapacitySelector,
+      availableCapacities: productSelection.availableCapacities,
+      capacidadFromAPI: apiProduct?.capacidad,
+    });
+  }
 
   // Integración con el contexto del carrito
   const { addProduct } = useCartContext();
@@ -619,6 +653,17 @@ export default function ProductCard({
             </div>
           )}
 
+          {/* Mostrar capacidad como texto cuando showCapacitySelector es true pero solo hay 1 capacidad */}
+          {showCapacitySelector &&
+            apiProduct &&
+            productSelection.availableCapacities.length === 1 && (
+            <div className="px-3 mb-1">
+              <p className="text-xs text-gray-600 font-medium">
+                {`Tamaño: ${formatCapacityLabel(productSelection.availableCapacities[0])}`}
+              </p>
+            </div>
+          )}
+
           {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
           {showColorSelector &&
             (apiProduct
@@ -672,13 +717,14 @@ export default function ProductCard({
                       ? productSelection.availableCapacities.map(
                           (capacityName) => {
                             // Crear un ProductCapacity basado en el nombre de la capacidad
+                            const formattedLabel = formatCapacityLabel(capacityName);
                             const capacityInfo = capacities?.find(
                               (c) => c.label === capacityName
                             ) || {
                               value: capacityName
                                 .toLowerCase()
                                 .replaceAll(/\s+/g, ""),
-                              label: capacityName,
+                              label: formattedLabel,
                               sku: "",
                               ean: "",
                             };
@@ -691,22 +737,20 @@ export default function ProductCard({
                     apiProduct
                       ? productSelection.availableCapacities
                           .map((capacityName) => {
+                            const formattedLabel = formatCapacityLabel(capacityName);
                             const capacityInfo = capacities?.find(
                               (c) => c.label === capacityName
                             ) || {
                               value: capacityName
                                 .toLowerCase()
                                 .replaceAll(/\s+/g, ""),
-                              label: capacityName,
-                              sku: "",
-                              ean: "",
+                              label: formattedLabel,
                             };
                             return capacityInfo;
                           })
                           .find(
                             (c) =>
-                              c.label ===
-                              productSelection.selection.selectedCapacity
+                              c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
                           ) || null
                       : selectedCapacity
                   }

@@ -26,6 +26,8 @@ export interface ProductCardProps {
   desDetallada?:string;
   /** Indica si el producto puede ser recogido en tienda */
   canPickUp?: boolean;
+  /** Indica si se está cargando el canPickUp */
+  isLoadingCanPickUp?: boolean;
 }
 
 // Funciones puras para cálculos (SRP)
@@ -70,6 +72,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   ram,
   isLoadingShippingInfo,
   canPickUp,
+  isLoadingCanPickUp = false,
   onQuantityChange,
   onRemove,
 }) => {
@@ -174,7 +177,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-xs text-gray-500">
                 Disponibles: {disponible}
               </span>
-              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && (
+              {isLoadingCanPickUp && (
+                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
                 <span className="text-xs text-gray-400">
                   canPickUp: {canPickUp ? "true" : "false"}
                 </span>
@@ -298,7 +304,10 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-xs text-gray-500 text-center">
                 Disponibles: {disponible}
               </span>
-              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && (
+              {isLoadingCanPickUp && (
+                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1 mx-auto" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
                 <span className="text-xs text-gray-400 text-center">
                   canPickUp: {canPickUp ? "true" : "false"}
                 </span>

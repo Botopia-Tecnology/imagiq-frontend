@@ -314,8 +314,13 @@ export function useCart(): UseCartReturn {
       setProducts(getStoredProducts());
       setAppliedDiscount(getStoredDiscount());
     };
+    // Escuchar tanto el evento 'storage' nativo (entre tabs) como el evento personalizado (mismo tab)
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("localStorageChange", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleStorageChange);
+    };
   }, []);
 
   // Función para guardar productos en localStorage
@@ -459,7 +464,11 @@ export function useCart(): UseCartReturn {
             });
 
             if (response.success && response.data) {
-              const { stores, default_direction, canPickUp } = response.data;
+              const { stores, default_direction } = response.data;
+              // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
+              const canPickUp = (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickUp ?? 
+                                (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickup ?? 
+                                false;
 
               // Obtener la primera ciudad y tienda disponible
               let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 

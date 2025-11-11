@@ -44,47 +44,75 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Ref para evitar múltiples llamadas a candidate-stores
   const candidateStoresFetchedRef = useRef<Set<string>>(new Set());
   const previousProductsRef = useRef<string>("");
+  const fetchingRef = useRef<boolean>(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Estado para rastrear qué productos están cargando canPickUp
+  const [loadingCanPickUp, setLoadingCanPickUp] = useState<Set<string>>(new Set());
 
   // Cargar datos de Trade-In desde localStorage
   useEffect(() => {
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
-    console.log("🔍 Verificando Trade-In en localStorage:", storedTradeIn);
     if (storedTradeIn) {
       try {
         const data = JSON.parse(storedTradeIn);
-        console.log("📦 Datos de Trade-In cargados:", data);
         if (data.completed) {
           setTradeInData(data);
-          console.log("✅ Trade-In aplicado al carrito");
         }
       } catch (error) {
         console.error("❌ Error al cargar datos de Trade-In:", error);
       }
-    } else {
-      console.log("ℹ️ No hay datos de Trade-In guardados");
     }
   }, []);
 
   // Llamar a candidate-stores para cada producto en Step1
   useEffect(() => {
-    const fetchCandidateStoresForAllProducts = async () => {
-      if (cartProducts.length === 0) {
+    // Limpiar timeout anterior si existe
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Debounce: esperar 500ms antes de hacer las peticiones para evitar rate limiting
+    timeoutRef.current = setTimeout(async () => {
+      // Evitar múltiples ejecuciones simultáneas
+      if (fetchingRef.current) {
         return;
       }
 
-      // Crear una clave única basada en los productos actuales para detectar cambios
-      const currentProductsKey = cartProducts.map(p => `${p.sku}-${p.quantity}`).join(",");
-      
-      // Si los productos cambiaron, limpiar el ref para permitir nuevas peticiones
-      if (previousProductsRef.current !== currentProductsKey) {
-        candidateStoresFetchedRef.current.clear();
-        previousProductsRef.current = currentProductsKey;
+      if (cartProducts.length === 0) {
+        fetchingRef.current = false;
+        return;
       }
 
-      // Obtener user_id del localStorage
+      fetchingRef.current = true;
+
       try {
+        // Crear una clave única basada en los productos actuales para detectar cambios
+        const currentProductsKey = cartProducts.map(p => `${p.sku}-${p.quantity}`).sort((a, b) => a.localeCompare(b)).join(",");
+        
+        // Si los productos no han cambiado, no hacer nada (evitar peticiones duplicadas)
+        if (previousProductsRef.current === currentProductsKey) {
+          fetchingRef.current = false;
+          return;
+        }
+        
+        // Si los productos cambiaron, limpiar el ref solo para los productos que ya no existen
+        const previousProductsSet = new Set(previousProductsRef.current.split(",").filter(Boolean));
+        const currentProductKeysSet = new Set(cartProducts.map(p => `${p.sku}-${p.quantity}`));
+        
+        // Limpiar solo las claves que ya no existen
+        for (const key of previousProductsSet) {
+          if (!currentProductKeysSet.has(key)) {
+            candidateStoresFetchedRef.current.delete(key);
+          }
+        }
+        
+        // Actualizar la referencia
+        previousProductsRef.current = currentProductsKey;
+
+        // Obtener user_id del localStorage
         const userStr = localStorage.getItem("imagiq_user");
         if (!userStr) {
+          fetchingRef.current = false;
           return;
         }
 
@@ -92,23 +120,46 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         const userId = user?.id || user?.user_id;
 
         if (!userId) {
+          fetchingRef.current = false;
           return;
         }
 
-        // Filtrar productos que necesitan la petición (no tienen canPickUp o no están en el ref)
+        // Filtrar productos que necesitan la petición (solo si no tienen canPickUp definido Y no están en el ref)
         const productsToFetch = cartProducts.filter(product => {
           const productKey = `${product.sku}-${product.quantity}`;
-          // Hacer petición si no está en el ref O si no tiene canPickUp definido
-          return !candidateStoresFetchedRef.current.has(productKey) || product.canPickUp === undefined;
+          // Solo hacer petición si:
+          // 1. No está en el ref (nunca se ha consultado)
+          // 2. Y no tiene canPickUp definido (undefined)
+          // Si ya tiene canPickUp (true o false), no hacer petición
+          const isInRef = candidateStoresFetchedRef.current.has(productKey);
+          const hasCanPickUp = product.canPickUp !== undefined;
+          
+          // Solo hacer petición si NO está en el ref Y NO tiene canPickUp
+          return !isInRef && !hasCanPickUp;
         });
 
         if (productsToFetch.length === 0) {
+          fetchingRef.current = false;
+          // Limpiar loading si no hay productos para cargar
+          setLoadingCanPickUp(new Set());
           return;
         }
 
-        // Hacer petición para cada producto que lo necesite en paralelo
-        const promises = productsToFetch.map(async (product) => {
+        // Marcar productos como cargando
+        const productKeysToLoad = productsToFetch.map(p => `${p.sku}-${p.quantity}`);
+        setLoadingCanPickUp(new Set(productKeysToLoad));
+
+        // Hacer petición para cada producto con delay entre peticiones para evitar rate limiting
+        const results: Array<{ sku: string; canPickUp: boolean; shippingCity: string; shippingStore: string } | null> = [];
+        
+        for (let i = 0; i < productsToFetch.length; i++) {
+          const product = productsToFetch[i];
           const productKey = `${product.sku}-${product.quantity}`;
+          
+          // Agregar delay entre peticiones (excepto la primera)
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 300)); // 300ms entre peticiones
+          }
           
           try {
             candidateStoresFetchedRef.current.add(productKey);
@@ -119,7 +170,11 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             });
 
             if (response.success && response.data) {
-              const { stores, canPickUp } = response.data;
+              const { stores } = response.data;
+              // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
+              const canPickUp = (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickUp ?? 
+                                (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickup ?? 
+                                false;
 
               let shippingCity = "BOGOTÁ";
               let shippingStore = "";
@@ -133,19 +188,23 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 }
               }
 
-              return { sku: product.sku, canPickUp, shippingCity, shippingStore };
+              results.push({ sku: product.sku, canPickUp, shippingCity, shippingStore });
             } else {
               console.error(`❌ Error en la respuesta de candidate-stores para ${product.sku}:`, response.message);
-              return null;
+              results.push(null);
             }
           } catch (error) {
             console.error(`❌ Error al llamar a candidate-stores para ${product.sku}:`, error);
-            return null;
+            results.push(null);
+          } finally {
+            // Remover de loading cuando termine (éxito o error)
+            setLoadingCanPickUp(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(productKey);
+              return newSet;
+            });
           }
-        });
-
-        // Esperar a que todas las peticiones terminen
-        const results = await Promise.all(promises);
+        }
         
         // Actualizar localStorage una sola vez con todos los cambios
         const storedProducts = JSON.parse(localStorage.getItem("cart-items") || "[]") as Array<Record<string, unknown>>;
@@ -158,19 +217,38 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         });
         localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
 
-        // Disparar evento storage para que el hook useCart se actualice
+        // Disparar evento storage personalizado para que el hook useCart se actualice
+        // Usamos un evento personalizado porque el evento 'storage' nativo solo se dispara entre tabs
+        const customEvent = new CustomEvent("localStorageChange", {
+          detail: { key: "cart-items" }
+        });
+        window.dispatchEvent(customEvent);
+        
+        // También disparar el evento storage estándar por compatibilidad
         window.dispatchEvent(new Event("storage"));
         
-        // Forzar actualización adicional después de un pequeño delay
+        // Forzar actualización adicional después de un pequeño delay para asegurar sincronización
         setTimeout(() => {
           window.dispatchEvent(new Event("storage"));
-        }, 200);
+          window.dispatchEvent(customEvent);
+        }, 100);
+        
+        // Limpiar todos los loading después de actualizar localStorage
+        setLoadingCanPickUp(new Set());
       } catch (error) {
         console.error("❌ Error al obtener usuario:", error);
+        // Limpiar loading en caso de error
+        setLoadingCanPickUp(new Set());
+        fetchingRef.current = false;
+      }
+    }, 500); // Debounce de 500ms
+
+    // Cleanup: limpiar timeout si el componente se desmonta o cambian los productos
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
-
-    fetchCandidateStoresForAllProducts();
   }, [cartProducts]);
 
   // Usar cálculos del hook centralizado
@@ -289,6 +367,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     canPickUp={product.canPickUp}
                     isLoadingShippingInfo={
                       loadingShippingInfo[product.sku] || false
+                    }
+                    isLoadingCanPickUp={
+                      loadingCanPickUp.has(`${product.sku}-${product.quantity}`)
                     }
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)

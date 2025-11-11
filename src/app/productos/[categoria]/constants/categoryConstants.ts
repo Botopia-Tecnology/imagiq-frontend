@@ -17,10 +17,10 @@ export const electrodomesticoFilters: FilterConfig = {
     { label: "Más de $3.000.000", min: 3000000, max: Infinity },
   ],
   color: ["Negro", "Blanco", "Plata", "Gris", "Azul", "Rojo"],
-  capacidad: ["300L", "400L", "500L", "600L", "700L+"],
-  eficienciaEnergetica: ["A+++", "A++", "A+", "A"],
-  tecnologia: ["Twin Cooling Plus", "Digital Inverter", "No Frost", "SpaceMax"],
-  tamaño: ["Compacto", "Mediano", "Grande", "Extra Grande"],
+  capacidad: ["5kg - 10kg", "11kg - 15kg", "16kg - 20kg", "21kg - 25kg", "+26kg"],
+  //eficienciaEnergetica: ["A+++", "A++", "A+", "A"],
+  //tecnologia: ["Ecobubble", "Digital Inverter", "No Frost", "SpaceMax"],
+  //tamaño: ["Compacto", "Mediano", "Grande", "Extra Grande"],
 };
 
 /**
@@ -45,16 +45,16 @@ export const movilesFilters: FilterConfig = {
   ],
   almacenamiento: ["64GB", "128GB", "256GB", "512GB", "1TB"],
   ram: ["4GB", "6GB", "8GB", "12GB", "16GB"],
-  serie: ["Galaxy A", "Galaxy S", "Galaxy Note", "Galaxy Z"],
-  pantalla: ['5.5"', '6.1"', '6.5"', '6.7"', '6.8"'],
-  camara: ["12MP", "50MP", "64MP", "108MP", "200MP"],
-  caracteristicas: [
+  //serie: ["Galaxy A", "Galaxy S", "Galaxy Note", "Galaxy Z"],
+  //pantalla: ['5.5"', '6.1"', '6.5"', '6.7"', '6.8"'],
+  //camara: ["12MP", "50MP", "64MP", "108MP", "200MP"],
+  /*caracteristicas: [
     "5G",
     "Resistente al agua",
     "Carga inalámbrica",
     "NFC",
     "Dual SIM",
-  ],
+  ],*/
 };
 
 /**
@@ -69,9 +69,9 @@ export const tvsFilters: FilterConfig = {
   ],
   color: ["Negro", "Plata", "Gris", "Blanco"],
   tamanoPantalla: ['32"', '43"', '50"', '55"', '65"', '75"', '85"'],
-  resolucion: ["HD", "Full HD", "4K", "8K"],
-  smartFeatures: ["Tizen", "Google TV", "Smart Hub", "Bixby"],
-  conectividad: ["WiFi", "Bluetooth", "HDMI", "USB"],
+  //resolucion: ["HD", "Full HD", "4K", "8K"],
+  //smartFeatures: ["Tizen", "Google TV", "Smart Hub", "Bixby"],
+  //conectividad: ["WiFi", "Bluetooth", "HDMI", "USB"],
 };
 
 

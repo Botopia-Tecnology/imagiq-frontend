@@ -38,6 +38,19 @@ export default function Step3({
     canContinue,
   } = useDelivery();
 
+  // Verificar si algún producto tiene canPickUp: false
+  const hasProductWithoutPickup = products.some(
+    (product) => product.canPickUp === false
+  );
+
+  // Si hay productos sin pickup y el método está en tienda, cambiar a domicilio
+  React.useEffect(() => {
+    if (hasProductWithoutPickup && deliveryMethod === "tienda") {
+      setDeliveryMethod("domicilio");
+      localStorage.setItem("checkout-delivery-method", "domicilio");
+    }
+  }, [hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
+
   // UX: Navegación al siguiente paso
   const handleContinue = () => {
     // Track del evento add_payment_info para analytics
@@ -95,12 +108,14 @@ export default function Step3({
                 </div>
               )}
 
-              <div className="mt-6">
-                <StorePickupSelector
-                  deliveryMethod={deliveryMethod}
-                  onMethodChange={handleDeliveryMethodChange}
-                />
-              </div>
+              {!hasProductWithoutPickup && (
+                <div className="mt-6">
+                  <StorePickupSelector
+                    deliveryMethod={deliveryMethod}
+                    onMethodChange={handleDeliveryMethodChange}
+                  />
+                </div>
+              )}
 
               {deliveryMethod === "tienda" && (
                 <div className="mt-6">

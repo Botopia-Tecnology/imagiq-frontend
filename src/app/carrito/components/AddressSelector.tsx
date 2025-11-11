@@ -70,7 +70,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
           </div>
           <button
             type="button"
-            className="text-blue-600 text-sm font-medium hover:text-blue-700 transition self-start sm:self-center"
+            className="text-blue-600 text-sm font-medium hover:text-blue-700 transition self-start sm:self-center cursor-pointer"
             onClick={() => onEditToggle(true)}
           >
             {address ? "Cambiar dirección" : "Seleccionar dirección"}
@@ -115,7 +115,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
               <button
                 type="button"
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="w-full sm:w-auto text-blue-600 text-sm font-medium hover:text-blue-700 transition flex items-center justify-center gap-2 p-3 border border-blue-200 rounded-lg hover:bg-blue-50"
+                className="w-full sm:w-auto text-blue-600 text-sm font-medium hover:text-blue-700 transition flex items-center justify-center gap-2 p-3 border border-blue-200 rounded-lg hover:bg-blue-50 cursor-pointer"
               >
                 <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -130,7 +130,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                 disabled={!canSaveSelection}
                 className={`flex-1 sm:flex-none px-6 py-3 rounded-lg text-sm font-semibold transition ${
                   canSaveSelection
-                    ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}
               >
@@ -138,7 +138,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
               </button>
               <button
                 type="button"
-                className="flex-1 sm:flex-none text-gray-600 text-sm font-medium px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                className="flex-1 sm:flex-none text-gray-600 text-sm font-medium px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition cursor-pointer"
                 onClick={() => {
                   onEditToggle(false);
                   setShowAddForm(false);

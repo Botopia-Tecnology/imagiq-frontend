@@ -20,7 +20,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
     <div className="mt-4">
       <input
         type="text"
-        className="w-full border rounded-lg px-3 py-2 text-sm mb-2"
+        className="w-full border rounded-lg px-3 py-2 text-sm mb-2 cursor-text"
         placeholder="Buscar tienda por nombre, ciudad o centro comercial..."
         value={storeQuery}
         onChange={(e) => onQueryChange(e.target.value)}

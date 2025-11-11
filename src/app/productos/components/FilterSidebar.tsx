@@ -118,6 +118,7 @@ export default function FilterSidebar({
       pantalla: "PANTALLA",
       procesador: "PROCESADOR",
       ram: "MEMORIA RAM",
+      tamanoPantalla: "TAMAÑO DE PANTALLA",
       conectividad: "CONECTIVIDAD",
       tamanoCaja: "TAMAÑO DE CAJA",
       material: "MATERIAL",

@@ -23,7 +23,9 @@ export interface BaseApiFilters {
   conDescuento?: boolean;
   stockMinimo?: number;
   color?: string;
+  nombreColor?: string; // Nombre del color para filtrar
   capacidad?: string;
+  memoriaram?: string; // Memoria RAM para filtrar (valores exactos como "4GB", "6GB", etc.)
   nombre?: string;
   desDetallada?: string;
   modelo?: string;
@@ -54,7 +56,9 @@ export interface FrontendApiFilters {
   precioMin?: number;
   precioMax?: number;
   color?: string;
+  nombreColor?: string; // maps to nombreColor (nombre del color para filtrar)
   capacity?: string;     // maps to capacidad
+  memoriaram?: string;   // maps to memoriaram (memoria RAM con valores exactos)
   name?: string;         // maps to nombre
   withDiscount?: boolean; // maps to conDescuento
   minStock?: number;    // maps to stockMinimo

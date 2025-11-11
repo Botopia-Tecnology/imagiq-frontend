@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
+import { useShippingFlow } from "@/hooks/useShippingFlow";
 import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
 import { payWithAddi, payWithCard, payWithPse } from "../utils";
@@ -13,6 +14,7 @@ export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
   const { products: cartProducts, appliedDiscount, calculations } = useCart();
+  const { determineShippingMethod } = useShippingFlow();
 
   // Estados principales
   const [error, setError] = useState("");
@@ -142,6 +144,18 @@ export function useCheckoutLogic() {
 
     // Usar cálculos del hook useCart
     const { total, shipping: envio } = calculations;
+
+    // Determinar el método de envío según la lógica del diagrama
+    const deliveryMethodSaved = localStorage.getItem("checkout-delivery-method") || "domicilio";
+    const shippingMethod = determineShippingMethod(deliveryMethodSaved as 'tienda' | 'domicilio');
+    
+    console.log('🚀 Procesando pago con método de envío:', shippingMethod);
+    console.log('📋 Detalles:', {
+      deliveryMethod: deliveryMethodSaved,
+      shippingMethod,
+      total,
+      envio
+    });
 
     // Procesar pago
     try {

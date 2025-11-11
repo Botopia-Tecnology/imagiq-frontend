@@ -239,9 +239,12 @@ export function useCart(): UseCartReturn {
       });
 
       if (response.success && response.data) {
-        const { stores, default_direction } = response.data;
+        const { stores, canPickUp } = response.data;
 
-        let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
+        // Guardar canPickUp en localStorage para uso en checkout
+        localStorage.setItem('imagiq_can_pickup', JSON.stringify(canPickUp));
+
+        let shippingCity = "BOGOTÁ"; 
         let shippingStore = "";
 
         const storeEntries = Object.entries(stores);
@@ -455,10 +458,13 @@ export function useCart(): UseCartReturn {
             });
 
             if (response.success && response.data) {
-              const { stores, default_direction } = response.data;
+              const { stores, canPickUp } = response.data;
+
+              // Guardar canPickUp en localStorage para uso en checkout
+              localStorage.setItem('imagiq_can_pickup', JSON.stringify(canPickUp));
 
               // Obtener la primera ciudad y tienda disponible
-              let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
+              let shippingCity = "BOGOTÁ"; 
               let shippingStore = "";
 
               // Si stores no está vacío, obtener la primera ciudad y su primera tienda

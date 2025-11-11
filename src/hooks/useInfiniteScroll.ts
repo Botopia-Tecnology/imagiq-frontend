@@ -23,12 +23,17 @@ export function useInfiniteScroll({
 }: UseInfiniteScrollOptions) {
   const observer = useRef<IntersectionObserver | null>(null);
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const isLoadingRef = useRef(false);
 
   const handleObserver = useCallback(
     (entries: IntersectionObserverEntry[]) => {
       const [target] = entries;
-      if (target.isIntersecting && hasMore && !isLoading) {
-        onLoadMore();
+      // Prevenir múltiples llamadas usando una ref además del estado
+      if (target.isIntersecting && hasMore && !isLoading && !isLoadingRef.current) {
+        isLoadingRef.current = true;
+        Promise.resolve(onLoadMore()).finally(() => {
+          isLoadingRef.current = false;
+        });
       }
     },
     [hasMore, isLoading, onLoadMore]

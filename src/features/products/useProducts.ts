@@ -129,6 +129,7 @@ export const useProducts = (
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
   const previousMenuUuidRef = useRef<string | undefined>(undefined);
   const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
+  const loadingMoreRef = useRef<boolean>(false); // Lock para prevenir múltiples llamadas simultáneas a loadMore
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -458,21 +459,47 @@ export const useProducts = (
 
   // Función para cargar más productos (scroll infinito con paginación automática)
   const loadMore = useCallback(async () => {
-    if (!loading && !isLoadingMore && hasNextPage) {
-      // Cargar la siguiente página automáticamente
-      const nextPage = currentPage + 1;
+    // Prevenir múltiples llamadas simultáneas usando ref
+    // También verificar que realmente haya una siguiente página del backend (hasNextPage)
+    if (loadingMoreRef.current || loading || isLoadingMore || !hasNextPage) {
+      console.log('[loadMore] Bloqueado:', {
+        loadingMoreRef: loadingMoreRef.current,
+        loading,
+        isLoadingMore,
+        hasNextPage,
+        currentPage
+      });
+      return; // Salir temprano si ya está cargando o no hay más páginas
+    }
+
+    loadingMoreRef.current = true;
+
+    try {
+      // Usar setCurrentPage con función callback para obtener el valor más actualizado
+      let nextPage: number;
+      setCurrentPage((prevPage) => {
+        nextPage = prevPage + 1;
+        console.log('[loadMore] Solicitando página:', nextPage, 'anterior:', prevPage);
+        // IMPORTANTE: Retornar nextPage para actualizar el estado inmediatamente
+        // Esto previene que múltiples llamadas a loadMore usen el mismo prevPage
+        return nextPage;
+      });
 
       if (currentSearchQuery) {
         // Si estamos en modo búsqueda
-        await searchProducts(currentSearchQuery, nextPage);
+        await searchProducts(currentSearchQuery, nextPage!);
       } else {
         // Scroll infinito normal: cargar siguiente página y agregar productos
-        const filtersWithNextPage = { ...currentFilters, page: nextPage };
-        // NO llamar setCurrentPage aquí - fetchProducts ya actualiza currentPage cuando procesa la respuesta
+        const filtersWithNextPage = { ...currentFilters, page: nextPage! };
         await fetchProducts(filtersWithNextPage, true); // append=true para agregar productos
       }
+    } catch (error) {
+      console.error("Error in loadMore:", error);
+    } finally {
+      // Siempre resetear el lock al finalizar
+      loadingMoreRef.current = false;
     }
-  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, isLoadingMore, currentSearchQuery, currentFilters, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(

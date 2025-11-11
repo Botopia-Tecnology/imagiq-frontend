@@ -365,7 +365,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 placeholder="Código de descuento"
                 className="border rounded-lg px-3 py-2 text-sm flex-1"
               />
-              <button className="bg-gray-200 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-300 transition">
+              <button className="bg-gray-200 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-300 transition cursor-pointer">
                 Aplicar
               </button>
             </div>
@@ -391,7 +391,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
               cartProducts.length === 0
                 ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "text-black hover:brightness-95"
+                : "text-black hover:brightness-95 cursor-pointer"
             }`}
             style={
               cartProducts.length === 0
@@ -429,7 +429,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               </div>
               <button
                 onClick={() => setShowCouponModal(true)}
-                className="text-sm text-sky-600 hover:text-sky-700 font-medium underline"
+                className="text-sm text-sky-600 hover:text-sky-700 font-medium underline cursor-pointer"
               >
                 Cupón
               </button>
@@ -437,7 +437,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
             {/* Botón continuar */}
             <button
-              className="w-full font-bold py-3 rounded-lg text-base transition bg-sky-500 hover:bg-sky-600 text-white"
+              className="w-full font-bold py-3 rounded-lg text-base transition bg-sky-500 hover:bg-sky-600 text-white cursor-pointer"
               onClick={handleContinue}
             >
               Continuar pago
@@ -455,7 +455,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               <h3 className="text-lg font-bold">Agregar cupón</h3>
               <button
                 onClick={() => setShowCouponModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 cursor-pointer"
               >
                 ✕
               </button>
@@ -477,7 +477,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                   setShowCouponModal(false);
                   setCouponCode("");
                 }}
-                className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition"
+                className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition cursor-pointer"
               >
                 Aplicar cupón
               </button>

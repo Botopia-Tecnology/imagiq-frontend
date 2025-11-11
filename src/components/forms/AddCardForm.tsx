@@ -123,7 +123,6 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
     if (imageSrc) {
       // Por ahora solo simularemos la captura
       // En producción, aquí se usaría OCR (ej: Tesseract.js)
-      console.log("Imagen capturada:", imageSrc);
       setShowCamera(false);
 
       // Simulación: rellenar con datos de ejemplo
@@ -170,14 +169,7 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
     setSubmitStatus("idle");
 
     try {
-      console.log("📤 Iniciando tokenización de tarjeta...");
-
-      console.log("🔍 DEBUG - Datos de expiración:", {
-        expiryMonth,
-        expiryYear
-      });
-
-      const response = await profileService.tokenizeCard({
+      await profileService.tokenizeCard({
         userId,
         cardNumber: cardNumber.replace(/\s/g, ""),
         cardHolder,
@@ -185,8 +177,6 @@ const AddCardForm: React.FC<AddCardFormProps> = ({
         expiryYear,
         cvv,
       });
-
-      console.log("✅ Tarjeta tokenizada exitosamente:", response);
 
       // Mostrar mensaje de éxito
       setSubmitStatus("success");

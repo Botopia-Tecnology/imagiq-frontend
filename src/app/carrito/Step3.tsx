@@ -10,7 +10,7 @@ import {
   OrderSummary,
 } from "./components";
 import { Direccion } from "@/types/user";
-import { useAnalytics } from "@/lib/analytics";
+import { useAnalyticsWithUser } from "@/lib/analytics";
 
 export default function Step3({
   onBack,
@@ -20,7 +20,7 @@ export default function Step3({
   onContinue?: () => void;
 }) {
   const { products, appliedDiscount, calculations } = useCart();
-  const { trackAddPaymentInfo } = useAnalytics();
+  const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const {
     address,
     setAddress,

@@ -6,7 +6,7 @@ import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import { type ProductApiData, productEndpoints } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
-import { useAnalytics } from "@/lib/analytics";
+import { useAnalyticsWithUser } from "@/lib/analytics";
 
 /**
  * Paso 1 del carrito de compras
@@ -22,7 +22,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const [validationError, setValidationError] = useState<string>("");
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
-  const { trackBeginCheckout } = useAnalytics();
+  const { trackBeginCheckout } = useAnalyticsWithUser();
 
   // Estado para Trade-In
   const [tradeInData, setTradeInData] = useState<{

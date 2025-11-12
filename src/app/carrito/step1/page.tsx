@@ -12,7 +12,8 @@ export default function Step1Page() {
         ? localStorage.getItem("imagiq_user") || "{}"
         : "{}"
     );
-    if (hasData !== undefined) {
+    console.log({hasData})
+    if (hasData.email) {
       router.push("/carrito/step3");
     } else {
       router.push("/carrito/step2");

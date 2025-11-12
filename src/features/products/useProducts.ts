@@ -1036,6 +1036,8 @@ export const useFavorites = (userId?: string,
             apellido?: string;
             email?: string;
             telefono?: string;
+            tipo_documento?: string;
+            numero_documento?: string;
           } = {};
           
           if (guestUserData) {
@@ -1043,6 +1045,8 @@ export const useFavorites = (userId?: string,
             if (guestUserData.apellido) userInfoAllowed.apellido = guestUserData.apellido;
             if (guestUserData.email) userInfoAllowed.email = guestUserData.email;
             if (guestUserData.telefono) userInfoAllowed.telefono = guestUserData.telefono;
+            if (guestUserData.tipo_documento) userInfoAllowed.tipo_documento = guestUserData.tipo_documento;
+            if (guestUserData.numero_documento) userInfoAllowed.numero_documento = guestUserData.numero_documento;
           }
           
           payload = {

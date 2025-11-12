@@ -1,12 +1,12 @@
 /**
  * Tipos de dirección física
  */
-export type TipoDireccionFisica = 'CASA' | 'APARTAMENTO' | 'OFICINA' | 'OTRO';
+export type TipoDireccionFisica = "CASA" | "APARTAMENTO" | "OFICINA" | "OTRO";
 
 /**
  * Tipo de uso de la dirección
  */
-export type TipoUsoDireccion = 'ENVIO' | 'FACTURACION' | 'AMBOS';
+export type TipoUsoDireccion = "ENVIO" | "FACTURACION" | "AMBOS";
 
 /**
  * Interface principal de dirección
@@ -20,6 +20,7 @@ export interface Address {
   tipo: TipoUsoDireccion;
   esPredeterminada: boolean;
   activa: boolean;
+  codigo_dane: string;
 
   // Ubicación
   googlePlaceId: string;

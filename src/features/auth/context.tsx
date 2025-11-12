@@ -80,8 +80,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Logout function
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("imagiq_user");
-    localStorage.removeItem("imagiq_token");
+
+    // Limpiar todo el localStorage excepto la versión de la app
+    const VERSION_KEY = "app_version";
+    const appVersion = localStorage.getItem(VERSION_KEY);
+
+    localStorage.clear();
+
+    // Restaurar la versión
+    if (appVersion) {
+      localStorage.setItem(VERSION_KEY, appVersion);
+    }
+
     apiClient.removeAuthToken();
   };
 

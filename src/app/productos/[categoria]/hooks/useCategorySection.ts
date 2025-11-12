@@ -37,25 +37,54 @@ export function useCategoryPagination(
   // Refs para rastrear si ya se inicializó y los valores previos
   const isInitializedRef = useRef(false);
   const previousCategoriaRef = useRef<CategoriaParams | undefined>(undefined);
-  const previousSeccionRef = useRef<Seccion | undefined>(undefined);
   const previousMenuUuidRef = useRef<string | undefined>(undefined);
   const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
 
   // Efecto para manejar cambios de ubicación y restauración de página
   useEffect(() => {
     // Solo esperar a que tengamos categoriaApiCode, que es el único valor realmente crítico
-    // menuUuid y submenuUuid pueden ser undefined legítimamente (categoría base)
     if (!categoriaApiCode) {
       // Sin categoría no podemos proceder
       return;
     }
 
+    // IMPORTANTE: Si estamos en una sección (seccion no vacía) pero menuUuid aún es undefined, ESPERAR
+    // Esto evita inicializar con valores incorrectos cuando menuUuid llega con delay
+    if (seccion && seccion.trim() !== "" && !menuUuid) {
+      console.log('⏳ Esperando menuUuid para sección:', seccion);
+      return;
+    }
+
     // Verificar si la ubicación cambió comparando con valores previos
-    const locationChanged =
-      (previousCategoriaRef.current != undefined && previousCategoriaRef.current != categoria) ||
-      (previousSeccionRef.current != undefined && previousSeccionRef.current != seccion) ||
-      (previousMenuUuidRef.current != undefined && previousMenuUuidRef.current != menuUuid) ||
-      (previousSubmenuUuidRef.current != undefined && previousSubmenuUuidRef.current != submenuUuid);
+    // Normalizar valores para comparación consistente
+    const currentMenuUuidNorm = menuUuid ?? undefined;
+    const currentSubmenuUuidNorm = submenuUuid ?? undefined;
+    const prevMenuUuidNorm = previousMenuUuidRef.current ?? undefined;
+    const prevSubmenuUuidNorm = previousSubmenuUuidRef.current ?? undefined;
+
+    // Detectar cambio de ubicación
+    // IMPORTANTE: Comparar siempre si ya se inicializó, no solo cuando el valor previo !== undefined
+    // Esto permite detectar cambios de undefined a valor (ej: categoría base → sección)
+    const categoriaChanged = isInitializedRef.current && previousCategoriaRef.current !== categoria;
+    const menuUuidChanged = isInitializedRef.current && prevMenuUuidNorm !== currentMenuUuidNorm;
+    const submenuUuidChanged = isInitializedRef.current && prevSubmenuUuidNorm !== currentSubmenuUuidNorm;
+
+    const locationChanged = categoriaChanged || menuUuidChanged || submenuUuidChanged;
+
+    console.log('🔍 Detectando cambios:', {
+      isInitialized: isInitializedRef.current,
+      locationChanged,
+      prev: {
+        categoria: previousCategoriaRef.current,
+        menuUuid: prevMenuUuidNorm,
+        submenuUuid: prevSubmenuUuidNorm
+      },
+      current: {
+        categoria,
+        menuUuid: currentMenuUuidNorm,
+        submenuUuid: currentSubmenuUuidNorm
+      }
+    });
 
     if (!isInitializedRef.current) {
       // Primera inicialización: intentar restaurar página guardada
@@ -63,46 +92,34 @@ export function useCategoryPagination(
         const saved = localStorage.getItem("imagiq_last_location");
         if (saved) {
           const parsed = JSON.parse(saved);
-          // Verificar si la ubicación guardada coincide con la actual (comparando undefined también)
-          console.log(parsed, categoriaApiCode, menuUuid, submenuUuid, 'sii')
-          if(submenuUuid){
-            console.log('nivel sub')
-            if(parsed.submenuUuid == submenuUuid){
-              setCurrentPage(parsed.page || 1);
-            }else{
-              setCurrentPage(1);
-            }
-          }else if(menuUuid){
-            console.log('nivel menu')
-            if(parsed.menuUuid== menuUuid){
-              setCurrentPage(parsed.page || 1);
-            }else{
-              setCurrentPage(1);
-            }
-          }else if(categoriaApiCode){
-            console.log('nivel categoria')
-            if(parsed.categoria == categoriaApiCode){
-              console.log('misma categoria', parsed.page)
-              setCurrentPage(parsed.page || 1);
-            }else{
-              setCurrentPage(1);
-            }
+
+          // Normalizar undefined/null a undefined para comparación consistente
+          const savedCategoria = parsed.categoria;
+          const savedMenuUuid = parsed.menuUuid ?? undefined;
+          const savedSubmenuUuid = parsed.submenuUuid ?? undefined;
+          const currentMenuUuid = menuUuid ?? undefined;
+          const currentSubmenuUuid = submenuUuid ?? undefined;
+
+          console.log('Comparando ubicaciones:', {
+            saved: { categoria: savedCategoria, menuUuid: savedMenuUuid, submenuUuid: savedSubmenuUuid, page: parsed.page },
+            current: { categoria: categoriaApiCode, menuUuid: currentMenuUuid, submenuUuid: currentSubmenuUuid }
+          });
+
+          // IMPORTANTE: Comparar TODA la ruta completa, no solo el nivel actual
+          const categoriaMatches = savedCategoria === categoriaApiCode;
+          const menuUuidMatches = savedMenuUuid === currentMenuUuid;
+          const submenuUuidMatches = savedSubmenuUuid === currentSubmenuUuid;
+
+          if (categoriaMatches && menuUuidMatches && submenuUuidMatches) {
+            console.log('✅ Ubicación coincide, restaurando página:', parsed.page);
+            setCurrentPage(parsed.page || 1);
+          } else {
+            console.log('❌ Ubicación diferente, iniciando en página 1');
+            setCurrentPage(1);
           }
-          // if (
-            
-          //   parsed.categoria == categoriaApiCode &&
-          //   parsed.menuUuid == menuUuid &&
-          //   parsed.submenuUuid == submenuUuid
-          // ) {
-          //   setCurrentPage(parsed.page || 1);
-          // } else {
-          //   // Ubicación diferente, empezar en página 1
-          //   setCurrentPage(1);
-          // }
         } else {
-          // No hay ubicación guardada, empezar en página 1
+          console.log('No hay ubicación guardada, iniciando en página 1');
           setCurrentPage(1);
-          console.log('sospechoso 1')
         }
       } catch (error) {
         console.error("Error reading saved location:", error);
@@ -111,16 +128,16 @@ export function useCategoryPagination(
       isInitializedRef.current = true;
       // Guardar valores iniciales
       previousCategoriaRef.current = categoria;
-      previousSeccionRef.current = seccion;
+      //previousSeccionRef.current = seccion;
       previousMenuUuidRef.current = menuUuid;
       previousSubmenuUuidRef.current = submenuUuid;
-    } else if (locationChanged) {
+    }else if (locationChanged) {
       // Cambio de ubicación después de inicializar: resetear a página 1
       setCurrentPage(1);
       console.log('sospechoso 2')
       // Actualizar valores previos
       previousCategoriaRef.current = categoria;
-      previousSeccionRef.current = seccion;
+      //previousSeccionRef.current = seccion;
       previousMenuUuidRef.current = menuUuid;
       previousSubmenuUuidRef.current = submenuUuid;
     }

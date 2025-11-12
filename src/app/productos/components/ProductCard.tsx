@@ -653,17 +653,6 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Mostrar capacidad como texto cuando showCapacitySelector es true pero solo hay 1 capacidad */}
-          {showCapacitySelector &&
-            apiProduct &&
-            productSelection.availableCapacities.length === 1 && (
-            <div className="px-3 mb-1">
-              <p className="text-xs text-gray-600 font-medium">
-                {`Tamaño: ${formatCapacityLabel(productSelection.availableCapacities[0])}`}
-              </p>
-            </div>
-          )}
-
           {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
           {showColorSelector &&
             (apiProduct

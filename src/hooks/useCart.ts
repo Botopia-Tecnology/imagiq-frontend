@@ -36,6 +36,8 @@ export interface CartProduct {
   ram?: string;
   skuPostback?: string;
   desDetallada?:string;
+  /** Indica si el producto puede ser recogido en tienda (canPickUp) */
+  canPickUp?: boolean;
 }
 
 interface CartCalculations {
@@ -138,6 +140,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     const capacity = asString(p.capacity);
     const ram = asString(p.ram);
     const desDetallada = asString(p.desDetallada);
+    const canPickUp = typeof p.canPickUp === "boolean" ? p.canPickUp : undefined;
 
     return {
       id,
@@ -159,6 +162,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       ram,
       skuPostback,
       desDetallada,
+      canPickUp,
     };
   };
 
@@ -239,7 +243,7 @@ export function useCart(): UseCartReturn {
       });
 
       if (response.success && response.data) {
-        const { stores, default_direction } = response.data;
+        const { stores, default_direction, canPickUp } = response.data;
 
         let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
         let shippingStore = "";
@@ -255,7 +259,7 @@ export function useCart(): UseCartReturn {
 
         setProducts((currentProducts) => {
           const updatedProducts = currentProducts.map(p =>
-            p.sku === sku ? { ...p, shippingCity, shippingStore } : p
+            p.sku === sku ? { ...p, shippingCity, shippingStore, canPickUp } : p
           );
 
           try {
@@ -310,8 +314,13 @@ export function useCart(): UseCartReturn {
       setProducts(getStoredProducts());
       setAppliedDiscount(getStoredDiscount());
     };
+    // Escuchar tanto el evento 'storage' nativo (entre tabs) como el evento personalizado (mismo tab)
     window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    window.addEventListener("localStorageChange", handleStorageChange);
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleStorageChange);
+    };
   }, []);
 
   // Función para guardar productos en localStorage
@@ -456,6 +465,10 @@ export function useCart(): UseCartReturn {
 
             if (response.success && response.data) {
               const { stores, default_direction } = response.data;
+              // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
+              const canPickUp = (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickUp ?? 
+                                (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickup ?? 
+                                false;
 
               // Obtener la primera ciudad y tienda disponible
               let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
@@ -474,7 +487,7 @@ export function useCart(): UseCartReturn {
               // Actualizar el producto con ciudad y tienda por separado
               setProducts((currentProducts) => {
                 const updatedProducts = currentProducts.map(p =>
-                  p.sku === product.sku ? { ...p, shippingCity, shippingStore } : p
+                  p.sku === product.sku ? { ...p, shippingCity, shippingStore, canPickUp } : p
                 );
 
                 // Guardar en localStorage

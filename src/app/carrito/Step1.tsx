@@ -1,10 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
-import { type ProductApiData } from "@/lib/api";
+import { type ProductApiData, productEndpoints } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalytics } from "@/lib/analytics";
 
@@ -40,25 +40,216 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     calculations,
     loadingShippingInfo,
   } = useCart();
+
+  // Ref para evitar múltiples llamadas a candidate-stores
+  const candidateStoresFetchedRef = useRef<Set<string>>(new Set());
+  const previousProductsRef = useRef<string>("");
+  const fetchingRef = useRef<boolean>(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Estado para rastrear qué productos están cargando canPickUp
+  const [loadingCanPickUp, setLoadingCanPickUp] = useState<Set<string>>(new Set());
+
   // Cargar datos de Trade-In desde localStorage
   useEffect(() => {
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
-    console.log("🔍 Verificando Trade-In en localStorage:", storedTradeIn);
     if (storedTradeIn) {
       try {
         const data = JSON.parse(storedTradeIn);
-        console.log("📦 Datos de Trade-In cargados:", data);
         if (data.completed) {
           setTradeInData(data);
-          console.log("✅ Trade-In aplicado al carrito");
         }
       } catch (error) {
         console.error("❌ Error al cargar datos de Trade-In:", error);
       }
-    } else {
-      console.log("ℹ️ No hay datos de Trade-In guardados");
     }
   }, []);
+
+  // Llamar a candidate-stores para cada producto en Step1
+  useEffect(() => {
+    // Limpiar timeout anterior si existe
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Debounce: esperar 500ms antes de hacer las peticiones para evitar rate limiting
+    timeoutRef.current = setTimeout(async () => {
+      // Evitar múltiples ejecuciones simultáneas
+      if (fetchingRef.current) {
+        return;
+      }
+
+      if (cartProducts.length === 0) {
+        fetchingRef.current = false;
+        return;
+      }
+
+      fetchingRef.current = true;
+
+      try {
+        // Crear una clave única basada en los productos actuales para detectar cambios
+        const currentProductsKey = cartProducts.map(p => `${p.sku}-${p.quantity}`).sort((a, b) => a.localeCompare(b)).join(",");
+        
+        // Si los productos no han cambiado, no hacer nada (evitar peticiones duplicadas)
+        if (previousProductsRef.current === currentProductsKey) {
+          fetchingRef.current = false;
+          return;
+        }
+        
+        // Si los productos cambiaron, limpiar el ref solo para los productos que ya no existen
+        const previousProductsSet = new Set(previousProductsRef.current.split(",").filter(Boolean));
+        const currentProductKeysSet = new Set(cartProducts.map(p => `${p.sku}-${p.quantity}`));
+        
+        // Limpiar solo las claves que ya no existen
+        for (const key of previousProductsSet) {
+          if (!currentProductKeysSet.has(key)) {
+            candidateStoresFetchedRef.current.delete(key);
+          }
+        }
+        
+        // Actualizar la referencia
+        previousProductsRef.current = currentProductsKey;
+
+        // Obtener user_id del localStorage
+        const userStr = localStorage.getItem("imagiq_user");
+        if (!userStr) {
+          fetchingRef.current = false;
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        const userId = user?.id || user?.user_id;
+
+        if (!userId) {
+          fetchingRef.current = false;
+          return;
+        }
+
+        // Filtrar productos que necesitan la petición (solo si no tienen canPickUp definido Y no están en el ref)
+        const productsToFetch = cartProducts.filter(product => {
+          const productKey = `${product.sku}-${product.quantity}`;
+          // Solo hacer petición si:
+          // 1. No está en el ref (nunca se ha consultado)
+          // 2. Y no tiene canPickUp definido (undefined)
+          // Si ya tiene canPickUp (true o false), no hacer petición
+          const isInRef = candidateStoresFetchedRef.current.has(productKey);
+          const hasCanPickUp = product.canPickUp !== undefined;
+          
+          // Solo hacer petición si NO está en el ref Y NO tiene canPickUp
+          return !isInRef && !hasCanPickUp;
+        });
+
+        if (productsToFetch.length === 0) {
+          fetchingRef.current = false;
+          // Limpiar loading si no hay productos para cargar
+          setLoadingCanPickUp(new Set());
+          return;
+        }
+
+        // Marcar productos como cargando
+        const productKeysToLoad = productsToFetch.map(p => `${p.sku}-${p.quantity}`);
+        setLoadingCanPickUp(new Set(productKeysToLoad));
+
+        // Hacer petición para cada producto con delay entre peticiones para evitar rate limiting
+        const results: Array<{ sku: string; canPickUp: boolean; shippingCity: string; shippingStore: string } | null> = [];
+        
+        for (let i = 0; i < productsToFetch.length; i++) {
+          const product = productsToFetch[i];
+          const productKey = `${product.sku}-${product.quantity}`;
+          
+          // Agregar delay entre peticiones (excepto la primera)
+          if (i > 0) {
+            await new Promise(resolve => setTimeout(resolve, 300)); // 300ms entre peticiones
+          }
+          
+          try {
+            candidateStoresFetchedRef.current.add(productKey);
+            
+            const response = await productEndpoints.getCandidateStores({
+              products: [{ sku: product.sku, quantity: product.quantity }],
+              user_id: userId,
+            });
+
+            if (response.success && response.data) {
+              const { stores } = response.data;
+              // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
+              const canPickUp = (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickUp ?? 
+                                (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickup ?? 
+                                false;
+
+              let shippingCity = "BOGOTÁ";
+              let shippingStore = "";
+
+              const storeEntries = Object.entries(stores);
+              if (storeEntries.length > 0) {
+                const [firstCity, firstCityStores] = storeEntries[0];
+                shippingCity = firstCity;
+                if (firstCityStores.length > 0) {
+                  shippingStore = firstCityStores[0].nombre_tienda.trim();
+                }
+              }
+
+              results.push({ sku: product.sku, canPickUp, shippingCity, shippingStore });
+            } else {
+              console.error(`❌ Error en la respuesta de candidate-stores para ${product.sku}:`, response.message);
+              results.push(null);
+            }
+          } catch (error) {
+            console.error(`❌ Error al llamar a candidate-stores para ${product.sku}:`, error);
+            results.push(null);
+          } finally {
+            // Remover de loading cuando termine (éxito o error)
+            setLoadingCanPickUp(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(productKey);
+              return newSet;
+            });
+          }
+        }
+        
+        // Actualizar localStorage una sola vez con todos los cambios
+        const storedProducts = JSON.parse(localStorage.getItem("cart-items") || "[]") as Array<Record<string, unknown>>;
+        const updatedProducts = storedProducts.map((p) => {
+          const result = results.find(r => r && r.sku === p.sku);
+          if (result) {
+            return { ...p, shippingCity: result.shippingCity, shippingStore: result.shippingStore, canPickUp: result.canPickUp };
+          }
+          return p;
+        });
+        localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+
+        // Disparar evento storage personalizado para que el hook useCart se actualice
+        // Usamos un evento personalizado porque el evento 'storage' nativo solo se dispara entre tabs
+        const customEvent = new CustomEvent("localStorageChange", {
+          detail: { key: "cart-items" }
+        });
+        window.dispatchEvent(customEvent);
+        
+        // También disparar el evento storage estándar por compatibilidad
+        window.dispatchEvent(new Event("storage"));
+        
+        // Forzar actualización adicional después de un pequeño delay para asegurar sincronización
+        setTimeout(() => {
+          window.dispatchEvent(new Event("storage"));
+          window.dispatchEvent(customEvent);
+        }, 100);
+        
+        // Limpiar todos los loading después de actualizar localStorage
+        setLoadingCanPickUp(new Set());
+      } catch (error) {
+        console.error("❌ Error al obtener usuario:", error);
+        // Limpiar loading en caso de error
+        setLoadingCanPickUp(new Set());
+        fetchingRef.current = false;
+      }
+    }, 500); // Debounce de 500ms
+
+    // Cleanup: limpiar timeout si el componente se desmonta o cambian los productos
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [cartProducts]);
 
   // Usar cálculos del hook centralizado
   const subtotal = calculations.subtotal;
@@ -70,7 +261,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
-    console.log(product);
     if (product) {
       updateQuantity(product.sku, cantidad);
     }
@@ -174,8 +364,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     capacity={product.capacity}
                     ram={product.ram}
                     desDetallada={product.desDetallada}
+                    canPickUp={product.canPickUp}
                     isLoadingShippingInfo={
                       loadingShippingInfo[product.sku] || false
+                    }
+                    isLoadingCanPickUp={
+                      loadingCanPickUp.has(`${product.sku}-${product.quantity}`)
                     }
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
@@ -252,7 +446,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 placeholder="Código de descuento"
                 className="border rounded-lg px-3 py-2 text-sm flex-1"
               />
-              <button className="bg-gray-200 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-300 transition">
+              <button className="bg-gray-200 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-300 transition cursor-pointer">
                 Aplicar
               </button>
             </div>
@@ -278,7 +472,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
               cartProducts.length === 0
                 ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "text-black hover:brightness-95"
+                : "text-black hover:brightness-95 cursor-pointer"
             }`}
             style={
               cartProducts.length === 0
@@ -316,7 +510,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               </div>
               <button
                 onClick={() => setShowCouponModal(true)}
-                className="text-sm text-sky-600 hover:text-sky-700 font-medium underline"
+                className="text-sm text-sky-600 hover:text-sky-700 font-medium underline cursor-pointer"
               >
                 Cupón
               </button>
@@ -324,7 +518,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
             {/* Botón continuar */}
             <button
-              className="w-full font-bold py-3 rounded-lg text-base transition bg-sky-500 hover:bg-sky-600 text-white"
+              className="w-full font-bold py-3 rounded-lg text-base transition bg-sky-500 hover:bg-sky-600 text-white cursor-pointer"
               onClick={handleContinue}
             >
               Continuar pago
@@ -342,7 +536,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               <h3 className="text-lg font-bold">Agregar cupón</h3>
               <button
                 onClick={() => setShowCouponModal(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 cursor-pointer"
               >
                 ✕
               </button>
@@ -364,7 +558,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                   setShowCouponModal(false);
                   setCouponCode("");
                 }}
-                className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition"
+                className="w-full mt-4 bg-sky-500 hover:bg-sky-600 text-white font-bold py-3 rounded-lg transition cursor-pointer"
               >
                 Aplicar cupón
               </button>

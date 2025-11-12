@@ -90,7 +90,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         <button
           className={`w-full py-3 px-4 rounded-lg font-semibold text-base transition-all duration-200 ${
             canContinue
-              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+              ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm cursor-pointer"
               : "bg-gray-300 text-gray-500 cursor-not-allowed"
           }`}
           onClick={canContinue ? onContinue : undefined}
@@ -102,7 +102,7 @@ export const OrderSummary: React.FC<OrderSummaryProps> = ({
         {typeof onBack === "function" && (
           <button
             type="button"
-            className="w-full py-3 px-4 rounded-lg font-medium text-blue-600 bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 rounded-lg font-medium text-blue-600 bg-white border border-gray-300 hover:bg-blue-50 hover:border-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer"
             onClick={onBack}
           >
             <span>←</span>

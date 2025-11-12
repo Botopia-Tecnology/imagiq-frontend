@@ -24,6 +24,10 @@ export interface ProductCardProps {
   onQuantityChange: (cantidad: number) => void;
   onRemove: () => void;
   desDetallada?:string;
+  /** Indica si el producto puede ser recogido en tienda */
+  canPickUp?: boolean;
+  /** Indica si se está cargando el canPickUp */
+  isLoadingCanPickUp?: boolean;
 }
 
 // Funciones puras para cálculos (SRP)
@@ -67,6 +71,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   capacity,
   ram,
   isLoadingShippingInfo,
+  canPickUp,
+  isLoadingCanPickUp = false,
   onQuantityChange,
   onRemove,
 }) => {
@@ -158,7 +164,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <select
                 value={cantidad}
                 onChange={(e) => onQuantityChange(Number(e.target.value))}
-                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white cursor-pointer"
               >
                 {Array.from({ length: limiteMax }, (_, i) => i + 1).map(
                   (num) => (
@@ -171,6 +177,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-xs text-gray-500">
                 Disponibles: {disponible}
               </span>
+              {isLoadingCanPickUp && (
+                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
+                <span className="text-xs text-gray-400">
+                  canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
             </div>
 
             {/* Precios */}
@@ -208,7 +222,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </div>
           <button
             onClick={onRemove}
-            className="text-sm text-sky-600 hover:text-sky-700 font-medium transition"
+            className="text-sm text-sky-600 hover:text-sky-700 font-medium transition cursor-pointer"
             aria-label="Eliminar producto"
           >
             Eliminar
@@ -267,7 +281,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <div className="flex items-center gap-2 border border-gray-300 rounded-lg">
                 <button
                   onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
-                  className="p-2.5 hover:bg-gray-100 transition disabled:opacity-50"
+                  className="p-2.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                   disabled={cantidad <= 1}
                   aria-label="Disminuir cantidad"
                 >
@@ -280,7 +294,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   onClick={() =>
                     onQuantityChange(Math.min(limiteMax, cantidad + 1))
                   }
-                  className="p-2.5 hover:bg-gray-100 transition disabled:opacity-50"
+                  className="p-2.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
                   disabled={cantidad >= limiteMax}
                   aria-label="Aumentar cantidad"
                 >
@@ -290,6 +304,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
               <span className="text-xs text-gray-500 text-center">
                 Disponibles: {disponible}
               </span>
+              {isLoadingCanPickUp && (
+                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1 mx-auto" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
+                <span className="text-xs text-gray-400 text-center">
+                  canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
             </div>
 
             {/* Precios */}

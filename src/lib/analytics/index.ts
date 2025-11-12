@@ -62,6 +62,8 @@ export type { GA4Event, MetaEvent, TikTokEvent } from './mappers';
 
 // Emisores (para uso avanzado)
 export { sendGa4, sendMeta, sendTiktok } from './emitters';
+export { identifyTiktokUser } from './emitters/emit.tiktok';
+export type { TikTokUserData } from './emitters/emit.tiktok';
 
 // Hook de React para uso en componentes
 export { useAnalytics } from './hooks/useAnalytics';

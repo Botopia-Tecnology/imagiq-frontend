@@ -55,6 +55,15 @@ export function useCategoryPagination(
       return;
     }
 
+    // IMPORTANTE: Si hay un parámetro submenu en la URL pero submenuUuid aún es undefined, ESPERAR
+    // Esto evita inicializar con valores incorrectos cuando submenuUuid llega con delay
+    const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const hasSubmenuParam = urlParams.has('submenu');
+    if (hasSubmenuParam && !submenuUuid && menuUuid) {
+      console.log('⏳ Esperando submenuUuid para submenu URL');
+      return;
+    }
+
     // Verificar si la ubicación cambió comparando con valores previos
     // Normalizar valores para comparación consistente
     const currentMenuUuidNorm = menuUuid ?? undefined;

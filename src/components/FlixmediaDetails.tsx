@@ -13,6 +13,7 @@ import {
   findAvailableEan,
   parseSkuString,
 } from "@/lib/flixmedia";
+import { flixmediaCache } from "@/lib/flixmediaCache";
 
 interface FlixmediaDetailsProps {
   mpn?: string | null;
@@ -42,14 +43,24 @@ export default function FlixmediaDetails({
         return;
       }
 
+      // 🚀 OPTIMIZACIÓN: Verificar cache primero
+      const cached = flixmediaCache.get(mpn, ean);
+      if (cached) {
+        console.log(`⚡ [CACHE HIT] FlixmediaDetails usando resultados cacheados`);
+        setActualMpn(cached.mpn);
+        setActualEan(cached.ean);
+        setIsSearching(false);
+        return;
+      }
+
       setIsSearching(true);
       console.group(`📋 Flixmedia Details - Búsqueda inteligente de SKU`);
       console.log(`📦 Producto: "${productName}"`);
       console.log(`📋 MPN recibido: ${mpn}`);
       console.log(`🏷️ EAN recibido: ${ean}`);
 
-      let foundMpn = false;
-      let foundEan = false;
+      let foundMpn: string | null = null;
+      let foundEan: string | null = null;
 
       // Si tenemos MPN, buscamos el SKU disponible
       if (mpn) {
@@ -62,7 +73,7 @@ export default function FlixmediaDetails({
 
           if (availableSku) {
             setActualMpn(availableSku);
-            foundMpn = true;
+            foundMpn = availableSku;
             console.log(`✅ Usando MPN: ${availableSku}`);
           } else {
             console.log(`❌ No se encontró contenido multimedia para MPN`);
@@ -82,13 +93,16 @@ export default function FlixmediaDetails({
 
           if (availableEan) {
             setActualEan(availableEan);
-            foundEan = true;
+            foundEan = availableEan;
             console.log(`✅ Usando EAN: ${availableEan}`);
           } else {
             console.log(`❌ No se encontró contenido multimedia para EAN`);
           }
         }
       }
+
+      // 🚀 OPTIMIZACIÓN: Guardar resultado en cache
+      flixmediaCache.set(mpn, ean, foundMpn, foundEan);
 
       // Si no se encontró ni MPN ni EAN
       if (!foundMpn && !foundEan) {

@@ -27,6 +27,7 @@ import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 import { HeroProvider } from "@/contexts/HeroContext";
+import FlixmediaPreload from "@/components/FlixmediaPreload";
 // Si necesitas Inter desde Google Fonts en entornos con internet,
 // reactivar la importación desde next/font/google o agregar el CSS manual.
 
@@ -133,6 +134,8 @@ export default function RootLayout({
     >
       <head></head>
       <body className="antialiased">
+        {/* 🚀 Preload del script de Flixmedia para mejorar performance */}
+        <FlixmediaPreload />
         <AnalyticsScripts />
         <AnalyticsInit />
         <ResponsiveProvider>

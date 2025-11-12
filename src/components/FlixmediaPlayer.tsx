@@ -13,6 +13,7 @@ import {
   findAvailableEan,
   parseSkuString,
 } from "@/lib/flixmedia";
+import { flixmediaCache } from "@/lib/flixmediaCache";
 
 interface FlixmediaPlayerProps {
   mpn?: string | null;
@@ -48,8 +49,37 @@ export default function FlixmediaPlayer({
         return;
       }
 
-      let foundMpn = false;
-      let foundEan = false;
+      // 🚀 OPTIMIZACIÓN 1: Verificar cache primero
+      const cached = flixmediaCache.get(mpn, ean);
+      if (cached) {
+        const cacheTime = performance.now();
+        console.log(`⚡ [CACHE HIT] Usando resultados cacheados (${(cacheTime - startTime).toFixed(2)}ms)`);
+        setActualMpn(cached.mpn);
+        setActualEan(cached.ean);
+
+        // Si hay resultados, no redirigir
+        if (cached.mpn || cached.ean) {
+          return;
+        }
+
+        // Si el cache dice que no hay resultados, redirigir
+        const isPremiumProduct = (segmento?: string | string[]): boolean => {
+          if (!segmento) return false;
+          const segmentoValue = Array.isArray(segmento) ? segmento[0] : segmento;
+          return segmentoValue?.toLowerCase() === 'premium';
+        };
+
+        console.log('❌ [REDIRECT] No hay contenido Flixmedia disponible (cache) - Redirigiendo a vista de producto');
+        const isPremium = isPremiumProduct(segmento);
+        const route = isPremium
+          ? `/productos/viewpremium/${productId}`
+          : `/productos/view/${productId}`;
+        router.replace(route);
+        return;
+      }
+
+      let foundMpn: string | null = null;
+      let foundEan: string | null = null;
 
       // Si tenemos MPN, buscamos el SKU disponible
       if (mpn) {
@@ -64,7 +94,7 @@ export default function FlixmediaPlayer({
           if (availableSku) {
             console.log(`✅ [PASO 2 COMPLETADO] SKU encontrado: ${availableSku} (${(mpnEndTime - mpnStartTime).toFixed(2)}ms)`);
             setActualMpn(availableSku);
-            foundMpn = true;
+            foundMpn = availableSku;
           } else {
             console.log(`❌ [PASO 2] No se encontró SKU disponible (${(mpnEndTime - mpnStartTime).toFixed(2)}ms)`);
           }
@@ -84,7 +114,7 @@ export default function FlixmediaPlayer({
           if (availableEan) {
             console.log(`✅ [PASO 3 COMPLETADO] EAN encontrado: ${availableEan} (${(eanEndTime - eanStartTime).toFixed(2)}ms)`);
             setActualEan(availableEan);
-            foundEan = true;
+            foundEan = availableEan;
           } else {
             console.log(`❌ [PASO 3] No se encontró EAN disponible (${(eanEndTime - eanStartTime).toFixed(2)}ms)`);
           }
@@ -94,15 +124,18 @@ export default function FlixmediaPlayer({
       const endTime = performance.now();
       console.log(`⏱️ [RESUMEN BÚSQUEDA] Tiempo total de búsqueda: ${(endTime - startTime).toFixed(2)}ms`);
 
-      // Función helper para verificar si el producto es premium
-      const isPremiumProduct = (segmento?: string | string[]): boolean => {
-        if (!segmento) return false;
-        const segmentoValue = Array.isArray(segmento) ? segmento[0] : segmento;
-        return segmentoValue?.toLowerCase() === 'premium';
-      };
+      // 🚀 OPTIMIZACIÓN 2: Guardar resultado en cache
+      flixmediaCache.set(mpn, ean, foundMpn, foundEan);
 
       // Si no se encontró ni MPN ni EAN, redirigir a la vista del producto
       if (!foundMpn && !foundEan) {
+        // Función helper para verificar si el producto es premium
+        const isPremiumProduct = (segmento?: string | string[]): boolean => {
+          if (!segmento) return false;
+          const segmentoValue = Array.isArray(segmento) ? segmento[0] : segmento;
+          return segmentoValue?.toLowerCase() === 'premium';
+        };
+
         console.log('❌ [REDIRECT] No hay contenido Flixmedia disponible - Redirigiendo a vista de producto');
         const isPremium = isPremiumProduct(segmento);
         const route = isPremium
@@ -145,37 +178,40 @@ export default function FlixmediaPlayer({
       script.onload = () => {
         const scriptEndTime = performance.now();
         console.log(`✅ [PASO 5] Script de Flixmedia cargado (${(scriptEndTime - scriptStartTime).toFixed(2)}ms)`);
-        console.log('🔄 [PASO 6] Flixmedia procesando contenido... (monitoreando cada 500ms)');
+        console.log('🔄 [PASO 6] Flixmedia procesando contenido...');
         setScriptLoaded(true);
 
-        // Monitorear cuando el contenido realmente aparece
-        let checkCount = 0;
-        const contentCheckInterval = setInterval(() => {
-          checkCount++;
-          const inpageDiv = document.getElementById('flix-inpage');
+        // 🚀 OPTIMIZACIÓN 3: Usar MutationObserver en lugar de setInterval
+        const inpageDiv = document.getElementById('flix-inpage');
 
-          if (inpageDiv) {
+        if (inpageDiv) {
+          const observer = new MutationObserver(() => {
             const children = inpageDiv.children.length;
             const height = inpageDiv.offsetHeight;
             const hasContent = children > 1 || height > 100;
 
-            console.log(`🔍 [MONITOREO ${checkCount}] Children: ${children}, Height: ${height}px, Contenido visible: ${hasContent ? 'SÍ ✅' : 'NO ⏳'}`);
-
             if (hasContent) {
               const totalTime = performance.now() - scriptStartTime;
-              console.log(`🎉 [PASO 7 COMPLETADO] ¡Contenido Flixmedia visible en pantalla! Tiempo total desde script: ${(totalTime).toFixed(2)}ms`);
-              clearInterval(contentCheckInterval);
+              console.log(`🎉 [PASO 7 COMPLETADO] ¡Contenido Flixmedia visible! Tiempo total: ${totalTime.toFixed(2)}ms`);
+              observer.disconnect();
             }
-          } else {
-            console.log(`🔍 [MONITOREO ${checkCount}] Div #flix-inpage aún no existe`);
-          }
+          });
 
-          // Timeout después de 20 intentos (10 segundos)
-          if (checkCount >= 20) {
-            console.warn('⚠️ [TIMEOUT] Se alcanzó el límite de 10 segundos esperando contenido');
-            clearInterval(contentCheckInterval);
-          }
-        }, 500);
+          // Observar cambios en el DOM del contenedor
+          observer.observe(inpageDiv, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+          });
+
+          // Timeout de seguridad (10 segundos)
+          setTimeout(() => {
+            observer.disconnect();
+            console.warn('⚠️ [TIMEOUT] Límite de 10 segundos alcanzado');
+          }, 10000);
+        } else {
+          console.warn('⚠️ Div #flix-inpage no encontrado');
+        }
       };
 
       script.onerror = () => {

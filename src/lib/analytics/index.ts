@@ -30,6 +30,7 @@
 
 // Controlador principal
 export { processAnalyticsEvent, initAnalytics, pushToDataLayer } from './controller';
+export type { AnalyticsUserData } from './controller';
 
 // Lógica de abandono (exponer para uso avanzado)
 export {
@@ -64,6 +65,8 @@ export type { GA4Event, MetaEvent, TikTokEvent } from './mappers';
 export { sendGa4, sendMeta, sendTiktok } from './emitters';
 export { identifyTiktokUser } from './emitters/emit.tiktok';
 export type { TikTokUserData } from './emitters/emit.tiktok';
+export type { GA4UserData } from './emitters/emit.ga4';
 
-// Hook de React para uso en componentes
+// Hooks de React para uso en componentes
 export { useAnalytics } from './hooks/useAnalytics';
+export { useAnalyticsWithUser } from './hooks/useAnalyticsWithUser';

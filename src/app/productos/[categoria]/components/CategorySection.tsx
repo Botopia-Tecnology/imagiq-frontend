@@ -54,7 +54,7 @@ export default function CategorySection({
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid);
+  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid, categoriaApiCode);
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,
@@ -114,9 +114,10 @@ export default function CategorySection({
 
   useCategoryAnalytics(categoria, seccion, totalItems);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortBy, setCurrentPage]);
+  // useEffect(() => {
+  //   console.log('sospechoso 7')
+  //   setCurrentPage(1);
+  // }, [sortBy, setCurrentPage]);
 
   if (error) {
     return (

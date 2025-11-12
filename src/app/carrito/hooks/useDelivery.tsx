@@ -14,7 +14,7 @@ const addressToDireccion = (address: Address): Direccion => {
     usuario_id: address.usuarioId,
     email: '', // Se llenará del localStorage si es necesario
     linea_uno: address.direccionFormateada,
-    codigo_dane: '', // Backend lo llena
+    codigo_dane: address.codigo_dane, // Backend lo llena
     ciudad: address.ciudad || '',
     pais: address.pais,
   };

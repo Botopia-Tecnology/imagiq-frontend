@@ -2,7 +2,7 @@
  * 🎛️ CATEGORY HOOKS - Hooks personalizados para CategorySection
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import { applySortToFilters } from "@/lib/sortUtils";
@@ -31,41 +31,109 @@ export function useCategoryPagination(
   submenuUuid?: string,
   categoriaApiCode?:string,
 ) {
-  const [currentPage, setCurrentPage] = useState(() => {
-    // Intentar restaurar la página guardada en el montaje inicial
-    try {
-      const saved = localStorage.getItem("imagiq_last_location");
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        console.log(categoriaApiCode,'aja')
-        console.log(saved,'category',categoriaApiCode,'menu', menuUuid, 'subb', submenuUuid, 'siii', parsed.page)
-        // Verificar si la ubicación guardada coincide con la actual
-        if (
-          parsed.categoria == categoriaApiCode &&
-          parsed.menuUuid == menuUuid &&
-          parsed.submenuUuid == submenuUuid
-        ) {
-          return parsed.page || 1;
-        }
-      }
-    } catch (error) {
-      console.error("Error reading saved location:", error);
-    }
-    return 1;
-  });
+  const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
-  // Resetear página cuando cambia categoría, sección, menú o submenú
+  // Refs para rastrear si ya se inicializó y los valores previos
+  const isInitializedRef = useRef(false);
+  const previousCategoriaRef = useRef<CategoriaParams | undefined>(undefined);
+  const previousSeccionRef = useRef<Seccion | undefined>(undefined);
+  const previousMenuUuidRef = useRef<string | undefined>(undefined);
+  const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
+
+  // Efecto para manejar cambios de ubicación y restauración de página
   useEffect(() => {
-    setCurrentPage(1);
-  }, [categoria, seccion, menuUuid, submenuUuid]);
+    // Solo esperar a que tengamos categoriaApiCode, que es el único valor realmente crítico
+    // menuUuid y submenuUuid pueden ser undefined legítimamente (categoría base)
+    if (!categoriaApiCode) {
+      // Sin categoría no podemos proceder
+      return;
+    }
+
+    // Verificar si la ubicación cambió comparando con valores previos
+    const locationChanged =
+      (previousCategoriaRef.current != undefined && previousCategoriaRef.current != categoria) ||
+      (previousSeccionRef.current != undefined && previousSeccionRef.current != seccion) ||
+      (previousMenuUuidRef.current != undefined && previousMenuUuidRef.current != menuUuid) ||
+      (previousSubmenuUuidRef.current != undefined && previousSubmenuUuidRef.current != submenuUuid);
+
+    if (!isInitializedRef.current) {
+      // Primera inicialización: intentar restaurar página guardada
+      try {
+        const saved = localStorage.getItem("imagiq_last_location");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Verificar si la ubicación guardada coincide con la actual (comparando undefined también)
+          console.log(parsed, categoriaApiCode, menuUuid, submenuUuid, 'sii')
+          if(submenuUuid){
+            console.log('nivel sub')
+            if(parsed.submenuUuid == submenuUuid){
+              setCurrentPage(parsed.page || 1);
+            }else{
+              setCurrentPage(1);
+            }
+          }else if(menuUuid){
+            console.log('nivel menu')
+            if(parsed.menuUuid== menuUuid){
+              setCurrentPage(parsed.page || 1);
+            }else{
+              setCurrentPage(1);
+            }
+          }else if(categoriaApiCode){
+            console.log('nivel categoria')
+            if(parsed.categoria == categoriaApiCode){
+              console.log('misma categoria', parsed.page)
+              setCurrentPage(parsed.page || 1);
+            }else{
+              setCurrentPage(1);
+            }
+          }
+          // if (
+            
+          //   parsed.categoria == categoriaApiCode &&
+          //   parsed.menuUuid == menuUuid &&
+          //   parsed.submenuUuid == submenuUuid
+          // ) {
+          //   setCurrentPage(parsed.page || 1);
+          // } else {
+          //   // Ubicación diferente, empezar en página 1
+          //   setCurrentPage(1);
+          // }
+        } else {
+          // No hay ubicación guardada, empezar en página 1
+          setCurrentPage(1);
+          console.log('sospechoso 1')
+        }
+      } catch (error) {
+        console.error("Error reading saved location:", error);
+        setCurrentPage(1);
+      }
+      isInitializedRef.current = true;
+      // Guardar valores iniciales
+      previousCategoriaRef.current = categoria;
+      previousSeccionRef.current = seccion;
+      previousMenuUuidRef.current = menuUuid;
+      previousSubmenuUuidRef.current = submenuUuid;
+    } else if (locationChanged) {
+      // Cambio de ubicación después de inicializar: resetear a página 1
+      setCurrentPage(1);
+      console.log('sospechoso 2')
+      // Actualizar valores previos
+      previousCategoriaRef.current = categoria;
+      previousSeccionRef.current = seccion;
+      previousMenuUuidRef.current = menuUuid;
+      previousSubmenuUuidRef.current = submenuUuid;
+    }
+  }, [categoria, seccion, menuUuid, submenuUuid, categoriaApiCode]);
 
   const handlePageChange = useCallback((page: number) => {
+    console.log('sospechoso 4')
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleItemsPerPageChange = useCallback((items: number) => {
+    console.log('sospechoso 3')
     setItemsPerPage(items);
     setCurrentPage(1);
   }, []);
@@ -107,7 +175,7 @@ export function useCategoryProducts(
   const [previousMenuUuid, setPreviousMenuUuid] = useState(menuUuid);
   
   useEffect(() => {
-    if (previousSeccion !== seccion || previousMenuUuid !== menuUuid) {
+    if (previousSeccion != seccion || previousMenuUuid != menuUuid) {
       setIsTransitioning(true);
       setHasLoadedOnce(false); // Resetear cuando cambia la categoría/sección
       setPreviousSeccion(seccion);
@@ -156,7 +224,7 @@ export function useCategoryProducts(
 
     // Si estamos en una sección específica (no vacía), necesitamos menuUuid
     // Si seccion es "" (cadena vacía), significa que estamos en la categoría base, así que no necesitamos menuUuid
-    if (seccion && seccion.trim() !== "" && !menuUuid) {
+    if (seccion && seccion.trim() != "" && !menuUuid) {
       return false;
     }
 
@@ -166,7 +234,7 @@ export function useCategoryProducts(
     // - Si no tenemos menuUuid y hay seccion, esperar (aún estamos cargando el menú)
     const searchParams = new URLSearchParams(globalThis.location.search);
     const submenuParam = searchParams.get('submenu');
-    if (submenuParam && !submenuUuid && !menuUuid && seccion && seccion.trim() !== "") {
+    if (submenuParam && !submenuUuid && !menuUuid && seccion && seccion.trim() != "") {
       // Solo bloquear si hay seccion y no tenemos menuUuid
       return false;
     }
@@ -266,7 +334,7 @@ export function useFilterManagement(
         ...prev,
         [filterType]: checked
           ? [...(prev[filterType] || []), value]
-          : (prev[filterType] || []).filter((item) => item !== value),
+          : (prev[filterType] || []).filter((item) => item != value),
       }));
 
       posthogUtils.capture("filter_applied", {

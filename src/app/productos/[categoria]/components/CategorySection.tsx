@@ -116,6 +116,7 @@ export default function CategorySection({
   useCategoryAnalytics(categoria, seccion, totalItems);
 
   useEffect(() => {
+    console.log('sospechoso 7')
     setCurrentPage(1);
   }, [sortBy, setCurrentPage]);
 

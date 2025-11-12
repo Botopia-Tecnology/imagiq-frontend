@@ -5,9 +5,13 @@ import BillingTypeSelector from "./components/BillingTypeSelector";
 import PolicyAcceptance from "./components/PolicyAcceptance";
 import CheckoutActions from "./components/CheckoutActions";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import Modal from "@/components/ui/Modal";
+import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
+import { useAuthContext } from "@/features/auth/context";
 
 export default function Step4({ onBack }: { onBack?: () => void }) {
+  const authContext = useAuthContext();
   const {
     error,
     isProcessing,
@@ -19,18 +23,40 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
     billingType,
     accepted,
     saveInfo,
+    selectedCardId,
+    useNewCard,
+    isAddCardModalOpen,
     handleCardChange,
     handleCardErrorChange,
     handlePaymentMethodChange,
     handleBankChange,
     handleBillingTypeChange,
     handleFinish,
+    handleCardSelect,
+    handleOpenAddCardModal,
+    handleCloseAddCardModal,
+    handleUseNewCardChange,
     setAccepted,
     setSaveInfo,
   } = useCheckoutLogic();
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
+      {/* Modal para agregar nueva tarjeta */}
+      <Modal
+        isOpen={isAddCardModalOpen}
+        onClose={handleCloseAddCardModal}
+        size="lg"
+        showCloseButton={false}
+      >
+        <AddCardForm
+          userId={authContext.user?.id || ""}
+          onSuccess={handleCloseAddCardModal}
+          onCancel={handleCloseAddCardModal}
+          showAsModal={true}
+        />
+      </Modal>
+
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Formulario de pago */}
         <form
@@ -51,6 +77,11 @@ export default function Step4({ onBack }: { onBack?: () => void }) {
             onSaveInfoChange={setSaveInfo}
             selectedBank={selectedBank}
             onBankChange={handleBankChange}
+            selectedCardId={selectedCardId}
+            onCardSelect={handleCardSelect}
+            onOpenAddCardModal={handleOpenAddCardModal}
+            useNewCard={useNewCard}
+            onUseNewCardChange={handleUseNewCardChange}
           />
 
           {/* Billing section */}

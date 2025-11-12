@@ -6,7 +6,7 @@ import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
-import { payWithAddi, payWithCard, payWithPse } from "../utils";
+import { payWithAddi, payWithCard, payWithSavedCard, payWithPse } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
 
 export function useCheckoutLogic() {
@@ -19,6 +19,12 @@ export function useCheckoutLogic() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("tarjeta");
   const [selectedBank, setSelectedBank] = useState<string>("");
+
+  // Estados para tarjetas guardadas
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [useNewCard, setUseNewCard] = useState(false);
+  const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
+
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
     if (typeof window !== "undefined") {
@@ -77,6 +83,26 @@ export function useCheckoutLogic() {
     setBillingError("");
   };
 
+  // Handlers para tarjetas guardadas
+  const handleCardSelect = (cardId: string | null) => {
+    setSelectedCardId(cardId);
+  };
+
+  const handleOpenAddCardModal = () => {
+    setIsAddCardModalOpen(true);
+  };
+
+  const handleCloseAddCardModal = () => {
+    setIsAddCardModalOpen(false);
+  };
+
+  const handleUseNewCardChange = (useNew: boolean) => {
+    setUseNewCard(useNew);
+    if (!useNew) {
+      setSelectedCardId(null);
+    }
+  };
+
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
   // useEffect(() => {
   //   const syncCart = () => setCartProducts(getCartProducts());
@@ -107,9 +133,17 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      const validation = validateCardFields(card, isAmex);
-      setCardErrors(validation.errors);
-      valid = !validation.hasError && valid;
+      // Si usa una tarjeta guardada, no validar campos
+      if (!selectedCardId || useNewCard) {
+        const validation = validateCardFields(card, isAmex);
+        setCardErrors(validation.errors);
+        valid = !validation.hasError && valid;
+      }
+      // Si usa tarjeta guardada, verificar que haya seleccionado una
+      else if (!selectedCardId) {
+        setError("Debes seleccionar una tarjeta o agregar una nueva");
+        valid = false;
+      }
     }
 
     // Validar banco si se seleccionó PSE
@@ -192,30 +226,58 @@ export function useCheckoutLogic() {
           break;
 
         case "tarjeta":
-          res = await payWithCard({
-            cardCvc: card.cvc,
-            cardExpMonth: card.expiryMonth,
-            cardExpYear: card.expiryYear,
-            cardNumber: card.number,
-            dues: card.installments,
-            items: cartProducts.map((p) => ({
-              name: String(p.name),
-              sku: String(p.sku),
-              ean: String(p.ean || "").trim(),
-              quantity: String(p.quantity),
-              unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-            })),
-            metodo_envio: 1,
-            shippingAmount: String(envio),
-            totalAmount: String(total),
-            currency: "COP",
-            userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
-            },
-          });
+          // Verificar si usa tarjeta guardada o nueva
+          if (selectedCardId && !useNewCard) {
+            // Pago con tarjeta guardada
+            res = await payWithSavedCard({
+              cardId: selectedCardId,
+              dues: card.installments || "1",
+              items: cartProducts.map((p) => ({
+                name: String(p.name),
+                sku: String(p.sku),
+                ean: String(p.ean || "").trim(),
+                quantity: String(p.quantity),
+                unitPrice: String(p.price),
+                skupostback: String(p.skuPostback),
+                desDetallada: String(p.desDetallada),
+              })),
+              metodo_envio: 1,
+              shippingAmount: String(envio),
+              totalAmount: String(total),
+              currency: "COP",
+              userInfo: {
+                userId: userInfo.id,
+                direccionId: direction.id,
+              },
+            });
+          } else {
+            // Pago con tarjeta nueva
+            res = await payWithCard({
+              cardCvc: card.cvc,
+              cardExpMonth: card.expiryMonth,
+              cardExpYear: card.expiryYear,
+              cardNumber: card.number,
+              dues: card.installments,
+              items: cartProducts.map((p) => ({
+                name: String(p.name),
+                sku: String(p.sku),
+                ean: String(p.ean || "").trim(),
+                quantity: String(p.quantity),
+                unitPrice: String(p.price),
+                skupostback: String(p.skuPostback),
+                desDetallada: String(p.desDetallada),
+              })),
+              metodo_envio: 1,
+              shippingAmount: String(envio),
+              totalAmount: String(total),
+              currency: "COP",
+              userInfo: {
+                userId: userInfo.id,
+                direccionId: direction.id,
+              },
+            });
+          }
+
           if ("error" in res) {
             // Check if it's an out-of-stock error
             if (res.message.includes("dejó (dejaron) de estar disponobles") ||
@@ -298,6 +360,11 @@ export function useCheckoutLogic() {
     saveInfo,
     isAmex,
 
+    // Estados de tarjetas guardadas
+    selectedCardId,
+    useNewCard,
+    isAddCardModalOpen,
+
     // Handlers
     handleCardChange,
     handleCardErrorChange,
@@ -305,6 +372,12 @@ export function useCheckoutLogic() {
     handleBankChange,
     handleBillingTypeChange,
     handleFinish,
+
+    // Handlers de tarjetas guardadas
+    handleCardSelect,
+    handleOpenAddCardModal,
+    handleCloseAddCardModal,
+    handleUseNewCardChange,
 
     // Setters
     setAccepted,

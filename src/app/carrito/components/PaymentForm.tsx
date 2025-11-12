@@ -1,10 +1,13 @@
 "use client";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import PaymentMethodSelector from "./PaymentMethodSelector";
 import CreditCardForm, { CardData, CardErrors } from "./CreditCardForm";
 import AlternativePaymentMethods from "./AlternativePaymentMethods";
 import SaveInfoCheckbox from "./SaveInfoCheckbox";
+import SavedCardsSelector from "./SavedCardsSelector";
 import { PaymentMethod } from "../types";
+import { PaymentCardData, profileService } from "@/services/profile.service";
+import { useAuthContext } from "@/features/auth/context";
 
 interface PaymentFormProps {
   paymentMethod: string;
@@ -17,6 +20,12 @@ interface PaymentFormProps {
   onSaveInfoChange: (save: boolean) => void;
   selectedBank?: string;
   onBankChange?: (bank: string) => void;
+  // Nuevos props para tarjetas guardadas
+  selectedCardId: string | null;
+  onCardSelect: (cardId: string | null) => void;
+  onOpenAddCardModal: () => void;
+  useNewCard: boolean;
+  onUseNewCardChange: (useNew: boolean) => void;
 }
 
 export default function PaymentForm({
@@ -30,10 +39,45 @@ export default function PaymentForm({
   onSaveInfoChange,
   selectedBank,
   onBankChange,
+  selectedCardId,
+  onCardSelect,
+  onOpenAddCardModal,
+  useNewCard,
+  onUseNewCardChange,
 }: PaymentFormProps) {
+  const authContext = useAuthContext();
+  const [savedCards, setSavedCards] = useState<PaymentCardData[]>([]);
+  const [isLoadingCards, setIsLoadingCards] = useState(false);
+
+  // Cargar tarjetas guardadas cuando el usuario selecciona "tarjeta"
+  useEffect(() => {
+    if (paymentMethod === "tarjeta" && authContext.user?.id) {
+      loadSavedCards();
+    }
+  }, [paymentMethod, authContext.user?.id]);
+
+  const loadSavedCards = async () => {
+    try {
+      setIsLoadingCards(true);
+      const cards = await profileService.getUserPaymentMethods(authContext.user?.id);
+      setSavedCards(cards);
+    } catch (error) {
+      console.error("Error cargando tarjetas:", error);
+      setSavedCards([]);
+    } finally {
+      setIsLoadingCards(false);
+    }
+  };
+
+  // Handler para cuando el usuario agrega una nueva tarjeta
+  const handleCardAdded = async () => {
+    await loadSavedCards();
+    onUseNewCardChange(false); // Volver a modo de selección
+  };
+
   return (
     <div>
-      <h2 className="text-[22px] font-bold mb-4">Metodo de pago</h2>
+      <h2 className="text-[22px] font-bold mb-4">Método de pago</h2>
 
       <div
         className="rounded-xl overflow-hidden mb-6"
@@ -50,14 +94,31 @@ export default function PaymentForm({
           onMethodChange={onPaymentMethodChange}
         />
 
-        {/* Credit card form */}
-        <CreditCardForm
-          card={card}
-          cardErrors={cardErrors}
-          onCardChange={onCardChange}
-          onErrorChange={onCardErrorChange}
-          isVisible={paymentMethod === "tarjeta"}
-        />
+        {/* Tarjetas guardadas o formulario de nueva tarjeta */}
+        {paymentMethod === "tarjeta" && (
+          <div className="p-6 bg-white">
+            {!useNewCard ? (
+              // Mostrar selector de tarjetas guardadas
+              <SavedCardsSelector
+                userId={authContext.user?.id || ""}
+                cards={savedCards}
+                selectedCardId={selectedCardId}
+                onCardSelect={onCardSelect}
+                onAddNewCard={onOpenAddCardModal}
+                isLoading={isLoadingCards}
+              />
+            ) : (
+              // Mostrar formulario de nueva tarjeta
+              <CreditCardForm
+                card={card}
+                cardErrors={cardErrors}
+                onCardChange={onCardChange}
+                onErrorChange={onCardErrorChange}
+                isVisible={true}
+              />
+            )}
+          </div>
+        )}
 
         {/* Alternative payment methods */}
         <AlternativePaymentMethods
@@ -68,8 +129,10 @@ export default function PaymentForm({
         />
       </div>
 
-      {/* Save info checkbox */}
-      <SaveInfoCheckbox checked={saveInfo} onChange={onSaveInfoChange} />
+      {/* Save info checkbox - solo mostrar si usa nueva tarjeta */}
+      {paymentMethod === "tarjeta" && useNewCard && (
+        <SaveInfoCheckbox checked={saveInfo} onChange={onSaveInfoChange} />
+      )}
     </div>
   );
 }

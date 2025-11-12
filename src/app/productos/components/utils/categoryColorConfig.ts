@@ -110,6 +110,8 @@ const CATEGORIES_WITH_CAPACITY_SELECTOR = [
   'electrodomésticos',
   'EL', // Electrodomésticos
   'el',
+  'DA', // Neveras/Electrodomésticos
+  'da',
 ] as const;
 
 /**
@@ -118,6 +120,7 @@ const CATEGORIES_WITH_CAPACITY_SELECTOR = [
  * - Dispositivos móviles: almacenamiento (128GB, 256GB, etc.)
  * - Televisores: pulgadas (43", 55", 65", etc.)
  * - Electrodomésticos: capacidad (según el producto)
+ * - Neveras: capacidad en litros (809 LT, 810 LT, etc.)
  *
  * @param categoria - Categoría del producto
  * @param subcategoria - Subcategoría del producto (opcional)

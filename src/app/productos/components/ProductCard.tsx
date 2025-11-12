@@ -37,8 +37,9 @@ import { useStockNotification } from "@/hooks/useStockNotification";
 import { motion } from "framer-motion";
 
 /**
- * Formatea la capacidad para mostrar correctamente GB o pulgadas
+ * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
  * - Para almacenamiento: mantiene el formato original (128GB, 256GB, etc.)
+ * - Para litros: normaliza el formato (859LT -> 859 LT, 809 LT -> 809 LT)
  * - Para pulgadas: agrega comillas si es solo un número (75 -> 75")
  */
 function formatCapacityLabel(capacity: string): string {
@@ -47,6 +48,11 @@ function formatCapacityLabel(capacity: string): string {
   // Si ya tiene GB, TB, o comillas, retornar tal cual
   if (capacity.includes('GB') || capacity.includes('TB') || capacity.includes('"') || capacity.includes('pulgada')) {
     return capacity;
+  }
+
+  // Normalizar litros: asegurar espacio entre número y LT (859LT -> 859 LT)
+  if (capacity.toUpperCase().includes('LT')) {
+    return capacity.replace(/(\d+)(LT)/gi, '$1 $2').trim();
   }
 
   // Si es solo un número (probablemente pulgadas de TV), agregar comillas

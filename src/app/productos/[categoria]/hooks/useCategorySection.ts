@@ -51,7 +51,7 @@ export function useCategoryPagination(
     // IMPORTANTE: Si estamos en una sección (seccion no vacía) pero menuUuid aún es undefined, ESPERAR
     // Esto evita inicializar con valores incorrectos cuando menuUuid llega con delay
     if (seccion && seccion.trim() !== "" && !menuUuid) {
-      console.log('⏳ Esperando menuUuid para sección:', seccion);
+     
       return;
     }
 
@@ -60,7 +60,7 @@ export function useCategoryPagination(
     const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
     const hasSubmenuParam = urlParams.has('submenu');
     if (hasSubmenuParam && !submenuUuid && menuUuid) {
-      console.log('⏳ Esperando submenuUuid para submenu URL');
+    
       return;
     }
 
@@ -109,10 +109,7 @@ export function useCategoryPagination(
           const currentMenuUuid = menuUuid ?? undefined;
           const currentSubmenuUuid = submenuUuid ?? undefined;
 
-          console.log('Comparando ubicaciones:', {
-            saved: { categoria: savedCategoria, menuUuid: savedMenuUuid, submenuUuid: savedSubmenuUuid, page: parsed.page },
-            current: { categoria: categoriaApiCode, menuUuid: currentMenuUuid, submenuUuid: currentSubmenuUuid }
-          });
+
 
           // IMPORTANTE: Comparar TODA la ruta completa, no solo el nivel actual
           const categoriaMatches = savedCategoria === categoriaApiCode;
@@ -120,18 +117,15 @@ export function useCategoryPagination(
           const submenuUuidMatches = savedSubmenuUuid === currentSubmenuUuid;
 
           if (categoriaMatches && menuUuidMatches && submenuUuidMatches) {
-            console.log('✅ Ubicación coincide, restaurando página:', parsed.page);
             setCurrentPage(parsed.page || 1);
           } else {
-            console.log('❌ Ubicación diferente, iniciando en página 1');
             setCurrentPage(1);
           }
         } else {
-          console.log('No hay ubicación guardada, iniciando en página 1');
+  
           setCurrentPage(1);
         }
       } catch (error) {
-        console.error("Error reading saved location:", error);
         setCurrentPage(1);
       }
       isInitializedRef.current = true;
@@ -143,23 +137,19 @@ export function useCategoryPagination(
     }else if (locationChanged) {
       // Cambio de ubicación después de inicializar: resetear a página 1
       setCurrentPage(1);
-      console.log('sospechoso 2')
       // Actualizar valores previos
       previousCategoriaRef.current = categoria;
-      //previousSeccionRef.current = seccion;
       previousMenuUuidRef.current = menuUuid;
       previousSubmenuUuidRef.current = submenuUuid;
     }
   }, [categoria, seccion, menuUuid, submenuUuid, categoriaApiCode]);
 
   const handlePageChange = useCallback((page: number) => {
-    console.log('sospechoso 4')
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleItemsPerPageChange = useCallback((items: number) => {
-    console.log('sospechoso 3')
     setItemsPerPage(items);
     setCurrentPage(1);
   }, []);

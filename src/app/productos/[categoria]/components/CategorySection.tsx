@@ -55,7 +55,6 @@ export default function CategorySection({
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
   const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid, categoriaApiCode);
-  console.log('todoo',categoryCode, categoryUuid, menuUuid, submenuUuid , categoria, seccion, categoriaApiCode)
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,

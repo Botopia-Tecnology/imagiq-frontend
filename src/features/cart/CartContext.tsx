@@ -13,8 +13,8 @@
 import React, { createContext, useContext, useCallback } from "react";
 import { useCart, CartProduct } from "@/hooks/useCart";
 import { useAuthContext } from "@/features/auth/context";
-import { useAnalytics } from "@/lib/analytics";
 import { apiClient } from "@/lib/api";
+import { useAnalyticsWithUser } from "@/lib/analytics";
 
 /**
  * CartContextType
@@ -70,8 +70,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   // Obtener el usuario autenticado
   const { user } = useAuthContext();
 
-  // Hook de analytics para tracking
-  const { trackAddToCart } = useAnalytics();
+  // Hook de analytics para tracking con datos de usuario
+  const { trackAddToCart } = useAnalyticsWithUser();
 
   // Usar el hook centralizado useCart
   const {

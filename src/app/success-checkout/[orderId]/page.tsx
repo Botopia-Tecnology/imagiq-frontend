@@ -19,7 +19,7 @@ import { use, useEffect, useRef, useState } from "react";
 import CheckoutSuccessOverlay from "../../carrito/CheckoutSuccessOverlay";
 import { useCart } from "@/hooks/useCart";
 import { apiClient } from "@/lib/api";
-import { useAnalytics } from "@/lib/analytics";
+import { useAnalyticsWithUser } from "@/lib/analytics";
 
 // API Base URL
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -54,7 +54,7 @@ export default function SuccessCheckoutPage({
   const router = useRouter();
   const [open, setOpen] = useState(true);
   const { clearCart } = useCart();
-  const { trackPurchase } = useAnalytics();
+  const { trackPurchase } = useAnalyticsWithUser();
   const whatsappSentRef = useRef(false);
   const analyticsSentRef = useRef(false);
 

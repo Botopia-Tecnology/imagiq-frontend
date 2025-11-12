@@ -13,6 +13,7 @@ import type { DlAny } from './types';
 import { generateEventId } from './utils';
 import { toGa4Event, toMetaEvent, toTiktokEvent } from './mappers';
 import { sendGa4, sendMeta, sendTiktok } from './emitters';
+import type { GA4UserData } from './emitters/emit.ga4';
 import {
   markCartIntent,
   markCheckoutIntent,
@@ -20,6 +21,22 @@ import {
   resolveCartAbandon,
   resolveCheckoutAbandon,
 } from './abandon';
+
+/**
+ * Interfaz unificada para datos de usuario en analytics
+ */
+export interface AnalyticsUserData {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  address?: {
+    city?: string;
+    state?: string;
+    country?: string;
+    zipCode?: string;
+  };
+}
 
 /**
  * Procesa un evento del dataLayer y lo envía a todas las plataformas
@@ -41,13 +58,20 @@ import {
  *     },
  *   };
  *
- *   await processAnalyticsEvent(dlEvent);
+ *   const userData = {
+ *     email: 'user@example.com',
+ *     phone: '+573001234567',
+ *     firstName: 'John',
+ *     lastName: 'Doe'
+ *   };
+ *
+ *   await processAnalyticsEvent(dlEvent, userData);
  * };
  * ```
  */
 export async function processAnalyticsEvent(
   event: DlAny,
-  user?: { email?: string; phone?: string }
+  user?: AnalyticsUserData
 ): Promise<void> {
   console.debug('[Analytics] Processing event:', event.event, event);
 
@@ -60,12 +84,21 @@ export async function processAnalyticsEvent(
     const metaEvent = toMetaEvent(event, eventId, user);
     const tiktokEvent = toTiktokEvent(event, eventId, user);
 
-    // 3. Enviar a cada plataforma (con verificación de consentimiento interna)
-    sendGa4(ga4Event);
+    // 3. Preparar datos de usuario para GA4 Enhanced Conversions
+    const ga4UserData: GA4UserData | undefined = user ? {
+      email: user.email,
+      phone: user.phone,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      address: user.address,
+    } : undefined;
+
+    // 4. Enviar a cada plataforma (con verificación de consentimiento interna)
+    await sendGa4(ga4Event, ga4UserData);
     sendMeta(metaEvent, eventId);
     sendTiktok(tiktokEvent, eventId);
 
-    // 4. Registrar intenciones de abandono
+    // 5. Registrar intenciones de abandono
     handleAbandonTracking(event);
 
     console.debug('[Analytics] Event processed successfully:', event.event);
@@ -142,7 +175,7 @@ function handleAbandonTracking(event: DlAny): void {
  * - (Opcional) Configura heartbeat para chequear abandono periódicamente
  */
 export function initAnalytics(): void {
-  if (typeof window === 'undefined') return;
+  if (globalThis.window === undefined) return;
 
   console.debug('[Analytics] Initializing analytics system');
 
@@ -151,15 +184,6 @@ export function initAnalytics(): void {
     resolveCartAbandon();
     resolveCheckoutAbandon();
   }, 5000); // Esperar 5s después del page load
-
-  // (Opcional) Heartbeat cada 10 minutos para chequear abandono
-  // Descomentar si quieres chequeo periódico
-  /*
-  setInterval(() => {
-    resolveCartAbandon();
-    resolveCheckoutAbandon();
-  }, 10 * 60 * 1000); // 10 minutos
-  */
 
   console.debug('[Analytics] Analytics system initialized');
 }
@@ -181,12 +205,10 @@ export function initAnalytics(): void {
  * ```
  */
 export function pushToDataLayer(event: DlAny): void {
-  if (typeof window === 'undefined') return;
+  if (globalThis.window === undefined) return;
 
-  if (!window.dataLayer) {
-    window.dataLayer = [];
-  }
+  globalThis.window.dataLayer ??= [];
 
-  window.dataLayer.push(event);
+  globalThis.window.dataLayer.push(event);
   console.debug('[Analytics] Event pushed to dataLayer:', event.event);
 }

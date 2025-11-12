@@ -25,6 +25,7 @@ declare global {
     _fbq?: Window['fbq'];
     ttq?: {
       track: (eventName: string, data?: Record<string, unknown>, options?: Record<string, unknown>) => void;
+      identify: (userData: Record<string, string>) => void;
       page: () => void;
     };
   }

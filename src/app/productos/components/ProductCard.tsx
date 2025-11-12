@@ -757,7 +757,7 @@ export default function ProductCard({
           {/* Precio */}
           <div className="px-3 space-y-3 mt-2">
             {finalCurrentPrice && (
-              <div className="space-y-1">
+              <div className="space-y-1 min-h-[32px]">
                 {(() => {
                   const { hasSavings, savings } = calculateSavings(
                     finalCurrentPrice,

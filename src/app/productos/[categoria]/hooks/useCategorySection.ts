@@ -25,12 +25,34 @@ export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion)
 }
 
 export function useCategoryPagination(
-  categoria?: CategoriaParams, 
+  categoria?: CategoriaParams,
   seccion?: Seccion,
   menuUuid?: string,
-  submenuUuid?: string
+  submenuUuid?: string,
+  categoriaApiCode?:string,
 ) {
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(() => {
+    // Intentar restaurar la página guardada en el montaje inicial
+    try {
+      const saved = localStorage.getItem("imagiq_last_location");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        console.log(categoriaApiCode,'aja')
+        console.log(saved,'category',categoriaApiCode,'menu', menuUuid, 'subb', submenuUuid, 'siii', parsed.page)
+        // Verificar si la ubicación guardada coincide con la actual
+        if (
+          parsed.categoria == categoriaApiCode &&
+          parsed.menuUuid == menuUuid &&
+          parsed.submenuUuid == submenuUuid
+        ) {
+          return parsed.page || 1;
+        }
+      }
+    } catch (error) {
+      console.error("Error reading saved location:", error);
+    }
+    return 1;
+  });
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
   // Resetear página cuando cambia categoría, sección, menú o submenú

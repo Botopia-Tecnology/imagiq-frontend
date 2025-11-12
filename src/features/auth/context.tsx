@@ -93,6 +93,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     apiClient.removeAuthToken();
+
+    // Disparar evento para que otros componentes se enteren del cambio
+    window.dispatchEvent(new Event("storage"));
+    window.dispatchEvent(new Event("localStorageChange"));
   };
 
   // Role checking utilities

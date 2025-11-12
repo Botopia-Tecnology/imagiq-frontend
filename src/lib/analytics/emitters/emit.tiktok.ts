@@ -34,7 +34,7 @@ export function sendTiktok(
   }
 
   // Verificar que ttq esté disponible
-  if (globalThis.window === undefined || !globalThis.ttq?.track) {
+  if (globalThis.window === undefined || !globalThis.window.ttq?.track) {
     console.warn('[TikTok Pixel] ttq.track() not available, skipping event:', event.name);
     return;
   }
@@ -54,7 +54,7 @@ export function sendTiktok(
     }
 
     // Enviar evento
-    globalThis.ttq.track(event.name, event.data, options);
+    globalThis.window.ttq.track(event.name, event.data, options);
 
     console.debug(`[TikTok Pixel] Event sent: ${event.name}`, {
       data: event.data,
@@ -109,7 +109,7 @@ export async function identifyTiktokUser(userData: TikTokUserData): Promise<void
   }
 
   // Verificar que ttq esté disponible
-  if (globalThis.window === undefined || !globalThis.ttq?.identify) {
+  if (globalThis.window === undefined || !globalThis.window.ttq?.identify) {
     console.warn('[TikTok Pixel] ttq.identify() not available');
     return;
   }
@@ -135,7 +135,7 @@ export async function identifyTiktokUser(userData: TikTokUserData): Promise<void
 
     // Enviar identificación a TikTok
     if (Object.keys(identifyData).length > 0) {
-      globalThis.ttq.identify(identifyData);
+      globalThis.window.ttq.identify(identifyData);
 
       console.debug('[TikTok Pixel] User identified', {
         hasEmail: Boolean(identifyData.email),

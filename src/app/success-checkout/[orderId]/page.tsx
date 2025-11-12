@@ -294,6 +294,13 @@ export default function SuccessCheckoutPage({
             details: whatsappData.details
           });
           whatsappSentRef.current = false;
+        } else {
+          console.log("✅ [WhatsApp] Mensaje enviado exitosamente:", {
+            messageId: whatsappData.messageId,
+            message: whatsappData.message,
+            ordenId: pathParams.orderId,
+            telefono: telefono
+          });
         }
       } catch (error) {
         console.error("❌ [WhatsApp] Error al procesar envío de WhatsApp:", error);

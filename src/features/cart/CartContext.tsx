@@ -13,6 +13,7 @@
 import React, { createContext, useContext, useCallback } from "react";
 import { useCart, CartProduct } from "@/hooks/useCart";
 import { useAuthContext } from "@/features/auth/context";
+import { apiClient } from "@/lib/api";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 
 /**
@@ -97,6 +98,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const { quantity, ...productWithoutQuantity } = product;
       await addToCart(productWithoutQuantity, quantity || 1, user?.id);
 
+      apiClient.post("/api/cart/add", {
+        userId: user?.id ?? "unregistered",
+        item: product,
+      });
+
       // Track del evento add_to_cart para analytics
       trackAddToCart({
         item_id: product.sku || product.id,
@@ -112,9 +118,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const updateQuantity = useCallback(
     (productId: string, quantity: number) => {
+      apiClient.put(
+        `/api/cart/${user?.id ?? "unregistered"}/items/${productId}`,
+        {
+          quantity,
+        }
+      );
       updateQty(productId, quantity);
     },
-    [updateQty]
+    [updateQty, user?.id]
   );
 
   const getProducts = useCallback(() => products, [products]);

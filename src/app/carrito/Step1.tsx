@@ -4,7 +4,7 @@ import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
-import { type ProductApiData, productEndpoints } from "@/lib/api";
+import { apiClient, type ProductApiData, productEndpoints } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 
@@ -47,7 +47,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const fetchingRef = useRef<boolean>(false);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Estado para rastrear qué productos están cargando canPickUp
-  const [loadingCanPickUp, setLoadingCanPickUp] = useState<Set<string>>(new Set());
+  const [loadingCanPickUp, setLoadingCanPickUp] = useState<Set<string>>(
+    new Set()
+  );
 
   // Cargar datos de Trade-In desde localStorage
   useEffect(() => {
@@ -87,25 +89,32 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
       try {
         // Crear una clave única basada en los productos actuales para detectar cambios
-        const currentProductsKey = cartProducts.map(p => `${p.sku}-${p.quantity}`).sort((a, b) => a.localeCompare(b)).join(",");
-        
+        const currentProductsKey = cartProducts
+          .map((p) => `${p.sku}-${p.quantity}`)
+          .sort((a, b) => a.localeCompare(b))
+          .join(",");
+
         // Si los productos no han cambiado, no hacer nada (evitar peticiones duplicadas)
         if (previousProductsRef.current === currentProductsKey) {
           fetchingRef.current = false;
           return;
         }
-        
+
         // Si los productos cambiaron, limpiar el ref solo para los productos que ya no existen
-        const previousProductsSet = new Set(previousProductsRef.current.split(",").filter(Boolean));
-        const currentProductKeysSet = new Set(cartProducts.map(p => `${p.sku}-${p.quantity}`));
-        
+        const previousProductsSet = new Set(
+          previousProductsRef.current.split(",").filter(Boolean)
+        );
+        const currentProductKeysSet = new Set(
+          cartProducts.map((p) => `${p.sku}-${p.quantity}`)
+        );
+
         // Limpiar solo las claves que ya no existen
         for (const key of previousProductsSet) {
           if (!currentProductKeysSet.has(key)) {
             candidateStoresFetchedRef.current.delete(key);
           }
         }
-        
+
         // Actualizar la referencia
         previousProductsRef.current = currentProductsKey;
 
@@ -125,7 +134,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         }
 
         // Filtrar productos que necesitan la petición (solo si no tienen canPickUp definido Y no están en el ref)
-        const productsToFetch = cartProducts.filter(product => {
+        const productsToFetch = cartProducts.filter((product) => {
           const productKey = `${product.sku}-${product.quantity}`;
           // Solo hacer petición si:
           // 1. No está en el ref (nunca se ha consultado)
@@ -133,7 +142,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           // Si ya tiene canPickUp (true o false), no hacer petición
           const isInRef = candidateStoresFetchedRef.current.has(productKey);
           const hasCanPickUp = product.canPickUp !== undefined;
-          
+
           // Solo hacer petición si NO está en el ref Y NO tiene canPickUp
           return !isInRef && !hasCanPickUp;
         });
@@ -146,24 +155,31 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         }
 
         // Marcar productos como cargando
-        const productKeysToLoad = productsToFetch.map(p => `${p.sku}-${p.quantity}`);
+        const productKeysToLoad = productsToFetch.map(
+          (p) => `${p.sku}-${p.quantity}`
+        );
         setLoadingCanPickUp(new Set(productKeysToLoad));
 
         // Hacer petición para cada producto con delay entre peticiones para evitar rate limiting
-        const results: Array<{ sku: string; canPickUp: boolean; shippingCity: string; shippingStore: string } | null> = [];
-        
+        const results: Array<{
+          sku: string;
+          canPickUp: boolean;
+          shippingCity: string;
+          shippingStore: string;
+        } | null> = [];
+
         for (let i = 0; i < productsToFetch.length; i++) {
           const product = productsToFetch[i];
           const productKey = `${product.sku}-${product.quantity}`;
-          
+
           // Agregar delay entre peticiones (excepto la primera)
           if (i > 0) {
-            await new Promise(resolve => setTimeout(resolve, 300)); // 300ms entre peticiones
+            await new Promise((resolve) => setTimeout(resolve, 300)); // 300ms entre peticiones
           }
-          
+
           try {
             candidateStoresFetchedRef.current.add(productKey);
-            
+
             const response = await productEndpoints.getCandidateStores({
               products: [{ sku: product.sku, quantity: product.quantity }],
               user_id: userId,
@@ -172,9 +188,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             if (response.success && response.data) {
               const { stores } = response.data;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
-              const canPickUp = (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickUp ?? 
-                                (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickup ?? 
-                                false;
+              const canPickUp =
+                (response.data as { canPickUp?: boolean; canPickup?: boolean })
+                  .canPickUp ??
+                (response.data as { canPickUp?: boolean; canPickup?: boolean })
+                  .canPickup ??
+                false;
 
               let shippingCity = "BOGOTÁ";
               let shippingStore = "";
@@ -188,30 +207,48 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                 }
               }
 
-              results.push({ sku: product.sku, canPickUp, shippingCity, shippingStore });
+              results.push({
+                sku: product.sku,
+                canPickUp,
+                shippingCity,
+                shippingStore,
+              });
             } else {
-              console.error(`❌ Error en la respuesta de candidate-stores para ${product.sku}:`, response.message);
+              console.error(
+                `❌ Error en la respuesta de candidate-stores para ${product.sku}:`,
+                response.message
+              );
               results.push(null);
             }
           } catch (error) {
-            console.error(`❌ Error al llamar a candidate-stores para ${product.sku}:`, error);
+            console.error(
+              `❌ Error al llamar a candidate-stores para ${product.sku}:`,
+              error
+            );
             results.push(null);
           } finally {
             // Remover de loading cuando termine (éxito o error)
-            setLoadingCanPickUp(prev => {
+            setLoadingCanPickUp((prev) => {
               const newSet = new Set(prev);
               newSet.delete(productKey);
               return newSet;
             });
           }
         }
-        
+
         // Actualizar localStorage una sola vez con todos los cambios
-        const storedProducts = JSON.parse(localStorage.getItem("cart-items") || "[]") as Array<Record<string, unknown>>;
+        const storedProducts = JSON.parse(
+          localStorage.getItem("cart-items") || "[]"
+        ) as Array<Record<string, unknown>>;
         const updatedProducts = storedProducts.map((p) => {
-          const result = results.find(r => r && r.sku === p.sku);
+          const result = results.find((r) => r && r.sku === p.sku);
           if (result) {
-            return { ...p, shippingCity: result.shippingCity, shippingStore: result.shippingStore, canPickUp: result.canPickUp };
+            return {
+              ...p,
+              shippingCity: result.shippingCity,
+              shippingStore: result.shippingStore,
+              canPickUp: result.canPickUp,
+            };
           }
           return p;
         });
@@ -220,19 +257,19 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         // Disparar evento storage personalizado para que el hook useCart se actualice
         // Usamos un evento personalizado porque el evento 'storage' nativo solo se dispara entre tabs
         const customEvent = new CustomEvent("localStorageChange", {
-          detail: { key: "cart-items" }
+          detail: { key: "cart-items" },
         });
         window.dispatchEvent(customEvent);
-        
+
         // También disparar el evento storage estándar por compatibilidad
         window.dispatchEvent(new Event("storage"));
-        
+
         // Forzar actualización adicional después de un pequeño delay para asegurar sincronización
         setTimeout(() => {
           window.dispatchEvent(new Event("storage"));
           window.dispatchEvent(customEvent);
         }, 100);
-        
+
         // Limpiar todos los loading después de actualizar localStorage
         setLoadingCanPickUp(new Set());
       } catch (error) {
@@ -261,7 +298,15 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
+    const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const productId = product?.sku;
     if (product) {
+      apiClient.put(
+        `/api/cart/${user?.id ?? "unregistered"}/items/${productId}`,
+        {
+          quantity: cantidad,
+        }
+      );
       updateQuantity(product.sku, cantidad);
     }
   };
@@ -270,8 +315,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Esto evita el problema de actualizar el estado durante el renderizado
   const handleRemove = (idx: number) => {
     const product = cartProducts[idx];
+    const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const productId = product?.sku;
     if (product) {
-      // Programar la eliminación para después del renderizado usando setTimeout
+      apiClient.delete(
+        `/api/cart/${user?.id ?? "unregistered"}/items/${productId}`
+      );
       setTimeout(() => {
         removeProduct(product.sku);
       }, 0);
@@ -368,9 +417,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     isLoadingShippingInfo={
                       loadingShippingInfo[product.sku] || false
                     }
-                    isLoadingCanPickUp={
-                      loadingCanPickUp.has(`${product.sku}-${product.quantity}`)
-                    }
+                    isLoadingCanPickUp={loadingCanPickUp.has(
+                      `${product.sku}-${product.quantity}`
+                    )}
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
                     }

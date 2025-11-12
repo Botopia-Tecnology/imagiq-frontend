@@ -587,8 +587,8 @@ export default function ProductCard({
         {/* Contenido del producto */}
         <div className="py-2 space-y-2">
           {/* Título del producto */}
-          <div className="px-3">
-            <h3 className="text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap text-black">
+          <div className="px-3 min-h-[48px]">
+            <h3 className="text-base font-bold line-clamp-2 text-black">
               <button
                 type="button"
                 onClick={(event) => {
@@ -664,7 +664,7 @@ export default function ProductCard({
             (apiProduct
               ? productSelection.availableColors.length > 0
               : colors && colors.length > 0) && (
-              <div className="h-[40px] px-3">
+              <div className="min-h-[48px] px-3">
                 <ColorSelector
                   colors={
                     apiProduct
@@ -705,7 +705,7 @@ export default function ProductCard({
             (apiProduct
               ? productSelection.availableCapacities.length > 0
               : capacities && capacities.length > 0) && (
-              <div className="h-[40px] px-3">
+              <div className="min-h-[48px] px-3">
                 <CapacitySelector
                   capacities={
                     apiProduct
@@ -755,9 +755,9 @@ export default function ProductCard({
             )}
 
           {/* Precio */}
-          <div className="px-3 space-y-3">
+          <div className="px-3 space-y-3 mt-2">
             {finalCurrentPrice && (
-              <div className="space-y-1">
+              <div className="space-y-1 min-h-[32px]">
                 {(() => {
                   const { hasSavings, savings } = calculateSavings(
                     finalCurrentPrice,

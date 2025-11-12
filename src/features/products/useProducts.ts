@@ -785,6 +785,74 @@ export const useProduct = (productId: string) => {
 
   useEffect(() => {
     const fetchProduct = async () => {
+      // Verificar si hay datos en cache primero
+      const cachedResponse = productCache.getSingleProduct(productId);
+
+      if (cachedResponse && cachedResponse.success && cachedResponse.data) {
+        // Usar datos del cache inmediatamente
+        const apiData = cachedResponse.data;
+        const mappedProducts = mapApiProductsToFrontend(apiData.products);
+
+        if (mappedProducts.length > 0) {
+          const foundProduct = mappedProducts[0];
+          setProduct(foundProduct);
+          setError(null);
+
+          // Obtener productos relacionados
+          const modelBase =
+            foundProduct.name.split(" ")[1] ||
+            foundProduct.name.split(" ")[0];
+          const related = mappedProducts
+            .filter(
+              (p) => p.name.includes(modelBase) && p.id !== foundProduct.id
+            )
+            .slice(0, 4);
+          setRelatedProducts(related);
+
+          // Mostrar datos del cache inmediatamente
+          setLoading(false);
+
+          // Actualizar en background (stale-while-revalidate)
+          // No bloquear la UI, solo actualizar los datos si cambiaron
+          productEndpoints.getByCodigoMarket(productId)
+            .then(response => {
+              if (response.success && response.data) {
+                const freshData = response.data;
+                const freshMappedProducts = mapApiProductsToFrontend(freshData.products);
+
+                if (freshMappedProducts.length > 0) {
+                  const freshProduct = freshMappedProducts[0];
+
+                  // Solo actualizar si los datos son diferentes
+                  setProduct(prev => {
+                    if (!prev || JSON.stringify(prev) !== JSON.stringify(freshProduct)) {
+                      return freshProduct;
+                    }
+                    return prev;
+                  });
+
+                  // Actualizar cache con datos frescos
+                  productCache.setSingleProduct(productId, response, 10 * 60 * 1000);
+
+                  // Actualizar productos relacionados
+                  const modelBase = freshProduct.name.split(" ")[1] || freshProduct.name.split(" ")[0];
+                  const related = freshMappedProducts
+                    .filter((p) => p.name.includes(modelBase) && p.id !== freshProduct.id)
+                    .slice(0, 4);
+                  setRelatedProducts(related);
+                }
+              }
+            })
+            .catch(err => {
+              console.debug('[useProduct] Error al actualizar producto en background:', err);
+              // No mostrar error, ya tenemos datos del cache
+            });
+
+          return; // Salir temprano, ya mostramos los datos del cache
+        }
+      }
+
+      // No hay cache, hacer petición normal con loading
       setLoading(true);
       setError(null);
 
@@ -801,6 +869,9 @@ export const useProduct = (productId: string) => {
           if (mappedProducts.length > 0) {
             const foundProduct = mappedProducts[0]; // Tomar el primer producto encontrado
             setProduct(foundProduct);
+
+            // Guardar en cache
+            productCache.setSingleProduct(productId, response, 10 * 60 * 1000);
 
             // Obtener productos relacionados (otros productos con el mismo modelo base)
             const modelBase =

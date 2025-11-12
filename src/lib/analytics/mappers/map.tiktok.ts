@@ -18,9 +18,7 @@ export interface TikTokEvent {
     | 'CompletePayment'
     | 'PlaceAnOrder'
     | 'Search'
-    | 'ClickButton'
-    | 'AddToWishlist'
-    | 'CompleteRegistration';
+    | 'ClickButton';
   data: {
     contents?: Array<{ content_id: string; quantity: number; price?: number }>;
     content_type?: 'product' | 'product_group';
@@ -132,27 +130,6 @@ export function toTiktokEvent(
         data: {
           description: `Category: ${event.nav.category_name}`,
           content_name: event.nav.category_name,
-        },
-      };
-
-    case 'add_to_wishlist':
-      return {
-        name: 'AddToWishlist',
-        data: {
-          contents: mapContents(event.ecommerce.items),
-          content_type: 'product',
-          value: event.ecommerce.value,
-          currency: event.ecommerce.currency || 'COP',
-        },
-      };
-
-    case 'sign_up':
-    case 'register':
-      return {
-        name: 'CompleteRegistration',
-        data: {
-          content_type: 'product',
-          description: 'User registration completed',
         },
       };
 

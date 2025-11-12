@@ -129,10 +129,6 @@ export async function identifyTiktokUser(userData: TikTokUserData): Promise<void
       identifyData.phone_number = hashedData.ph;
     }
 
-    if (hashedData.external_id) {
-      identifyData.external_id = hashedData.external_id;
-    }
-
     // Enviar identificación a TikTok
     if (Object.keys(identifyData).length > 0) {
       globalThis.window.ttq.identify(identifyData);

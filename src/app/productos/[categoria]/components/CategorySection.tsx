@@ -29,6 +29,7 @@ import { useCurrentMenu } from "@/hooks/useCurrentMenu";
 import { useCategoryMenus } from "@/hooks/useCategoryMenus";
 import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import { useProductBanner } from "@/hooks/useProductBanner";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -94,6 +95,10 @@ export default function CategorySection({
     submenuUuid,
     categoryCode
   );
+
+  // Obtener banner de producto para el grid
+  const submenuName = currentMenu?.nombreVisible || currentMenu?.nombre;
+  const { config: bannerConfig } = useProductBanner(categoryVisibleName, submenuName);
 
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
   const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
@@ -223,6 +228,7 @@ export default function CategorySection({
             showLazySkeletons={hasMore}
             lazySkeletonCount={3}
             hasLoadedOnce={hasLoadedOnce}
+            banner={bannerConfig}
           />
 
           {/* Elemento invisible para detectar scroll */}

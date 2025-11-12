@@ -5,7 +5,7 @@
 
 'use client';
 
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard, {
@@ -13,18 +13,22 @@ import ProductCard, {
 } from "../../components/ProductCard";
 import { useFavorites } from "@/features/products/useProducts";
 import GuestDataModal from "../../components/GuestDataModal";
+import { ProductBannerCard } from "../../components/ProductBannerCard";
+import { insertBannersInGrid } from "../../utils/insertBanners";
+import type { Banner } from "@/types/banner";
 
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
   loading: boolean;
-  isLoadingMore?: boolean; // Estado de carga para lazy loading (append)
+  isLoadingMore?: boolean;
   error: string | null;
   refreshProducts: () => void;
   viewMode?: "grid" | "list";
   categoryName: string;
-  showLazySkeletons?: boolean; // Mostrar skeletons de lazy loading
-  lazySkeletonCount?: number; // Cantidad de skeletons
-  hasLoadedOnce?: boolean; // Indica si ya se completó al menos una carga
+  showLazySkeletons?: boolean;
+  lazySkeletonCount?: number;
+  hasLoadedOnce?: boolean;
+  banner?: Banner | null; // Banner a mostrar en el grid
 }
 
 
@@ -41,9 +45,9 @@ export const CategoryProductsGrid = forwardRef<
       refreshProducts,
       viewMode = "grid",
       categoryName,
-      showLazySkeletons = false,
       lazySkeletonCount = 3,
       hasLoadedOnce = false,
+      banner = null,
     },
     ref
   ) => {
@@ -51,6 +55,16 @@ export const CategoryProductsGrid = forwardRef<
     const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
+
+    // Mezclar productos con banners
+    const gridItems = useMemo(() => {
+      console.log('[ProductsGrid] Banner recibido:', banner);
+      console.log('[ProductsGrid] Total productos:', products.length);
+      const items = insertBannersInGrid(products, banner, 15);
+      console.log('[ProductsGrid] Total items en grid:', items.length);
+      console.log('[ProductsGrid] Items:', items.map(i => ({ type: i.type, key: i.key })));
+      return items;
+    }, [products, banner]);
 
     const handleAddToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");
@@ -130,13 +144,32 @@ export const CategoryProductsGrid = forwardRef<
           </div>
         )}
 
-        {/* Ocultar productos antiguos durante carga de nueva página */}
-        {products.length > 0 && !loading && (
+        {/* Renderizar productos y banners mezclados */}
+        {gridItems.length > 0 && !loading && (
           <>
-            {products.map((product, index) => {
+            {gridItems.map((item, index) => {
+              if (item.type === "banner") {
+                return (
+                  <motion.div
+                    key={item.key}
+                    className="w-full"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.4,
+                      delay: index * 0.08,
+                      ease: [0.25, 0.1, 0.25, 1],
+                    }}
+                  >
+                    <ProductBannerCard config={item.data as Banner} />
+                  </motion.div>
+                );
+              }
+
+              const product = item.data as ProductCardProps;
               return (
                 <motion.div
-                  key={product.id}
+                  key={item.key}
                   className="w-full"
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}

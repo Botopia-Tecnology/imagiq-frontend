@@ -2,7 +2,7 @@
  * 🎛️ CATEGORY HOOKS - Hooks personalizados para CategorySection
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useProducts } from "@/features/products/useProducts";
 import { applySortToFilters } from "@/lib/sortUtils";
@@ -25,18 +25,124 @@ export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion)
 }
 
 export function useCategoryPagination(
-  categoria?: CategoriaParams, 
+  categoria?: CategoriaParams,
   seccion?: Seccion,
   menuUuid?: string,
-  submenuUuid?: string
+  submenuUuid?: string,
+  categoriaApiCode?:string,
 ) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
 
-  // Resetear página cuando cambia categoría, sección, menú o submenú
+  // Refs para rastrear si ya se inicializó y los valores previos
+  const isInitializedRef = useRef(false);
+  const previousCategoriaRef = useRef<CategoriaParams | undefined>(undefined);
+  const previousMenuUuidRef = useRef<string | undefined>(undefined);
+  const previousSubmenuUuidRef = useRef<string | undefined>(undefined);
+
+  // Efecto para manejar cambios de ubicación y restauración de página
   useEffect(() => {
-    setCurrentPage(1);
-  }, [categoria, seccion, menuUuid, submenuUuid]);
+    // Solo esperar a que tengamos categoriaApiCode, que es el único valor realmente crítico
+    if (!categoriaApiCode) {
+      // Sin categoría no podemos proceder
+      return;
+    }
+
+    // IMPORTANTE: Si estamos en una sección (seccion no vacía) pero menuUuid aún es undefined, ESPERAR
+    // Esto evita inicializar con valores incorrectos cuando menuUuid llega con delay
+    if (seccion && seccion.trim() !== "" && !menuUuid) {
+     
+      return;
+    }
+
+    // IMPORTANTE: Si hay un parámetro submenu en la URL pero submenuUuid aún es undefined, ESPERAR
+    // Esto evita inicializar con valores incorrectos cuando submenuUuid llega con delay
+    const urlParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
+    const hasSubmenuParam = urlParams.has('submenu');
+    if (hasSubmenuParam && !submenuUuid && menuUuid) {
+    
+      return;
+    }
+
+    // Verificar si la ubicación cambió comparando con valores previos
+    // Normalizar valores para comparación consistente
+    const currentMenuUuidNorm = menuUuid ?? undefined;
+    const currentSubmenuUuidNorm = submenuUuid ?? undefined;
+    const prevMenuUuidNorm = previousMenuUuidRef.current ?? undefined;
+    const prevSubmenuUuidNorm = previousSubmenuUuidRef.current ?? undefined;
+
+    // Detectar cambio de ubicación
+    // IMPORTANTE: Comparar siempre si ya se inicializó, no solo cuando el valor previo !== undefined
+    // Esto permite detectar cambios de undefined a valor (ej: categoría base → sección)
+    const categoriaChanged = isInitializedRef.current && previousCategoriaRef.current !== categoria;
+    const menuUuidChanged = isInitializedRef.current && prevMenuUuidNorm !== currentMenuUuidNorm;
+    const submenuUuidChanged = isInitializedRef.current && prevSubmenuUuidNorm !== currentSubmenuUuidNorm;
+
+    const locationChanged = categoriaChanged || menuUuidChanged || submenuUuidChanged;
+
+    console.log('🔍 Detectando cambios:', {
+      isInitialized: isInitializedRef.current,
+      locationChanged,
+      prev: {
+        categoria: previousCategoriaRef.current,
+        menuUuid: prevMenuUuidNorm,
+        submenuUuid: prevSubmenuUuidNorm
+      },
+      current: {
+        categoria,
+        menuUuid: currentMenuUuidNorm,
+        submenuUuid: currentSubmenuUuidNorm
+      }
+    });
+
+    if (!isInitializedRef.current) {
+      // Primera inicialización: intentar restaurar página guardada
+      try {
+        const saved = localStorage.getItem("imagiq_last_location");
+        if (saved) {
+          const parsed = JSON.parse(saved);
+
+          // Normalizar undefined/null a undefined para comparación consistente
+          const savedCategoria = parsed.categoria;
+          const savedMenuUuid = parsed.menuUuid ?? undefined;
+          const savedSubmenuUuid = parsed.submenuUuid ?? undefined;
+          const currentMenuUuid = menuUuid ?? undefined;
+          const currentSubmenuUuid = submenuUuid ?? undefined;
+
+
+
+          // IMPORTANTE: Comparar TODA la ruta completa, no solo el nivel actual
+          const categoriaMatches = savedCategoria === categoriaApiCode;
+          const menuUuidMatches = savedMenuUuid === currentMenuUuid;
+          const submenuUuidMatches = savedSubmenuUuid === currentSubmenuUuid;
+
+          if (categoriaMatches && menuUuidMatches && submenuUuidMatches) {
+            setCurrentPage(parsed.page || 1);
+          } else {
+            setCurrentPage(1);
+          }
+        } else {
+  
+          setCurrentPage(1);
+        }
+      } catch (error) {
+        setCurrentPage(1);
+      }
+      isInitializedRef.current = true;
+      // Guardar valores iniciales
+      previousCategoriaRef.current = categoria;
+      //previousSeccionRef.current = seccion;
+      previousMenuUuidRef.current = menuUuid;
+      previousSubmenuUuidRef.current = submenuUuid;
+    }else if (locationChanged) {
+      // Cambio de ubicación después de inicializar: resetear a página 1
+      setCurrentPage(1);
+      // Actualizar valores previos
+      previousCategoriaRef.current = categoria;
+      previousMenuUuidRef.current = menuUuid;
+      previousSubmenuUuidRef.current = submenuUuid;
+    }
+  }, [categoria, seccion, menuUuid, submenuUuid, categoriaApiCode]);
 
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
@@ -85,7 +191,7 @@ export function useCategoryProducts(
   const [previousMenuUuid, setPreviousMenuUuid] = useState(menuUuid);
   
   useEffect(() => {
-    if (previousSeccion !== seccion || previousMenuUuid !== menuUuid) {
+    if (previousSeccion != seccion || previousMenuUuid != menuUuid) {
       setIsTransitioning(true);
       setHasLoadedOnce(false); // Resetear cuando cambia la categoría/sección
       setPreviousSeccion(seccion);
@@ -134,7 +240,7 @@ export function useCategoryProducts(
 
     // Si estamos en una sección específica (no vacía), necesitamos menuUuid
     // Si seccion es "" (cadena vacía), significa que estamos en la categoría base, así que no necesitamos menuUuid
-    if (seccion && seccion.trim() !== "" && !menuUuid) {
+    if (seccion && seccion.trim() != "" && !menuUuid) {
       return false;
     }
 
@@ -144,7 +250,7 @@ export function useCategoryProducts(
     // - Si no tenemos menuUuid y hay seccion, esperar (aún estamos cargando el menú)
     const searchParams = new URLSearchParams(globalThis.location.search);
     const submenuParam = searchParams.get('submenu');
-    if (submenuParam && !submenuUuid && !menuUuid && seccion && seccion.trim() !== "") {
+    if (submenuParam && !submenuUuid && !menuUuid && seccion && seccion.trim() != "") {
       // Solo bloquear si hay seccion y no tenemos menuUuid
       return false;
     }
@@ -244,7 +350,7 @@ export function useFilterManagement(
         ...prev,
         [filterType]: checked
           ? [...(prev[filterType] || []), value]
-          : (prev[filterType] || []).filter((item) => item !== value),
+          : (prev[filterType] || []).filter((item) => item != value),
       }));
 
       posthogUtils.capture("filter_applied", {

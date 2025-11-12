@@ -133,6 +133,49 @@ export const useProducts = (
   const previousPageRef = useRef<number | undefined>(undefined);
   const previousFiltersRef = useRef<string | null>(null); // Para detectar cambios en filtros
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialMount = useRef(true); // Para detectar el primer montaje
+
+  // Función para obtener la ubicación guardada en localStorage
+  const getSavedLocation = useCallback(() => {
+    try {
+      const saved = localStorage.getItem("imagiq_last_location");
+      return saved ? JSON.parse(saved) : null;
+    } catch (error) {
+      console.error("Error reading saved location:", error);
+      return null;
+    }
+  }, []);
+
+  // Función para guardar la ubicación actual en localStorage
+  const saveLocation = useCallback((categoria?: string, menuUuid?: string, submenuUuid?: string, page?: number) => {
+    try {
+      const location = {
+        categoria,
+        menuUuid,
+        submenuUuid,
+        page: page || 1,
+      };
+      localStorage.setItem("imagiq_last_location", JSON.stringify(location));
+    } catch (error) {
+      console.error("Error saving location:", error);
+    }
+  }, []);
+
+  // Función para verificar si la ubicación cambió
+  const hasLocationChanged = useCallback((
+    savedLocation: { categoria?: string; menuUuid?: string; submenuUuid?: string; page?: number } | null,
+    currentCategoria?: string,
+    currentMenuUuid?: string,
+    currentSubmenuUuid?: string
+  ) => {
+    if (!savedLocation) return true;
+
+    return (
+      savedLocation.categoria !== currentCategoria ||
+      savedLocation.menuUuid !== currentMenuUuid ||
+      savedLocation.submenuUuid !== currentSubmenuUuid
+    );
+  }, []);
 
   // Función para convertir filtros del frontend a parámetros de API
   const convertFiltersToApiParams = useCallback(
@@ -612,17 +655,53 @@ export const useProducts = (
 
     // Debounce para evitar múltiples peticiones cuando cambian filtros rápidamente
     debounceTimerRef.current = setTimeout(() => {
-      const filtersToUse =
+      let filtersToUse =
         typeof initialFilters === "function"
           ? initialFilters()
           : initialFilters || {};
+
+      // En el primer montaje, verificar si debemos restaurar la página guardada
+      if (isInitialMount.current) {
+        const savedLocation = getSavedLocation();
+        const currentCategoria = filtersToUse.category;
+        const currentMenuUuid = filtersToUse.menuUuid;
+        const currentSubmenuUuid = filtersToUse.submenuUuid;
+
+        // Verificar si la ubicación cambió
+        const locationChanged = hasLocationChanged(
+          savedLocation,
+          currentCategoria,
+          currentMenuUuid,
+          currentSubmenuUuid
+        );
+
+        if (locationChanged) {
+          // Si cambió la ubicación, empezar desde página 1
+          filtersToUse = { ...filtersToUse, page: 1 };
+          saveLocation(currentCategoria, currentMenuUuid, currentSubmenuUuid, 1);
+        } else if (savedLocation?.page && !filtersToUse.page) {
+          // Si no cambió y no se especificó página, usar la página guardada
+          filtersToUse = { ...filtersToUse, page: savedLocation.page };
+        } else {
+          // Guardar la ubicación actual
+          saveLocation(currentCategoria, currentMenuUuid, currentSubmenuUuid, filtersToUse.page || 1);
+        }
+
+        isInitialMount.current = false;
+      }
 
       // Detectar si cambian parámetros críticos (menuUuid, submenuUuid)
       const apiParams = convertFiltersToApiParams(filtersToUse);
       const currentMenuUuid = apiParams.menuUuid;
       const currentSubmenuUuid = apiParams.submenuUuid;
+      const currentCategoria = apiParams.categoria;
       const requestedPage = filtersToUse.page || 1;
-      
+
+      // Guardar la ubicación actual cuando cambia cualquier parámetro
+      if (!isInitialMount.current) {
+        saveLocation(currentCategoria, currentMenuUuid, currentSubmenuUuid, requestedPage);
+      }
+
       // Detectar cambio de página
       const pageChanged = previousPageRef.current !== undefined && previousPageRef.current !== requestedPage;
       
@@ -673,7 +752,7 @@ export const useProducts = (
         clearTimeout(debounceTimerRef.current);
       }
     };
-  }, [initialFilters, fetchProducts, convertFiltersToApiParams]);
+  }, [initialFilters, fetchProducts, convertFiltersToApiParams, getSavedLocation, hasLocationChanged, saveLocation]);
 
   return {
     products,

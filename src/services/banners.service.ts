@@ -59,7 +59,12 @@ class BannersService {
    */
   async getBannersByPlacement(placement: string): Promise<Banner[]> {
     const banners = await this.getActiveBanners();
-    return banners.filter((banner) => banner.placement === placement);
+    console.log('[BannersService] Buscando placement:', placement);
+    console.log('[BannersService] Total banners:', banners.length);
+    console.log('[BannersService] Placements disponibles:', banners.map(b => b.placement));
+    const filtered = banners.filter((banner) => banner.placement === placement);
+    console.log('[BannersService] Banners encontrados:', filtered.length);
+    return filtered;
   }
 
   /**

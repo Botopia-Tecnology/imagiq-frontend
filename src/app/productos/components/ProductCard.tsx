@@ -37,8 +37,9 @@ import { useStockNotification } from "@/hooks/useStockNotification";
 import { motion } from "framer-motion";
 
 /**
- * Formatea la capacidad para mostrar correctamente GB o pulgadas
+ * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
  * - Para almacenamiento: mantiene el formato original (128GB, 256GB, etc.)
+ * - Para litros: normaliza el formato (859LT -> 859 LT, 809 LT -> 809 LT)
  * - Para pulgadas: agrega comillas si es solo un número (75 -> 75")
  */
 function formatCapacityLabel(capacity: string): string {
@@ -47,6 +48,11 @@ function formatCapacityLabel(capacity: string): string {
   // Si ya tiene GB, TB, o comillas, retornar tal cual
   if (capacity.includes('GB') || capacity.includes('TB') || capacity.includes('"') || capacity.includes('pulgada')) {
     return capacity;
+  }
+
+  // Normalizar litros: asegurar espacio entre número y LT (859LT -> 859 LT)
+  if (capacity.toUpperCase().includes('LT')) {
+    return capacity.replace(/(\d+)(LT)/gi, '$1 $2').trim();
   }
 
   // Si es solo un número (probablemente pulgadas de TV), agregar comillas
@@ -581,8 +587,8 @@ export default function ProductCard({
         {/* Contenido del producto */}
         <div className="py-2 space-y-2">
           {/* Título del producto */}
-          <div className="px-3">
-            <h3 className="text-base font-bold line-clamp-1 overflow-hidden text-ellipsis whitespace-nowrap text-black">
+          <div className="px-3 min-h-[48px]">
+            <h3 className="text-base font-bold line-clamp-2 text-black">
               <button
                 type="button"
                 onClick={(event) => {
@@ -653,23 +659,12 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Mostrar capacidad como texto cuando showCapacitySelector es true pero solo hay 1 capacidad */}
-          {showCapacitySelector &&
-            apiProduct &&
-            productSelection.availableCapacities.length === 1 && (
-            <div className="px-3 mb-1">
-              <p className="text-xs text-gray-600 font-medium">
-                {`Tamaño: ${formatCapacityLabel(productSelection.availableCapacities[0])}`}
-              </p>
-            </div>
-          )}
-
           {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
           {showColorSelector &&
             (apiProduct
               ? productSelection.availableColors.length > 0
               : colors && colors.length > 0) && (
-              <div className="h-[40px] px-3">
+              <div className="min-h-[48px] px-3">
                 <ColorSelector
                   colors={
                     apiProduct
@@ -710,7 +705,7 @@ export default function ProductCard({
             (apiProduct
               ? productSelection.availableCapacities.length > 0
               : capacities && capacities.length > 0) && (
-              <div className="h-[40px] px-3">
+              <div className="min-h-[48px] px-3">
                 <CapacitySelector
                   capacities={
                     apiProduct
@@ -760,9 +755,9 @@ export default function ProductCard({
             )}
 
           {/* Precio */}
-          <div className="px-3 space-y-3">
+          <div className="px-3 space-y-3 mt-2">
             {finalCurrentPrice && (
-              <div className="space-y-1">
+              <div className="space-y-1 min-h-[32px]">
                 {(() => {
                   const { hasSavings, savings } = calculateSavings(
                     finalCurrentPrice,

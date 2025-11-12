@@ -29,6 +29,7 @@ import { useCurrentMenu } from "@/hooks/useCurrentMenu";
 import { useCategoryMenus } from "@/hooks/useCategoryMenus";
 import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import { useProductBanner } from "@/hooks/useProductBanner";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -53,7 +54,7 @@ export default function CategorySection({
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid);
+  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid, categoriaApiCode);
   const { sortBy, setSortBy } = useCategorySorting();
   const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
     categoria,
@@ -95,6 +96,10 @@ export default function CategorySection({
     categoryCode
   );
 
+  // Obtener banner de producto para el grid
+  const submenuName = currentMenu?.nombreVisible || currentMenu?.nombre;
+  const { config: bannerConfig } = useProductBanner(categoryVisibleName, submenuName);
+
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
   const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
 
@@ -109,9 +114,10 @@ export default function CategorySection({
 
   useCategoryAnalytics(categoria, seccion, totalItems);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [sortBy, setCurrentPage]);
+  // useEffect(() => {
+  //   console.log('sospechoso 7')
+  //   setCurrentPage(1);
+  // }, [sortBy, setCurrentPage]);
 
   if (error) {
     return (
@@ -223,6 +229,7 @@ export default function CategorySection({
             showLazySkeletons={hasMore}
             lazySkeletonCount={3}
             hasLoadedOnce={hasLoadedOnce}
+            banner={bannerConfig}
           />
 
           {/* Elemento invisible para detectar scroll */}

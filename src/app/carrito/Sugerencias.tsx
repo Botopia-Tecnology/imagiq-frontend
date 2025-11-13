@@ -67,7 +67,7 @@ export default function Sugerencias({
               <div className="w-full h-full rounded-xl bg-white flex items-center justify-center overflow-hidden">
                 <Image
                   src={getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog")}
-                  alt={producto.desDetallada[0] || producto.nombreMarket}
+                  alt={producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}
                   width={112}
                   height={112}
                   className="object-contain"
@@ -75,7 +75,7 @@ export default function Sugerencias({
               </div>
               <button
                 className="absolute top-2 right-2 bg-blue-500 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg hover:bg-blue-600 transition"
-                aria-label={`Agregar ${producto.desDetallada[0] || producto.nombreMarket}`}
+                aria-label={`Agregar ${producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}`}
                 onClick={() => onAdd?.(producto)}
               >
                 <Plus className="w-5 h-5" />
@@ -83,7 +83,7 @@ export default function Sugerencias({
             </div>
             <div className="text-center mt-2">
               <div className="font-semibold text-gray-900 text-base mb-1 line-clamp-2">
-                {producto.desDetallada[0] || producto.nombreMarket}
+                {producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}
               </div>
               <div className="text-lg font-bold text-gray-900">
                 $ {(producto.precioeccommerce[0] || producto.precioNormal[0]).toLocaleString()}

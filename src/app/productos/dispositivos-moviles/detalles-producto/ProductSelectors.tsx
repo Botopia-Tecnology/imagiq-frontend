@@ -68,14 +68,11 @@ export default function ProductSelectors({
            normalizedRam !== 'no';
   });
 
-  // Filtrar valores "NO APLICA", "NO", etc. para opciones de color
+  // Filtrar solo colores válidos con código hexadecimal
   const validColorOptions = colorOptions.filter(color => {
-    const normalizedLabel = color.color?.toLowerCase().trim() || '';
-    return !normalizedLabel.includes('no aplica') &&
-           normalizedLabel !== 'n/a' &&
-           normalizedLabel !== 'na' &&
-           normalizedLabel !== 'no' &&
-           normalizedLabel !== '';
+    const colorValue = color.color?.trim() || '';
+    // Solo permitir colores que sean códigos hexadecimales válidos (empiezan con #)
+    return colorValue.startsWith('#') && colorValue.length >= 4; // #FFF o #FFFFFF
   });
 
   // Filtrar valores "NO APLICA", "NO", etc. para opciones de almacenamiento

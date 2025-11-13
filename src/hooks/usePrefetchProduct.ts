@@ -57,6 +57,7 @@ export function usePrefetchProduct({
     // Verificar si ya existe en cache
     const cachedProduct = productCache.getSingleProduct(productId);
     if (cachedProduct) {
+      console.debug('[usePrefetchProduct] Producto ya en cache, no se precarga:', productId);
       prefetchedRef.current = true;
       return;
     }

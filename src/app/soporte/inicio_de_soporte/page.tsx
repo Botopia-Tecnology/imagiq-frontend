@@ -1,7 +1,9 @@
 ﻿"use client";
 
+import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api";
-import { SupportOrderResponse } from "@/types/support";
+import { Documento, SupportOrderResponse } from "@/types/support";
+import Link from "next/link";
 import { useState } from "react";
 
 export default function InicioDeSoportePage() {
@@ -25,6 +27,27 @@ export default function InicioDeSoportePage() {
     return Object.keys(e).length === 0;
   };
 
+  const handlePaySubmit = async (doc: Documento) => {
+    const cartItem = {
+      id: doc.documento || "0",
+      name: "0",
+      image: "0",
+      price: 0,
+      originalPrice: 0,
+      stock: 0,
+      sku: "0",
+      ean: "0",
+      puntos_q: 0,
+      color: "0",
+      colorName: "0",
+      capacity: "0",
+      ram: "0",
+      skuPostback: "0",
+      desDetallada: "0",
+      quantity: 1,
+    };
+    localStorage.setItem("cart-items", JSON.stringify([cartItem]));
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccess("");
@@ -65,9 +88,9 @@ export default function InicioDeSoportePage() {
       style={{ backgroundImage: "url('/images/fondo_soporte.jpg')" }}
     >
       <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-xl w-full max-w-4xl mx-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           {/* Columna izquierda: formulario */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 flex flex-col">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">
               Inicio de Soporte
             </h1>
@@ -251,65 +274,86 @@ export default function InicioDeSoportePage() {
             </form>
           </div>
 
-          {/* Columna central: Recomendaciones */}
-          <div className="lg:col-span-1">
-            <h3 className="text-lg font-semibold mb-4">Consejos</h3>
-            <ul className="list-disc pl-5 text-sm space-y-3 text-muted-foreground">
-              <li>Asegúrate de ingresar la cédula sin puntos ni guiones.</li>
-              <li>
-                El número de orden lo encuentras en el correo de confirmación.
-              </li>
-              <li>
-                Si necesitas ayuda urgente, contacta al soporte telefónico.
-              </li>
-            </ul>
+          {/* Columna central: Recomendaciones y Pago */}
+          <div className="lg:col-span-1 flex flex-col">
+            <div className="mb-8">
+              <h3 className="text-lg font-semibold mb-4">Consejos</h3>
+              <ul className="list-disc pl-5 text-sm space-y-3 text-muted-foreground">
+                <li>Asegúrate de ingresar la cédula sin puntos ni guiones.</li>
+                <li>
+                  El número de orden lo encuentras en el correo de confirmación.
+                </li>
+                <li>
+                  Si necesitas ayuda urgente, contacta al soporte telefónico.
+                </li>
+              </ul>
+            </div>
+
+            {/* Card de pago: Dentro del grid */}
+            {result && (
+              <div className="grow flex flex-col">
+                <div className=" p-8 rounded-lg border border-blue-200 shadow-md flex flex-col h-full">
+                  <p className="text-xs font-semibold text-black uppercase tracking-wide mb-4">
+                    Resumen de pago
+                  </p>
+                  <div className="mb-8 grow">
+                    <p className="text-sm text-gray-900 mb-2">Monto a pagar:</p>
+                    <p className="text-5xl font-bold text-gray-900">
+                      {(() => {
+                        const documentos =
+                          result?.obtenerDocumentosResult?.documentos;
+                        const doc = documentos?.find(
+                          (d) => d?.valor && d.valor !== "0,0000"
+                        );
+                        const raw = doc?.valor;
+                        if (!raw) return "No disponible";
+
+                        const normalized = raw
+                          .replaceAll(".", "")
+                          .replaceAll(",", ".");
+                        const value = Number(normalized);
+                        if (Number.isNaN(value)) return raw;
+
+                        const formatted = value.toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        });
+
+                        return `$${formatted}`;
+                      })()}
+                    </p>
+                  </div>
+                  <div className="w-full flex flex-col gap-2">
+                    <Link
+                      href={
+                        result.obtenerDocumentosResult.documentos.find(
+                          (r) => r.valor !== "0,0000"
+                        )?.url || "#"
+                      }
+                      className="w-full rounded-xl inline-flex items-center justify-center px-4 py-2 bg-white text-gray-900 border border-gray-950 font-bold shadow-md transition transform hover:scale-105"
+                    >
+                      Descargar factura
+                    </Link>
+                    <Button
+                      onClick={() =>
+                        handlePaySubmit(
+                          result.obtenerDocumentosResult.documentos.find(
+                            (r) => r.valor !== "0,0000"
+                          )!
+                        )
+                      }
+                      type="button"
+                      className="w-full inline-flex items-center justify-center px-6 py-4 bg-black text-white rounded-lg font-bold shadow-md transition transform hover:scale-105"
+                    >
+                      Ir a pagar
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      {/* Card de pago: Fuera del grid, aparece abajo cuando hay resultado */}
-      {result && (
-        <div className="mt-8">
-          <div className="bg-linear-to-br from-blue-50 to-blue-100 p-8 rounded-lg border border-blue-200 shadow-md">
-            <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-4">
-              Resumen de pago
-            </p>
-            <div className="mb-8">
-              <p className="text-sm text-blue-900 mb-2">Monto a pagar:</p>
-              <p className="text-5xl font-bold text-blue-900">
-                {(() => {
-                  const documentos =
-                    result?.obtenerDocumentosResult?.documentos;
-                  const doc = documentos?.find(
-                    (d) => d?.valor && d.valor !== "0,0000"
-                  );
-                  const raw = doc?.valor;
-                  if (!raw) return "No disponible";
-
-                  const normalized = raw
-                    .replaceAll(".", "")
-                    .replaceAll(",", ".");
-                  const value = Number(normalized);
-                  if (Number.isNaN(value)) return raw;
-
-                  const formatted = value.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  });
-
-                  return `$${formatted}`;
-                })()}
-              </p>
-            </div>
-            <button
-              type="button"
-              className="w-full inline-flex items-center justify-center px-6 py-4 bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-bold shadow-md transition transform hover:scale-105"
-            >
-              Ir a pagar
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

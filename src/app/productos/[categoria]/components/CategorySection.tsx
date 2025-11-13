@@ -97,7 +97,8 @@ export default function CategorySection({
   );
 
   // Obtener banner de producto para el grid
-  const submenuName = currentMenu?.nombreVisible || currentMenu?.nombre;
+  // Solo pasar submenuName si existe seccion, sino null para obtener banner de categoría
+  const submenuName = seccion ? (currentMenu?.nombreVisible || currentMenu?.nombre) : null;
   const { config: bannerConfig } = useProductBanner(categoryVisibleName, submenuName);
 
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid

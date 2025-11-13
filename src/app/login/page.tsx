@@ -15,10 +15,18 @@ import { notifyError, notifyLoginSuccess } from "./notifications";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 interface LoginSuccessResponse {
-  access_token: string;
-  user: Omit<Usuario, "contrasena" | "tipo_documento">;
-  telefono_verificado: boolean; // Indica si el teléfono está verificado
-  skus: string[] | { sku: string }[];
+  access_token?: string;
+  user?: Omit<Usuario, "contrasena" | "tipo_documento">;
+  telefono_verificado?: boolean; // Indica si el teléfono está verificado
+  email_verificado?: boolean; // Indica si el email está verificado
+  requiresVerification?: boolean; // Indica si necesita verificación
+  userId?: string; // ID del usuario cuando requiere verificación
+  email?: string; // Email cuando requiere verificación
+  telefono?: string; // Teléfono cuando requiere verificación
+  nombre?: string; // Nombre cuando requiere verificación
+  apellido?: string; // Apellido cuando requiere verificación
+  numero_documento?: string; // Documento cuando requiere verificación
+  skus?: string[] | { sku: string }[];
   defaultAddress?: {
     id: string;
     nombreDireccion: string;
@@ -101,36 +109,37 @@ export default function LoginPage() {
 
       const result: LoginSuccessResponse = await response.json();
 
+      // 🔒 VERIFICACIÓN OBLIGATORIA - Si el backend retorna requiresVerification
+      if (result.requiresVerification) {
+        // Guardar datos temporalmente para continuar verificación en paso 2
+        sessionStorage.setItem("pending_registration_step2", JSON.stringify({
+          userId: result.userId,
+          email: result.email,
+          nombre: result.nombre,
+          apellido: result.apellido,
+          telefono: result.telefono,
+          numero_documento: result.numero_documento,
+          fromLogin: true, // Bandera para saber que viene de login
+        }));
+
+        posthogUtils.capture("login_requires_verification", {
+          user_id: result.userId,
+          user_email: result.email,
+        });
+
+        // Redirigir a create-account (paso 2) para completar verificación
+        router.push("/login/create-account");
+        return;
+      }
+
+      // Validar respuesta normal de login exitoso
       if (!result.access_token || !result.user) {
         throw new Error("Respuesta de servidor inválida");
       }
 
-      const { user, access_token, telefono_verificado, skus, defaultAddress } = result;
+      const { user, access_token, skus, defaultAddress } = result;
 
-      // 🔒 VERIFICACIÓN OBLIGATORIA DE TELÉFONO
-      if (!telefono_verificado) {
-        // Guardar datos temporalmente para continuar registro en paso 2
-        sessionStorage.setItem("pending_registration_step2", JSON.stringify({
-          userId: user.id,
-          email: user.email,
-          nombre: user.nombre,
-          apellido: user.apellido,
-          telefono: user.telefono,
-          numero_documento: user.numero_documento,
-          fromLogin: true, // Bandera para saber que viene de login
-        }));
-
-        posthogUtils.capture("login_phone_not_verified", {
-          user_id: user.id,
-          user_email: user.email,
-        });
-
-        // Redirigir a create-account (paso 2)
-        router.push("/login/create-account?step=2");
-        return;
-      }
-
-      // ✅ Teléfono verificado - Login exitoso
+      // ✅ Usuario verificado - Login exitoso
       posthogUtils.capture("login_success", {
         user_id: user.id,
         user_role: user.rol,

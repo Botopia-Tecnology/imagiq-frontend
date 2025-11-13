@@ -21,6 +21,7 @@ import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
 import MultimediaBottomBar from "@/components/MultimediaBottomBar";
 import { motion } from "framer-motion";
+import { usePrefetchProduct } from "@/hooks/usePrefetchProduct";
 
 // Skeleton de carga mejorado
 function MultimediaPageSkeleton() {
@@ -89,6 +90,14 @@ export default function MultimediaPage({
   const { id } = resolvedParams;
 
   const { product, loading, error } = useProduct(id);
+
+  // Precargar los datos del producto para la vista de detalle (view/viewpremium)
+  // mientras el usuario ve el multimedia. Esto hace que la navegación sea instantánea
+  usePrefetchProduct({
+    productId: id,
+    delay: 2000, // Esperar 2 segundos para no interferir con la carga de multimedia
+    enabled: !loading && !error && !!product, // Solo precargar si el producto se cargó exitosamente
+  });
 
 
   // Loading state

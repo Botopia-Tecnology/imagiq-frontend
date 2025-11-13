@@ -72,7 +72,7 @@ export default function AppliancesProductsGrid() {
       (p) =>
         p.apiProduct?.subcategoria === "Aspiradoras" ||
         p.apiProduct?.subcategoria === "Limpieza" ||
-        p.apiProduct?.nombreMarket?.toLowerCase().includes("aspiradora")
+        (p.apiProduct?.nombreMarket?.[0]?.toLowerCase().includes("aspiradora") ?? false)
     );
     const aspiradorasOrdenadas = aspiradoras.toSorted((a, b) => {
       const precioA =

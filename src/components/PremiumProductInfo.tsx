@@ -143,8 +143,8 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
           {product.name}
         </h1>
-        {product.apiProduct?.modelo && (
-          <p className="text-sm text-gray-600">Modelo: {product.apiProduct.modelo}</p>
+        {product.apiProduct?.modelo?.[0] && (
+          <p className="text-sm text-gray-600">Modelo: {product.apiProduct.modelo[0]}</p>
         )}
       </div>
 
@@ -258,13 +258,13 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
       </div>
 
       {/* Descripción */}
-      {product.apiProduct?.descGeneral && (
+      {product.apiProduct?.descGeneral?.[0] && (
         <div className="pt-6 border-t">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             Descripción
           </h3>
           <p className="text-gray-600 text-sm leading-relaxed">
-            {product.apiProduct.descGeneral}
+            {product.apiProduct.descGeneral[0]}
           </p>
         </div>
       )}

@@ -414,16 +414,16 @@ export interface ProductApiResponse {
 export interface ProductApiData {
   codigoMarketBase: string;
   codigoMarket: string[];
-  nombreMarket: string;
+  nombreMarket: string[];
   categoria: string;
   subcategoria: string;
-  modelo: string;
+  modelo: string[];
   segmento?: string[]; // Campo para identificar productos premium (array)
   color: string[];
   nombreColor?: string[]; // Nombre del color para mostrar (ej: "Negro Medianoche")
   capacidad: string[];
   memoriaram: string[];
-  descGeneral: string | null;
+  descGeneral: string[];
   sku: string[];
   ean:string[];
   desDetallada: string[];
@@ -445,6 +445,10 @@ export interface ProductApiData {
   indRetoma?: number[]; // Indicador de retoma (0 o 1 por cada variante)
   skuPostback?: string[];
   indcerointeres?: number[];
+  ancho?: number[];
+  alto?: number[];
+  largo?: number[];
+  peso?: number[];
 }
 
 export interface FavoriteApiResponse {

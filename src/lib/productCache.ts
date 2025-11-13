@@ -19,6 +19,15 @@ interface CacheEntry {
 }
 
 /**
+ * Entrada en el caché para productos individuales
+ */
+interface SingleProductCacheEntry {
+  data: ApiResponse<ProductApiResponse>;
+  timestamp: number;
+  ttl: number;
+}
+
+/**
  * Configuración del caché
  */
 interface CacheConfig {
@@ -32,6 +41,7 @@ interface CacheConfig {
  */
 class ProductCache {
   private cache: Map<string, CacheEntry> = new Map();
+  private singleProductCache: Map<string, SingleProductCacheEntry> = new Map();
   private config: CacheConfig;
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -261,6 +271,20 @@ class ProductCache {
       }
     });
 
+    // Limpiar también el caché de productos individuales
+    const singleProductKeysToDelete: string[] = [];
+    this.singleProductCache.forEach((entry, key) => {
+      if (this.isExpired(entry)) {
+        singleProductKeysToDelete.push(key);
+      }
+    });
+
+    singleProductKeysToDelete.forEach(key => {
+      if (this.singleProductCache.delete(key)) {
+        deletedCount++;
+      }
+    });
+
     return deletedCount;
   }
 
@@ -269,6 +293,52 @@ class ProductCache {
    */
   clear(): void {
     this.cache.clear();
+    this.singleProductCache.clear();
+  }
+
+  /**
+   * Obtiene un producto individual del caché por su ID
+   */
+  getSingleProduct(productId: string): ApiResponse<ProductApiResponse> | null {
+    const key = `product:${productId}`;
+    const entry = this.singleProductCache.get(key);
+
+    if (entry && !this.isExpired(entry)) {
+      return entry.data;
+    }
+
+    // Si está expirado, eliminarlo
+    if (entry) {
+      this.singleProductCache.delete(key);
+    }
+
+    return null;
+  }
+
+  /**
+   * Almacena un producto individual en el caché
+   */
+  setSingleProduct(
+    productId: string,
+    data: ApiResponse<ProductApiResponse>,
+    ttl?: number
+  ): void {
+    const key = `product:${productId}`;
+    const entry: SingleProductCacheEntry = {
+      data,
+      timestamp: Date.now(),
+      ttl: ttl || this.config.defaultTTL,
+    };
+
+    this.singleProductCache.set(key, entry);
+  }
+
+  /**
+   * Invalida el caché de un producto individual
+   */
+  invalidateSingleProduct(productId: string): boolean {
+    const key = `product:${productId}`;
+    return this.singleProductCache.delete(key);
   }
 
   /**

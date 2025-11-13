@@ -9,8 +9,10 @@ interface OTPStepProps {
   telefono: string;
   otpCode: string;
   otpSent: boolean;
+  sendMethod: 'email' | 'whatsapp';
   onOTPChange: (code: string) => void;
-  onSendOTP: () => void;
+  onSendOTP: (method?: 'email' | 'whatsapp') => void;
+  onMethodChange: (method: 'email' | 'whatsapp') => void;
   onChangeEmail: (newEmail: string) => void;
   onChangePhone: (newPhone: string) => void;
   disabled?: boolean;
@@ -21,13 +23,14 @@ export function OTPStep({
   telefono,
   otpCode,
   otpSent,
+  sendMethod,
   onOTPChange,
   onSendOTP,
+  onMethodChange,
   onChangeEmail,
   onChangePhone,
   disabled,
 }: OTPStepProps) {
-  const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('whatsapp');
   const [editMode, setEditMode] = useState<'email' | 'phone' | null>(null);
   const [tempEmail, setTempEmail] = useState(email);
   const [tempPhone, setTempPhone] = useState(telefono);
@@ -191,19 +194,20 @@ export function OTPStep({
           <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
             <button
               type="button"
-              onClick={() => setSendMethod('email')}
-              disabled={true}
-              className="flex-1 flex flex-col items-center justify-center gap-1 px-4 py-3 rounded-lg border-2 border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60"
+              onClick={() => onMethodChange('email')}
+              disabled={disabled}
+              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
+                sendMethod === 'email'
+                  ? 'border-black bg-black text-white'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+              }`}
             >
-              <div className="flex items-center gap-2">
-                <Mail className="w-5 h-5" />
-                <span className="font-medium">Email</span>
-              </div>
-              <span className="text-xs">Próximamente</span>
+              <Mail className="w-5 h-5" />
+              <span className="font-medium">Email</span>
             </button>
             <button
               type="button"
-              onClick={() => setSendMethod('whatsapp')}
+              onClick={() => onMethodChange('whatsapp')}
               disabled={disabled}
               className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
                 sendMethod === 'whatsapp'
@@ -234,7 +238,7 @@ export function OTPStep({
             <Button
               type="button"
               variant="ghost"
-              onClick={onSendOTP}
+              onClick={() => onSendOTP(sendMethod)}
               disabled={disabled}
               className="text-sm"
             >

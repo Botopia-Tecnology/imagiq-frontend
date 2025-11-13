@@ -88,10 +88,38 @@ export default function ProductSelectors({
            normalizedLabel !== '';
   });
 
+  // Detectar el tipo de capacidad para mostrar el label apropiado
+  const hasInches = validStorageOptions.some(storage =>
+    storage.capacidad?.includes('"') || storage.capacidad?.includes('\"')
+  );
+
+  const hasKilograms = validStorageOptions.some(storage =>
+    storage.capacidad?.toLowerCase().includes('kg')
+  );
+
+  // Detectar si es almacenamiento (GB/TB)
+  const isStorage = validStorageOptions.some(storage => {
+    const cap = storage.capacidad?.toUpperCase() || '';
+    return cap.includes('GB') || cap.includes('TB');
+  });
+
+  // Determinar el label apropiado para el selector
+  let storageLabel = "Elige tu Almacenamiento"; // Por defecto para GB/TB
+  if (hasInches) {
+    storageLabel = "Elige tu Tamaño";
+  } else if (hasKilograms) {
+    storageLabel = "Elige tu Capacidad";
+  }
+
+  // Mostrar selector de color si:
+  // 1. Hay más de una opción de color, O
+  // 2. Es un producto con almacenamiento (GB/TB) aunque tenga un solo color
+  const shouldShowColorSelector = validColorOptions.length > 1 || isStorage;
+
   return (
     <>
-      {/* Selector de color - Solo mostrar si hay opciones válidas */}
-      {validColorOptions.length > 0 && (
+      {/* Selector de color - Mostrar si hay múltiples colores o si es producto de almacenamiento (GB/TB) */}
+      {shouldShowColorSelector && validColorOptions.length > 0 && (
         <>
           <section className="mb-8">
             <p className="block text-base text-[#222] font-semibold mb-4">
@@ -117,12 +145,12 @@ export default function ProductSelectors({
         </>
       )}
 
-      {/* Selector de almacenamiento - Solo mostrar si hay opciones válidas */}
+      {/* Selector de almacenamiento/tamaño - Solo mostrar si hay opciones válidas */}
       {validStorageOptions.length > 0 && (
         <>
           <section className="mb-8">
             <p className="block text-base text-[#222] font-semibold mb-5">
-              Elige tu Almacenamiento
+              {storageLabel}
             </p>
             <div className="grid grid-cols-2 gap-4">
               {variantsLoading ? (

@@ -304,9 +304,9 @@ export default function InicioDeSoportePage() {
                         "font-bold text-gray-900",
                         result.obtenerDocumentosResult.documentos.every(
                           (r) => r.valor === "0,0000"
-                        ) !== true
-                          ? "text-5xl"
-                          : "text-3xl"
+                        ) === true
+                          ? "text-3xl"
+                          : "text-5xl"
                       )}
                     >
                       {(() => {

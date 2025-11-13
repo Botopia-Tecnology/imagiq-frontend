@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { apiClient } from "@/lib/api";
+import { SupportOrderResponse } from "@/types/support";
 import { useState } from "react";
 
 export default function InicioDeSoportePage() {
@@ -8,6 +10,7 @@ export default function InicioDeSoportePage() {
   const [errors, setErrors] = useState<{ cedula?: string; orden?: string }>({});
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
+  const [result, setResult] = useState<SupportOrderResponse | null>(null);
 
   const validate = () => {
     const e: { cedula?: string; orden?: string } = {};
@@ -27,14 +30,30 @@ export default function InicioDeSoportePage() {
     setSuccess("");
     if (!validate()) return;
     setLoading(true);
-    // Simular envío async; reemplazar por fetch/axios a la API real.
+
     try {
+      // Simular retardo
       await new Promise((r) => setTimeout(r, 900));
+
       console.log("Enviando solicitud de soporte:", { cedula, orden });
-      setSuccess("Solicitud enviada correctamente. Te contactaremos pronto.");
+
+      // Esperar la respuesta real de la API
+      const response = await apiClient.post<SupportOrderResponse>(
+        "/api/orders/support-order",
+        {
+          numero_cedula: cedula,
+          referencia: orden,
+        }
+      );
+
+      setResult(response.data);
       setCedula("");
       setOrden("");
       setErrors({});
+      setSuccess("Solicitud enviada correctamente.");
+    } catch (err) {
+      console.error(err);
+      setSuccess("Ocurrió un error al enviar la solicitud.");
     } finally {
       setLoading(false);
     }
@@ -45,31 +64,32 @@ export default function InicioDeSoportePage() {
       className="min-h-screen bg-cover bg-center flex items-center justify-center p-6"
       style={{ backgroundImage: "url('/images/fondo_soporte.jpg')" }}
     >
-      <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-xl w-full max-w-3xl mx-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-          <div className="md:pr-4">
+      <div className="bg-white/95 backdrop-blur-sm rounded-xl p-6 shadow-xl w-full max-w-4xl mx-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+          {/* Columna izquierda: formulario */}
+          <div className="lg:col-span-1">
             <h1 className="text-2xl md:text-3xl font-bold mb-2">
               Inicio de Soporte
             </h1>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm text-muted-foreground mb-6">
               Ingresa tu cédula y el número de orden para crear la solicitud de
               soporte. Responderemos a la mayor brevedad.
             </p>
 
             {success && (
-              <output className="mb-4 rounded-md bg-emerald-50 border border-emerald-100 p-3 text-emerald-800">
+              <span className="mb-6 w-full text-xs rounded-md bg-emerald-50 border border-emerald-100 p-3 text-emerald-800 block">
                 {success}
-              </output>
+              </span>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4" noValidate>
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+              {/* Campo Cédula */}
               <div>
                 <label htmlFor="cedula" className="block text-sm font-medium">
                   Número de cédula
                 </label>
                 <div className="mt-1 relative">
                   <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                    {/* icono simple */}
                     <svg
                       width="20"
                       height="20"
@@ -118,6 +138,7 @@ export default function InicioDeSoportePage() {
                 )}
               </div>
 
+              {/* Campo Orden */}
               <div>
                 <label htmlFor="orden" className="block text-sm font-medium">
                   Número de orden
@@ -175,12 +196,13 @@ export default function InicioDeSoportePage() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2">
+              {/* Botones */}
+              <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <button
                     type="submit"
                     disabled={loading}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-black text-white rounded-lg hover:bg-neutral-800 font-semibold shadow-sm transition disabled:opacity-60"
+                    className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2 px-6 py-3 bg-black text-white rounded-lg hover:bg-neutral-800 font-semibold shadow-md transition disabled:opacity-60"
                   >
                     {loading ? (
                       <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
@@ -210,23 +232,29 @@ export default function InicioDeSoportePage() {
                       setOrden("");
                       setErrors({});
                       setSuccess("");
+                      setResult(null);
                     }}
-                    className="px-3 py-2 border rounded-lg text-sm hover:bg-gray-50"
+                    className="px-4 py-3 border border-gray-300 rounded-lg text-sm font-medium hover:bg-gray-50 transition"
                   >
                     Limpiar
                   </button>
                 </div>
 
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground w-full sm:w-auto text-right hidden sm:block">
                   Los datos se usan solo para procesar tu solicitud.
                 </p>
               </div>
+
+              <p className="text-xs text-muted-foreground sm:hidden">
+                Los datos se usan solo para procesar tu solicitud.
+              </p>
             </form>
           </div>
 
-          <div className="hidden md:block border-l pl-6">
-            <h3 className="text-lg font-semibold mb-2">Consejos</h3>
-            <ul className="list-disc pl-5 text-sm space-y-2 text-muted-foreground">
+          {/* Columna central: Recomendaciones */}
+          <div className="lg:col-span-1">
+            <h3 className="text-lg font-semibold mb-4">Consejos</h3>
+            <ul className="list-disc pl-5 text-sm space-y-3 text-muted-foreground">
               <li>Asegúrate de ingresar la cédula sin puntos ni guiones.</li>
               <li>
                 El número de orden lo encuentras en el correo de confirmación.
@@ -238,6 +266,50 @@ export default function InicioDeSoportePage() {
           </div>
         </div>
       </div>
+
+      {/* Card de pago: Fuera del grid, aparece abajo cuando hay resultado */}
+      {result && (
+        <div className="mt-8">
+          <div className="bg-linear-to-br from-blue-50 to-blue-100 p-8 rounded-lg border border-blue-200 shadow-md">
+            <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-4">
+              Resumen de pago
+            </p>
+            <div className="mb-8">
+              <p className="text-sm text-blue-900 mb-2">Monto a pagar:</p>
+              <p className="text-5xl font-bold text-blue-900">
+                {(() => {
+                  const documentos =
+                    result?.obtenerDocumentosResult?.documentos;
+                  const doc = documentos?.find(
+                    (d) => d?.valor && d.valor !== "0,0000"
+                  );
+                  const raw = doc?.valor;
+                  if (!raw) return "No disponible";
+
+                  const normalized = raw
+                    .replaceAll(".", "")
+                    .replaceAll(",", ".");
+                  const value = Number(normalized);
+                  if (Number.isNaN(value)) return raw;
+
+                  const formatted = value.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  });
+
+                  return `$${formatted}`;
+                })()}
+              </p>
+            </div>
+            <button
+              type="button"
+              className="w-full inline-flex items-center justify-center px-6 py-4 bg-linear-to-r from-blue-600 to-blue-700 text-white rounded-lg hover:from-blue-700 hover:to-blue-800 font-bold shadow-md transition transform hover:scale-105"
+            >
+              Ir a pagar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

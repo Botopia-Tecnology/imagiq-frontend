@@ -2,6 +2,7 @@
  * Hook para pre-cargar los menús de todas las categorías dinámicas
  * cuando se carga la página. Los menús se cargan en paralelo para
  * mejorar el tiempo de respuesta cuando el usuario hace hover.
+ * También precarga todos los submenús de todos los menús.
  */
 
 import { useEffect, useState, useRef } from 'react';
@@ -27,6 +28,8 @@ export function usePreloadCategoryMenus() {
   const [loadingStates, setLoadingStates] = useState<LoadingState>({});
   // Ref para rastrear qué categorías ya están siendo procesadas
   const processingRef = useRef<Set<string>>(new Set());
+  // Ref para rastrear si ya se precargaron los submenús
+  const submenusPreloadedRef = useRef<boolean>(false);
 
   useEffect(() => {
     // Esperar a que las categorías se carguen
@@ -68,7 +71,9 @@ export function usePreloadCategoryMenus() {
         setLoadingStates((prev) => ({ ...prev, ...loadingUpdates }));
       }
 
-      // Crear promesas para cargar menús en paralelo
+      // Crear promesas para cargar menús en paralelo y recopilar los menús cargados
+      const allLoadedMenus: Menu[] = [];
+      
       categoriesToLoad.forEach((category) => {
         if (!category.uuid) return;
 
@@ -76,10 +81,13 @@ export function usePreloadCategoryMenus() {
           .getMenusByCategory(category.uuid)
           .then((response) => {
             if (response.success && response.data) {
+              // Guardar en estado
               setPreloadedMenus((prev) => ({
                 ...prev,
                 [category.uuid]: response.data,
               }));
+              // Recopilar para precargar submenús
+              allLoadedMenus.push(...response.data);
             }
           })
           .catch((error) => {
@@ -99,6 +107,49 @@ export function usePreloadCategoryMenus() {
 
       // Esperar a que todas las peticiones terminen (o fallen)
       await Promise.allSettled(menuPromises);
+
+      // Una vez que todos los menús estén cargados, precargar submenús
+      // Verificar si ya se precargaron los submenús para evitar ejecuciones múltiples
+      if (!submenusPreloadedRef.current) {
+        submenusPreloadedRef.current = true;
+
+        // Pre-cargar submenús de todos los menús activos en paralelo
+        const submenuPromises: Array<Promise<unknown>> = [];
+
+        // Recopilar todos los menús activos: los que acabamos de cargar + los que ya estaban precargados
+        const allMenusToProcess = [
+          ...allLoadedMenus,
+          ...Object.values(preloadedMenus).flat()
+        ];
+
+        // Usar un Set para evitar duplicados por UUID
+        const processedMenuUuids = new Set<string>();
+
+        allMenusToProcess.forEach((menu) => {
+          // Solo precargar submenús de menús activos que tengan UUID y que no hayamos procesado
+          if (menu.activo && menu.uuid && !processedMenuUuids.has(menu.uuid)) {
+            processedMenuUuids.add(menu.uuid);
+            
+            const promise = menusEndpoints
+              .getSubmenus(menu.uuid)
+              .then(() => {
+                // Ignorar el resultado, solo precargar
+              })
+              .catch((error) => {
+                // Silenciar errores en precarga - no afectar la UX
+                console.debug(`[PreloadSubmenus] Error silencioso para menú ${menu.uuid}:`, error);
+              });
+
+            submenuPromises.push(promise);
+          }
+        });
+
+        // Esperar a que todas las peticiones terminen (o fallen)
+        // No bloquear la UI, ejecutar en background
+        Promise.allSettled(submenuPromises).then(() => {
+          console.debug('[PreloadSubmenus] Todos los submenús precargados');
+        });
+      }
     };
 
     loadAllMenus();

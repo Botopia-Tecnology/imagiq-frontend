@@ -107,8 +107,8 @@ export default function ProductSelectors({
 
   return (
     <>
-      {/* Selector de color - Solo mostrar si hay más de una opción válida */}
-      {validColorOptions.length > 1 && (
+      {/* Selector de color - Solo mostrar si hay opciones válidas */}
+      {validColorOptions.length > 0 && (
         <>
           <section className="mb-8">
             <p className="block text-base text-[#222] font-semibold mb-4">

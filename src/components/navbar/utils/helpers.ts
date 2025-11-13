@@ -1,9 +1,7 @@
-import type { DropdownName } from "../types";
-import type { NavItem } from "../types";
+import type { DropdownName, NavItem } from "../types";
 
 const STATIC_DROPDOWNS: readonly DropdownName[] = [
   "Ofertas",
-  "Soporte",
 ] as const;
 
 /**

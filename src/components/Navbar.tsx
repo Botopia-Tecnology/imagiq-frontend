@@ -12,7 +12,6 @@ import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 import { useHeroContext } from "@/contexts/HeroContext";
 import OfertasDropdown from "./dropdowns/ofertas";
-import SoporteDropdown from "./dropdowns/soporte";
 import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import { useAuthContext } from "@/features/auth/context";
@@ -70,8 +69,6 @@ export default function Navbar() {
     switch (name) {
       case "Ofertas":
         return <OfertasDropdown {...props} />;
-      case "Soporte":
-        return <SoporteDropdown {...props} />;
       default:
         return null;
     }

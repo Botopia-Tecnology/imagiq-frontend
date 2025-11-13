@@ -140,7 +140,7 @@ export function useVisibleCategories() {
       href: "/soporte/inicio_de_soporte",
       category: "soporte",
       categoryCode: "soporte",
-      dropdownName: "Soporte", // Tiene dropdown
+      dropdownName: undefined, // Sin dropdown, redirige directamente
       uuid: "soporte",
       totalProducts: 0,
       orden: 1001

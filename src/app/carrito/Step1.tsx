@@ -359,12 +359,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       // Mapear ProductApiData a CartProduct
       const cartProduct = {
         id: producto.codigoMarketBase,
-        name: producto.desDetallada[0] || producto.nombreMarket,
+        name: producto.desDetallada[0] || producto.nombreMarket?.[0] || '',
         image: getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog"),
         price: producto.precioeccommerce[0] || producto.precioNormal[0],
         sku: producto.sku[0] || "",
         ean: producto.ean[0] || "",
-        desDetallada: producto.desDetallada[0] || producto.nombreMarket,
+        desDetallada: producto.desDetallada[0] || producto.nombreMarket?.[0] || '',
       };
 
       // Agregar al carrito

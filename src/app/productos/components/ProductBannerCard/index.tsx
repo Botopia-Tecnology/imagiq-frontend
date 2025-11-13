@@ -35,7 +35,7 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
   };
 
   return (
-    <div className="relative w-full aspect-[3/4] overflow-hidden rounded-lg bg-gray-100 group shadow-sm hover:shadow-lg transition-shadow">
+    <div className="relative w-full max-w-[350px] mx-auto aspect-[5/9] overflow-hidden rounded-lg bg-gray-100 group shadow-sm hover:shadow-lg transition-shadow">
       {/* Media de fondo */}
       <BannerMedia
         videoUrl={config.desktop_video_url}

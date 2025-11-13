@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { apiClient } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { Documento, SupportOrderResponse } from "@/types/support";
 import Link from "next/link";
 import { useState } from "react";
@@ -298,7 +299,16 @@ export default function InicioDeSoportePage() {
                   </p>
                   <div className="mb-8 grow">
                     <p className="text-sm text-gray-900 mb-2">Monto a pagar:</p>
-                    <p className="text-5xl font-bold text-gray-900">
+                    <p
+                      className={cn(
+                        "font-bold text-gray-900",
+                        result.obtenerDocumentosResult.documentos.every(
+                          (r) => r.valor === "0,0000"
+                        ) !== true
+                          ? "text-5xl"
+                          : "text-3xl"
+                      )}
+                    >
                       {(() => {
                         const documentos =
                           result?.obtenerDocumentosResult?.documentos;
@@ -306,7 +316,7 @@ export default function InicioDeSoportePage() {
                           (d) => d?.valor && d.valor !== "0,0000"
                         );
                         const raw = doc?.valor;
-                        if (!raw) return "No disponible";
+                        if (!raw) return "Aún no tenemos esta información";
 
                         const normalized = raw
                           .replaceAll(".", "")
@@ -323,36 +333,36 @@ export default function InicioDeSoportePage() {
                       })()}
                     </p>
                   </div>
-                  <div className="w-full flex flex-col gap-2">
-                    <Link
-                      href={
-                        result.obtenerDocumentosResult.documentos.find(
-                          (r) => r.valor !== "0,0000"
-                        )?.url || "#"
-                      }
-                      className="w-full rounded-xl inline-flex items-center justify-center px-4 py-2 bg-white text-gray-900 border border-gray-950 font-bold shadow-md transition transform hover:scale-105"
-                    >
-                      Descargar factura
-                    </Link>
-                    <Button
-                      disabled={
-                        result.obtenerDocumentosResult.documentos.every(
-                          (r) => r.valor === "0,0000"
-                        ) === undefined
-                      }
-                      onClick={() =>
-                        handlePaySubmit(
+                  {result.obtenerDocumentosResult.documentos.every(
+                    (r) => r.valor === "0,0000"
+                  ) !== true && (
+                    <div className="w-full flex flex-col gap-2">
+                      <Link
+                        href={
                           result.obtenerDocumentosResult.documentos.find(
                             (r) => r.valor !== "0,0000"
-                          )!
-                        )
-                      }
-                      type="button"
-                      className="w-full inline-flex items-center justify-center px-6 py-4 bg-black text-white rounded-lg font-bold shadow-md transition transform hover:scale-105"
-                    >
-                      Ir a pagar
-                    </Button>
-                  </div>
+                          )?.url || "#"
+                        }
+                        className="w-full rounded-xl inline-flex items-center justify-center px-4 py-2 bg-white text-gray-900 border border-gray-950 font-bold shadow-md transition transform hover:scale-105"
+                      >
+                        Descargar factura
+                      </Link>
+
+                      <Button
+                        onClick={() =>
+                          handlePaySubmit(
+                            result.obtenerDocumentosResult.documentos.find(
+                              (r) => r.valor !== "0,0000"
+                            )!
+                          )
+                        }
+                        type="button"
+                        className="w-full inline-flex items-center justify-center px-6 py-4 bg-black text-white rounded-lg font-bold shadow-md transition transform hover:scale-105"
+                      >
+                        Ir a pagar
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -46,7 +46,7 @@ export default function InicioDeSoportePage() {
       desDetallada: "0",
       quantity: 1,
     };
-   console.log("Agregando al carrito:", cartItem)
+    console.log("Agregando al carrito:", cartItem);
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -335,6 +335,11 @@ export default function InicioDeSoportePage() {
                       Descargar factura
                     </Link>
                     <Button
+                      disabled={
+                        result.obtenerDocumentosResult.documentos.every(
+                          (r) => r.valor === "0,0000"
+                        ) === undefined
+                      }
                       onClick={() =>
                         handlePaySubmit(
                           result.obtenerDocumentosResult.documentos.find(

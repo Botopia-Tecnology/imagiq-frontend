@@ -316,7 +316,11 @@ export default function InicioDeSoportePage() {
                           (d) => d?.valor && d.valor !== "0,0000"
                         );
                         const raw = doc?.valor;
-                        if (!raw) return "Aún no tenemos esta información";
+                        if (!raw)
+                          return (
+                            documentos.findLast((p) => p.valor === "0,0000")
+                              ?.estadoNombre || "Pronto tendremos tu información!"
+                          );
 
                         const normalized = raw
                           .replaceAll(".", "")

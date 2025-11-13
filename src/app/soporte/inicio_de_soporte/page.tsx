@@ -46,7 +46,7 @@ export default function InicioDeSoportePage() {
       desDetallada: "0",
       quantity: 1,
     };
-    localStorage.setItem("cart-items", JSON.stringify([cartItem]));
+   console.log("Agregando al carrito:", cartItem)
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

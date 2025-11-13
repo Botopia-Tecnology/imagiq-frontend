@@ -300,21 +300,25 @@ export default function InicioDeSoportePage() {
         onClose={() => setIsModalOpen(false)}
         size="lg"
       >
-        <div className="p-8">
-          <h2 className="text-2xl font-bold mb-6">Resumen de tu consulta</h2>
+        <div className="p-4 md:p-8">
+          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">
+            Resumen de tu consulta
+          </h2>
 
           {result && (
-            <div className="space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-                <p className="text-sm text-blue-900 mb-2">Monto a pagar:</p>
+            <div className="space-y-4 md:space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
+                <p className="text-xs md:text-sm text-blue-900 mb-2">
+                  Monto a pagar:
+                </p>
                 <p
                   className={cn(
-                    "font-bold text-blue-900",
+                    "font-bold text-blue-900 overflow-wrap-break-word",
                     result.obtenerDocumentosResult.documentos.every(
                       (r) => r.valor === "0,0000"
                     ) === true
-                      ? "text-3xl"
-                      : "text-5xl"
+                      ? "text-2xl md:text-3xl"
+                      : "text-3xl md:text-5xl"
                   )}
                 >
                   {(() => {
@@ -349,14 +353,14 @@ export default function InicioDeSoportePage() {
               {result.obtenerDocumentosResult.documentos.every(
                 (r) => r.valor === "0,0000"
               ) !== true && (
-                <div className="w-full flex flex-col gap-3">
+                <div className="w-full flex flex-col gap-2 md:gap-3">
                   <Link
                     href={
                       result.obtenerDocumentosResult.documentos.find(
                         (r) => r.valor !== "0,0000"
                       )?.url || "#"
                     }
-                    className="w-full rounded-lg inline-flex items-center justify-center px-4 py-3 bg-white text-gray-900 border border-gray-950 font-bold shadow-md transition transform hover:scale-105"
+                    className="w-full rounded-lg inline-flex items-center justify-center px-3 md:px-4 py-2 md:py-3 bg-white text-gray-900 border border-gray-950 font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
                   >
                     Descargar factura
                   </Link>
@@ -370,7 +374,7 @@ export default function InicioDeSoportePage() {
                       )
                     }
                     type="button"
-                    className="w-full px-6 py-3 bg-black text-white rounded-lg font-bold shadow-md transition transform hover:scale-105"
+                    className="w-full px-4 md:px-6 py-2 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
                   >
                     Ir a pagar
                   </Button>
@@ -380,7 +384,7 @@ export default function InicioDeSoportePage() {
               <Button
                 onClick={() => setIsModalOpen(false)}
                 variant="outline"
-                className="w-full"
+                className="w-full text-sm md:text-base"
               >
                 Cerrar
               </Button>

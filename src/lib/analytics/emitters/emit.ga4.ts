@@ -79,12 +79,13 @@ export async function sendGa4(event: GA4Event, userData?: GA4UserData): Promise<
 
       // Agregar user_data hasheados según el formato de Enhanced Conversions
       // https://support.google.com/google-ads/answer/9888656
+      // Nota: Los datos ya vienen hasheados con SHA-256, pero usamos nombres genéricos
       eventData.user_data = {
-        sha256_email_address: hashedData.em,
-        sha256_phone_number: hashedData.ph,
+        email_address: hashedData.em,
+        phone_number: hashedData.ph,
         address: {
-          sha256_first_name: hashedData.fn,
-          sha256_last_name: hashedData.ln,
+          first_name: hashedData.fn,
+          last_name: hashedData.ln,
           city: hashedData.ct,
           region: hashedData.st,
           country: hashedData.country,

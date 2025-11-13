@@ -33,9 +33,14 @@ export const MobileMenu: FC<Props> = ({
 }) => {
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
   const [activeMenus, setActiveMenus] = useState<Menu[] | null>(null);
-  const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(null);
-  const [activeCategoryVisibleName, setActiveCategoryVisibleName] = useState<string | null>(null);
-  const [activeDropdownName, setActiveDropdownName] = useState<DropdownName | null>(null);
+  const [activeCategoryCode, setActiveCategoryCode] = useState<string | null>(
+    null
+  );
+  const [activeCategoryVisibleName, setActiveCategoryVisibleName] = useState<
+    string | null
+  >(null);
+  const [activeDropdownName, setActiveDropdownName] =
+    useState<DropdownName | null>(null);
 
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   const { getMenus, isLoading } = usePreloadCategoryMenus();
@@ -46,7 +51,9 @@ export const MobileMenu: FC<Props> = ({
   // Sincronizar activeMenus cuando los menús precargados estén disponibles
   useEffect(() => {
     if (activeSubmenu && activeCategoryCode) {
-      const activeItem = menuRoutes.find(route => route.name === activeSubmenu);
+      const activeItem = menuRoutes.find(
+        (route) => route.name === activeSubmenu
+      );
       if (activeItem?.uuid) {
         const categoryUuid = activeItem.uuid;
         const menus = getMenus(categoryUuid);
@@ -60,7 +67,15 @@ export const MobileMenu: FC<Props> = ({
 
   if (!isOpen) return null;
 
-  const handleMenuItemClick = (item: MenuItem & { menus?: Menu[]; categoryCode?: string; uuid?: string; dropdownName?: string; categoryVisibleName?: string }) => {
+  const handleMenuItemClick = (
+    item: MenuItem & {
+      menus?: Menu[];
+      categoryCode?: string;
+      uuid?: string;
+      dropdownName?: string;
+      categoryVisibleName?: string;
+    }
+  ) => {
     if (item.hasDropdown) {
       const dropdownKey = item.dropdownName || item.name;
       // Si es una categoría estática (Ofertas, Soporte)
@@ -77,10 +92,10 @@ export const MobileMenu: FC<Props> = ({
         const menusLoading = isLoading(categoryUuid);
 
         // Primero establecer el estado del submenú activo
-        setActiveCategoryCode(item.categoryCode || '');
+        setActiveCategoryCode(item.categoryCode || "");
         setActiveCategoryVisibleName(item.categoryVisibleName || null);
         setActiveSubmenu(item.name);
-        
+
         // Si ya hay menús precargados, establecerlos inmediatamente
         if (cachedMenus && cachedMenus.length > 0) {
           setActiveMenus(cachedMenus);
@@ -105,10 +120,7 @@ export const MobileMenu: FC<Props> = ({
         case "Ofertas":
           return (
             <div className="flex-1 overflow-y-auto">
-              <OfertasDropdown
-                isMobile={true}
-                onItemClick={() => onClose()}
-              />
+              <OfertasDropdown isMobile={true} onItemClick={() => onClose()} />
             </div>
           );
         default:
@@ -118,7 +130,9 @@ export const MobileMenu: FC<Props> = ({
 
     // Si es una categoría dinámica con menús de API
     if (activeCategoryCode) {
-      const activeItem = menuRoutes.find(route => route.name === activeSubmenu);
+      const activeItem = menuRoutes.find(
+        (route) => route.name === activeSubmenu
+      );
       const categoryUuid = activeItem?.uuid;
       const menusToPass = activeMenus || [];
       // Verificar si están cargando usando el hook de precarga

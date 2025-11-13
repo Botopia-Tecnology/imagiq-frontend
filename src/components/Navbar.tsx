@@ -36,7 +36,7 @@ export default function Navbar() {
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
   const { getMenus, isLoading, prioritizeCategory } = usePreloadCategoryMenus();
-  
+
   // Hook para prefetch de productos cuando el usuario hace hover sobre categorías
   const { prefetchWithDebounce, cancelPrefetch } = usePrefetchProducts();
 
@@ -106,23 +106,24 @@ export default function Navbar() {
   }, [navbar]);
 
   // Variables derivadas para sincronizar con HeroContext
-  const useHeroTheme = (navbar.isOfertas || navbar.isHome) && !navbar.isScrolled;
+  const useHeroTheme =
+    (navbar.isOfertas || navbar.isHome) && !navbar.isScrolled;
 
   // Si hay un dropdown activo, forzar todo a negro
   const shouldShowWhiteLogo = navbar.activeDropdown
     ? false
     : useHeroTheme
-      ? theme === 'light'
-      : navbar.showWhiteLogo;
+    ? theme === "light"
+    : navbar.showWhiteLogo;
 
   const shouldShowWhiteItems = navbar.activeDropdown
     ? false
     : useHeroTheme
-      ? theme === 'light'
-      : navbar.showWhiteItems;
+    ? theme === "light"
+    : navbar.showWhiteItems;
 
   const shouldShowWhiteItemsMobile = useHeroTheme
-    ? theme === 'light'
+    ? theme === "light"
     : navbar.showWhiteItemsMobile;
 
   const getIconColorClasses = (forMobile = false): string => {
@@ -142,7 +143,7 @@ export default function Navbar() {
 
     // Si estamos en home u ofertas sin scroll, usar tema del Hero
     if (useHeroTheme) {
-      return theme === 'light' ? "text-white" : "text-black";
+      return theme === "light" ? "text-white" : "text-black";
     }
 
     // Fallback a comportamiento por defecto
@@ -331,7 +332,7 @@ export default function Navbar() {
                                 prioritizeCategory(item.uuid);
                               }
                             }
-                            
+
                             // Prefetch productos de la categoría base cuando hay categoryCode
                             // Esto mejora la velocidad percibida al hacer clic en la categoría
                             if (item.categoryCode) {
@@ -345,7 +346,7 @@ export default function Navbar() {
                           }}
                           onMouseLeave={() => {
                             navbar.handleDropdownLeave();
-                            
+
                             // Cancelar prefetch cuando el usuario deja de hacer hover
                             if (item.categoryCode) {
                               cancelPrefetch({

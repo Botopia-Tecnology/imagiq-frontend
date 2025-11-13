@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { Button } from "@/components/ui/button";
+import Modal from "@/components/ui/Modal";
 import { apiClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Documento, SupportOrderResponse } from "@/types/support";
@@ -14,6 +15,7 @@ export default function InicioDeSoportePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [result, setResult] = useState<SupportOrderResponse | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const validate = () => {
     const e: { cedula?: string; orden?: string } = {};
@@ -75,6 +77,7 @@ export default function InicioDeSoportePage() {
       setOrden("");
       setErrors({});
       setSuccess("Solicitud enviada correctamente.");
+      setIsModalOpen(true);
     } catch (err) {
       console.error(err);
       setSuccess("Ocurrió un error al enviar la solicitud.");
@@ -275,104 +278,116 @@ export default function InicioDeSoportePage() {
             </form>
           </div>
 
-          {/* Columna central: Recomendaciones y Pago */}
+          {/* Columna derecha: Consejos */}
           <div className="lg:col-span-1 flex flex-col">
-            <div className="mb-8">
-              <h3 className="text-lg font-semibold mb-4">Consejos</h3>
-              <ul className="list-disc pl-5 text-sm space-y-3 text-muted-foreground">
-                <li>Asegúrate de ingresar la cédula sin puntos ni guiones.</li>
-                <li>
-                  El número de orden lo encuentras en el correo de confirmación.
-                </li>
-                <li>
-                  Si necesitas ayuda urgente, contacta al soporte telefónico.
-                </li>
-              </ul>
-            </div>
-
-            {/* Card de pago: Dentro del grid */}
-            {result && (
-              <div className="grow flex flex-col">
-                <div className=" p-8 rounded-lg border border-blue-200 shadow-md flex flex-col h-full">
-                  <p className="text-xs font-semibold text-black uppercase tracking-wide mb-4">
-                    Resumen de pago
-                  </p>
-                  <div className="mb-8 grow">
-                    <p className="text-sm text-gray-900 mb-2">Monto a pagar:</p>
-                    <p
-                      className={cn(
-                        "font-bold text-gray-900",
-                        result.obtenerDocumentosResult.documentos.every(
-                          (r) => r.valor === "0,0000"
-                        ) === true
-                          ? "text-3xl"
-                          : "text-5xl"
-                      )}
-                    >
-                      {(() => {
-                        const documentos =
-                          result?.obtenerDocumentosResult?.documentos;
-                        const doc = documentos?.find(
-                          (d) => d?.valor && d.valor !== "0,0000"
-                        );
-                        const raw = doc?.valor;
-                        if (!raw)
-                          return (
-                            documentos.findLast((p) => p.valor === "0,0000")
-                              ?.estadoNombre || "Pronto tendremos tu información!"
-                          );
-
-                        const normalized = raw
-                          .replaceAll(".", "")
-                          .replaceAll(",", ".");
-                        const value = Number(normalized);
-                        if (Number.isNaN(value)) return raw;
-
-                        const formatted = value.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        });
-
-                        return `$${formatted}`;
-                      })()}
-                    </p>
-                  </div>
-                  {result.obtenerDocumentosResult.documentos.every(
-                    (r) => r.valor === "0,0000"
-                  ) !== true && (
-                    <div className="w-full flex flex-col gap-2">
-                      <Link
-                        href={
-                          result.obtenerDocumentosResult.documentos.find(
-                            (r) => r.valor !== "0,0000"
-                          )?.url || "#"
-                        }
-                        className="w-full rounded-xl inline-flex items-center justify-center px-4 py-2 bg-white text-gray-900 border border-gray-950 font-bold shadow-md transition transform hover:scale-105"
-                      >
-                        Descargar factura
-                      </Link>
-
-                      <Button
-                        onClick={() =>
-                          handlePaySubmit(
-                            result.obtenerDocumentosResult.documentos.find(
-                              (r) => r.valor !== "0,0000"
-                            )!
-                          )
-                        }
-                        type="button"
-                        className="w-full inline-flex items-center justify-center px-6 py-4 bg-black text-white rounded-lg font-bold shadow-md transition transform hover:scale-105"
-                      >
-                        Ir a pagar
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
+            <h3 className="text-lg font-semibold mb-4">Consejos</h3>
+            <ul className="list-disc pl-5 text-sm space-y-3 text-muted-foreground">
+              <li>Asegúrate de ingresar la cédula sin puntos ni guiones.</li>
+              <li>
+                El número de orden lo encuentras en el correo de confirmación.
+              </li>
+              <li>
+                Si necesitas ayuda urgente, contacta al soporte telefónico.
+              </li>
+            </ul>
           </div>
         </div>
       </div>
+
+      {/* Modal de Resultado */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        size="lg"
+      >
+        <div className="p-8">
+          <h2 className="text-2xl font-bold mb-6">Resumen de tu consulta</h2>
+
+          {result && (
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                <p className="text-sm text-blue-900 mb-2">Monto a pagar:</p>
+                <p
+                  className={cn(
+                    "font-bold text-blue-900",
+                    result.obtenerDocumentosResult.documentos.every(
+                      (r) => r.valor === "0,0000"
+                    ) === true
+                      ? "text-3xl"
+                      : "text-5xl"
+                  )}
+                >
+                  {(() => {
+                    const documentos =
+                      result?.obtenerDocumentosResult?.documentos;
+                    const doc = documentos?.find(
+                      (d) => d?.valor && d.valor !== "0,0000"
+                    );
+                    const raw = doc?.valor;
+                    if (!raw)
+                      return (
+                        documentos.findLast((p) => p.valor === "0,0000")
+                          ?.estadoNombre || "Pronto tendremos tu información!"
+                      );
+
+                    const normalized = raw
+                      .replaceAll(".", "")
+                      .replaceAll(",", ".");
+                    const value = Number(normalized);
+                    if (Number.isNaN(value)) return raw;
+
+                    const formatted = value.toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    });
+
+                    return `$${formatted}`;
+                  })()}
+                </p>
+              </div>
+
+              {result.obtenerDocumentosResult.documentos.every(
+                (r) => r.valor === "0,0000"
+              ) !== true && (
+                <div className="w-full flex flex-col gap-3">
+                  <Link
+                    href={
+                      result.obtenerDocumentosResult.documentos.find(
+                        (r) => r.valor !== "0,0000"
+                      )?.url || "#"
+                    }
+                    className="w-full rounded-lg inline-flex items-center justify-center px-4 py-3 bg-white text-gray-900 border border-gray-950 font-bold shadow-md transition transform hover:scale-105"
+                  >
+                    Descargar factura
+                  </Link>
+
+                  <Button
+                    onClick={() =>
+                      handlePaySubmit(
+                        result.obtenerDocumentosResult.documentos.find(
+                          (r) => r.valor !== "0,0000"
+                        )!
+                      )
+                    }
+                    type="button"
+                    className="w-full px-6 py-3 bg-black text-white rounded-lg font-bold shadow-md transition transform hover:scale-105"
+                  >
+                    Ir a pagar
+                  </Button>
+                </div>
+              )}
+
+              <Button
+                onClick={() => setIsModalOpen(false)}
+                variant="outline"
+                className="w-full"
+              >
+                Cerrar
+              </Button>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

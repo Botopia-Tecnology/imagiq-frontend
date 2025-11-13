@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ export default function CreateAccountPage() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [fromLogin, setFromLogin] = useState(false);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -45,6 +46,36 @@ export default function CreateAccountPage() {
 
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // useEffect para cargar datos si viene desde login
+  useEffect(() => {
+    const pendingData = sessionStorage.getItem("pending_registration_step2");
+    if (pendingData) {
+      try {
+        const data = JSON.parse(pendingData);
+        setFormData({
+          nombre: data.nombre || "",
+          apellido: data.apellido || "",
+          email: data.email || "",
+          telefono: data.telefono || "",
+          codigo_pais: "57",
+          tipo_documento: "CC",
+          numero_documento: data.numero_documento || "",
+          fecha_nacimiento: "",
+          contrasena: "",
+          confirmPassword: "",
+        });
+        setUserId(data.userId || null);
+        setFromLogin(true);
+        setCurrentStep(2); // Ir directo al paso 2
+        // Limpiar sessionStorage
+        sessionStorage.removeItem("pending_registration_step2");
+      } catch (err) {
+        console.error("Error al cargar datos pendientes:", err);
+      }
+    }
+  }, []);
 
   const validateStep1 = () => {
     if (!formData.nombre || !formData.apellido) {
@@ -55,8 +86,8 @@ export default function CreateAccountPage() {
       setError("Correo electrónico inválido");
       return false;
     }
-    if (!formData.telefono || formData.telefono.length < 10) {
-      setError("Teléfono inválido");
+    if (!formData.telefono || formData.telefono.length !== 10) {
+      setError("El teléfono debe tener exactamente 10 dígitos");
       return false;
     }
     if (!formData.numero_documento) {
@@ -147,12 +178,26 @@ export default function CreateAccountPage() {
           throw new Error("No se pudo conectar con el servidor");
         }
 
-        const result = await response.json() as { message?: string; userId?: string };
+        const result = await response.json() as {
+          message?: string;
+          userId?: string;
+          alreadyExists?: boolean;
+          canVerify?: boolean;
+        };
 
         if (!response.ok) {
+          // Si ya existe y puede verificar, pasar al paso 2
+          if (result.alreadyExists && result.canVerify) {
+            setError("");
+            setUserId(result.userId || null); // Guardar ID de usuario existente
+            setCurrentStep(2);
+            return;
+          }
           throw new Error(result.message || "Error al crear el usuario");
         }
 
+        // Éxito: guardar userId y continuar al paso 2
+        setUserId(result.userId || null);
         setCurrentStep(2);
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Error al crear usuario";
@@ -233,6 +278,79 @@ export default function CreateAccountPage() {
     router.push("/");
   };
 
+  const handleChangeEmail = async (newEmail: string) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/update-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId, // Usar userId en lugar de email
+          newEmail: newEmail,
+        }),
+      });
+
+      if (!response || typeof response.status !== "number") {
+        throw new Error("No se pudo conectar con el servidor");
+      }
+
+      const result = await response.json() as { message?: string };
+
+      if (!response.ok) {
+        throw new Error(result.message || "Error al actualizar email");
+      }
+
+      // Actualizar el email en el formulario
+      setFormData({ ...formData, email: newEmail });
+      setOtpSent(false); // Resetear estado de OTP
+      setOtpCode(""); // Limpiar código OTP anterior
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al actualizar email";
+      setError(msg);
+      await notifyError(msg, "Actualización fallida");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangePhone = async (newPhone: string) => {
+    setIsLoading(true);
+    setError("");
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/auth/update-phone`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: userId, // Usar userId en lugar de email
+          telefono: newPhone,
+          codigo_pais: formData.codigo_pais,
+        }),
+      });
+
+      if (!response || typeof response.status !== "number") {
+        throw new Error("No se pudo conectar con el servidor");
+      }
+
+      const result = await response.json() as { message?: string };
+
+      if (!response.ok) {
+        throw new Error(result.message || "Error al actualizar teléfono");
+      }
+
+      // Actualizar el teléfono en el formulario
+      setFormData({ ...formData, telefono: newPhone });
+      setOtpSent(false); // Resetear estado de OTP
+      setOtpCode(""); // Limpiar código OTP anterior
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al actualizar teléfono";
+      setError(msg);
+      await notifyError(msg, "Actualización fallida");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -247,10 +365,13 @@ export default function CreateAccountPage() {
         return (
           <OTPStep
             email={formData.email}
+            telefono={formData.telefono}
             otpCode={otpCode}
             otpSent={otpSent}
             onOTPChange={setOtpCode}
             onSendOTP={handleSendOTP}
+            onChangeEmail={handleChangeEmail}
+            onChangePhone={handleChangePhone}
             disabled={isLoading}
           />
         );
@@ -326,7 +447,8 @@ export default function CreateAccountPage() {
               )}
 
               <div className="flex gap-3 pt-4">
-                {currentStep > 1 && (
+                {/* Botón Atrás solo en paso 1 y pasos opcionales (3, 4) */}
+                {currentStep > 1 && currentStep !== 2 && (
                   <Button
                     type="button"
                     variant="outline"

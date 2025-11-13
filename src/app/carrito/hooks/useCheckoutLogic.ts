@@ -118,6 +118,61 @@ export function useCheckoutLogic() {
   //   }
   // }, []);
 
+  // Función para validar y guardar datos de pago (sin procesar aún)
+  const handleSavePaymentData = async (e: React.FormEvent) => {
+    e.preventDefault();
+    let valid = true;
+    setError("");
+
+    // Validar método de pago
+    if (!paymentMethod) {
+      setError("Selecciona un método de pago");
+      valid = false;
+    }
+
+    // Validar campos de tarjeta si corresponde
+    if (paymentMethod === "tarjeta") {
+      // Si usa una tarjeta guardada, no validar campos
+      if (!selectedCardId || useNewCard) {
+        const validation = validateCardFields(card, isAmex);
+        setCardErrors(validation.errors);
+        valid = !validation.hasError && valid;
+      }
+      // Si usa tarjeta guardada, verificar que haya seleccionado una
+      else if (!selectedCardId) {
+        setError("Debes seleccionar una tarjeta o agregar una nueva");
+        valid = false;
+      }
+    }
+
+    // Validar banco si se seleccionó PSE
+    if (paymentMethod === "pse" && !selectedBank) {
+      setError("Debes seleccionar un banco para pagar con PSE");
+      valid = false;
+    }
+
+    // Si hay errores, no continuar
+    if (!valid) {
+      return false;
+    }
+
+    // Guardar datos en localStorage para usarlos después
+    localStorage.setItem("checkout-payment-method", paymentMethod);
+
+    if (paymentMethod === "tarjeta") {
+      if (selectedCardId && !useNewCard) {
+        localStorage.setItem("checkout-saved-card-id", selectedCardId);
+        localStorage.setItem("checkout-card-installments", card.installments || "1");
+      } else {
+        localStorage.setItem("checkout-card-data", JSON.stringify(card));
+      }
+    } else if (paymentMethod === "pse") {
+      localStorage.setItem("checkout-selected-bank", selectedBank);
+    }
+
+    return true;
+  };
+
   // Función principal de finalización de compra
   const handleFinish = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -372,6 +427,7 @@ export function useCheckoutLogic() {
     handleBankChange,
     handleBillingTypeChange,
     handleFinish,
+    handleSavePaymentData,
 
     // Handlers de tarjetas guardadas
     handleCardSelect,

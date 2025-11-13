@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect } from "react";
 import { Plus, Check, CreditCard } from "lucide-react";
-import { PaymentCardData } from "@/services/profile.service";
+import { DBCard } from "@/features/profile/types";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
 
 interface SavedCardsSelectorProps {
   userId: string;
-  cards: PaymentCardData[];
+  cards: DBCard[];
   selectedCardId: string | null;
   onCardSelect: (cardId: string) => void;
   onAddNewCard: () => void;
@@ -22,15 +22,27 @@ const SavedCardsSelector: React.FC<SavedCardsSelectorProps> = ({
   onAddNewCard,
   isLoading = false,
 }) => {
+  // Debug: Log cuando cambian las tarjetas
+  useEffect(() => {
+    console.log("🎴 [SavedCardsSelector] Tarjetas recibidas:", cards);
+    console.log("🎴 [SavedCardsSelector] Cantidad:", cards?.length || 0);
+    console.log("🎴 [SavedCardsSelector] Usuario ID:", userId);
+    console.log("🎴 [SavedCardsSelector] Tarjeta seleccionada actual:", selectedCardId);
+  }, [cards, userId, selectedCardId]);
+
   // Auto-seleccionar la tarjeta predeterminada al montar
   useEffect(() => {
+    console.log("🔄 [SavedCardsSelector] Intentando auto-seleccionar tarjeta...");
     if (!selectedCardId && cards.length > 0) {
       const defaultCard = cards.find((card) => card.es_predeterminada);
+      console.log("🔍 [SavedCardsSelector] Tarjeta predeterminada encontrada:", defaultCard);
       if (defaultCard) {
-        onCardSelect(defaultCard.id.toString());
+        console.log("✅ [SavedCardsSelector] Seleccionando tarjeta predeterminada:", defaultCard.id);
+        onCardSelect(String(defaultCard.id));
       } else {
         // Si no hay predeterminada, seleccionar la primera
-        onCardSelect(cards[0].id.toString());
+        console.log("⚠️ [SavedCardsSelector] No hay predeterminada, seleccionando primera tarjeta:", cards[0].id);
+        onCardSelect(String(cards[0].id));
       }
     }
   }, [cards, selectedCardId, onCardSelect]);
@@ -99,13 +111,13 @@ const SavedCardsSelector: React.FC<SavedCardsSelectorProps> = ({
       {/* Lista de tarjetas */}
       <div className="space-y-3">
         {activeCards.map((card) => {
-          const isSelected = selectedCardId === card.id.toString();
+          const isSelected = selectedCardId === String(card.id);
 
           return (
             <button
               key={card.id}
               type="button"
-              onClick={() => onCardSelect(card.id.toString())}
+              onClick={() => onCardSelect(String(card.id))}
               className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
                 isSelected
                   ? "border-black bg-gray-50"

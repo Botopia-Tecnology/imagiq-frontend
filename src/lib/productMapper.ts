@@ -53,9 +53,12 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
   // indRetoma es un array de 0 o 1, si al menos una variante tiene 1, acepta retoma
   const acceptsTradeIn = apiProduct.indRetoma?.some(value => value === 1) ?? false;
 
+  // Obtener el nombre del producto: usar el primer elemento de modelo o nombreMarket
+  const productName = (apiProduct.modelo?.[0] || apiProduct.nombreMarket?.[0] || '').trim();
+
   return {
     id,
-    name: apiProduct.modelo || apiProduct.nombreMarket,
+    name: productName,
     image,
     colors,
     capacities: capacities.length > 0 ? capacities : undefined,
@@ -390,19 +393,23 @@ export function groupProductsByCategory(products: ProductCardProps[]): Record<st
   };
 
   products.forEach(product => {
+    // Asegurar que name sea string (después del mapeo siempre debería serlo)
+    const productName = typeof product.name === 'string' ? product.name : String(product.name || '');
+    const nameLower = productName.toLowerCase();
+
     // Mapear categorías de la API a categorías del frontend
-    if (product.name.toLowerCase().includes('buds') ||
-      product.name.toLowerCase().includes('watch') ||
-      product.name.toLowerCase().includes('cargador') ||
-      product.name.toLowerCase().includes('funda')) {
+    if (nameLower.includes('buds') ||
+      nameLower.includes('watch') ||
+      nameLower.includes('cargador') ||
+      nameLower.includes('funda')) {
       grouped['accesorios'].push(product);
-    } else if (product.name.toLowerCase().includes('tv') ||
-      product.name.toLowerCase().includes('monitor') ||
-      product.name.toLowerCase().includes('soundbar')) {
+    } else if (nameLower.includes('tv') ||
+      nameLower.includes('monitor') ||
+      nameLower.includes('soundbar')) {
       grouped['tv-monitores-audio'].push(product);
-    } else if (product.name.toLowerCase().includes('galaxy') ||
-      product.name.toLowerCase().includes('tab') ||
-      product.name.toLowerCase().includes('celular')) {
+    } else if (nameLower.includes('galaxy') ||
+      nameLower.includes('tab') ||
+      nameLower.includes('celular')) {
       grouped['smartphones-tablets'].push(product);
     } else {
       grouped['electrodomesticos'].push(product);

@@ -143,14 +143,14 @@ export default function ProductCard({
     apiProduct || {
       codigoMarketBase: id,
       codigoMarket: [],
-      nombreMarket: name,
+      nombreMarket: [name],
       categoria: "",
       subcategoria: "",
-      modelo: "",
+      modelo: [name],
       color: [],
       capacidad: [],
       memoriaram: [],
-      descGeneral: null,
+      descGeneral: [],
       sku: [],
       ean: [],
       desDetallada: [],
@@ -190,7 +190,7 @@ export default function ProductCard({
   // DEBUG: Log para verificar capacidades en TV
   if (apiProduct?.categoria === 'AV' && process.env.NODE_ENV === 'development') {
     console.log('🔍 TV Product Debug:', {
-      modelo: apiProduct?.modelo,
+      modelo: apiProduct?.modelo?.[0],
       categoria: apiProduct?.categoria,
       showCapacitySelector,
       availableCapacities: productSelection.availableCapacities,
@@ -220,6 +220,21 @@ export default function ProductCard({
   const currentPrice = productSelection.selectedPrice || null;
   const currentOriginalPrice = productSelection.selectedOriginalPrice || null;
   const currentskuPostback = productSelection.selectedSkuPostback || null;
+
+  // Obtener el nombre del modelo basado en la variante seleccionada
+  // Si hay una variante seleccionada, usar el modelo del índice correspondiente
+  const currentProductName = useMemo(() => {
+    if (apiProduct && productSelection.selectedVariant?.index !== undefined) {
+      const variantIndex = productSelection.selectedVariant.index;
+      // Usar modelo del índice de la variante seleccionada, o nombreMarket como fallback
+      const modelName = apiProduct.modelo?.[variantIndex] || apiProduct.nombreMarket?.[variantIndex];
+      if (modelName) {
+        return modelName;
+      }
+    }
+    // Fallback al nombre original o primer modelo
+    return apiProduct?.modelo?.[0] || apiProduct?.nombreMarket?.[0] || name;
+  }, [apiProduct, productSelection.selectedVariant, name]);
 
   // Obtener la imagen del color seleccionado o usar la imagen por defecto
   const currentImage = useMemo(() => {
@@ -288,7 +303,7 @@ export default function ProductCard({
 
     posthogUtils.capture("product_capacity_selected", {
       product_id: id,
-      product_name: name,
+      product_name: currentProductName,
       capacity_value: capacity.value,
       capacity_sku: capacity.sku,
       capacity_ean: capacity.ean,
@@ -413,7 +428,7 @@ export default function ProductCard({
       "";
 
     await stockNotification.requestNotification({
-      productName: apiProduct?.modelo || name,
+      productName: currentProductName,
       email,
       sku: selectedColorSku,
       codigoMarket,
@@ -494,10 +509,10 @@ export default function ProductCard({
 
   return (
     <>
-      <StockNotificationModal
+        <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
-        productName={apiProduct?.modelo || name}
+        productName={currentProductName}
         productImage={
           typeof currentImage === "string"
             ? currentImage
@@ -522,7 +537,7 @@ export default function ProductCard({
         onClick={handleCardClick}
         onKeyDown={handleCardKeyDown}
         tabIndex={0}
-        aria-label={`Ver detalles de ${apiProduct?.modelo || name}`}
+        aria-label={`Ver detalles de ${currentProductName}`}
         whileHover={{
           scale: 1.02,
           transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
@@ -597,7 +612,7 @@ export default function ProductCard({
                 }}
                 className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
               >
-                {apiProduct?.modelo || name}
+                {currentProductName}
               </button>
             </h3>
             {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}

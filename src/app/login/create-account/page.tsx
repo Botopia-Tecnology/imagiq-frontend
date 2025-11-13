@@ -47,6 +47,7 @@ export default function CreateAccountPage() {
   const [otpCode, setOtpCode] = useState("");
   const [otpSent, setOtpSent] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('whatsapp');
 
   // useEffect para cargar datos si viene desde login
   useEffect(() => {
@@ -109,18 +110,36 @@ export default function CreateAccountPage() {
     return true;
   };
 
-  const handleSendOTP = async () => {
+  const handleSendOTP = async (method?: 'email' | 'whatsapp') => {
     setIsLoading(true);
     setError("");
+
+    // Usar el método pasado como parámetro o el método actual
+    const methodToUse = method || sendMethod;
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/otp/send-register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          telefono: formData.telefono,
-          metodo: "whatsapp",
-        }),
-      });
+      let response;
+
+      if (methodToUse === 'email') {
+        // Enviar OTP por email
+        response = await fetch(`${API_BASE_URL}/api/auth/otp/send-email-register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+          }),
+        });
+      } else {
+        // Enviar OTP por WhatsApp (método actual)
+        response = await fetch(`${API_BASE_URL}/api/auth/otp/send-register`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            telefono: formData.telefono,
+            metodo: "whatsapp",
+          }),
+        });
+      }
 
       if (!response || typeof response.status !== "number") {
         throw new Error("No se pudo conectar con el servidor");
@@ -216,14 +235,29 @@ export default function CreateAccountPage() {
       // Verificar OTP con el backend y completar registro
       setIsLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/otp/verify-register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telefono: formData.telefono,
-            codigo: otpCode,
-          }),
-        });
+        let response;
+
+        if (sendMethod === 'email') {
+          // Verificar OTP por email
+          response = await fetch(`${API_BASE_URL}/api/auth/otp/verify-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: formData.email,
+              codigo: otpCode,
+            }),
+          });
+        } else {
+          // Verificar OTP por WhatsApp (método actual)
+          response = await fetch(`${API_BASE_URL}/api/auth/otp/verify-register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              telefono: formData.telefono,
+              codigo: otpCode,
+            }),
+          });
+        }
 
         if (!response || typeof response.status !== "number") {
           throw new Error("No se pudo conectar con el servidor");
@@ -368,8 +402,10 @@ export default function CreateAccountPage() {
             telefono={formData.telefono}
             otpCode={otpCode}
             otpSent={otpSent}
+            sendMethod={sendMethod}
             onOTPChange={setOtpCode}
             onSendOTP={handleSendOTP}
+            onMethodChange={setSendMethod}
             onChangeEmail={handleChangeEmail}
             onChangePhone={handleChangePhone}
             disabled={isLoading}
@@ -463,7 +499,7 @@ export default function CreateAccountPage() {
                 {currentStep === 2 && !otpSent ? (
                   <Button
                     type="button"
-                    onClick={handleSendOTP}
+                    onClick={() => handleSendOTP(sendMethod)}
                     disabled={isLoading}
                     className="flex-1 bg-black text-white hover:bg-gray-800"
                   >

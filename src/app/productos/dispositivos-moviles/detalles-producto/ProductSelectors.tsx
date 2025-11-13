@@ -97,12 +97,6 @@ export default function ProductSelectors({
     storage.capacidad?.toLowerCase().includes('kg')
   );
 
-  // Detectar si es almacenamiento (GB/TB)
-  const isStorage = validStorageOptions.some(storage => {
-    const cap = storage.capacidad?.toUpperCase() || '';
-    return cap.includes('GB') || cap.includes('TB');
-  });
-
   // Determinar el label apropiado para el selector
   let storageLabel = "Elige tu Almacenamiento"; // Por defecto para GB/TB
   if (hasInches) {
@@ -111,15 +105,10 @@ export default function ProductSelectors({
     storageLabel = "Elige tu Capacidad";
   }
 
-  // Mostrar selector de color si:
-  // 1. Hay más de una opción de color, O
-  // 2. Es un producto con almacenamiento (GB/TB) aunque tenga un solo color
-  const shouldShowColorSelector = validColorOptions.length > 1 || isStorage;
-
   return (
     <>
-      {/* Selector de color - Mostrar si hay múltiples colores o si es producto de almacenamiento (GB/TB) */}
-      {shouldShowColorSelector && validColorOptions.length > 0 && (
+      {/* Selector de color - Solo mostrar si hay más de una opción válida */}
+      {validColorOptions.length > 1 && (
         <>
           <section className="mb-8">
             <p className="block text-base text-[#222] font-semibold mb-4">

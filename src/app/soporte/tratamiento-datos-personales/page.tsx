@@ -484,89 +484,139 @@ export default function TratamientoDatosPage() {
           <h2 className="text-3xl font-bold text-black mb-6 tracking-tight">
             Transferencias y Transmisiones
           </h2>
-          <div className="grid md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-gray-50 p-6">
-              <h3 className="font-semibold text-black mb-3">Transferencias</h3>
-              <p className="text-gray-700">
-                La Empresa podrá realizar transferencias de datos a otros
-                Responsables cuando esté autorizado por el Titular, la ley o un
-                mandato administrativo o judicial.
-              </p>
-            </div>
-            <div className="bg-gray-50 p-6">
-              <h3 className="font-semibold text-black mb-3">Transmisiones</h3>
-              <p className="text-gray-700">
-                La Empresa podrá enviar o transmitir datos a Encargados ubicados
-                dentro o fuera del país cuando cuente con autorización o exista
-                un contrato de transmisión.
-              </p>
-            </div>
-          </div>
 
-          <div className="bg-blue-50 border-l-4 border-blue-500 p-6">
-            <h3 className="font-semibold text-black mb-4 text-lg">
-              Transferencias Internacionales de Datos
-            </h3>
-            <p className="text-gray-700 mb-4">
-              IMAGIQ S.A.S. utiliza servicios de terceros para análisis y
-              publicidad (Microsoft Clarity, Google Tag Manager, Meta Pixel,
-              TikTok Pixel) cuyos servidores pueden estar ubicados en{" "}
-              <strong>Estados Unidos</strong> u otros países fuera de Colombia.
-            </p>
-            <p className="text-gray-700 mb-4">
-              Al aceptar nuestras políticas de cookies, el usuario autoriza
-              expresamente la{" "}
-              <strong>transferencia internacional de sus datos</strong> a estos
-              terceros, quienes han certificado cumplir con estándares de
-              protección de datos equivalentes a los establecidos en la
-              legislación colombiana (Ley 1581 de 2012).
-            </p>
-            <div className="bg-white border border-blue-200 p-4 mt-4">
-              <h4 className="font-semibold text-black mb-3">
-                Servicios de Terceros que Procesan Datos Internacionalmente:
-              </h4>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span>
-                    <strong>Microsoft Clarity</strong> (Estados Unidos) -
-                    Análisis de comportamiento
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span>
-                    <strong>Google Tag Manager</strong> (Estados Unidos) -
-                    Gestión de etiquetas
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span>
-                    <strong>Meta Pixel</strong> (Estados Unidos) - Tracking de
-                    conversiones Facebook/Instagram
-                  </span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-blue-600">•</span>
-                  <span>
-                    <strong>TikTok Pixel</strong> (Estados Unidos/China) -
-                    Tracking de conversiones TikTok
-                  </span>
-                </li>
-              </ul>
-              <p className="text-sm text-gray-600 mt-4 italic">
-                Estos servicios solo se activan si el usuario otorga
-                consentimiento explícito a través de nuestro banner de cookies.
-                El usuario puede ejercer sus derechos de acceso, rectificación,
-                cancelación y oposición contactando a{" "}
-                <a
-                  href="mailto:DATOS.PERSONALES@IMAGIQ.CO"
-                  className="underline text-blue-600 hover:text-blue-800"
-                >
-                  DATOS.PERSONALES@IMAGIQ.CO
-                </a>
-              </p>
+          <div className="space-y-8">
+            <div className="border-l-2 border-gray-300 pl-6">
+              <h3 className="text-xl font-semibold text-black mb-4">
+                Definiciones y Alcance
+              </h3>
+
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">Transferencias</h4>
+                  <p className="text-gray-700">
+                    La Empresa podrá realizar transferencias de datos a otros
+                    Responsables cuando esté autorizado por el Titular, la ley o un
+                    mandato administrativo o judicial.
+                  </p>
+                </div>
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">Transmisiones</h4>
+                  <p className="text-gray-700">
+                    La Empresa podrá enviar o transmitir datos a Encargados ubicados
+                    dentro o fuera del país cuando cuente con autorización o exista
+                    un contrato de transmisión.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="border-l-2 border-gray-300 pl-6">
+              <h3 className="text-xl font-semibold text-black mb-4">
+                Transferencias Internacionales de Datos
+              </h3>
+
+              <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6 mb-6">
+                <div className="flex gap-3">
+                  <span className="text-yellow-600 font-bold text-lg">⚠</span>
+                  <div>
+                    <p className="font-semibold text-yellow-900 mb-2">
+                      Información Importante sobre Transferencia Internacional
+                    </p>
+                    <p className="text-yellow-800 mb-3">
+                      IMAGIQ S.A.S. utiliza servicios de terceros para análisis, monitoreo y
+                      publicidad cuyos servidores pueden estar ubicados en{" "}
+                      <strong>Estados Unidos</strong> u otros países fuera de Colombia.
+                    </p>
+                    <p className="text-yellow-800">
+                      Al aceptar nuestras políticas de cookies, el usuario autoriza
+                      expresamente la{" "}
+                      <strong>transferencia internacional de sus datos</strong> a estos
+                      terceros, quienes han certificado cumplir con estándares de
+                      protección de datos equivalentes a los establecidos en la
+                      legislación colombiana (Ley 1581 de 2012).
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-6">
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-4 text-lg">
+                    Servicios de Terceros que Procesan Datos Internacionalmente
+                  </h4>
+
+                  <div className="space-y-4">
+                    <div className="bg-white border-l-4 border-gray-400 p-4">
+                      <h5 className="font-semibold text-black mb-2">
+                        Análisis y Monitoreo
+                      </h5>
+                      <ul className="space-y-2 text-gray-700">
+                        <li className="flex items-start gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
+                          <span>
+                            <strong>Microsoft Clarity</strong> (Estados Unidos) -
+                            Análisis de comportamiento del usuario y mapas de calor
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
+                          <span>
+                            <strong>Sentry</strong> (Estados Unidos) -
+                            Monitoreo de errores y rendimiento de la aplicación
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="bg-white border-l-4 border-gray-400 p-4">
+                      <h5 className="font-semibold text-black mb-2">
+                        Marketing y Publicidad
+                      </h5>
+                      <ul className="space-y-2 text-gray-700">
+                        <li className="flex items-start gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
+                          <span>
+                            <strong>Google Tag Manager</strong> (Estados Unidos) -
+                            Gestión de etiquetas de marketing
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
+                          <span>
+                            <strong>Meta Pixel</strong> (Estados Unidos) -
+                            Tracking de conversiones Facebook/Instagram
+                          </span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
+                          <span>
+                            <strong>TikTok Pixel</strong> (Estados Unidos/China) -
+                            Tracking de conversiones TikTok
+                          </span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 border-l-4 border-gray-400 p-6">
+                  <p className="text-gray-800 mb-3">
+                    <strong>Control y Consentimiento:</strong> Estos servicios solo se activan si el usuario otorga
+                    consentimiento explícito a través de nuestro banner de cookies.
+                  </p>
+                  <p className="text-gray-800">
+                    <strong>Ejercicio de Derechos:</strong> El usuario puede ejercer sus derechos de acceso, rectificación,
+                    cancelación y oposición contactando a{" "}
+                    <a
+                      href="mailto:DATOS.PERSONALES@IMAGIQ.CO"
+                      className="underline text-black hover:text-gray-600 font-medium"
+                    >
+                      DATOS.PERSONALES@IMAGIQ.CO
+                    </a>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </section>

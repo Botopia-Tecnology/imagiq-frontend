@@ -40,7 +40,7 @@ export default function TyCDaviviendaPage() {
             <div className="grid gap-3 text-gray-700">
               <div className="flex">
                 <span className="font-semibold min-w-[140px]">Vigencia:</span>
-                <span>Del 1 de octubre de 2025 al 31 de diciembre de 2025</span>
+                <span>Del 9 de octubre de 2025 al 31 de diciembre de 2025</span>
               </div>
               <div className="flex">
                 <span className="font-semibold min-w-[140px]">
@@ -64,7 +64,7 @@ export default function TyCDaviviendaPage() {
           </h2>
           <p className="text-gray-700 leading-relaxed mb-6 text-lg">
             La promoción de 0% de interés estará vigente desde el{" "}
-            <strong>1 de octubre de 2025</strong> hasta el{" "}
+            <strong>9 de octubre de 2025</strong> hasta el{" "}
             <strong>31 de diciembre de 2025</strong>, aplicable a compras
             realizadas tanto en tiendas físicas como en el sitio web oficial de
             IMAGIQ.
@@ -142,6 +142,22 @@ export default function TyCDaviviendaPage() {
             siguientes productos de la línea Samsung Galaxy:
           </p>
 
+          <div className="bg-red-50 border-l-4 border-red-500 p-6 mb-6">
+            <div className="flex gap-3">
+              <span className="text-red-600 font-bold text-lg">⚠</span>
+              <div>
+                <p className="font-semibold text-red-900 mb-1">Importante</p>
+                <p className="text-red-800">
+                  <strong>
+                    Series A, Tab A y Buds NO cuentan con este beneficio.
+                  </strong>{" "}
+                  Solo aplica para los productos específicos listados a
+                  continuación.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="border border-gray-200 overflow-hidden">
             <table className="w-full">
               <caption className="sr-only">
@@ -150,57 +166,219 @@ export default function TyCDaviviendaPage() {
               <thead>
                 <tr className="bg-black text-white">
                   <th scope="col" className="px-6 py-4 text-left font-semibold">
-                    Categoría
+                    Producto
                   </th>
                   <th scope="col" className="px-6 py-4 text-left font-semibold">
-                    Productos Incluidos
+                    Cuotas Aplicables
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-semibold text-black">
-                    Smartphones
+                    Galaxy Z Fold7 5G
                   </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    Galaxy S Series, Galaxy Z Fold Series, Galaxy Z Flip Series,
-                    Galaxy A Series
-                  </td>
+                  <td className="px-6 py-4 text-gray-700">6, 12, 18 o 24</td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-semibold text-black">
-                    Tablets
+                    Galaxy Z Fold6 5G
                   </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    Galaxy Tab S Series, Galaxy Tab A Series
-                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-semibold text-black">
-                    Wearables
+                    Galaxy Z Fold5 5G
                   </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    Galaxy Watch Series, Galaxy Buds Series
-                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
                 </tr>
                 <tr className="hover:bg-gray-50 transition-colors">
                   <td className="px-6 py-4 font-semibold text-black">
-                    Accesorios
+                    Galaxy Z Flip7 5G
                   </td>
-                  <td className="px-6 py-4 text-gray-700">
-                    Accesorios oficiales Samsung seleccionados (sujeto a
-                    disponibilidad)
+                  <td className="px-6 py-4 text-gray-700">6, 12, 18 o 24</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Z Flip6 5G
                   </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Z Flip5 5G
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Z Flip7 FE
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6, 12, 18 o 24</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S25 Ultra
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6, 12, 18 o 24</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S25+
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6, 12, 18 o 24</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S25
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6, 12, 18 o 24</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S24*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S24+
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S24 Ultra
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S24 FE*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy S25 FE*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy A56 5G*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy A55 5G*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S11
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S11 Ultra
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Watch 8 Classic*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Watch Ultra
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S10 plus
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S10 Ultra
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S10 FE*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S10 FE +*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 WIFI
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 Ultra WIFI
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 Plus WIFI
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 FE+ WIFI*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 FE+ 5G
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 FE WIFI*
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
+                </tr>
+                <tr className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-semibold text-black">
+                    Galaxy Tab S9 FE 5G
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">6 o 12</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           <div className="bg-gray-50 border-l-4 border-gray-400 p-6 mt-6">
+            <p className="text-gray-800 text-sm mb-2">
+              <strong>*Nota importante:</strong> Estos productos aplican si y
+              solo si el precio a pagar es mayor o igual a UN MILLÓN OCHOCIENTOS
+              MIL PESOS (COP $1.800.000).
+            </p>
             <p className="text-gray-800 text-sm">
-              <strong>Nota:</strong> Los productos específicos participantes
-              pueden variar según disponibilidad. Consulte en tienda o en el
-              sitio web los modelos exactos incluidos en la promoción.
+              La disponibilidad de productos puede variar. Los plazos
+              específicos dependen del modelo adquirido según la tabla anterior.
             </p>
           </div>
         </section>
@@ -216,20 +394,14 @@ export default function TyCDaviviendaPage() {
 
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             <div className="bg-linear-to-br from-gray-800 to-black text-white p-8 shadow-lg">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-8 bg-white/20 rounded"></div>
-                <h3 className="text-xl font-bold">Visa</h3>
-              </div>
+              <h3 className="text-xl font-bold mb-2">Visa</h3>
               <p className="text-gray-200 text-sm">
                 Todas las modalidades Davivienda
               </p>
             </div>
 
             <div className="bg-linear-to-br from-gray-700 to-gray-900 text-white p-8 shadow-lg">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-8 bg-white/20 rounded"></div>
-                <h3 className="text-xl font-bold">Mastercard</h3>
-              </div>
+              <h3 className="text-xl font-bold mb-2">Mastercard</h3>
               <p className="text-gray-200 text-sm">
                 Todas las modalidades Davivienda
               </p>
@@ -280,26 +452,21 @@ export default function TyCDaviviendaPage() {
                 Plazos disponibles
               </h3>
               <p className="text-gray-700 mb-4">
-                La promoción de 0% de interés está disponible en los siguientes
-                plazos:
+                La promoción de 0% de interés está disponible en plazos de{" "}
+                <strong>6, 12, 18 o 24 cuotas</strong>, dependiendo del producto
+                específico adquirido:
               </p>
-              <div className="flex flex-wrap gap-3 mb-4">
-                <span className="px-5 py-2 bg-gray-100 text-black font-medium border border-gray-300">
-                  3 meses
-                </span>
-                <span className="px-5 py-2 bg-gray-100 text-black font-medium border border-gray-300">
-                  6 meses
-                </span>
-                <span className="px-5 py-2 bg-gray-100 text-black font-medium border border-gray-300">
-                  9 meses
-                </span>
-                <span className="px-5 py-2 bg-gray-100 text-black font-medium border border-gray-300">
-                  12 meses
-                </span>
+              <div className="bg-blue-50 border border-blue-200 p-4 mb-4">
+                <p className="text-blue-900 text-sm">
+                  <strong>Importante:</strong> Los plazos específicos para cada
+                  producto están detallados en la sección &quot;Productos
+                  Participantes&quot;. Consulte la tabla de productos para
+                  conocer las cuotas aplicables a cada modelo.
+                </p>
               </div>
               <p className="text-sm text-gray-600">
-                Los plazos disponibles pueden variar según el monto de la compra
-                y el producto seleccionado.
+                Por ejemplo: Galaxy Z Fold7 5G aplica para 6, 12, 18 o 24
+                cuotas, mientras que Galaxy S24 aplica solo para 6 o 12 cuotas.
               </p>
             </div>
 
@@ -307,10 +474,17 @@ export default function TyCDaviviendaPage() {
               <h3 className="text-xl font-semibold text-black mb-3">
                 Monto mínimo de compra
               </h3>
+              <p className="text-gray-700 mb-3">
+                El monto mínimo de compra para acceder a la promoción es de{" "}
+                <strong>
+                  UN MILLÓN OCHOCIENTOS MIL PESOS (COP $1.800.000)
+                </strong>{" "}
+                para los productos marcados con asterisco (*).
+              </p>
               <p className="text-gray-700">
-                No se establece monto mínimo de compra para acceder a la
-                promoción, sujeto a aprobación del cupo de crédito por parte de
-                Davivienda.
+                Los productos sin asterisco no requieren monto mínimo. Revise la
+                tabla de productos participantes para identificar los requisitos
+                específicos.
               </p>
             </div>
 

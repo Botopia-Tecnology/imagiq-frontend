@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { MessageCircle } from "lucide-react";
 
@@ -8,6 +8,20 @@ export default function ChatbotButton({
 }: Readonly<{ onClick?: () => void }>) {
   const [showTooltip, setShowTooltip] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [position, setPosition] = useState(0); // Posición relativa desde el centro
+  const [isDragging, setIsDragging] = useState(false);
+  const [hasMoved, setHasMoved] = useState(false); // Para detectar si hubo movimiento
+  const dragStartY = useRef(0);
+  const initialPosition = useRef(0);
+  const buttonRef = useRef<HTMLDivElement>(null);
+
+  // Cargar posición guardada al montar
+  useEffect(() => {
+    const savedPosition = localStorage.getItem('chatbot-button-position');
+    if (savedPosition) {
+      setPosition(parseFloat(savedPosition));
+    }
+  }, []);
 
   // Mostrar tooltip después de 2 segundos (menos intrusivo)
   useEffect(() => {
@@ -23,13 +37,113 @@ export default function ChatbotButton({
     }
   }, [showTooltip]);
 
+  // Handlers para arrastre con mouse
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Solo click izquierdo
+    setIsDragging(true);
+    setHasMoved(false); // Resetear el estado de movimiento
+    dragStartY.current = e.clientY;
+    initialPosition.current = position;
+    e.preventDefault();
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    if (!isDragging) return;
+
+    const deltaY = e.clientY - dragStartY.current;
+
+    // Si el movimiento es mayor a 5px, considerarlo como arrastre
+    if (Math.abs(deltaY) > 5) {
+      setHasMoved(true);
+    }
+
+    const newPosition = initialPosition.current + deltaY;
+
+    // Limitar el movimiento a la mitad de la pantalla (hacia arriba y hacia abajo)
+    const maxMove = window.innerHeight / 2;
+    const clampedPosition = Math.max(-maxMove, Math.min(maxMove, newPosition));
+
+    setPosition(clampedPosition);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+
+    // Si hubo movimiento, guardar la posición. Si no, es un click
+    if (hasMoved) {
+      localStorage.setItem('chatbot-button-position', position.toString());
+    } else {
+      // Es un click, ejecutar la función onClick
+      onClick?.();
+    }
+  };
+
+  // Handlers para arrastre táctil
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setIsDragging(true);
+    setHasMoved(false); // Resetear el estado de movimiento
+    dragStartY.current = e.touches[0].clientY;
+    initialPosition.current = position;
+  };
+
+  const handleTouchMove = (e: TouchEvent) => {
+    if (!isDragging) return;
+
+    const deltaY = e.touches[0].clientY - dragStartY.current;
+
+    // Si el movimiento es mayor a 5px, considerarlo como arrastre
+    if (Math.abs(deltaY) > 5) {
+      setHasMoved(true);
+    }
+
+    const newPosition = initialPosition.current + deltaY;
+
+    // Limitar el movimiento a la mitad de la pantalla
+    const maxMove = window.innerHeight / 2;
+    const clampedPosition = Math.max(-maxMove, Math.min(maxMove, newPosition));
+
+    setPosition(clampedPosition);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+
+    // Si hubo movimiento, guardar la posición. Si no, es un click
+    if (hasMoved) {
+      localStorage.setItem('chatbot-button-position', position.toString());
+    } else {
+      // Es un click/tap, ejecutar la función onClick
+      onClick?.();
+    }
+  };
+
+  // Event listeners globales
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("touchmove", handleTouchMove);
+      document.addEventListener("touchend", handleTouchEnd);
+
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("touchmove", handleTouchMove);
+        document.removeEventListener("touchend", handleTouchEnd);
+      };
+    }
+  }, [isDragging, position]);
+
   return (
     <div
-      className="fixed right-6 z-50 flex items-end gap-3"
+      ref={buttonRef}
+      className="fixed right-6 z-50 flex items-end gap-3 transition-none"
       style={{
-        bottom:
-          "calc(max(1.5rem, env(safe-area-inset-bottom, 1.5rem)) + 170px)",
+        bottom: `calc(max(1.5rem, env(safe-area-inset-bottom, 1.5rem)) + 170px - ${position}px)`,
+        cursor: isDragging ? "grabbing" : "grab",
       }}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
       {/* Burbuja de mensaje mejorada */}
       {showTooltip && (
@@ -55,7 +169,6 @@ export default function ChatbotButton({
 
       {/* Botón con foto de persona o icono de fallback */}
       <button
-        onClick={onClick}
         className="relative flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-xl rounded-full transition-all duration-300 hover:scale-105 active:scale-95 border-2 border-white"
         aria-label="Abrir chat de ayuda"
         type="button"

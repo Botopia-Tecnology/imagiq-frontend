@@ -41,7 +41,7 @@ export default function PickupMap({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
@@ -66,8 +66,8 @@ export default function PickupMap({
               </svg>
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900 text-lg">Ubicación de la tienda</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-black text-base mb-1">Ubicación de la tienda</h3>
+              <p className="text-sm text-gray-500">
                 {fullTiendaAddress}
               </p>
             </div>
@@ -133,16 +133,18 @@ export default function PickupMap({
         </MapContainer>
       </div>
 
-      {/* Store Info - Reduced height */}
-      <div className="px-4 py-2 bg-gray-50 border-t border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
-            <span className="text-white text-xs font-bold">S</span>
+      {/* Store Info - Instructions */}
+      <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-t border-gray-200">
+        <div className="flex items-start gap-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-bold">S</span>
           </div>
-          <div>
-            <span className="text-sm font-semibold text-gray-800">Tienda IMAGIQ</span>
-            <p className="text-xs text-gray-600">
-              Presenta tu token personal para recoger tu pedido
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-gray-900 mb-1">
+              Instrucciones para recoger tu pedido:
+            </p>
+            <p className="text-xs text-gray-700 leading-relaxed">
+              Presenta tu <strong>identificación</strong> y el <strong>token personal</strong> al personal de la tienda para recoger tu pedido.
             </p>
           </div>
         </div>

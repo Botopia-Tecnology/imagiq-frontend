@@ -96,7 +96,7 @@ export function ImagiqShippingView({
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-black">
+                  <h2 className="font-semibold text-black text-base mb-1">
                     Productos en tu pedido
                   </h2>
                   <p className="text-sm text-gray-500">

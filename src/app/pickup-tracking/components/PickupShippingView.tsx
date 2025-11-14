@@ -81,9 +81,9 @@ export function PickupShippingView({
 
         {/* Right Column - Products */}
         <div>
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-[535px] flex flex-col">
-            <div className="px-4 py-3 border-b border-gray-200 flex-shrink-0">
-              <div className="flex items-center gap-3">
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm h-[570px] flex flex-col">
+            <div className="p-6 flex-shrink-0">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
                   <svg
                     className="w-5 h-5 text-white"
@@ -100,10 +100,10 @@ export function PickupShippingView({
                   </svg>
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-gray-900">
+                  <h2 className="font-semibold text-black text-base mb-1">
                     Productos en tu pedido
                   </h2>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-500">
                     {products.length} {products.length === 1 ? 'producto' : 'productos'}
                   </p>
                 </div>
@@ -204,7 +204,7 @@ export function PickupShippingView({
       </div>
 
       {/* Contact Support - Full Width */}
-      <div className="mt-4">
+      <div className="mt-2">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <svg
             className="w-5 h-5 text-[#17407A]"

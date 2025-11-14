@@ -81,7 +81,7 @@ export function DeliveryMap({
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
             <svg
@@ -105,8 +105,8 @@ export function DeliveryMap({
             </svg>
           </div>
           <div>
-            <h3 className="font-semibold text-gray-900">Ruta de Entrega</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className="font-semibold text-black text-base mb-1">Ruta de Entrega</h3>
+            <p className="text-sm text-gray-500">
               Desde tienda IMAGIQ hasta tu dirección
             </p>
           </div>

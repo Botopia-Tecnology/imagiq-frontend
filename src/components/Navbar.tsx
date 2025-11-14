@@ -102,11 +102,11 @@ export default function Navbar() {
         );
 
         // Precargar productos de categoría + menús para cada categoría
-        // Con un delay escalonado para evitar demasiadas peticiones simultáneas
+        // Con un delay escalonado más largo para evitar demasiadas peticiones simultáneas
         dynamicCategories.forEach((item, categoryIndex) => {
           if (!item.categoryCode || !item.uuid) return;
 
-          // Delay escalonado por categoría: 0ms, 500ms, 1000ms, etc.
+          // Delay escalonado por categoría: 0ms, 2000ms, 4000ms, etc. (aumentado para evitar 429)
           setTimeout(() => {
             // Verificar si ya se precargó o se está precargando (por hover o automático)
             if (autoPrefetchedRef.current.has(item.uuid!) || autoPrefetchingRef.current.has(item.uuid!)) {
@@ -130,10 +130,10 @@ export default function Navbar() {
               prefetchProducts({
                 categoryCode: item.categoryCode!,
               }).finally(() => {
-                // Precargar productos de cada menú activo con delay escalonado
+                // Precargar productos de cada menú activo con delay escalonado más largo
                 menus.forEach((menu, menuIndex) => {
                   if (menu.activo && menu.uuid && item.categoryCode) {
-                    // Delay escalonado por menú: 0ms, 100ms, 200ms, etc.
+                    // Delay escalonado por menú: 0ms, 500ms, 1000ms, etc. (aumentado para evitar 429)
                     setTimeout(() => {
                       prefetchProducts({
                         categoryCode: item.categoryCode!,
@@ -141,7 +141,7 @@ export default function Navbar() {
                       }).catch(() => {
                         // Silenciar errores
                       });
-                    }, menuIndex * 100);
+                    }, menuIndex * 500);
                   }
                 });
 
@@ -149,8 +149,8 @@ export default function Navbar() {
                 autoPrefetchedRef.current.add(item.uuid!);
                 autoPrefetchingRef.current.delete(item.uuid!);
               });
-            }, 200); // Esperar 200ms para que los menús se carguen
-          }, categoryIndex * 500); // Escalonar cada categoría cada 500ms
+            }, 500); // Esperar 500ms para que los menús se carguen
+          }, categoryIndex * 2000); // Escalonar cada categoría cada 2000ms (2 segundos)
         });
       };
 
@@ -451,12 +451,12 @@ export default function Navbar() {
                                 if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
                                   const menus = getMenus(item.uuid) || [];
                                   
-                                  // Hacer prefetch de cada menú activo con un pequeño delay escalonado
+                                  // Hacer prefetch de cada menú activo con un delay escalonado
                                   // para evitar demasiadas peticiones simultáneas
                                   // Pero más rápido que el sistema automático (priorizado)
                                   menus.forEach((menu, index) => {
                                     if (menu.activo && menu.uuid && item.categoryCode) {
-                                      // Delay escalonado más corto para hover: 50ms, 100ms, 150ms, etc.
+                                      // Delay escalonado para hover: 200ms, 400ms, 600ms, etc. (aumentado para evitar 429)
                                       const menuTimer = setTimeout(() => {
                                         prefetchProducts({
                                           categoryCode: item.categoryCode!,
@@ -464,7 +464,7 @@ export default function Navbar() {
                                         }).catch(() => {
                                           // Silenciar errores
                                         });
-                                      }, 50 + (index * 50)); // Escalonar cada 50ms (más rápido que automático)
+                                      }, 200 + (index * 200)); // Escalonar cada 200ms (más rápido que automático pero seguro)
                                       
                                       timers.push(menuTimer);
                                     }

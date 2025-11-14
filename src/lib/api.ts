@@ -20,6 +20,7 @@ export interface ApiResponse<T> {
   success: boolean;
   message?: string;
   errors?: string[];
+  statusCode?: number; // Incluir statusCode para detectar errores HTTP como 429
 }
 
 // API Client class
@@ -58,6 +59,9 @@ export class ApiClient {
       const response = await fetch(url, config);
       const responseData = await response.json();
 
+      // Extraer statusCode del responseData si existe (para errores como 429)
+      const statusCode = responseData?.statusCode || response.status;
+
       // Si la respuesta tiene la estructura { success, data, message, errors }
       if (responseData && typeof responseData === 'object' && 'success' in responseData) {
         return {
@@ -65,6 +69,7 @@ export class ApiClient {
           success: responseData.success && response.ok,
           message: responseData.message,
           errors: responseData.errors,
+          statusCode: !response.ok ? statusCode : undefined, // Solo incluir si hay error
         };
       }
 
@@ -74,6 +79,7 @@ export class ApiClient {
         success: response.ok,
         message: responseData.message,
         errors: responseData.errors,
+        statusCode: !response.ok ? statusCode : undefined, // Solo incluir si hay error
       };
     } catch (error) {
       // Silenciar errores de abort - son esperados cuando el usuario cambia de filtros rápidamente

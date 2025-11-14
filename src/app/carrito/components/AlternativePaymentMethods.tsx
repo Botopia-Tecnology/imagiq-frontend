@@ -25,9 +25,9 @@ export default function AlternativePaymentMethods({
   );
   useEffect(() => {
     fetchBanks().then((res) => {
-      setBanks(res)
-    })
-  }, [])
+      setBanks(res);
+    });
+  }, []);
   return (
     <div
       className="px-6 pb-2 flex flex-col gap-2"
@@ -59,7 +59,10 @@ export default function AlternativePaymentMethods({
       {/* Bank selector for PSE */}
       {selectedMethod === "pse" && (
         <div className="ml-7 mt-2 mb-4">
-          <label htmlFor="bank-select" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="bank-select"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Selecciona tu banco
           </label>
           <select

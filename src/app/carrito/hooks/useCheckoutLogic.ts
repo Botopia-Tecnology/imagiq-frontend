@@ -6,7 +6,12 @@ import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
-import { payWithAddi, payWithCard, payWithSavedCard, payWithPse } from "../utils";
+import {
+  payWithAddi,
+  payWithCard,
+  payWithSavedCard,
+  payWithPse,
+} from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
 
 export function useCheckoutLogic() {
@@ -173,7 +178,10 @@ export function useCheckoutLogic() {
     if (paymentMethod === "tarjeta") {
       if (selectedCardId && !useNewCard) {
         localStorage.setItem("checkout-saved-card-id", selectedCardId);
-        localStorage.setItem("checkout-card-installments", card.installments || "1");
+        localStorage.setItem(
+          "checkout-card-installments",
+          card.installments || "1"
+        );
       } else {
         localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
@@ -276,9 +284,11 @@ export function useCheckoutLogic() {
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
-            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
-                res.message.includes("no está disponible") ||
-                res.message.includes("not available")) {
+            if (
+              res.message.includes("dejó (dejaron) de estar disponobles") ||
+              res.message.includes("no está disponible") ||
+              res.message.includes("not available")
+            ) {
               toast.error("Producto(s) no disponible(s)", {
                 description: res.message,
                 duration: 5000,
@@ -348,9 +358,11 @@ export function useCheckoutLogic() {
 
           if ("error" in res) {
             // Check if it's an out-of-stock error
-            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
-                res.message.includes("no está disponible") ||
-                res.message.includes("not available")) {
+            if (
+              res.message.includes("dejó (dejaron) de estar disponobles") ||
+              res.message.includes("no está disponible") ||
+              res.message.includes("not available")
+            ) {
               toast.error("Producto(s) no disponible(s)", {
                 description: res.message,
                 duration: 5000,
@@ -389,9 +401,11 @@ export function useCheckoutLogic() {
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
-            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
-                res.message.includes("no está disponible") ||
-                res.message.includes("not available")) {
+            if (
+              res.message.includes("dejó (dejaron) de estar disponobles") ||
+              res.message.includes("no está disponible") ||
+              res.message.includes("not available")
+            ) {
               toast.error("Producto(s) no disponible(s)", {
                 description: res.message,
                 duration: 5000,

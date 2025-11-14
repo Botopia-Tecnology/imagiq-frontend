@@ -7,7 +7,13 @@ import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
 
-export default function Step4({ onBack, onContinue }: { onBack?: () => void; onContinue?: () => void }) {
+export default function Step4({
+  onBack,
+  onContinue,
+}: {
+  onBack?: () => void;
+  onContinue?: () => void;
+}) {
   const authContext = useAuthContext();
   const {
     isProcessing,

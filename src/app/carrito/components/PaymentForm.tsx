@@ -90,7 +90,7 @@ export default function PaymentForm({
           if (!decrypted) return null;
 
           return {
-            id: decrypted.cardId as unknown as number,
+            id: decrypted.cardId as unknown as string,
             ultimos_dijitos: decrypted.last4Digits,
             marca: decrypted.brand?.toLowerCase() || undefined,
             banco: decrypted.banco || undefined,

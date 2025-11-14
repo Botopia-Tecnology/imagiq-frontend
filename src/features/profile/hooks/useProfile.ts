@@ -6,7 +6,13 @@
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthContext } from "@/features/auth/context";
-import { ProfileState, ProfileUser, DBAddress, DBCard, DecryptedCardData } from "../types";
+import {
+  ProfileState,
+  ProfileUser,
+  DBAddress,
+  DBCard,
+  DecryptedCardData,
+} from "../types";
 import { profileService, ProfileResponse } from "@/services/profile.service";
 import { encryptionService } from "@/lib/encryption";
 
@@ -42,7 +48,9 @@ export const useProfile = (): UseProfileReturn => {
 
     try {
       // Cargar perfil básico y direcciones
-      const profileData: ProfileResponse = await profileService.getUserProfile(authContext.user.id);
+      const profileData: ProfileResponse = await profileService.getUserProfile(
+        authContext.user.id
+      );
 
       // Parsear direcciones
       let direcciones: DBAddress[] = [];
@@ -59,38 +67,45 @@ export const useProfile = (): UseProfileReturn => {
       // Cargar tarjetas encriptadas y desencriptarlas
       let tarjetas: DBCard[] = [];
       try {
-        const encryptedCards = await profileService.getUserPaymentMethodsEncrypted(authContext.user.id);
+        const encryptedCards =
+          await profileService.getUserPaymentMethodsEncrypted(
+            authContext.user.id
+          );
 
-        tarjetas = encryptedCards.map((encCard) => {
-          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(encCard.encryptedData);
+        tarjetas = encryptedCards
+          .map((encCard) => {
+            const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
+              encCard.encryptedData
+            );
 
-          if (!decrypted) {
-            console.error("❌ Error desencriptando tarjeta");
-            return null;
-          }
+            if (!decrypted) {
+              console.error("❌ Error desencriptando tarjeta");
+              return null;
+            }
 
-          console.log("🔍 DEBUG - Datos desencriptados:", {
-            cardId: decrypted.cardId,
-            last4: decrypted.last4Digits,
-            brand: decrypted.brand,
-            tipo: decrypted.tipo,
-            banco: decrypted.banco,
-            cardHolderName: decrypted.cardHolderName,
-            createdAt: decrypted.createdAt
-          });
+            console.log("🔍 DEBUG - Datos desencriptados:", {
+              cardId: decrypted.cardId,
+              last4: decrypted.last4Digits,
+              brand: decrypted.brand,
+              tipo: decrypted.tipo,
+              banco: decrypted.banco,
+              cardHolderName: decrypted.cardHolderName,
+              createdAt: decrypted.createdAt,
+            });
 
-          // Convertir formato DecryptedCardData a DBCard
-          return {
-            id: parseInt(decrypted.cardId.replace(/\D/g, '').slice(-8)) || 0, // Convertir UUID a número temporal
-            ultimos_dijitos: decrypted.last4Digits,
-            marca: decrypted.brand?.toLowerCase() || undefined,
-            banco: decrypted.banco || undefined,
-            tipo_tarjeta: decrypted.tipo || undefined, // credit/debit del backend
-            es_predeterminada: false,
-            activa: true,
-            nombre_titular: decrypted.cardHolderName || undefined,
-          } as DBCard;
-        }).filter((card): card is DBCard => card !== null);
+            // Convertir formato DecryptedCardData a DBCard
+            return {
+              id: decrypted.cardId.replace(/\D/g, "").slice(-8) || "", // Convertir UUID a número temporal
+              ultimos_dijitos: decrypted.last4Digits,
+              marca: decrypted.brand?.toLowerCase() || undefined,
+              banco: decrypted.banco || undefined,
+              tipo_tarjeta: decrypted.tipo || undefined, // credit/debit del backend
+              es_predeterminada: false,
+              activa: true,
+              nombre_titular: decrypted.cardHolderName || undefined,
+            } as DBCard;
+          })
+          .filter((card): card is DBCard => card !== null);
 
         console.log("✅ Tarjetas desencriptadas (final):", tarjetas);
       } catch (err) {
@@ -114,7 +129,8 @@ export const useProfile = (): UseProfileReturn => {
       setProfileUser(user);
     } catch (err) {
       console.error("Error cargando perfil:", err);
-      const errorMessage = err instanceof Error ? err.message : "Error al cargar perfil";
+      const errorMessage =
+        err instanceof Error ? err.message : "Error al cargar perfil";
       setError(errorMessage);
 
       // Si es error de autenticación (token expirado), hacer logout y redirigir
@@ -125,7 +141,9 @@ export const useProfile = (): UseProfileReturn => {
         errorMessage.includes("No se encontró el ID del usuario") ||
         errorMessage.toLowerCase().includes("token")
       ) {
-        console.log("🔒 Token expirado o inválido, cerrando sesión y redirigiendo al login...");
+        console.log(
+          "🔒 Token expirado o inválido, cerrando sesión y redirigiendo al login..."
+        );
         authContext.logout();
         router.push("/login");
       }

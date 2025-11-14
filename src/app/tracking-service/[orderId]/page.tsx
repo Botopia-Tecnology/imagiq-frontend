@@ -11,7 +11,7 @@ import {
   PickupOrderView,
   ShippingOrderView,
 } from "../components";
-import { ImagiqShippingView } from "@/app/imagiq-tracking/components";
+import { ImagiqShippingView } from "@/app/imagiq-tracking/components/ImagiqShippingView";
 import { EnhancedPickupOrderView } from "@/app/pickup-tracking/components";
 
 export default function TrackingService({

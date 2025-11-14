@@ -4,6 +4,7 @@ import ClarityScript from './ClarityScript';
 import GTMScript from './GTMScript';
 import MetaPixelScript from './MetaPixelScript';
 import TikTokPixelScript from './TikTokPixelScript';
+import SentryScript from './SentryScript';
 
 /**
  * Componente contenedor para todos los scripts de analytics
@@ -12,6 +13,7 @@ import TikTokPixelScript from './TikTokPixelScript';
  *
  * **Analytics:**
  * - Microsoft Clarity (mapas de calor y grabaciones de sesión)
+ * - Sentry (error tracking, performance monitoring y session replay)
  *
  * **Marketing:**
  * - Google Tag Manager (gestión de tags y eventos)
@@ -44,6 +46,7 @@ export default function AnalyticsScripts() {
     <>
       {/* Analytics - requiere consentimiento de analytics */}
       <ClarityScript />
+      <SentryScript />
 
       {/* Marketing - requiere consentimiento de publicidad */}
       <GTMScript />

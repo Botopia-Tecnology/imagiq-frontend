@@ -1,6 +1,9 @@
 /**
  * Footer Configuration
  * Configuración centralizada de todos los enlaces y datos del footer
+ *
+ * NOTA: La sección "Tienda" ahora se genera dinámicamente desde useVisibleCategories
+ * para mantener sincronización con el navbar
  */
 
 export interface FooterLink {
@@ -18,19 +21,38 @@ export interface FooterSection {
   title: string;
   links?: FooterLink[];
   subsections?: FooterSubsection[];
+  dynamic?: boolean; // Indica si la sección se genera dinámicamente
 }
 
-export const footerSections: FooterSection[] = [
-  {
-    title: "Tienda",
-    links: [
-      { name: "Ofertas", href: "/ofertas" },
-      { name: "Dispositivos móviles", href: "/productos/dispositivos-moviles" },
-      { name: "TV y audio", href: "/productos/tv-y-audio" },
-      { name: "Electrodomésticos", href: "/productos/electrodomesticos" },
-      { name: "Ofertas para empresas", href: "/ventas-corporativas" },
-    ],
-  },
+/**
+ * Función para obtener las secciones del footer
+ * Si se pasa navbarRoutes, la sección "Tienda" se generará dinámicamente
+ */
+export const getFooterSections = (navbarRoutes?: Array<{ name: string; href: string }>): FooterSection[] => {
+  // Si tenemos rutas del navbar, generar sección Tienda dinámicamente
+  const tiendaSection: FooterSection = navbarRoutes
+    ? {
+        title: "Tienda",
+        dynamic: true,
+        links: navbarRoutes.map(route => ({
+          name: route.name,
+          href: route.href,
+        })),
+      }
+    : {
+        // Fallback estático si no hay rutas del navbar
+        title: "Tienda",
+        links: [
+          { name: "Ofertas", href: "/ofertas" },
+          { name: "Dispositivos móviles", href: "/productos/dispositivos-moviles" },
+          { name: "TV y audio", href: "/productos/tv-y-audio" },
+          { name: "Electrodomésticos", href: "/productos/electrodomesticos" },
+          { name: "Ofertas para empresas", href: "/ventas-corporativas" },
+        ],
+      };
+
+  return [
+    tiendaSection,
   {
     title: "Productos",
     links: [
@@ -141,14 +163,17 @@ export const footerSections: FooterSection[] = [
   //     { name: "Productos Electrónicos de consumo", href: "/electronica" },
   //   ],
   // },
-];
+  ];
+};
+
+// Exportar también una versión estática para compatibilidad (deprecated)
+export const footerSections: FooterSection[] = getFooterSections();
 
 export const legalLinks: FooterLink[] = [
-  { name: "Privacidad", href: "/privacidad" },
-  { name: "Legal", href: "/legal" },
-  { name: "Mapa del Sitio", href: "/tiendas" },
-  { name: "Cookies", href: "/cookies" },
-  { name: "Políticas generales", href: "/politicas" },
+  { name: "Tratamiento de datos", href: "/soporte/tratamiento-datos-personales" },
+  { name: "Aviso legal", href: "/soporte/aviso-legal" },
+  { name: "Cookies", href: "/soporte/politica-cookies" },
+  { name: "Políticas generales", href: "/soporte/politicas-generales" },
 ];
 
 export const socialLinks = [

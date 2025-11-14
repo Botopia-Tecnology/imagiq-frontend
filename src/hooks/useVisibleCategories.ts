@@ -137,9 +137,9 @@ export function useVisibleCategories() {
       orden: 1000,
     };
 
-    // Agregar Soporte después de Tiendas
+    // Agregar Servicio Técnico después de Tiendas
     const soporteRoute = {
-      name: "Soporte",
+      name: "Servicio Técnico",
       href: "/soporte/inicio_de_soporte",
       category: "soporte",
       categoryCode: "soporte",

@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { OrderDetails, ProductoDetalle, TiendaInfo } from "@/app/tracking-service/interfaces/types.d";
 import { LoadingSpinner, ErrorView } from "@/app/tracking-service/components";
-import { PickupShippingView } from "../components";
+import { PickupShippingView } from "../components/PickupShippingView";
 
 export default function PickupTrackingPage({
   params,

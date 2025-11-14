@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { PickupMap } from ".";
+import PickupMap from "./PickupMap";
 
 interface Product {
   id: string;
@@ -55,7 +55,7 @@ export function PickupShippingView({
           </div>
 
           {/* Right side - Token personal */}
-          <div className="flex items-center">
+          <div className="flex flex-col items-end gap-2">
             <div className="bg-black rounded-lg px-6 py-3 shadow-lg">
               <div className="text-center">
                 <p className="text-xs text-gray-300 mb-1 font-medium">Token personal</p>
@@ -64,6 +64,9 @@ export function PickupShippingView({
                 </span>
               </div>
             </div>
+            <p className="text-xs text-gray-600 text-right">
+              Recibiste este token vía <strong>WhatsApp</strong> y <strong>correo</strong>
+            </p>
           </div>
         </div>
       </div>

@@ -12,7 +12,7 @@ import {
   ShippingOrderView,
 } from "../components";
 import { ImagiqShippingView } from "@/app/imagiq-tracking/components/ImagiqShippingView";
-import { EnhancedPickupOrderView } from "@/app/pickup-tracking/components";
+import { EnhancedPickupOrderView } from "@/app/pickup-tracking/components/EnhancedPickupOrderView";
 
 export default function TrackingService({
   params,

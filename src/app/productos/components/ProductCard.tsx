@@ -575,6 +575,7 @@ export default function ProductCard({
                 >
                   <div className="relative w-full h-full">
                     <Image
+                      key={`${id}-${transformedSrc}-${index}`}
                       src={transformedSrc}
                       alt={`${name} - imagen ${index + 1}`}
                       fill

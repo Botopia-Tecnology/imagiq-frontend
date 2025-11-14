@@ -251,149 +251,142 @@ export default function PoliticaCookiesPage() {
             acepta el uso de cookies en nuestro banner de consentimiento.
           </p>
 
-          <div className="space-y-6">
-            <div className="bg-blue-50 border border-blue-200 p-6">
-              <h3 className="font-semibold text-black text-xl mb-4">
-                Cookies de Análisis
+          <div className="space-y-8">
+            <div className="border-l-2 border-gray-300 pl-6">
+              <h3 className="text-xl font-semibold text-black mb-4">
+                Cookies de Análisis y Monitoreo
               </h3>
-              <div className="space-y-4">
-                <div className="bg-white p-4 border-l-4 border-blue-500">
-                  <h4 className="font-semibold text-black mb-2">
-                    Microsoft Clarity
-                  </h4>
+
+              <div className="space-y-6">
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">Microsoft Clarity</h4>
                   <p className="text-gray-700 mb-3">
                     Servicio de análisis de comportamiento que proporciona mapas
                     de calor y grabaciones de sesión para mejorar la experiencia
                     del usuario.
                   </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>ID del Proyecto:</strong> tnnqbxjgre
-                  </p>
+                  <div className="bg-white border-l-4 border-gray-400 p-4 mb-3">
+                    <p className="text-sm text-gray-700">
+                      <strong>ID del Proyecto:</strong> tnnqbxjgre
+                    </p>
+                  </div>
                   <a
                     href="https://privacy.microsoft.com/privacystatement"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 underline mt-2 text-sm"
+                    className="inline-flex items-center gap-2 text-gray-900 hover:text-gray-600 underline text-sm font-medium"
                   >
-                    Ver Política de Privacidad de Microsoft
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
-                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
-                    </svg>
+                    Ver Política de Privacidad de Microsoft →
+                  </a>
+                </div>
+
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">Sentry</h4>
+                  <p className="text-gray-700 mb-3">
+                    Plataforma de monitoreo de errores y rendimiento que ayuda a identificar
+                    y resolver problemas técnicos en tiempo real para garantizar la mejor
+                    experiencia de usuario posible.
+                  </p>
+                  <div className="bg-white border-l-4 border-gray-400 p-4 mb-3">
+                    <p className="text-sm text-gray-700 mb-1">
+                      <strong>DSN:</strong> Configurado para el proyecto IMAGIQ
+                    </p>
+                    <p className="text-sm text-gray-700">
+                      <strong>Datos recopilados:</strong> Información de errores técnicos, rendimiento de la aplicación y contexto del navegador (sin incluir datos personales sensibles)
+                    </p>
+                  </div>
+                  <a
+                    href="https://sentry.io/privacy/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-gray-900 hover:text-gray-600 underline text-sm font-medium"
+                  >
+                    Ver Política de Privacidad de Sentry →
                   </a>
                 </div>
               </div>
             </div>
 
-            <div className="bg-purple-50 border border-purple-200 p-6">
-              <h3 className="font-semibold text-black text-xl mb-4">
+            <div className="border-l-2 border-gray-300 pl-6">
+              <h3 className="text-xl font-semibold text-black mb-4">
                 Cookies de Publicidad y Marketing
               </h3>
-              <div className="space-y-4">
-                <div className="bg-white p-4 border-l-4 border-purple-500">
-                  <h4 className="font-semibold text-black mb-2">
-                    Google Tag Manager
-                  </h4>
+
+              <div className="space-y-6">
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">Google Tag Manager</h4>
                   <p className="text-gray-700 mb-3">
                     Plataforma de gestión de etiquetas que permite administrar y
                     desplegar etiquetas de marketing sin modificar el código.
                   </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>ID del Contenedor:</strong> GTM-MS5J6DQT
-                  </p>
+                  <div className="bg-white border-l-4 border-gray-400 p-4 mb-3">
+                    <p className="text-sm text-gray-700">
+                      <strong>ID del Contenedor:</strong> GTM-MS5J6DQT
+                    </p>
+                  </div>
                   <a
                     href="https://policies.google.com/privacy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 underline mt-2 text-sm"
+                    className="inline-flex items-center gap-2 text-gray-900 hover:text-gray-600 underline text-sm font-medium"
                   >
-                    Ver Política de Privacidad de Google
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
-                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
-                    </svg>
+                    Ver Política de Privacidad de Google →
                   </a>
                 </div>
 
-                <div className="bg-white p-4 border-l-4 border-purple-500">
-                  <h4 className="font-semibold text-black mb-2">
-                    Meta Pixel (Facebook Pixel)
-                  </h4>
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">Meta Pixel (Facebook Pixel)</h4>
                   <p className="text-gray-700 mb-3">
                     Herramienta de análisis que ayuda a medir la efectividad de
                     la publicidad mediante el seguimiento de las acciones que
                     realizan los usuarios.
                   </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>ID del Pixel:</strong> 25730530136536207
-                  </p>
+                  <div className="bg-white border-l-4 border-gray-400 p-4 mb-3">
+                    <p className="text-sm text-gray-700">
+                      <strong>ID del Pixel:</strong> 25730530136536207
+                    </p>
+                  </div>
                   <a
                     href="https://www.facebook.com/privacy/policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 underline mt-2 text-sm"
+                    className="inline-flex items-center gap-2 text-gray-900 hover:text-gray-600 underline text-sm font-medium"
                   >
-                    Ver Política de Privacidad de Meta
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
-                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
-                    </svg>
+                    Ver Política de Privacidad de Meta →
                   </a>
                 </div>
 
-                <div className="bg-white p-4 border-l-4 border-purple-500">
-                  <h4 className="font-semibold text-black mb-2">TikTok Pixel</h4>
+                <div className="bg-gray-50 border border-gray-200 p-6">
+                  <h4 className="font-semibold text-black mb-3">TikTok Pixel</h4>
                   <p className="text-gray-700 mb-3">
                     Código de seguimiento que ayuda a medir el rendimiento de las
                     campañas publicitarias y optimizar los anuncios en TikTok.
                   </p>
-                  <p className="text-sm text-gray-600">
-                    <strong>ID del Pixel:</strong> Pendiente por configurar
-                  </p>
+                  <div className="bg-white border-l-4 border-gray-400 p-4 mb-3">
+                    <p className="text-sm text-gray-700">
+                      <strong>ID del Pixel:</strong> Pendiente por configurar
+                    </p>
+                  </div>
                   <a
                     href="https://www.tiktok.com/legal/privacy-policy"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-800 underline mt-2 text-sm"
+                    className="inline-flex items-center gap-2 text-gray-900 hover:text-gray-600 underline text-sm font-medium"
                   >
-                    Ver Política de Privacidad de TikTok
-                    <svg
-                      width="12"
-                      height="12"
-                      fill="currentColor"
-                      viewBox="0 0 16 16"
-                    >
-                      <path d="M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5z" />
-                      <path d="M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0v-5z" />
-                    </svg>
+                    Ver Política de Privacidad de TikTok →
                   </a>
                 </div>
               </div>
             </div>
 
-            <div className="bg-green-50 border-l-4 border-green-500 p-6">
+            <div className="bg-yellow-50 border-l-4 border-yellow-500 p-6">
               <div className="flex gap-3">
-                <span className="text-green-600 font-bold text-lg">✓</span>
+                <span className="text-yellow-600 font-bold text-lg">⚠</span>
                 <div>
-                  <p className="font-semibold text-green-900 mb-1">
+                  <p className="font-semibold text-yellow-900 mb-1">
                     Control de Consentimiento
                   </p>
-                  <p className="text-green-800">
+                  <p className="text-yellow-800">
                     Todos estos servicios solo se cargan si el usuario acepta
                     explícitamente el uso de cookies a través de nuestro banner
                     de consentimiento. El usuario puede rechazar el uso de estas
@@ -404,35 +397,37 @@ export default function PoliticaCookiesPage() {
             </div>
 
             <div className="bg-gray-50 border border-gray-200 p-6">
-              <h4 className="font-semibold text-black mb-3">
+              <h4 className="font-semibold text-black mb-4">
                 Cookies Necesarias (Siempre Activas)
               </h4>
-              <p className="text-gray-700 mb-3">
+              <p className="text-gray-700 mb-4">
                 Adicionalmente, utilizamos cookies técnicas esenciales que son
                 necesarias para el funcionamiento básico del sitio web:
               </p>
-              <ul className="space-y-2 text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-600">•</span>
+              <ul className="space-y-3 text-gray-700">
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                   <span>Gestión de sesión de usuario</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-600">•</span>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                   <span>Carrito de compras</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-600">•</span>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                   <span>Autenticación y seguridad</span>
                 </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gray-600">•</span>
+                <li className="flex items-start gap-3">
+                  <span className="w-1.5 h-1.5 rounded-full bg-black mt-2 shrink-0"></span>
                   <span>Preferencias de consentimiento de cookies</span>
                 </li>
               </ul>
-              <p className="text-gray-600 text-sm mt-3 italic">
-                Estas cookies no requieren consentimiento ya que son
-                estrictamente necesarias para proporcionar el servicio solicitado.
-              </p>
+              <div className="bg-gray-50 border-l-4 border-gray-400 p-4 mt-4">
+                <p className="text-gray-800 text-sm">
+                  <strong>Nota:</strong> Estas cookies no requieren consentimiento ya que son
+                  estrictamente necesarias para proporcionar el servicio solicitado.
+                </p>
+              </div>
             </div>
           </div>
         </section>

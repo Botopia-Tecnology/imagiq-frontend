@@ -5,17 +5,40 @@
  * - Código modular y escalable
  * - Redes sociales y enlaces legales
  * - Animaciones elegantes
+ * - Sincronización dinámica con el navbar
  */
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { footerSections } from "./footer/footer-config";
+import { useState, useEffect, useMemo } from "react";
+import { getFooterSections } from "./footer/footer-config";
 import { FooterColumn } from "./footer/FooterColumn";
 import { FooterBottom } from "./footer/FooterBottom";
+import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 
 function Footer() {
   const [isVisible, setIsVisible] = useState(false);
+  const { getNavbarRoutes, loading } = useVisibleCategories();
+
+  // Obtener rutas del navbar para sincronizar con footer
+  const navbarRoutes = useMemo(() => {
+    const routes = getNavbarRoutes();
+    // Filtrar solo las rutas que queremos en el footer (excluir algunas si es necesario)
+    return routes.map(route => ({
+      name: route.name,
+      href: route.href,
+    }));
+  }, [getNavbarRoutes]);
+
+  // Generar secciones del footer dinámicamente basadas en las rutas del navbar
+  const footerSections = useMemo(() => {
+    // Si aún está cargando, usar la versión estática como fallback
+    if (loading) {
+      return getFooterSections();
+    }
+    // Generar secciones dinámicamente con las rutas del navbar
+    return getFooterSections(navbarRoutes);
+  }, [navbarRoutes, loading]);
 
   // Animación de entrada al montar
   useEffect(() => {

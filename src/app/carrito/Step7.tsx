@@ -66,6 +66,7 @@ interface BillingData {
   razonSocial?: string;
   nit?: string;
   nombreRepresentante?: string;
+  tipoDocumento: string;
 }
 
 export default function Step7({ onBack }: Step7Props) {
@@ -198,7 +199,27 @@ export default function Step7({ onBack }: Step7Props) {
   }, []);
 
   const handleConfirmOrder = async () => {
+    if (!billingData) {
+      console.error("No billing data available");
+      return;
+    }
+
     setIsProcessing(true);
+
+    // Preparar información de facturación de forma segura
+    const informacion_facturacion = {
+      direccion_id: billingData.direccion?.id ?? "",
+      email: billingData.email ?? "",
+      nombre_completo: billingData.nombre ?? "",
+      numero_documento: billingData.documento ?? "",
+      tipo_documento: billingData.tipoDocumento ?? "",
+      telefono: billingData.telefono ?? "",
+      type: billingData.type ?? "",
+      nit: billingData.nit,
+      razon_social: billingData.razonSocial,
+      representante_legal:
+        billingData.nombreRepresentante || billingData.razonSocial,
+    };
 
     try {
       // Aquí irá la lógica para procesar el pago
@@ -223,10 +244,11 @@ export default function Step7({ onBack }: Step7Props) {
             metodo_envio: 1,
             shippingAmount: String(calculations.shipping),
             userInfo: {
-              direccionId: billingData?.direccion.id || "",
+              direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
             cardTokenId: paymentData.savedCard?.id || "",
+            informacion_facturacion,
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -252,9 +274,10 @@ export default function Step7({ onBack }: Step7Props) {
             description: "Pago de pedido en Imagiq",
             metodo_envio: 1,
             userInfo: {
-              direccionId: billingData?.direccion.id || "",
+              direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -278,9 +301,10 @@ export default function Step7({ onBack }: Step7Props) {
             })),
             metodo_envio: 1,
             userInfo: {
-              direccionId: billingData?.direccion.id || "",
+              direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             throw new Error(res.message);

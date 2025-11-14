@@ -4,13 +4,15 @@ import { use, useEffect, useState } from "react";
 
 // Importación de iconos
 import { apiClient } from "@/lib/api";
-import { OrderDetails, EnvioEvento } from "../interfaces/types.d";
+import { OrderDetails, EnvioEvento, ProductoDetalle, TiendaInfo } from "../interfaces/types.d";
 import {
   LoadingSpinner,
   ErrorView,
   PickupOrderView,
   ShippingOrderView,
 } from "../components";
+import { ImagiqShippingView } from "@/app/imagiq-tracking/components";
+import { EnhancedPickupOrderView } from "@/app/pickup-tracking/components";
 
 export default function TrackingService({
   params,
@@ -24,6 +26,13 @@ export default function TrackingService({
   const [metodoEnvio, setMetodoEnvio] = useState<string>("");
   const [horaRecogida, setHoraRecogida] = useState<string>("");
   const [token, setToken] = useState<string>("");
+  const [fechaCreacion, setFechaCreacion] = useState<string>("");
+  const [productos, setProductos] = useState<ProductoDetalle[]>([]);
+  const [tiendaInfo, setTiendaInfo] = useState<TiendaInfo | undefined>(undefined);
+  const [direccionEntrega, setDireccionEntrega] = useState<string>("");
+  const [ciudadEntrega, setCiudadEntrega] = useState<string>("");
+  const [nombreDestinatario, setNombreDestinatario] = useState<string>("");
+  const [telefonoDestinatario, setTelefonoDestinatario] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const pathParams = use(params);
 
@@ -83,6 +92,15 @@ export default function TrackingService({
         setMetodoEnvio(data.metodo_envio || "");
         setHoraRecogida(data.hora_recogida_autorizada || "");
         setToken(data.token || "");
+        setFechaCreacion(data.fecha_creacion || "");
+
+        // Set new enhanced data
+        setProductos(data.productos || []);
+        setTiendaInfo(data.tienda);
+        setDireccionEntrega(data.direccion_entrega || "");
+        setCiudadEntrega(data.ciudad_entrega || "");
+        setNombreDestinatario(data.nombre_destinatario || "");
+        setTelefonoDestinatario(data.telefono_destinatario || "");
 
         setIsLoading(false);
       })
@@ -105,20 +123,58 @@ export default function TrackingService({
     );
   }
 
+  // Determine which view to show
+  const showPickup = isPickupOrder(metodoEnvio);
+  const showEnhancedPickup = showPickup && (productos.length > 0 || tiendaInfo);
+  const showImagiqShipping = !showPickup && !pdfBase64;
+  const showCoordinadoraShipping = !showPickup && pdfBase64;
+
   return (
     <div className="bg-white pt-4 md:pt-5">
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-2 sm:px-4">
         {/* Tracking Content - full-bleed white, no card border */}
         <div className="bg-white max-w-7xl mx-auto" style={{ minHeight: "500px" }}>
-          {isPickupOrder(metodoEnvio) ? (
+          {/* Enhanced Pickup View - with products */}
+          {showEnhancedPickup && (
+            <EnhancedPickupOrderView
+              orderNumber={orderNumber}
+              token={token}
+              horaRecogida={horaRecogida}
+              fechaCreacion={fechaCreacion}
+              products={productos}
+              storeInfo={tiendaInfo}
+              formatDate={formatDate}
+            />
+          )}
+
+          {/* Basic Pickup View - fallback */}
+          {showPickup && !showEnhancedPickup && (
             <PickupOrderView
               orderNumber={orderNumber}
               token={token}
               horaRecogida={horaRecogida}
               formatDate={formatDate}
             />
-          ) : (
+          )}
+
+          {/* IMAGIQ Shipping View - no PDF */}
+          {showImagiqShipping && (
+            <ImagiqShippingView
+              orderNumber={orderNumber}
+              estimatedInitDate={estimatedInitDate}
+              estimatedFinalDate={estimatedFinalDate}
+              trackingSteps={trackingSteps}
+              direccionEntrega={direccionEntrega}
+              ciudadEntrega={ciudadEntrega}
+              nombreDestinatario={nombreDestinatario}
+              telefonoDestinatario={telefonoDestinatario}
+              products={productos}
+            />
+          )}
+
+          {/* Coordinadora Shipping View - with PDF */}
+          {showCoordinadoraShipping && (
             <ShippingOrderView
               orderNumber={orderNumber}
               estimatedInitDate={estimatedInitDate}

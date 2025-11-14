@@ -1,0 +1,325 @@
+import { OrderInfoCard, InstructionsBox } from "@/app/tracking-service/components";
+import Image from "next/image";
+
+interface Product {
+  id: string;
+  nombre: string;
+  imagen?: string;
+  cantidad: number;
+  precio?: number;
+}
+
+interface StoreInfo {
+  nombre: string;
+  direccion: string;
+  ciudad: string;
+  telefono: string;
+  horario: string;
+}
+
+interface EnhancedPickupOrderViewProps {
+  orderNumber: string;
+  token: string;
+  horaRecogida: string;
+  fechaCreacion?: string;
+  products?: Product[];
+  storeInfo?: StoreInfo;
+  formatDate: (
+    dateString: string,
+    options?: Intl.DateTimeFormatOptions
+  ) => string;
+}
+
+export function EnhancedPickupOrderView({
+  orderNumber,
+  token,
+  horaRecogida,
+  fechaCreacion,
+  products = [],
+  storeInfo,
+  formatDate,
+}: Readonly<EnhancedPickupOrderViewProps>) {
+  const orderInfoItems = [
+    { label: "Orden #", value: orderNumber },
+    { label: "Token", value: token, highlight: true },
+    {
+      label: "Fecha de creación",
+      value: fechaCreacion ? formatDate(fechaCreacion) : formatDate(new Date().toISOString()),
+    },
+    {
+      label: "Hora de recogida",
+      value: horaRecogida || "Pendiente por asignar",
+    },
+    {
+      label: "Estado",
+      value: horaRecogida ? "Listo para recoger" : "Preparando pedido",
+    },
+  ];
+
+  return (
+    <div className="flex flex-col gap-6 p-4 sm:p-8">
+      {/* Header Section */}
+      <div className="text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg
+            className="w-8 h-8 text-green-600"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold text-black mb-2">
+          {horaRecogida ? "Pedido listo para recoger" : "Preparando tu pedido"}
+        </h1>
+        <p className="text-gray-600">
+          {horaRecogida
+            ? "Tu pedido está preparado y esperando por ti en la tienda"
+            : "Estamos preparando tu pedido. Te notificaremos cuando esté listo."}
+        </p>
+      </div>
+
+      {/* Main Content - Two Column Layout on Desktop */}
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Left Column - Order Info */}
+        <div className="lg:w-1/2 w-full space-y-6">
+          <OrderInfoCard title="Información del pedido" items={orderInfoItems} />
+
+          {/* Store Information */}
+          {storeInfo && (
+            <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg
+                    className="w-5 h-5 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-black">
+                  Información de la tienda
+                </h2>
+              </div>
+              <div className="space-y-3 text-sm">
+                <div>
+                  <span className="font-medium text-gray-900">{storeInfo.nombre}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <svg
+                    className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                  </svg>
+                  <span className="text-gray-600">{storeInfo.direccion}, {storeInfo.ciudad}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                    />
+                  </svg>
+                  <span className="text-gray-600">{storeInfo.telefono}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <svg
+                    className="w-4 h-4 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span className="text-gray-600">{storeInfo.horario}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <InstructionsBox
+            title="Instrucciones para recoger"
+            instructions="Presenta tu identificación, el número de orden y el token al personal de la tienda para recoger tu pedido."
+          />
+        </div>
+
+        {/* Right Column - Products List */}
+        <div className="lg:w-1/2 w-full">
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-5 h-5 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-black">
+                  Productos en tu pedido
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {products.length} {products.length === 1 ? 'producto' : 'productos'}
+                </p>
+              </div>
+            </div>
+
+            {products.length > 0 ? (
+              <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
+                {products.map((product, index) => (
+                  <div
+                    key={product.id}
+                    className="flex gap-4 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl border border-gray-200 hover:shadow-md hover:border-blue-300 transition-all duration-200"
+                  >
+                    {/* Product Image */}
+                    <div className="w-24 h-24 bg-white rounded-xl overflow-hidden flex-shrink-0 border-2 border-gray-100 relative shadow-sm">
+                      {product.imagen ? (
+                        <Image
+                          src={product.imagen}
+                          alt={product.nombre}
+                          fill
+                          className="object-contain p-2"
+                          sizes="96px"
+                          priority={index < 3}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                          <svg
+                            className="w-10 h-10 text-gray-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Product Info */}
+                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-base line-clamp-2 mb-2">
+                          {product.nombre}
+                        </h3>
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                            Cantidad: {product.cantidad}
+                          </span>
+                        </div>
+                      </div>
+                      {product.precio && (
+                        <div className="flex justify-end">
+                          <span className="text-lg font-bold text-[#17407A]">
+                            ${product.precio.toLocaleString('es-CO')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+                <div className="flex flex-col items-center justify-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-4">
+                    <svg
+                      className="w-10 h-10 text-gray-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-gray-700 mb-2">
+                    Detalles del pedido
+                  </h3>
+                  <p className="text-sm text-gray-500 max-w-xs">
+                    Los detalles de los productos se mostrarán aquí una vez que estén disponibles
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* QR Code Token Display */}
+          <div className="mt-6 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border-2 border-blue-200 p-6">
+            <h3 className="font-semibold text-gray-900 text-center mb-3">
+              Token de recogida
+            </h3>
+            <div className="bg-white rounded-lg p-6 shadow-inner">
+              <div className="text-center">
+                <div className="inline-block bg-gray-100 px-6 py-3 rounded-lg mb-3">
+                  <span className="text-3xl font-bold text-[#17407A] tracking-wider">
+                    {token}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Presenta este código al recoger tu pedido
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -166,18 +166,12 @@ export const CategoryProductsGrid = forwardRef<
 
                   const product = item.data as ProductCardProps;
                   return (
-                    <motion.div
+                    <div
                       key={item.key}
                       className="w-full"
-                      initial={{ opacity: 0, y: -20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{
-                        duration: 0.4,
-                        delay: index * 0.08,
-                        ease: [0.25, 0.1, 0.25, 1],
-                      }}
                     >
                       <ProductCard
+                        key={product.id}
                         {...product}
                         isFavorite={isFavorite(product.id)}
                         onToggleFavorite={(productId: string) => {
@@ -189,7 +183,7 @@ export const CategoryProductsGrid = forwardRef<
                         }}
                         className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
                       />
-                    </motion.div>
+                    </div>
                   );
                 })}
 

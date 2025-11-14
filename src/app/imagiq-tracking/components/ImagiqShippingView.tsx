@@ -200,7 +200,7 @@ export function ImagiqShippingView({
       </div>
 
       {/* Contact Support - Full Width */}
-      <div className="mt-8">
+      <div className="mt-2">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <svg
             className="w-5 h-5 text-[#17407A]"

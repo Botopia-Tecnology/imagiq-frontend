@@ -42,8 +42,8 @@ export function TrackingHeader({
             <p className="text-xs font-bold text-gray-800 text-center">Recibido por IMAGIQ</p>
           </div>
 
-          {/* Connector Line 1 - MAS LARGA */}
-          <div className="w-24 h-1.5 bg-black -mx-0"></div>
+          {/* Connector Line 1 */}
+          <div className="w-24 h-1 bg-black mx-2 relative z-10"></div>
 
           {/* Step 2: Enviando - In Progress */}
           <div className="flex flex-col items-center gap-1 relative z-20">
@@ -55,8 +55,8 @@ export function TrackingHeader({
             <p className="text-xs font-bold text-gray-500 text-center">Enviando por IMAGIQ</p>
           </div>
 
-          {/* Connector Line 2 - MAS LARGA */}
-          <div className="w-24 h-1.5 bg-gray-400 -mx-0"></div>
+          {/* Connector Line 2 */}
+          <div className="w-24 h-1 bg-gray-500 mx-2 relative z-10"></div>
 
           {/* Step 3: Entregado - Not Started */}
           <div className="flex flex-col items-center gap-1 relative z-20">

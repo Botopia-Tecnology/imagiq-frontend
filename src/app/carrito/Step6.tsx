@@ -41,7 +41,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
   // Estados para direcciones
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
+    null
+  );
   const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
   const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
 
@@ -70,7 +72,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   const handleAddressSelect = (address: Address) => {
     setSelectedAddressId(address.id);
     const direccion = addressToDireccion(address);
-    setBillingData(prev => ({
+    setBillingData((prev) => ({
       ...prev,
       direccion,
     }));
@@ -83,11 +85,17 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
       setIsLoadingAddresses(true);
       try {
-        const userAddresses = await addressesService.getUserAddressesByType("FACTURACION");
+        const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+        const userAddresses = await addressesService.getUserAddressesByType(
+          "FACTURACION",
+          user?.id
+        );
         setAddresses(userAddresses);
 
         // Auto-seleccionar dirección predeterminada
-        const defaultAddress = userAddresses.find((addr) => addr.esPredeterminada);
+        const defaultAddress = userAddresses.find(
+          (addr) => addr.esPredeterminada
+        );
         if (defaultAddress) {
           setSelectedAddressId(defaultAddress.id);
           handleAddressSelect(defaultAddress);
@@ -141,7 +149,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       if (shippingAddress) {
         try {
           const parsed = JSON.parse(shippingAddress);
-          setBillingData(prev => ({
+          setBillingData((prev) => ({
             ...prev,
             direccion: parsed,
           }));
@@ -154,20 +162,20 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
   const handleTypeChange = (type: BillingType) => {
     setBillingType(type);
-    setBillingData(prev => ({
+    setBillingData((prev) => ({
       ...prev,
       type,
     }));
   };
 
   const handleInputChange = (field: keyof BillingData, value: string) => {
-    setBillingData(prev => ({
+    setBillingData((prev) => ({
       ...prev,
       [field]: value,
     }));
     // Limpiar error del campo cuando el usuario empieza a escribir
     if (errors[field]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const newErrors = { ...prev };
         delete newErrors[field];
         return newErrors;
@@ -186,7 +194,11 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   const handleAddressAdded = async (newAddress: Address) => {
     // Recargar direcciones
     try {
-      const userAddresses = await addressesService.getUserAddressesByType("FACTURACION");
+      const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const userAddresses = await addressesService.getUserAddressesByType(
+        "FACTURACION",
+        user?.id
+      );
       setAddresses(userAddresses);
 
       // Seleccionar la nueva dirección
@@ -228,7 +240,8 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
         newErrors.nit = "El NIT es requerido";
       }
       if (!billingData.nombreRepresentante?.trim()) {
-        newErrors.nombreRepresentante = "El nombre del representante es requerido";
+        newErrors.nombreRepresentante =
+          "El nombre del representante es requerido";
       }
     }
 
@@ -267,9 +280,12 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     // Si es persona jurídica, validar también campos específicos
     if (billingType === "juridica") {
       // Verificar que los campos existan Y no estén vacíos
-      const razonSocialFilled = billingData.razonSocial && billingData.razonSocial.trim() !== "";
+      const razonSocialFilled =
+        billingData.razonSocial && billingData.razonSocial.trim() !== "";
       const nitFilled = billingData.nit && billingData.nit.trim() !== "";
-      const nombreRepresentanteFilled = billingData.nombreRepresentante && billingData.nombreRepresentante.trim() !== "";
+      const nombreRepresentanteFilled =
+        billingData.nombreRepresentante &&
+        billingData.nombreRepresentante.trim() !== "";
 
       return (
         commonFieldsFilled &&
@@ -289,7 +305,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Formulario de facturación */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="text-[22px] font-bold mb-6">Datos de facturación</h2>
+              <h2 className="text-[22px] font-bold mb-6">
+                Datos de facturación
+              </h2>
 
               {/* Selector de tipo de persona */}
               <div className="mb-6">
@@ -349,14 +367,20 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                       <input
                         type="text"
                         value={billingData.razonSocial || ""}
-                        onChange={(e) => handleInputChange("razonSocial", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("razonSocial", e.target.value)
+                        }
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                          errors.razonSocial ? "border-red-500" : "border-gray-300"
+                          errors.razonSocial
+                            ? "border-red-500"
+                            : "border-gray-300"
                         }`}
                         placeholder="Empresa S.A.S."
                       />
                       {errors.razonSocial && (
-                        <p className="text-red-500 text-xs mt-1">{errors.razonSocial}</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.razonSocial}
+                        </p>
                       )}
                     </div>
 
@@ -368,33 +392,47 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                       <input
                         type="text"
                         value={billingData.nit || ""}
-                        onChange={(e) => handleInputChange("nit", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange("nit", e.target.value)
+                        }
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
                           errors.nit ? "border-red-500" : "border-gray-300"
                         }`}
                         placeholder="900123456-7"
                       />
                       {errors.nit && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nit}</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.nit}
+                        </p>
                       )}
                     </div>
 
                     {/* Nombre del Representante Legal */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nombre del Representante Legal <span className="text-red-500">*</span>
+                        Nombre del Representante Legal{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         value={billingData.nombreRepresentante || ""}
-                        onChange={(e) => handleInputChange("nombreRepresentante", e.target.value)}
+                        onChange={(e) =>
+                          handleInputChange(
+                            "nombreRepresentante",
+                            e.target.value
+                          )
+                        }
                         className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                          errors.nombreRepresentante ? "border-red-500" : "border-gray-300"
+                          errors.nombreRepresentante
+                            ? "border-red-500"
+                            : "border-gray-300"
                         }`}
                         placeholder="Juan Pérez"
                       />
                       {errors.nombreRepresentante && (
-                        <p className="text-red-500 text-xs mt-1">{errors.nombreRepresentante}</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.nombreRepresentante}
+                        </p>
                       )}
                     </div>
                   </>
@@ -403,13 +441,17 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 {/* Nombre (o nombre del contacto para jurídica) */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {billingType === "juridica" ? "Nombre de contacto" : "Nombre completo"}{" "}
+                    {billingType === "juridica"
+                      ? "Nombre de contacto"
+                      : "Nombre completo"}{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={billingData.nombre}
-                    onChange={(e) => handleInputChange("nombre", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("nombre", e.target.value)
+                    }
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
                       errors.nombre ? "border-red-500" : "border-gray-300"
                     }`}
@@ -423,20 +465,26 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 {/* Documento */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {billingType === "juridica" ? "Cédula del contacto" : "Documento de identidad"}{" "}
+                    {billingType === "juridica"
+                      ? "Cédula del contacto"
+                      : "Documento de identidad"}{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={billingData.documento}
-                    onChange={(e) => handleInputChange("documento", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("documento", e.target.value)
+                    }
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
                       errors.documento ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="1234567890"
                   />
                   {errors.documento && (
-                    <p className="text-red-500 text-xs mt-1">{errors.documento}</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.documento}
+                    </p>
                   )}
                 </div>
 
@@ -467,14 +515,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   <input
                     type="tel"
                     value={billingData.telefono}
-                    onChange={(e) => handleInputChange("telefono", e.target.value)}
+                    onChange={(e) =>
+                      handleInputChange("telefono", e.target.value)
+                    }
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
                       errors.telefono ? "border-red-500" : "border-gray-300"
                     }`}
                     placeholder="3001234567"
                   />
                   {errors.telefono && (
-                    <p className="text-red-500 text-xs mt-1">{errors.telefono}</p>
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.telefono}
+                    </p>
                   )}
                 </div>
               </div>
@@ -610,7 +662,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 )}
 
                 {errors.direccion && (
-                  <p className="text-red-500 text-xs mt-2">{errors.direccion}</p>
+                  <p className="text-red-500 text-xs mt-2">
+                    {errors.direccion}
+                  </p>
                 )}
               </div>
             </div>

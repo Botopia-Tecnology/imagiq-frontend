@@ -2,12 +2,21 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Step4OrderSummary from "./components/Step4OrderSummary";
-import { CreditCard, MapPin, FileText, Truck, Store, Edit2 } from "lucide-react";
+import {
+  CreditCard,
+  MapPin,
+  FileText,
+  Truck,
+  Store,
+  Edit2,
+} from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
 import { DBCard, DecryptedCardData } from "@/features/profile/types";
 import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
+import { payWithAddi, payWithCard, payWithPse } from "./utils";
+import { useCart } from "@/hooks/useCart";
 
 interface Step7Props {
   onBack?: () => void;
@@ -45,6 +54,10 @@ interface BillingData {
   email: string;
   telefono: string;
   direccion: {
+    id: string;
+    codigo_dane: string;
+    pais: string;
+    usuario_id: string;
     linea_uno: string;
     ciudad: string;
   };
@@ -63,6 +76,7 @@ export default function Step7({ onBack }: Step7Props) {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const { products, calculations } = useCart();
 
   // Cargar datos de localStorage
   useEffect(() => {
@@ -81,15 +95,21 @@ export default function Step7({ onBack }: Step7Props) {
         // Si usó una tarjeta guardada, cargar sus datos completos
         if (savedCardId && authContext.user?.id) {
           try {
-            const encryptedCards = await profileService.getUserPaymentMethodsEncrypted(authContext.user.id);
+            const encryptedCards =
+              await profileService.getUserPaymentMethodsEncrypted(
+                authContext.user.id
+              );
 
             const decryptedCards: DBCard[] = encryptedCards
               .map((encCard) => {
-                const decrypted = encryptionService.decryptJSON<DecryptedCardData>(encCard.encryptedData);
+                const decrypted =
+                  encryptionService.decryptJSON<DecryptedCardData>(
+                    encCard.encryptedData
+                  );
                 if (!decrypted) return null;
 
                 return {
-                  id: decrypted.cardId as unknown as number,
+                  id: decrypted.cardId as unknown as string,
                   ultimos_dijitos: decrypted.last4Digits,
                   marca: decrypted.brand?.toLowerCase() || undefined,
                   banco: decrypted.banco || undefined,
@@ -101,7 +121,9 @@ export default function Step7({ onBack }: Step7Props) {
               })
               .filter((card): card is DBCard => card !== null);
 
-            savedCard = decryptedCards.find((card) => String(card.id) === savedCardId);
+            savedCard = decryptedCards.find(
+              (card) => String(card.id) === savedCardId
+            );
           } catch (error) {
             console.error("Error loading saved card:", error);
           }
@@ -120,7 +142,9 @@ export default function Step7({ onBack }: Step7Props) {
           cardData,
           savedCard,
           bank: selectedBank || undefined,
-          installments: installments ? Number.parseInt(installments) : undefined,
+          installments: installments
+            ? Number.parseInt(installments)
+            : undefined,
         });
       }
     };
@@ -160,10 +184,96 @@ export default function Step7({ onBack }: Step7Props) {
     try {
       // Aquí irá la lógica para procesar el pago
       // Por ahora solo simulamos un delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      console.log({ paymentData });
 
+      switch (paymentData?.method) {
+        case "tarjeta": {
+          const res = await payWithCard({
+            currency: "COP",
+            dues: String(paymentData.installments || "1"),
+            items: products.map((p) => ({
+              sku: String(p.sku),
+              name: String(p.name),
+              quantity: String(p.quantity),
+              unitPrice: String(p.price),
+              skupostback: String(p.skuPostback),
+              desDetallada: String(p.desDetallada),
+              ean: String(p.ean),
+            })),
+            totalAmount: String(calculations.total),
+            metodo_envio: 1,
+            shippingAmount: String(calculations.shipping),
+            userInfo: {
+              direccionId: billingData?.direccion.id || "",
+              userId: authContext.user?.id || "",
+            },
+            cardTokenId: paymentData.savedCard?.id || "",
+          });
+          if ("error" in res) {
+            throw new Error(res.message);
+          }
+          router.push(res.redirectionUrl);
+          break;
+        }
+        case "pse": {
+          const res = await payWithPse({
+            totalAmount: String(calculations.total),
+            shippingAmount: String(calculations.shipping),
+            currency: "COP",
+            items: products.map((p) => ({
+              sku: String(p.sku),
+              name: String(p.name),
+              quantity: String(p.quantity),
+              unitPrice: String(p.price),
+              skupostback: String(p.skuPostback),
+              desDetallada: String(p.desDetallada),
+              ean: String(p.ean),
+            })),
+            bank: paymentData.bank || "",
+            description: "Pago de pedido en Imagiq",
+            metodo_envio: 1,
+            userInfo: {
+              direccionId: billingData?.direccion.id || "",
+              userId: authContext.user?.id || "",
+            },
+          });
+          if ("error" in res) {
+            throw new Error(res.message);
+          }
+          router.push(res.redirectUrl);
+          break;
+        }
+        case "addi": {
+          const res = await payWithAddi({
+            totalAmount: String(calculations.total),
+            shippingAmount: String(calculations.shipping),
+            currency: "COP",
+            items: products.map((p) => ({
+              sku: String(p.sku),
+              name: String(p.name),
+              quantity: String(p.quantity),
+              unitPrice: String(p.price),
+              skupostback: String(p.skuPostback),
+              desDetallada: String(p.desDetallada),
+              ean: String(p.ean),
+            })),
+            metodo_envio: 1,
+            userInfo: {
+              direccionId: billingData?.direccion.id || "",
+              userId: authContext.user?.id || "",
+            },
+          });
+          if ("error" in res) {
+            throw new Error(res.message);
+          }
+          router.push(res.redirectUrl);
+          break;
+        }
+        default:
+          throw new Error("Método de pago no soportado");
+      }
       // Redirigir a página de éxito
-      router.push("/success-checkout/123456");
+      /* router.push("/success-checkout/123456"); */
     } catch (error) {
       console.error("Error processing payment:", error);
       setIsProcessing(false);
@@ -176,8 +286,8 @@ export default function Step7({ onBack }: Step7Props) {
         return "Tarjeta de crédito/débito";
       case "pse":
         return "PSE - Pago Seguro en Línea";
-      case "efectivo":
-        return "Efectivo contra entrega";
+      case "addi":
+        return "Paga a cuotas con Addi";
       default:
         return method;
     }
@@ -187,7 +297,9 @@ export default function Step7({ onBack }: Step7Props) {
     <div className="min-h-screen w-full">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Confirma tu pedido</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Confirma tu pedido
+          </h1>
           <p className="text-gray-600 mt-1">
             Revisa todos los detalles antes de confirmar tu compra
           </p>
@@ -205,7 +317,9 @@ export default function Step7({ onBack }: Step7Props) {
                       <CreditCard className="w-5 h-5 text-gray-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900">Método de pago</h2>
+                      <h2 className="text-lg font-bold text-gray-900">
+                        Método de pago
+                      </h2>
                       <p className="text-sm text-gray-600">
                         {getPaymentMethodLabel(paymentData.method)}
                       </p>
@@ -228,7 +342,10 @@ export default function Step7({ onBack }: Step7Props) {
                       {paymentData.savedCard && (
                         <>
                           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <CardBrandLogo brand={paymentData.savedCard.marca} size="md" />
+                            <CardBrandLogo
+                              brand={paymentData.savedCard.marca}
+                              size="md"
+                            />
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-gray-900 tracking-wider">
@@ -236,7 +353,9 @@ export default function Step7({ onBack }: Step7Props) {
                                 </span>
                                 {paymentData.savedCard.tipo_tarjeta && (
                                   <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.savedCard.tipo_tarjeta.includes("credit")
+                                    {paymentData.savedCard.tipo_tarjeta.includes(
+                                      "credit"
+                                    )
                                       ? "Crédito"
                                       : "Débito"}
                                   </span>
@@ -269,16 +388,22 @@ export default function Step7({ onBack }: Step7Props) {
                         <>
                           <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                             {paymentData.cardData.brand && (
-                              <CardBrandLogo brand={paymentData.cardData.brand} size="md" />
+                              <CardBrandLogo
+                                brand={paymentData.cardData.brand}
+                                size="md"
+                              />
                             )}
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold text-gray-900 tracking-wider">
-                                  •••• {paymentData.cardData.cardNumber.slice(-4)}
+                                  ••••{" "}
+                                  {paymentData.cardData.cardNumber.slice(-4)}
                                 </span>
                                 {paymentData.cardData.cardType && (
                                   <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.cardData.cardType.includes("credit")
+                                    {paymentData.cardData.cardType.includes(
+                                      "credit"
+                                    )
                                       ? "Crédito"
                                       : "Débito"}
                                   </span>
@@ -311,7 +436,9 @@ export default function Step7({ onBack }: Step7Props) {
                   {paymentData.method === "pse" && paymentData.bank && (
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Banco:</span>
-                      <span className="font-medium text-gray-900">{paymentData.bank}</span>
+                      <span className="font-medium text-gray-900">
+                        {paymentData.bank}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -331,7 +458,9 @@ export default function Step7({ onBack }: Step7Props) {
                       )}
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900">Método de entrega</h2>
+                      <h2 className="text-lg font-bold text-gray-900">
+                        Método de entrega
+                      </h2>
                       <p className="text-sm text-gray-600">
                         {shippingData.type === "delivery"
                           ? "Envío a domicilio"
@@ -357,7 +486,9 @@ export default function Step7({ onBack }: Step7Props) {
                         {shippingData.address}
                       </p>
                       {shippingData.city && (
-                        <p className="text-xs text-gray-600 mt-1">{shippingData.city}</p>
+                        <p className="text-xs text-gray-600 mt-1">
+                          {shippingData.city}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -374,7 +505,9 @@ export default function Step7({ onBack }: Step7Props) {
                       <FileText className="w-5 h-5 text-gray-600" />
                     </div>
                     <div>
-                      <h2 className="text-lg font-bold text-gray-900">Datos de facturación</h2>
+                      <h2 className="text-lg font-bold text-gray-900">
+                        Datos de facturación
+                      </h2>
                       <p className="text-sm text-gray-600">
                         {billingData.type === "natural"
                           ? "Persona Natural"
@@ -394,14 +527,17 @@ export default function Step7({ onBack }: Step7Props) {
 
                 <div className="space-y-4">
                   {/* Razón Social (solo para jurídica) - ocupa todo el ancho */}
-                  {billingData.type === "juridica" && billingData.razonSocial && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Razón Social</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.razonSocial}
-                      </p>
-                    </div>
-                  )}
+                  {billingData.type === "juridica" &&
+                    billingData.razonSocial && (
+                      <div>
+                        <p className="text-xs text-gray-500 mb-1">
+                          Razón Social
+                        </p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {billingData.razonSocial}
+                        </p>
+                      </div>
+                    )}
 
                   {/* Grid de 2 columnas para los demás campos */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -409,14 +545,18 @@ export default function Step7({ onBack }: Step7Props) {
                     {billingData.type === "juridica" && billingData.nit && (
                       <div>
                         <p className="text-xs text-gray-500 mb-1">NIT</p>
-                        <p className="text-sm font-medium text-gray-900">{billingData.nit}</p>
+                        <p className="text-sm font-medium text-gray-900">
+                          {billingData.nit}
+                        </p>
                       </div>
                     )}
 
                     {/* Nombre */}
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Nombre</p>
-                      <p className="text-sm font-medium text-gray-900">{billingData.nombre}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {billingData.nombre}
+                      </p>
                     </div>
 
                     {/* Documento */}
@@ -430,20 +570,26 @@ export default function Step7({ onBack }: Step7Props) {
                     {/* Email */}
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Email</p>
-                      <p className="text-sm font-medium text-gray-900">{billingData.email}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {billingData.email}
+                      </p>
                     </div>
 
                     {/* Teléfono */}
                     <div>
                       <p className="text-xs text-gray-500 mb-1">Teléfono</p>
-                      <p className="text-sm font-medium text-gray-900">{billingData.telefono}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {billingData.telefono}
+                      </p>
                     </div>
                   </div>
 
                   {/* Dirección de facturación - ocupa todo el ancho */}
                   {billingData.direccion && (
                     <div>
-                      <p className="text-xs text-gray-500 mb-1">Dirección de facturación</p>
+                      <p className="text-xs text-gray-500 mb-1">
+                        Dirección de facturación
+                      </p>
                       <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
                         <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                         <div>

@@ -80,9 +80,10 @@ export function usePrefetchProducts() {
 
   /**
    * Realiza el prefetch de productos
+   * Retorna una Promise que se resuelve cuando el prefetch termina
    */
   const prefetchProducts = useCallback(
-    async (options: PrefetchOptions) => {
+    async (options: PrefetchOptions): Promise<void> => {
       const params = buildPrefetchParams(options);
       if (!params) {
         return;

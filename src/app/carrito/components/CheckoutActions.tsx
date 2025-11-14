@@ -7,6 +7,7 @@ interface CheckoutActionsProps {
   isProcessing: boolean;
   isAccepted: boolean;
   error?: string;
+  continueText?: string;
 }
 
 export default function CheckoutActions({
@@ -15,6 +16,7 @@ export default function CheckoutActions({
   isProcessing,
   isAccepted,
   error,
+  continueText = "Finalizar pago",
 }: CheckoutActionsProps) {
   const router = useRouter();
 
@@ -67,7 +69,7 @@ export default function CheckoutActions({
             <span>Procesando tu compra…</span>
           </span>
         ) : (
-          "Finalizar pago"
+          continueText
         )}
       </button>
 

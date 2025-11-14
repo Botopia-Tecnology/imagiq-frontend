@@ -92,12 +92,19 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
   };
 }
 
+type ProductSelectionProps = {
+  selectedSku?: string | null;
+  selectedVariant?: { ean?: string } | null;
+};
+
 export default function ViewProduct({
   product,
   flix,
+  productSelection,
 }: Readonly<{
   product: RawProduct;
   flix?: ProductCardProps;
+  productSelection?: ProductSelectionProps | null;
 }>) {
 
 
@@ -262,7 +269,12 @@ export default function ViewProduct({
       {/* Parte 2: Imagen y especificaciones con scroll y animaciones */}
 
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0">
-        <Specifications product={productCard} flix={flix}  />
+        <Specifications
+          product={productCard}
+          flix={flix}
+          selectedSku={productSelection?.selectedSku || undefined}
+          selectedEan={productSelection?.selectedVariant?.ean || undefined}
+        />
       </div>
     </div>
   );

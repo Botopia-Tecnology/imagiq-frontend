@@ -33,7 +33,7 @@ export interface DBAddress {
  * Formato del JSON en el campo 'tarjetas' de v_usuario_perfil
  */
 export interface DBCard {
-  id: number;
+  id: string;
   ultimos_dijitos: string;
   tipo_tarjeta?: string;
   nombre_titular?: string;

@@ -52,6 +52,33 @@ export async function payWithCard(
   }
 }
 
+// Nueva función para pagar con tarjeta guardada (token)
+export async function payWithSavedCard(
+  props: Omit<CardPaymentData, "cardNumber" | "cardExpMonth" | "cardExpYear" | "cardCvc"> & { cardId: string }
+): Promise<{ redirectionUrl: string } | { error: string; message: string }> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/payments/epayco/saved-card`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...props,
+        dues: props.dues.trim() === "" ? "1" : props.dues,
+      }),
+    });
+    if (!res.ok) {
+      const errorData = await res.json();
+      return { error: "payment_failed", message: errorData.message || "Failed to process saved card payment" };
+    }
+    const data = (await res.json()) as { redirectionUrl: string };
+    return data;
+  } catch (error) {
+    console.error("Error processing saved card payment:", error);
+    return { error: "network_error", message: "Error de conexión al procesar el pago" };
+  }
+}
+
 export async function payWithPse(props: PsePaymentData): Promise<{ redirectUrl: string } | { error: string; message: string }> {
   try {
     const res = await fetch(`${API_BASE_URL}/api/payments/epayco/pse`, {

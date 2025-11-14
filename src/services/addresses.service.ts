@@ -190,11 +190,12 @@ export class AddressesService {
    * Obtiene direcciones por tipo
    */
   public async getUserAddressesByType(
-    tipo: "ENVIO" | "FACTURACION" | "AMBOS"
+    tipo: "ENVIO" | "FACTURACION" | "AMBOS",
+    usuarioId: string
   ): Promise<Address[]> {
     try {
       const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/addresses/by-type/${tipo}`,
+        `${BASE_CONFIG.API_URL}/api/addresses/by-type/${tipo}?usuarioId=${usuarioId}`,
         {
           method: "GET",
           headers: this.getHeaders(),

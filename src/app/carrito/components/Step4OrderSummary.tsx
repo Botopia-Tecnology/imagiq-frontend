@@ -4,15 +4,19 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
 
 interface Step4OrderSummaryProps {
-  isProcessing: boolean;
-  accepted: boolean;
+  isProcessing?: boolean;
   onFinishPayment: () => void;
+  buttonText?: string;
+  onBack?: () => void;
+  disabled?: boolean;
 }
 
 export default function Step4OrderSummary({
-  isProcessing,
-  accepted,
+  isProcessing = false,
   onFinishPayment,
+  buttonText = "Continuar",
+  onBack,
+  disabled = false,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -21,6 +25,17 @@ export default function Step4OrderSummary({
     isEmpty,
     products,
   } = useCart();
+
+  // Calcular ahorro total por descuentos de productos
+  const productSavings = React.useMemo(() => {
+    return products.reduce((total, product) => {
+      if (product.originalPrice && product.originalPrice > product.price) {
+        const saving = (product.originalPrice - product.price) * product.quantity;
+        return total + saving;
+      }
+      return total;
+    }, 0);
+  }, [products]);
 
   if (isEmpty) {
     return (
@@ -51,13 +66,27 @@ export default function Step4OrderSummary({
             {cartFormatPrice(calculations.subtotal)}
           </span>
         </div>
-        {/* Descuento: siempre string */}
-        <div className="flex justify-between text-base">
-          <span>Descuento</span>
-          <span className="text-red-600">
-            -{cartFormatPrice(calculations.discount)}
-          </span>
-        </div>
+
+        {/* Descuento por productos */}
+        {productSavings > 0 && (
+          <div className="flex justify-between text-base">
+            <span className="text-green-600 font-medium">Descuento</span>
+            <span className="text-green-600 font-bold">
+              -{cartFormatPrice(productSavings)}
+            </span>
+          </div>
+        )}
+
+        {/* Descuento por cupón (si existe) */}
+        {calculations.discount > 0 && (
+          <div className="flex justify-between text-base">
+            <span>Descuento cupón</span>
+            <span className="text-red-600">
+              -{cartFormatPrice(calculations.discount)}
+            </span>
+          </div>
+        )}
+
         {/* Total: siempre string */}
         <div className="flex justify-between text-lg font-bold mt-2">
           <span>Total</span>
@@ -68,12 +97,25 @@ export default function Step4OrderSummary({
           Incluye {cartFormatPrice(calculations.taxes)} de impuestos
         </div>
       </div>
+
+      {/* Mensaje de T&C */}
+      <div className="text-xs text-gray-600 text-center px-2">
+        Al comprar aceptas nuestros{" "}
+        <a href="/terminos-y-condiciones" target="_blank" className="text-black underline hover:text-gray-700">
+          términos y condiciones
+        </a>{" "}
+        y{" "}
+        <a href="/politicas-de-privacidad" target="_blank" className="text-black underline hover:text-gray-700">
+          políticas de privacidad
+        </a>
+      </div>
+
       <button
         type="button"
-        className={`w-full bg-[#2563EB] text-white font-bold py-3 rounded-lg text-base mt-6 hover:bg-blue-700 transition flex items-center justify-center ${
-          isProcessing ? "opacity-70 cursor-not-allowed" : ""
+        className={`w-full bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
+          isProcessing || disabled ? "opacity-70 cursor-not-allowed" : ""
         }`}
-        disabled={!accepted || isProcessing}
+        disabled={isProcessing || disabled}
         data-testid="checkout-finish-btn"
         aria-busy={isProcessing}
         onClick={onFinishPayment}
@@ -99,12 +141,24 @@ export default function Step4OrderSummary({
                 d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
               />
             </svg>
-            <span>Procesando tu compra…</span>
+            <span>Procesando…</span>
           </span>
         ) : (
-          "Finalizar pago"
+          buttonText
         )}
       </button>
+
+      {/* Botón de volver (opcional) */}
+      {onBack && (
+        <button
+          type="button"
+          className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+          onClick={onBack}
+        >
+          Volver
+        </button>
+      )}
+
       {/* Botón secundario: Regresar al comercio */}
       <button
         type="button"

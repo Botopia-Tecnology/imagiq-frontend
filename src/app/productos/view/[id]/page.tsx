@@ -123,7 +123,7 @@ function ProductContentWithVariants({
         onVariantsReady={onVariantsReady}
         onProductSelectionChange={onProductSelectionChange}
       />
-      <ViewProduct product={convertedProduct} flix={product} />
+      <ViewProduct product={convertedProduct} flix={product} productSelection={productSelection} />
       <AddToCartButton
         product={product}
         productSelection={productSelection}

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import FlixmediaDetails from "@/components/FlixmediaDetails";
 
@@ -60,47 +60,74 @@ const SPEC_CATEGORIES = [
 
 
 const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selectedSku, selectedEan }) => {
-  // Recopilar TODOS los SKUs y EANs del producto (como en multimedia)
-  const allSkus: string[] = [];
-  const allEans: string[] = [];
+  // Memoizar SKUs/EANs para evitar re-renders innecesarios
+  const { productSku, productEan } = useMemo(() => {
+    // Recopilar TODOS los SKUs y EANs del producto (igual que en multimedia)
+    const allSkus: string[] = [];
+    const allEans: string[] = [];
 
-  // Agregar SKUs del apiProduct si existen
-  if (product.apiProduct?.sku) {
-    product.apiProduct.sku.forEach(sku => {
-      if (sku && sku.trim()) allSkus.push(sku.trim());
-    });
-  }
+    // 1. Si hay SKU/EAN seleccionado, agregarlo PRIMERO (prioridad)
+    if (selectedSku && selectedSku.trim()) {
+      allSkus.push(selectedSku.trim());
+    }
+    if (selectedEan && selectedEan.trim()) {
+      allEans.push(selectedEan.trim());
+    }
 
-  // Agregar EANs del apiProduct si existen
-  if (product.apiProduct?.ean) {
-    product.apiProduct.ean.forEach(ean => {
-      if (ean && ean.trim()) allEans.push(ean.trim());
-    });
-  }
+    // 2. Agregar SKUs de colores si existen (SIEMPRE, como en multimedia)
+    if (product.colors) {
+      product.colors.forEach(color => {
+        if (color.sku && color.sku.trim() && !allSkus.includes(color.sku.trim())) {
+          allSkus.push(color.sku.trim());
+        }
+        if (color.ean && color.ean.trim() && !allEans.includes(color.ean.trim())) {
+          allEans.push(color.ean.trim());
+        }
+      });
+    }
 
-  // Agregar SKUs de capacidades si existen
-  if (product.capacities) {
-    product.capacities.forEach(capacity => {
-      if (capacity.sku && capacity.sku.trim()) allSkus.push(capacity.sku.trim());
-      if (capacity.ean && capacity.ean.trim()) allEans.push(capacity.ean.trim());
-    });
-  }
+    // 3. Agregar SKUs de capacidades si existen (SIEMPRE, como en multimedia)
+    if (product.capacities) {
+      product.capacities.forEach(capacity => {
+        if (capacity.sku && capacity.sku.trim() && !allSkus.includes(capacity.sku.trim())) {
+          allSkus.push(capacity.sku.trim());
+        }
+        if (capacity.ean && capacity.ean.trim() && !allEans.includes(capacity.ean.trim())) {
+          allEans.push(capacity.ean.trim());
+        }
+      });
+    }
 
-  // Agregar el SKU seleccionado al inicio si existe (para que sea el primero en intentarse)
-  if (selectedSku && selectedSku.trim() && !allSkus.includes(selectedSku.trim())) {
-    allSkus.unshift(selectedSku.trim());
-  }
+    // 4. Fallback a apiProduct SKUs/EANs si existen
+    if (product.apiProduct?.sku) {
+      product.apiProduct.sku.forEach(sku => {
+        if (sku && sku.trim() && !allSkus.includes(sku.trim())) {
+          allSkus.push(sku.trim());
+        }
+      });
+    }
 
-  if (selectedEan && selectedEan.trim() && !allEans.includes(selectedEan.trim())) {
-    allEans.unshift(selectedEan.trim());
-  }
+    if (product.apiProduct?.ean) {
+      product.apiProduct.ean.forEach(ean => {
+        if (ean && ean.trim() && !allEans.includes(ean.trim())) {
+          allEans.push(ean.trim());
+        }
+      });
+    }
 
-  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por Flixmedia)
-  const productSku = allSkus.length > 0 ? allSkus.join(',') : null;
-  const productEan = allEans.length > 0 ? allEans.join(',') : null;
+    // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por Flixmedia)
+    const skuString = allSkus.length > 0 ? allSkus.join(',') : null;
+    const eanString = allEans.length > 0 ? allEans.join(',') : null;
 
-  console.log('🎬 Specifications - SKUs para Flixmedia:', productSku);
-  console.log('🎬 Specifications - EANs para Flixmedia:', productEan);
+    console.log('🎬 Specifications - SKUs para Flixmedia:', skuString);
+    console.log('🎬 Specifications - EANs para Flixmedia:', eanString);
+    console.log('🎬 Specifications - Total SKUs:', allSkus.length, 'Total EANs:', allEans.length);
+
+    return {
+      productSku: skuString,
+      productEan: eanString,
+    };
+  }, [product.id, product.colors, product.capacities, product.apiProduct, selectedSku, selectedEan]);
 
 
   // --- VISUAL: UX mejorada, tabs y contenido ---

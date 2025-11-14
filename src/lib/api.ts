@@ -286,6 +286,39 @@ export const categoriesEndpoints = {
       return { data: cache ?? [], success: !lastError, message: lastError || undefined };
     };
   })(),
+
+  getCompleteCategories: (() => {
+    let cache: VisibleCategoryComplete[] | undefined;
+    let inFlight: Promise<void> | null = null;
+    let lastError: string | null = null;
+
+    return async (): Promise<ApiResponse<VisibleCategoryComplete[]>> => {
+      if (cache) {
+        return { data: cache, success: true };
+      }
+      if (inFlight) {
+        await inFlight;
+        return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+      }
+
+      inFlight = (async () => {
+        const resp = await apiClient.get<VisibleCategoryComplete[]>('/api/categorias/visibles/completas');
+        if (resp.success && resp.data) {
+          cache = (resp.data as VisibleCategoryComplete[])
+            .filter(c => c.activo)
+            .sort((a, b) => a.orden - b.orden);
+          lastError = null;
+        } else {
+          cache = cache || [];
+          lastError = resp.message || 'Error al cargar categorías completas';
+        }
+      })();
+
+      await inFlight;
+      inFlight = null;
+      return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+    };
+  })(),
 };
 
 // Menus API endpoints
@@ -295,6 +328,23 @@ const menusByCategoryInFlight: Record<string, Promise<void> | undefined> = {};
 
 const submenusByMenuCache: Record<string, Submenu[] | undefined> = {};
 const submenusByMenuInFlight: Record<string, Promise<void> | undefined> = {};
+
+/**
+ * Función helper para poblar el caché de submenús desde la respuesta completa
+ * Esto evita múltiples peticiones HTTP al backend
+ * Guarda tanto arrays con submenús como arrays vacíos para evitar futuras peticiones
+ */
+export const populateSubmenusCache = (completeCategories: VisibleCategoryComplete[]): void => {
+  completeCategories.forEach((category) => {
+    category.menus?.forEach((menu) => {
+      if (menu.uuid && menu.submenus !== undefined) {
+        // Poblar el caché de submenús directamente (incluyendo arrays vacíos)
+        // Esto evita futuras peticiones incluso para menús sin submenús
+        submenusByMenuCache[menu.uuid] = menu.submenus;
+      }
+    });
+  });
+};
 
 export const menusEndpoints = {
   getSubmenus: async (menuUuid: string): Promise<ApiResponse<Submenu[]>> => {

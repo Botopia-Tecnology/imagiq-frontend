@@ -2,11 +2,12 @@
  * Hook para pre-cargar los menús de todas las categorías dinámicas
  * cuando se carga la página. Los menús se cargan en paralelo para
  * mejorar el tiempo de respuesta cuando el usuario hace hover.
- * También precarga todos los submenús de todos los menús.
+ * También precarga todos los submenús usando una sola petición al endpoint
+ * /api/categorias/visibles/completas para evitar "Too many requests".
  */
 
 import { useEffect, useState, useRef } from 'react';
-import { menusEndpoints, type Menu } from '@/lib/api';
+import { menusEndpoints, categoriesEndpoints, populateSubmenusCache, type Menu } from '@/lib/api';
 import { useVisibleCategories } from './useVisibleCategories';
 import { isStaticCategoryUuid } from '@/constants/staticCategories';
 
@@ -109,46 +110,25 @@ export function usePreloadCategoryMenus() {
       await Promise.allSettled(menuPromises);
 
       // Una vez que todos los menús estén cargados, precargar submenús
-      // Verificar si ya se precargaron los submenús para evitar ejecuciones múltiples
+      // usando una sola petición al endpoint /api/categorias/visibles/completas
+      // para evitar "Too many requests"
       if (!submenusPreloadedRef.current) {
         submenusPreloadedRef.current = true;
 
-        // Pre-cargar submenús de todos los menús activos en paralelo
-        const submenuPromises: Array<Promise<unknown>> = [];
-
-        // Recopilar todos los menús activos: los que acabamos de cargar + los que ya estaban precargados
-        const allMenusToProcess = [
-          ...allLoadedMenus,
-          ...Object.values(preloadedMenus).flat()
-        ];
-
-        // Usar un Set para evitar duplicados por UUID
-        const processedMenuUuids = new Set<string>();
-
-        allMenusToProcess.forEach((menu) => {
-          // Solo precargar submenús de menús activos que tengan UUID y que no hayamos procesado
-          if (menu.activo && menu.uuid && !processedMenuUuids.has(menu.uuid)) {
-            processedMenuUuids.add(menu.uuid);
-            
-            const promise = menusEndpoints
-              .getSubmenus(menu.uuid)
-              .then(() => {
-                // Ignorar el resultado, solo precargar
-              })
-              .catch((error) => {
-                // Silenciar errores en precarga - no afectar la UX
-                console.debug(`[PreloadSubmenus] Error silencioso para menú ${menu.uuid}:`, error);
-              });
-
-            submenuPromises.push(promise);
-          }
-        });
-
-        // Esperar a que todas las peticiones terminen (o fallen)
-        // No bloquear la UI, ejecutar en background
-        Promise.allSettled(submenuPromises).then(() => {
-          console.debug('[PreloadSubmenus] Todos los submenús precargados');
-        });
+        // Hacer una sola petición para obtener todas las categorías completas con submenús
+        categoriesEndpoints
+          .getCompleteCategories()
+          .then((response) => {
+            if (response.success && response.data) {
+              // Poblar el caché de submenús directamente desde la respuesta
+              populateSubmenusCache(response.data);
+              console.debug('[PreloadSubmenus] Todos los submenús precargados desde endpoint completo');
+            }
+          })
+          .catch((error) => {
+            // Silenciar errores en precarga - no afectar la UX
+            console.debug('[PreloadSubmenus] Error silencioso al cargar categorías completas:', error);
+          });
       }
     };
 

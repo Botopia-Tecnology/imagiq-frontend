@@ -189,13 +189,15 @@ export function useCategoryProducts(
 
   // Detectar cambio de sección o menú
   const [previousMenuUuid, setPreviousMenuUuid] = useState(menuUuid);
-  
+  const [forceKey, setForceKey] = useState(0); // Key para forzar re-render completo
+
   useEffect(() => {
     if (previousSeccion != seccion || previousMenuUuid != menuUuid) {
       setIsTransitioning(true);
       setHasLoadedOnce(false); // Resetear cuando cambia la categoría/sección
       setPreviousSeccion(seccion);
       setPreviousMenuUuid(menuUuid);
+      setForceKey(prev => prev + 1); // Incrementar key para forzar re-mount
     }
   }, [seccion, previousSeccion, menuUuid, previousMenuUuid]);
 
@@ -317,7 +319,9 @@ export function useCategoryProducts(
     // isLoadingMore se mantiene separado, no se afecta por la transición
     isLoadingMore: productsResult.isLoadingMore,
     // hasLoadedOnce indica si ya se completó al menos una carga
-    hasLoadedOnce
+    hasLoadedOnce,
+    // forceKey para forzar re-mount del grid cuando cambia la sección
+    forceKey
   };
 }
 

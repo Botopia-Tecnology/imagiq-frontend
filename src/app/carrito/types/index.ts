@@ -23,10 +23,11 @@ export interface UserInfo {
   direccionId: string;
 }
 export interface CardPaymentData extends BasicPaymentData {
-  cardExpYear: string;
-  cardExpMonth: string;
-  cardNumber: string;
-  cardCvc: string;
+  cardExpYear?: string;
+  cardExpMonth?: string;
+  cardNumber?: string;
+  cardCvc?: string;
+  cardTokenId?: string;
   dues: string;
 }
 

@@ -10,7 +10,7 @@
 
 import { useState, useMemo } from "react";
 import reviews from "@/app/productos/components/utils/reviews";
-import { getRandomColor, getFirstName, getInitial, GOOGLE_REVIEWS_URL } from "./reviews/utils";
+import { getColorFromId, getFirstName, getInitial, GOOGLE_REVIEWS_URL } from "./reviews/utils";
 import { ReviewsHeader } from "./reviews/ReviewsHeader";
 import { DesktopSlider } from "./reviews/DesktopSlider";
 import { MobileSlider } from "./reviews/MobileSlider";
@@ -24,7 +24,7 @@ const Reviews = () => {
       .filter((review) => review.review_rating >= 4)
       .map((review) => ({
         ...review,
-        color: getRandomColor(),
+        color: getColorFromId(review.author_id),
         firstName: getFirstName(review.author_title),
         initial: getInitial(review.author_title),
       }));

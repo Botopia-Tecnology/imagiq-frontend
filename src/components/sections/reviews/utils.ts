@@ -13,8 +13,20 @@ export const AVATAR_COLORS = [
   "bg-red-500 text-white",
 ] as const;
 
-export const getRandomColor = () => {
-  return AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)];
+// Función hash simple para generar un índice determinista basado en un string
+const hashString = (str: string): number => {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convertir a 32bit integer
+  }
+  return Math.abs(hash);
+};
+
+export const getColorFromId = (id: string) => {
+  const index = hashString(id) % AVATAR_COLORS.length;
+  return AVATAR_COLORS[index];
 };
 
 export const getFirstName = (fullName: string) => {

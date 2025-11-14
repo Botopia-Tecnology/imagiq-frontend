@@ -259,6 +259,23 @@ export function useCheckoutLogic() {
       const direction = JSON.parse(
         localStorage.getItem("checkout-address") || "{}"
       );
+      const billing = JSON.parse(
+        localStorage.getItem("checkout-billing-data") || "{}"
+      );
+
+      const informacion_facturacion = {
+        direccion_id: billing?.direccion?.id ?? direction?.id ?? "",
+        email: billing?.email ?? "",
+        nombre_completo: billing?.nombre ?? "",
+        numero_documento: billing?.documento ?? "",
+        tipo_documento: billing?.tipoDocumento ?? "",
+        telefono: billing?.telefono ?? "",
+        type: billing?.type ?? "",
+        nit: billing?.nit,
+        razon_social: billing?.razonSocial,
+        representante_legal:
+          billing?.nombreRepresentante || billing?.razonSocial,
+      };
       let res;
 
       switch (paymentMethod) {
@@ -281,6 +298,7 @@ export function useCheckoutLogic() {
               userId: userInfo.id,
               direccionId: direction.id,
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
@@ -327,6 +345,7 @@ export function useCheckoutLogic() {
                 userId: userInfo.id,
                 direccionId: direction.id,
               },
+              informacion_facturacion,
             });
           } else {
             // Pago con tarjeta nueva
@@ -353,6 +372,7 @@ export function useCheckoutLogic() {
                 userId: userInfo.id,
                 direccionId: direction.id,
               },
+              informacion_facturacion,
             });
           }
 
@@ -398,6 +418,7 @@ export function useCheckoutLogic() {
               userId: userInfo.id,
               direccionId: direction.id,
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error

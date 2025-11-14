@@ -17,6 +17,7 @@ const addressToDireccion = (address: Address): Direccion => {
     codigo_dane: address.codigo_dane, // Backend lo llena
     ciudad: address.ciudad || '',
     pais: address.pais,
+    esPredeterminada: address.esPredeterminada,
   };
 };
 

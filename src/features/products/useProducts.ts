@@ -253,15 +253,10 @@ export const useProducts = (
         // Detectar cambios en menuUuid o submenuUuid para invalidación selectiva de caché
       const currentMenuUuid = apiParams.menuUuid;
       const currentSubmenuUuid = apiParams.submenuUuid;
-      
-      // Detectar cambios usando la misma lógica mejorada que usamos en el useEffect
-      const menuUuidChangedForCache = 
-        (previousMenuUuidRef.current === undefined) !== (currentMenuUuid === undefined) ||
-        (previousMenuUuidRef.current !== undefined && currentMenuUuid !== undefined && previousMenuUuidRef.current !== currentMenuUuid);
-      
-      const submenuUuidChangedForCache = 
-        (previousSubmenuUuidRef.current === undefined) !== (currentSubmenuUuid === undefined) ||
-        (previousSubmenuUuidRef.current !== undefined && currentSubmenuUuid !== undefined && previousSubmenuUuidRef.current !== currentSubmenuUuid);
+
+      // SIMPLIFICADO: Comparación directa para detectar CUALQUIER cambio
+      const menuUuidChangedForCache = previousMenuUuidRef.current !== currentMenuUuid;
+      const submenuUuidChangedForCache = previousSubmenuUuidRef.current !== currentSubmenuUuid;
       
       if (!append && (menuUuidChangedForCache || submenuUuidChangedForCache)) {
         // Invalidar caché de combinaciones menu+submenu anteriores
@@ -270,12 +265,15 @@ export const useProducts = (
             // Invalidar entradas que tengan el menuUuid anterior con cualquier submenuUuid
             const keyParams = productCache.parseCacheKey(key);
             if (!keyParams) return false;
-            return keyParams.menuUuid === previousMenuUuidRef.current && 
+            return keyParams.menuUuid === previousMenuUuidRef.current &&
                    keyParams.submenuUuid !== undefined;
           });
         }
-        
-        // Actualizar referencias
+      }
+
+      // CRÍTICO: Actualizar referencias SIEMPRE, no solo cuando se invalida caché
+      // Esto asegura que la próxima vez detectemos cambios correctamente
+      if (!append) {
         previousMenuUuidRef.current = currentMenuUuid;
         previousSubmenuUuidRef.current = currentSubmenuUuid;
       }
@@ -306,11 +304,15 @@ export const useProducts = (
           
           // Detectar cambio de página: comparar filters.page con currentPage
           const isPageChange = filters.page !== undefined && filters.page !== currentPage;
-          
+
           // Detectar cambio de filtros (no solo página)
           const filtersChanged = previousFiltersRef.current !== null && previousFiltersRef.current !== filterKey;
-          
-          if (isPageChange || filtersChanged) {
+
+          // CRÍTICO: Detectar cambios en menuUuid/submenuUuid para limpiar productos inmediatamente
+          // Esto previene que se muestren productos de una sección cuando navegas a otra
+          const menuSubmenuChanged = menuUuidChangedForCache || submenuUuidChangedForCache;
+
+          if (isPageChange || filtersChanged || menuSubmenuChanged) {
             // Cambio de página o filtros: limpiar productos y mostrar skeletons inmediatamente
             setProducts([]);
             productsRef.current = [];

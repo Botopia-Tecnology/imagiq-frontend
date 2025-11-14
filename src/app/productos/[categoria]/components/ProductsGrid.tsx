@@ -125,7 +125,7 @@ export const CategoryProductsGrid = forwardRef<
         className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}
       >
         {/* Mostrar skeletons cuando loading es true (incluyendo cambio de página) */}
-        {loading && (
+        {loading ? (
           <>
             {Array.from({ length: 12 }, (_, i) => (
               <div key={`skeleton-${i}`} className="w-full">
@@ -133,74 +133,74 @@ export const CategoryProductsGrid = forwardRef<
               </div>
             ))}
           </>
-        )}
-
-        {/* Mostrar mensaje solo cuando terminó de cargar, NO hay productos Y ya se cargó al menos una vez */}
-        {/* Esto evita mostrar el mensaje durante la carga inicial, incluso cuando se carga desde caché */}
-        {products.length === 0 && !loading && hasLoadedOnce && (
-          <div className="col-span-full w-full text-center py-12 text-gray-500">
-            No se encontraron {categoryName.toLowerCase()} con los filtros
-            seleccionados.
-          </div>
-        )}
-
-        {/* Renderizar productos y banners mezclados */}
-        {gridItems.length > 0 && !loading && (
+        ) : (
           <>
-            {gridItems.map((item, index) => {
-              if (item.type === "banner") {
-                return (
-                  <motion.div
-                    key={item.key}
-                    className="w-full"
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{
-                      duration: 0.4,
-                      delay: index * 0.08,
-                      ease: [0.25, 0.1, 0.25, 1],
-                    }}
-                  >
-                    <ProductBannerCard config={item.data as Banner} />
-                  </motion.div>
-                );
-              }
-
-              const product = item.data as ProductCardProps;
-              return (
-                <motion.div
-                  key={item.key}
-                  className="w-full"
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{
-                    duration: 0.4,
-                    delay: index * 0.08,
-                    ease: [0.25, 0.1, 0.25, 1],
-                  }}
-                >
-                  <ProductCard
-                    {...product}
-                    isFavorite={isFavorite(product.id)}
-                    onToggleFavorite={(productId: string) => {
-                      if (isFavorite(productId)) {
-                        handleRemoveToFavorites(productId);
-                      } else {
-                        handleAddToFavorites(productId);
-                      }
-                    }}
-                    className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
-                  />
-                </motion.div>
-              );
-            })}
-
-            {/* Skeletons de lazy loading - solo cuando isLoadingMore es true */}
-            {isLoadingMore && Array.from({ length: lazySkeletonCount }, (_, i) => (
-              <div key={`lazy-skeleton-${i}`} className="w-full">
-                <SkeletonCard />
+            {/* Mostrar mensaje solo cuando terminó de cargar, NO hay productos Y ya se cargó al menos una vez */}
+            {products.length === 0 && hasLoadedOnce && (
+              <div className="col-span-full w-full text-center py-12 text-gray-500">
+                No se encontraron {categoryName.toLowerCase()} con los filtros seleccionados.
               </div>
-            ))}
+            )}
+
+            {/* Renderizar productos y banners mezclados */}
+            {gridItems.length > 0 && (
+              <>
+                {gridItems.map((item, index) => {
+                  if (item.type === "banner") {
+                    return (
+                      <motion.div
+                        key={item.key}
+                        className="w-full"
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{
+                          duration: 0.4,
+                          delay: index * 0.08,
+                          ease: [0.25, 0.1, 0.25, 1],
+                        }}
+                      >
+                        <ProductBannerCard config={item.data as Banner} />
+                      </motion.div>
+                    );
+                  }
+
+                  const product = item.data as ProductCardProps;
+                  return (
+                    <motion.div
+                      key={item.key}
+                      className="w-full"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        duration: 0.4,
+                        delay: index * 0.08,
+                        ease: [0.25, 0.1, 0.25, 1],
+                      }}
+                    >
+                      <ProductCard
+                        {...product}
+                        isFavorite={isFavorite(product.id)}
+                        onToggleFavorite={(productId: string) => {
+                          if (isFavorite(productId)) {
+                            handleRemoveToFavorites(productId);
+                          } else {
+                            handleAddToFavorites(productId);
+                          }
+                        }}
+                        className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+                      />
+                    </motion.div>
+                  );
+                })}
+
+                {/* Skeletons de lazy loading - solo cuando isLoadingMore es true */}
+                {isLoadingMore && Array.from({ length: lazySkeletonCount }, (_, i) => (
+                  <div key={`lazy-skeleton-${i}`} className="w-full">
+                    <SkeletonCard />
+                  </div>
+                ))}
+              </>
+            )}
           </>
         )}
 

@@ -37,6 +37,7 @@ interface PaymentData {
   cardData?: CardData;
   savedCard?: DBCard;
   bank?: string;
+  bankName?: string;
   installments?: number;
 }
 
@@ -137,11 +138,29 @@ export default function Step7({ onBack }: Step7Props) {
           }
         }
 
+        // selectedBank can be a JSON string { code, name } or a plain code string
+        let bankCode: string | undefined = undefined;
+        let bankName: string | undefined = undefined;
+        if (selectedBank) {
+          try {
+            const parsed = JSON.parse(selectedBank);
+            if (parsed && typeof parsed === "object" && "code" in parsed) {
+              bankCode = parsed.code || undefined;
+              bankName = parsed.name || undefined;
+            } else {
+              bankCode = String(selectedBank);
+            }
+          } catch (err) {
+            bankCode = selectedBank;
+          }
+        }
+
         setPaymentData({
           method: paymentMethod,
           cardData,
           savedCard,
-          bank: selectedBank || undefined,
+          bank: bankCode,
+          bankName,
           installments: installments
             ? Number.parseInt(installments)
             : undefined,
@@ -437,7 +456,7 @@ export default function Step7({ onBack }: Step7Props) {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Banco:</span>
                       <span className="font-medium text-gray-900">
-                        {paymentData.bank}
+                        {paymentData.bankName || paymentData.bank}
                       </span>
                     </div>
                   )}

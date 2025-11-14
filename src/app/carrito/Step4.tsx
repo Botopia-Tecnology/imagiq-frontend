@@ -19,6 +19,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
     selectedCardId,
     useNewCard,
     isAddCardModalOpen,
+    savedCardsReloadCounter,
     handleCardChange,
     handleCardErrorChange,
     handlePaymentMethodChange,
@@ -27,6 +28,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
     handleCardSelect,
     handleOpenAddCardModal,
     handleCloseAddCardModal,
+    handleAddCardSuccess,
     handleUseNewCardChange,
     setSaveInfo,
   } = useCheckoutLogic();
@@ -49,7 +51,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
       >
         <AddCardForm
           userId={authContext.user?.id || ""}
-          onSuccess={handleCloseAddCardModal}
+          onSuccess={handleAddCardSuccess}
           onCancel={handleCloseAddCardModal}
           showAsModal={true}
         />
@@ -78,6 +80,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
             selectedCardId={selectedCardId}
             onCardSelect={handleCardSelect}
             onOpenAddCardModal={handleOpenAddCardModal}
+            savedCardsReloadCounter={savedCardsReloadCounter}
             useNewCard={useNewCard}
             onUseNewCardChange={handleUseNewCardChange}
           />

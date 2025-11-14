@@ -19,11 +19,14 @@ export function useCheckoutLogic() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("tarjeta");
   const [selectedBank, setSelectedBank] = useState<string>("");
+  const [selectedBankName, setSelectedBankName] = useState<string>("");
 
   // Estados para tarjetas guardadas
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [useNewCard, setUseNewCard] = useState(false);
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
+  // Contador para forzar recarga de tarjetas guardadas
+  const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
@@ -71,11 +74,13 @@ export function useCheckoutLogic() {
     setPaymentMethod(method);
     if (method !== "pse") {
       setSelectedBank("");
+      setSelectedBankName("");
     }
   };
 
-  const handleBankChange = (bank: string) => {
-    setSelectedBank(bank);
+  const handleBankChange = (bankCode: string, bankName?: string) => {
+    setSelectedBank(bankCode);
+    if (bankName) setSelectedBankName(bankName);
   };
 
   const handleBillingTypeChange = (type: string) => {
@@ -94,6 +99,12 @@ export function useCheckoutLogic() {
 
   const handleCloseAddCardModal = () => {
     setIsAddCardModalOpen(false);
+  };
+
+  // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
+  const handleAddCardSuccess = () => {
+    setIsAddCardModalOpen(false);
+    setSavedCardsReloadCounter((c) => c + 1);
   };
 
   const handleUseNewCardChange = (useNew: boolean) => {
@@ -167,7 +178,9 @@ export function useCheckoutLogic() {
         localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
     } else if (paymentMethod === "pse") {
-      localStorage.setItem("checkout-selected-bank", selectedBank);
+      // Guardar tanto código como nombre del banco para uso en resumen
+      const payload = { code: selectedBank, name: selectedBankName || "" };
+      localStorage.setItem("checkout-selected-bank", JSON.stringify(payload));
     }
 
     return true;
@@ -419,6 +432,7 @@ export function useCheckoutLogic() {
     selectedCardId,
     useNewCard,
     isAddCardModalOpen,
+    savedCardsReloadCounter,
 
     // Handlers
     handleCardChange,
@@ -433,6 +447,7 @@ export function useCheckoutLogic() {
     handleCardSelect,
     handleOpenAddCardModal,
     handleCloseAddCardModal,
+    handleAddCardSuccess,
     handleUseNewCardChange,
 
     // Setters

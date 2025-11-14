@@ -11,7 +11,7 @@ interface AlternativePaymentMethodsProps {
   readonly selectedMethod: string;
   readonly onMethodChange: (method: PaymentMethod) => void;
   readonly selectedBank?: string;
-  readonly onBankChange?: (bank: string) => void;
+  readonly onBankChange?: (bankCode: string, bankName?: string) => void;
 }
 
 export default function AlternativePaymentMethods({
@@ -65,7 +65,11 @@ export default function AlternativePaymentMethods({
           <select
             id="bank-select"
             value={selectedBank || ""}
-            onChange={(e) => onBankChange?.(e.target.value)}
+            onChange={(e) => {
+              const code = e.target.value;
+              const bank = banks.find((b) => b.bankCode === code);
+              onBankChange?.(code, bank?.bankName);
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             required={selectedMethod === "pse"}
           >

@@ -25,12 +25,13 @@ interface PaymentFormProps {
   saveInfo: boolean;
   onSaveInfoChange: (save: boolean) => void;
   selectedBank?: string;
-  onBankChange?: (bank: string) => void;
+  onBankChange?: (bankCode: string, bankName?: string) => void;
   selectedCardId: string | null;
   onCardSelect: (cardId: string | null) => void;
   onOpenAddCardModal: () => void;
   useNewCard: boolean;
   onUseNewCardChange: (useNew: boolean) => void;
+  savedCardsReloadCounter?: number;
 }
 
 export default function PaymentForm({
@@ -49,6 +50,7 @@ export default function PaymentForm({
   onOpenAddCardModal,
   useNewCard,
   onUseNewCardChange,
+  savedCardsReloadCounter,
 }: PaymentFormProps) {
   const authContext = useAuthContext();
   const [savedCards, setSavedCards] = useState<DBCard[]>([]);
@@ -68,6 +70,14 @@ export default function PaymentForm({
       loadSavedCards();
     }
   }, [authContext.user?.id]);
+
+  // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
+  useEffect(() => {
+    if (authContext.user?.id && savedCardsReloadCounter !== undefined) {
+      loadSavedCards();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedCardsReloadCounter]);
 
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas
   useEffect(() => {
@@ -214,7 +224,11 @@ export default function PaymentForm({
                 <select
                   id="bank-select"
                   value={selectedBank || ""}
-                  onChange={(e) => onBankChange?.(e.target.value)}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    const bank = banks.find((b) => b.bankCode === code);
+                    onBankChange?.(code, bank?.bankName);
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
                   required={paymentMethod === "pse"}
                 >

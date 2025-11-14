@@ -3,8 +3,8 @@
 import { use, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { OrderDetails, ProductoDetalle, TiendaInfo } from "@/app/tracking-service/interfaces/types.d";
-import { LoadingSpinner, ErrorView, PickupOrderView } from "@/app/tracking-service/components";
-import { EnhancedPickupOrderView } from "../components";
+import { LoadingSpinner, ErrorView } from "@/app/tracking-service/components";
+import { PickupShippingView } from "../components";
 
 export default function PickupTrackingPage({
   params,
@@ -72,32 +72,18 @@ export default function PickupTrackingPage({
     );
   }
 
-  // Use enhanced view if we have products or store info
-  const useEnhancedView = productos.length > 0 || tiendaInfo;
-
   return (
-    <div className="bg-gradient-to-br from-green-50 via-white to-blue-50 min-h-screen pt-4 md:pt-5">
-      <main className="w-full max-w-7xl mx-auto px-2 sm:px-4">
-        <div className="bg-white max-w-7xl mx-auto rounded-xl shadow-sm" style={{ minHeight: "500px" }}>
-          {useEnhancedView ? (
-            <EnhancedPickupOrderView
-              orderNumber={orderNumber}
-              token={token}
-              horaRecogida={horaRecogida}
-              fechaCreacion={fechaCreacion}
-              products={productos}
-              storeInfo={tiendaInfo}
-              formatDate={formatDate}
-            />
-          ) : (
-            <PickupOrderView
-              orderNumber={orderNumber}
-              token={token}
-              horaRecogida={horaRecogida}
-              formatDate={formatDate}
-            />
-          )}
-        </div>
+    <div className="bg-white min-h-screen">
+      <main className="w-full max-w-7xl mx-auto">
+        <PickupShippingView
+          orderNumber={orderNumber}
+          token={token}
+          fechaCreacion={fechaCreacion ? formatDate(fechaCreacion) : formatDate(new Date().toISOString())}
+          horaRecogida={horaRecogida}
+          direccionTienda={tiendaInfo?.direccion}
+          ciudadTienda={tiendaInfo?.ciudad}
+          products={productos}
+        />
       </main>
     </div>
   );

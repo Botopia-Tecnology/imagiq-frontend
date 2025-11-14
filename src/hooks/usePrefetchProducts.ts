@@ -21,6 +21,22 @@ interface PrefetchOptions {
 // Debounce timer para evitar múltiples llamadas rápidas
 const prefetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+// Sistema de cola para controlar concurrencia y evitar errores 429
+interface QueuedPrefetch {
+  options: PrefetchOptions;
+  resolve: () => void;
+  reject: (error: any) => void;
+}
+
+// Cola global de prefetches pendientes
+const prefetchQueue: QueuedPrefetch[] = [];
+// Número máximo de peticiones simultáneas
+const MAX_CONCURRENT_PREFETCHES = 7;
+// Contador de peticiones activas
+let activePrefetches = 0;
+// Flag para indicar si el procesador de cola está corriendo
+let isProcessingQueue = false;
+
 /**
  * Hook para prefetching de productos
  */
@@ -79,10 +95,9 @@ export function usePrefetchProducts() {
   }, []);
 
   /**
-   * Realiza el prefetch de productos
-   * Retorna una Promise que se resuelve cuando el prefetch termina
+   * Ejecuta un prefetch individual
    */
-  const prefetchProducts = useCallback(
+  const executePrefetch = useCallback(
     async (options: PrefetchOptions): Promise<void> => {
       const params = buildPrefetchParams(options);
       if (!params) {
@@ -116,13 +131,105 @@ export function usePrefetchProducts() {
         }
       } catch (error) {
         // Silenciar errores en prefetch - no afectar la UX
-        console.debug("[Prefetch] Error silencioso:", error);
+        // Pero loguear errores 429 para debugging
+        if (error && typeof error === 'object' && 'statusCode' in error && error.statusCode === 429) {
+          console.debug("[Prefetch] Rate limit alcanzado, reintentando más tarde:", error);
+        } else {
+          console.debug("[Prefetch] Error silencioso:", error);
+        }
       } finally {
         // Remover del set de prefetches en curso
         prefetchingRef.current.delete(prefetchKey);
       }
     },
     [buildPrefetchParams, getPrefetchKey]
+  );
+
+  /**
+   * Procesa la cola de prefetches de forma controlada
+   */
+  const processPrefetchQueue = useCallback(async () => {
+    // Si ya está procesando o no hay items en la cola, salir
+    if (isProcessingQueue || prefetchQueue.length === 0) {
+      return;
+    }
+
+    // Si ya alcanzamos el límite de concurrencia, esperar
+    if (activePrefetches >= MAX_CONCURRENT_PREFETCHES) {
+      // Reintentar después de un breve delay
+      setTimeout(() => processPrefetchQueue(), 100);
+      return;
+    }
+
+    isProcessingQueue = true;
+
+    while (prefetchQueue.length > 0 && activePrefetches < MAX_CONCURRENT_PREFETCHES) {
+      const queued = prefetchQueue.shift();
+      if (!queued) break;
+
+      activePrefetches++;
+      
+      // Ejecutar el prefetch
+      executePrefetch(queued.options)
+        .then(() => {
+          queued.resolve();
+        })
+        .catch((error) => {
+          queued.reject(error);
+        })
+        .finally(() => {
+          activePrefetches--;
+          // Continuar procesando la cola
+          setTimeout(() => processPrefetchQueue(), 50); // Pequeño delay entre peticiones
+        });
+    }
+
+    isProcessingQueue = false;
+  }, [executePrefetch]);
+
+  /**
+   * Realiza el prefetch de productos usando cola para controlar concurrencia
+   * Retorna una Promise que se resuelve cuando el prefetch termina
+   */
+  const prefetchProducts = useCallback(
+    async (options: PrefetchOptions): Promise<void> => {
+      const params = buildPrefetchParams(options);
+      if (!params) {
+        return;
+      }
+
+      const prefetchKey = getPrefetchKey(params);
+
+      // Evitar prefetch duplicado
+      if (prefetchingRef.current.has(prefetchKey)) {
+        return;
+      }
+
+      // Verificar si ya está en caché
+      const cached = productCache.get(params);
+      if (cached) {
+        // Ya está cacheado, no necesitamos prefetch
+        return;
+      }
+
+      // Si hay espacio disponible, ejecutar inmediatamente
+      if (activePrefetches < MAX_CONCURRENT_PREFETCHES) {
+        activePrefetches++;
+        return executePrefetch(options)
+          .finally(() => {
+            activePrefetches--;
+            // Procesar cola después de completar
+            setTimeout(() => processPrefetchQueue(), 50);
+          });
+      }
+
+      // Si no hay espacio, encolar
+      return new Promise<void>((resolve, reject) => {
+        prefetchQueue.push({ options, resolve, reject });
+        processPrefetchQueue();
+      });
+    },
+    [buildPrefetchParams, getPrefetchKey, executePrefetch, processPrefetchQueue]
   );
 
   /**

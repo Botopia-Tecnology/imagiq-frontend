@@ -4,7 +4,8 @@ import { use, useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { OrderDetails, EnvioEvento, ProductoDetalle } from "@/app/tracking-service/interfaces/types.d";
 import { LoadingSpinner, ErrorView } from "@/app/tracking-service/components";
-import { ImagiqShippingView } from "../components";
+import { ImagiqShippingView } from "../components/ImagiqShippingView";
+
 
 export default function ImagiqTrackingPage({
   params,

@@ -68,14 +68,14 @@ export default function ProductViewPage({ params }) {
     product?.apiProduct || {
       codigoMarketBase: product?.id || "",
       codigoMarket: [],
-      nombreMarket: product?.name || "",
+      nombreMarket: product?.name ? [product.name] : [],
       categoria: "",
       subcategoria: "",
-      modelo: "",
+      modelo: product?.name ? [product.name] : [],
       color: [],
       capacidad: [],
       memoriaram: [],
-      descGeneral: null,
+      descGeneral: [],
       sku: [],
       ean: [],
       desDetallada: [],
@@ -225,6 +225,24 @@ export default function ProductViewPage({ params }) {
         </div>
       </div>
     );
+  }
+
+  // Validar que el producto tenga segmento PREMIUM
+  const isPremiumProduct = product.apiProduct?.segmento?.some(
+    (seg) => seg?.toUpperCase() === "PREMIUM"
+  );
+
+  // Validar que tenga contenido premium (imagenPremium o videoPremium)
+  const hasPremiumContent = product.apiProduct?.imagenPremium?.some(
+    (imgs: string[]) => Array.isArray(imgs) && imgs.length > 0 && imgs.some(img => img && img.trim() !== '')
+  ) || product.apiProduct?.videoPremium?.some(
+    (vids: string[]) => Array.isArray(vids) && vids.length > 0 && vids.some(vid => vid && vid.trim() !== '')
+  );
+
+  // Si NO es PREMIUM o NO tiene contenido premium, redirigir a la vista normal
+  if (!isPremiumProduct || !hasPremiumContent) {
+    router.replace(`/productos/view/${id}`);
+    return <ViewPremiumSkeleton />;
   }
 
   // Obtener indcerointeres del producto (puede venir como array del API)

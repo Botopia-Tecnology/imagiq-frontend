@@ -7,12 +7,8 @@
 
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import {
-  findAvailableSku,
-  findAvailableEan,
-  parseSkuString,
-} from "@/lib/flixmedia";
+import { useEffect, useState, useRef, memo } from "react";
+import { parseSkuString } from "@/lib/flixmedia";
 
 interface FlixmediaDetailsProps {
   mpn?: string | null;
@@ -21,7 +17,7 @@ interface FlixmediaDetailsProps {
   className?: string;
 }
 
-export default function FlixmediaDetails({
+function FlixmediaDetailsComponent({
   mpn,
   ean,
   productName = "Producto",
@@ -31,75 +27,41 @@ export default function FlixmediaDetails({
   const [actualEan, setActualEan] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
-  const [hasContent, setHasContent] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Búsqueda inteligente de SKU disponible (similar a FlixmediaPlayer)
+  // Usar directamente los SKUs/EANs sin verificación previa (más rápido y confiable)
   useEffect(() => {
-    async function searchAvailableSku() {
-      if (!mpn && !ean) {
-        console.warn("⚠️ No se proporcionó MPN/SKU ni EAN");
-        return;
-      }
-
-      setIsSearching(true);
-      console.group(`📋 Flixmedia Details - Búsqueda inteligente de SKU`);
-      console.log(`📦 Producto: "${productName}"`);
-      console.log(`📋 MPN recibido: ${mpn}`);
-      console.log(`🏷️ EAN recibido: ${ean}`);
-
-      let foundMpn = false;
-      let foundEan = false;
-
-      // Si tenemos MPN, buscamos el SKU disponible
-      if (mpn) {
-        const skus = parseSkuString(mpn);
-
-        if (skus.length === 0) {
-          console.warn("⚠️ No hay SKUs válidos para verificar");
-        } else {
-          const availableSku = await findAvailableSku(skus);
-
-          if (availableSku) {
-            setActualMpn(availableSku);
-            foundMpn = true;
-            console.log(`✅ Usando MPN: ${availableSku}`);
-          } else {
-            console.log(`❌ No se encontró contenido multimedia para MPN`);
-          }
-        }
-      }
-
-      // Si no encontramos MPN o no había MPN, buscamos por EAN
-      if (!foundMpn && ean) {
-        const eans = parseSkuString(ean);
-
-        if (eans.length === 0) {
-          console.warn("⚠️ No hay EANs válidos para verificar");
-        } else {
-          console.log(`🔍 Buscando contenido por EAN...`);
-          const availableEan = await findAvailableEan(eans);
-
-          if (availableEan) {
-            setActualEan(availableEan);
-            foundEan = true;
-            console.log(`✅ Usando EAN: ${availableEan}`);
-          } else {
-            console.log(`❌ No se encontró contenido multimedia para EAN`);
-          }
-        }
-      }
-
-      // Si no se encontró ni MPN ni EAN
-      if (!foundMpn && !foundEan) {
-        console.log(`❌ No hay contenido disponible en Flixmedia`);
-      }
-
-      setIsSearching(false);
-      console.groupEnd();
+    if (!mpn && !ean) {
+      console.warn("⚠️ No se proporcionó MPN/SKU ni EAN");
+      return;
     }
 
-    searchAvailableSku();
+    console.group(`📋 Flixmedia Details - Cargando contenido`);
+    console.log(`📦 Producto: "${productName}"`);
+    console.log(`📋 MPN recibido: ${mpn}`);
+    console.log(`🏷️ EAN recibido: ${ean}`);
+
+    // Usar directamente todos los SKUs/EANs sin verificación previa
+    // FlixMedia internamente manejará cuál usar
+    if (mpn) {
+      const skus = parseSkuString(mpn);
+      if (skus.length > 0) {
+        // Usar el primer SKU (FlixMedia probará todos internamente)
+        setActualMpn(skus[0]);
+        console.log(`✅ Usando MPN principal: ${skus[0]} (${skus.length} total)`);
+      }
+    }
+
+    if (ean && !mpn) {
+      const eans = parseSkuString(ean);
+      if (eans.length > 0) {
+        setActualEan(eans[0]);
+        console.log(`✅ Usando EAN principal: ${eans[0]} (${eans.length} total)`);
+      }
+    }
+
+    setIsSearching(false);
+    console.groupEnd();
   }, [mpn, ean, productName]);
 
   // Cargar el script de Flixmedia cuando tengamos MPN o EAN
@@ -132,25 +94,22 @@ export default function FlixmediaDetails({
 
     script.onload = () => {
       console.log('✅ Script de Flixmedia cargado');
-      setScriptLoaded(true);
 
       // Verificar contenido después de un delay
       setTimeout(() => {
         const inpageContent = document.getElementById('flix-specifications-inpage');
         if (inpageContent && inpageContent.children.length > 0) {
           console.log("✅ Contenido de Flixmedia renderizado:", inpageContent.children.length, "elementos");
-          setHasContent(true);
         } else {
-          console.warn("⚠️ No se encontró contenido de Flixmedia");
-          setHasContent(false);
+          console.warn("⚠️ No se encontró contenido de Flixmedia en el primer intento");
         }
-      }, 3000);
+        setScriptLoaded(true);
+      }, 2000);
     };
 
     script.onerror = () => {
       console.error('❌ Error al cargar script de Flixmedia');
       setScriptLoaded(true);
-      setHasContent(false);
     };
 
     if (containerRef.current) {
@@ -257,13 +216,11 @@ export default function FlixmediaDetails({
 
         // Asegurarse de que specifications y el selector de características estén visibles
         const toShow = ['specifications', 'features'];
-        let hasVisibleContent = false;
         toShow.forEach(key => {
           const element = container.querySelector(`[flixtemplate-key="${key}"]`);
           if (element) {
             (element as HTMLElement).style.display = 'block';
             (element as HTMLElement).style.visibility = 'visible';
-            hasVisibleContent = true;
           }
         });
 
@@ -274,13 +231,7 @@ export default function FlixmediaDetails({
           (keyFeatureSelector as HTMLElement).style.visibility = 'visible';
         }
 
-        if (hasVisibleContent) {
-          console.log('✅ Especificaciones y galería visibles');
-          setHasContent(true);
-        } else {
-          console.log('⚠️ No se encontró contenido de especificaciones ni galería');
-          setHasContent(false);
-        }
+        console.log('✅ Estilos de especificaciones y galería aplicados');
       }, 100);
     }, 500);
 
@@ -312,27 +263,42 @@ export default function FlixmediaDetails({
   }
 
   return (
-    <div ref={containerRef} className={`${className} w-full`}>
-      {/* Contenedor para las especificaciones y galería de Flixmedia */}
+    <div ref={containerRef} className={`${className} w-full min-h-[200px] relative`}>
+      {/* Contenedor para las especificaciones y galería de Flixmedia - SIEMPRE VISIBLE */}
       <div
         id="flix-specifications-inpage"
         className="w-full"
         style={{
-          minHeight: hasContent ? 'auto' : '0',
-          opacity: hasContent ? 1 : 0,
-          transition: 'opacity 0.3s ease-in-out',
+          minHeight: 'auto',
+          opacity: scriptLoaded ? 1 : 0,
+          transition: 'opacity 0.5s ease-in-out',
         }}
       />
 
-      {/* Loading indicator */}
+      {/* Loading indicator - Solo visible mientras carga el script */}
       {!scriptLoaded && (actualMpn || actualEan) && (
-        <div className="flex items-center justify-center py-8">
+        <div className="absolute inset-0 flex items-center justify-center py-12 bg-white">
           <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-gray-200 border-t-[#0099FF] rounded-full animate-spin" />
-            <p className="text-sm text-gray-500">Cargando especificaciones...</p>
+            <div className="w-10 h-10 border-4 border-gray-200 border-t-[#0099FF] rounded-full animate-spin" />
+            <p className="text-sm text-gray-600 font-medium">Cargando contenido multimedia...</p>
+            <p className="text-xs text-gray-400">Espere un momento...</p>
           </div>
         </div>
       )}
     </div>
   );
 }
+
+// Exportar componente memoizado para evitar re-renders innecesarios
+const FlixmediaDetails = memo(FlixmediaDetailsComponent, (prevProps, nextProps) => {
+  // Solo re-renderizar si cambian los SKUs/EANs o el nombre del producto
+  return (
+    prevProps.mpn === nextProps.mpn &&
+    prevProps.ean === nextProps.ean &&
+    prevProps.productName === nextProps.productName
+  );
+});
+
+FlixmediaDetails.displayName = 'FlixmediaDetails';
+
+export default FlixmediaDetails;

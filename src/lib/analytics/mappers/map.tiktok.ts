@@ -10,7 +10,15 @@ import type { DlAny, DlItem } from '../types';
 
 /** Evento TikTok Pixel */
 export interface TikTokEvent {
-  name: 'ViewContent' | 'AddToCart' | 'InitiateCheckout' | 'AddPaymentInfo' | 'CompletePayment' | 'Search' | 'ClickButton';
+  name:
+    | 'ViewContent'
+    | 'AddToCart'
+    | 'InitiateCheckout'
+    | 'AddPaymentInfo'
+    | 'CompletePayment'
+    | 'PlaceAnOrder'
+    | 'Search'
+    | 'ClickButton';
   data: {
     contents?: Array<{ content_id: string; quantity: number; price?: number }>;
     content_type?: 'product' | 'product_group';

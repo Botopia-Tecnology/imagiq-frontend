@@ -70,10 +70,10 @@ function convertProductForView(product: ProductCardProps) {
         name: safeValue(color.name || color.label, "None"),
         hex: safeValue(color.hex, "#808080"),
       })) || [],
-    description: safeValue(product.apiProduct?.descGeneral, "None"),
+    description: safeValue(product.apiProduct?.descGeneral?.[0], "None"),
     specs: [
       { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
-      { label: "Modelo", value: safeValue(product.apiProduct?.modelo, "None") },
+      { label: "Modelo", value: safeValue(product.apiProduct?.modelo?.[0], "None") },
       {
         label: "Categoría",
         value: safeValue(product.apiProduct?.categoria, "None"),
@@ -123,7 +123,7 @@ function ProductContentWithVariants({
         onVariantsReady={onVariantsReady}
         onProductSelectionChange={onProductSelectionChange}
       />
-      <ViewProduct product={convertedProduct} flix={product} />
+      <ViewProduct product={convertedProduct} flix={product} productSelection={productSelection} />
       <AddToCartButton
         product={product}
         productSelection={productSelection}

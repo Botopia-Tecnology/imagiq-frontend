@@ -3,6 +3,22 @@ export interface EnvioEvento {
   time_stamp: string; // o Date, según cómo lo conviertas en tu backend
 }
 
+export interface ProductoDetalle {
+  id: string;
+  nombre: string;
+  imagen?: string;
+  cantidad: number;
+  precio?: number;
+}
+
+export interface TiendaInfo {
+  nombre: string;
+  direccion: string;
+  ciudad: string;
+  telefono: string;
+  horario: string;
+}
+
 export interface DetalleEnvio {
   orden_id: string;
   numero_guia: string;
@@ -53,4 +69,12 @@ export interface OrderDetails
   total_amount?: number;
   validado?: boolean;
   entregado?: boolean;
+
+  // Nuevas propiedades para vista mejorada
+  productos?: ProductoDetalle[];
+  tienda?: TiendaInfo;
+  direccion_entrega?: string;
+  ciudad_entrega?: string;
+  nombre_destinatario?: string;
+  telefono_destinatario?: string;
 }

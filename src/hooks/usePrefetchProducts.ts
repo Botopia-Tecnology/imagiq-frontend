@@ -21,11 +21,21 @@ interface PrefetchOptions {
 // Debounce timer para evitar múltiples llamadas rápidas
 const prefetchTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+// Tipo para errores HTTP que pueden tener statusCode
+interface HttpError {
+  statusCode: number;
+  message?: string;
+  [key: string]: unknown;
+}
+
+// Tipo para errores que pueden ocurrir en prefetch
+type PrefetchError = Error | HttpError;
+
 // Sistema de cola para controlar concurrencia y evitar errores 429
 interface QueuedPrefetch {
   options: PrefetchOptions;
   resolve: () => void;
-  reject: (error: any) => void;
+  reject: (error: PrefetchError) => void;
 }
 
 // Cola global de prefetches pendientes

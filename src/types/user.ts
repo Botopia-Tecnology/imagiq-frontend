@@ -196,4 +196,5 @@ export interface Direccion {
   codigo_dane: string;
   ciudad: string;
   pais: string;
+  esPredeterminada: boolean;
 }

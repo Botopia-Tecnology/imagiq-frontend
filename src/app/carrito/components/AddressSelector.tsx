@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Direccion } from "@/types/user";
 import type { Address } from "@/types/address";
 import AddNewAddressForm from "./AddNewAddressForm";
@@ -24,6 +24,7 @@ const addressToDireccion = (address: Address): Direccion => {
     codigo_dane: '', // Backend lo llena
     ciudad: address.ciudad || '',
     pais: address.pais,
+    esPredeterminada: address.esPredeterminada || false,
   };
 };
 
@@ -37,12 +38,13 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onAddressChange(address!)
-    onEditToggle(false);
-    setShowAddForm(false);
-  };
+  // Si no hay dirección seleccionada, seleccionar por defecto la marcada
+  useEffect(() => {
+    if (!address && addresses.length > 0) {
+      const defaultAddr = addresses.find((a) => a.esPredeterminada) || addresses[0];
+      if (defaultAddr) onAddressChange(defaultAddr);
+    }
+  }, [address, addresses, onAddressChange]);
 
   const handleAddressAdded = (newAddress: Address) => {
     onAddressAdded?.();
@@ -53,8 +55,6 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
     onEditToggle(false);
   };
 
-  // Check if we can save the selection
-  const canSaveSelection = address !== null && (addresses.length > 0 || showAddForm);
 
   return (
     <div className="space-y-4">
@@ -78,7 +78,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
         </div>
       ) : (
         <div className="space-y-6">
-          <form className="space-y-4" onSubmit={handleSubmit}>
+          <form className="space-y-4">
             {addresses.length > 0 && (
               <div className="space-y-3">
                 <h4 className="text-base font-medium text-gray-900">
@@ -93,7 +93,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                       <input
                         type="radio"
                         name="address"
-                        checked={address === ad}
+                        checked={address?.id === ad.id}
                         onChange={() => onAddressChange(ad)}
                         className="mt-1 accent-blue-600 h-4 w-4"
                       />
@@ -125,17 +125,6 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                type="submit"
-                disabled={!canSaveSelection}
-                className={`flex-1 sm:flex-none px-6 py-3 rounded-lg text-sm font-semibold transition ${
-                  canSaveSelection
-                    ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer"
-                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                }`}
-              >
-                Guardar selección
-              </button>
               <button
                 type="button"
                 className="flex-1 sm:flex-none text-gray-600 text-sm font-medium px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition cursor-pointer"

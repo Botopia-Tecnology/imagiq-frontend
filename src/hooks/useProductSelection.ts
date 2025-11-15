@@ -504,6 +504,19 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     setActiveRamFilter(variant.memoriaram);
   }, []);
 
+  // Función helper para extraer nombre de color de desDetallada
+  const extractColorName = (desDetallada: string | null | undefined): string | null => {
+    if (!desDetallada) return null;
+
+    // Formato: "Samsung Galaxy Fold7 5G 12GB 256GB DS / Azul Oscuro + Watch8 40mm / Gris Oscuro"
+    // Queremos extraer "Azul Oscuro" (la parte después del primer "/" y antes de cualquier "+" o "--")
+    const match = desDetallada.match(/\/\s*([^/+\-]+?)(?:\s*[\+\-]{2}|$)/);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+    return null;
+  };
+
   // Funciones helper para compatibilidad con componentes legacy
   const getColorOptions = useCallback((): ColorOption[] => {
     return availableColorsFiltered.map(color => {
@@ -524,10 +537,10 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       }
 
       // Encontrar el nombreColor correspondiente desde el API
-      // Buscar la primera variante con este color para obtener su índice
+      // Buscar la primera variante con este color para obtener su índice y extraer el nombre de desDetallada
       const firstVariantWithColor = allVariants.find(v => v.color === color);
-      const nombreColorDisplay = firstVariantWithColor 
-        ? (apiProduct.nombreColor?.[firstVariantWithColor.index] || null)
+      const nombreColorDisplay = firstVariantWithColor
+        ? extractColorName(apiProduct.desDetallada?.[firstVariantWithColor.index])
         : null;
 
       return {

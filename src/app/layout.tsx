@@ -27,6 +27,7 @@ import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 import { HeroProvider } from "@/contexts/HeroContext";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 // Si necesitas Inter desde Google Fonts en entornos con internet,
 // reactivar la importación desde next/font/google o agregar el CSS manual.
 
@@ -110,6 +111,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Verificar si el modo mantenimiento está activado
+  const isMaintenanceMode =
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
   // Validar children para evitar NaN, null, undefined o string vacío
   let safeChildren = children;
   const isNaNValue =
@@ -135,6 +140,7 @@ export default function RootLayout({
       <body className="antialiased">
         <AnalyticsScripts />
         <AnalyticsInit />
+
         <ResponsiveProvider>
           <HeroProvider>
             <ProductProvider>
@@ -147,10 +153,15 @@ export default function RootLayout({
                           <SelectedColorProvider>
                             <PointsProvider>
                               <SelectedStoreProvider>
-                                <ClientLayout>{safeChildren}</ClientLayout>
+                                {/* Mostrar pantalla de mantenimiento si está activada */}
+                                {isMaintenanceMode ? (
+                                  <MaintenanceScreen />
+                                ) : (
+                                  <ClientLayout>{safeChildren}</ClientLayout>
+                                )}
                               </SelectedStoreProvider>
-                              {/* Widget del chatbot */}
-                              <ChatbotWidget />
+                              {/* Widget del chatbot - solo si NO está en mantenimiento */}
+                              {!isMaintenanceMode && <ChatbotWidget />}
                               {/* Toast notifications */}
                               <Toaster
                                 position="top-center"

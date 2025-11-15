@@ -243,7 +243,7 @@ export class AddressesService {
         return null;
       }
 
-      const usuarioId = userInfo.id || userInfo.email;
+      const usuarioId = userInfo.id || userInfo.email || "";
       const url = `${
         BASE_CONFIG.API_URL
       }/api/addresses/default/${tipo}?usuarioId=${encodeURIComponent(

@@ -89,7 +89,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
         const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
         const userAddresses = await addressesService.getUserAddressesByType(
           "FACTURACION",
-          user?.id
+          user?.id || ""
         );
         setAddresses(userAddresses);
 
@@ -198,7 +198,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
       const userAddresses = await addressesService.getUserAddressesByType(
         "FACTURACION",
-        user?.id
+        user?.id || ""
       );
       setAddresses(userAddresses);
 

@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import ProductCard from "@/app/productos/components/ProductCard";
 import { ProductApiData } from "@/lib/api";
+import { apiGet } from "@/lib/api-client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import VideoOverlay from "./VideoOverlay";
 
@@ -48,15 +49,15 @@ export default function MaintenanceScreen() {
 
     const fetchProducts = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
         const productsData: ProductApiData[] = [];
 
         for (const modelo of productModels) {
           try {
-            const response = await fetch(
-              `${API_URL}/api/products/search/grouped?modelo=${encodeURIComponent(modelo)}&limit=1`
-            );
-            const data = await response.json();
+            // Usar apiGet que incluye automáticamente la API Key
+            const data = await apiGet<{
+              success: boolean;
+              data?: { products: ProductApiData[] };
+            }>(`/api/products/search/grouped?modelo=${encodeURIComponent(modelo)}&limit=1`);
 
             if (data.success && data.data?.products && data.data.products.length > 0) {
               productsData.push(data.data.products[0]);

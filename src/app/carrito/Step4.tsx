@@ -7,7 +7,13 @@ import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
 
-export default function Step4({ onBack, onContinue }: { onBack?: () => void; onContinue?: () => void }) {
+export default function Step4({
+  onBack,
+  onContinue,
+}: {
+  onBack?: () => void;
+  onContinue?: () => void;
+}) {
   const authContext = useAuthContext();
   const {
     isProcessing,
@@ -19,6 +25,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
     selectedCardId,
     useNewCard,
     isAddCardModalOpen,
+    savedCardsReloadCounter,
     handleCardChange,
     handleCardErrorChange,
     handlePaymentMethodChange,
@@ -27,6 +34,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
     handleCardSelect,
     handleOpenAddCardModal,
     handleCloseAddCardModal,
+    handleAddCardSuccess,
     handleUseNewCardChange,
     setSaveInfo,
   } = useCheckoutLogic();
@@ -49,7 +57,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
       >
         <AddCardForm
           userId={authContext.user?.id || ""}
-          onSuccess={handleCloseAddCardModal}
+          onSuccess={handleAddCardSuccess}
           onCancel={handleCloseAddCardModal}
           showAsModal={true}
         />
@@ -78,6 +86,7 @@ export default function Step4({ onBack, onContinue }: { onBack?: () => void; onC
             selectedCardId={selectedCardId}
             onCardSelect={handleCardSelect}
             onOpenAddCardModal={handleOpenAddCardModal}
+            savedCardsReloadCounter={savedCardsReloadCounter}
             useNewCard={useNewCard}
             onUseNewCardChange={handleUseNewCardChange}
           />

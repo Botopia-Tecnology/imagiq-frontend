@@ -37,6 +37,7 @@ interface PaymentData {
   cardData?: CardData;
   savedCard?: DBCard;
   bank?: string;
+  bankName?: string;
   installments?: number;
 }
 
@@ -65,6 +66,7 @@ interface BillingData {
   razonSocial?: string;
   nit?: string;
   nombreRepresentante?: string;
+  tipoDocumento: string;
 }
 
 export default function Step7({ onBack }: Step7Props) {
@@ -137,11 +139,29 @@ export default function Step7({ onBack }: Step7Props) {
           }
         }
 
+        // selectedBank can be a JSON string { code, name } or a plain code string
+        let bankCode: string | undefined = undefined;
+        let bankName: string | undefined = undefined;
+        if (selectedBank) {
+          try {
+            const parsed = JSON.parse(selectedBank);
+            if (parsed && typeof parsed === "object" && "code" in parsed) {
+              bankCode = parsed.code || undefined;
+              bankName = parsed.name || undefined;
+            } else {
+              bankCode = String(selectedBank);
+            }
+          } catch (err) {
+            bankCode = selectedBank;
+          }
+        }
+
         setPaymentData({
           method: paymentMethod,
           cardData,
           savedCard,
-          bank: selectedBank || undefined,
+          bank: bankCode,
+          bankName,
           installments: installments
             ? Number.parseInt(installments)
             : undefined,
@@ -179,7 +199,27 @@ export default function Step7({ onBack }: Step7Props) {
   }, []);
 
   const handleConfirmOrder = async () => {
+    if (!billingData) {
+      console.error("No billing data available");
+      return;
+    }
+
     setIsProcessing(true);
+
+    // Preparar información de facturación de forma segura
+    const informacion_facturacion = {
+      direccion_id: billingData.direccion?.id ?? "",
+      email: billingData.email ?? "",
+      nombre_completo: billingData.nombre ?? "",
+      numero_documento: billingData.documento ?? "",
+      tipo_documento: billingData.tipoDocumento ?? "",
+      telefono: billingData.telefono ?? "",
+      type: billingData.type ?? "",
+      nit: billingData.nit,
+      razon_social: billingData.razonSocial,
+      representante_legal:
+        billingData.nombreRepresentante || billingData.razonSocial,
+    };
 
     try {
       // Aquí irá la lógica para procesar el pago
@@ -204,10 +244,11 @@ export default function Step7({ onBack }: Step7Props) {
             metodo_envio: 1,
             shippingAmount: String(calculations.shipping),
             userInfo: {
-              direccionId: billingData?.direccion.id || "",
+              direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
             cardTokenId: paymentData.savedCard?.id || "",
+            informacion_facturacion,
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -233,9 +274,10 @@ export default function Step7({ onBack }: Step7Props) {
             description: "Pago de pedido en Imagiq",
             metodo_envio: 1,
             userInfo: {
-              direccionId: billingData?.direccion.id || "",
+              direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -259,9 +301,10 @@ export default function Step7({ onBack }: Step7Props) {
             })),
             metodo_envio: 1,
             userInfo: {
-              direccionId: billingData?.direccion.id || "",
+              direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -437,7 +480,7 @@ export default function Step7({ onBack }: Step7Props) {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Banco:</span>
                       <span className="font-medium text-gray-900">
-                        {paymentData.bank}
+                        {paymentData.bankName || paymentData.bank}
                       </span>
                     </div>
                   )}

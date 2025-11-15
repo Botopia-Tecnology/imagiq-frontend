@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Direccion } from "@/types/user";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import { useAuthContext } from "@/features/auth/context";
@@ -11,8 +11,8 @@ import { MapPin, Plus, Check } from "lucide-react";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 
 interface Step6Props {
-  onBack?: () => void;
-  onContinue?: () => void;
+  readonly onBack?: () => void;
+  readonly onContinue?: () => void;
 }
 
 type BillingType = "natural" | "juridica";
@@ -22,6 +22,7 @@ interface BillingData {
   // Campos comunes
   nombre: string;
   documento: string;
+  tipoDocumento?: string;
   email: string;
   telefono: string;
   direccion: Direccion | null;
@@ -52,6 +53,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     type: "natural",
     nombre: "",
     documento: "",
+    tipoDocumento: "",
     email: "",
     telefono: "",
     direccion: null,
@@ -67,6 +69,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       codigo_dane: "",
       ciudad: address.ciudad || "",
       pais: address.pais,
+      esPredeterminada: address.esPredeterminada,
     };
   };
 
@@ -225,6 +228,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     } else if (!/\S+@\S+\.\S+/.test(billingData.email)) {
       newErrors.email = "El email no es válido";
     }
+    if (!billingData.tipoDocumento?.trim()) {
+      newErrors.tipoDocumento = "El tipo de documento es requerido";
+    }
     if (!billingData.telefono.trim()) {
       newErrors.telefono = "El teléfono es requerido";
     }
@@ -255,8 +261,35 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       return;
     }
 
+    // Preparar datos a guardar; si se usa la dirección de envío, asegurar que guardamos su `id`
+    let billingToSave: BillingData = { ...billingData };
+    if (useShippingData) {
+      const shippingAddressStr = localStorage.getItem("checkout-address");
+      if (shippingAddressStr) {
+        try {
+          const parsed = JSON.parse(shippingAddressStr);
+          if (parsed && typeof parsed === "object") {
+            // Asegurar que la dirección en el billing incluye el id del checkout-address
+            billingToSave = {
+              ...billingToSave,
+              direccion: {
+                ...(billingToSave.direccion || {}),
+                ...parsed,
+              },
+            };
+          }
+        } catch (err) {
+          // Si falla el parseo, no interrumpir el guardado; seguimos con billingData actual
+          console.error("Error parsing checkout-address for billing id:", err);
+        }
+      }
+    }
+
     // Guardar datos en localStorage
-    localStorage.setItem("checkout-billing-data", JSON.stringify(billingData));
+    localStorage.setItem(
+      "checkout-billing-data",
+      JSON.stringify(billingToSave)
+    );
 
     if (onContinue) {
       onContinue();
@@ -264,29 +297,27 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   };
 
   // Validación para habilitar/deshabilitar el botón de continuar
-  const canContinue = (() => {
-    // Validaciones comunes para ambos tipos de persona
+  const canContinue = useMemo(() => {
     const commonFieldsFilled =
       billingData.nombre.trim() !== "" &&
+      !!billingData.tipoDocumento?.trim() &&
       billingData.documento.trim() !== "" &&
       billingData.email.trim() !== "" &&
       billingData.telefono.trim() !== "" &&
       billingData.direccion !== null;
 
-    // Si es persona natural, solo validar campos comunes
-    if (billingType === "natural") {
-      return commonFieldsFilled;
-    }
+    if (billingType === "natural") return commonFieldsFilled;
 
-    // Si es persona jurídica, validar también campos específicos
+    // persona jurídica
     if (billingType === "juridica") {
-      // Verificar que los campos existan Y no estén vacíos
-      const razonSocialFilled =
-        billingData.razonSocial && billingData.razonSocial.trim() !== "";
-      const nitFilled = billingData.nit && billingData.nit.trim() !== "";
-      const nombreRepresentanteFilled =
+      const razonSocialFilled = !!(
+        billingData.razonSocial && billingData.razonSocial.trim() !== ""
+      );
+      const nitFilled = !!(billingData.nit && billingData.nit.trim() !== "");
+      const nombreRepresentanteFilled = !!(
         billingData.nombreRepresentante &&
-        billingData.nombreRepresentante.trim() !== "";
+        billingData.nombreRepresentante.trim() !== ""
+      );
 
       return (
         commonFieldsFilled &&
@@ -297,7 +328,131 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
 
     return false;
-  })();
+  }, [billingData, billingType]);
+
+  // Ordenador para direcciones: predeterminadas primero
+  const sortAddressesByDefault = (a: Address, b: Address) => {
+    if (a.esPredeterminada === b.esPredeterminada) return 0;
+    return a.esPredeterminada ? -1 : 1;
+  };
+
+  // Renderiza la sección de direcciones (evita ternarios anidados en JSX)
+  const renderAddressSection = () => {
+    if (useShippingData) {
+      return (
+        billingData.direccion && (
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p className="text-sm font-medium text-gray-700">
+              {billingData.direccion.linea_uno}
+            </p>
+            {billingData.direccion.ciudad && (
+              <p className="text-sm text-gray-600 mt-1">
+                {billingData.direccion.ciudad}
+              </p>
+            )}
+          </div>
+        )
+      );
+    }
+
+    if (isLoadingAddresses) {
+      return (
+        <div className="animate-pulse space-y-3">
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+          <div className="h-16 bg-gray-200 rounded-lg"></div>
+        </div>
+      );
+    }
+
+    if (addresses.length > 0) {
+      return (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm text-gray-600">
+              Selecciona una dirección de facturación
+            </p>
+            <button
+              type="button"
+              onClick={handleOpenAddAddressModal}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            >
+              <Plus className="w-4 h-4" />
+              Nueva dirección
+            </button>
+          </div>
+
+          {addresses.toSorted(sortAddressesByDefault).map((address) => (
+            <button
+              key={address.id}
+              type="button"
+              onClick={() => handleAddressSelect(address)}
+              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
+                selectedAddressId === address.id
+                  ? "border-black bg-gray-50"
+                  : "border-gray-200 hover:border-gray-300 bg-white"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
+                    selectedAddressId === address.id
+                      ? "border-black bg-black"
+                      : "border-gray-300 bg-white"
+                  }`}
+                >
+                  {selectedAddressId === address.id && (
+                    <Check className="w-3 h-3 text-white" />
+                  )}
+                </div>
+
+                <div className="flex-shrink-0">
+                  <MapPin className="w-5 h-5 text-gray-400" />
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="font-semibold text-gray-900">
+                      {address.nombreDireccion}
+                    </p>
+                    {address.esPredeterminada && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                        Predeterminada
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    {address.direccionFormateada}
+                  </p>
+                  {address.ciudad && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      {address.ciudad}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      );
+    }
+
+    return (
+      <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+        <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+        <p className="text-gray-600 text-sm mb-4">
+          No tienes direcciones de facturación guardadas
+        </p>
+        <button
+          type="button"
+          onClick={handleOpenAddAddressModal}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold text-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Agregar dirección
+        </button>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen w-full">
@@ -312,9 +467,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
               {/* Selector de tipo de persona */}
               <div className="mb-6">
-                <label className="block text-sm font-semibold text-gray-700 mb-3">
+                <p className="block text-sm font-semibold text-gray-700 mb-3">
                   Tipo de facturación
-                </label>
+                </p>
                 <div className="flex gap-4">
                   <button
                     type="button"
@@ -362,10 +517,14 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   <>
                     {/* Razón Social - ocupa 2 columnas */}
                     <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="razonSocial"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Razón Social <span className="text-red-500">*</span>
                       </label>
                       <input
+                        id="razonSocial"
                         type="text"
                         value={billingData.razonSocial || ""}
                         onChange={(e) =>
@@ -387,10 +546,14 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
                     {/* NIT */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="nit"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         NIT <span className="text-red-500">*</span>
                       </label>
                       <input
+                        id="nit"
                         type="text"
                         value={billingData.nit || ""}
                         onChange={(e) =>
@@ -410,11 +573,15 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
                     {/* Nombre del Representante Legal */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label
+                        htmlFor="nombreRepresentante"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
                         Nombre del Representante Legal{" "}
                         <span className="text-red-500">*</span>
                       </label>
                       <input
+                        id="nombreRepresentante"
                         type="text"
                         value={billingData.nombreRepresentante || ""}
                         onChange={(e) =>
@@ -440,14 +607,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 )}
 
                 {/* Nombre (o nombre del contacto para jurídica) */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="md:col-span-2">
+                  <label
+                    htmlFor="nombre"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     {billingType === "juridica"
                       ? "Nombre de contacto"
                       : "Nombre completo"}{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="nombre"
                     type="text"
                     value={billingData.nombre}
                     onChange={(e) =>
@@ -463,20 +634,66 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   )}
                 </div>
 
+                {/* Tipo de documento */}
+                <div className="md:col-span-1">
+                  <label
+                    htmlFor="tipoDocumento"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Tipo de documento <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="tipoDocumento"
+                    name="tipoDocumento"
+                    value={billingData.tipoDocumento || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        "tipoDocumento" as keyof BillingData,
+                        e.target.value
+                      )
+                    }
+                    aria-invalid={Boolean(errors.tipoDocumento)}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
+                      errors.tipoDocumento
+                        ? "border-red-500"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    <option value="">Selecciona el tipo de documento</option>
+                    <option value="C.C.">C.C.</option>
+                    <option value="C.E.">C.E.</option>
+                    <option value="NIT">NIT</option>
+                    <option value="PASAPORTE">Pasaporte</option>
+                  </select>
+                  {errors.tipoDocumento && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.tipoDocumento}
+                    </p>
+                  )}
+                </div>
+
                 {/* Documento */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div className="md:col-span-1">
+                  <label
+                    htmlFor="documento"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     {billingType === "juridica"
                       ? "Cédula del contacto"
                       : "Documento de identidad"}{" "}
                     <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="documento"
+                    name="documento"
                     type="text"
                     value={billingData.documento}
                     onChange={(e) =>
                       handleInputChange("documento", e.target.value)
                     }
+                    aria-invalid={Boolean(errors.documento)}
+                    required
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
                       errors.documento ? "border-red-500" : "border-gray-300"
                     }`}
@@ -491,10 +708,14 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="email"
                     type="email"
                     value={billingData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
@@ -510,10 +731,14 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
                 {/* Teléfono */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    htmlFor="telefono"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Teléfono <span className="text-red-500">*</span>
                   </label>
                   <input
+                    id="telefono"
                     type="tel"
                     value={billingData.telefono}
                     onChange={(e) =>
@@ -538,129 +763,20 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   Dirección de facturación
                 </h3>
 
-                {!useShippingData ? (
-                  <>
-                    {/* Modal para agregar nueva dirección */}
-                    <Modal
-                      isOpen={isAddAddressModalOpen}
-                      onClose={handleCloseAddAddressModal}
-                      size="lg"
-                      showCloseButton={false}
-                    >
-                      <AddNewAddressForm
-                        onAddressAdded={handleAddressAdded}
-                        onCancel={handleCloseAddAddressModal}
-                        withContainer={false}
-                      />
-                    </Modal>
+                <Modal
+                  isOpen={isAddAddressModalOpen}
+                  onClose={handleCloseAddAddressModal}
+                  size="lg"
+                  showCloseButton={false}
+                >
+                  <AddNewAddressForm
+                    onAddressAdded={handleAddressAdded}
+                    onCancel={handleCloseAddAddressModal}
+                    withContainer={false}
+                  />
+                </Modal>
 
-                    {isLoadingAddresses ? (
-                      <div className="animate-pulse space-y-3">
-                        <div className="h-16 bg-gray-200 rounded-lg"></div>
-                        <div className="h-16 bg-gray-200 rounded-lg"></div>
-                      </div>
-                    ) : addresses.length > 0 ? (
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between mb-2">
-                          <p className="text-sm text-gray-600">
-                            Selecciona una dirección de facturación
-                          </p>
-                          <button
-                            type="button"
-                            onClick={handleOpenAddAddressModal}
-                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-                          >
-                            <Plus className="w-4 h-4" />
-                            Nueva dirección
-                          </button>
-                        </div>
-
-                        {addresses.map((address) => (
-                          <button
-                            key={address.id}
-                            type="button"
-                            onClick={() => handleAddressSelect(address)}
-                            className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                              selectedAddressId === address.id
-                                ? "border-black bg-gray-50"
-                                : "border-gray-200 hover:border-gray-300 bg-white"
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              {/* Radio button visual */}
-                              <div
-                                className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
-                                  selectedAddressId === address.id
-                                    ? "border-black bg-black"
-                                    : "border-gray-300 bg-white"
-                                }`}
-                              >
-                                {selectedAddressId === address.id && (
-                                  <Check className="w-3 h-3 text-white" />
-                                )}
-                              </div>
-
-                              {/* Icono de ubicación */}
-                              <div className="flex-shrink-0">
-                                <MapPin className="w-5 h-5 text-gray-400" />
-                              </div>
-
-                              {/* Información de la dirección */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <p className="font-semibold text-gray-900">
-                                    {address.nombreDireccion}
-                                  </p>
-                                  {address.esPredeterminada && (
-                                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
-                                      Predeterminada
-                                    </span>
-                                  )}
-                                </div>
-                                <p className="text-sm text-gray-600">
-                                  {address.direccionFormateada}
-                                </p>
-                                {address.ciudad && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {address.ciudad}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-                        <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                        <p className="text-gray-600 text-sm mb-4">
-                          No tienes direcciones de facturación guardadas
-                        </p>
-                        <button
-                          type="button"
-                          onClick={handleOpenAddAddressModal}
-                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold text-sm"
-                        >
-                          <Plus className="w-4 h-4" />
-                          Agregar dirección
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  billingData.direccion && (
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-sm font-medium text-gray-700">
-                        {billingData.direccion.linea_uno}
-                      </p>
-                      {billingData.direccion.ciudad && (
-                        <p className="text-sm text-gray-600 mt-1">
-                          {billingData.direccion.ciudad}
-                        </p>
-                      )}
-                    </div>
-                  )
-                )}
+                {renderAddressSection()}
 
                 {errors.direccion && (
                   <p className="text-red-500 text-xs mt-2">

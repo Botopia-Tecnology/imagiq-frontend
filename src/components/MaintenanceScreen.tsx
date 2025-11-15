@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 /**
  * Pantalla de mantenimiento - Diseño Samsung Real
@@ -17,37 +18,15 @@ interface Product {
   sku: string;
   name: string;
   image: string;
+  price: number;
+  originalPrice?: number;
+  discount?: number;
   loading?: boolean;
 }
 
 export default function MaintenanceScreen() {
   const [mounted, setMounted] = useState(false);
-  const [products, setProducts] = useState<Product[]>([
-    {
-      sku: "SM-F966BDBJCOO",
-      name: "Galaxy Z Fold6",
-      image: "/placeholder-product.png",
-      loading: true,
-    },
-    {
-      sku: "SM-F766BDBKCOO",
-      name: "Galaxy Z Flip6",
-      image: "/placeholder-product.png",
-      loading: true,
-    },
-    {
-      sku: "SM-X930NZADCOO",
-      name: "Galaxy Tab S10+",
-      image: "/placeholder-product.png",
-      loading: true,
-    },
-    {
-      sku: "SM-L705FZB1COO",
-      name: "Galaxy Watch Ultra",
-      image: "/placeholder-product.png",
-      loading: true,
-    },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [notifyEmail, setNotifyEmail] = useState("");
   const [notificationSent, setNotificationSent] = useState<Set<string>>(
     new Set()
@@ -77,6 +56,12 @@ export default function MaintenanceScreen() {
 
               if (data.success && data.data.length > 0) {
                 const product = data.data[0];
+                const price = parseFloat(product.precio?.[0] || "0");
+                const originalPrice = parseFloat(product.precioOriginal?.[0] || "0");
+                const discount = originalPrice > price
+                  ? Math.round(((originalPrice - price) / originalPrice) * 100)
+                  : 0;
+
                 return {
                   sku,
                   name:
@@ -84,6 +69,9 @@ export default function MaintenanceScreen() {
                     product.desDetallada?.[0] ||
                     "Producto Samsung",
                   image: product.imagePreviewUrl?.[0] || "/placeholder-product.png",
+                  price,
+                  originalPrice: originalPrice > 0 ? originalPrice : undefined,
+                  discount: discount > 0 ? discount : undefined,
                   loading: false,
                 };
               }
@@ -91,6 +79,7 @@ export default function MaintenanceScreen() {
                 sku,
                 name: "Producto Samsung",
                 image: "/placeholder-product.png",
+                price: 0,
                 loading: false,
               };
             } catch {
@@ -98,6 +87,7 @@ export default function MaintenanceScreen() {
                 sku,
                 name: "Producto Samsung",
                 image: "/placeholder-product.png",
+                price: 0,
                 loading: false,
               };
             }
@@ -166,27 +156,26 @@ export default function MaintenanceScreen() {
 
           {/* Productos destacados */}
           <div className="mb-8 animate-fade-in-delay-3">
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {products.map((product, idx) => (
                 <div
                   key={product.sku}
-                  className="group bg-white border border-gray-200 hover:border-black transition-all duration-500 hover:shadow-2xl animate-slide-up"
+                  className="group bg-white border border-gray-200 hover:border-black transition-all duration-500 hover:shadow-xl animate-slide-up rounded-lg overflow-hidden"
                   style={{ animationDelay: `${idx * 100}ms` }}
                 >
                   {/* Imagen del producto */}
-                  <div className="relative aspect-square bg-gray-50 overflow-hidden">
-                    {product.loading ? (
-                      <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="relative aspect-square bg-white overflow-hidden">
+                    {!products.length || product.loading ? (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
                         <div className="w-8 h-8 border-2 border-black border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : (
-                      <div className="relative w-full h-full p-8">
+                      <div className="relative w-full h-full p-6">
                         <Image
-                          src={product.image}
+                          src={getCloudinaryUrl(product.image, "product")}
                           alt={product.name}
                           fill
-                          className="object-contain group-hover:scale-110 transition-transform duration-700 ease-out"
+                          className="object-contain group-hover:scale-105 transition-transform duration-700 ease-out"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         />
                       </div>
@@ -194,17 +183,30 @@ export default function MaintenanceScreen() {
                   </div>
 
                   {/* Info del producto */}
-                  <div className="p-6">
-                    <h4 className="text-lg font-bold text-black mb-2 line-clamp-2 min-h-[3.5rem]">
+                  <div className="p-4 space-y-3">
+                    {/* Nombre */}
+                    <h4 className="text-sm font-semibold text-black line-clamp-2 min-h-[2.5rem]">
                       {product.name}
                     </h4>
 
-                    {/* SKU */}
-                    <p className="text-xs text-gray-500 mb-4 font-mono">
-                      {product.sku}
-                    </p>
+                    {/* Precios */}
+                    <div className="space-y-1">
+                      {product.discount && product.originalPrice && (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold text-green-600">
+                            -{product.discount}%
+                          </span>
+                          <span className="text-xs text-gray-400 line-through">
+                            ${product.originalPrice.toLocaleString("es-CO")}
+                          </span>
+                        </div>
+                      )}
+                      <p className="text-xl font-bold text-black">
+                        ${product.price.toLocaleString("es-CO")}
+                      </p>
+                    </div>
 
-                    {/* Botón Notifícame */}
+                    {/* Botón Notifícame - Siempre visible */}
                     <button
                       onClick={() => {
                         const email = prompt("Ingresa tu email para notificarte:");
@@ -216,7 +218,7 @@ export default function MaintenanceScreen() {
                         }
                       }}
                       disabled={notificationSent.has(product.sku)}
-                      className={`w-full py-3 font-medium transition-all duration-300 ${
+                      className={`w-full py-2.5 text-sm font-medium transition-all duration-300 rounded-md ${
                         notificationSent.has(product.sku)
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
                           : "bg-black text-white hover:bg-gray-900 hover:shadow-lg"

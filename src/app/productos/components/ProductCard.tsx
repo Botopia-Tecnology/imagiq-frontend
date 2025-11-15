@@ -833,6 +833,8 @@ export default function ProductCard({
               >
                 {isLoading ? (
                   <Loader className="w-4 h-4 mx-auto" />
+                ) : process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ? (
+                  "Notifícame"
                 ) : isOutOfStock ? (
                   "Notifícame"
                 ) : (

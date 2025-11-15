@@ -46,27 +46,27 @@ export const benefits: Benefit[] = [
 const BenefitItem: React.FC<Benefit> = ({ icon, title, subtitle }) => (
   <div className="flex flex-col items-center text-center" role="listitem">
     <div
-      className="w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center mb-3 md:mb-4 shadow-md"
+      className="w-14 h-14 md:w-16 md:h-16 rounded-full flex items-center justify-center mb-2.5 md:mb-3 shadow-md"
       style={{ backgroundColor: "#0d2345" }}
       aria-label={title}
     >
       <Image
         src={icon}
         alt={title}
-        width={40}
-        height={40}
+        width={32}
+        height={32}
         className="object-contain"
         priority
       />
     </div>
     <h3
-      className="font-semibold text-[#0d2345] text-xs md:text-base leading-tight mb-1"
+      className="font-semibold text-[#0d2345] text-[11px] md:text-sm leading-tight mb-0.5"
       style={{ fontFamily: "SamsungSharpSans" }}
     >
       {title}
     </h3>
     <p
-      className="text-gray-700 text-xs md:text-sm leading-tight"
+      className="text-gray-700 text-[10px] md:text-xs leading-tight"
       style={{ fontFamily: "SamsungSharpSans" }}
     >
       {subtitle}
@@ -86,16 +86,16 @@ const BenefitsSection: React.FC = () => (
   >
     <div className="max-w-6xl mx-auto px-4 md:px-0">
       {/* Encabezado */}
-      <div className="text-center mb-10 md:mb-14">
+      <div className="text-center mb-8 md:mb-10">
         <h2
           id="benefits-title"
-          className="text-3xl md:text-4xl font-light text-[#222] mb-3"
+          className="text-2xl md:text-3xl font-light text-[#222] mb-2"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           Beneficios imagiq
         </h2>
         <p
-          className="text-base md:text-lg text-gray-500 font-light"
+          className="text-sm md:text-base text-gray-500 font-light"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           Compra con confianza y disfruta de ventajas exclusivas

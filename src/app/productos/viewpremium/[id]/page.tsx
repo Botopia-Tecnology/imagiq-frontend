@@ -287,16 +287,16 @@ export default function ProductViewPage({ params }) {
       />
 
       {/* Layout de dos columnas: Carrusel sin márgenes, Info con márgenes */}
-      <div className="bg-white pt-8 pb-0 mb-0 min-h-screen">
+      <div className="bg-white pt-0 pb-0 mb-0 min-h-screen">
         {/* Breadcrumbs */}
-        <div className="px-4 md:px-6 lg:px-12 mb-4">
+        <div className="px-4 md:px-6 lg:px-12 mb-4 pt-4">
           <Breadcrumbs productName="Detalles del producto" />
         </div>
 
         {/* Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
           {/* Columna izquierda: Carrusel - ocupa el ancho */}
-          <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden">
+          <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden lg:-mt-8">
             <ProductCarousel
               ref={carouselRef}
               product={product}
@@ -336,7 +336,7 @@ export default function ProductViewPage({ params }) {
       </div>
 
       {/* Sección de Estreno y Entrego - SIEMPRE fuera del grid, centrada */}
-      <div className="bg-white pb-4 mt-8 lg:-mt-16">
+      <div className="bg-white pb-2 md:pb-4 mt-4 md:mt-8 lg:-mt-16">
         <div className="container mx-auto px-4 md:px-6 lg:px-12">
           <div className="max-w-7xl mx-auto">
             <TradeInSection

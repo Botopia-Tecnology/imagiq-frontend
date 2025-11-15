@@ -181,8 +181,8 @@ export const useProductLogic = (product: ProductCardProps | null) => {
       // Calcular el porcentaje de scroll (0-100)
       const scrollPercentage = (scrollY / documentHeight) * 100;
       
-      // Cambiar al segundo carrusel cuando el scroll llegue al 20%
-      const shouldHideCarousel = scrollPercentage > 20;
+      // Cambiar al segundo carrusel cuando el scroll llegue al 19%
+      const shouldHideCarousel = scrollPercentage > 19;
       setShowStickyCarousel(!shouldHideCarousel);
     };
 

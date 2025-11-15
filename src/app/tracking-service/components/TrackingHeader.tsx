@@ -43,7 +43,7 @@ export function TrackingHeader({
           </div>
 
           {/* Connector Line 1 */}
-          <div className="w-24 h-1 bg-black mx-2 relative z-10"></div>
+          <div className="w-32 h-1 bg-black relative z-10 -mx-8"></div>
 
           {/* Step 2: Enviando - In Progress */}
           <div className="flex flex-col items-center gap-1 relative z-20">
@@ -56,7 +56,7 @@ export function TrackingHeader({
           </div>
 
           {/* Connector Line 2 */}
-          <div className="w-24 h-1 bg-gray-500 mx-2 relative z-10"></div>
+          <div className="w-32 h-1 bg-gray-500 relative z-10 -mx-8"></div>
 
           {/* Step 3: Entregado - Not Started */}
           <div className="flex flex-col items-center gap-1 relative z-20">

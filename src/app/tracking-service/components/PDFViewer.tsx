@@ -193,7 +193,7 @@ export function PDFViewer({
       </div>
 
       {/* Controls */}
-      <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t">
+      <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
         {/* Page Navigation */}
         {numPages > 1 && (
           <div className="flex items-center gap-3">

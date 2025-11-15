@@ -141,54 +141,54 @@ export default function RootLayout({
         <AnalyticsScripts />
         <AnalyticsInit />
 
-        {/* Mostrar pantalla de mantenimiento si está activada */}
-        {isMaintenanceMode ? (
-          <MaintenanceScreen />
-        ) : (
-          <ResponsiveProvider>
-            <HeroProvider>
-              <ProductProvider>
-                <NavbarVisibilityProvider>
-                  <PostHogProvider>
-                    <AnalyticsProvider>
-                      <AuthProvider>
-                        <UserPreferencesProvider>
-                          <CartProvider>
-                            <SelectedColorProvider>
-                              <PointsProvider>
-                                <SelectedStoreProvider>
+        <ResponsiveProvider>
+          <HeroProvider>
+            <ProductProvider>
+              <NavbarVisibilityProvider>
+                <PostHogProvider>
+                  <AnalyticsProvider>
+                    <AuthProvider>
+                      <UserPreferencesProvider>
+                        <CartProvider>
+                          <SelectedColorProvider>
+                            <PointsProvider>
+                              <SelectedStoreProvider>
+                                {/* Mostrar pantalla de mantenimiento si está activada */}
+                                {isMaintenanceMode ? (
+                                  <MaintenanceScreen />
+                                ) : (
                                   <ClientLayout>{safeChildren}</ClientLayout>
-                                </SelectedStoreProvider>
-                                {/* Widget del chatbot */}
-                                <ChatbotWidget />
-                                {/* Toast notifications */}
-                                <Toaster
-                                  position="top-center"
-                                  expand={true}
-                                  richColors
-                                  closeButton
-                                  toastOptions={{
-                                    duration: 4000,
-                                    style: {
-                                      background: "white",
-                                      border: "1px solid #e2e8f0",
-                                      color: "#1e293b",
-                                      fontFamily: "var(--font-inter)",
-                                    },
-                                  }}
-                                />
-                              </PointsProvider>
-                            </SelectedColorProvider>
-                          </CartProvider>
-                        </UserPreferencesProvider>
-                      </AuthProvider>
-                    </AnalyticsProvider>
-                  </PostHogProvider>
-                </NavbarVisibilityProvider>
-              </ProductProvider>
-            </HeroProvider>
-          </ResponsiveProvider>
-        )}
+                                )}
+                              </SelectedStoreProvider>
+                              {/* Widget del chatbot - solo si NO está en mantenimiento */}
+                              {!isMaintenanceMode && <ChatbotWidget />}
+                              {/* Toast notifications */}
+                              <Toaster
+                                position="top-center"
+                                expand={true}
+                                richColors
+                                closeButton
+                                toastOptions={{
+                                  duration: 4000,
+                                  style: {
+                                    background: "white",
+                                    border: "1px solid #e2e8f0",
+                                    color: "#1e293b",
+                                    fontFamily: "var(--font-inter)",
+                                  },
+                                }}
+                              />
+                            </PointsProvider>
+                          </SelectedColorProvider>
+                        </CartProvider>
+                      </UserPreferencesProvider>
+                    </AuthProvider>
+                  </AnalyticsProvider>
+                </PostHogProvider>
+              </NavbarVisibilityProvider>
+            </ProductProvider>
+          </HeroProvider>
+        </ResponsiveProvider>
       </body>
     </html>
   );

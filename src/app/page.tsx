@@ -90,9 +90,9 @@ export default function HomePage() {
   return (
     <>
       <SEO
-        title="Imagiq Store - Tu tienda online de confianza"
-        description="Descubre productos de calidad: Outlet con hasta 70% OFF, Novedades, Recomendados y Ventas Corporativas. Envío gratis +$999"
-        keywords="ecommerce, outlet, novedades, recomendados, ventas corporativas, soporte"
+        title="Imagiq - Distribuidor Oficial Samsung Colombia"
+        description="Distribuidor oficial de Samsung en Colombia. Encuentra los últimos Galaxy, tablets, wearables y electrodomésticos con garantía oficial. Envío gratis, soporte especializado y las mejores promociones."
+        keywords="Samsung Colombia, distribuidor oficial Samsung, Galaxy, Samsung Store, electrodomésticos Samsung, tablets Samsung, smartwatch Samsung, Galaxy Z Fold, Galaxy Z Flip, tienda Samsung Colombia"
       />
       {/* Sin padding top para que el video empiece desde arriba y el navbar quede encima */}
       <div

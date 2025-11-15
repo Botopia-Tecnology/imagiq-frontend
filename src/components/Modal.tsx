@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -86,7 +87,7 @@ export default function Modal({
 
   if (!isOpen) return null;
 
-  return (
+  const modalContent = (
     <div
       className={cn(
         "fixed inset-0 z-[100] flex items-start justify-center pt-40 pb-4 px-4 overflow-y-auto",
@@ -156,4 +157,9 @@ export default function Modal({
       </div>
     </div>
   );
+
+  // Renderizar en un portal para que aparezca fuera del flujo normal del DOM
+  return typeof window !== 'undefined'
+    ? createPortal(modalContent, document.body)
+    : null;
 }

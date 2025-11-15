@@ -493,17 +493,28 @@ export default function ProductCard({
   // Color seleccionado para UI (coincide con el selector de colores)
   const displayedSelectedColor = useMemo(() => {
     if (apiProduct) {
+      // Obtener las opciones de color con nombreColorDisplay desde el hook
+      const colorOptions = productSelection.getColorOptions().map((colorOption) => ({
+        name: colorOption.color,
+        hex: colorOption.hex,
+        label: colorOption.nombreColorDisplay || colorOption.color,
+        nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+        sku: colorOption.variants[0]?.sku || "",
+        ean: colorOption.variants[0]?.ean || "",
+      }));
+
+      // Buscar por el valor de color (hex) ya que productSelection.selection.selectedColor contiene el hex
       return (
-        colors.find(
-          (c) => c.label === productSelection.selection.selectedColor
+        colorOptions.find(
+          (c) => c.name === productSelection.selection.selectedColor ||
+                 c.hex === productSelection.selection.selectedColor
         ) || null
       );
     }
     return selectedColor;
   }, [
     apiProduct,
-    colors,
-    productSelection.selection.selectedColor,
+    productSelection,
     selectedColor,
   ]);
 
@@ -589,7 +600,7 @@ export default function ProductCard({
           </div>
 
           {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
-          {isOutOfStock && (
+          {isOutOfStock && process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
             <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
               <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
                 <p className="text-xs text-gray-600 text-center font-medium">
@@ -618,6 +629,7 @@ export default function ProductCard({
             </h3>
             {/* SKU y CodigoMarket dinámicos - Solo si la variable de entorno lo permite */}
             {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" &&
+              process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" &&
               (currentSku || currentCodigoMarket || currentskuPostback) && (
                 <div className="mt-1 space-y-0.5">
                   {currentSku && (
@@ -684,30 +696,38 @@ export default function ProductCard({
                 <ColorSelector
                   colors={
                     apiProduct
-                      ? productSelection.availableColors.map((colorName) => {
-                          // Crear un ProductColor basado en el nombre del color
-                          const normalizedColor = colorName
-                            .toLowerCase()
-                            .trim();
-                          const colorInfo = colors.find(
-                            (c) => c.label.toLowerCase() === normalizedColor
-                          ) || {
-                            name: normalizedColor.replaceAll(/\s+/g, "-"),
-                            hex: "#808080",
-                            label: colorName,
-                            sku: "",
-                            ean: "",
-                          };
-                          return colorInfo;
-                        })
+                      ? productSelection.getColorOptions().map((colorOption) => ({
+                          name: colorOption.color,
+                          hex: colorOption.hex,
+                          label: colorOption.nombreColorDisplay || colorOption.color,
+                          nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+                          sku: colorOption.variants[0]?.sku || "",
+                          ean: colorOption.variants[0]?.ean || "",
+                        }))
                       : colors
                   }
                   selectedColor={
                     apiProduct
-                      ? colors.find(
-                          (c) =>
-                            c.label === productSelection.selection.selectedColor
-                        ) || null
+                      ? productSelection.getColorOptions().find(
+                          (colorOption) =>
+                            colorOption.color === productSelection.selection.selectedColor
+                        ) ? {
+                          name: productSelection.selection.selectedColor || "",
+                          hex: productSelection.getColorOptions().find(
+                            (colorOption) =>
+                              colorOption.color === productSelection.selection.selectedColor
+                          )?.hex || "#808080",
+                          label: productSelection.getColorOptions().find(
+                            (colorOption) =>
+                              colorOption.color === productSelection.selection.selectedColor
+                          )?.nombreColorDisplay || productSelection.selection.selectedColor || "",
+                          nombreColorDisplay: productSelection.getColorOptions().find(
+                            (colorOption) =>
+                              colorOption.color === productSelection.selection.selectedColor
+                          )?.nombreColorDisplay || undefined,
+                          sku: "",
+                          ean: "",
+                        } : null
                       : selectedColor
                   }
                   onColorSelect={handleColorSelect}
@@ -818,7 +838,7 @@ export default function ProductCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (isOutOfStock) {
+                  if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || isOutOfStock) {
                     stockNotification.openModal();
                   } else {
                     handleAddToCart();

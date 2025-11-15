@@ -70,14 +70,14 @@ export default function VideoOverlay({
         className="w-full h-full object-cover"
       />
 
-      {/* Botón Skip - Solo visible después de 3 segundos */}
+      {/* Botón Skip - Responsive */}
       {canSkip && (
         <button
           onClick={onClose}
-          className="absolute top-8 right-8 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-6 py-3 rounded-full flex items-center gap-2 transition-all duration-200 animate-fade-in"
+          className="absolute top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white px-4 py-2 sm:px-6 sm:py-3 rounded-full flex items-center gap-2 transition-all duration-200 animate-fade-in"
         >
-          <span className="text-sm font-medium">Saltar video</span>
-          <X className="w-4 h-4" />
+          <span className="text-xs sm:text-sm font-medium">Saltar video</span>
+          <X className="w-3 h-3 sm:w-4 sm:h-4" />
         </button>
       )}
 

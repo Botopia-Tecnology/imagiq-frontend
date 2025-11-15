@@ -31,12 +31,12 @@ export default function MaintenanceScreen() {
         for (const sku of skus) {
           try {
             const response = await fetch(
-              `${API_URL}/api/v1/products?sku=${sku}&limit=1`
+              `${API_URL}/api/products/search/grouped?sku=${sku}&limit=1`
             );
             const data = await response.json();
 
-            if (data.success && data.data.length > 0) {
-              productsData.push(data.data[0]);
+            if (data.success && data.data?.products && data.data.products.length > 0) {
+              productsData.push(data.data.products[0]);
             }
           } catch (error) {
             console.error(`Error fetching ${sku}:`, error);

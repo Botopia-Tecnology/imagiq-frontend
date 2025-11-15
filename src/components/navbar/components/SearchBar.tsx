@@ -10,7 +10,7 @@ type Props = {
 export const SearchBar: FC<Props> = ({ value, onChange, onSubmit }) => (
   <form
     onSubmit={onSubmit}
-    className="relative flex items-center rounded-full px-4 h-10 transition-all duration-300 w-[220px] backdrop-blur-md border-white/30 bg-gray-100"
+    className="relative flex items-center rounded-full px-4 h-10 transition-all duration-300 w-[140px] backdrop-blur-md border-white/30 bg-gray-100"
     style={{ overflow: "hidden" }}
   >
     <Search className="w-5 h-5 mr-2 text-gray-600" />

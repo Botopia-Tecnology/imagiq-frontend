@@ -24,7 +24,7 @@ export default function Step2({
 }) {
   // Usar el hook centralizado useCart
   const { products: cartProducts, calculations, formatPrice } = useCart();
-  const router = useRouter()
+  const router = useRouter();
   // Recibe onContinue para avanzar al siguiente paso
   // onBack ya existe
   // onContinue?: () => void
@@ -41,25 +41,27 @@ export default function Step2({
   });
 
   // Estado para la dirección seleccionada con Google Places
-  const [selectedAddress, setSelectedAddress] = useState<PlaceDetails | null>(null);
+  const [selectedAddress, setSelectedAddress] = useState<PlaceDetails | null>(
+    null
+  );
 
   // Handler para cuando se selecciona una dirección
   const handleAddressSelect = (place: PlaceDetails) => {
-    console.log('🏠 Dirección seleccionada en checkout:', place);
+    console.log("🏠 Dirección seleccionada en checkout:", place);
     setSelectedAddress(place);
 
     // Actualizar los campos del formulario automáticamente
-    setGuestForm(prev => ({
+    setGuestForm((prev) => ({
       ...prev,
       direccion_linea_uno: place.formattedAddress,
-      direccion_ciudad: place.city || ""
+      direccion_ciudad: place.city || "",
     }));
 
     // Limpiar errores de dirección ya que se seleccionó una válida
-    setFieldErrors(prev => ({
+    setFieldErrors((prev) => ({
       ...prev,
       direccion_linea_uno: "",
-      direccion_ciudad: ""
+      direccion_ciudad: "",
     }));
   };
 
@@ -250,14 +252,16 @@ export default function Step2({
   };
   useEffect(() => {
     const haveAccount = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-    console.log(haveAccount)
-    if (haveAccount.email){
-      router.push('/carrito/step3')
+    console.log(haveAccount);
+    if (haveAccount.email) {
+      router.push("/carrito/step3");
     }
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
+    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 relative z-10">
+      {/* Fondo blanco sólido para cubrir cualquier animación de fondo */}
+      <div className="fixed inset-0 bg-white -z-10" />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Login y invitado */}
         <div className="col-span-2 flex flex-col gap-8">
@@ -269,11 +273,17 @@ export default function Step2({
               beneficios
             </p>
             <div className="flex gap-4 items-center">
-              <button className="bg-[#333] text-white font-bold py-3 px-8 rounded-lg text-base hover:bg-[#222] transition">
+              <button
+                onClick={() => router.push("/login")}
+                className="bg-[#333] text-white font-bold py-3 px-8 rounded-lg text-base hover:bg-[#222] transition"
+              >
                 Iniciar sesión
               </button>
               <span className="text-gray-600">No tienes cuenta aún?</span>
-              <a href="#" className="text-[#0074E8] font-semibold underline">
+              <a
+                href="/login/create-account"
+                className="text-[#0074E8] font-semibold underline"
+              >
                 Regístrate aquí
               </a>
             </div>
@@ -380,11 +390,17 @@ export default function Step2({
                   disabled={loading || success}
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  ⚠️ Solo entregas en zonas de cobertura • ✨ Autocompletado con Google Places
+                  ⚠️ Solo entregas en zonas de cobertura • ✨ Autocompletado con
+                  Google Places
                 </p>
-                {(fieldErrors.direccion_linea_uno || fieldErrors.direccion_ciudad) && (
-                  <span className="text-red-500 text-xs" style={{ marginTop: 2 }}>
-                    {fieldErrors.direccion_linea_uno || fieldErrors.direccion_ciudad}
+                {(fieldErrors.direccion_linea_uno ||
+                  fieldErrors.direccion_ciudad) && (
+                  <span
+                    className="text-red-500 text-xs"
+                    style={{ marginTop: 2 }}
+                  >
+                    {fieldErrors.direccion_linea_uno ||
+                      fieldErrors.direccion_ciudad}
                   </span>
                 )}
               </div>
@@ -940,7 +956,8 @@ export default function Step2({
                   showControls={false}
                 />
                 <p className="text-xs text-gray-500 mt-2 text-center">
-                  ✅ Tu pedido será enviado a esta dirección • Verifica que sea correcta
+                  ✅ Tu pedido será enviado a esta dirección • Verifica que sea
+                  correcta
                 </p>
               </div>
             )}

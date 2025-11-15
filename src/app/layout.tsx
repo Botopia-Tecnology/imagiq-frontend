@@ -27,6 +27,7 @@ import { SelectedColorProvider } from "@/contexts/SelectedColorContext";
 import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 import { HeroProvider } from "@/contexts/HeroContext";
+import MaintenanceScreen from "@/components/MaintenanceScreen";
 // Si necesitas Inter desde Google Fonts en entornos con internet,
 // reactivar la importación desde next/font/google o agregar el CSS manual.
 
@@ -110,6 +111,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Verificar si el modo mantenimiento está activado
+  const isMaintenanceMode =
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+
   // Validar children para evitar NaN, null, undefined o string vacío
   let safeChildren = children;
   const isNaNValue =
@@ -135,49 +140,55 @@ export default function RootLayout({
       <body className="antialiased">
         <AnalyticsScripts />
         <AnalyticsInit />
-        <ResponsiveProvider>
-          <HeroProvider>
-            <ProductProvider>
-              <NavbarVisibilityProvider>
-                <PostHogProvider>
-                  <AnalyticsProvider>
-                    <AuthProvider>
-                      <UserPreferencesProvider>
-                        <CartProvider>
-                          <SelectedColorProvider>
-                            <PointsProvider>
-                              <SelectedStoreProvider>
-                                <ClientLayout>{safeChildren}</ClientLayout>
-                              </SelectedStoreProvider>
-                              {/* Widget del chatbot */}
-                              <ChatbotWidget />
-                              {/* Toast notifications */}
-                              <Toaster
-                                position="top-center"
-                                expand={true}
-                                richColors
-                                closeButton
-                                toastOptions={{
-                                  duration: 4000,
-                                  style: {
-                                    background: "white",
-                                    border: "1px solid #e2e8f0",
-                                    color: "#1e293b",
-                                    fontFamily: "var(--font-inter)",
-                                  },
-                                }}
-                              />
-                            </PointsProvider>
-                          </SelectedColorProvider>
-                        </CartProvider>
-                      </UserPreferencesProvider>
-                    </AuthProvider>
-                  </AnalyticsProvider>
-                </PostHogProvider>
-              </NavbarVisibilityProvider>
-            </ProductProvider>
-          </HeroProvider>
-        </ResponsiveProvider>
+
+        {/* Mostrar pantalla de mantenimiento si está activada */}
+        {isMaintenanceMode ? (
+          <MaintenanceScreen />
+        ) : (
+          <ResponsiveProvider>
+            <HeroProvider>
+              <ProductProvider>
+                <NavbarVisibilityProvider>
+                  <PostHogProvider>
+                    <AnalyticsProvider>
+                      <AuthProvider>
+                        <UserPreferencesProvider>
+                          <CartProvider>
+                            <SelectedColorProvider>
+                              <PointsProvider>
+                                <SelectedStoreProvider>
+                                  <ClientLayout>{safeChildren}</ClientLayout>
+                                </SelectedStoreProvider>
+                                {/* Widget del chatbot */}
+                                <ChatbotWidget />
+                                {/* Toast notifications */}
+                                <Toaster
+                                  position="top-center"
+                                  expand={true}
+                                  richColors
+                                  closeButton
+                                  toastOptions={{
+                                    duration: 4000,
+                                    style: {
+                                      background: "white",
+                                      border: "1px solid #e2e8f0",
+                                      color: "#1e293b",
+                                      fontFamily: "var(--font-inter)",
+                                    },
+                                  }}
+                                />
+                              </PointsProvider>
+                            </SelectedColorProvider>
+                          </CartProvider>
+                        </UserPreferencesProvider>
+                      </AuthProvider>
+                    </AnalyticsProvider>
+                  </PostHogProvider>
+                </NavbarVisibilityProvider>
+              </ProductProvider>
+            </HeroProvider>
+          </ResponsiveProvider>
+        )}
       </body>
     </html>
   );

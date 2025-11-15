@@ -13,6 +13,7 @@ import {
   payWithPse,
 } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
@@ -276,6 +277,8 @@ export function useCheckoutLogic() {
         representante_legal:
           billing?.nombreRepresentante || billing?.razonSocial,
       };
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
       let res;
 
       switch (paymentMethod) {
@@ -295,8 +298,8 @@ export function useCheckoutLogic() {
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
             informacion_facturacion,
           });
@@ -342,8 +345,8 @@ export function useCheckoutLogic() {
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
               informacion_facturacion,
             });
@@ -369,8 +372,8 @@ export function useCheckoutLogic() {
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
               informacion_facturacion,
             });
@@ -415,8 +418,8 @@ export function useCheckoutLogic() {
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
             informacion_facturacion,
           });

@@ -8,6 +8,7 @@ import type { Address } from "@/types/address";
 import Modal from "@/components/ui/Modal";
 import AddNewAddressForm from "./components/AddNewAddressForm";
 import { MapPin, Plus, Check } from "lucide-react";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 interface Step6Props {
   readonly onBack?: () => void;
@@ -88,10 +89,10 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
       setIsLoadingAddresses(true);
       try {
-        const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+        const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
         const userAddresses = await addressesService.getUserAddressesByType(
           "FACTURACION",
-          user?.id
+          user?.id || ""
         );
         setAddresses(userAddresses);
 
@@ -197,10 +198,10 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   const handleAddressAdded = async (newAddress: Address) => {
     // Recargar direcciones
     try {
-      const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
       const userAddresses = await addressesService.getUserAddressesByType(
         "FACTURACION",
-        user?.id
+        user?.id || ""
       );
       setAddresses(userAddresses);
 

@@ -5,6 +5,7 @@
 
 import { PlaceDetails } from "@/types/places.types";
 import type { Address } from "@/types/address";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 /**
  * Interface para crear una nueva dirección
@@ -85,7 +86,10 @@ export class AddressesService {
   ): Promise<Address> {
     try {
       // Obtener información del usuario del localStorage
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
       const requestData = { ...addressData };
 
       // SIEMPRE incluir usuarioId explícitamente
@@ -146,7 +150,10 @@ export class AddressesService {
       let url = `${BASE_CONFIG.API_URL}/api/addresses`;
 
       // El backend requiere usuarioId siempre (con o sin token JWT)
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
 
       if (userInfo.id) {
         url += `?usuarioId=${encodeURIComponent(userInfo.id)}`;
@@ -224,7 +231,10 @@ export class AddressesService {
   ): Promise<Address | null> {
     try {
       // Obtener información del usuario del localStorage
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
 
       if (!userInfo.id && !userInfo.email) {
         console.warn(
@@ -233,7 +243,7 @@ export class AddressesService {
         return null;
       }
 
-      const usuarioId = userInfo.id || userInfo.email;
+      const usuarioId = userInfo.id || userInfo.email || "";
       const url = `${
         BASE_CONFIG.API_URL
       }/api/addresses/default/${tipo}?usuarioId=${encodeURIComponent(
@@ -366,7 +376,10 @@ export class AddressesService {
   public async setDefaultAddress(addressId: string): Promise<Address> {
     try {
       // Obtener información del usuario del localStorage
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
 
       if (!userInfo.id && !userInfo.email) {
         throw new Error(
@@ -374,7 +387,7 @@ export class AddressesService {
         );
       }
 
-      const usuarioId = userInfo.id || userInfo.email;
+      const usuarioId = userInfo.id || userInfo.email || "";
       const url = `${
         BASE_CONFIG.API_URL
       }/api/addresses/${addressId}/set-default?usuarioId=${encodeURIComponent(

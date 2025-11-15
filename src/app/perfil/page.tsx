@@ -13,13 +13,14 @@
 import { ProfilePage as ProfilePageComponent } from "@/features/profile";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export default function ProfilePage() {
   const router = useRouter();
 
   useEffect(() => {
     const token = localStorage.getItem("imagiq_token");
-    const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
 
     // Redirigir a login si no hay sesión activa
     if (!token || !user.id) {

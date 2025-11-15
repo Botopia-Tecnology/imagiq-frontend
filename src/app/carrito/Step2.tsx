@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import AddressAutocomplete from "@/components/forms/AddressAutocomplete";
 import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
@@ -251,7 +252,10 @@ export default function Step2({
     }, 1200);
   };
   useEffect(() => {
-    const haveAccount = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const haveAccount = safeGetLocalStorage<{ email?: string }>(
+      "imagiq_user",
+      {}
+    );
     console.log(haveAccount);
     if (haveAccount.email) {
       router.push("/carrito/step3");

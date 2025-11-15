@@ -8,6 +8,7 @@ import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
 import { payWithAddi, payWithCard, payWithSavedCard, payWithPse } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
@@ -234,10 +235,8 @@ export function useCheckoutLogic() {
 
     // Procesar pago
     try {
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-      const direction = JSON.parse(
-        localStorage.getItem("checkout-address") || "{}"
-      );
+      const userInfo = safeGetLocalStorage("imagiq_user", {});
+      const direction = safeGetLocalStorage("checkout-address", {});
       let res;
 
       switch (paymentMethod) {

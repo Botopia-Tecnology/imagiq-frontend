@@ -7,6 +7,7 @@ import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/de
 import { apiClient, type ProductApiData, productEndpoints } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 /**
  * Paso 1 del carrito de compras
@@ -119,13 +120,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         previousProductsRef.current = currentProductsKey;
 
         // Obtener user_id del localStorage
-        const userStr = localStorage.getItem("imagiq_user");
-        if (!userStr) {
-          fetchingRef.current = false;
-          return;
-        }
-
-        const user = JSON.parse(userStr);
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+          "imagiq_user",
+          {}
+        );
         const userId = user?.id || user?.user_id;
 
         if (!userId) {
@@ -298,7 +296,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
-    const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
     const productId = product?.sku;
     if (product) {
       apiClient.put(
@@ -315,7 +313,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Esto evita el problema de actualizar el estado durante el renderizado
   const handleRemove = (idx: number) => {
     const product = cartProducts[idx];
-    const user = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
     const productId = product?.sku;
     if (product) {
       apiClient.delete(

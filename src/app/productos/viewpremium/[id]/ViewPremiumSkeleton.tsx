@@ -6,49 +6,47 @@
 export default function ViewPremiumSkeleton() {
   return (
     <div className="bg-white min-h-screen animate-pulse">
-      {/* Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 md:px-6 lg:px-12 py-4">
-          <div className="max-w-7xl mx-auto">
-            <div className="h-4 bg-gray-200 rounded w-48"></div>
-          </div>
-        </div>
-      </div>
 
       {/* Layout principal de dos columnas */}
-      <div className="pt-8 pb-0">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start">
+      <div className="bg-white pt-0 pb-0 mb-0 min-h-screen">
+        {/* Breadcrumbs */}
+        <div className="px-4 md:px-6 lg:px-12 mb-4 pt-4">
+          <div className="h-4 bg-gray-200 rounded w-48"></div>
+        </div>
+
+        {/* Grid principal */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 items-start relative">
           {/* Columna izquierda: Carrusel - ocupa el ancho */}
-          <div className="lg:col-span-9">
+          <div className="lg:col-span-9 lg:sticky lg:top-24 self-start lg:h-screen overflow-hidden">
             {/* DESKTOP: Carrusel grande */}
             <div className="hidden lg:block">
-              <div className="w-full h-screen flex items-center justify-center bg-gray-50">
-                <div className="w-96 h-[600px] bg-gray-200 rounded-2xl"></div>
+              <div className="w-full h-[700px] flex items-center justify-center bg-transparent">
+                <div className="w-full h-full bg-gray-200"></div>
               </div>
 
               {/* Indicadores de navegación */}
-              <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2">
+              <div className="flex justify-center gap-2 mt-6 mb-4">
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-2 h-2 rounded-full bg-gray-300"
+                    className="w-3 h-3 rounded-full bg-gray-300"
                   ></div>
                 ))}
               </div>
             </div>
 
             {/* MOBILE: Carrusel compacto */}
-            <div className="lg:hidden px-4">
-              <div className="w-full h-[500px] bg-gray-100 rounded-2xl flex items-center justify-center">
-                <div className="w-64 h-96 bg-gray-200 rounded-xl"></div>
+            <div className="lg:hidden">
+              <div className="w-full h-[220px] bg-transparent flex items-center justify-center">
+                <div className="w-full h-full bg-gray-200"></div>
               </div>
 
               {/* Indicadores mobile */}
-              <div className="flex justify-center gap-2 mt-4">
+              <div className="flex justify-center gap-2 mt-4 mb-4">
                 {[...Array(4)].map((_, i) => (
                   <div
                     key={i}
-                    className="w-2 h-2 rounded-full bg-gray-300"
+                    className="w-3 h-3 rounded-full bg-gray-300"
                   ></div>
                 ))}
               </div>
@@ -56,7 +54,7 @@ export default function ViewPremiumSkeleton() {
           </div>
 
           {/* Columna derecha: Información del producto */}
-          <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-8 lg:mt-0">
+          <div className="lg:col-span-3 px-4 md:px-6 lg:px-12 mt-0 lg:mt-0 lg:min-h-[200vh]">
             <div className="max-w-7xl mx-auto space-y-6">
               {/* Caracteristicas */}
               <div className="space-y-3">

@@ -120,7 +120,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
 
         {/* Dispositivo */}
-        <div className="mb-20">
+        <div className="mb-8">
           {/* Información de SKU, Código y Stock */}
           <div className="mb-4 space-y-1">
             {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedSku && (
@@ -138,19 +138,30 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 SKU Postback: {productSelection.selectedSkuPostback}
               </p>
             )}
-            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedStockTotal !== null && (
-              <p className="text-sm text-gray-600">
-                Stock disponible: {productSelection.selectedStockTotal}
-                {productSelection.selectedVariant?.cantidadTiendas ? 
-                  ` (Total: ${productSelection.selectedStockTotal} en ${productSelection.selectedVariant.cantidadTiendas} tiendas)` 
-                  : ''}
-              </p>
-            )}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (() => {
+              // Mostrar el stock disponible solo cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true
+              const stockTotal = productSelection.selectedStockTotal ?? 0;
+              const variant = productSelection.selectedVariant;
+              const cantidadTiendas = variant?.cantidadTiendas || 0;
+              const variantIndex = variant?.index ?? 0;
+              const cantidadTiendasReserva = product.apiProduct?.cantidadTiendasReserva?.[variantIndex] || 0;
+              const stockCentroDistribuciones = Math.max(0, stockTotal - cantidadTiendasReserva);
+              const stockTiendas = cantidadTiendasReserva;
+              const stockCalculado = stockCentroDistribuciones + (stockTiendas - cantidadTiendas);
+              
+              return (
+                <div className="text-sm text-gray-600 space-y-0.5">
+                  <p>
+                    Stock disponible ({stockCalculado}): Centro: {stockCentroDistribuciones} | Tiendas: {stockTiendas} | Cant. tiendas: {cantidadTiendas}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
-          <div className="border-2 border-blue-600 rounded-md p-4 bg-blue-50/30">
-            <div className="flex items-center justify-between gap-3">
-              <div className="font-bold text-black text-lg flex-1 self-center">{product.name}</div>
+          <div className="border-2 border-blue-600 rounded-md p-3 bg-blue-50/30">
+            <div className="flex items-center justify-between gap-2">
+              <div className="font-bold text-black text-sm flex-1 self-center">{product.name}</div>
               <div className="text-right self-center">
                 {(() => {
                   // Usar precio del sistema de selección si está disponible
@@ -163,7 +174,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                   if (indcerointeres === 0) {
                     // CASO 0: Solo precio de contado (SIN cuotas)
                     return (
-                      <div className="text-2xl text-black font-bold">
+                      <div className="text-base md:text-lg text-black font-bold">
                         {priceDisplay}
                       </div>
                     );
@@ -177,7 +188,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     // Si hay error o está cargando, solo mostrar precio
                     if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
                       return (
-                        <div className="text-xl sm:text-2xl text-black font-bold">
+                        <div className="text-lg sm:text-xl text-black font-bold">
                           {priceDisplay}
                         </div>
                       );
@@ -186,16 +197,16 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     return (
                       <>
                         {/* Layout limpio - simplificado en móvil */}
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-0.5">
                           {/* Móvil: Texto simplificado - Desktop: Texto completo */}
-                          <div className="text-xs sm:text-sm md:text-base font-bold text-[#222] leading-tight text-right">
+                          <div className="text-[10px] sm:text-xs md:text-xs font-bold text-[#222] leading-tight text-right">
                             <span className="md:hidden">{textoInteresSimple}</span>
                             <span className="hidden md:inline">{textoInteresCompleto}</span>
                           </div>
                           {/* Separador "o" solo en móvil */}
-                          <span className="text-[10px] text-gray-500 md:hidden">o</span>
+                          <span className="text-[9px] text-gray-500 md:hidden">o</span>
                           {/* Precio de contado */}
-                          <div className="text-base sm:text-lg md:text-xl lg:text-2xl text-black font-bold">
+                          <div className="text-sm sm:text-base md:text-base lg:text-lg text-black font-bold">
                             {priceDisplay}
                           </div>
                         </div>
@@ -209,7 +220,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                       <div className="text-sm text-black">
                         Desde $ {monthlyPrice.toLocaleString('es-CO')} al mes o
                       </div>
-                      <div className="text-2xl text-black">
+                      <div className="text-xl text-black">
                         {priceDisplay}
                       </div>
                     </>
@@ -246,13 +257,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           if (availableCapacities.length === 0) return null;
 
           return (
-          <div className="mb-6 mt-8">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-2xl font-bold text-black">Almacenamiento</h3>
+          <div className="mb-5 mt-3">
+            <div className="flex items-center gap-2 mb-1.5">
+              <h3 className="text-base font-bold text-black">Almacenamiento</h3>
             </div>
-            <p className="text-sm text-black mb-4">Compra tu smartphone de mayor capacidad a menor precio</p>
+            <p className="text-xs text-black mb-3">Compra tu smartphone de mayor capacidad a menor precio</p>
 
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {availableCapacities.map((capacityLabel, index) => {
                 // Buscar información de la capacidad desde product.capacities o desde el hook
                 const capacityInfo = product.capacities?.find(c => c.label === capacityLabel);
@@ -303,20 +314,20 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                           setSelectedStorage(capacityInfo?.value || capacityLabel);
                         }
                       }}
-                      className={`border-2 rounded-md p-4 cursor-pointer transition-all ${isSelected
+                      className={`border-2 rounded-md p-3 cursor-pointer transition-all ${isSelected
                         ? "border-blue-600 bg-blue-50/30"
                         : "border-gray-300 hover:border-gray-400"
                         }`}
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="font-bold text-black text-base">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="font-bold text-black text-sm">
                           {formattedLabel}
                         </div>
                         <div className="text-right">
-                          <div className="text-sm text-gray-700">
+                          <div className="text-xs text-gray-700">
                             $ {monthlyPrice.toLocaleString('es-CO')} al mes o
                           </div>
-                          <div className="text-lg text-black">
+                          <div className="text-sm text-black">
                             {priceStr !== "0" ? priceStr : "Precio no disponible"}
                           </div>
                         </div>
@@ -328,11 +339,11 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
             </div>
 
             {/* Información importante */}
-            <div className="mt-3 p-3">
-              <p className="text-sm font-semibold text-gray-900 mb-1">
+            <div className="mt-2.5 p-2.5">
+              <p className="text-xs font-semibold text-gray-900 mb-0.5">
                 Información importante: Memoria ROM
               </p>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-xs text-gray-600 leading-relaxed">
                 Parte del espacio de la memoria esta ocupada por contenidos preinstalados. Para este dispositivo, el espacio disponible para el usuario es aproximadamente el 87% de la capacidad total de la memoria indicada.
               </p>
             </div>
@@ -360,13 +371,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           if (availableRamOptions.length === 0) return null;
 
           return (
-            <div className="mb-6 mt-8">
-              <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-2xl font-bold text-black">Memoria RAM</h3>
+            <div className="mb-5 mt-6">
+              <div className="flex items-center gap-2 mb-1.5">
+                <h3 className="text-base font-bold text-black">Memoria RAM</h3>
               </div>
-              <p className="text-sm text-black mb-4">Elige tu Memoria Ram</p>
+              <p className="text-xs text-black mb-3">Elige tu Memoria Ram</p>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 {availableRamOptions.map((ram, index) => {
                   const isSelected = product.apiProduct
                     ? productSelection.selection.selectedMemoriaram === ram
@@ -391,13 +402,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                           setSelectedRam(ram);
                         }
                       }}
-                      className={`border-2 rounded-md px-6 py-6 cursor-pointer transition-all ${
+                      className={`border-2 rounded-md px-4 py-4 cursor-pointer transition-all ${
                         isSelected
                           ? "border-blue-600 bg-blue-50/30"
                           : "border-gray-300 hover:border-gray-400"
                       }`}
                     >
-                      <span className="font-semibold text-base">{ram}</span>
+                      <span className="font-semibold text-sm">{ram}</span>
                     </div>
                   );
                 })}
@@ -449,11 +460,11 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
           if (validColors.length === 0) return null;
 
           return (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="text-base font-semibold text-gray-900">Color</h3>
+          <div className="mb-5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <h3 className="text-sm font-semibold text-gray-900">Color</h3>
             </div>
-            <p className="text-xs text-gray-500 mb-3">Selecciona el color de tu dispositivo.</p>
+            <p className="text-[11px] text-gray-500 mb-2.5">Selecciona el color de tu dispositivo.</p>
 
             {/* Selectores de color - SOLO DESKTOP */}
             <div className="hidden lg:flex gap-4 justify-center">
@@ -476,7 +487,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                     className="flex flex-col items-center cursor-pointer transition-all"
                   >
                     <div
-                      className={`w-12 h-12 rounded-full border-2 transition-all ${
+                      className={`w-10 h-10 rounded-full border-2 transition-all ${
                         isSelected
                           ? "border-black ring-2 ring-black ring-offset-2 scale-110"
                           : color.hex === '#000000' || color.hex.toLowerCase() === '#000000'
@@ -490,7 +501,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                           : undefined
                       }}
                     ></div>
-                    <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
+                    <div className={`font-medium text-center text-[10px] mt-1.5 ${isSelected ? "text-black" : "text-gray-600"
                       }`}>
                       {color.nombreColorDisplay || color.label}
                     </div>
@@ -531,10 +542,10 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 </div>
 
                 {/* Botón Ver más */}
-                <div className="flex justify-center mt-4 mb-6">
+                <div className="flex justify-center mt-3 mb-5">
                   <button
                     onClick={onOpenModal}
-                    className="px-6 py-2.5 bg-white text-black border-2 border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-all hover:scale-105"
+                    className="px-5 py-2 bg-white text-black border-2 border-black rounded-full text-xs font-medium hover:bg-black hover:text-white transition-all hover:scale-105"
                   >
                     Ver más
                   </button>
@@ -543,7 +554,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
 
                 {/* Selectores de color - SOLO MOBILE - Debajo de Ver más */}
-                <div className="flex gap-4 justify-center mb-6">
+                <div className="flex gap-3 justify-center mb-5">
                   {validColors.map((color, index) => {
                     const isSelected = product.apiProduct
                       ? productSelection.selection.selectedColor === color.label
@@ -563,13 +574,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                         className="flex flex-col items-center cursor-pointer transition-all"
                       >
                         <div
-                          className={`w-12 h-12 rounded-full border-2 transition-all ${isSelected
+                          className={`w-10 h-10 rounded-full border-2 transition-all ${isSelected
                             ? "border-black ring-2 ring-black ring-offset-2 scale-110"
                             : "border-gray-300 hover:border-gray-400 hover:scale-105"
                             }`}
                           style={{ backgroundColor: color.hex }}
                         ></div>
-                        <div className={`font-medium text-center text-xs mt-2 ${isSelected ? "text-black" : "text-gray-600"
+                        <div className={`font-medium text-center text-[10px] mt-1.5 ${isSelected ? "text-black" : "text-gray-600"
                           }`}>
                           {color.nombreColorDisplay || color.label}
                         </div>
@@ -599,8 +610,8 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         })()}
 
         {/* Entregas */}
-        <div className="mb-4 pb-32 md:pb-4 lg:border-b border-gray-200">
-          <p className="text-xs text-gray-600">Entregas: en 1-3 días laborables</p>
+        <div className="mb-3 pb-32 md:pb-3 lg:border-b border-gray-200">
+          <p className="text-[11px] text-gray-600">Entregas: en 1-3 días laborables</p>
         </div>
       </div>
     </div>

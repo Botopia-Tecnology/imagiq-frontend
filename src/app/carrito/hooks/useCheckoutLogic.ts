@@ -8,6 +8,7 @@ import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
 import { payWithAddi, payWithCard, payWithSavedCard, payWithPse } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
@@ -234,10 +235,8 @@ export function useCheckoutLogic() {
 
     // Procesar pago
     try {
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-      const direction = JSON.parse(
-        localStorage.getItem("checkout-address") || "{}"
-      );
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
       let res;
 
       switch (paymentMethod) {
@@ -257,8 +256,8 @@ export function useCheckoutLogic() {
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
           });
           if ("error" in res) {
@@ -301,8 +300,8 @@ export function useCheckoutLogic() {
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
             });
           } else {
@@ -327,8 +326,8 @@ export function useCheckoutLogic() {
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
             });
           }
@@ -370,8 +369,8 @@ export function useCheckoutLogic() {
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
           });
           if ("error" in res) {

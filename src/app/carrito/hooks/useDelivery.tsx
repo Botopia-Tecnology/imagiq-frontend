@@ -4,6 +4,7 @@ import { stores, Store } from "../../../components/LocationsArray";
 import { Direccion } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 /**
  * Helper para convertir Address a Direccion (legacy)
@@ -31,7 +32,10 @@ export const useDelivery = () => {
 
   // Cargar direcciones del usuario usando AddressesService
   useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+    const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+      "imagiq_user",
+      {}
+    );
     if (userInfo && (userInfo.id || userInfo.email)) {
       addressesService.getUserAddresses()
         .then((addresses: Address[]) => {

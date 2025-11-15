@@ -44,7 +44,7 @@ export default function PickupMap({
       <div className="bg-white p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center aspect-square flex-shrink-0">
               <svg
                 className="w-5 h-5 text-white"
                 fill="none"
@@ -136,7 +136,7 @@ export default function PickupMap({
       {/* Store Info - Instructions */}
       <div className="px-6 py-4 bg-white border-t border-gray-200">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 aspect-square">
             <span className="text-white text-sm font-bold">S</span>
           </div>
           <div className="flex-1">

@@ -123,11 +123,20 @@ export default function TrackingService({
     );
   }
 
+  // Helper function to determine if this is an IMAGIQ order
+  const isImagiqOrder = () => {
+    // Check if the order comes from IMAGIQ service
+    // This can be determined by checking if we have enhanced data (productos, direccionEntrega, etc.)
+    // or by checking the API endpoint structure
+    return productos.length > 0 || direccionEntrega || ciudadEntrega || nombreDestinatario;
+  };
+
   // Determine which view to show
   const showPickup = isPickupOrder(metodoEnvio);
   const showEnhancedPickup = showPickup && (productos.length > 0 || tiendaInfo);
-  const showImagiqShipping = !showPickup && !pdfBase64;
-  const showCoordinadoraShipping = !showPickup && pdfBase64;
+  const showImagiqShipping = !showPickup && isImagiqOrder();
+  const showCoordinadoraShipping = !showPickup && !isImagiqOrder() && pdfBase64;
+  const showDefaultShipping = !showPickup && !isImagiqOrder() && !pdfBase64;
 
   return (
     <div className="bg-white pt-4 md:pt-5">
@@ -158,7 +167,7 @@ export default function TrackingService({
             />
           )}
 
-          {/* IMAGIQ Shipping View - no PDF */}
+          {/* IMAGIQ Shipping View - for IMAGIQ orders */}
           {showImagiqShipping && (
             <ImagiqShippingView
               orderNumber={orderNumber}
@@ -181,6 +190,17 @@ export default function TrackingService({
               estimatedFinalDate={estimatedFinalDate}
               trackingSteps={trackingSteps}
               pdfBase64={pdfBase64}
+            />
+          )}
+
+          {/* Default Shipping View - when no PDF and not IMAGIQ */}
+          {showDefaultShipping && (
+            <ShippingOrderView
+              orderNumber={orderNumber}
+              estimatedInitDate={estimatedInitDate}
+              estimatedFinalDate={estimatedFinalDate}
+              trackingSteps={trackingSteps}
+              pdfBase64=""
             />
           )}
         </div>

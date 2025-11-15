@@ -5,6 +5,7 @@ export { OrderInfoCard } from "./OrderInfoCard";
 export { InstructionsBox } from "./InstructionsBox";
 export { TrackingTimeline } from "./TrackingTimeline";
 export { TrackingHeader } from "./TrackingHeader";
+export { SimpleTrackingHeader } from "./SimpleTrackingHeader";
 export { PDFViewer } from "./PDFViewer";
 
 // Legacy components for tracking-service

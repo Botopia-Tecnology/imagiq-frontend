@@ -87,7 +87,7 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
     <div className="bg-white py-0">
       <div className="container mx-auto px-4 md:px-6 lg:px-12 max-w-7xl">
         {/* Horizontal separator line */}
-        <div className="border-t border-gray-200 mb-6"></div>
+        <div className="border-t border-gray-200 mb-3 md:mb-6"></div>
 
         {/* Mostrar banner de resumen si el Trade-In está completado */}
         {tradeInCompleted && tradeInValue > 0 && tradeInDeviceName && (
@@ -100,16 +100,16 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
 
         {/* Estreno y Entrego section - Solo mostrar si NO está completado */}
         {!tradeInCompleted && (
-          <div className="mb-5">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1.5">
+          <div className="mb-3 md:mb-5">
+          <h2 className="text-2xl font-bold text-gray-900 mb-1 md:mb-1.5">
             Estreno y Entrego
           </h2>
-          <p className="text-sm text-gray-900 mb-4">
+          <p className="text-sm text-gray-900 mb-3 md:mb-4">
             Selecciona Estreno y Entrego y recibe una oferta por tu dispositivo antiguo
           </p>
 
           {/* Option cards */}
-          <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 mb-3">
+          <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 mb-2 md:mb-3">
             <div
               className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors ${selectedOption === 'yes'
                 ? 'border-blue-500'
@@ -149,7 +149,7 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
         )}
 
         {/* Te presentamos Estreno y entrego & Pasarte de iOS a Galaxy */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {/* Te presentamos Estreno y entrego */}
           <div className="bg-gray-100 p-2.5 rounded-lg shadow-sm border border-gray-100">
             <div className="flex items-center">

@@ -80,7 +80,7 @@ const VideoPlayer: React.FC<{
       {/* Botón de pausa/play dentro del video - parte inferior derecha */}
       <button
         onClick={handlePlayPause}
-        className="absolute bottom-8 right-6 md:bottom-12 md:right-8 w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-50"
+        className="absolute bottom-4 right-6 md:bottom-12 md:right-8 w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-50"
       >
         {isPlaying ? (
           <div className="w-2.5 h-2.5 md:w-3 md:h-3 flex gap-0.5">
@@ -106,6 +106,8 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   onOpenModal,
 }, ref) => {
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
 
   const handleVideoStart = () => {
     setIsVideoPlaying(true);
@@ -115,10 +117,45 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
     setIsVideoPlaying(false);
   };
 
+  // Handlers para gestos de swipe en móvil
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+
+    const distance = touchStartX.current - touchEndX.current;
+    const minSwipeDistance = 50; // Distancia mínima para considerar un swipe
+
+    // Determinar qué imágenes usar
+    const currentImages = showStickyCarousel ? premiumImages : productImages;
+
+    if (currentImages.length <= 1) return;
+
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // Swipe hacia la izquierda - siguiente imagen
+        setCurrentImageIndex((prev) => (prev + 1) % currentImages.length);
+      } else {
+        // Swipe hacia la derecha - imagen anterior
+        setCurrentImageIndex((prev) => (prev === 0 ? currentImages.length - 1 : prev - 1));
+      }
+    }
+
+    // Resetear valores
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
   return (
     <div ref={ref} className="w-full relative">
       {/* Carrusel premium - estilo Samsung más grande */}
-      <div className={`relative w-full pt-4 md:pt-6 transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+      <div className={`relative w-full pt-8 md:pt-6 transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
           // Determinar qué imágenes usar según el estado del scroll
           // Para el carrusel premium, usar SOLO las imágenes del API (sin contenido mockeado)
@@ -139,7 +176,12 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
             return (
             <>
               {/* Imagen principal - estilo Samsung más grande */}
-              <div className={`relative w-full h-[220px] md:h-[700px] bg-transparent flex items-center justify-center ${isVideo ? 'overflow-visible' : 'overflow-hidden'}`}>
+              <div 
+                className={`relative w-full h-[220px] md:h-[700px] bg-transparent flex items-center justify-center ${isVideo ? 'overflow-visible' : 'overflow-hidden'}`}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 {(() => {
                   if (isVideo) {
                     return (
@@ -206,7 +248,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
 
               {/* Puntos de navegación - PARA AMBOS CARRUSELES - CÍRCULOS */}
               {currentImages.length > 1 && (
-                <div className="flex justify-center gap-2 -mt-2 mb-4">
+                <div className="flex justify-center gap-2 mt-2 md:-mt-2 mb-4">
                   {currentImages.map((_, index) => (
                     <button
                       key={index}
@@ -237,7 +279,12 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
         {productImages.length > 0 ? (
           <>
             {/* Imagen del producto - más pequeña y simple con fondo transparente */}
-            <div className="relative w-full h-[220px] md:h-[600px] flex items-center justify-center overflow-hidden">
+            <div 
+              className="relative w-full h-[220px] md:h-[600px] flex items-center justify-center overflow-hidden"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
               {(() => {
                 const currentSrc = productImages[currentImageIndex % productImages.length];
 
@@ -256,7 +303,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
               })()}
             </div>
             {/* Botón Ver más - estilo Samsung */}
-            <div className="flex justify-center mt-1">
+            <div className="flex justify-center -mt-2 md:mt-1">
               <button
                 onClick={onOpenModal}
                 className="px-6 py-2.5 bg-white text-black border-2 border-black rounded-full text-sm font-medium hover:bg-black hover:text-white transition-all hover:scale-105"

@@ -193,7 +193,7 @@ export default function MaintenanceScreen() {
 
       {/* Contador de próximo video - Responsive */}
       {!isVideoPlaying && (
-        <div className="fixed top-4 right-4 sm:top-6 sm:right-6 md:top-8 md:right-8 z-50 bg-white/90 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg border border-gray-200">
+        <div className="fixed bottom-4 right-4 sm:top-6 sm:right-6 sm:bottom-auto md:top-8 md:right-8 z-50 bg-white/90 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg border border-gray-200">
           <p className="text-xs sm:text-sm font-medium text-gray-700">
             Próximo video en <span className="font-bold text-black">{countdown}s</span>
           </p>

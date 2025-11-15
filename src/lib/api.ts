@@ -13,6 +13,15 @@ import type { StoresApiResponse } from "@/types/store";
 
 // API Client configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
+
+// Advertencia en desarrollo si no está configurada la API Key
+if (!API_KEY && process.env.NODE_ENV === 'development') {
+  console.warn(
+    '⚠️ NEXT_PUBLIC_API_KEY no está configurada en .env.local\n' +
+    'Las peticiones al API fallarán con error 401'
+  );
+}
 
 // Generic API response type
 export interface ApiResponse<T> {
@@ -32,6 +41,8 @@ export class ApiClient {
     this.baseURL = baseURL;
     this.headers = {
       "Content-Type": "application/json",
+      // Agregar API Key automáticamente si está configurada
+      ...(API_KEY && { "X-API-Key": API_KEY }),
     };
   }
 

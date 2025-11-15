@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import ProductCard from "@/app/productos/components/ProductCard";
 import { ProductApiData } from "@/lib/api";
+import { apiGet } from "@/lib/api-client";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import VideoOverlay from "./VideoOverlay";
 
@@ -48,15 +49,15 @@ export default function MaintenanceScreen() {
 
     const fetchProducts = async () => {
       try {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
         const productsData: ProductApiData[] = [];
 
         for (const modelo of productModels) {
           try {
-            const response = await fetch(
-              `${API_URL}/api/products/search/grouped?modelo=${encodeURIComponent(modelo)}&limit=1`
-            );
-            const data = await response.json();
+            // Usar apiGet que incluye automáticamente la API Key
+            const data = await apiGet<{
+              success: boolean;
+              data?: { products: ProductApiData[] };
+            }>(`/api/products/search/grouped?modelo=${encodeURIComponent(modelo)}&limit=1`);
 
             if (data.success && data.data?.products && data.data.products.length > 0) {
               productsData.push(data.data.products[0]);
@@ -191,10 +192,10 @@ export default function MaintenanceScreen() {
         onVideoEnd={handleVideoEnd}
       />
 
-      {/* Contador de próximo video - Esquina superior derecha */}
+      {/* Contador de próximo video - Responsive */}
       {!isVideoPlaying && (
-        <div className="fixed top-8 right-8 z-50 bg-white/90 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-gray-200">
-          <p className="text-sm font-medium text-gray-700">
+        <div className="fixed bottom-4 right-4 sm:top-6 sm:right-6 sm:bottom-auto md:top-8 md:right-8 z-50 bg-white/90 backdrop-blur-sm px-3 py-1.5 sm:px-4 sm:py-2 rounded-full shadow-lg border border-gray-200">
+          <p className="text-xs sm:text-sm font-medium text-gray-700">
             Próximo video en <span className="font-bold text-black">{countdown}s</span>
           </p>
         </div>
@@ -210,31 +211,31 @@ export default function MaintenanceScreen() {
 
       {/* Contenido principal */}
       <div className="relative z-10">
-        <main className="py-6 md:py-8">
-          {/* Título principal - Con padding lateral */}
+        <main className="py-4 sm:py-6 md:py-8">
+          {/* Título principal - Responsive con padding lateral */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-6 md:mb-8">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-black mb-4 md:mb-6 animate-fade-in">
+            <div className="text-center mb-4 sm:mb-6 md:mb-8">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-black mb-3 sm:mb-4 md:mb-6 animate-fade-in">
                 SAMSUNG STORE
               </h1>
 
-              <h2 className="text-xl md:text-2xl lg:text-3xl font-light tracking-tight text-black mb-6 md:mb-8 animate-fade-in-delay-1">
+              <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-light tracking-tight text-black mb-4 sm:mb-6 md:mb-8 animate-fade-in-delay-1 px-2">
                 Estamos trabajando <span className="font-bold">en algo especial</span>
               </h2>
             </div>
           </div>
 
-          {/* Carrusel de productos - SIN padding, de lado a lado */}
+          {/* Carrusel de productos - Responsive */}
           {products.length > 0 && (
             <div
-              className="relative mb-8 animate-fade-in-delay-3 z-0 w-full"
+              className="relative mb-6 sm:mb-8 animate-fade-in-delay-3 z-0 w-full"
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
             >
               <div className="overflow-hidden">
                 <div
                   ref={carouselRef}
-                  className="flex gap-6"
+                  className="flex gap-3 sm:gap-4 md:gap-6"
                   style={{
                     transform: `translateX(-${offset}px)`,
                     transition: 'none',
@@ -243,9 +244,10 @@ export default function MaintenanceScreen() {
                   {displayProducts.map((product, idx) => (
                     <div
                       key={`${product.codigoMarketBase}-${idx}`}
-                      className="flex-shrink-0 w-64"
+                      className="flex-shrink-0 w-48 sm:w-56 md:w-64"
                     >
-                      <div className="transform scale-75">
+                      {/* Mobile: scale-90, Tablet: scale-80, Desktop: scale-75 */}
+                      <div className="transform scale-90 sm:scale-80 md:scale-75">
                         <ProductCard
                           id={product.codigoMarketBase || ""}
                           name={product.nombreMarket?.[0] || "Producto Samsung"}
@@ -263,15 +265,15 @@ export default function MaintenanceScreen() {
                 </div>
               </div>
 
-              {/* Indicadores de posición */}
-              <div className="flex justify-center gap-2 mt-6">
+              {/* Indicadores de posición - Responsive */}
+              <div className="flex justify-center gap-1.5 sm:gap-2 mt-4 sm:mt-6">
                 {products.map((_, idx) => {
                   const currentIndex = Math.floor(offset / (carouselRef.current?.scrollWidth || 1) * products.length * 2) % products.length;
                   return (
                     <div
                       key={idx}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        idx === currentIndex ? "bg-black w-8" : "bg-gray-300"
+                      className={`h-1.5 sm:h-2 rounded-full transition-all ${
+                        idx === currentIndex ? "bg-black w-6 sm:w-8" : "bg-gray-300 w-1.5 sm:w-2"
                       }`}
                     />
                   );
@@ -280,10 +282,10 @@ export default function MaintenanceScreen() {
             </div>
           )}
 
-          {/* Footer - Con padding lateral */}
+          {/* Footer - Responsive con padding lateral */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center pt-8 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
+            <div className="text-center pt-6 sm:pt-8 border-t border-gray-200">
+              <p className="text-xs sm:text-sm text-gray-500">
                 ¿Necesitas ayuda?{" "}
                 <a
                   href="mailto:soporte@imagiq.com"

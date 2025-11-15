@@ -34,20 +34,22 @@ import MaintenanceScreen from "@/components/MaintenanceScreen";
 export const metadata: Metadata = {
   metadataBase: new URL("https://imagiq.com"),
   title: {
-    default: "Imagiq Store - Tu tienda online de confianza",
-    template: "%s | Imagiq Store",
+    default: "Imagiq - Distribuidor Oficial Samsung Colombia",
+    template: "%s | Imagiq Samsung Store",
   },
   description:
-    "Ecommerce líder con Outlet hasta 70% OFF, Novedades exclusivas, Productos Recomendados y Ventas Corporativas. Soporte 24/7 y envío gratis +$999",
+    "Imagiq - Distribuidor oficial de Samsung en Colombia. Encuentra los últimos Galaxy, tablets, wearables y electrodomésticos con garantía oficial. Envío gratis, soporte especializado y las mejores promociones.",
   keywords: [
-    "ecommerce",
-    "outlet",
-    "descuentos",
-    "novedades",
-    "recomendados",
-    "ventas corporativas",
-    "soporte",
-    "envío gratis",
+    "Samsung Colombia",
+    "distribuidor oficial Samsung",
+    "Galaxy",
+    "Samsung Store",
+    "electrodomésticos Samsung",
+    "tablets Samsung",
+    "smartwatch Samsung",
+    "Galaxy Z Fold",
+    "Galaxy Z Flip",
+    "tienda Samsung Colombia",
   ],
   authors: [{ name: "Imagiq Team", url: "https://imagiq.com" }],
   creator: "Imagiq Store",
@@ -70,12 +72,12 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "es_MX",
+    locale: "es_CO",
     url: "https://imagiq.com",
-    siteName: "Imagiq Store",
-    title: "Imagiq Store - Tu tienda online de confianza",
+    siteName: "Imagiq Samsung Store",
+    title: "Imagiq - Distribuidor Oficial Samsung Colombia",
     description:
-      "Ecommerce líder con Outlet, Novedades, Recomendados y Ventas Corporativas",
+      "Distribuidor oficial de Samsung en Colombia. Galaxy, tablets, wearables y electrodomésticos con garantía oficial.",
     images: [
       {
         url: "/logo-og.png",

@@ -132,49 +132,40 @@ export default function MaintenanceScreen() {
 
   return (
     <div className="relative min-h-screen bg-white overflow-hidden">
-      {/* Sombras dinámicas animadas - más sutiles y minimalistas */}
-      <div className="fixed inset-0 pointer-events-none">
+      {/* Sombras dinámicas animadas - minimalistas con movimiento visible */}
+      <div className="fixed inset-0 pointer-events-none z-0">
         {/* Sombra superior izquierda */}
-        <div className="absolute -top-32 -left-32 w-96 h-96 bg-gray-900/[0.03] rounded-full blur-3xl animate-float-1" />
+        <div className="absolute -top-32 -left-32 w-[500px] h-[500px] bg-gray-900/[0.08] rounded-full blur-3xl animate-float-1" />
 
         {/* Sombra inferior derecha */}
-        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-gray-900/[0.04] rounded-full blur-3xl animate-float-2" />
+        <div className="absolute -bottom-32 -right-32 w-[500px] h-[500px] bg-gray-900/[0.08] rounded-full blur-3xl animate-float-2" />
 
         {/* Sombra central flotante */}
-        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-gray-900/[0.02] rounded-full blur-3xl animate-float-3" />
+        <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] bg-gray-900/[0.05] rounded-full blur-3xl animate-float-3" />
 
         {/* Sombra derecha media */}
-        <div className="absolute top-2/3 right-1/4 w-72 h-72 bg-gray-900/[0.03] rounded-full blur-3xl animate-float-4" />
+        <div className="absolute top-2/3 right-1/4 w-[350px] h-[350px] bg-gray-900/[0.06] rounded-full blur-3xl animate-float-4" />
       </div>
 
       {/* Contenido principal */}
       <div className="relative z-10">
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
           {/* Título principal - SAMSUNG STORE centrado y grande */}
-          <div className="text-center mb-12 md:mb-16">
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-black mb-16 md:mb-20 animate-fade-in">
+          <div className="text-center mb-8 md:mb-10">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight text-black mb-8 md:mb-10 animate-fade-in">
               SAMSUNG STORE
             </h1>
 
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-light tracking-tight text-black mb-6 animate-fade-in-delay-1">
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-light tracking-tight text-black mb-8 md:mb-10 animate-fade-in-delay-1">
               Estamos trabajando
               <br />
               <span className="font-bold">en algo especial</span>
             </h2>
-
-            <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-delay-2">
-              Nuestro equipo está preparando una experiencia renovada.
-              <br />
-              Vuelve pronto para descubrir las mejores ofertas.
-            </p>
           </div>
 
           {/* Productos destacados */}
-          <div className="mb-12 animate-fade-in-delay-3">
-            <h3 className="text-2xl md:text-3xl font-bold text-black mb-8 text-center">
-              Próximamente disponibles
-            </h3>
+          <div className="mb-8 animate-fade-in-delay-3">
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {products.map((product, idx) => (
@@ -258,63 +249,70 @@ export default function MaintenanceScreen() {
 
       {/* Estilos de animaciones minimalistas */}
       <style jsx>{`
-        /* Animación de sombra 1 - Lenta y suave */
+        /* Animación de sombra 1 - Diagonal suave */
         @keyframes float-1 {
-          0%,
-          100% {
+          0% {
             transform: translate(0, 0) scale(1);
-            opacity: 0.03;
-          }
-          33% {
-            transform: translate(40px, -30px) scale(1.1);
-            opacity: 0.05;
-          }
-          66% {
-            transform: translate(-20px, 40px) scale(0.95);
-            opacity: 0.02;
-          }
-        }
-
-        /* Animación de sombra 2 - Movimiento diagonal */
-        @keyframes float-2 {
-          0%,
-          100% {
-            transform: translate(0, 0) scale(1);
-            opacity: 0.04;
-          }
-          50% {
-            transform: translate(-50px, -50px) scale(1.15);
-            opacity: 0.06;
-          }
-        }
-
-        /* Animación de sombra 3 - Rotación suave */
-        @keyframes float-3 {
-          0%,
-          100% {
-            transform: translate(0, 0) rotate(0deg) scale(1);
-            opacity: 0.02;
           }
           25% {
-            transform: translate(30px, 20px) rotate(5deg) scale(1.05);
-            opacity: 0.04;
+            transform: translate(80px, -60px) scale(1.15);
+          }
+          50% {
+            transform: translate(120px, -40px) scale(1.1);
           }
           75% {
-            transform: translate(-30px, -20px) rotate(-5deg) scale(0.95);
-            opacity: 0.03;
+            transform: translate(60px, 20px) scale(0.95);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
           }
         }
 
-        /* Animación de sombra 4 - Pulsación */
-        @keyframes float-4 {
-          0%,
-          100% {
+        /* Animación de sombra 2 - Circular amplia */
+        @keyframes float-2 {
+          0% {
             transform: translate(0, 0) scale(1);
-            opacity: 0.03;
+          }
+          25% {
+            transform: translate(-100px, 80px) scale(1.2);
           }
           50% {
-            transform: translate(20px, 30px) scale(1.2);
-            opacity: 0.05;
+            transform: translate(-150px, 0) scale(1.1);
+          }
+          75% {
+            transform: translate(-80px, -60px) scale(0.9);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+        }
+
+        /* Animación de sombra 3 - Ondulación */
+        @keyframes float-3 {
+          0% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(100px, 50px) scale(1.15);
+          }
+          66% {
+            transform: translate(-80px, -40px) scale(0.95);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+        }
+
+        /* Animación de sombra 4 - Pulsación con movimiento */
+        @keyframes float-4 {
+          0% {
+            transform: translate(0, 0) scale(1);
+          }
+          50% {
+            transform: translate(60px, -80px) scale(1.25);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
           }
         }
 
@@ -343,19 +341,19 @@ export default function MaintenanceScreen() {
         }
 
         .animate-float-1 {
-          animation: float-1 25s ease-in-out infinite;
+          animation: float-1 20s ease-in-out infinite;
         }
 
         .animate-float-2 {
-          animation: float-2 30s ease-in-out infinite;
+          animation: float-2 25s ease-in-out infinite;
         }
 
         .animate-float-3 {
-          animation: float-3 35s ease-in-out infinite;
+          animation: float-3 18s ease-in-out infinite;
         }
 
         .animate-float-4 {
-          animation: float-4 28s ease-in-out infinite;
+          animation: float-4 22s ease-in-out infinite;
         }
 
         .animate-fade-in {

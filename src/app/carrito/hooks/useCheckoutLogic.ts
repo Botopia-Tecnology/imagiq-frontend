@@ -235,8 +235,8 @@ export function useCheckoutLogic() {
 
     // Procesar pago
     try {
-      const userInfo = safeGetLocalStorage("imagiq_user", {});
-      const direction = safeGetLocalStorage("checkout-address", {});
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
       let res;
 
       switch (paymentMethod) {

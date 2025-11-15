@@ -706,3 +706,133 @@ GIF PAUSE CONTROL - ENHANCED VERSION WITH SMOOTH TRANSITIONS
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
 }
+
+/* 
+=================================================================
+ZOOM-SAFE UTILITIES
+=================================================================
+Purpose: Ensure UI elements remain visible and properly sized across all browser zoom levels (25% - 500%)
+Effects: PremiumImageGallery, buttons, and layout containers
+Requirements: 1.4, 1.5, 3.4
+*/
+
+/* Zoom-safe button styling with fluid sizing */
+.zoom-safe-button {
+  padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 4vw, 2rem);
+  margin-top: clamp(1rem, 3vw, 1.5rem);
+  margin-bottom: clamp(1rem, 3vw, 1.5rem);
+  min-height: 44px;
+  min-width: 120px;
+  max-width: 100%;
+  font-size: clamp(0.875rem, 1.5vw, 1rem);
+  line-height: 1.5;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Zoom-safe spacing for consistent gaps and padding */
+.zoom-safe-spacing {
+  gap: clamp(0.5rem, 1.5vw, 0.75rem);
+  padding-left: clamp(0.5rem, 2vw, 1rem);
+  padding-right: clamp(0.5rem, 2vw, 1rem);
+}
+
+/* Zoom-safe container with container queries support */
+.zoom-safe-container {
+  container-type: inline-size;
+  container-name: gallery;
+  width: 100%;
+  max-width: 100%;
+  overflow: visible;
+}
+
+/* Container query adjustments for small containers */
+@container gallery (max-width: 600px) {
+  .zoom-safe-button {
+    width: 100%;
+    max-width: 300px;
+    font-size: 0.875rem;
+    padding: 0.75rem 1.5rem;
+  }
+}
+
+@container gallery (max-width: 400px) {
+  .zoom-safe-button {
+    font-size: 0.8125rem;
+    padding: 0.625rem 1.25rem;
+    min-width: 100px;
+  }
+}
+
+/* Extreme zoom adjustments (>200% zoom) */
+body.extreme-zoom .zoom-safe-button {
+  font-size: 1rem;
+  padding: 1rem 2rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+body.extreme-zoom .zoom-safe-spacing {
+  gap: 0.75rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Fallback for browsers without clamp() support */
+@supports not (width: clamp(1rem, 2vw, 3rem)) {
+  .zoom-safe-button {
+    padding: 0.75rem 1.5rem;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .zoom-safe-spacing {
+    gap: 0.5rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
+/* Fallback for browsers without container queries */
+@supports not (container-type: inline-size) {
+  .zoom-safe-container {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  /* Use media queries as fallback */
+  @media (max-width: 600px) {
+    .zoom-safe-button {
+      width: 100%;
+      max-width: 300px;
+      font-size: 0.875rem;
+      padding: 0.75rem 1.5rem;
+    }
+  }
+  
+  @media (max-width: 400px) {
+    .zoom-safe-button {
+      font-size: 0.8125rem;
+      padding: 0.625rem 1.25rem;
+      min-width: 100px;
+    }
+  }
+}
+
+/* Ensure touch targets meet accessibility standards */
+@media (hover: none) and (pointer: coarse) {
+  .zoom-safe-button {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 0.875rem 1.75rem;
+  }
+}
+
+/* 
+=================================================================
+END ZOOM-SAFE UTILITIES
+=================================================================
+*/

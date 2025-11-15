@@ -84,10 +84,10 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
   };
 
   return (
-    <div className="bg-white py-0">
+    <div className="bg-white pt-2 pb-8 sticky top-[120px] z-30">
       <div className="container mx-auto px-4 md:px-6 lg:px-12 max-w-7xl">
         {/* Horizontal separator line */}
-        <div className="border-t border-gray-200 mb-3 md:mb-6"></div>
+        <div className="border-t border-gray-200 mb-2 md:mb-3"></div>
 
         {/* Mostrar banner de resumen si el Trade-In está completado */}
         {tradeInCompleted && tradeInValue > 0 && tradeInDeviceName && (

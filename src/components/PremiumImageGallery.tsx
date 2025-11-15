@@ -227,7 +227,14 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
 
         {/* Miniaturas */}
         {images.length > 1 && (
-          <div className="flex justify-center gap-3 mt-6 px-4">
+          <div 
+            className="flex justify-center flex-wrap max-w-full overflow-x-auto mt-6"
+            style={{ 
+              gap: 'clamp(0.5rem, 1.5vw, 0.75rem)',
+              paddingLeft: 'clamp(0.5rem, 2vw, 1rem)',
+              paddingRight: 'clamp(0.5rem, 2vw, 1rem)'
+            }}
+          >
             {visibleImages.map((image, index) => {
               const thumbnailSrc = typeof image === "string" ? image : image.src;
 
@@ -260,8 +267,18 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
                 onClick={() => openModal(maxVisibleThumbnails)}
                 aria-label={`Ver ${remainingCount} imágenes más`}
               >
-                <span className="text-sm font-bold text-gray-700">+{remainingCount}</span>
-                <span className="text-xs text-gray-600">más</span>
+                <span 
+                  className="font-bold text-gray-700"
+                  style={{ fontSize: 'clamp(0.75rem, 1.5vw, 0.875rem)' }}
+                >
+                  +{remainingCount}
+                </span>
+                <span 
+                  className="text-gray-600"
+                  style={{ fontSize: 'clamp(0.625rem, 1.2vw, 0.75rem)' }}
+                >
+                  más
+                </span>
               </button>
             )}
           </div>
@@ -269,10 +286,20 @@ const PremiumImageGallery: React.FC<PremiumImageGalleryProps> = ({
 
         {/* Botón "Ver más" */}
         {images.length > 5 && (
-          <div className="flex justify-center mt-6">
+          <div 
+            className="flex justify-center px-4"
+            style={{ 
+              marginTop: 'clamp(1rem, 3vw, 1.5rem)',
+              marginBottom: 'clamp(1rem, 3vw, 1.5rem)'
+            }}
+          >
             <button
               onClick={() => openModal(currentImageIndex)}
-              className="px-8 py-3 bg-white border-2 border-gray-300 rounded-full font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md"
+              className="bg-white border-2 border-gray-300 rounded-full font-semibold text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm hover:shadow-md min-h-[44px] min-w-[120px] max-w-full"
+              style={{
+                padding: 'clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 4vw, 2rem)',
+                fontSize: 'clamp(0.875rem, 1.5vw, 1rem)'
+              }}
             >
               Ver más fotos
             </button>

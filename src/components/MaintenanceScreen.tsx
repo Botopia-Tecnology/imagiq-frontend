@@ -131,82 +131,57 @@ export default function MaintenanceScreen() {
   if (!mounted) return null;
 
   return (
-    <div className="relative min-h-screen bg-white">
-      {/* Sombras dinámicas de fondo */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-48 w-96 h-96 bg-gray-900/5 rounded-full blur-3xl animate-float-slow" />
-        <div
-          className="absolute bottom-1/4 -right-48 w-96 h-96 bg-gray-900/5 rounded-full blur-3xl animate-float-slow"
-          style={{ animationDelay: "2s" }}
-        />
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gray-900/3 rounded-full blur-3xl animate-pulse-slow"
-          style={{ animationDelay: "1s" }}
-        />
+    <div className="relative min-h-screen bg-white overflow-hidden">
+      {/* Sombras dinámicas animadas - más sutiles y minimalistas */}
+      <div className="fixed inset-0 pointer-events-none">
+        {/* Sombra superior izquierda */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-gray-900/[0.03] rounded-full blur-3xl animate-float-1" />
+
+        {/* Sombra inferior derecha */}
+        <div className="absolute -bottom-32 -right-32 w-96 h-96 bg-gray-900/[0.04] rounded-full blur-3xl animate-float-2" />
+
+        {/* Sombra central flotante */}
+        <div className="absolute top-1/3 left-1/4 w-80 h-80 bg-gray-900/[0.02] rounded-full blur-3xl animate-float-3" />
+
+        {/* Sombra derecha media */}
+        <div className="absolute top-2/3 right-1/4 w-72 h-72 bg-gray-900/[0.03] rounded-full blur-3xl animate-float-4" />
       </div>
 
       {/* Contenido principal */}
       <div className="relative z-10">
-        {/* Header - SAMSUNG STORE */}
-        <header className="border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-black">
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          {/* Título principal - SAMSUNG STORE centrado y grande */}
+          <div className="text-center mb-12 md:mb-16">
+            <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold tracking-tight text-black mb-16 md:mb-20 animate-fade-in">
               SAMSUNG STORE
             </h1>
-          </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-          {/* Mensaje principal */}
-          <div className="text-center mb-16 md:mb-24">
-            <div className="inline-block mb-6">
-              <div className="w-16 h-1 bg-black" />
-            </div>
-
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-light tracking-tight text-black mb-8">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-light tracking-tight text-black mb-6 animate-fade-in-delay-1">
               Estamos trabajando
               <br />
               <span className="font-bold">en algo especial</span>
             </h2>
 
-            <p className="text-lg md:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed animate-fade-in-delay-2">
               Nuestro equipo está preparando una experiencia renovada.
               <br />
               Vuelve pronto para descubrir las mejores ofertas.
             </p>
           </div>
 
-          {/* Email notification */}
-          <div className="max-w-md mx-auto mb-20">
-            <div className="flex gap-2">
-              <input
-                type="email"
-                placeholder="tucorreo@ejemplo.com"
-                value={notifyEmail}
-                onChange={(e) => setNotifyEmail(e.target.value)}
-                className="flex-1 px-4 py-3 border-2 border-black text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-all"
-              />
-              <button
-                onClick={() => handleNotifyMe("general")}
-                className="px-6 py-3 bg-black text-white font-medium hover:bg-gray-900 transition-colors"
-              >
-                Notifícame
-              </button>
-            </div>
-          </div>
-
           {/* Productos destacados */}
-          <div className="mb-12">
+          <div className="mb-12 animate-fade-in-delay-3">
             <h3 className="text-2xl md:text-3xl font-bold text-black mb-8 text-center">
               Próximamente disponibles
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {products.map((product, idx) => (
                 <div
                   key={product.sku}
-                  className="group bg-white border border-gray-200 hover:border-black transition-all duration-300 hover:shadow-2xl"
+                  className="group bg-white border border-gray-200 hover:border-black transition-all duration-500 hover:shadow-2xl animate-slide-up"
+                  style={{ animationDelay: `${idx * 100}ms` }}
                 >
                   {/* Imagen del producto */}
                   <div className="relative aspect-square bg-gray-50 overflow-hidden">
@@ -220,7 +195,7 @@ export default function MaintenanceScreen() {
                           src={product.image}
                           alt={product.name}
                           fill
-                          className="object-contain group-hover:scale-105 transition-transform duration-500"
+                          className="object-contain group-hover:scale-110 transition-transform duration-700 ease-out"
                           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                         />
                       </div>
@@ -240,12 +215,20 @@ export default function MaintenanceScreen() {
 
                     {/* Botón Notifícame */}
                     <button
-                      onClick={() => handleNotifyMe(product.sku)}
+                      onClick={() => {
+                        const email = prompt("Ingresa tu email para notificarte:");
+                        if (email && email.includes("@")) {
+                          setNotifyEmail(email);
+                          handleNotifyMe(product.sku);
+                        } else if (email) {
+                          alert("Por favor ingresa un email válido");
+                        }
+                      }}
                       disabled={notificationSent.has(product.sku)}
-                      className={`w-full py-3 font-medium transition-all ${
+                      className={`w-full py-3 font-medium transition-all duration-300 ${
                         notificationSent.has(product.sku)
                           ? "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
-                          : "bg-black text-white hover:bg-gray-900"
+                          : "bg-black text-white hover:bg-gray-900 hover:shadow-lg"
                       }`}
                     >
                       {notificationSent.has(product.sku)
@@ -273,37 +256,130 @@ export default function MaintenanceScreen() {
         </main>
       </div>
 
-      {/* Estilos de animaciones */}
+      {/* Estilos de animaciones minimalistas */}
       <style jsx>{`
-        @keyframes float-slow {
+        /* Animación de sombra 1 - Lenta y suave */
+        @keyframes float-1 {
           0%,
           100% {
-            transform: translateY(0) translateX(0);
+            transform: translate(0, 0) scale(1);
+            opacity: 0.03;
           }
           33% {
-            transform: translateY(-30px) translateX(20px);
+            transform: translate(40px, -30px) scale(1.1);
+            opacity: 0.05;
           }
           66% {
-            transform: translateY(-15px) translateX(-20px);
+            transform: translate(-20px, 40px) scale(0.95);
+            opacity: 0.02;
           }
         }
 
-        @keyframes pulse-slow {
+        /* Animación de sombra 2 - Movimiento diagonal */
+        @keyframes float-2 {
           0%,
           100% {
-            opacity: 0.3;
+            transform: translate(0, 0) scale(1);
+            opacity: 0.04;
           }
           50% {
-            opacity: 0.5;
+            transform: translate(-50px, -50px) scale(1.15);
+            opacity: 0.06;
           }
         }
 
-        .animate-float-slow {
-          animation: float-slow 20s ease-in-out infinite;
+        /* Animación de sombra 3 - Rotación suave */
+        @keyframes float-3 {
+          0%,
+          100% {
+            transform: translate(0, 0) rotate(0deg) scale(1);
+            opacity: 0.02;
+          }
+          25% {
+            transform: translate(30px, 20px) rotate(5deg) scale(1.05);
+            opacity: 0.04;
+          }
+          75% {
+            transform: translate(-30px, -20px) rotate(-5deg) scale(0.95);
+            opacity: 0.03;
+          }
         }
 
-        .animate-pulse-slow {
-          animation: pulse-slow 8s ease-in-out infinite;
+        /* Animación de sombra 4 - Pulsación */
+        @keyframes float-4 {
+          0%,
+          100% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0.03;
+          }
+          50% {
+            transform: translate(20px, 30px) scale(1.2);
+            opacity: 0.05;
+          }
+        }
+
+        /* Fade in para título */
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Slide up para productos */
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-float-1 {
+          animation: float-1 25s ease-in-out infinite;
+        }
+
+        .animate-float-2 {
+          animation: float-2 30s ease-in-out infinite;
+        }
+
+        .animate-float-3 {
+          animation: float-3 35s ease-in-out infinite;
+        }
+
+        .animate-float-4 {
+          animation: float-4 28s ease-in-out infinite;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 1s ease-out forwards;
+        }
+
+        .animate-fade-in-delay-1 {
+          animation: fade-in 1s ease-out 0.2s forwards;
+          opacity: 0;
+        }
+
+        .animate-fade-in-delay-2 {
+          animation: fade-in 1s ease-out 0.4s forwards;
+          opacity: 0;
+        }
+
+        .animate-fade-in-delay-3 {
+          animation: fade-in 1s ease-out 0.6s forwards;
+          opacity: 0;
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.8s ease-out forwards;
+          opacity: 0;
         }
       `}</style>
     </div>

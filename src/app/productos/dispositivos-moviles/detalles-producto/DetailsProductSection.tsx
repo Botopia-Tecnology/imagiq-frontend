@@ -18,7 +18,6 @@ import ImageGalleryModal from "./ImageGalleryModal";
 import { TradeInModal } from "./estreno-y-entrego";
 import ProductHeader from "./ProductHeader";
 import ProductSelectors from "./ProductSelectors";
-import DeliveryTradeInOptions from "./DeliveryTradeInOptions";
 import StickyImageContainer from "./StickyImageContainer";
 import PriceAndActions from "./PriceAndActions";
 import DeviceCarousel from "./DeviceCarousel";
@@ -125,9 +124,6 @@ const DetailsProductSection: React.FC<{
   // State
   const [loading, setLoading] = React.useState(false);
   const isFavorite = checkIsFavorite(product.id);
-  const [deliveryOption, setDeliveryOption] = React.useState<
-    "standard" | "express"
-  >("standard");
   const [estrenoYEntrego, setEstrenoYEntrego] = React.useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = React.useState(false);
   const [galleryImages, setGalleryImages] = React.useState<
@@ -470,10 +466,6 @@ const DetailsProductSection: React.FC<{
                     acceptsTradeIn={product.acceptsTradeIn}
                   />
 
-                  <DeliveryTradeInOptions
-                    deliveryOption={deliveryOption}
-                    onDeliveryChange={setDeliveryOption}
-                  />
                   <p className="text-base text-[#222] font-light leading-relaxed mb-8">
                     {/* Description removed from ProductCardProps */}
                   </p>

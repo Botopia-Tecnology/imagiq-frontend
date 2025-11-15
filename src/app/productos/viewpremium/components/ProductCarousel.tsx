@@ -80,7 +80,7 @@ const VideoPlayer: React.FC<{
       {/* Botón de pausa/play dentro del video - parte inferior derecha */}
       <button
         onClick={handlePlayPause}
-        className="absolute bottom-14 right-6 md:bottom-20 md:right-8 w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-50"
+        className="absolute bottom-8 right-6 md:bottom-12 md:right-8 w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-50"
       >
         {isPlaying ? (
           <div className="w-2.5 h-2.5 md:w-3 md:h-3 flex gap-0.5">
@@ -118,7 +118,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   return (
     <div ref={ref} className="w-full relative">
       {/* Carrusel premium - estilo Samsung más grande */}
-      <div className={`relative w-full transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
+      <div className={`relative w-full pt-4 md:pt-6 transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
           // Determinar qué imágenes usar según el estado del scroll
           // Para el carrusel premium, usar SOLO las imágenes del API (sin contenido mockeado)
@@ -206,7 +206,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
 
               {/* Puntos de navegación - PARA AMBOS CARRUSELES - CÍRCULOS */}
               {currentImages.length > 1 && (
-                <div className="flex justify-center gap-2 mt-6 mb-4">
+                <div className="flex justify-center gap-2 -mt-2 mb-4">
                   {currentImages.map((_, index) => (
                     <button
                       key={index}

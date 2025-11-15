@@ -182,9 +182,6 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
             </div>
           </div>
         </div>
-
-        {/* Separator line */}
-        <div className="border-t border-gray-200 my-6"></div>
       </div>
 
       {/* Trade-In Modal */}

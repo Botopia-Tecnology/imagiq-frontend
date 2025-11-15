@@ -387,7 +387,7 @@ export class AddressesService {
         );
       }
 
-      const usuarioId = userInfo.id || userInfo.email;
+      const usuarioId = userInfo.id || userInfo.email || "";
       const url = `${
         BASE_CONFIG.API_URL
       }/api/addresses/${addressId}/set-default?usuarioId=${encodeURIComponent(

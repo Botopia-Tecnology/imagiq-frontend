@@ -256,8 +256,8 @@ export function useCheckoutLogic() {
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
           });
           if ("error" in res) {
@@ -300,8 +300,8 @@ export function useCheckoutLogic() {
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
             });
           } else {
@@ -326,8 +326,8 @@ export function useCheckoutLogic() {
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
             });
           }
@@ -369,8 +369,8 @@ export function useCheckoutLogic() {
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
           });
           if ("error" in res) {

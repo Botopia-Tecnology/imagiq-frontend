@@ -138,14 +138,23 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
                 SKU Postback: {productSelection.selectedSkuPostback}
               </p>
             )}
-            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && productSelection.selectedStockTotal !== null && (
-              <p className="text-sm text-gray-600">
-                Stock disponible: {productSelection.selectedStockTotal}
-                {productSelection.selectedVariant?.cantidadTiendas ? 
-                  ` (Total: ${productSelection.selectedStockTotal} en ${productSelection.selectedVariant.cantidadTiendas} tiendas)` 
-                  : ''}
-              </p>
-            )}
+            {productSelection.selectedStockTotal !== null && productSelection.selectedVariant && (() => {
+              const stockTotal = productSelection.selectedStockTotal || 0;
+              const cantidadTiendas = productSelection.selectedVariant.cantidadTiendas || 0;
+              const variantIndex = productSelection.selectedVariant?.index ?? 0;
+              const cantidadTiendasReserva = product.apiProduct?.cantidadTiendasReserva?.[variantIndex] || 0;
+              const stockCentroDistribuciones = Math.max(0, stockTotal - cantidadTiendasReserva);
+              const stockTiendas = cantidadTiendasReserva;
+              const stockCalculado = stockCentroDistribuciones + (stockTiendas - cantidadTiendas);
+              
+              return (
+                <div className="text-sm text-gray-600 space-y-0.5">
+                  <p>
+                    Stock disponible ({stockCalculado}): Centro: {stockCentroDistribuciones} | Tiendas: {stockTiendas} | Cant. tiendas: {cantidadTiendas}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="border-2 border-blue-600 rounded-md p-4 bg-blue-50/30">

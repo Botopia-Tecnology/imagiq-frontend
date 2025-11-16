@@ -95,7 +95,7 @@ export default function Step4OrderSummary({
       </div>
 
       {/* Mensaje de T&C */}
-      <div className="text-xs text-gray-600 text-center">
+      <div className="text-xs text-gray-600 text-left">
         Al comprar aceptas nuestros{" "}
         <a href="/terminos-y-condiciones" target="_blank" className="text-black underline hover:text-gray-700">
           términos y condiciones

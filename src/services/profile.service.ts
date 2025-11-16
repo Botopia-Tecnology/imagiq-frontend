@@ -3,6 +3,8 @@
  * @description Servicio para interactuar con el API de perfil del backend
  */
 
+import { apiGet, apiPost, apiPut } from "@/lib/api-client";
+
 /**
  * Interface para la respuesta completa del perfil del usuario
  * IMPORTANTE: Esta interfaz debe coincidir EXACTAMENTE con lo que retorna
@@ -82,13 +84,6 @@ export interface UpdateProfileRequest {
 }
 
 /**
- * Configuración base del servicio
- */
-const BASE_CONFIG = {
-  API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
-};
-
-/**
  * Clase de servicio para el perfil de usuario
  */
 export class ProfileService {
@@ -110,14 +105,6 @@ export class ProfileService {
   }
 
   /**
-   * Obtiene el token de autorización del localStorage
-   */
-  private getAuthToken(): string {
-    const token = globalThis.localStorage?.getItem?.("imagiq_token") ?? "";
-    return token;
-  }
-
-  /**
    * Obtiene el ID del usuario del localStorage
    */
   private getUserId(): string | null {
@@ -129,17 +116,6 @@ export class ProfileService {
     } catch {
       return null;
     }
-  }
-
-  /**
-   * Headers base para las peticiones
-   */
-  private getHeaders(): HeadersInit {
-    const token = this.getAuthToken();
-    return {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
   }
 
   /**
@@ -155,30 +131,7 @@ export class ProfileService {
 
       console.log("📤 Solicitando perfil para usuario:", id);
 
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/auth/profile/${id}`,
-        {
-          method: "GET",
-          headers: this.getHeaders(),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error response from API:", errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText };
-        }
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      const result = await response.json();
+      const result = await apiGet<ProfileResponse>(`/api/auth/profile/${id}`);
       console.log("✅ Perfil obtenido exitosamente (RAW):", result);
 
       // ⚠️ IMPORTANTE: Si tarjetas/direcciones vienen como JSON strings, parsearlos
@@ -238,23 +191,7 @@ export class ProfileService {
 
       console.log("📤 Solicitando tarjetas encriptadas para usuario:", id);
 
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/payments/cards/${id}`,
-        {
-          method: "GET",
-          headers: this.getHeaders(),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error response from API:", errorText);
-        throw new Error(
-          `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      const result = await response.json();
+      const result = await apiGet<import('../features/profile/types').EncryptedCard[]>(`/api/payments/cards/${id}`);
       console.log("✅ Tarjetas encriptadas obtenidas:", result);
       return result;
     } catch (error: unknown) {
@@ -277,31 +214,7 @@ export class ProfileService {
     try {
       console.log("📤 Actualizando perfil para usuario:", userId, data);
 
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/auth/profile/${userId}`,
-        {
-          method: "PUT",
-          headers: this.getHeaders(),
-          body: JSON.stringify(data),
-        }
-      );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error response from API:", errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText };
-        }
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      const result = await response.json();
+      const result = await apiPut<ProfileResponse>(`/api/auth/profile/${userId}`, data);
       console.log("✅ Perfil actualizado exitosamente:", result);
       return result;
     } catch (error: unknown) {
@@ -386,35 +299,10 @@ export class ProfileService {
         cardCvc: data.cvv,
       };
 
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/payments/cards/tokenize`,
-        {
-          method: "POST",
-          headers: this.getHeaders(),
-          body: JSON.stringify(payload),
-        }
+      const result = await apiPost<{ success: boolean; message: string }>(
+        "/api/payments/cards/tokenize",
+        payload
       );
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error response from API:", errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-
-          // El backend puede devolver { status, message: { statusCode, message, errorCode, ... } }
-          // Extraer el objeto anidado si existe
-          if (errorData.message && typeof errorData.message === 'object') {
-            errorData = errorData.message;
-          }
-        } catch {
-          errorData = { message: errorText };
-        }
-        // Stringify the entire error object to preserve errorCode, errorMessage, etc.
-        throw new Error(JSON.stringify(errorData));
-      }
-
-      const result = await response.json();
       console.log("✅ Tarjeta tokenizada exitosamente:", result);
       return result;
     } catch (error: unknown) {

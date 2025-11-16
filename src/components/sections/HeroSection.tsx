@@ -8,7 +8,7 @@
 import { useState, useEffect } from "react";
 import { useHeroBanner } from "@/hooks/useHeroBanner";
 import { useHeroContext } from "@/contexts/HeroContext";
-import { coordinatesToCSS } from "@/utils/bannerCoordinates";
+import { positionToCSS } from "@/utils/bannerCoordinates";
 import Link from "next/link";
 import type { HeroBannerConfig } from "@/types/banner";
 
@@ -139,9 +139,9 @@ export default function HeroSection() {
     );
   }
 
-  // Estilos de posicionamiento con coordenadas
-  const desktopPositionStyle = coordinatesToCSS(config.coordinates);
-  const mobilePositionStyle = coordinatesToCSS(config.coordinatesMobile);
+  // Estilos de posicionamiento con el nuevo sistema
+  const desktopPositionStyle = positionToCSS(config.positionDesktop);
+  const mobilePositionStyle = positionToCSS(config.positionMobile);
 
   // Variables para decidir si mostrar el contenido del Hero
   const hasAnyVideo = Boolean(config.videoSrc || config.mobileVideoSrc);

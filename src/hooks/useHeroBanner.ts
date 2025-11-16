@@ -27,8 +27,10 @@ const DEFAULT_HERO_CONFIG: HeroBannerConfig = {
   ctaText: 'Más información',
   ctaLink: '/productos/ofertas?seccion=smartphones-tablets',
   textColor: '#ffffff',
-  coordinates: '4-4',
-  coordinatesMobile: '4-6',
+  // Posiciones en porcentajes (centro)
+  positionDesktop: { x: 50, y: 50, imageWidth: 1920, imageHeight: 1080 },
+  positionMobile: { x: 50, y: 75, imageWidth: 750, imageHeight: 1334 },
+  textStyles: null,
   showContentOnEnd: true,
   autoplay: true,
   loop: false,

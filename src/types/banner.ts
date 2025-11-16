@@ -11,12 +11,41 @@
 export type BannerStatus = 'active' | 'inactive' | 'scheduled';
 
 /**
- * Estructura de coordenadas procesadas del sistema 9x9
- * x,y van de 0-8 donde 0 es inicio y 8 es fin
+ * Estructura de posición en formato JSON del API
+ * x,y son PORCENTAJES relativos (0-100)
  */
-export interface BannerCoordinates {
+export interface BannerPosition {
   x: number;
   y: number;
+  imageWidth: number;
+  imageHeight: number;
+}
+
+/**
+ * Estilos de texto personalizados para el banner
+ */
+export interface BannerTextStyles {
+  title?: {
+    fontSize?: string;
+    fontWeight?: string;
+    lineHeight?: string;
+    color?: string;
+  };
+  description?: {
+    fontSize?: string;
+    fontWeight?: string;
+    lineHeight?: string;
+    color?: string;
+  };
+  cta?: {
+    fontSize?: string;
+    fontWeight?: string;
+    padding?: string;
+    borderRadius?: string;
+    borderWidth?: string;
+    backgroundColor?: string;
+    color?: string;
+  };
 }
 
 /**
@@ -47,14 +76,17 @@ export interface Banner {
   title: string | null;
   /** Color del texto del banner en formato hex */
   color_font: string;
-  /** Coordenadas desktop en formato "x-y" (ej: "2-5") */
-  coordinates: string;
-  /** Coordenadas mobile en formato "x-y" (ej: "4-6") */
-  coordinates_mobile: string;
+  /** Posición desktop como JSON string con porcentajes: {"x":50,"y":50,"imageWidth":1920,"imageHeight":1080} */
+  position_desktop: string | null;
+  /** Posición mobile como JSON string con porcentajes: {"x":50,"y":50,"imageWidth":750,"imageHeight":1334} */
+  position_mobile: string | null;
+  /** Estilos de texto como JSON string (puede ser null para usar estilos por defecto) */
+  text_styles: string | null;
   start_date: string | null;
   end_date: string | null;
   created_at: string;
   updated_at: string;
+  created_by: string | null;
 }
 
 /**
@@ -88,10 +120,12 @@ export interface HeroBannerConfig {
   ctaLink: string;
   /** Color del texto en formato hex */
   textColor: string;
-  /** Coordenadas desktop en formato "x-y" */
-  coordinates: string;
-  /** Coordenadas mobile en formato "x-y" */
-  coordinatesMobile: string;
+  /** Posición desktop parseada (porcentajes) */
+  positionDesktop?: BannerPosition;
+  /** Posición mobile parseada (porcentajes) */
+  positionMobile?: BannerPosition;
+  /** Estilos de texto personalizados (null = usar por defecto) */
+  textStyles?: BannerTextStyles | null;
   showContentOnEnd: boolean;
   autoplay: boolean;
   loop: boolean;

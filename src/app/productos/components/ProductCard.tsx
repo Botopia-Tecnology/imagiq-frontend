@@ -275,8 +275,13 @@ export default function ProductCard({
 
   const handleColorSelect = (color: ProductColor) => {
     if (apiProduct) {
-      // Usar el nuevo sistema de selección
-      productSelection.selectColor(color.label);
+      // Buscar el color correcto en las opciones del API
+      const colorOption = productSelection.getColorOptions().find(
+        opt => opt.nombreColorDisplay === color.label || opt.color === color.label || opt.hex === color.hex
+      );
+      
+      const colorToSelect = colorOption?.color || color.label;
+      productSelection.selectColor(colorToSelect);
     } else {
       // Usar el sistema legacy
       setSelectedColorLocal(color);

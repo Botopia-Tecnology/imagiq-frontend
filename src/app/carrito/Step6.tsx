@@ -10,6 +10,8 @@ import Modal from "@/components/ui/Modal";
 import AddNewAddressForm from "./components/AddNewAddressForm";
 import { MapPin, Plus, Check } from "lucide-react";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface Step6Props {
   readonly onBack?: () => void;
@@ -35,8 +37,8 @@ interface BillingData {
 }
 
 export default function Step6({ onBack, onContinue }: Step6Props) {
-  // useCart no es necesario aquí, lo usa Step4OrderSummary internamente
   const { user } = useAuthContext();
+  const { products } = useCart();
 
   const [billingType, setBillingType] = useState<BillingType>("natural");
   const [useShippingData, setUseShippingData] = useState(false);
@@ -66,6 +68,33 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     deviceName: string;
     value: number;
   } | null>(null);
+
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+      
+      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
+      const timeoutId = setTimeout(() => {
+        setTradeInData(null);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [products]);
 
   // Convertir Address a Direccion
   const addressToDireccion = (address: Address): Direccion => {
@@ -286,6 +315,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   };
 
   const handleContinue = () => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     // Siempre validar el formulario para mostrar errores
     if (!validateForm()) {
       // Hacer scroll al primer error
@@ -793,7 +829,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={false}
+              disabled={!tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}
@@ -802,6 +838,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
+                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
           </div>

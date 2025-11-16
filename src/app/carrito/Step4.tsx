@@ -7,6 +7,8 @@ import Modal from "@/components/ui/Modal";
 import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
+import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 export default function Step4({
   onBack,
@@ -16,6 +18,7 @@ export default function Step4({
   onContinue?: () => void;
 }) {
   const authContext = useAuthContext();
+  const { products } = useCart();
   const {
     isProcessing,
     paymentMethod,
@@ -68,7 +71,42 @@ export default function Step4({
     setTradeInData(null);
   };
 
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = React.useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  React.useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+      
+      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
+      const timeoutId = setTimeout(() => {
+        setTradeInData(null);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [products]);
+
   const handleContinueToNextStep = async (e: React.FormEvent) => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      e.preventDefault();
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     const isValid = await handleSavePaymentData(e);
     if (isValid && onContinue) {
       onContinue();
@@ -133,6 +171,7 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
+            disabled={isProcessing || !tradeInValidation.isValid}
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}
@@ -141,6 +180,7 @@ export default function Step4({
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
+              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
             />
           )}
         </div>

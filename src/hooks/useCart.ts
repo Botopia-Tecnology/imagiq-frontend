@@ -38,6 +38,8 @@ export interface CartProduct {
   desDetallada?:string;
   /** Indica si el producto puede ser recogido en tienda (canPickUp) */
   canPickUp?: boolean;
+  /** Indica si el producto aplica para retoma (indRetoma: 1 = aplica, 0 = no aplica) */
+  indRetoma?: number;
 }
 
 interface CartCalculations {
@@ -141,6 +143,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     const ram = asString(p.ram);
     const desDetallada = asString(p.desDetallada);
     const canPickUp = typeof p.canPickUp === "boolean" ? p.canPickUp : undefined;
+    const indRetoma = typeof p.indRetoma === "number" ? p.indRetoma : undefined;
 
     return {
       id,
@@ -163,6 +166,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       skuPostback,
       desDetallada,
       canPickUp,
+      indRetoma,
     };
   };
 

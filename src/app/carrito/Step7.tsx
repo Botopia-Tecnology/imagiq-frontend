@@ -18,6 +18,7 @@ import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
 import { payWithAddi, payWithCard, payWithPse } from "./utils";
 import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface Step7Props {
   onBack?: () => void;
@@ -225,7 +226,34 @@ export default function Step7({ onBack }: Step7Props) {
     setTradeInData(null);
   };
 
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+    }
+  }, [products]);
+
   const handleConfirmOrder = async () => {
+    // Validar Trade-In antes de confirmar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     if (!billingData) {
       console.error("No billing data available");
       return;
@@ -687,6 +715,7 @@ export default function Step7({ onBack }: Step7Props) {
               onFinishPayment={handleConfirmOrder}
               onBack={onBack}
               buttonText="Confirmar y pagar"
+              disabled={isProcessing || !tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}
@@ -695,6 +724,7 @@ export default function Step7({ onBack }: Step7Props) {
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
+                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
           </div>

@@ -40,6 +40,7 @@ export default function Step3({
     deliveryMethod,
     setDeliveryMethod,
     canContinue,
+    storesLoading,
   } = useDelivery();
 
   // Trade-In state management
@@ -293,6 +294,7 @@ export default function Step3({
                     selectedStore={selectedStore}
                     onQueryChange={setStoreQuery}
                     onStoreSelect={selectedStoreChanged}
+                    storesLoading={storesLoading}
                   />
                 </div>
               )}

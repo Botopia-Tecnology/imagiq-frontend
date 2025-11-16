@@ -20,9 +20,7 @@ import CheckoutSuccessOverlay from "../../carrito/CheckoutSuccessOverlay";
 import { useCart } from "@/hooks/useCart";
 import { apiClient } from "@/lib/api";
 import { useAnalyticsWithUser } from "@/lib/analytics";
-
-// API Base URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { apiPost } from "@/lib/api-client";
 
 interface OrderData {
   orden_id: string;
@@ -140,7 +138,7 @@ export default function SuccessCheckoutPage({
 
         // Limpiar y formatear el teléfono (quitar espacios, guiones, paréntesis, etc.)
         let telefono = userInfo.telefono.toString().replace(/[\s+\-()]/g, "");
-        
+
         // Asegurar que el teléfono tenga el código de país 57
         if (!telefono.startsWith("57")) {
           telefono = "57" + telefono;
@@ -260,47 +258,37 @@ export default function SuccessCheckoutPage({
           fechaEntrega: fechaEntregaFinal,
         };
 
-        // Enviar mensaje de WhatsApp al backend
-        const apiUrl = `${API_BASE_URL}/api/messaging/pedido-confirmado`;
-        const whatsappResponse = await fetch(apiUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
+        // Enviar mensaje de WhatsApp al backend usando apiPost
+        try {
+          const whatsappData = await apiPost<{
+            success: boolean;
+            messageId?: string;
+            message?: string;
+            error?: string;
+            details?: string;
+          }>('/api/messaging/pedido-confirmado', payload);
 
-        // Verificar respuesta del backend
-        if (!whatsappResponse.ok) {
-          const errorData = await whatsappResponse.json().catch(() => ({}));
-          console.error("❌ [WhatsApp] Error al enviar mensaje de WhatsApp:", {
-            status: whatsappResponse.status,
-            statusText: whatsappResponse.statusText,
-            error: errorData.error || errorData,
-            details: errorData.details
-          });
+          // Verificar respuesta exitosa según la especificación del endpoint
+          if (!whatsappData.success) {
+            console.error("❌ [WhatsApp] Error en respuesta de WhatsApp:", {
+              success: whatsappData.success,
+              error: whatsappData.error,
+              details: whatsappData.details
+            });
+            whatsappSentRef.current = false;
+          } else {
+            console.log("✅ [WhatsApp] Mensaje enviado exitosamente:", {
+              messageId: whatsappData.messageId,
+              message: whatsappData.message,
+              ordenId: pathParams.orderId,
+              telefono: telefono
+            });
+          }
+        } catch (whatsappError) {
+          console.error("❌ [WhatsApp] Error al enviar mensaje de WhatsApp:", whatsappError);
           // Resetear el flag para permitir reintento en caso de error
           whatsappSentRef.current = false;
           return;
-        }
-
-        const whatsappData = await whatsappResponse.json().catch(() => ({ success: false }));
-
-        // Verificar respuesta exitosa según la especificación del endpoint
-        if (!whatsappData.success) {
-          console.error("❌ [WhatsApp] Error en respuesta de WhatsApp:", {
-            success: whatsappData.success,
-            error: whatsappData.error,
-            details: whatsappData.details
-          });
-          whatsappSentRef.current = false;
-        } else {
-          console.log("✅ [WhatsApp] Mensaje enviado exitosamente:", {
-            messageId: whatsappData.messageId,
-            message: whatsappData.message,
-            ordenId: pathParams.orderId,
-            telefono: telefono
-          });
         }
       } catch (error) {
         console.error("❌ [WhatsApp] Error al procesar envío de WhatsApp:", error);

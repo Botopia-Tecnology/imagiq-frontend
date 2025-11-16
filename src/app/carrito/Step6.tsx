@@ -53,7 +53,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     type: "natural",
     nombre: "",
     documento: "",
-    tipoDocumento: "",
+    tipoDocumento: "C.C.", // Valor por defecto
     email: "",
     telefono: "",
     direccion: null,
@@ -257,7 +257,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   };
 
   const handleContinue = () => {
+    // Siempre validar el formulario para mostrar errores
     if (!validateForm()) {
+      // Hacer scroll al primer error
+      const firstErrorElement = document.querySelector('.border-red-500');
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -296,39 +302,6 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
   };
 
-  // Validación para habilitar/deshabilitar el botón de continuar
-  const canContinue = useMemo(() => {
-    const commonFieldsFilled =
-      billingData.nombre.trim() !== "" &&
-      !!billingData.tipoDocumento?.trim() &&
-      billingData.documento.trim() !== "" &&
-      billingData.email.trim() !== "" &&
-      billingData.telefono.trim() !== "" &&
-      billingData.direccion !== null;
-
-    if (billingType === "natural") return commonFieldsFilled;
-
-    // persona jurídica
-    if (billingType === "juridica") {
-      const razonSocialFilled = !!(
-        billingData.razonSocial && billingData.razonSocial.trim() !== ""
-      );
-      const nitFilled = !!(billingData.nit && billingData.nit.trim() !== "");
-      const nombreRepresentanteFilled = !!(
-        billingData.nombreRepresentante &&
-        billingData.nombreRepresentante.trim() !== ""
-      );
-
-      return (
-        commonFieldsFilled &&
-        razonSocialFilled &&
-        nitFilled &&
-        nombreRepresentanteFilled
-      );
-    }
-
-    return false;
-  }, [billingData, billingType]);
 
   // Ordenador para direcciones: predeterminadas primero
   const sortAddressesByDefault = (a: Address, b: Address) => {
@@ -793,7 +766,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={!canContinue}
+              disabled={false}
             />
           </div>
         </div>

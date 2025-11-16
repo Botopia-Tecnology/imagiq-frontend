@@ -2,6 +2,8 @@
  * Servicio para consultar información de cuotas sin interés
  */
 
+import { apiPost } from '@/lib/api-client';
+
 export interface CeroInteresEntity {
   codEntidad: string;
   entidad: string;
@@ -20,32 +22,14 @@ export type CeroInteresResponse = CeroInteresEntity[];
 export async function buscarCeroInteresPorPrecios(
   precios: number[]
 ): Promise<CeroInteresResponse> {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-  
-  if (!apiUrl) {
-    console.error('[CeroInteres] NEXT_PUBLIC_API_URL no está configurada');
-    throw new Error('API URL no configurada');
-  }
-
   // Eliminar precios duplicados
   const preciosUnicos = Array.from(new Set(precios));
 
   try {
-    const response = await fetch(`${apiUrl}/api/cero-interes/buscar-por-precios`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        precios: preciosUnicos,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data: CeroInteresResponse = await response.json();
+    const data = await apiPost<CeroInteresResponse>(
+      '/api/cero-interes/buscar-por-precios',
+      { precios: preciosUnicos }
+    );
     return data;
   } catch (error) {
     console.error('[CeroInteres] Error al consultar cuotas sin interés:', error);
@@ -77,7 +61,7 @@ export function calcularCuotaMaxima(
     // Los plazos vienen como string "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24"
     const plazosArray = entity.plazos.split(',').map(p => Number.parseInt(p.trim(), 10));
     const maxPlazoEntidad = Math.max(...plazosArray);
-    
+
     if (maxPlazoEntidad > plazoMaximo) {
       plazoMaximo = maxPlazoEntidad;
     }

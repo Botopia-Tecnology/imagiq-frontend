@@ -11,6 +11,7 @@ import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { apiPost } from "@/lib/api-client";
+import Step4OrderSummary from "./components/Step4OrderSummary";
 
 interface GuestUserResponse {
   address: {
@@ -39,7 +40,7 @@ export default function Step2({
   onContinue?: () => void;
 }) {
   // Usar el hook centralizado useCart
-  const { products: cartProducts, calculations, formatPrice } = useCart();
+  const { products: cartProducts } = useCart();
   const router = useRouter();
   // Recibe onContinue para avanzar al siguiente paso
   // onBack ya existe
@@ -81,9 +82,6 @@ export default function Step2({
     }));
   };
 
-  // Eliminado: indicativo
-  const appliedDiscount = 0;
-
   // Estado para validación y UX
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -98,12 +96,6 @@ export default function Step2({
     direccion_linea_uno: "",
     direccion_ciudad: "",
   });
-
-  // Usar cálculos del hook centralizado
-  const subtotal = calculations.subtotal;
-  const envio = 0;
-  const impuestos = Math.round(subtotal * 0.18);
-  const total = subtotal - appliedDiscount + envio;
 
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo
@@ -206,8 +198,10 @@ export default function Step2({
    * Maneja el envío del formulario de invitado.
    * Valida los campos, guarda la información en localStorage y muestra feedback UX.
    */
-  const handleGuestSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleGuestSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
     setError("");
     const errors = validateFields(guestForm);
     setFieldErrors(errors);
@@ -260,6 +254,29 @@ export default function Step2({
         }
       }, 800);
     }, 1200);
+  };
+
+  // Wrapper function to handle both form validation and continue action
+  const handleContinue = async () => {
+    if (!isGuestFormValid) {
+      setError("Por favor completa todos los campos obligatorios.");
+      const newFieldErrors: typeof fieldErrors = {
+        email: guestForm.email.trim() ? "" : "Este campo es obligatorio",
+        nombre: guestForm.nombre.trim() ? "" : "Este campo es obligatorio",
+        apellido: guestForm.apellido.trim() ? "" : "Este campo es obligatorio",
+        cedula: guestForm.cedula.trim() ? "" : "Este campo es obligatorio",
+        celular: guestForm.celular.trim() ? "" : "Este campo es obligatorio",
+        direccion_linea_uno: guestForm.direccion_linea_uno.trim()
+          ? ""
+          : "Este campo es obligatorio",
+        direccion_ciudad: guestForm.direccion_ciudad.trim()
+          ? ""
+          : "Este campo es obligatorio",
+      };
+      setFieldErrors(newFieldErrors);
+      return;
+    }
+    await handleGuestSubmit();
   };
   useEffect(() => {
     const haveAccount = safeGetLocalStorage<{ email?: string }>(
@@ -861,157 +878,46 @@ export default function Step2({
             </form>
           </div>
         </div>
-        {/* Resumen de compra dinámico */}
-        <div className="bg-[#F3F3F3] rounded-xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] sticky top-8">
-          <h2 className="text-xl font-bold mb-2">Resumen de compra</h2>
-          <div className="flex flex-col gap-2 flex-1">
-            <div className="flex justify-between text-base">
-              <span>
-                Productos (
-                {(() => {
-                  const val = cartProducts.reduce((acc, p) => {
-                    const qty = Number(p.quantity);
-                    return acc + (isNaN(qty) ? 1 : qty);
-                  }, 0);
-                  return isNaN(val) ? "0" : String(val);
-                })()}
-                )
-              </span>
-              <span className="font-bold">
-                {typeof subtotal === "number" && !isNaN(subtotal)
-                  ? String(formatPrice(subtotal))
-                  : "0"}
-              </span>
-            </div>
-            <div className="flex justify-between text-base">
-              <span>Descuento</span>
-              <span className="text-red-600">
-                -{" "}
-                {typeof appliedDiscount === "number" && !isNaN(appliedDiscount)
-                  ? String(formatPrice(appliedDiscount))
-                  : "0"}
-              </span>
-            </div>
-            <div className="flex justify-between text-lg font-bold mt-2">
-              <span>Total</span>
-              <span>
-                {typeof total === "number" && !isNaN(total)
-                  ? String(formatPrice(total))
-                  : "0"}
-              </span>
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              Incluye{" "}
-              {typeof impuestos === "number" && !isNaN(impuestos)
-                ? String(formatPrice(impuestos))
-                : "0"}{" "}
-              de impuestos
-            </div>
-          </div>
-          {/* Botones abajo, igual al diseño */}
-          <div className="flex flex-col gap-2 mt-6">
-            <button
-              type="button"
-              className="w-full bg-[#0074E8] text-white font-bold py-3 rounded-lg text-lg hover:bg-[#005bb5] transition"
-              onClick={() => {
-                // Simular un FormEvent real sin usar 'any'
-                const fakeEvent = {
-                  preventDefault: () => {},
-                } as React.FormEvent<HTMLFormElement>;
-                // Si no es válido, mostrar error general
-                if (!isGuestFormValid) {
-                  setError("Por favor completa todos los campos obligatorios.");
-                  // Marcar los campos vacíos incluyendo dirección y ciudad
-                  const newFieldErrors: typeof fieldErrors = {
-                    email: guestForm.email.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                    nombre: guestForm.nombre.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                    apellido: guestForm.apellido.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                    cedula: guestForm.cedula.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                    celular: guestForm.celular.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                    direccion_linea_uno: guestForm.direccion_linea_uno.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                    direccion_ciudad: guestForm.direccion_ciudad.trim()
-                      ? ""
-                      : "Este campo es obligatorio",
-                  };
-                  setFieldErrors(newFieldErrors);
-                  return;
-                }
-                handleGuestSubmit(fakeEvent);
-                // No need to call onContinue here as it's already called in handleGuestSubmit
-              }}
-              disabled={loading || success}
-              aria-disabled={loading || success}
-            >
-              {loading ? "Procesando..." : "Continuar pago"}
-            </button>
+        {/* Resumen de compra con Step4OrderSummary */}
+        <div className="flex flex-col gap-4">
+          <Step4OrderSummary
+            onFinishPayment={handleContinue}
+            onBack={onBack}
+            buttonText={loading ? "Procesando..." : "Continuar pago"}
+            disabled={loading || success || !isGuestFormValid}
+            isProcessing={loading}
+          />
 
-            {/* Mapa 3D de la dirección seleccionada */}
-            {selectedAddress && (
-              <div className="mt-6 mb-4">
-                <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                  📍 Ubicación de Entrega Confirmada
-                </h4>
-                <AddressMap3D
-                  address={selectedAddress}
-                  height="200px"
-                  enable3D={true}
-                  showControls={false}
-                />
-                <p className="text-xs text-gray-500 mt-2 text-center">
-                  ✅ Tu pedido será enviado a esta dirección • Verifica que sea
-                  correcta
-                </p>
-              </div>
-            )}
-            {onBack && (
-              <button
-                type="button"
-                className="w-full flex items-center justify-center gap-2 text-[#0074E8] font-semibold text-base py-2 rounded-lg bg-white border border-[#e5e5e5] shadow-sm hover:bg-[#e6f3ff] hover:text-[#005bb5] focus:outline-none focus:ring-2 focus:ring-[#0074E8] transition-all duration-150"
-                onClick={onBack}
-                disabled={loading}
-                aria-disabled={loading}
-              >
-                <span className="text-lg">←</span>
-                <span>Volver al paso anterior</span>
-              </button>
-            )}
-          </div>
-          {/* Mensajes de error/success debajo de los botones */}
-          {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+          {/* Mapa 3D de la dirección seleccionada */}
+          {selectedAddress && (
+            <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5]">
+              <h4 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                📍 Ubicación de Entrega Confirmada
+              </h4>
+              <AddressMap3D
+                address={selectedAddress}
+                height="200px"
+                enable3D={true}
+                showControls={false}
+              />
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                ✅ Tu pedido será enviado a esta dirección • Verifica que sea
+                correcta
+              </p>
+            </div>
+          )}
+
+          {/* Mensajes de error/success */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           {success && (
-            <div className="text-green-600 text-sm mt-2">
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
               ¡Compra realizada como invitado!
             </div>
           )}
-          <style jsx>{`
-            .input-samsung {
-              background: #fff;
-              border-radius: 0.75rem;
-              border: 1px solid #d1d5db;
-              padding: 0.85rem 1.1rem;
-              font-size: 1rem;
-              color: #222;
-              font-family: inherit;
-              outline: none;
-              transition: border 0.2s;
-              box-shadow: none;
-            }
-            .input-samsung:focus {
-              border-color: #0074e8;
-            }
-          `}</style>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import { apiClient, type ProductApiData, productEndpoints } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import Step4OrderSummary from "./components/Step4OrderSummary";
 
 /**
  * Paso 1 del carrito de compras
@@ -20,7 +21,6 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
  * Recibe onContinue para avanzar al paso 2
  */
 export default function Step1({ onContinue }: { onContinue: () => void }) {
-  const [validationError, setValidationError] = useState<string>("");
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const { trackBeginCheckout } = useAnalyticsWithUser();
@@ -287,11 +287,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   }, [cartProducts]);
 
   // Usar cálculos del hook centralizado
-  const subtotal = calculations.subtotal;
-  const tradeInSavings = tradeInData?.value || 0; // Ahorro, NO descuento inmediato
-  const envio = 0;
-  const impuestos = Math.round(subtotal * 0.09); // ejemplo 9%
-  const total = subtotal + envio; // NO restar el Trade-In, es un beneficio posterior
+  const total = calculations.total;
 
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
@@ -330,12 +326,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Función para manejar el click en continuar pago
   const handleContinue = () => {
     if (cartProducts.length === 0) {
-      setValidationError(
-        "Agrega al menos un producto al carrito para continuar"
-      );
       return;
     }
-    setValidationError("");
 
     // Track del evento begin_checkout para analytics
     trackBeginCheckout(
@@ -453,86 +445,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           )}
         </section>
         {/* Resumen de compra - Solo Desktop */}
-        <aside className="hidden md:flex rounded-2xl p-6 flex-col gap-6">
-          <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
-
-          {/* Estreno y Entrego - Justo después del título */}
-          {tradeInData?.completed && tradeInSavings > 0 && (
-            <div className="mb-4 pb-4 border-b border-gray-200">
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-semibold text-gray-900 uppercase">
-                  Estreno y Entrego
-                </span>
-                <span className="text-base font-bold text-blue-600">
-                  - $ {Number(tradeInSavings).toLocaleString()}
-                </span>
-              </div>
-              <p className="text-xs text-gray-600 leading-relaxed max-w-xs">
-                Este es un valor aproximado del
-                <br />
-                beneficio Estreno y Entrego al que
-                <br />
-                aplicaste. Aplican TyC*
-              </p>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2">
-            <div className="flex justify-between text-sm">
-              <span>
-                Productos (
-                {cartProducts.reduce((acc, p) => acc + p.quantity, 0)})
-              </span>
-              <span className="font-bold">
-                $ {Number(subtotal).toLocaleString()}
-              </span>
-            </div>
-            <div className="flex gap-2 mt-2">
-              <input
-                type="text"
-                placeholder="Código de descuento"
-                className="border rounded-lg px-3 py-2 text-sm flex-1"
-              />
-              <button className="bg-gray-200 rounded-lg px-4 py-2 text-sm font-semibold hover:bg-gray-300 transition cursor-pointer">
-                Aplicar
-              </button>
-            </div>
-            <div className="flex justify-between text-sm mt-2">
-              <span>Subtotal</span>
-              <span>$ {Number(subtotal).toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between text-base font-bold mt-2">
-              <span>Total</span>
-              <span>$ {Number(total).toLocaleString()}</span>
-            </div>
-            <div className="text-xs text-gray-500 mt-1">
-              Incluye $ {Number(impuestos).toLocaleString()} de impuestos
-            </div>
-          </div>
-          {/* Mostrar error de validación si existe */}
-          {validationError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {validationError}
-            </div>
-          )}
-          <button
-            className={`w-full font-bold py-3 rounded-lg text-base mt-2 transition ${
-              cartProducts.length === 0
-                ? "bg-gray-400 text-gray-600 cursor-not-allowed"
-                : "text-black hover:brightness-95 cursor-pointer"
-            }`}
-            style={
-              cartProducts.length === 0
-                ? undefined
-                : { backgroundColor: "#87CEEB" }
-            }
-            onClick={handleContinue}
+        <aside className="hidden md:block">
+          <Step4OrderSummary
+            onFinishPayment={handleContinue}
+            buttonText="Continuar pago"
             disabled={cartProducts.length === 0}
-          >
-            {cartProducts.length === 0
-              ? "Agrega productos para continuar"
-              : "Continuar pago"}
-          </button>
+          />
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}

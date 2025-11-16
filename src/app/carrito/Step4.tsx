@@ -131,6 +131,8 @@ export default function Step4({
               ) as HTMLFormElement;
               if (form) form.requestSubmit();
             }}
+            onBack={onBack}
+            buttonText="Continuar"
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}

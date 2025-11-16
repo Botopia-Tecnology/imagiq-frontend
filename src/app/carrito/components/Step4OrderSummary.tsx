@@ -57,21 +57,21 @@ export default function Step4OrderSummary({
 
   return (
     <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] border border-[#E5E5E5] sticky top-8">
-      <h2 className="font-bold text-xl mb-4">Resumen de compra</h2>
+      <h2 className="font-bold text-lg mb-4">Resumen de compra</h2>
       <div className="flex flex-col gap-2">
         {/* Productos: mostrar precio ANTES del descuento para que el usuario vea el impacto */}
-        <div className="flex justify-between text-base">
+        <div className="flex justify-between text-sm">
           <span>Productos ({calculations.productCount})</span>
-          <span className="font-bold">
+          <span className="font-semibold">
             {cartFormatPrice(calculations.subtotal + productSavings)}
           </span>
         </div>
 
         {/* Descuento por productos */}
         {productSavings > 0 && (
-          <div className="flex justify-between text-base">
+          <div className="flex justify-between text-sm">
             <span className="text-green-600 font-medium">Descuento productos</span>
-            <span className="text-green-600 font-bold">
+            <span className="text-green-600 font-semibold">
               -{cartFormatPrice(productSavings)}
             </span>
           </div>
@@ -79,7 +79,7 @@ export default function Step4OrderSummary({
 
         {/* Descuento por cupón (si existe) */}
         {calculations.discount > 0 && (
-          <div className="flex justify-between text-base">
+          <div className="flex justify-between text-sm">
             <span>Descuento cupón</span>
             <span className="text-red-600">
               -{cartFormatPrice(calculations.discount)}
@@ -88,7 +88,7 @@ export default function Step4OrderSummary({
         )}
 
         {/* Total: siempre string */}
-        <div className="flex justify-between text-lg font-bold mt-2">
+        <div className="flex justify-between text-base font-bold mt-2">
           <span>Total</span>
           <span>{cartFormatPrice(calculations.total)}</span>
         </div>

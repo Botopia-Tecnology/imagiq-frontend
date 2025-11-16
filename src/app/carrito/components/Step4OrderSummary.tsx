@@ -106,54 +106,55 @@ export default function Step4OrderSummary({
         </a>
       </div>
 
-      <button
-        type="button"
-        className={`w-full bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
-          isProcessing || disabled ? "opacity-70 cursor-not-allowed" : ""
-        }`}
-        disabled={isProcessing || disabled}
-        data-testid="checkout-finish-btn"
-        aria-busy={isProcessing}
-        onClick={onFinishPayment}
-      >
-        {isProcessing ? (
-          <span className="flex items-center gap-2" aria-live="polite">
-            <svg
-              className="animate-spin h-5 w-5 mr-2 text-green-500"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-                fill="none"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
-            <span>Procesando…</span>
-          </span>
-        ) : (
-          buttonText
+      <div className="flex gap-3">
+        {/* Botón de volver (opcional) */}
+        {onBack && (
+          <button
+            type="button"
+            className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+            onClick={onBack}
+          >
+            Volver
+          </button>
         )}
-      </button>
-
-      {/* Botón de volver (opcional) */}
-      {onBack && (
         <button
           type="button"
-          className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
-          onClick={onBack}
+          className={`flex-1 bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
+            isProcessing || disabled ? "opacity-70 cursor-not-allowed" : ""
+          }`}
+          disabled={isProcessing || disabled}
+          data-testid="checkout-finish-btn"
+          aria-busy={isProcessing}
+          onClick={onFinishPayment}
         >
-          Volver
+          {isProcessing ? (
+            <span className="flex items-center gap-2" aria-live="polite">
+              <svg
+                className="animate-spin h-5 w-5 mr-2 text-green-500"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                />
+              </svg>
+              <span>Procesando…</span>
+            </span>
+          ) : (
+            buttonText
+          )}
         </button>
-      )}
+      </div>
     </aside>
   );
 }

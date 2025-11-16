@@ -34,18 +34,39 @@ export function validateTradeInProducts(products: CartProduct[]): {
       isValid: false,
       productsWithoutRetoma: [],
       hasMultipleProducts: true,
-      errorMessage: "Para aplicar el beneficio Estreno y Entrego, solo puedes tener un producto en el carrito. Por favor, elimina los productos adicionales para continuar.",
+      errorMessage: "Para aplicar el beneficio Estreno y Entrego solo puedes tener un producto en el carrito. Quita este beneficio para continuar o remueve los productos adicionales y deja un único producto.",
     };
   }
 
-  // Validación 2: Buscar productos que tienen indRetoma === 0 o undefined
+  // Validación 2: Buscar productos que tienen indRetoma === 0 o undefined (no aplican para el beneficio)
   const productsWithoutRetoma = products.filter(
     (product) => product.indRetoma === 0 || product.indRetoma === undefined
   );
 
+  // Si hay productos con indRetoma === 0 y había un trade-in activo, significa que el producto cambió de 1 a 0
+  // IMPORTANTE: Solo mostrar el mensaje "Te removimos" si había un trade-in activo en localStorage
+  if (productsWithoutRetoma.length > 0 && hasActiveTradeIn) {
+    return {
+      isValid: false,
+      productsWithoutRetoma,
+      hasMultipleProducts: false,
+      errorMessage: "Te removimos el cupón de entrego y estreno. El producto seleccionado ya no aplica para este beneficio.",
+    };
+  }
+
+  // Si hay productos sin retoma pero NO había trade-in activo, no mostrar el mensaje de "Te removimos"
+  // Solo retornar que no es válido sin el mensaje personalizado
+  if (productsWithoutRetoma.length > 0) {
+    return {
+      isValid: false,
+      productsWithoutRetoma,
+      hasMultipleProducts: false,
+    };
+  }
+
   return {
-    isValid: productsWithoutRetoma.length === 0,
-    productsWithoutRetoma,
+    isValid: true,
+    productsWithoutRetoma: [],
     hasMultipleProducts: false,
   };
 }
@@ -62,7 +83,7 @@ export function getTradeInValidationMessage(
     errorMessage?: string;
   }
 ): string {
-  // Si hay un mensaje de error personalizado (múltiples productos), usarlo
+  // Si hay un mensaje de error personalizado (múltiples productos o cuando cambió de 1 a 0), usarlo
   if (validationResult.errorMessage) {
     return validationResult.errorMessage;
   }
@@ -74,12 +95,12 @@ export function getTradeInValidationMessage(
   }
 
   if (productsWithoutRetoma.length === 1) {
-    return `El producto "${productsWithoutRetoma[0].name}" ya no aplica para el beneficio Estreno y Entrego. Por favor, remuévelo del carrito para continuar.`;
+    return `El producto "${productsWithoutRetoma[0].name}" ya no aplica para el beneficio Estreno y Entrego. Quita este beneficio para continuar o remueve el producto y deja un único producto que sí aplique.`;
   }
 
   const productNames = productsWithoutRetoma
     .map((p) => `"${p.name}"`)
     .join(", ");
-  return `Los siguientes productos ya no aplican para el beneficio Estreno y Entrego: ${productNames}. Por favor, remuévelos del carrito para continuar.`;
+  return `Los siguientes productos ya no aplican para el beneficio Estreno y Entrego: ${productNames}. Quita este beneficio para continuar o remueve estos productos y deja un único producto que sí aplique.`;
 }
 

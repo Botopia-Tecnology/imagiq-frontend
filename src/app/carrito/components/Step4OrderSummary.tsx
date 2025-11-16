@@ -45,7 +45,7 @@ export default function Step4OrderSummary({
           <p className="text-gray-500 text-center">Tu carrito está vacío</p>
           <button
             type="button"
-            className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-4 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+            className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-4 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition cursor-pointer"
             onClick={() => router.push("/")}
           >
             Volver a comprar
@@ -111,7 +111,7 @@ export default function Step4OrderSummary({
         {onBack && (
           <button
             type="button"
-            className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
+            className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition cursor-pointer"
             onClick={onBack}
           >
             Volver
@@ -120,7 +120,7 @@ export default function Step4OrderSummary({
         <button
           type="button"
           className={`flex-1 bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
-            isProcessing || disabled ? "opacity-70 cursor-not-allowed" : ""
+            isProcessing || disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
           }`}
           disabled={isProcessing || disabled}
           data-testid="checkout-finish-btn"

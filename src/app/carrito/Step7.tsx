@@ -238,6 +238,12 @@ export default function Step7({ onBack }: Step7Props) {
   useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+    }
   }, [products]);
 
   const handleConfirmOrder = async () => {
@@ -704,12 +710,6 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Mensaje de error si algún producto no aplica para Trade-In */}
-            {!tradeInValidation.isValid && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
-                {getTradeInValidationMessage(tradeInValidation)}
-              </div>
-            )}
             <Step4OrderSummary
               isProcessing={isProcessing}
               onFinishPayment={handleConfirmOrder}
@@ -724,6 +724,7 @@ export default function Step7({ onBack }: Step7Props) {
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
+                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
           </div>

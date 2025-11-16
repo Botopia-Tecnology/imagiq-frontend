@@ -48,7 +48,7 @@ export default function Step3({
     value: number;
   } | null>(null);
 
-  // Load Trade-In data from localStorage
+  // Load Trade-In data from localStorage y forzar método a "tienda" si hay trade-in
   React.useEffect(() => {
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
@@ -56,12 +56,15 @@ export default function Step3({
         const parsed = JSON.parse(storedTradeIn);
         if (parsed.completed) {
           setTradeInData(parsed);
+          // IMPORTANTE: Si hay trade-in, forzar método a "tienda" inmediatamente
+          setDeliveryMethod("tienda");
+          localStorage.setItem("checkout-delivery-method", "tienda");
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
-  }, []);
+  }, [setDeliveryMethod]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
@@ -69,18 +72,40 @@ export default function Step3({
     setTradeInData(null);
   };
 
+  // IMPORTANTE: Si hay trade-in activo, solo permitir recoger en tienda
+  const hasActiveTradeIn = tradeInData?.completed === true;
+
   // Verificar si algún producto tiene canPickUp: false
-  const hasProductWithoutPickup = products.some(
+  // PERO solo aplicar esta lógica si NO hay trade-in activo
+  const hasProductWithoutPickup = !hasActiveTradeIn && products.some(
     (product) => product.canPickUp === false
   );
 
   // Si hay productos sin pickup y el método está en tienda, cambiar a domicilio
+  // SOLO si NO hay trade-in activo
   React.useEffect(() => {
-    if (hasProductWithoutPickup && deliveryMethod === "tienda") {
+    if (!hasActiveTradeIn && hasProductWithoutPickup && deliveryMethod === "tienda") {
       setDeliveryMethod("domicilio");
       localStorage.setItem("checkout-delivery-method", "domicilio");
     }
-  }, [hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
+  }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
+
+  // Forzar método de entrega a "tienda" si hay trade-in activo (ejecutar inmediatamente)
+  React.useEffect(() => {
+    if (hasActiveTradeIn) {
+      // Forzar cambio a tienda si está en domicilio
+      if (deliveryMethod === "domicilio") {
+        setDeliveryMethod("tienda");
+        localStorage.setItem("checkout-delivery-method", "tienda");
+      }
+      // También prevenir que se cambie a domicilio
+      const savedMethod = localStorage.getItem("checkout-delivery-method");
+      if (savedMethod === "domicilio") {
+        setDeliveryMethod("tienda");
+        localStorage.setItem("checkout-delivery-method", "tienda");
+      }
+    }
+  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod]);
 
   // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
   React.useEffect(() => {
@@ -161,6 +186,19 @@ export default function Step3({
   React.useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+      
+      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
+      const timeoutId = setTimeout(() => {
+        setTradeInData(null);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
   }, [products]);
 
   const handleContinue = () => {
@@ -191,6 +229,10 @@ export default function Step3({
     localStorage.setItem("checkout-address", JSON.stringify(newAddress));
   };
   const handleDeliveryMethodChange = (method: string) => {
+    // Si hay trade-in activo, no permitir cambiar a domicilio
+    if (hasActiveTradeIn && method === "domicilio") {
+      return; // No hacer nada, mantener en tienda
+    }
     setDeliveryMethod(method);
     localStorage.setItem("checkout-delivery-method", method);
   };
@@ -211,9 +253,11 @@ export default function Step3({
                 deliveryMethod={deliveryMethod}
                 onMethodChange={handleDeliveryMethodChange}
                 canContinue={canContinue}
+                disableHomeDelivery={hasActiveTradeIn}
+                disableReason={hasActiveTradeIn ? "Para aplicar el beneficio Estreno y Entrego solo puedes recoger en tienda" : undefined}
               />
 
-              {deliveryMethod === "domicilio" && (
+              {deliveryMethod === "domicilio" && !hasActiveTradeIn && (
                 <div className="mt-6">
                   <AddressSelector
                     address={address}
@@ -226,7 +270,10 @@ export default function Step3({
                 </div>
               )}
 
-              {!hasProductWithoutPickup && (
+              {/* Mostrar opción de recoger en tienda si:
+                  - NO hay productos sin pickup, O
+                  - Hay trade-in activo (siempre permitir recoger en tienda) */}
+              {(!hasProductWithoutPickup || hasActiveTradeIn) && (
                 <div className="mt-6">
                   <StorePickupSelector
                     deliveryMethod={deliveryMethod}
@@ -251,12 +298,6 @@ export default function Step3({
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Mensaje de error si algún producto no aplica para Trade-In */}
-            {!tradeInValidation.isValid && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {getTradeInValidationMessage(tradeInValidation)}
-              </div>
-            )}
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               buttonText="Continuar"
@@ -270,6 +311,8 @@ export default function Step3({
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
+                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+                showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
               />
             )}
           </div>

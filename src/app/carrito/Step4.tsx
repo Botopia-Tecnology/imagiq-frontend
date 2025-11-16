@@ -83,6 +83,19 @@ export default function Step4({
   React.useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+      
+      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
+      const timeoutId = setTimeout(() => {
+        setTradeInData(null);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
   }, [products]);
 
   const handleContinueToNextStep = async (e: React.FormEvent) => {
@@ -148,12 +161,6 @@ export default function Step4({
 
         {/* Resumen de compra y Trade-In */}
         <div className="space-y-4">
-          {/* Mensaje de error si algún producto no aplica para Trade-In */}
-          {!tradeInValidation.isValid && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {getTradeInValidationMessage(tradeInValidation)}
-            </div>
-          )}
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -173,6 +180,7 @@ export default function Step4({
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
+              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
             />
           )}
         </div>

@@ -278,6 +278,12 @@ export default function Step2({
   React.useEffect(() => {
     const validation = validateTradeInProducts(cartProducts);
     setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+    }
   }, [cartProducts]);
 
   // Wrapper function to handle both form validation and continue action
@@ -422,7 +428,7 @@ export default function Step2({
             <div className="flex gap-4 items-center">
               <button
                 onClick={() => router.push("/login")}
-                className="bg-[#333] text-white font-bold py-3 px-8 rounded-lg text-base hover:bg-[#222] transition"
+                className="bg-[#333] text-white font-bold py-3 px-8 rounded-lg text-base hover:bg-[#222] transition cursor-pointer"
               >
                 Iniciar sesión
               </button>
@@ -996,12 +1002,6 @@ export default function Step2({
         </div>
         {/* Resumen de compra con Step4OrderSummary */}
         <div className="flex flex-col gap-4">
-          {/* Mensaje de error si algún producto no aplica para Trade-In */}
-          {!tradeInValidation.isValid && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {getTradeInValidationMessage(tradeInValidation)}
-            </div>
-          )}
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             onBack={onBack}
@@ -1016,6 +1016,7 @@ export default function Step2({
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
+              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
             />
           )}
 

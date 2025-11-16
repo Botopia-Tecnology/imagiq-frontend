@@ -433,6 +433,19 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   React.useEffect(() => {
     const validation = validateTradeInProducts(cartProducts);
     setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+      
+      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
+      const timeoutId = setTimeout(() => {
+        setTradeInData(null);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
   }, [cartProducts, tradeInData]);
 
   // Función para manejar el click en continuar pago
@@ -557,12 +570,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         </section>
         {/* Resumen de compra y Trade-In - Solo Desktop */}
         <aside className="hidden md:block space-y-4">
-          {/* Mensaje de error si algún producto no aplica para Trade-In */}
-          {!tradeInValidation.isValid && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
-              {getTradeInValidationMessage(tradeInValidation)}
-            </div>
-          )}
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             buttonText="Continuar pago"
@@ -575,6 +582,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
+              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
             />
           )}
         </aside>
@@ -607,18 +615,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               </button>
             </div>
 
-            {/* Mensaje de error si algún producto no aplica para Trade-In */}
-            {!tradeInValidation.isValid && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-3 py-2 rounded-lg text-xs mb-3">
-                {getTradeInValidationMessage(tradeInValidation)}
-              </div>
-            )}
             {/* Botón continuar */}
             <button
-              className={`w-full font-bold py-3 rounded-lg text-base transition text-white cursor-pointer ${
+              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
                 !tradeInValidation.isValid
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-sky-500 hover:bg-sky-600"
+                  : "bg-sky-500 hover:bg-sky-600 cursor-pointer"
               }`}
               onClick={handleContinue}
               disabled={!tradeInValidation.isValid}

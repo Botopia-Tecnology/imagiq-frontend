@@ -375,7 +375,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       {/* Grid principal: productos y resumen de compra */}
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {/* Productos */}
-        <section id="carrito-productos" className="p-0 md:p-4">
+        <section id="carrito-productos" className="p-0">
           <h2 className="font-bold text-lg mb-3 md:mb-6 px-2 md:px-0">
             Productos
           </h2>
@@ -430,27 +430,25 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                   Tu compra califica para envío gratuito
                 </p>
               </div>
-
-              {/* Banner de Trade-In - Debajo de productos */}
-              {tradeInData?.completed && (
-                <div className="mt-6 px-2 md:px-0">
-                  <TradeInCompletedSummary
-                    deviceName={tradeInData.deviceName}
-                    tradeInValue={tradeInData.value}
-                    onEdit={handleRemoveTradeIn}
-                  />
-                </div>
-              )}
             </>
           )}
         </section>
-        {/* Resumen de compra - Solo Desktop */}
-        <aside className="hidden md:block">
+        {/* Resumen de compra y Trade-In - Solo Desktop */}
+        <aside className="hidden md:block space-y-4">
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             buttonText="Continuar pago"
             disabled={cartProducts.length === 0}
           />
+
+          {/* Banner de Trade-In - Debajo del resumen */}
+          {tradeInData?.completed && (
+            <TradeInCompletedSummary
+              deviceName={tradeInData.deviceName}
+              tradeInValue={tradeInData.value}
+              onEdit={handleRemoveTradeIn}
+            />
+          )}
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}

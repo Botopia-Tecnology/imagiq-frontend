@@ -434,20 +434,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Formulario de facturación */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="text-[22px] font-bold mb-6">
-                Datos de facturación
-              </h2>
+              {/* Header con título y selector de tipo de persona */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <h2 className="text-[22px] font-bold">
+                  Datos de facturación
+                </h2>
 
-              {/* Selector de tipo de persona */}
-              <div className="mb-6">
-                <p className="block text-sm font-semibold text-gray-700 mb-3">
-                  Tipo de facturación
-                </p>
-                <div className="flex gap-4">
+                {/* Selector de tipo de persona */}
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => handleTypeChange("natural")}
-                    className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
                       billingType === "natural"
                         ? "border-black bg-gray-50 text-black"
                         : "border-gray-300 text-gray-600 hover:border-gray-400"
@@ -458,7 +456,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   <button
                     type="button"
                     onClick={() => handleTypeChange("juridica")}
-                    className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
                       billingType === "juridica"
                         ? "border-black bg-gray-50 text-black"
                         : "border-gray-300 text-gray-600 hover:border-gray-400"

@@ -59,18 +59,18 @@ export default function Step4OrderSummary({
     <aside className="bg-white rounded-2xl p-8 shadow flex flex-col gap-6 h-fit justify-between min-h-[480px] border border-[#E5E5E5] sticky top-8">
       <h2 className="font-bold text-xl mb-4">Resumen de compra</h2>
       <div className="flex flex-col gap-2">
-        {/* Productos: siempre string */}
+        {/* Productos: mostrar precio ANTES del descuento para que el usuario vea el impacto */}
         <div className="flex justify-between text-base">
           <span>Productos ({calculations.productCount})</span>
           <span className="font-bold">
-            {cartFormatPrice(calculations.subtotal)}
+            {cartFormatPrice(calculations.subtotal + productSavings)}
           </span>
         </div>
 
         {/* Descuento por productos */}
         {productSavings > 0 && (
           <div className="flex justify-between text-base">
-            <span className="text-green-600 font-medium">Descuento</span>
+            <span className="text-green-600 font-medium">Descuento productos</span>
             <span className="text-green-600 font-bold">
               -{cartFormatPrice(productSavings)}
             </span>
@@ -158,16 +158,6 @@ export default function Step4OrderSummary({
           Volver
         </button>
       )}
-
-      {/* Botón secundario: Regresar al comercio */}
-      <button
-        type="button"
-        className="w-full bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg mt-3 hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition"
-        onClick={() => router.push("/")}
-        data-testid="checkout-back-to-home"
-      >
-        Regresar al comercio
-      </button>
     </aside>
   );
 }

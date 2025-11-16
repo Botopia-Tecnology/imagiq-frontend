@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 import { useCart } from "@/hooks/useCart";
@@ -9,6 +9,8 @@ import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import { tradeInEndpoints } from "@/lib/api";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 /**
  * Paso 1 del carrito de compras
@@ -49,6 +51,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Estado para rastrear qué productos están cargando canPickUp
   const [loadingCanPickUp, setLoadingCanPickUp] = useState<Set<string>>(
+    new Set()
+  );
+  // Estado para rastrear qué productos están cargando indRetoma
+  const [loadingIndRetoma, setLoadingIndRetoma] = useState<Set<string>>(
     new Set()
   );
 
@@ -286,6 +292,98 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     };
   }, [cartProducts]);
 
+  // Verificar indRetoma para cada producto único en el carrito
+  useEffect(() => {
+    if (cartProducts.length === 0) return;
+
+    const verifyTradeIn = async () => {
+      // Obtener SKUs únicos (sin duplicados)
+      const uniqueSkus = Array.from(
+        new Set(cartProducts.map((p) => p.sku))
+      );
+
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      const productsToVerify = uniqueSkus.filter((sku) => {
+        const product = cartProducts.find((p) => p.sku === sku);
+        return product && product.indRetoma === undefined;
+      });
+
+      if (productsToVerify.length === 0) return;
+
+      // Marcar productos como cargando
+      setLoadingIndRetoma(new Set(productsToVerify));
+
+      // Verificar cada SKU único
+      const results: Array<{
+        sku: string;
+        indRetoma: number;
+      } | null> = [];
+
+      for (let i = 0; i < productsToVerify.length; i++) {
+        const sku = productsToVerify[i];
+
+        // Agregar delay entre peticiones (excepto la primera)
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+
+        try {
+          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
+          if (response.success && response.data) {
+            const result = response.data;
+            results.push({
+              sku,
+              indRetoma: result.indRetoma ?? (result.aplica ? 1 : 0),
+            });
+          } else {
+            results.push(null);
+          }
+        } catch (error) {
+          console.error(
+            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            error
+          );
+          results.push(null);
+        } finally {
+          // Remover de loading cuando termine
+          setLoadingIndRetoma((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(sku);
+            return newSet;
+          });
+        }
+      }
+
+      // Actualizar localStorage con los resultados
+      const storedProducts = JSON.parse(
+        localStorage.getItem("cart-items") || "[]"
+      ) as Array<Record<string, unknown>>;
+      const updatedProducts = storedProducts.map((p) => {
+        const result = results.find((r) => r && r.sku === p.sku);
+        if (result) {
+          return {
+            ...p,
+            indRetoma: result.indRetoma,
+          };
+        }
+        return p;
+      });
+      localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+
+      // Disparar evento storage para sincronizar
+      const customEvent = new CustomEvent("localStorageChange", {
+        detail: { key: "cart-items" },
+      });
+      window.dispatchEvent(customEvent);
+      window.dispatchEvent(new Event("storage"));
+
+      // Limpiar todos los loading después de actualizar
+      setLoadingIndRetoma(new Set());
+    };
+
+    verifyTradeIn();
+  }, [cartProducts]);
+
   // Usar cálculos del hook centralizado
   const total = calculations.total;
 
@@ -323,9 +421,44 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // ...existing code...
 
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = React.useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof cartProducts;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos o el trade-in
+  React.useEffect(() => {
+    const validation = validateTradeInProducts(cartProducts);
+    setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+      
+      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
+      const timeoutId = setTimeout(() => {
+        setTradeInData(null);
+      }, 5000);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cartProducts, tradeInData]);
+
   // Función para manejar el click en continuar pago
   const handleContinue = () => {
     if (cartProducts.length === 0) {
+      return;
+    }
+
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(cartProducts);
+    if (!validation.isValid) {
+      const message = getTradeInValidationMessage(validation);
+      alert(message);
       return;
     }
 
@@ -410,6 +543,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     isLoadingCanPickUp={loadingCanPickUp.has(
                       `${product.sku}-${product.quantity}`
                     )}
+                    isLoadingIndRetoma={loadingIndRetoma.has(product.sku)}
+                    indRetoma={product.indRetoma}
                     onQuantityChange={(cantidad) =>
                       handleQuantityChange(idx, cantidad)
                     }
@@ -438,7 +573,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             buttonText="Continuar pago"
-            disabled={cartProducts.length === 0}
+            disabled={cartProducts.length === 0 || !tradeInValidation.isValid}
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}
@@ -447,6 +582,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
+              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
             />
           )}
         </aside>
@@ -481,8 +617,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
             {/* Botón continuar */}
             <button
-              className="w-full font-bold py-3 rounded-lg text-base transition bg-sky-500 hover:bg-sky-600 text-white cursor-pointer"
+              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
+                !tradeInValidation.isValid
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-sky-500 hover:bg-sky-600 cursor-pointer"
+              }`}
               onClick={handleContinue}
+              disabled={!tradeInValidation.isValid}
             >
               Continuar pago
             </button>

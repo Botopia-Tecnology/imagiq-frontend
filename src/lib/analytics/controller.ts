@@ -10,17 +10,13 @@
  */
 
 import type { DlAny } from './types';
-import { generateEventId } from './utils';
 import { toGa4Event, toMetaEvent, toTiktokEvent } from './mappers';
-import { sendGa4, sendMeta, sendTiktok } from './emitters';
+import type { MetaEvent, TikTokEvent } from './mappers';
+import { sendGa4, sendMeta, sendTiktok, sendMetaCapi, sendTikTokCapi } from './emitters';
 import type { GA4UserData } from './emitters/emit.ga4';
-import {
-  markCartIntent,
-  markCheckoutIntent,
-  clearAbandonIntents,
-  resolveCartAbandon,
-  resolveCheckoutAbandon,
-} from './abandon';
+import type { MetaCapiCustomData, TikTokEventsProperties } from './types/capi';
+import { resolveCartAbandon, resolveCheckoutAbandon } from './abandon';
+import { generateEventIdForEvent, handleAbandonTracking } from './helpers/event-processing';
 
 /**
  * Interfaz unificada para datos de usuario en analytics
@@ -40,6 +36,10 @@ export interface AnalyticsUserData {
 
 /**
  * Procesa un evento del dataLayer y lo envía a todas las plataformas
+ *
+ * DUAL TRACKING STRATEGY:
+ * - CLIENT-SIDE: Pixels (fbq, ttq) solo si hay consentimiento
+ * - SERVER-SIDE: CAPI siempre (FULL si hay consentimiento, ANONYMOUS si no)
  *
  * @param event - Evento del dataLayer
  * @param user - Datos de usuario para Advanced Matching (opcional)
@@ -93,12 +93,15 @@ export async function processAnalyticsEvent(
       address: user.address,
     } : undefined;
 
-    // 4. Enviar a cada plataforma (con verificación de consentimiento interna)
+    // 4. CLIENT-SIDE: Enviar a pixels (solo si hay consentimiento)
     await sendGa4(ga4Event, ga4UserData);
     sendMeta(metaEvent, eventId);
     sendTiktok(tiktokEvent, eventId);
 
-    // 5. Registrar intenciones de abandono
+    // 5. SERVER-SIDE: Enviar a CAPI SIEMPRE (modo condicional)
+    await sendServerSideEvents(metaEvent, tiktokEvent, eventId, user);
+
+    // 6. Registrar intenciones de abandono
     handleAbandonTracking(event);
 
     console.debug('[Analytics] Event processed successfully:', event.event);
@@ -108,62 +111,46 @@ export async function processAnalyticsEvent(
 }
 
 /**
- * Genera event_id para un evento del dataLayer
+ * Envía eventos a las APIs server-side (CAPI)
+ *
+ * Esta función SIEMPRE se ejecuta, sin importar el consentimiento.
+ * Modo FULL o ANONYMOUS se decide dentro de cada emisor.
  */
-async function generateEventIdForEvent(event: DlAny): Promise<string> {
-  const { event: eventName, ts } = event;
+async function sendServerSideEvents(
+  metaEvent: MetaEvent,
+  tiktokEvent: TikTokEvent,
+  eventId: string,
+  user?: AnalyticsUserData
+): Promise<void> {
+  try {
+    // Construir custom_data para Meta CAPI (type-safe extraction)
+    const metaCustomData: MetaCapiCustomData = {
+      value: typeof metaEvent.data.value === 'number' ? metaEvent.data.value : undefined,
+      currency: typeof metaEvent.data.currency === 'string' ? metaEvent.data.currency : undefined,
+      content_type: typeof metaEvent.data.content_type === 'string' ? metaEvent.data.content_type : undefined,
+      content_ids: Array.isArray(metaEvent.data.content_ids) ? metaEvent.data.content_ids : undefined,
+      content_name: typeof metaEvent.data.content_name === 'string' ? metaEvent.data.content_name : undefined,
+      num_items: typeof metaEvent.data.num_items === 'number' ? metaEvent.data.num_items : undefined,
+      search_string: typeof metaEvent.data.search_string === 'string' ? metaEvent.data.search_string : undefined,
+    };
 
-  // Extraer items/SKUs según el tipo de evento
-  let items: string[] = [];
-  let transactionId: string | undefined;
-  let value: number | undefined;
+    // Construir properties para TikTok Events API (type-safe extraction)
+    const tiktokProperties: TikTokEventsProperties = {
+      value: typeof tiktokEvent.data.value === 'number' ? tiktokEvent.data.value : undefined,
+      currency: typeof tiktokEvent.data.currency === 'string' ? tiktokEvent.data.currency : undefined,
+      content_ids: Array.isArray(tiktokEvent.data.content_ids) ? tiktokEvent.data.content_ids : undefined,
+      content_type: typeof tiktokEvent.data.content_type === 'string' ? tiktokEvent.data.content_type : undefined,
+      num_items: typeof tiktokEvent.data.num_items === 'number' ? tiktokEvent.data.num_items : undefined,
+      search_string: typeof tiktokEvent.data.search_string === 'string' ? tiktokEvent.data.search_string : undefined,
+    };
 
-  if ('ecommerce' in event) {
-    if ('items' in event.ecommerce) {
-      items = event.ecommerce.items.map((i) => i.item_id);
-    }
-
-    if ('transaction_id' in event.ecommerce) {
-      transactionId = event.ecommerce.transaction_id;
-    }
-
-    if ('value' in event.ecommerce) {
-      value = event.ecommerce.value;
-    }
-  }
-
-  return generateEventId(eventName, ts, items, transactionId, value);
-}
-
-/**
- * Maneja el tracking de abandono según el tipo de evento
- */
-function handleAbandonTracking(event: DlAny): void {
-  switch (event.event) {
-    case 'add_to_cart':
-      // Registrar intención de carrito
-      markCartIntent(
-        event.ecommerce.items.map((i) => ({ item_id: i.item_id, quantity: i.quantity || 1 })),
-        event.ecommerce.value,
-        event.ecommerce.currency
-      );
-      break;
-
-    case 'begin_checkout':
-    case 'add_payment_info':
-      // Registrar intención de checkout
-      markCheckoutIntent(
-        event.event,
-        event.ecommerce.items.map((i) => ({ item_id: i.item_id, quantity: i.quantity || 1 })),
-        event.ecommerce.value,
-        event.ecommerce.currency
-      );
-      break;
-
-    case 'purchase':
-      // Limpiar intenciones al completar compra
-      clearAbandonIntents();
-      break;
+    // Enviar a ambas APIs en paralelo
+    await Promise.all([
+      sendMetaCapi(metaEvent.name, eventId, metaCustomData, user),
+      sendTikTokCapi(tiktokEvent.name, eventId, tiktokProperties, user),
+    ]);
+  } catch (error) {
+    console.error('[Analytics] Failed to send server-side events:', error);
   }
 }
 

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface Step5Props {
   onBack?: () => void;
@@ -18,7 +19,7 @@ interface InstallmentOption {
 }
 
 export default function Step5({ onBack, onContinue }: Step5Props) {
-  const { calculations } = useCart();
+  const { calculations, products } = useCart();
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
 
   // Trade-In state management
@@ -54,6 +55,26 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
   };
+
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+    
+    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+      // Limpiar localStorage inmediatamente
+      localStorage.removeItem("imagiq_trade_in");
+    }
+  }, [products]);
 
   // Calcular opciones de cuotas basadas en el total del carrito
   const calculateInstallments = (): InstallmentOption[] => {
@@ -126,6 +147,13 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   };
 
   const handleContinue = () => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     if (selectedInstallments === null) {
       return;
     }
@@ -229,7 +257,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={selectedInstallments === null}
+              disabled={selectedInstallments === null || !tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}
@@ -238,6 +266,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
+                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
           </div>

@@ -4,6 +4,8 @@
  * Evita duplicados y gestiona la carga de forma centralizada
  */
 
+import { apiGet } from '@/lib/api-client';
+
 // Declaraciones de tipos para Google Maps
 type GoogleMapsNamespace = {
   maps?: Record<string, unknown>;
@@ -43,13 +45,8 @@ class GoogleMapsLoaderService {
   private async getApiKey(): Promise<string> {
     try {
       // Intentar obtener desde el backend
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/places/maps-config`, {
-        signal: AbortSignal.timeout(3000) // Timeout de 3 segundos
-      });
-      if (response.ok) {
-        const data = await response.json();
-        return data.apiKey;
-      }
+      const data = await apiGet<{ apiKey: string }>('/api/places/maps-config');
+      return data.apiKey;
     } catch (error) {
       console.warn('Backend no disponible, usando API key del .env:', error);
     }

@@ -92,10 +92,6 @@ export default function Step4OrderSummary({
           <span>Total</span>
           <span>{cartFormatPrice(calculations.total)}</span>
         </div>
-        {/* Impuestos: siempre string */}
-        <div className="text-xs text-gray-500 mt-1">
-          Incluye {cartFormatPrice(calculations.taxes)} de impuestos
-        </div>
       </div>
 
       {/* Mensaje de T&C */}

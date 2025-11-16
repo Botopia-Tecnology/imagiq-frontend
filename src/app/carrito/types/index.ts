@@ -5,6 +5,19 @@ export interface BasicPaymentData {
   items: Item[];
   userInfo: UserInfo;
   metodo_envio: number;
+  informacion_facturacion: InformacionFacturacion;
+}
+export interface InformacionFacturacion {
+  type: string;
+  nombre_completo: string;
+  tipo_documento: string;
+  numero_documento: string;
+  email: string;
+  telefono: string;
+  razon_social?: string;
+  nit?: string;
+  representante_legal?: string;
+  direccion_id: string | null; // nullable por si no siempre se envía
 }
 
 export type AddiPaymentData = BasicPaymentData;

@@ -11,7 +11,7 @@ interface AlternativePaymentMethodsProps {
   readonly selectedMethod: string;
   readonly onMethodChange: (method: PaymentMethod) => void;
   readonly selectedBank?: string;
-  readonly onBankChange?: (bank: string) => void;
+  readonly onBankChange?: (bankCode: string, bankName?: string) => void;
 }
 
 export default function AlternativePaymentMethods({
@@ -25,9 +25,9 @@ export default function AlternativePaymentMethods({
   );
   useEffect(() => {
     fetchBanks().then((res) => {
-      setBanks(res)
-    })
-  }, [])
+      setBanks(res);
+    });
+  }, []);
   return (
     <div
       className="px-6 pb-2 flex flex-col gap-2"
@@ -59,13 +59,20 @@ export default function AlternativePaymentMethods({
       {/* Bank selector for PSE */}
       {selectedMethod === "pse" && (
         <div className="ml-7 mt-2 mb-4">
-          <label htmlFor="bank-select" className="block text-sm font-medium text-gray-700 mb-2">
+          <label
+            htmlFor="bank-select"
+            className="block text-sm font-medium text-gray-700 mb-2"
+          >
             Selecciona tu banco
           </label>
           <select
             id="bank-select"
             value={selectedBank || ""}
-            onChange={(e) => onBankChange?.(e.target.value)}
+            onChange={(e) => {
+              const code = e.target.value;
+              const bank = banks.find((b) => b.bankCode === code);
+              onBankChange?.(code, bank?.bankName);
+            }}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
             required={selectedMethod === "pse"}
           >

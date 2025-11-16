@@ -10,8 +10,23 @@ import AddressAutocomplete from "@/components/forms/AddressAutocomplete";
 import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import { apiPost } from "@/lib/api-client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+interface GuestUserResponse {
+  address: {
+    id?: string;
+    linea_uno: string;
+    ciudad: string;
+  };
+  user: {
+    id: string;
+    nombre: string;
+    apellido: string;
+    email: string;
+    numero_documento: string;
+    telefono: string;
+  };
+}
 
 /**
  * Paso 2 del carrito: recibe onBack para volver al paso anterior
@@ -214,24 +229,19 @@ export default function Step2({
 
     // Guardar en localStorage bajo la clave 'guest-payment-info'
     try {
-      const res = await fetch(`${API_BASE_URL}/api/users/guest/new`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          guestInfo: {
-            nombre: guestForm.nombre,
-            apellido: guestForm.apellido,
-            email: guestForm.email,
-            numero_documento: guestForm.cedula,
-            telefono: guestForm.celular,
-          },
-          addressInfo: {
-            linea_uno: guestForm.direccion_linea_uno,
-            ciudad: guestForm.direccion_ciudad,
-          },
-        }),
+      const data = await apiPost<GuestUserResponse>("/api/users/guest/new", {
+        guestInfo: {
+          nombre: guestForm.nombre,
+          apellido: guestForm.apellido,
+          email: guestForm.email,
+          numero_documento: guestForm.cedula,
+          telefono: guestForm.celular,
+        },
+        addressInfo: {
+          linea_uno: guestForm.direccion_linea_uno,
+          ciudad: guestForm.direccion_ciudad,
+        },
       });
-      const data = await res.json();
       localStorage.setItem("checkout-address", JSON.stringify(data.address));
       localStorage.setItem("imagiq_user", JSON.stringify(data.user));
     } catch {

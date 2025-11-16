@@ -297,7 +297,7 @@ export default function Step2({
     }
 
     // Load Trade-In data from localStorage
-    const storedTradeIn = localStorage.getItem("tradeInData");
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const parsed = JSON.parse(storedTradeIn);
@@ -312,7 +312,7 @@ export default function Step2({
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
-    localStorage.removeItem("tradeInData");
+    localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
   };
 

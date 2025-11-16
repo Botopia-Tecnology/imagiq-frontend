@@ -174,7 +174,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
   // Load Trade-In data from localStorage
   useEffect(() => {
-    const storedTradeIn = localStorage.getItem("tradeInData");
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const parsed = JSON.parse(storedTradeIn);
@@ -189,7 +189,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
-    localStorage.removeItem("tradeInData");
+    localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
   };
 

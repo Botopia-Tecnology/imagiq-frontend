@@ -2,6 +2,7 @@
 import React from "react";
 import PaymentForm from "./components/PaymentForm";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import Modal from "@/components/ui/Modal";
 import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
@@ -38,6 +39,34 @@ export default function Step4({
     handleUseNewCardChange,
     setSaveInfo,
   } = useCheckoutLogic();
+
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = React.useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
+
+  // Load Trade-In data from localStorage
+  React.useEffect(() => {
+    const storedTradeIn = localStorage.getItem("tradeInData");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
+  }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("tradeInData");
+    setTradeInData(null);
+  };
 
   const handleContinueToNextStep = async (e: React.FormEvent) => {
     const isValid = await handleSavePaymentData(e);
@@ -92,16 +121,27 @@ export default function Step4({
           />
         </form>
 
-        {/* Resumen de compra */}
-        <Step4OrderSummary
-          isProcessing={isProcessing}
-          onFinishPayment={() => {
-            const form = document.getElementById(
-              "checkout-form"
-            ) as HTMLFormElement;
-            if (form) form.requestSubmit();
-          }}
-        />
+        {/* Resumen de compra y Trade-In */}
+        <div className="space-y-4">
+          <Step4OrderSummary
+            isProcessing={isProcessing}
+            onFinishPayment={() => {
+              const form = document.getElementById(
+                "checkout-form"
+              ) as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }}
+          />
+
+          {/* Banner de Trade-In - Debajo del resumen */}
+          {tradeInData?.completed && (
+            <TradeInCompletedSummary
+              deviceName={tradeInData.deviceName}
+              tradeInValue={tradeInData.value}
+              onEdit={handleRemoveTradeIn}
+            />
+          )}
+        </div>
       </div>
     </div>
   );

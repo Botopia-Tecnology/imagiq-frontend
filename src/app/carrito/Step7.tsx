@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import {
   CreditCard,
   MapPin,
@@ -79,6 +80,13 @@ export default function Step7({ onBack }: Step7Props) {
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
   const { products, calculations } = useCart();
+
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
 
   // Cargar datos de localStorage
   useEffect(() => {
@@ -196,7 +204,26 @@ export default function Step7({ onBack }: Step7Props) {
         console.error("Error parsing billing data:", error);
       }
     }
+
+    // Load Trade-In data
+    const storedTradeIn = localStorage.getItem("tradeInData");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
   }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("tradeInData");
+    setTradeInData(null);
+  };
 
   const handleConfirmOrder = async () => {
     if (!billingData) {
@@ -653,14 +680,23 @@ export default function Step7({ onBack }: Step7Props) {
             )}
           </div>
 
-          {/* Resumen de compra */}
-          <div className="lg:col-span-1">
+          {/* Resumen de compra y Trade-In */}
+          <div className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               isProcessing={isProcessing}
               onFinishPayment={handleConfirmOrder}
               onBack={onBack}
               buttonText="Confirmar y pagar"
             />
+
+            {/* Banner de Trade-In - Debajo del resumen */}
+            {tradeInData?.completed && (
+              <TradeInCompletedSummary
+                deviceName={tradeInData.deviceName}
+                tradeInValue={tradeInData.value}
+                onEdit={handleRemoveTradeIn}
+              />
+            )}
           </div>
         </div>
       </div>

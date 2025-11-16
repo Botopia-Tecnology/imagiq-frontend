@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Direccion } from "@/types/user";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useAuthContext } from "@/features/auth/context";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
@@ -58,6 +59,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     telefono: "",
     direccion: null,
   });
+
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
 
   // Convertir Address a Direccion
   const addressToDireccion = (address: Address): Direccion => {
@@ -163,6 +171,27 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       }
     }
   }, [useShippingData]);
+
+  // Load Trade-In data from localStorage
+  useEffect(() => {
+    const storedTradeIn = localStorage.getItem("tradeInData");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
+  }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("tradeInData");
+    setTradeInData(null);
+  };
 
   const handleTypeChange = (type: BillingType) => {
     setBillingType(type);
@@ -758,14 +787,23 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
             </div>
           </div>
 
-          {/* Resumen de compra */}
-          <div className="lg:col-span-1">
+          {/* Resumen de compra y Trade-In */}
+          <div className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               disabled={false}
             />
+
+            {/* Banner de Trade-In - Debajo del resumen */}
+            {tradeInData?.completed && (
+              <TradeInCompletedSummary
+                deviceName={tradeInData.deviceName}
+                tradeInValue={tradeInData.value}
+                onEdit={handleRemoveTradeIn}
+              />
+            )}
           </div>
         </div>
       </div>

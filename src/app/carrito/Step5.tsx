@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useCart } from "@/hooks/useCart";
 
 interface Step5Props {
@@ -20,13 +21,39 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   const { calculations } = useCart();
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
 
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
+
   // Cargar cuotas guardadas de localStorage
   useEffect(() => {
     const savedInstallments = localStorage.getItem("checkout-installments");
     if (savedInstallments) {
       setSelectedInstallments(parseInt(savedInstallments));
     }
+
+    // Load Trade-In data
+    const storedTradeIn = localStorage.getItem("tradeInData");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
   }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("tradeInData");
+    setTradeInData(null);
+  };
 
   // Calcular opciones de cuotas basadas en el total del carrito
   const calculateInstallments = (): InstallmentOption[] => {
@@ -196,14 +223,23 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
             </div>
           </div>
 
-          {/* Resumen de compra */}
-          <div className="lg:col-span-1">
+          {/* Resumen de compra y Trade-In */}
+          <div className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               disabled={selectedInstallments === null}
             />
+
+            {/* Banner de Trade-In - Debajo del resumen */}
+            {tradeInData?.completed && (
+              <TradeInCompletedSummary
+                deviceName={tradeInData.deviceName}
+                tradeInValue={tradeInData.value}
+                onEdit={handleRemoveTradeIn}
+              />
+            )}
           </div>
         </div>
       </div>

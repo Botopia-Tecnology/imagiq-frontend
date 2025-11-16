@@ -12,6 +12,7 @@ import { PlaceDetails } from "@/types/places.types";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { apiPost } from "@/lib/api-client";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 
 interface GuestUserResponse {
   address: {
@@ -96,6 +97,13 @@ export default function Step2({
     direccion_linea_uno: "",
     direccion_ciudad: "",
   });
+
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
 
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo
@@ -287,7 +295,26 @@ export default function Step2({
     if (haveAccount.email) {
       router.push("/carrito/step3");
     }
+
+    // Load Trade-In data from localStorage
+    const storedTradeIn = localStorage.getItem("tradeInData");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
   }, [router]);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("tradeInData");
+    setTradeInData(null);
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 relative z-10">
@@ -887,6 +914,15 @@ export default function Step2({
             disabled={loading || success || !isGuestFormValid}
             isProcessing={loading}
           />
+
+          {/* Banner de Trade-In - Debajo del resumen */}
+          {tradeInData?.completed && (
+            <TradeInCompletedSummary
+              deviceName={tradeInData.deviceName}
+              tradeInValue={tradeInData.value}
+              onEdit={handleRemoveTradeIn}
+            />
+          )}
 
           {/* Mapa 3D de la dirección seleccionada */}
           {selectedAddress && (

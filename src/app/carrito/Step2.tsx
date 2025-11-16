@@ -11,8 +11,10 @@ import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { apiPost } from "@/lib/api-client";
+import { tradeInEndpoints } from "@/lib/api";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface GuestUserResponse {
   address: {
@@ -264,8 +266,29 @@ export default function Step2({
     }, 1200);
   };
 
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = React.useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof cartProducts;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  React.useEffect(() => {
+    const validation = validateTradeInProducts(cartProducts);
+    setTradeInValidation(validation);
+  }, [cartProducts]);
+
   // Wrapper function to handle both form validation and continue action
   const handleContinue = async () => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(cartProducts);
+    if (!validation.isValid) {
+      setError(getTradeInValidationMessage(validation));
+      return;
+    }
+
     if (!isGuestFormValid) {
       setError("Por favor completa todos los campos obligatorios.");
       const newFieldErrors: typeof fieldErrors = {
@@ -315,6 +338,72 @@ export default function Step2({
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
   };
+
+  // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
+  useEffect(() => {
+    if (cartProducts.length === 0) return;
+
+    const verifyTradeIn = async () => {
+      // Obtener SKUs únicos (sin duplicados)
+      const uniqueSkus = Array.from(
+        new Set(cartProducts.map((p) => p.sku))
+      );
+
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      const productsToVerify = uniqueSkus.filter((sku) => {
+        const product = cartProducts.find((p) => p.sku === sku);
+        return product && product.indRetoma === undefined;
+      });
+
+      if (productsToVerify.length === 0) return;
+
+      // Verificar cada SKU único en segundo plano
+      for (let i = 0; i < productsToVerify.length; i++) {
+        const sku = productsToVerify[i];
+
+        // Agregar delay entre peticiones (excepto la primera)
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+
+        try {
+          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
+          if (!response.success || !response.data) {
+            throw new Error('Error al verificar trade-in');
+          }
+          const result = response.data;
+          const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
+
+          // Actualizar localStorage con el resultado
+          const storedProducts = JSON.parse(
+            localStorage.getItem("cart-items") || "[]"
+          ) as Array<Record<string, unknown>>;
+          const updatedProducts = storedProducts.map((p) => {
+            if (p.sku === sku) {
+              return { ...p, indRetoma };
+            }
+            return p;
+          });
+          localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+
+          // Disparar evento storage para sincronizar
+          const customEvent = new CustomEvent("localStorageChange", {
+            detail: { key: "cart-items" },
+          });
+          window.dispatchEvent(customEvent);
+          window.dispatchEvent(new Event("storage"));
+        } catch (error) {
+          // Silenciar errores, solo log en consola
+          console.error(
+            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            error
+          );
+        }
+      }
+    };
+
+    verifyTradeIn();
+  }, [cartProducts]);
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 relative z-10">
@@ -907,11 +996,17 @@ export default function Step2({
         </div>
         {/* Resumen de compra con Step4OrderSummary */}
         <div className="flex flex-col gap-4">
+          {/* Mensaje de error si algún producto no aplica para Trade-In */}
+          {!tradeInValidation.isValid && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {getTradeInValidationMessage(tradeInValidation)}
+            </div>
+          )}
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             onBack={onBack}
             buttonText={loading ? "Procesando..." : "Continuar pago"}
-            disabled={loading || success || !isGuestFormValid}
+            disabled={loading || success || !isGuestFormValid || !tradeInValidation.isValid}
             isProcessing={loading}
           />
 

@@ -422,7 +422,9 @@ export const menusEndpoints = {
 export const tradeInEndpoints = {
   getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/trade-in/hierarchy'),
   calculateValue: (data: TradeInValueRequest) =>
-    apiClient.post<TradeInValueResponse>('/api/trade-in/value', data)
+    apiClient.post<TradeInValueResponse>('/api/trade-in/value', data),
+  checkSkuForTradeIn: (data: { sku: string }) =>
+    apiClient.post<TradeInCheckResult>('/api/trade-in/check-sku', data)
 };
 
 // Stores API endpoints
@@ -632,6 +634,13 @@ export interface TradeInValueResponse {
   categoria: string;
   grado: 'A' | 'B' | 'C';
   valorRetoma: number;
+}
+
+export interface TradeInCheckResult {
+  aplica: boolean;
+  sku: string;
+  indRetoma?: number;
+  mensaje?: string;
 }
 
 // Candidate stores types

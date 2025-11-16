@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface Step5Props {
   onBack?: () => void;
@@ -18,7 +19,7 @@ interface InstallmentOption {
 }
 
 export default function Step5({ onBack, onContinue }: Step5Props) {
-  const { calculations } = useCart();
+  const { calculations, products } = useCart();
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
 
   // Trade-In state management
@@ -54,6 +55,20 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
   };
+
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+  }, [products]);
 
   // Calcular opciones de cuotas basadas en el total del carrito
   const calculateInstallments = (): InstallmentOption[] => {
@@ -126,6 +141,13 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   };
 
   const handleContinue = () => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     if (selectedInstallments === null) {
       return;
     }
@@ -225,11 +247,17 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Mensaje de error si algún producto no aplica para Trade-In */}
+            {!tradeInValidation.isValid && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+                {getTradeInValidationMessage(tradeInValidation)}
+              </div>
+            )}
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={selectedInstallments === null}
+              disabled={selectedInstallments === null || !tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

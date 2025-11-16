@@ -28,6 +28,10 @@ export interface ProductCardProps {
   canPickUp?: boolean;
   /** Indica si se está cargando el canPickUp */
   isLoadingCanPickUp?: boolean;
+  /** Indica si se está cargando el indRetoma */
+  isLoadingIndRetoma?: boolean;
+  /** Indica si el producto aplica para retoma (1 = aplica, 0 = no aplica) */
+  indRetoma?: number;
 }
 
 // Funciones puras para cálculos (SRP)
@@ -73,6 +77,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   isLoadingShippingInfo,
   canPickUp,
   isLoadingCanPickUp = false,
+  isLoadingIndRetoma = false,
+  indRetoma,
   onQuantityChange,
   onRemove,
 }) => {
@@ -183,6 +189,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
               {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
                 <span className="text-xs text-gray-400">
                   canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
+              {isLoadingIndRetoma && (
+                <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mt-1" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
+                <span className="text-xs text-gray-400">
+                  retoma: {indRetoma}
                 </span>
               )}
             </div>
@@ -310,6 +324,14 @@ const ProductCard: React.FC<ProductCardProps> = ({
               {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
                 <span className="text-xs text-gray-400 text-center">
                   canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
+              {isLoadingIndRetoma && (
+                <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mt-1 mx-auto" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
+                <span className="text-xs text-gray-400 text-center">
+                  retoma: {indRetoma}
                 </span>
               )}
             </div>

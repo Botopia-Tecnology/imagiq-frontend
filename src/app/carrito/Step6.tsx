@@ -10,6 +10,8 @@ import Modal from "@/components/ui/Modal";
 import AddNewAddressForm from "./components/AddNewAddressForm";
 import { MapPin, Plus, Check } from "lucide-react";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface Step6Props {
   readonly onBack?: () => void;
@@ -35,8 +37,8 @@ interface BillingData {
 }
 
 export default function Step6({ onBack, onContinue }: Step6Props) {
-  // useCart no es necesario aquí, lo usa Step4OrderSummary internamente
   const { user } = useAuthContext();
+  const { products } = useCart();
 
   const [billingType, setBillingType] = useState<BillingType>("natural");
   const [useShippingData, setUseShippingData] = useState(false);
@@ -66,6 +68,20 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     deviceName: string;
     value: number;
   } | null>(null);
+
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+  }, [products]);
 
   // Convertir Address a Direccion
   const addressToDireccion = (address: Address): Direccion => {
@@ -286,6 +302,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   };
 
   const handleContinue = () => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     // Siempre validar el formulario para mostrar errores
     if (!validateForm()) {
       // Hacer scroll al primer error
@@ -789,11 +812,17 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Mensaje de error si algún producto no aplica para Trade-In */}
+            {!tradeInValidation.isValid && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+                {getTradeInValidationMessage(tradeInValidation)}
+              </div>
+            )}
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={false}
+              disabled={!tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

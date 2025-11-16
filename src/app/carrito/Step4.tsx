@@ -7,6 +7,8 @@ import Modal from "@/components/ui/Modal";
 import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
+import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 export default function Step4({
   onBack,
@@ -16,6 +18,7 @@ export default function Step4({
   onContinue?: () => void;
 }) {
   const authContext = useAuthContext();
+  const { products } = useCart();
   const {
     isProcessing,
     paymentMethod,
@@ -68,7 +71,29 @@ export default function Step4({
     setTradeInData(null);
   };
 
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = React.useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  React.useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+  }, [products]);
+
   const handleContinueToNextStep = async (e: React.FormEvent) => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      e.preventDefault();
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     const isValid = await handleSavePaymentData(e);
     if (isValid && onContinue) {
       onContinue();
@@ -123,6 +148,12 @@ export default function Step4({
 
         {/* Resumen de compra y Trade-In */}
         <div className="space-y-4">
+          {/* Mensaje de error si algún producto no aplica para Trade-In */}
+          {!tradeInValidation.isValid && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {getTradeInValidationMessage(tradeInValidation)}
+            </div>
+          )}
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -133,6 +164,7 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
+            disabled={isProcessing || !tradeInValidation.isValid}
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}

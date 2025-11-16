@@ -12,6 +12,8 @@ import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { Direccion } from "@/types/user";
 import { useAnalyticsWithUser } from "@/lib/analytics";
+import { tradeInEndpoints } from "@/lib/api";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 export default function Step3({
   onBack,
@@ -80,8 +82,95 @@ export default function Step3({
     }
   }, [hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
 
+  // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
+  React.useEffect(() => {
+    if (products.length === 0) return;
+
+    const verifyTradeIn = async () => {
+      // Obtener SKUs únicos (sin duplicados)
+      const uniqueSkus = Array.from(
+        new Set(products.map((p) => p.sku))
+      );
+
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      const productsToVerify = uniqueSkus.filter((sku) => {
+        const product = products.find((p) => p.sku === sku);
+        return product && product.indRetoma === undefined;
+      });
+
+      if (productsToVerify.length === 0) return;
+
+      // Verificar cada SKU único en segundo plano
+      for (let i = 0; i < productsToVerify.length; i++) {
+        const sku = productsToVerify[i];
+
+        // Agregar delay entre peticiones (excepto la primera)
+        if (i > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+
+        try {
+          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
+          if (!response.success || !response.data) {
+            throw new Error('Error al verificar trade-in');
+          }
+          const result = response.data;
+          const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
+
+          // Actualizar localStorage con el resultado
+          const storedProducts = JSON.parse(
+            localStorage.getItem("cart-items") || "[]"
+          ) as Array<Record<string, unknown>>;
+          const updatedProducts = storedProducts.map((p) => {
+            if (p.sku === sku) {
+              return { ...p, indRetoma };
+            }
+            return p;
+          });
+          localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+
+          // Disparar evento storage para sincronizar
+          const customEvent = new CustomEvent("localStorageChange", {
+            detail: { key: "cart-items" },
+          });
+          window.dispatchEvent(customEvent);
+          window.dispatchEvent(new Event("storage"));
+        } catch (error) {
+          // Silenciar errores, solo log en consola
+          console.error(
+            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            error
+          );
+        }
+      }
+    };
+
+    verifyTradeIn();
+  }, [products]);
+
   // UX: Navegación al siguiente paso
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = React.useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  React.useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+  }, [products]);
+
   const handleContinue = () => {
+    // Validar Trade-In antes de continuar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     // Track del evento add_payment_info para analytics
     trackAddPaymentInfo(
       products.map((p) => ({
@@ -162,11 +251,17 @@ export default function Step3({
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Mensaje de error si algún producto no aplica para Trade-In */}
+            {!tradeInValidation.isValid && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                {getTradeInValidationMessage(tradeInValidation)}
+              </div>
+            )}
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               buttonText="Continuar"
               onBack={onBack}
-              disabled={!canContinue}
+              disabled={!canContinue || !tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

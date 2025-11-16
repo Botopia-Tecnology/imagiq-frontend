@@ -18,6 +18,7 @@ import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
 import { payWithAddi, payWithCard, payWithPse } from "./utils";
 import { useCart } from "@/hooks/useCart";
+import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 
 interface Step7Props {
   onBack?: () => void;
@@ -225,7 +226,28 @@ export default function Step7({ onBack }: Step7Props) {
     setTradeInData(null);
   };
 
+  // Estado para validación de Trade-In
+  const [tradeInValidation, setTradeInValidation] = useState<{
+    isValid: boolean;
+    productsWithoutRetoma: typeof products;
+    hasMultipleProducts: boolean;
+    errorMessage?: string;
+  }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+
+  // Validar Trade-In cuando cambian los productos
+  useEffect(() => {
+    const validation = validateTradeInProducts(products);
+    setTradeInValidation(validation);
+  }, [products]);
+
   const handleConfirmOrder = async () => {
+    // Validar Trade-In antes de confirmar
+    const validation = validateTradeInProducts(products);
+    if (!validation.isValid) {
+      alert(getTradeInValidationMessage(validation));
+      return;
+    }
+
     if (!billingData) {
       console.error("No billing data available");
       return;
@@ -682,11 +704,18 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
+            {/* Mensaje de error si algún producto no aplica para Trade-In */}
+            {!tradeInValidation.isValid && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm mb-4">
+                {getTradeInValidationMessage(tradeInValidation)}
+              </div>
+            )}
             <Step4OrderSummary
               isProcessing={isProcessing}
               onFinishPayment={handleConfirmOrder}
               onBack={onBack}
               buttonText="Confirmar y pagar"
+              disabled={isProcessing || !tradeInValidation.isValid}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

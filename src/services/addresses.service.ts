@@ -6,6 +6,7 @@
 import { PlaceDetails } from "@/types/places.types";
 import type { Address } from "@/types/address";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import { apiGet, apiPost, apiPut, apiDelete } from "@/lib/api-client";
 
 /**
  * Interface para crear una nueva dirección
@@ -29,13 +30,6 @@ export interface CreateAddressRequest {
 export type AddressResponse = Address;
 
 /**
- * Configuración base del servicio
- */
-const BASE_CONFIG = {
-  API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001",
-};
-
-/**
  * Clase de servicio para direcciones
  */
 export class AddressesService {
@@ -54,28 +48,6 @@ export class AddressesService {
       AddressesService.instance = new AddressesService();
     }
     return AddressesService.instance;
-  }
-
-  /**
-   * Obtiene el token de autorización del localStorage o contexto de auth
-   */
-  private getAuthToken(): string {
-    // Usar la clave correcta del token que se guarda en login
-    const token =
-      localStorage.getItem("imagiq_token") ||
-      sessionStorage.getItem("imagiq_token");
-    return token || "";
-  }
-
-  /**
-   * Headers base para las peticiones
-   */
-  private getHeaders(): HeadersInit {
-    const token = this.getAuthToken();
-    return {
-      "Content-Type": "application/json",
-      ...(token && { Authorization: `Bearer ${token}` }),
-    };
   }
 
   /**
@@ -108,28 +80,7 @@ export class AddressesService {
         placeDetails: requestData.placeDetails ? "PlaceDetails object" : "null",
       });
 
-      const response = await fetch(`${BASE_CONFIG.API_URL}/api/addresses`, {
-        method: "POST",
-        headers: this.getHeaders(),
-        body: JSON.stringify(requestData),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Error response from API:", errorText);
-        let errorData;
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = { message: errorText };
-        }
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      const result = await response.json();
+      const result = await apiPost<Address>("/api/addresses", requestData);
       console.log("✅ Dirección creada exitosamente:", result);
       return result;
     } catch (error: unknown) {
@@ -147,41 +98,25 @@ export class AddressesService {
    */
   public async getUserAddresses(): Promise<Address[]> {
     try {
-      let url = `${BASE_CONFIG.API_URL}/api/addresses`;
-
       // El backend requiere usuarioId siempre (con o sin token JWT)
       const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
         "imagiq_user",
         {}
       );
 
+      let endpoint = "/api/addresses";
+
       if (userInfo.id) {
-        url += `?usuarioId=${encodeURIComponent(userInfo.id)}`;
+        endpoint += `?usuarioId=${encodeURIComponent(userInfo.id)}`;
       } else if (userInfo.email) {
-        url += `?usuarioId=${encodeURIComponent(userInfo.email)}`;
+        endpoint += `?usuarioId=${encodeURIComponent(userInfo.email)}`;
       } else {
         // Si no hay userInfo, retornar array vacío
         console.warn("No hay información de usuario para obtener direcciones");
         return [];
       }
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        // Si es 400 o 401, probablemente no hay usuario autenticado, retornar array vacío
-        if (response.status === 400 || response.status === 401) {
-          console.warn(
-            `Usuario no autenticado o sin permisos (${response.status})`
-          );
-          return [];
-        }
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await apiGet<Address[]>(endpoint);
       console.log("Direcciones obtenidas:", data);
       return data;
     } catch (error: unknown) {
@@ -201,19 +136,9 @@ export class AddressesService {
     usuarioId: string
   ): Promise<Address[]> {
     try {
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/addresses/by-type/${tipo}?usuarioId=${usuarioId}`,
-        {
-          method: "GET",
-          headers: this.getHeaders(),
-        }
+      return await apiGet<Address[]>(
+        `/api/addresses/by-type/${tipo}?usuarioId=${usuarioId}`
       );
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -244,26 +169,11 @@ export class AddressesService {
       }
 
       const usuarioId = userInfo.id || userInfo.email || "";
-      const url = `${
-        BASE_CONFIG.API_URL
-      }/api/addresses/default/${tipo}?usuarioId=${encodeURIComponent(
+      const endpoint = `/api/addresses/default/${tipo}?usuarioId=${encodeURIComponent(
         usuarioId
       )}`;
 
-      const response = await fetch(url, {
-        method: "GET",
-        headers: this.getHeaders(),
-      });
-
-      if (response.status === 404) {
-        return null;
-      }
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      return await response.json();
+      return await apiGet<Address>(endpoint);
     } catch {
       return null;
     }
@@ -277,24 +187,7 @@ export class AddressesService {
     updateData: Partial<CreateAddressRequest>
   ): Promise<Address> {
     try {
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/addresses/${addressId}`,
-        {
-          method: "PUT",
-          headers: this.getHeaders(),
-          body: JSON.stringify(updateData),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      return await response.json();
+      return await apiPut<Address>(`/api/addresses/${addressId}`, updateData);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Error actualizando dirección";
@@ -309,23 +202,7 @@ export class AddressesService {
     addressId: string
   ): Promise<{ message: string }> {
     try {
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/addresses/${addressId}`,
-        {
-          method: "DELETE",
-          headers: this.getHeaders(),
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      return await response.json();
+      return await apiDelete<{ message: string }>(`/api/addresses/${addressId}`);
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Error desactivando dirección";
@@ -340,23 +217,10 @@ export class AddressesService {
     addressId: string
   ): Promise<{ message: string }> {
     try {
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/addresses/${addressId}/increment-usage`,
-        {
-          method: "POST",
-          headers: this.getHeaders(),
-        }
+      return await apiPost<{ message: string }>(
+        `/api/addresses/${addressId}/increment-usage`,
+        {}
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      return await response.json();
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error
@@ -388,26 +252,11 @@ export class AddressesService {
       }
 
       const usuarioId = userInfo.id || userInfo.email || "";
-      const url = `${
-        BASE_CONFIG.API_URL
-      }/api/addresses/${addressId}/set-default?usuarioId=${encodeURIComponent(
+      const endpoint = `/api/addresses/${addressId}/set-default?usuarioId=${encodeURIComponent(
         usuarioId
       )}`;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: this.getHeaders(),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.message ||
-            `Error ${response.status}: ${response.statusText}`
-        );
-      }
-
-      return await response.json();
+      return await apiPost<Address>(endpoint, {});
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error

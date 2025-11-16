@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Direccion } from "@/types/user";
 import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useAuthContext } from "@/features/auth/context";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
@@ -53,11 +54,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     type: "natural",
     nombre: "",
     documento: "",
-    tipoDocumento: "",
+    tipoDocumento: "C.C.", // Valor por defecto
     email: "",
     telefono: "",
     direccion: null,
   });
+
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
 
   // Convertir Address a Direccion
   const addressToDireccion = (address: Address): Direccion => {
@@ -164,6 +172,27 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
   }, [useShippingData]);
 
+  // Load Trade-In data from localStorage
+  useEffect(() => {
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
+  }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("imagiq_trade_in");
+    setTradeInData(null);
+  };
+
   const handleTypeChange = (type: BillingType) => {
     setBillingType(type);
     setBillingData((prev) => ({
@@ -257,7 +286,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   };
 
   const handleContinue = () => {
+    // Siempre validar el formulario para mostrar errores
     if (!validateForm()) {
+      // Hacer scroll al primer error
+      const firstErrorElement = document.querySelector('.border-red-500');
+      if (firstErrorElement) {
+        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       return;
     }
 
@@ -296,39 +331,6 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     }
   };
 
-  // Validación para habilitar/deshabilitar el botón de continuar
-  const canContinue = useMemo(() => {
-    const commonFieldsFilled =
-      billingData.nombre.trim() !== "" &&
-      !!billingData.tipoDocumento?.trim() &&
-      billingData.documento.trim() !== "" &&
-      billingData.email.trim() !== "" &&
-      billingData.telefono.trim() !== "" &&
-      billingData.direccion !== null;
-
-    if (billingType === "natural") return commonFieldsFilled;
-
-    // persona jurídica
-    if (billingType === "juridica") {
-      const razonSocialFilled = !!(
-        billingData.razonSocial && billingData.razonSocial.trim() !== ""
-      );
-      const nitFilled = !!(billingData.nit && billingData.nit.trim() !== "");
-      const nombreRepresentanteFilled = !!(
-        billingData.nombreRepresentante &&
-        billingData.nombreRepresentante.trim() !== ""
-      );
-
-      return (
-        commonFieldsFilled &&
-        razonSocialFilled &&
-        nitFilled &&
-        nombreRepresentanteFilled
-      );
-    }
-
-    return false;
-  }, [billingData, billingType]);
 
   // Ordenador para direcciones: predeterminadas primero
   const sortAddressesByDefault = (a: Address, b: Address) => {
@@ -461,20 +463,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Formulario de facturación */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="text-[22px] font-bold mb-6">
-                Datos de facturación
-              </h2>
+              {/* Header con título y selector de tipo de persona */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <h2 className="text-[22px] font-bold">
+                  Datos de facturación
+                </h2>
 
-              {/* Selector de tipo de persona */}
-              <div className="mb-6">
-                <p className="block text-sm font-semibold text-gray-700 mb-3">
-                  Tipo de facturación
-                </p>
-                <div className="flex gap-4">
+                {/* Selector de tipo de persona */}
+                <div className="flex gap-3">
                   <button
                     type="button"
                     onClick={() => handleTypeChange("natural")}
-                    className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
                       billingType === "natural"
                         ? "border-black bg-gray-50 text-black"
                         : "border-gray-300 text-gray-600 hover:border-gray-400"
@@ -485,7 +485,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                   <button
                     type="button"
                     onClick={() => handleTypeChange("juridica")}
-                    className={`flex-1 py-3 px-4 rounded-lg border-2 font-semibold transition-all ${
+                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
                       billingType === "juridica"
                         ? "border-black bg-gray-50 text-black"
                         : "border-gray-300 text-gray-600 hover:border-gray-400"
@@ -787,14 +787,23 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
             </div>
           </div>
 
-          {/* Resumen de compra */}
-          <div className="lg:col-span-1">
+          {/* Resumen de compra y Trade-In */}
+          <div className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={!canContinue}
+              disabled={false}
             />
+
+            {/* Banner de Trade-In - Debajo del resumen */}
+            {tradeInData?.completed && (
+              <TradeInCompletedSummary
+                deviceName={tradeInData.deviceName}
+                tradeInValue={tradeInData.value}
+                onEdit={handleRemoveTradeIn}
+              />
+            )}
           </div>
         </div>
       </div>

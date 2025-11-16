@@ -2,8 +2,7 @@
 import LogoReloadAnimation from "@/app/carrito/LogoReloadAnimation";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { apiGet } from "@/lib/api-client";
 
 export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promise<{ id: string }>>; }>) {
   const { params } = props;
@@ -21,19 +20,9 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
     if (!orderId) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/orders/verify/${orderId}`
+      const data = await apiGet<{ message: string; status: number }>(
+        `/api/orders/verify/${orderId}`
       );
-
-      // Verificar primero el status HTTP de la respuesta
-      if (!response.ok) {
-        console.error("HTTP error:", response.status, response.statusText);
-        // Mantener la animación visible durante la redirección
-        router.push("/error-checkout");
-        return;
-      }
-
-      const data: { message: string; status: number } = await response.json();
 
       // Verificar el status del body de la respuesta
       if (data.status === 200) {

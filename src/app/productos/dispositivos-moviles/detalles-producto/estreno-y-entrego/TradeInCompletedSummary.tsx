@@ -6,6 +6,8 @@ interface TradeInCompletedSummaryProps {
   readonly onEdit: () => void;
   readonly validationError?: string;
   readonly showStorePickupMessage?: boolean;
+  readonly isGuide?: boolean;
+  readonly showErrorSkeleton?: boolean;
 }
 
 export default function TradeInCompletedSummary({
@@ -14,6 +16,8 @@ export default function TradeInCompletedSummary({
   onEdit,
   validationError,
   showStorePickupMessage = false,
+  isGuide = false,
+  showErrorSkeleton = false,
 }: TradeInCompletedSummaryProps) {
   return (
     <section className="mb-8">
@@ -22,17 +26,19 @@ export default function TradeInCompletedSummary({
           ? "bg-red-50 border-red-200" 
           : "bg-gray-50 border-gray-200"
       }`}>
-        {/* Botón X para cerrar/quitar el beneficio */}
-        <button
-          onClick={onEdit}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-          aria-label="Quitar beneficio Estreno y Entrego"
-          type="button"
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Botón X para cerrar/quitar el beneficio - Solo mostrar si NO es guía (está completado) */}
+        {!isGuide && (
+          <button
+            onClick={onEdit}
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+            aria-label="Quitar beneficio Estreno y Entrego"
+            type="button"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
 
         <div className="flex items-start justify-between gap-4 pr-6">
           <div className="flex items-center gap-3 flex-1">
@@ -58,39 +64,74 @@ export default function TradeInCompletedSummary({
                 }`}
                 type="button"
               >
-                Más información
+                {isGuide ? "Solo aplica para recoger en tienda" : "Más información"}
               </button>
             </div>
           </div>
 
           <div className="text-right flex-shrink-0">
-            <p className={`text-xl font-bold ${
-              validationError ? "text-red-600" : "text-[#0099FF]"
-            }`}>
-              - $ {tradeInValue.toLocaleString('es-CO')}
-            </p>
+            {isGuide ? (
+              <button
+                onClick={onEdit}
+                className="bg-[#0099FF] text-white px-4 py-2 rounded-lg text-center min-w-[120px] hover:bg-[#0088E6] transition-colors cursor-pointer"
+                type="button"
+              >
+                <p className="text-sm font-bold mb-0.5">
+                  Bono disponible
+                </p>
+                <p className="text-xs opacity-90">
+                  Aplica aquí
+                </p>
+              </button>
+            ) : (
+              <p className={`text-xl font-bold ${
+                validationError ? "text-red-600" : "text-[#0099FF]"
+              }`}>
+                - $ {tradeInValue.toLocaleString('es-CO')}
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Mensaje de error de validación */}
+        {/* Mensaje de error de validación - Mostrar skeleton inicialmente, luego el mensaje */}
         {validationError && (
-          <div className="mt-3 pt-3 border-t border-red-200">
-            <p className="text-sm text-red-700 font-medium leading-relaxed">
-              {validationError}
-            </p>
+          <div className="mt-3 pt-3 border-t border-gray-200">
+            {showErrorSkeleton ? (
+              <div className="animate-pulse space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ) : (
+              <p className="text-sm text-red-700 font-medium leading-relaxed">
+                {validationError}
+              </p>
+            )}
           </div>
         )}
 
         {/* Mensaje normal si no hay error */}
         {!validationError && (
           <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-            <p className="text-xs text-gray-700 leading-relaxed">
-              Este es un valor aproximado del beneficio Estreno y Entrego al que aplicaste. Aplican TyC*
-            </p>
-            {showStorePickupMessage && (
-              <p className="text-xs text-gray-700 leading-relaxed font-medium">
-                Para el beneficio de entrego y estreno solo aplica recogida en tienda de producto.
-              </p>
+            {isGuide ? (
+              <div>
+                <p className="text-sm text-gray-700 leading-relaxed font-medium mb-2">
+                  Este producto aplica para el beneficio Estreno y Entrego
+                </p>
+                <p className="text-xs text-gray-600 leading-relaxed">
+                  Completa el proceso de Estreno y Entrego para aplicar el descuento. Haz clic en &quot;Más información&quot; para comenzar.
+                </p>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs text-gray-700 leading-relaxed">
+                  Este es un valor aproximado del beneficio Estreno y Entrego al que aplicaste. Aplican TyC*
+                </p>
+                {showStorePickupMessage && (
+                  <p className="text-xs text-gray-700 leading-relaxed font-medium">
+                    Para el beneficio de entrego y estreno solo aplica recogida en tienda de producto.
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}

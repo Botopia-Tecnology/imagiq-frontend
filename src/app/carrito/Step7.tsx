@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
+import { toast } from "sonner";
 import { DBCard, DecryptedCardData } from "@/features/profile/types";
 import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
@@ -239,10 +240,16 @@ export default function Step7({ onBack }: Step7Props) {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
     
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
+      
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
     }
   }, [products]);
 

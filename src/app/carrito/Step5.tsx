@@ -4,6 +4,7 @@ import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import { toast } from "sonner";
 
 interface Step5Props {
   onBack?: () => void;
@@ -69,10 +70,16 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
     
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
+      
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
     }
   }, [products]);
 

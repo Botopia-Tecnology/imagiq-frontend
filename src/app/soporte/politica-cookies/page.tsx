@@ -386,13 +386,68 @@ export default function PoliticaCookiesPage() {
                   <p className="font-semibold text-yellow-900 mb-1">
                     Control de Consentimiento
                   </p>
-                  <p className="text-yellow-800">
-                    Todos estos servicios solo se cargan si el usuario acepta
-                    explícitamente el uso de cookies a través de nuestro banner
+                  <p className="text-yellow-800 mb-3">
+                    Todos estos servicios de cookies solo se cargan si el usuario acepta
+                    explícitamente su uso a través de nuestro banner
                     de consentimiento. El usuario puede rechazar el uso de estas
                     cookies sin afectar las funcionalidades básicas del sitio.
                   </p>
+                  <p className="font-semibold text-yellow-900 mb-1 mt-4">
+                    Tracking Analítico Server-Side (Sin Cookies)
+                  </p>
+                  <p className="text-yellow-800">
+                    Adicionalmente, IMAGIQ S.A.S. utiliza tecnologías de tracking analítico
+                    server-side (CAPI - Conversions API) que funcionan INDEPENDIENTEMENTE
+                    del consentimiento de cookies. Cuando el usuario rechaza cookies, estos
+                    sistemas SOLO envían datos agregados y anonimizados que NO constituyen
+                    datos personales según la Ley 1581 de 2012.
+                  </p>
                 </div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 border-l-4 border-blue-500 p-6 mt-6">
+              <h4 className="font-semibold text-blue-900 mb-4">
+                📊 Tracking Analítico Server-Side (CAPI)
+              </h4>
+              <p className="text-blue-800 mb-4">
+                IMAGIQ S.A.S. utiliza APIs server-side (Meta Conversions API y TikTok Events API)
+                para enviar eventos analíticos a nuestros servidores, que luego son transmitidos
+                a plataformas de publicidad para análisis agregado.
+              </p>
+              <div className="bg-white border-l-4 border-blue-400 p-4 mb-4">
+                <p className="font-semibold text-blue-900 mb-2">
+                  Modo de Operación Según Consentimiento:
+                </p>
+                <div className="space-y-3 text-blue-800 text-sm">
+                  <div>
+                    <p className="font-semibold">✅ Si acepta cookies:</p>
+                    <ul className="ml-4 mt-1 space-y-1">
+                      <li>• Se envían datos completos (email hasheado, teléfono hasheado)</li>
+                      <li>• Se incluyen cookies de Facebook (_fbp, _fbc)</li>
+                      <li>• Atribución precisa de anuncios</li>
+                      <li>• Personalización de ofertas</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="font-semibold">❌ Si rechaza cookies:</p>
+                    <ul className="ml-4 mt-1 space-y-1">
+                      <li>• Solo se envían datos agregados y anonimizados</li>
+                      <li>• NO se incluye email, teléfono, nombre</li>
+                      <li>• NO se incluyen cookies de rastreo</li>
+                      <li>• Solo: tipo de evento, valor de transacción, moneda</li>
+                      <li>• IP anonimizada (último octeto = 0)</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white border-l-4 border-green-400 p-4">
+                <p className="text-green-900 text-sm">
+                  <strong>Base Legal:</strong> Los datos anonimizados NO son considerados
+                  datos personales según la Ley 1581 de 2012, por lo tanto NO requieren
+                  consentimiento. Solo se utilizan para análisis agregado de tendencias
+                  sin identificar individuos.
+                </p>
               </div>
             </div>
 

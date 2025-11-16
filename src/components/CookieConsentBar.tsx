@@ -42,6 +42,26 @@ export interface CookieConsentBarProps {
 
 const defaultMessage = "Recomendaciones y ofertas exclusivas según tu zona.";
 
+/**
+ * NOTA IMPORTANTE SOBRE TRACKING ANALÍTICO:
+ *
+ * Aunque el usuario rechace cookies, continuamos enviando eventos analíticos
+ * ANÓNIMOS a nuestros servidores mediante APIs server-side (CAPI).
+ *
+ * Estos eventos NO contienen datos personales:
+ * - NO incluyen email, teléfono, nombre
+ * - NO incluyen cookies de rastreo (fbp, fbc)
+ * - Solo datos agregados: tipo de evento, valor de transacción, moneda
+ * - IP anonimizada (último octeto = 0)
+ *
+ * Base legal: Ley 1581 de 2012 (Colombia)
+ * Los datos anonimizados NO son considerados datos personales,
+ * por lo tanto NO requieren consentimiento.
+ *
+ * Propósito: Análisis agregado de tendencias y optimización del sitio
+ * sin identificar individuos.
+ */
+
 const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
   message = defaultMessage,
   moreInfoUrl = "/soporte/politica-cookies",

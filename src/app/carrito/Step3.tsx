@@ -7,8 +7,9 @@ import {
   StorePickupSelector,
   AddressSelector,
   StoreSelector,
-  OrderSummary,
 } from "./components";
+import Step4OrderSummary from "./components/Step4OrderSummary";
+import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { Direccion } from "@/types/user";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 
@@ -37,6 +38,34 @@ export default function Step3({
     setDeliveryMethod,
     canContinue,
   } = useDelivery();
+
+  // Trade-In state management
+  const [tradeInData, setTradeInData] = React.useState<{
+    completed: boolean;
+    deviceName: string;
+    value: number;
+  } | null>(null);
+
+  // Load Trade-In data from localStorage
+  React.useEffect(() => {
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
+  }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("imagiq_trade_in");
+    setTradeInData(null);
+  };
 
   // Verificar si algún producto tiene canPickUp: false
   const hasProductWithoutPickup = products.some(
@@ -131,16 +160,23 @@ export default function Step3({
             </div>
           </div>
 
-          {/* Resumen de compra */}
-          <div className="lg:col-span-1">
-            <OrderSummary
-              cartProducts={products}
-              appliedDiscount={appliedDiscount}
-              canContinue={canContinue}
-              onContinue={handleContinue}
+          {/* Resumen de compra y Trade-In */}
+          <div className="lg:col-span-1 space-y-4">
+            <Step4OrderSummary
+              onFinishPayment={handleContinue}
+              buttonText="Continuar"
               onBack={onBack}
-              deliveryMethod={deliveryMethod}
+              disabled={!canContinue}
             />
+
+            {/* Banner de Trade-In - Debajo del resumen */}
+            {tradeInData?.completed && (
+              <TradeInCompletedSummary
+                deviceName={tradeInData.deviceName}
+                tradeInValue={tradeInData.value}
+                onEdit={handleRemoveTradeIn}
+              />
+            )}
           </div>
         </div>
       </div>

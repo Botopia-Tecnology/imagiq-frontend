@@ -12,8 +12,7 @@ import { PersonalInfoStep } from "./components/PersonalInfoStep";
 import { OTPStep } from "./components/OTPStep";
 import { AddressStep } from "./components/AddressStep";
 import { PaymentStep } from "./components/PaymentStep";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { apiPost } from "@/lib/api-client";
 
 const STEPS = [
   { id: 1, name: "Información personal", required: true },
@@ -118,37 +117,17 @@ export default function CreateAccountPage() {
     const methodToUse = method || sendMethod;
 
     try {
-      let response;
-
       if (methodToUse === 'email') {
         // Enviar OTP por email
-        response = await fetch(`${API_BASE_URL}/api/auth/otp/send-email-register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email,
-          }),
+        await apiPost("/api/auth/otp/send-email-register", {
+          email: formData.email,
         });
       } else {
         // Enviar OTP por WhatsApp (método actual)
-        response = await fetch(`${API_BASE_URL}/api/auth/otp/send-register`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            telefono: formData.telefono,
-            metodo: "whatsapp",
-          }),
+        await apiPost("/api/auth/otp/send-register", {
+          telefono: formData.telefono,
+          metodo: "whatsapp",
         });
-      }
-
-      if (!response || typeof response.status !== "number") {
-        throw new Error("No se pudo conectar con el servidor");
-      }
-
-      const result = await response.json() as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(result.message || "Error al enviar código");
       }
 
       setOtpSent(true);
@@ -177,43 +156,22 @@ export default function CreateAccountPage() {
       // Crear usuario sin verificar antes de pasar al step 2
       setIsLoading(true);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/register-unverified`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email,
-            nombre: formData.nombre,
-            apellido: formData.apellido,
-            contrasena: formData.contrasena,
-            fecha_nacimiento: formData.fecha_nacimiento,
-            telefono: formData.telefono,
-            codigo_pais: formData.codigo_pais,
-            tipo_documento: formData.tipo_documento,
-            numero_documento: formData.numero_documento,
-          }),
-        });
-
-        if (!response || typeof response.status !== "number") {
-          throw new Error("No se pudo conectar con el servidor");
-        }
-
-        const result = await response.json() as {
+        const result = await apiPost<{
           message?: string;
           userId?: string;
           alreadyExists?: boolean;
           canVerify?: boolean;
-        };
-
-        if (!response.ok) {
-          // Si ya existe y puede verificar, pasar al paso 2
-          if (result.alreadyExists && result.canVerify) {
-            setError("");
-            setUserId(result.userId || null); // Guardar ID de usuario existente
-            setCurrentStep(2);
-            return;
-          }
-          throw new Error(result.message || "Error al crear el usuario");
-        }
+        }>("/api/auth/register-unverified", {
+          email: formData.email,
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          contrasena: formData.contrasena,
+          fecha_nacimiento: formData.fecha_nacimiento,
+          telefono: formData.telefono,
+          codigo_pais: formData.codigo_pais,
+          tipo_documento: formData.tipo_documento,
+          numero_documento: formData.numero_documento,
+        });
 
         // Éxito: guardar userId y continuar al paso 2
         setUserId(result.userId || null);
@@ -235,42 +193,24 @@ export default function CreateAccountPage() {
       // Verificar OTP con el backend y completar registro
       setIsLoading(true);
       try {
-        let response;
-
-        if (sendMethod === 'email') {
-          // Verificar OTP por email
-          response = await fetch(`${API_BASE_URL}/api/auth/otp/verify-email`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              email: formData.email,
-              codigo: otpCode,
-            }),
-          });
-        } else {
-          // Verificar OTP por WhatsApp (método actual)
-          response = await fetch(`${API_BASE_URL}/api/auth/otp/verify-register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              telefono: formData.telefono,
-              codigo: otpCode,
-            }),
-          });
-        }
-
-        if (!response || typeof response.status !== "number") {
-          throw new Error("No se pudo conectar con el servidor");
-        }
-
-        const result = await response.json() as {
+        let result: {
           access_token: string;
           user: Usuario;
           message?: string;
         };
 
-        if (!response.ok) {
-          throw new Error(result.message || "Código OTP inválido");
+        if (sendMethod === 'email') {
+          // Verificar OTP por email
+          result = await apiPost("/api/auth/otp/verify-email", {
+            email: formData.email,
+            codigo: otpCode,
+          });
+        } else {
+          // Verificar OTP por WhatsApp (método actual)
+          result = await apiPost("/api/auth/otp/verify-register", {
+            telefono: formData.telefono,
+            codigo: otpCode,
+          });
         }
 
         // Guardar token y usuario - registro completado
@@ -316,24 +256,10 @@ export default function CreateAccountPage() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/update-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId, // Usar userId en lugar de email
-          newEmail: newEmail,
-        }),
+      await apiPost("/api/auth/update-email", {
+        userId: userId, // Usar userId en lugar de email
+        newEmail: newEmail,
       });
-
-      if (!response || typeof response.status !== "number") {
-        throw new Error("No se pudo conectar con el servidor");
-      }
-
-      const result = await response.json() as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(result.message || "Error al actualizar email");
-      }
 
       // Actualizar el email en el formulario
       setFormData({ ...formData, email: newEmail });
@@ -352,25 +278,11 @@ export default function CreateAccountPage() {
     setIsLoading(true);
     setError("");
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/update-phone`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId: userId, // Usar userId en lugar de email
-          telefono: newPhone,
-          codigo_pais: formData.codigo_pais,
-        }),
+      await apiPost("/api/auth/update-phone", {
+        userId: userId, // Usar userId en lugar de email
+        telefono: newPhone,
+        codigo_pais: formData.codigo_pais,
       });
-
-      if (!response || typeof response.status !== "number") {
-        throw new Error("No se pudo conectar con el servidor");
-      }
-
-      const result = await response.json() as { message?: string };
-
-      if (!response.ok) {
-        throw new Error(result.message || "Error al actualizar teléfono");
-      }
 
       // Actualizar el teléfono en el formulario
       setFormData({ ...formData, telefono: newPhone });

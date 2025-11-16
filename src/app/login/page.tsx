@@ -11,8 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { notifyError, notifyLoginSuccess } from "./notifications";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import { apiPost } from "@/lib/api-client";
 
 interface LoginSuccessResponse {
   access_token?: string;
@@ -89,25 +88,10 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          contrasena: formData.password,
-        }),
+      const result = await apiPost<LoginSuccessResponse>("/api/auth/login", {
+        email: formData.email,
+        contrasena: formData.password,
       });
-
-      if (!response || typeof response.status !== "number") {
-        throw new Error("No se pudo conectar con el servidor");
-      }
-
-      if (!response.ok) {
-        const errorResult: LoginErrorResponse = await response.json();
-        throw new Error(errorResult.message || "Error de autenticación");
-      }
-
-      const result: LoginSuccessResponse = await response.json();
 
       // 🔒 VERIFICACIÓN OBLIGATORIA - Si el backend retorna requiresVerification
       if (result.requiresVerification) {

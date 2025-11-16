@@ -11,12 +11,12 @@ import {
   PlaceDetails,
   ColombianCity,
 } from '@/types/places.types';
+import { apiGet, apiPost } from '@/lib/api-client';
 
 /**
  * Configuración base del servicio
  */
 const BASE_CONFIG = {
-  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001',
   DEFAULT_COUNTRY: 'CO',
   DEFAULT_LANGUAGE: 'es',
   DEFAULT_DEBOUNCE: 300,
@@ -150,22 +150,9 @@ export class PlacesService {
 
     try {
       const params = this.buildSearchParams(input, options);
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/places/autocomplete?${params}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          signal: this.abortController.signal
-        }
+      const data = await apiGet<AutocompleteResponse>(
+        `/api/places/autocomplete?${params}`
       );
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
 
       // Limitar resultados si se especifica
       if (options?.maxResults && data.predictions) {
@@ -204,21 +191,9 @@ export class PlacesService {
         language: BASE_CONFIG.DEFAULT_LANGUAGE
       });
 
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/places/details?${params}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
+      const data = await apiGet<PlaceDetailsResponse>(
+        `/api/places/details?${params}`
       );
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
 
       // Regenerar token después de obtener detalles (para optimizar costos)
       this.generateSessionToken();
@@ -239,22 +214,10 @@ export class PlacesService {
    */
   public async validateCoverage(placeId: string): Promise<boolean> {
     try {
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/places/validate-coverage`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ placeId })
-        }
+      const data = await apiPost<{ isInCoverage: boolean }>(
+        '/api/places/validate-coverage',
+        { placeId }
       );
-
-      if (!response.ok) {
-        return false;
-      }
-
-      const data = await response.json();
       return data.isInCoverage;
     } catch (error) {
       return false;
@@ -266,21 +229,9 @@ export class PlacesService {
    */
   public async getAvailableCities(): Promise<ColombianCity[]> {
     try {
-      const response = await fetch(
-        `${BASE_CONFIG.API_URL}/api/places/available-cities`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        }
+      const data = await apiGet<{ cities: ColombianCity[] }>(
+        '/api/places/available-cities'
       );
-
-      if (!response.ok) {
-        throw new Error('Error obteniendo ciudades disponibles');
-      }
-
-      const data = await response.json();
       return data.cities;
     } catch (error) {
       return [];

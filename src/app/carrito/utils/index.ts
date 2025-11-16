@@ -67,9 +67,9 @@ export async function payWithPse(props: PsePaymentData): Promise<{ redirectUrl: 
   }
 }
 
-export async function fetchBanks() {
+export async function fetchBanks(): Promise<{ bankCode: string; bankName: string }[]> {
   try {
-    const data = await apiGet('/api/payments/epayco/banks');
+    const data = await apiGet<{ bankCode: string; bankName: string }[]>('/api/payments/epayco/banks');
     return data;
   } catch (error) {
     // Provide detailed error information for debugging

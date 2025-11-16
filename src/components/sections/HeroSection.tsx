@@ -140,8 +140,8 @@ export default function HeroSection() {
   }
 
   // Estilos de posicionamiento con el nuevo sistema
-  const desktopPositionStyle = positionToCSS(config.positionDesktop);
-  const mobilePositionStyle = positionToCSS(config.positionMobile);
+  const desktopPositionStyle = positionToCSS(config.positionDesktop ?? null);
+  const mobilePositionStyle = positionToCSS(config.positionMobile ?? null);
 
   // Variables para decidir si mostrar el contenido del Hero
   const hasAnyVideo = Boolean(config.videoSrc || config.mobileVideoSrc);

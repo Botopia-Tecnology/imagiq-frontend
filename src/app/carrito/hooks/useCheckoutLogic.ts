@@ -256,13 +256,20 @@ export function useCheckoutLogic() {
 
     // Procesar pago
     try {
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-      const direction = JSON.parse(
-        localStorage.getItem("checkout-address") || "{}"
-      );
-      const billing = JSON.parse(
-        localStorage.getItem("checkout-billing-data") || "{}"
-      );
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
+      const billing = safeGetLocalStorage<{
+        direccion?: { id?: string };
+        email?: string;
+        nombre?: string;
+        documento?: string;
+        tipoDocumento?: string;
+        telefono?: string;
+        type?: string;
+        nit?: string;
+        razonSocial?: string;
+        nombreRepresentante?: string;
+      }>("checkout-billing-data", {});
 
       const informacion_facturacion = {
         direccion_id: billing?.direccion?.id ?? direction?.id ?? "",
@@ -277,8 +284,6 @@ export function useCheckoutLogic() {
         representante_legal:
           billing?.nombreRepresentante || billing?.razonSocial,
       };
-      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
       let res;
 
       switch (paymentMethod) {

@@ -20,6 +20,7 @@ const addressToDireccion = (address: Address): Direccion => {
     codigo_dane: '',
     ciudad: address.ciudad || '',
     pais: address.pais,
+    esPredeterminada: address.esPredeterminada
   };
 };
 

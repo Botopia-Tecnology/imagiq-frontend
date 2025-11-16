@@ -6,7 +6,12 @@ import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
 import { PaymentMethod } from "../types";
-import { payWithAddi, payWithCard, payWithSavedCard, payWithPse } from "../utils";
+import {
+  payWithAddi,
+  payWithCard,
+  payWithSavedCard,
+  payWithPse,
+} from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 
@@ -20,11 +25,14 @@ export function useCheckoutLogic() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("tarjeta");
   const [selectedBank, setSelectedBank] = useState<string>("");
+  const [selectedBankName, setSelectedBankName] = useState<string>("");
 
   // Estados para tarjetas guardadas
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
   const [useNewCard, setUseNewCard] = useState(false);
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
+  // Contador para forzar recarga de tarjetas guardadas
+  const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
@@ -72,11 +80,13 @@ export function useCheckoutLogic() {
     setPaymentMethod(method);
     if (method !== "pse") {
       setSelectedBank("");
+      setSelectedBankName("");
     }
   };
 
-  const handleBankChange = (bank: string) => {
-    setSelectedBank(bank);
+  const handleBankChange = (bankCode: string, bankName?: string) => {
+    setSelectedBank(bankCode);
+    if (bankName) setSelectedBankName(bankName);
   };
 
   const handleBillingTypeChange = (type: string) => {
@@ -95,6 +105,12 @@ export function useCheckoutLogic() {
 
   const handleCloseAddCardModal = () => {
     setIsAddCardModalOpen(false);
+  };
+
+  // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
+  const handleAddCardSuccess = () => {
+    setIsAddCardModalOpen(false);
+    setSavedCardsReloadCounter((c) => c + 1);
   };
 
   const handleUseNewCardChange = (useNew: boolean) => {
@@ -163,12 +179,17 @@ export function useCheckoutLogic() {
     if (paymentMethod === "tarjeta") {
       if (selectedCardId && !useNewCard) {
         localStorage.setItem("checkout-saved-card-id", selectedCardId);
-        localStorage.setItem("checkout-card-installments", card.installments || "1");
+        localStorage.setItem(
+          "checkout-card-installments",
+          card.installments || "1"
+        );
       } else {
         localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
     } else if (paymentMethod === "pse") {
-      localStorage.setItem("checkout-selected-bank", selectedBank);
+      // Guardar tanto código como nombre del banco para uso en resumen
+      const payload = { code: selectedBank, name: selectedBankName || "" };
+      localStorage.setItem("checkout-selected-bank", JSON.stringify(payload));
     }
 
     return true;
@@ -237,6 +258,32 @@ export function useCheckoutLogic() {
     try {
       const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
       const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
+      const billing = safeGetLocalStorage<{
+        direccion?: { id?: string };
+        email?: string;
+        nombre?: string;
+        documento?: string;
+        tipoDocumento?: string;
+        telefono?: string;
+        type?: string;
+        nit?: string;
+        razonSocial?: string;
+        nombreRepresentante?: string;
+      }>("checkout-billing-data", {});
+
+      const informacion_facturacion = {
+        direccion_id: billing?.direccion?.id ?? direction?.id ?? "",
+        email: billing?.email ?? "",
+        nombre_completo: billing?.nombre ?? "",
+        numero_documento: billing?.documento ?? "",
+        tipo_documento: billing?.tipoDocumento ?? "",
+        telefono: billing?.telefono ?? "",
+        type: billing?.type ?? "",
+        nit: billing?.nit,
+        razon_social: billing?.razonSocial,
+        representante_legal:
+          billing?.nombreRepresentante || billing?.razonSocial,
+      };
       let res;
 
       switch (paymentMethod) {
@@ -259,12 +306,15 @@ export function useCheckoutLogic() {
               userId: userInfo.id || "",
               direccionId: direction.id || "",
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
-            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
-                res.message.includes("no está disponible") ||
-                res.message.includes("not available")) {
+            if (
+              res.message.includes("dejó (dejaron) de estar disponobles") ||
+              res.message.includes("no está disponible") ||
+              res.message.includes("not available")
+            ) {
               toast.error("Producto(s) no disponible(s)", {
                 description: res.message,
                 duration: 5000,
@@ -303,6 +353,7 @@ export function useCheckoutLogic() {
                 userId: userInfo.id || "",
                 direccionId: direction.id || "",
               },
+              informacion_facturacion,
             });
           } else {
             // Pago con tarjeta nueva
@@ -329,14 +380,17 @@ export function useCheckoutLogic() {
                 userId: userInfo.id || "",
                 direccionId: direction.id || "",
               },
+              informacion_facturacion,
             });
           }
 
           if ("error" in res) {
             // Check if it's an out-of-stock error
-            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
-                res.message.includes("no está disponible") ||
-                res.message.includes("not available")) {
+            if (
+              res.message.includes("dejó (dejaron) de estar disponobles") ||
+              res.message.includes("no está disponible") ||
+              res.message.includes("not available")
+            ) {
               toast.error("Producto(s) no disponible(s)", {
                 description: res.message,
                 duration: 5000,
@@ -372,12 +426,15 @@ export function useCheckoutLogic() {
               userId: userInfo.id || "",
               direccionId: direction.id || "",
             },
+            informacion_facturacion,
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
-            if (res.message.includes("dejó (dejaron) de estar disponobles") ||
-                res.message.includes("no está disponible") ||
-                res.message.includes("not available")) {
+            if (
+              res.message.includes("dejó (dejaron) de estar disponobles") ||
+              res.message.includes("no está disponible") ||
+              res.message.includes("not available")
+            ) {
               toast.error("Producto(s) no disponible(s)", {
                 description: res.message,
                 duration: 5000,
@@ -418,6 +475,7 @@ export function useCheckoutLogic() {
     selectedCardId,
     useNewCard,
     isAddCardModalOpen,
+    savedCardsReloadCounter,
 
     // Handlers
     handleCardChange,
@@ -432,6 +490,7 @@ export function useCheckoutLogic() {
     handleCardSelect,
     handleOpenAddCardModal,
     handleCloseAddCardModal,
+    handleAddCardSuccess,
     handleUseNewCardChange,
 
     // Setters

@@ -25,12 +25,13 @@ interface PaymentFormProps {
   saveInfo: boolean;
   onSaveInfoChange: (save: boolean) => void;
   selectedBank?: string;
-  onBankChange?: (bank: string) => void;
+  onBankChange?: (bankCode: string, bankName?: string) => void;
   selectedCardId: string | null;
   onCardSelect: (cardId: string | null) => void;
   onOpenAddCardModal: () => void;
   useNewCard: boolean;
   onUseNewCardChange: (useNew: boolean) => void;
+  savedCardsReloadCounter?: number;
 }
 
 export default function PaymentForm({
@@ -49,11 +50,14 @@ export default function PaymentForm({
   onOpenAddCardModal,
   useNewCard,
   onUseNewCardChange,
+  savedCardsReloadCounter,
 }: PaymentFormProps) {
   const authContext = useAuthContext();
   const [savedCards, setSavedCards] = useState<DBCard[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
-  const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>([]);
+  const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
+    []
+  );
 
   // Cargar bancos para PSE
   useEffect(() => {
@@ -69,10 +73,23 @@ export default function PaymentForm({
     }
   }, [authContext.user?.id]);
 
+  // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
+  useEffect(() => {
+    if (authContext.user?.id && savedCardsReloadCounter !== undefined) {
+      loadSavedCards();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedCardsReloadCounter]);
+
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas
   useEffect(() => {
-    if (savedCards.length > 0 && !selectedCardId && paymentMethod === "tarjeta") {
-      const defaultCard = savedCards.find((card) => card.es_predeterminada) || savedCards[0];
+    if (
+      savedCards.length > 0 &&
+      !selectedCardId &&
+      paymentMethod === "tarjeta"
+    ) {
+      const defaultCard =
+        savedCards.find((card) => card.es_predeterminada) || savedCards[0];
       if (defaultCard) {
         onCardSelect(String(defaultCard.id));
       }
@@ -82,11 +99,16 @@ export default function PaymentForm({
   const loadSavedCards = async () => {
     try {
       setIsLoadingCards(true);
-      const encryptedCards = await profileService.getUserPaymentMethodsEncrypted(authContext.user?.id);
+      const encryptedCards =
+        await profileService.getUserPaymentMethodsEncrypted(
+          authContext.user?.id
+        );
 
       const decryptedCards: DBCard[] = encryptedCards
         .map((encCard) => {
-          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(encCard.encryptedData);
+          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
+            encCard.encryptedData
+          );
           if (!decrypted) return null;
 
           return {
@@ -112,14 +134,18 @@ export default function PaymentForm({
   };
 
   // Obtener tarjeta predeterminada
-  const defaultCard = savedCards.find((card) => card.es_predeterminada) || savedCards[0];
+  const defaultCard =
+    savedCards.find((card) => card.es_predeterminada) || savedCards[0];
 
   // Filtrar tarjetas activas y no expiradas, excluyendo la predeterminada (ya está en Recomendados)
   const activeCards = savedCards.filter((card) => {
     if (!card.activa) return false;
     if (card.fecha_vencimiento) {
       const [month, year] = card.fecha_vencimiento.split("/");
-      const expDate = new Date(2000 + Number.parseInt(year), Number.parseInt(month) - 1);
+      const expDate = new Date(
+        2000 + Number.parseInt(year),
+        Number.parseInt(month) - 1
+      );
       if (expDate < new Date()) return false;
     }
     // Excluir la tarjeta que ya está en Recomendados
@@ -132,7 +158,9 @@ export default function PaymentForm({
 
       {/* Sección de Recomendados */}
       <div className="mb-6">
-        <h3 className="text-base font-semibold text-gray-700 mb-3">Recomendados</h3>
+        <h3 className="text-base font-semibold text-gray-700 mb-3">
+          Recomendados
+        </h3>
         <div
           className="rounded-xl overflow-hidden"
           style={{
@@ -141,7 +169,10 @@ export default function PaymentForm({
             border: "1px solid #E5E5E5",
           }}
         >
-          <div className="px-6 py-2 flex flex-col gap-2" style={{ background: "#fff" }}>
+          <div
+            className="px-6 py-2 flex flex-col gap-2"
+            style={{ background: "#fff" }}
+          >
             {/* Tarjeta predeterminada */}
             {defaultCard && (
               <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
@@ -149,7 +180,10 @@ export default function PaymentForm({
                   <input
                     type="radio"
                     name="payment"
-                    checked={paymentMethod === "tarjeta" && selectedCardId === String(defaultCard.id)}
+                    checked={
+                      paymentMethod === "tarjeta" &&
+                      selectedCardId === String(defaultCard.id)
+                    }
                     onChange={() => {
                       onPaymentMethodChange("tarjeta");
                       onCardSelect(String(defaultCard.id));
@@ -165,13 +199,17 @@ export default function PaymentForm({
                       </span>
                       {defaultCard.tipo_tarjeta && (
                         <span className="text-xs text-gray-500 uppercase">
-                          {defaultCard.tipo_tarjeta.includes("credit") ? "Crédito" : "Débito"}
+                          {defaultCard.tipo_tarjeta.includes("credit")
+                            ? "Crédito"
+                            : "Débito"}
                         </span>
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-gray-600">
                       {defaultCard.nombre_titular && (
-                        <span className="uppercase">{defaultCard.nombre_titular}</span>
+                        <span className="uppercase">
+                          {defaultCard.nombre_titular}
+                        </span>
                       )}
                       {defaultCard.banco && (
                         <>
@@ -200,21 +238,36 @@ export default function PaymentForm({
                   onChange={() => onPaymentMethodChange("pse")}
                   className="accent-black w-5 h-5 flex-shrink-0"
                 />
-                <span className="font-medium text-black">PSE - Débito bancario</span>
+                <span className="font-medium text-black">
+                  PSE - Débito bancario
+                </span>
               </span>
-              <Image src={pseLogo} alt="PSE" width={35} height={35} className="object-contain" />
+              <Image
+                src={pseLogo}
+                alt="PSE"
+                width={35}
+                height={35}
+                className="object-contain"
+              />
             </label>
 
             {/* Bank selector for PSE */}
             {paymentMethod === "pse" && (
               <div className="ml-8 mb-3 mt-1">
-                <label htmlFor="bank-select" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="bank-select"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Selecciona tu banco
                 </label>
                 <select
                   id="bank-select"
                   value={selectedBank || ""}
-                  onChange={(e) => onBankChange?.(e.target.value)}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    const bank = banks.find((b) => b.bankCode === code);
+                    onBankChange?.(code, bank?.bankName);
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white"
                   required={paymentMethod === "pse"}
                 >
@@ -238,9 +291,17 @@ export default function PaymentForm({
                   onChange={() => onPaymentMethodChange("addi")}
                   className="accent-black w-5 h-5 flex-shrink-0"
                 />
-                <span className="font-medium text-black">Addi - Paga después</span>
+                <span className="font-medium text-black">
+                  Addi - Paga después
+                </span>
               </span>
-              <Image src={addiLogo} alt="Addi" width={35} height={35} className="object-contain" />
+              <Image
+                src={addiLogo}
+                alt="Addi"
+                width={35}
+                height={35}
+                className="object-contain"
+              />
             </label>
           </div>
         </div>
@@ -250,7 +311,9 @@ export default function PaymentForm({
       {activeCards.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-semibold text-gray-700">Tarjetas guardadas</h3>
+            <h3 className="text-base font-semibold text-gray-700">
+              Tarjetas guardadas
+            </h3>
             <button
               type="button"
               onClick={onOpenAddCardModal}
@@ -269,7 +332,9 @@ export default function PaymentForm({
           ) : (
             <div className="flex flex-col gap-3">
               {activeCards.map((card) => {
-                const isSelected = paymentMethod === "tarjeta" && selectedCardId === String(card.id);
+                const isSelected =
+                  paymentMethod === "tarjeta" &&
+                  selectedCardId === String(card.id);
 
                 return (
                   <label
@@ -283,7 +348,9 @@ export default function PaymentForm({
                     <span className="flex items-center gap-3">
                       <div
                         className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
-                          isSelected ? "border-black bg-black" : "border-gray-300 bg-white"
+                          isSelected
+                            ? "border-black bg-black"
+                            : "border-gray-300 bg-white"
                         }`}
                       >
                         {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -296,13 +363,17 @@ export default function PaymentForm({
                           </span>
                           {card.tipo_tarjeta && (
                             <span className="text-xs text-gray-500 uppercase">
-                              {card.tipo_tarjeta.includes("credit") ? "Crédito" : "Débito"}
+                              {card.tipo_tarjeta.includes("credit")
+                                ? "Crédito"
+                                : "Débito"}
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                           {card.nombre_titular && (
-                            <span className="uppercase">{card.nombre_titular}</span>
+                            <span className="uppercase">
+                              {card.nombre_titular}
+                            </span>
                           )}
                           {card.banco && (
                             <>
@@ -335,7 +406,9 @@ export default function PaymentForm({
       {/* Formulario de nueva tarjeta (si el usuario elige agregar) */}
       {paymentMethod === "tarjeta" && useNewCard && (
         <div className="mb-6">
-          <h3 className="text-base font-semibold text-gray-700 mb-3">Nueva tarjeta</h3>
+          <h3 className="text-base font-semibold text-gray-700 mb-3">
+            Nueva tarjeta
+          </h3>
           <div
             className="rounded-xl overflow-hidden p-6"
             style={{

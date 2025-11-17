@@ -141,12 +141,45 @@ export default function FlixmediaPlayer({
       script.setAttribute('data-flix-button-image', '');
       script.setAttribute('data-flix-price', '');
       script.setAttribute('data-flix-fallback-language', '');
+      script.setAttribute('data-flix-hotspot', 'false'); // Desactivar módulo de hotspot
 
       script.onload = () => {
         const scriptEndTime = performance.now();
         console.log(`✅ [PASO 5] Script de Flixmedia cargado (${(scriptEndTime - scriptStartTime).toFixed(2)}ms)`);
         console.log('🔄 [PASO 6] Flixmedia procesando contenido... (monitoreando cada 500ms)');
         setScriptLoaded(true);
+
+        // Eliminar elementos de hotspot después de que se cargue el script
+        setTimeout(() => {
+          // Eliminar divs de hotspot
+          const hotspotDivs = document.querySelectorAll('[class*="flix_hotspot"]');
+          hotspotDivs.forEach((el) => el.remove());
+
+          // Eliminar scripts de hotspot
+          const hotspotScripts = document.querySelectorAll('script[src*="hotspot"]');
+          hotspotScripts.forEach((el) => el.remove());
+
+          // Agregar estilos para ocultar hotspots
+          const style = document.createElement('style');
+          style.id = 'flixmedia-no-hotspot-styles';
+          style.textContent = `
+            [class*="flix_hotspot"],
+            [id*="flix_hotspot"],
+            div[class*="hotspot"] {
+              display: none !important;
+              visibility: hidden !important;
+            }
+          `;
+
+          // Remover estilo anterior si existe
+          const oldStyle = document.getElementById('flixmedia-no-hotspot-styles');
+          if (oldStyle) {
+            oldStyle.remove();
+          }
+
+          document.head.appendChild(style);
+          console.log('✅ Elementos de hotspot eliminados y ocultados');
+        }, 1000);
 
         // Monitorear cuando el contenido realmente aparece
         let checkCount = 0;

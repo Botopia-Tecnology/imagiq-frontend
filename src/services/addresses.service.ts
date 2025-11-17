@@ -211,6 +211,40 @@ export class AddressesService {
   }
 
   /**
+   * Elimina físicamente una dirección de usuario
+   * @param addressId - ID de la dirección a eliminar
+   * @returns Mensaje de confirmación
+   */
+  public async deleteAddress(addressId: string): Promise<{ message: string }> {
+    try {
+      // Obtener información del usuario del localStorage
+      const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>(
+        "imagiq_user",
+        {}
+      );
+
+      if (!userInfo.id && !userInfo.email) {
+        throw new Error(
+          "No se encontró información del usuario. Por favor, inicia sesión nuevamente."
+        );
+      }
+
+      const usuarioId = userInfo.id || userInfo.email || "";
+      const endpoint = `/api/addresses/${addressId}?usuarioId=${encodeURIComponent(
+        usuarioId
+      )}`;
+
+      return await apiDelete<{ message: string }>(endpoint);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error eliminando dirección";
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Incrementa el contador de uso de una dirección
    */
   public async incrementUsageCount(

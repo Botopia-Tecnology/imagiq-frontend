@@ -35,6 +35,8 @@ interface UseTradeInFormReturn {
   setIsModelDropdownOpen: (open: boolean) => void;
   setIsCapacityDropdownOpen: (open: boolean) => void;
   setImeiInput: (value: string) => void;
+  termsAccepted: boolean;
+  setTermsAccepted: (accepted: boolean) => void;
   resetForm: () => void;
 }
 
@@ -67,6 +69,7 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
   });
 
   const [imeiInput, setImeiInput] = useState<string>("");
+  const [termsAccepted, setTermsAccepted] = useState<boolean>(false);
 
   const availableBrands = useMemo(
     () => getFilteredBrands(tradeInData, formState.selectedCategory),
@@ -142,6 +145,7 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
       isCapacityDropdownOpen: false,
     });
     setImeiInput("");
+    setTermsAccepted(false);
   }, []);
 
   const setSelectedCategory = useCallback((category: string) => {
@@ -188,6 +192,8 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     setIsModelDropdownOpen,
     setIsCapacityDropdownOpen,
     setImeiInput,
+    termsAccepted,
+    setTermsAccepted,
     resetForm,
   };
 }

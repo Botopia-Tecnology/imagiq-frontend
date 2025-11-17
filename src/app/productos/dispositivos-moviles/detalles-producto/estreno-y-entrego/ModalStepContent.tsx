@@ -37,6 +37,8 @@ interface ModalStepContentProps {
   readonly imeiInput: string;
   readonly tradeInValue: number;
   readonly calculatingValue: boolean;
+  readonly termsAccepted?: boolean;
+  readonly onTermsAcceptedChange?: (accepted: boolean) => void;
   readonly onSelectCategory: (category: string) => void;
   readonly onSelectBrand: (brand: Brand) => void;
   readonly onSelectModel: (model: DeviceModel) => void;
@@ -74,6 +76,8 @@ export default function ModalStepContent({
   imeiInput,
   tradeInValue,
   calculatingValue,
+  termsAccepted,
+  onTermsAcceptedChange,
   onSelectCategory,
   onSelectBrand,
   onSelectModel,
@@ -191,6 +195,8 @@ export default function ModalStepContent({
         onImeiChange={onImeiChange}
         tradeInValue={tradeInValue}
         calculatingValue={calculatingValue}
+        termsAccepted={termsAccepted}
+        onTermsAcceptedChange={onTermsAcceptedChange}
       />
     );
   }

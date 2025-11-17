@@ -5,7 +5,7 @@ import { Plus, Check } from "lucide-react";
 import { SiVisa, SiMastercard, SiAmericanexpress } from "react-icons/si";
 import CreditCardForm, { CardData, CardErrors } from "./CreditCardForm";
 import SaveInfoCheckbox from "./SaveInfoCheckbox";
-import { PaymentMethod } from "../types";
+import { PaymentMethod, CheckZeroInterestResponse } from "../types";
 import { profileService } from "@/services/profile.service";
 import { useAuthContext } from "@/features/auth/context";
 import { DBCard, DecryptedCardData } from "@/features/profile/types";
@@ -32,6 +32,9 @@ interface PaymentFormProps {
   useNewCard: boolean;
   onUseNewCardChange: (useNew: boolean) => void;
   savedCardsReloadCounter?: number;
+  zeroInterestData?: CheckZeroInterestResponse | null;
+  isLoadingZeroInterest?: boolean;
+  onFetchZeroInterest?: (cardIds: string[]) => void;
 }
 
 export default function PaymentForm({
@@ -51,6 +54,9 @@ export default function PaymentForm({
   useNewCard,
   onUseNewCardChange,
   savedCardsReloadCounter,
+  zeroInterestData,
+  isLoadingZeroInterest,
+  onFetchZeroInterest,
 }: PaymentFormProps) {
   const authContext = useAuthContext();
   const [savedCards, setSavedCards] = useState<DBCard[]>([]);
@@ -58,6 +64,16 @@ export default function PaymentForm({
   const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
     []
   );
+
+  // Helper para obtener el máximo de cuotas sin interés de una tarjeta
+  const getMaxInstallments = (cardId: string): number | null => {
+    if (!zeroInterestData?.cards) return null;
+
+    const cardInfo = zeroInterestData.cards.find(c => c.id === cardId);
+    if (!cardInfo?.eligibleForZeroInterest) return null;
+
+    return Math.max(...cardInfo.availableInstallments);
+  };
 
   // Cargar bancos para PSE
   useEffect(() => {
@@ -94,7 +110,16 @@ export default function PaymentForm({
         onCardSelect(String(defaultCard.id));
       }
     }
-  }, [savedCards, selectedCardId, paymentMethod]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedCards.length, paymentMethod]);
+
+  // Llamar a fetchZeroInterestInfo cuando se cargan las tarjetas
+  useEffect(() => {
+    if (savedCards.length > 0 && onFetchZeroInterest) {
+      const cardIds = savedCards.map((card) => String(card.id));
+      onFetchZeroInterest(cardIds);
+    }
+  }, [savedCards, onFetchZeroInterest]);
 
   const loadSavedCards = async () => {
     try {
@@ -324,10 +349,12 @@ export default function PaymentForm({
             </button>
           </div>
 
-          {isLoadingCards ? (
+          {isLoadingCards || isLoadingZeroInterest ? (
             <div className="animate-pulse space-y-3">
-              <div className="h-16 bg-gray-200 rounded-lg"></div>
-              <div className="h-16 bg-gray-200 rounded-lg"></div>
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
@@ -345,7 +372,18 @@ export default function PaymentForm({
                         : "border-gray-200 hover:border-gray-300 bg-white"
                     }`}
                   >
-                    <span className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      name="payment"
+                      checked={isSelected}
+                      onChange={() => {
+                        onPaymentMethodChange("tarjeta");
+                        onCardSelect(String(card.id));
+                        onUseNewCardChange(false);
+                      }}
+                      className="sr-only"
+                    />
+                    <span className="flex items-center gap-3 flex-1 min-w-0">
                       <div
                         className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                           isSelected
@@ -356,7 +394,7 @@ export default function PaymentForm({
                         {isSelected && <Check className="w-3 h-3 text-white" />}
                       </div>
                       <CardBrandLogo brand={card.marca} size="md" />
-                      <div className="flex flex-col">
+                      <div className="flex flex-col min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-gray-900 tracking-wider">
                             •••• {card.ultimos_dijitos}
@@ -384,17 +422,14 @@ export default function PaymentForm({
                         </div>
                       </div>
                     </span>
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={isSelected}
-                      onChange={() => {
-                        onPaymentMethodChange("tarjeta");
-                        onCardSelect(String(card.id));
-                        onUseNewCardChange(false);
-                      }}
-                      className="sr-only"
-                    />
+                    {(() => {
+                      const maxInstallments = getMaxInstallments(String(card.id));
+                      return maxInstallments && maxInstallments > 1 ? (
+                        <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold whitespace-nowrap flex-shrink-0">
+                          Hasta {maxInstallments} cuotas sin interés
+                        </span>
+                      ) : null;
+                    })()}
                   </label>
                 );
               })}

@@ -20,6 +20,7 @@ import CardBrandLogo from "@/components/ui/CardBrandLogo";
 import { payWithAddi, payWithCard, payWithPse } from "./utils";
 import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import { CheckZeroInterestResponse } from "./types";
 
 interface Step7Props {
   onBack?: () => void;
@@ -81,6 +82,7 @@ export default function Step7({ onBack }: Step7Props) {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
   const { products, calculations } = useCart();
 
   // Trade-In state management
@@ -180,6 +182,17 @@ export default function Step7({ onBack }: Step7Props) {
     };
 
     loadPaymentData();
+
+    // Cargar datos de cuotas sin interés
+    try {
+      const stored = localStorage.getItem("checkout-zero-interest");
+      if (stored) {
+        const parsed = JSON.parse(stored) as CheckZeroInterestResponse;
+        setZeroInterestData(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading zero interest data:", error);
+    }
 
     // Cargar dirección de envío
     const shippingAddress = localStorage.getItem("checkout-address");
@@ -398,6 +411,16 @@ export default function Step7({ onBack }: Step7Props) {
     }
   };
 
+  // Verificar si las cuotas seleccionadas son elegibles para cero interés
+  const isInstallmentEligibleForZeroInterest = (installments: number, cardId: string): boolean => {
+    if (!zeroInterestData?.cards) return false;
+
+    const cardInfo = zeroInterestData.cards.find(c => c.id === cardId);
+    if (!cardInfo?.eligibleForZeroInterest) return false;
+
+    return cardInfo.availableInstallments.includes(installments);
+  };
+
   return (
     <div className="min-h-screen w-full">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
@@ -483,6 +506,12 @@ export default function Step7({ onBack }: Step7Props) {
                               <span className="text-gray-600">Cuotas:</span>
                               <span className="font-medium text-gray-900">
                                 {paymentData.installments}x
+                                {paymentData.savedCard &&
+                                  isInstallmentEligibleForZeroInterest(paymentData.installments, String(paymentData.savedCard.id)) && (
+                                  <span className="ml-2 text-green-600 font-semibold">
+                                    (sin interés)
+                                  </span>
+                                )}
                               </span>
                             </div>
                           )}
@@ -531,6 +560,15 @@ export default function Step7({ onBack }: Step7Props) {
                               <span className="text-gray-600">Cuotas:</span>
                               <span className="font-medium text-gray-900">
                                 {paymentData.installments}x
+                                {(() => {
+                                  // Para tarjetas nuevas, intentar obtener el ID de localStorage
+                                  const savedCardId = localStorage.getItem("checkout-saved-card-id");
+                                  return savedCardId && isInstallmentEligibleForZeroInterest(paymentData.installments, savedCardId) && (
+                                    <span className="ml-2 text-green-600 font-semibold">
+                                      (sin interés)
+                                    </span>
+                                  );
+                                })()}
                               </span>
                             </div>
                           )}

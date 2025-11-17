@@ -6,6 +6,8 @@ import type { Address } from "@/types/address";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { storesService } from "@/services/stores.service";
 import type { FormattedStore } from "@/types/store";
+import { productEndpoints, type CandidateStore, type CandidateStoresResponse } from "@/lib/api";
+import { useCart } from "@/hooks/useCart";
 
 /**
  * Helper para convertir Address a Direccion (legacy)
@@ -34,6 +36,60 @@ const normalizeText = (text: string): string => {
     .replace(/[\u0300-\u036f]/g, ""); // Remueve diacríticos (acentos)
 };
 
+/**
+ * Convierte CandidateStore a FormattedStore
+ * Busca la información completa de la tienda desde el servicio de tiendas
+ * usando el codBodega o nombre_tienda para hacer el match
+ */
+const candidateStoreToFormattedStore = async (
+  candidateStore: CandidateStore,
+  city: string
+): Promise<FormattedStore | null> => {
+  try {
+    // Obtener todas las tiendas para buscar la información completa
+    const allStores = await storesService.getFormattedStores();
+    
+    // Buscar la tienda por codBodega o nombre_tienda
+    const matchedStore = allStores.find((store) => {
+      const codBodegaMatch = String(store.codBodega) === String(candidateStore.codBodega);
+      const nombreMatch = normalizeText(store.descripcion) === normalizeText(candidateStore.nombre_tienda);
+      return codBodegaMatch || nombreMatch;
+    });
+
+    if (matchedStore) {
+      return matchedStore;
+    }
+
+    // Si no se encuentra, crear un FormattedStore básico con los datos disponibles
+    // Esto es un fallback en caso de que la tienda no esté en el listado completo
+    const codDane = candidateStore.codDane 
+      ? (typeof candidateStore.codDane === 'string' ? parseInt(candidateStore.codDane) : candidateStore.codDane)
+      : 0;
+    
+    return {
+      codigo: parseInt(candidateStore.codBodega) || 0,
+      descripcion: candidateStore.nombre_tienda,
+      departamento: city, // Usar la ciudad como departamento si no está disponible
+      ciudad: candidateStore.ciudad || city,
+      direccion: candidateStore.direccion,
+      place_ID: candidateStore.place_ID,
+      ubicacion_cc: "",
+      horario: candidateStore.horario,
+      telefono: "",
+      extension: "",
+      email: "",
+      codBodega: candidateStore.codBodega,
+      codDane: codDane,
+      latitud: 0,
+      longitud: 0,
+      position: [0, 0],
+    };
+  } catch (error) {
+    console.error("Error converting CandidateStore to FormattedStore:", error);
+    return null;
+  }
+};
+
 export const useDelivery = () => {
   const [address, setAddress] = useState<Direccion | null>(null);
   const [addressEdit, setAddressEdit] = useState(false);
@@ -44,25 +100,89 @@ export const useDelivery = () => {
   const [addresses, setAddresses] = useState<Direccion[]>([]);
   const [deliveryMethod, setDeliveryMethod] = useState("domicilio");
   const [storesLoading, setStoresLoading] = useState(true);
+  const { products } = useCart();
 
-  // Cargar tiendas desde el API (excluyendo centros de distribución)
+  // Cargar tiendas desde candidate-stores (solo donde se puede recoger el producto)
   useEffect(() => {
-    const fetchStores = async () => {
+    const fetchCandidateStores = async () => {
       try {
         setStoresLoading(true);
-        const formattedStores = await storesService.getFormattedStores();
-        // Filtrar centros de distribución - solo mostrar tiendas físicas (SES)
-        const physicalStores = formattedStores.filter((store) => {
+        
+        // Obtener user_id
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+          "imagiq_user",
+          {}
+        );
+        const userId = user?.id || user?.user_id;
+
+        if (!userId || products.length === 0) {
+          setStores([]);
+          setFilteredStores([]);
+          setStoresLoading(false);
+          return;
+        }
+
+        // Obtener todas las tiendas candidatas para todos los productos
+        const allCandidateStores = new Map<string, { store: CandidateStore; city: string }>();
+        
+        // Hacer petición para cada producto
+        for (const product of products) {
+          try {
+            const response = await productEndpoints.getCandidateStores({
+              products: [{ sku: product.sku, quantity: product.quantity }],
+              user_id: userId,
+            });
+
+            if (response.success && response.data) {
+              // Solo usar tiendas donde canPickUp es true
+              const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
+              const canPickUp = 
+                responseData.canPickUp ?? 
+                responseData.canPickup ?? 
+                false;
+
+              if (canPickUp && responseData.stores) {
+                // Agregar todas las tiendas de todas las ciudades
+                Object.entries(responseData.stores).forEach(([city, cityStores]) => {
+                  cityStores.forEach((store) => {
+                    // Usar codBodega como clave única para evitar duplicados
+                    // Usar la ciudad de la tienda si está disponible, sino usar la clave del objeto
+                    const storeCity = store.ciudad || city;
+                    const key = `${store.codBodega}-${storeCity}`;
+                    if (!allCandidateStores.has(key)) {
+                      allCandidateStores.set(key, { store, city: storeCity });
+                    }
+                  });
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`Error fetching candidate stores for product ${product.sku}:`, error);
+          }
+        }
+
+        // Convertir CandidateStore a FormattedStore
+        const formattedStoresPromises = Array.from(allCandidateStores.values()).map(
+          ({ store, city }) => candidateStoreToFormattedStore(store, city)
+        );
+        
+        const formattedStoresResults = await Promise.all(formattedStoresPromises);
+        const validStores = formattedStoresResults.filter(
+          (store): store is FormattedStore => store !== null
+        );
+
+        // Filtrar centros de distribución
+        const physicalStores = validStores.filter((store) => {
           const descripcion = normalizeText(store.descripcion);
-          // Excluir centros de distribución
           return !descripcion.includes("centro de distribucion") && 
                  !descripcion.includes("centro distribucion") &&
                  !descripcion.includes("bodega");
         });
+
         setStores(physicalStores);
         setFilteredStores(physicalStores);
       } catch (error) {
-        console.error("Error loading stores:", error);
+        console.error("Error loading candidate stores:", error);
         setStores([]);
         setFilteredStores([]);
       } finally {
@@ -70,8 +190,8 @@ export const useDelivery = () => {
       }
     };
 
-    fetchStores();
-  }, []);
+    fetchCandidateStores();
+  }, [products]);
 
   // Cargar direcciones del usuario usando AddressesService
   useEffect(() => {

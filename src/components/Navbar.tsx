@@ -304,7 +304,7 @@ export default function Navbar() {
                 navbar.router.push("/");
               }}
               aria-label="Inicio"
-              className="shrink-0"
+              className="flex items-center gap-2 shrink-0"
             >
               <Image
                 src={
@@ -318,10 +318,23 @@ export default function Navbar() {
                 className="h-10 w-10 transition-all duration-300"
                 priority
               />
+              <Image
+                src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
+                alt="Samsung"
+                height={30}
+                width={100}
+                className={cn(
+                  "h-7 w-auto transition-all duration-300",
+                  shouldShowWhiteItemsMobile && "brightness-0 invert"
+                )}
+                priority
+              />
             </Link>
 
-            {/* Mostrar dirección (siempre, el componente maneja si está logueado o no) */}
-            <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
+            {/* Ocultar la dirección en mobile estricto para dar protagonismo al logo */}
+            <div className="hidden md:block">
+              <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
+            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">

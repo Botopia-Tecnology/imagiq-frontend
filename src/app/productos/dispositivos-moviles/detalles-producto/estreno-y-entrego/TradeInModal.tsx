@@ -95,6 +95,11 @@ export default function TradeInModal({
       categories: safeTradeInData.categories,
       selectedCategory: formState.selectedCategory,
       deviceState: flowState.deviceState,
+      flowState: {
+        initialAnswers: flowState.initialAnswers,
+        damageFreeAnswer: flowState.damageFreeAnswer,
+        goodConditionAnswer: flowState.goodConditionAnswer,
+      },
     });
 
   useEffect(() => {

@@ -41,13 +41,13 @@ export default function DeviceCategorySelector({
               onClick={() => onSelectCategory(category.id)}
               className={`relative rounded-md p-3 transition-all duration-200 ${
                 selectedCategory === category.id
-                  ? "border-[#0099FF] bg-white"
-                  : "border-gray-300 bg-white hover:border-[#222]"
+                  ? "border-[#0099FF] bg-[#0099FF]/5 ring-2 ring-[#0099FF] ring-offset-1"
+                  : "border-gray-300 bg-white hover:border-[#0099FF] hover:bg-gray-50"
               }`}
               style={
                 selectedCategory === category.id
                   ? {
-                      borderStyle: "dotted",
+                      borderStyle: "solid",
                       borderWidth: "2px",
                     }
                   : {

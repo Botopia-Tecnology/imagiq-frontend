@@ -11,6 +11,8 @@ interface IMEIInputSectionProps {
   readonly onImeiChange: (value: string) => void;
   readonly tradeInValue?: number;
   readonly calculatingValue?: boolean;
+  readonly termsAccepted?: boolean;
+  readonly onTermsAcceptedChange?: (accepted: boolean) => void;
 }
 
 export default function IMEIInputSection({
@@ -20,6 +22,8 @@ export default function IMEIInputSection({
   onImeiChange,
   tradeInValue = 0,
   calculatingValue = false,
+  termsAccepted = false,
+  onTermsAcceptedChange,
 }: Readonly<IMEIInputSectionProps>) {
   let imeiBorderClass = 'border-gray-300 focus:border-[#0099FF]';
   if (imeiInput.length > 0 && imeiInput.length < 15) {
@@ -179,6 +183,39 @@ export default function IMEIInputSection({
           </div>
         </div>
       </div>
+
+      {/* Terms and Conditions Section */}
+      {imeiInput.length === 15 && (
+        <div className="mt-6">
+          <h4
+            className="text-sm font-semibold text-[#222] mb-3"
+            style={{ fontFamily: "SamsungSharpSans" }}
+          >
+            Confirmar Términos & Condiciones y Políticas de Privacidad
+          </h4>
+          <div className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              id="terms-checkbox"
+              checked={termsAccepted}
+              onChange={(e) => onTermsAcceptedChange?.(e.target.checked)}
+              className="mt-1 w-4 h-4 text-[#0099FF] border-gray-300 rounded focus:ring-[#0099FF] focus:ring-2 cursor-pointer"
+            />
+            <label
+              htmlFor="terms-checkbox"
+              className="text-sm text-[#222] leading-relaxed cursor-pointer"
+              style={{ fontFamily: "SamsungSharpSans" }}
+            >
+              He leído y acepto los Términos y Condiciones del Plan Recambio
+            </label>
+          </div>
+          {imeiInput.length === 15 && !termsAccepted && (
+            <p className="text-xs text-red-500 mt-1">
+              Campo obligatorio
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -559,6 +559,28 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     setIsTradeInModalOpen(false);
   };
 
+  const shouldShowTradeInBanner =
+    !!tradeInData &&
+    (tradeInData.completed ||
+      (!tradeInData.completed &&
+        cartProducts.length === 1 &&
+        cartProducts[0]?.indRetoma === 1));
+
+  const tradeInSummaryProps = shouldShowTradeInBanner
+    ? {
+        deviceName: tradeInData!.deviceName,
+        tradeInValue: tradeInData!.value,
+        onEdit: tradeInData!.completed
+          ? handleRemoveTradeIn
+          : handleOpenTradeInModal,
+        validationError: !tradeInValidation.isValid
+          ? getTradeInValidationMessage(tradeInValidation)
+          : undefined,
+        isGuide: !tradeInData!.completed,
+        showErrorSkeleton,
+      }
+    : null;
+
   return (
     <main className="min-h-screen py-2 md:py-8 px-2 md:px-0 pb-40 md:pb-8">
       {/* Grid principal: productos y resumen de compra */}
@@ -621,6 +643,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                   Tu compra califica para envío gratuito
                 </p>
               </div>
+
+              {/* Banner de Trade-In - Solo mobile */}
+              {tradeInSummaryProps && (
+                <div className="md:hidden mt-4">
+                  <TradeInCompletedSummary {...tradeInSummaryProps} />
+                </div>
+              )}
             </>
           )}
         </section>
@@ -633,25 +662,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}
-          {/* Mostrar si está completado O si el producto aplica pero no está activo (para guiar al usuario) */}
-          {(tradeInData?.completed || (tradeInData && !tradeInData.completed && cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1)) && (
-            <TradeInCompletedSummary
-              deviceName={tradeInData.deviceName}
-              tradeInValue={tradeInData.value}
-              onEdit={tradeInData.completed ? handleRemoveTradeIn : handleOpenTradeInModal}
-              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
-              isGuide={!tradeInData.completed}
-              showErrorSkeleton={showErrorSkeleton}
-            />
+          {tradeInSummaryProps && (
+            <TradeInCompletedSummary {...tradeInSummaryProps} />
           )}
-          
-          {/* Modal de Trade-In */}
-          <TradeInModal
-            isOpen={isTradeInModalOpen}
-            onClose={() => setIsTradeInModalOpen(false)}
-            onCompleteTradeIn={handleCompleteTradeIn}
-            onCancelWithoutCompletion={handleCancelWithoutCompletion}
-          />
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
@@ -737,6 +750,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           </div>
         </div>
       )}
+
+      <TradeInModal
+        isOpen={isTradeInModalOpen}
+        onClose={() => setIsTradeInModalOpen(false)}
+        onCompleteTradeIn={handleCompleteTradeIn}
+        onCancelWithoutCompletion={handleCancelWithoutCompletion}
+      />
     </main>
   );
 }

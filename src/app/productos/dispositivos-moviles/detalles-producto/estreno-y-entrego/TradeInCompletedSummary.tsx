@@ -31,7 +31,7 @@ export default function TradeInCompletedSummary({
           <button
             onClick={onEdit}
             className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
-            aria-label="Quitar beneficio Estreno y Entrego"
+            aria-label="Quitar beneficio Entrego y Estreno"
             type="button"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -51,7 +51,7 @@ export default function TradeInCompletedSummary({
               <h3 className={`text-base font-semibold mb-1 ${
                 validationError ? "text-red-700" : "text-[#222]"
               }`}>
-                Estreno y Entrego
+                Entrego y Estreno
               </h3>
               <p className={`text-sm ${validationError ? "text-red-600" : "text-gray-600"}`}>
                 {deviceName}
@@ -115,16 +115,16 @@ export default function TradeInCompletedSummary({
             {isGuide ? (
               <div>
                 <p className="text-sm text-gray-700 leading-relaxed font-medium mb-2">
-                  Este producto aplica para el beneficio Estreno y Entrego
+                  Este producto aplica para el beneficio Entrego y Estreno
                 </p>
                 <p className="text-xs text-gray-600 leading-relaxed">
-                  Completa el proceso de Estreno y Entrego para aplicar el descuento. Haz clic en &quot;Más información&quot; para comenzar.
+                  Completa el proceso de Entrego y Estreno para aplicar el descuento. Haz clic en &quot;Más información&quot; para comenzar.
                 </p>
               </div>
             ) : (
               <>
                 <p className="text-xs text-gray-700 leading-relaxed">
-                  Este es un valor aproximado del beneficio Estreno y Entrego al que aplicaste. Aplican TyC*
+                  Este es un valor aproximado del beneficio Entrego y Estreno al que aplicaste. Aplican TyC*
                 </p>
                 {showStorePickupMessage && (
                   <p className="text-xs text-gray-700 leading-relaxed font-medium">

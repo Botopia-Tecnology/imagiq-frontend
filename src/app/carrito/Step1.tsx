@@ -11,7 +11,10 @@ import { useAnalyticsWithUser } from "@/lib/analytics";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import { tradeInEndpoints } from "@/lib/api";
-import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import {
+  validateTradeInProducts,
+  getTradeInValidationMessage,
+} from "./utils/validateTradeIn";
 import { toast } from "sonner";
 
 /**
@@ -35,7 +38,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     value: number;
     completed: boolean;
   } | null>(null);
-  
+
   // Estado para controlar el modal de Trade-In
   const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
 
@@ -78,7 +81,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       }
     } else {
       // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía
-      const productApplies = cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
+      const productApplies =
+        cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
       if (productApplies) {
         setTradeInData({
           deviceName: cartProducts[0].name,
@@ -324,9 +328,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
     const verifyTradeIn = async () => {
       // Obtener SKUs únicos (sin duplicados)
-      const uniqueSkus = Array.from(
-        new Set(cartProducts.map((p) => p.sku))
-      );
+      const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
       // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
       const productsToVerify = uniqueSkus.filter((sku) => {
@@ -454,7 +456,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     hasMultipleProducts: boolean;
     errorMessage?: string;
   }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
-  
+
   // Estado para mostrar skeleton del mensaje de error inicialmente
   const [showErrorSkeleton, setShowErrorSkeleton] = React.useState(false);
 
@@ -462,18 +464,23 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   React.useEffect(() => {
     const validation = validateTradeInProducts(cartProducts);
     setTradeInValidation(validation);
-    
+
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
-    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+    if (
+      !validation.isValid &&
+      validation.errorMessage &&
+      validation.errorMessage.includes("Te removimos")
+    ) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
+
       // Quitar el banner inmediatamente
       setTradeInData(null);
-      
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
-        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        description:
+          "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
         duration: 5000,
       });
     } else {
@@ -515,12 +522,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       // Mapear ProductApiData a CartProduct
       const cartProduct = {
         id: producto.codigoMarketBase,
-        name: producto.desDetallada[0] || producto.nombreMarket?.[0] || '',
+        name: producto.desDetallada[0] || producto.nombreMarket?.[0] || "",
         image: getCloudinaryUrl(producto.imagePreviewUrl[0], "catalog"),
         price: producto.precioeccommerce[0] || producto.precioNormal[0],
         sku: producto.sku[0] || "",
         ean: producto.ean[0] || "",
-        desDetallada: producto.desDetallada[0] || producto.nombreMarket?.[0] || '',
+        desDetallada:
+          producto.desDetallada[0] || producto.nombreMarket?.[0] || "",
       };
 
       // Agregar al carrito
@@ -534,7 +542,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const handleRemoveTradeIn = () => {
     setTradeInData(null);
     localStorage.removeItem("imagiq_trade_in");
-    
+
     // Si el producto aplica (indRetoma === 1), volver a mostrar el banner guía
     if (cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1) {
       setTradeInData({
@@ -544,12 +552,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       });
     }
   };
-  
+
   // Handler para abrir el modal de Trade-In
   const handleOpenTradeInModal = () => {
     setIsTradeInModalOpen(true);
   };
-  
+
   // Handler para cuando se completa el Trade-In
   const handleCompleteTradeIn = (deviceName: string, value: number) => {
     const newTradeInData = {
@@ -559,11 +567,26 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     };
     setTradeInData(newTradeInData);
     setIsTradeInModalOpen(false);
-    
-    // Guardar en localStorage
-    localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+
+    // Guardar en localStorage pero preservando propiedades previas (ej. detalles)
+    try {
+      const raw = localStorage.getItem("imagiq_trade_in");
+      let existing: Record<string, unknown> = {};
+      if (raw) {
+        try {
+          existing = JSON.parse(raw) as Record<string, unknown>;
+        } catch {
+          existing = {};
+        }
+      }
+      const merged = { ...existing, ...newTradeInData };
+      localStorage.setItem("imagiq_trade_in", JSON.stringify(merged));
+    } catch {
+      // fallback simple write
+      localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+    }
   };
-  
+
   // Handler para cancelar sin completar
   const handleCancelWithoutCompletion = () => {
     setIsTradeInModalOpen(false);

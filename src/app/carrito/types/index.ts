@@ -5,7 +5,9 @@ export interface BasicPaymentData {
   items: Item[];
   userInfo: UserInfo;
   metodo_envio: number;
+  codigo_bodega?: string;
   informacion_facturacion: InformacionFacturacion;
+  beneficios?: BeneficiosDTO[];
 }
 export interface InformacionFacturacion {
   type: string;
@@ -18,6 +20,29 @@ export interface InformacionFacturacion {
   nit?: string;
   representante_legal?: string;
   direccion_id: string | null; // nullable por si no siempre se envía
+}
+
+export interface DetalleDispositivoRetoma {
+  pantalla_enciende_mas_30_segundos: boolean;
+  libre_uso_sin_bloqueo_operador: boolean;
+  sin_danos_graves: boolean;
+  buen_estado: boolean;
+}
+
+export interface BeneficiosDTO {
+  type:
+    | "0%_interes"
+    | "entrego_y_estreno"
+    | "bundle"
+    | "soporte"
+    | "sin_beneficios";
+  dispositivo_a_recibir?: string;
+  valor_retoma?: number;
+  dispositivo_a_entregar?: string;
+  detalles_dispositivo_a_recibir?: DetalleDispositivoRetoma;
+  sku?: string;
+  descuento_producto?: number;
+  descuento_bundle?: number;
 }
 
 export type AddiPaymentData = BasicPaymentData;

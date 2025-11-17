@@ -69,7 +69,7 @@ export default function PaymentForm({
   const getMaxInstallments = (cardId: string): number | null => {
     if (!zeroInterestData?.cards) return null;
 
-    const cardInfo = zeroInterestData.cards.find(c => c.id === cardId);
+    const cardInfo = zeroInterestData.cards.find((c) => c.id === cardId);
     if (!cardInfo?.eligibleForZeroInterest) return null;
 
     return Math.max(...cardInfo.availableInstallments);
@@ -81,6 +81,43 @@ export default function PaymentForm({
       setBanks(res);
     });
   }, []);
+
+  const loadSavedCards = async () => {
+    try {
+      setIsLoadingCards(true);
+      const encryptedCards =
+        await profileService.getUserPaymentMethodsEncrypted(
+          authContext.user?.id
+        );
+
+      const decryptedCards: DBCard[] = encryptedCards
+        .map((encCard) => {
+          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
+            encCard.encryptedData
+          );
+          if (!decrypted) return null;
+
+          return {
+            id: decrypted.cardId as unknown as string,
+            ultimos_dijitos: decrypted.last4Digits,
+            marca: decrypted.brand?.toLowerCase() || undefined,
+            banco: decrypted.banco || undefined,
+            tipo_tarjeta: decrypted.tipo || undefined,
+            es_predeterminada: false,
+            activa: true,
+            nombre_titular: decrypted.cardHolderName || undefined,
+          } as DBCard;
+        })
+        .filter((card): card is DBCard => card !== null);
+
+      setSavedCards(decryptedCards);
+    } catch (error) {
+      console.error("❌ Error cargando tarjetas:", error);
+      setSavedCards([]);
+    } finally {
+      setIsLoadingCards(false);
+    }
+  };
 
   // Cargar tarjetas guardadas al montar
   useEffect(() => {
@@ -120,43 +157,6 @@ export default function PaymentForm({
       onFetchZeroInterest(cardIds);
     }
   }, [savedCards, onFetchZeroInterest]);
-
-  const loadSavedCards = async () => {
-    try {
-      setIsLoadingCards(true);
-      const encryptedCards =
-        await profileService.getUserPaymentMethodsEncrypted(
-          authContext.user?.id
-        );
-
-      const decryptedCards: DBCard[] = encryptedCards
-        .map((encCard) => {
-          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
-            encCard.encryptedData
-          );
-          if (!decrypted) return null;
-
-          return {
-            id: decrypted.cardId as unknown as string,
-            ultimos_dijitos: decrypted.last4Digits,
-            marca: decrypted.brand?.toLowerCase() || undefined,
-            banco: decrypted.banco || undefined,
-            tipo_tarjeta: decrypted.tipo || undefined,
-            es_predeterminada: false,
-            activa: true,
-            nombre_titular: decrypted.cardHolderName || undefined,
-          } as DBCard;
-        })
-        .filter((card): card is DBCard => card !== null);
-
-      setSavedCards(decryptedCards);
-    } catch (error) {
-      console.error("❌ Error cargando tarjetas:", error);
-      setSavedCards([]);
-    } finally {
-      setIsLoadingCards(false);
-    }
-  };
 
   // Obtener tarjeta predeterminada
   const defaultCard =
@@ -224,7 +224,9 @@ export default function PaymentForm({
                       </span>
                       {defaultCard.tipo_tarjeta && (
                         <span className="text-xs text-gray-500 uppercase">
-                          {defaultCard.tipo_tarjeta.toUpperCase().includes("CREDIT")
+                          {defaultCard.tipo_tarjeta
+                            .toUpperCase()
+                            .includes("CREDIT")
                             ? "Crédito"
                             : "Débito"}
                         </span>
@@ -401,7 +403,9 @@ export default function PaymentForm({
                           </span>
                           {card.tipo_tarjeta && (
                             <span className="text-xs text-gray-500 uppercase">
-                              {card.tipo_tarjeta.toUpperCase().includes("CREDIT")
+                              {card.tipo_tarjeta
+                                .toUpperCase()
+                                .includes("CREDIT")
                                 ? "Crédito"
                                 : "Débito"}
                             </span>
@@ -423,7 +427,9 @@ export default function PaymentForm({
                       </div>
                     </span>
                     {(() => {
-                      const maxInstallments = getMaxInstallments(String(card.id));
+                      const maxInstallments = getMaxInstallments(
+                        String(card.id)
+                      );
                       return maxInstallments && maxInstallments > 1 ? (
                         <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold whitespace-nowrap flex-shrink-0">
                           Hasta {maxInstallments} cuotas sin interés

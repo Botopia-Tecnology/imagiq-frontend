@@ -5,7 +5,11 @@ import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
-import { PaymentMethod, CheckZeroInterestResponse } from "../types";
+import {
+  PaymentMethod,
+  BeneficiosDTO,
+  CheckZeroInterestResponse,
+} from "../types";
 import {
   payWithAddi,
   payWithCard,
@@ -36,7 +40,8 @@ export function useCheckoutLogic() {
   const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
 
   // Estados para cuotas sin interés
-  const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
+  const [zeroInterestData, setZeroInterestData] =
+    useState<CheckZeroInterestResponse | null>(null);
   const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
 
   const [card, setCard] = useState<CardData>(() => {
@@ -125,44 +130,34 @@ export function useCheckoutLogic() {
 
   const handleUseNewCardChange = (useNew: boolean) => {
     setUseNewCard(useNew);
+    // If user chooses to use a new card, clear selected saved card.
     if (useNew) {
-      // Si el usuario quiere usar una nueva tarjeta, limpiar la selección de tarjeta guardada
       setSelectedCardId(null);
     }
   };
 
   // Función para consultar información de cuotas sin interés
-  const fetchZeroInterestInfo = useCallback(async (cardIds: string[]) => {
-    const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+  const fetchZeroInterestInfo = useCallback(
+    async (cardIds: string[]) => {
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
 
-    if (!userInfo.id || cardIds.length === 0) return;
+      if (!userInfo.id || cardIds.length === 0) return;
 
-    setIsLoadingZeroInterest(true);
-    const result = await checkZeroInterest({
-      userId: userInfo.id,
-      cardIds,
-      productSkus: cartProducts.map(p => p.sku),
-      totalAmount: calculations.total,
-    });
+      setIsLoadingZeroInterest(true);
+      const result = await checkZeroInterest({
+        userId: userInfo.id,
+        cardIds,
+        productSkus: cartProducts.map((p) => p.sku),
+        totalAmount: calculations.total,
+      });
 
-    setZeroInterestData(result);
-    setIsLoadingZeroInterest(false);
-  }, [cartProducts, calculations.total]);
+      setZeroInterestData(result);
+      setIsLoadingZeroInterest(false);
+    },
+    [cartProducts, calculations.total]
+  );
 
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
-  // useEffect(() => {
-  //   const syncCart = () => setCartProducts(getCartProducts());
-  //   window.addEventListener("storage", syncCart);
-  //   syncCart();
-  //   return () => window.removeEventListener("storage", syncCart);
-  // }, []);
-
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     const d = localStorage.getItem("applied-discount");
-  //     setAppliedDiscount(d ? Number(d) : 0);
-  //   }
-  // }, []);
 
   // Función para validar y guardar datos de pago (sin procesar aún)
   const handleSavePaymentData = async (e: React.FormEvent) => {
@@ -291,7 +286,10 @@ export function useCheckoutLogic() {
     // Procesar pago
     try {
       const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
+      const direction = safeGetLocalStorage<{ id?: string }>(
+        "checkout-address",
+        {}
+      );
       const billing = safeGetLocalStorage<{
         direccion?: { id?: string };
         email?: string;
@@ -321,7 +319,41 @@ export function useCheckoutLogic() {
       let res;
 
       switch (paymentMethod) {
-        case "addi":
+        case "addi": {
+          // Construir beneficios
+          const buildBeneficios = (): BeneficiosDTO[] => {
+            const beneficios: BeneficiosDTO[] = [];
+            try {
+              const tradeStr = localStorage.getItem("imagiq_trade_in");
+              if (tradeStr) {
+                const parsedTrade = JSON.parse(tradeStr);
+                if (parsedTrade?.completed) {
+                  beneficios.push({
+                    type: "entrego_y_estreno",
+                    dispositivo_a_recibir: parsedTrade.deviceName,
+                    valor_retoma: parsedTrade.value,
+                    detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                  });
+                }
+              }
+
+              const zeroStr = localStorage.getItem("checkout-zero-interest");
+              if (zeroStr) {
+                const parsedZero = JSON.parse(zeroStr);
+                const aplicaZero =
+                  parsedZero?.aplica_zero_interes || parsedZero?.aplica;
+                if (aplicaZero) {
+                  // Addi payments might not have a card id, but keep logic for completeness
+                  beneficios.push({ type: "0%_interes" });
+                }
+              }
+            } catch {
+              // ignore
+            }
+            if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+            return beneficios;
+          };
+
           res = await payWithAddi({
             currency: "COP",
             items: cartProducts.map((p) => ({
@@ -341,6 +373,7 @@ export function useCheckoutLogic() {
               direccionId: direction.id || "",
             },
             informacion_facturacion,
+            beneficios: buildBeneficios(),
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
@@ -362,8 +395,9 @@ export function useCheckoutLogic() {
             router.push(res.redirectUrl);
           }
           break;
+        }
 
-        case "tarjeta":
+        case "tarjeta": {
           // Verificar si usa tarjeta guardada o nueva
           if (selectedCardId && !useNewCard) {
             // Pago con tarjeta guardada
@@ -388,6 +422,56 @@ export function useCheckoutLogic() {
                 direccionId: direction.id || "",
               },
               informacion_facturacion,
+              beneficios: (() => {
+                const beneficios: BeneficiosDTO[] = [];
+                try {
+                  const tradeStr = localStorage.getItem("imagiq_trade_in");
+                  if (tradeStr) {
+                    const parsedTrade = JSON.parse(tradeStr);
+                    if (parsedTrade?.completed) {
+                      beneficios.push({
+                        type: "entrego_y_estreno",
+                        dispositivo_a_recibir: parsedTrade.deviceName,
+                        valor_retoma: parsedTrade.value,
+                        detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                      });
+                    }
+                  }
+
+                  const zeroStr = localStorage.getItem(
+                    "checkout-zero-interest"
+                  );
+                  if (zeroStr) {
+                    const parsedZero = JSON.parse(zeroStr);
+                    const aplicaZero =
+                      parsedZero?.aplica_zero_interes || parsedZero?.aplica;
+                    if (aplicaZero) {
+                      const installmentsNum = Number(card.installments || 1);
+                      const cardId =
+                        selectedCardId ||
+                        localStorage.getItem("checkout-saved-card-id");
+                      const matched = parsedZero?.cards?.find(
+                        (c: {
+                          id: string;
+                          eligibleForZeroInterest: boolean;
+                          availableInstallments: number[];
+                        }) => String(c.id) === String(cardId)
+                      );
+                      if (
+                        matched?.eligibleForZeroInterest &&
+                        matched.availableInstallments?.includes(installmentsNum)
+                      ) {
+                        beneficios.push({ type: "0%_interes" });
+                      }
+                    }
+                  }
+                } catch {
+                  // ignore
+                }
+                if (beneficios.length === 0)
+                  return [{ type: "sin_beneficios" }];
+                return beneficios;
+              })(),
             });
           } else {
             // Pago con tarjeta nueva
@@ -415,6 +499,30 @@ export function useCheckoutLogic() {
                 direccionId: direction.id || "",
               },
               informacion_facturacion,
+              beneficios: (() => {
+                const beneficios: BeneficiosDTO[] = [];
+                try {
+                  const tradeStr = localStorage.getItem("imagiq_trade_in");
+                  if (tradeStr) {
+                    const parsedTrade = JSON.parse(tradeStr);
+                    if (parsedTrade?.completed) {
+                      beneficios.push({
+                        type: "entrego_y_estreno",
+                        dispositivo_a_recibir: parsedTrade.deviceName,
+                        valor_retoma: parsedTrade.value,
+                        detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                      });
+                    }
+                  }
+
+                  // For new cards we don't have a card id to check zero interest eligibility
+                } catch {
+                  // ignore
+                }
+                if (beneficios.length === 0)
+                  return [{ type: "sin_beneficios" }];
+                return beneficios;
+              })(),
             });
           }
 
@@ -438,8 +546,9 @@ export function useCheckoutLogic() {
           }
           router.push(res.redirectionUrl);
           break;
+        }
 
-        case "pse":
+        case "pse": {
           res = await payWithPse({
             bank: selectedBank,
             description: "Imagiq Store",
@@ -461,6 +570,27 @@ export function useCheckoutLogic() {
               direccionId: direction.id || "",
             },
             informacion_facturacion,
+            beneficios: (() => {
+              const beneficios: BeneficiosDTO[] = [];
+              try {
+                const tradeStr = localStorage.getItem("imagiq_trade_in");
+                if (tradeStr) {
+                  const parsedTrade = JSON.parse(tradeStr);
+                  if (parsedTrade?.completed) {
+                    beneficios.push({
+                      type: "entrego_y_estreno",
+                      dispositivo_a_recibir: parsedTrade.deviceName,
+                      valor_retoma: parsedTrade.value,
+                      detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                    });
+                  }
+                }
+              } catch {
+                // ignore
+              }
+              if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+              return beneficios;
+            })(),
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
@@ -482,6 +612,7 @@ export function useCheckoutLogic() {
           }
           router.push(res.redirectUrl);
           break;
+        }
       }
     } catch (err) {
       console.error("Error al guardar datos de orden:", err);

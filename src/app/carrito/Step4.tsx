@@ -8,7 +8,10 @@ import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
 import { useCart } from "@/hooks/useCart";
-import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import {
+  validateTradeInProducts,
+  getTradeInValidationMessage,
+} from "./utils/validateTradeIn";
 import { toast } from "sonner";
 
 export default function Step4({
@@ -87,18 +90,23 @@ export default function Step4({
   React.useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
+
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
-    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+    if (
+      !validation.isValid &&
+      validation.errorMessage &&
+      validation.errorMessage.includes("Te removimos")
+    ) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
+
       // Quitar el banner inmediatamente
       setTradeInData(null);
-      
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
-        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        description:
+          "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
         duration: 5000,
       });
     }
@@ -189,7 +197,11 @@ export default function Step4({
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
-              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+              validationError={
+                !tradeInValidation.isValid
+                  ? getTradeInValidationMessage(tradeInValidation)
+                  : undefined
+              }
             />
           )}
         </div>

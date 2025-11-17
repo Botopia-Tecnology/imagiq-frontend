@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import DeviceCategorySelector from "./DeviceCategorySelector";
 import BrandDropdown from "./BrandDropdown";
 import SimpleDropdown from "./SimpleDropdown";
@@ -7,7 +7,12 @@ import IMEIInputSection from "./IMEIInputSection";
 import InitialQuestionsSection from "./InitialQuestionsSection";
 import CombinedConditionQuestions from "./CombinedConditionQuestions";
 import DisqualificationMessage from "./DisqualificationMessage";
-import type { Brand, DeviceModel, DeviceCapacity, DeviceCategory } from "./types";
+import type {
+  Brand,
+  DeviceModel,
+  DeviceCapacity,
+  DeviceCategory,
+} from "./types";
 import type { TradeInStep } from "./hooks/useTradeInFlow";
 
 interface ModalStepContentProps {
@@ -83,6 +88,68 @@ export default function ModalStepContent({
   onImeiChange,
   onClose,
 }: ModalStepContentProps) {
+  // Persistir respuestas dentro del objeto `imagiq_trade_in` bajo la propiedad `detalles`
+  const persistDetalle = (partial: Partial<Record<string, boolean>>) => {
+    if (globalThis.window === undefined) return;
+
+    const raw = localStorage.getItem("imagiq_trade_in");
+    let tradeInObj: Record<string, unknown> = {};
+    if (raw) {
+      try {
+        tradeInObj = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        tradeInObj = {};
+      }
+    }
+
+    const existingDetalles =
+      (tradeInObj.detalles as Record<string, boolean>) || {};
+    const mergedDetalles = { ...(existingDetalles || {}), ...(partial || {}) };
+
+    const newObj = { ...tradeInObj, detalles: mergedDetalles };
+    localStorage.setItem("imagiq_trade_in", JSON.stringify(newObj));
+  };
+
+  const handleScreenTurnsOnAnswer = (answer: boolean) => {
+    onScreenTurnsOnAnswer(answer);
+    persistDetalle({ pantalla_enciende_mas_30_segundos: Boolean(answer) });
+  };
+
+  const handleDeviceFreeAnswer = (answer: boolean) => {
+    onDeviceFreeAnswer(answer);
+    persistDetalle({ libre_uso_sin_bloqueo_operador: Boolean(answer) });
+  };
+
+  const handleDamageFreeAnswer = (answer: boolean) => {
+    onDamageFreeAnswer(answer);
+    persistDetalle({ sin_danos_graves: Boolean(answer) });
+  };
+
+  const handleGoodConditionAnswer = (answer: boolean) => {
+    onGoodConditionAnswer(answer);
+    persistDetalle({ buen_estado: Boolean(answer) });
+  };
+
+  // Persistir el valor de retoma dentro del objeto `imagiq_trade_in` existente
+  useEffect(() => {
+    if (globalThis.window === undefined) return;
+    if (tradeInValue === undefined || tradeInValue === null) return;
+    if (typeof tradeInValue !== "number" || Number.isNaN(tradeInValue)) return;
+
+    const raw = localStorage.getItem("imagiq_trade_in");
+    let obj: Record<string, unknown> = {};
+    if (raw) {
+      try {
+        obj = JSON.parse(raw) as Record<string, unknown>;
+      } catch {
+        obj = {};
+      }
+    }
+
+    const newObj = { ...obj, value: tradeInValue };
+    localStorage.setItem("imagiq_trade_in", JSON.stringify(newObj));
+  }, [tradeInValue]);
+
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -142,8 +209,8 @@ export default function ModalStepContent({
       <InitialQuestionsSection
         screenTurnsOn={screenTurnsOn}
         deviceFreeInColombia={deviceFreeInColombia}
-        onScreenTurnsOnAnswer={onScreenTurnsOnAnswer}
-        onDeviceFreeAnswer={onDeviceFreeAnswer}
+        onScreenTurnsOnAnswer={handleScreenTurnsOnAnswer}
+        onDeviceFreeAnswer={handleDeviceFreeAnswer}
       />
     );
   }
@@ -153,8 +220,8 @@ export default function ModalStepContent({
       <CombinedConditionQuestions
         damageFreeAnswer={damageFreeAnswer}
         goodConditionAnswer={goodConditionAnswer}
-        onDamageFreeAnswer={onDamageFreeAnswer}
-        onGoodConditionAnswer={onGoodConditionAnswer}
+        onDamageFreeAnswer={handleDamageFreeAnswer}
+        onGoodConditionAnswer={handleGoodConditionAnswer}
       />
     );
   }

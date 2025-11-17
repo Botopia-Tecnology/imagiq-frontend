@@ -330,14 +330,15 @@ export default function Navbar() {
                 priority
               />
             </Link>
-
-            {/* Ocultar la dirección en mobile estricto para dar protagonismo al logo */}
-            <div className="hidden md:block">
-              <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
-            </div>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Dirección antes del carrito en mobile/tablet */}
+            {isAuthenticated && (
+              <div className="flex-shrink-0 -ml-2" style={{ display: 'flex', alignItems: 'center' }}>
+                <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
+              </div>
+            )}
             <CartIcon
               count={navbar.itemCount}
               showBump={false}

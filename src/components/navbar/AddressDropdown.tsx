@@ -318,6 +318,35 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   // Determinar qué dirección mostrar: predeterminada o primera disponible
   const displayAddress = currentAddress || (addresses.length > 0 ? addresses[0] : null);
 
+  // Función para obtener una versión corta de la dirección para mobile
+  // NO mostrar nombreDireccion (ej: "Casa"), solo la dirección real
+  const getShortAddress = (address: Address | null): string => {
+    if (!address) return 'Dirección';
+    
+    // Priorizar ciudad (ej: "Bogotá")
+    if (address.ciudad && address.ciudad.trim()) {
+      return address.ciudad.trim();
+    }
+    
+    // Si tiene dirección formateada, tomar los primeros caracteres
+    if (address.direccionFormateada && address.direccionFormateada.trim()) {
+      const trimmed = address.direccionFormateada.trim();
+      return trimmed.length > 25 
+        ? trimmed.substring(0, 25) + '...'
+        : trimmed;
+    }
+    
+    // Fallback a lineaUno
+    if (address.lineaUno && address.lineaUno.trim()) {
+      const trimmed = address.lineaUno.trim();
+      return trimmed.length > 25 
+        ? trimmed.substring(0, 25) + '...'
+        : trimmed;
+    }
+    
+    return 'Dirección';
+  };
+
   // Si no hay dirección predeterminada ni direcciones disponibles, mostrar botón para agregar dirección
   // También mostrar skeleton si está cargando direcciones
   if (!displayAddress) {
@@ -453,28 +482,17 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
         </button>
 
-        {/* Botón para Mobile/Tablet (< 1280px) - Dos líneas con flecha */}
+        {/* Botón para Mobile/Tablet (< 1280px) - Solo icono, igual al carrito */}
         <button
           className={cn(
-            "xl:hidden flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer py-1 max-w-[200px] sm:max-w-[280px] pr-4",
-            showWhiteItems ? "text-white/90" : "text-black/80"
+            "xl:hidden flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity cursor-pointer",
+            "text-black"
           )}
           onClick={handleToggle}
-          title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
+          title={displayAddress.direccionFormateada || displayAddress.lineaUno || displayAddress.ciudad || 'Dirección'}
           type="button"
         >
-          <div className="flex flex-col items-start gap-0 min-w-0 flex-1">
-            <div className="flex items-center gap-1 w-full">
-              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-              <span className="text-[11px] font-semibold truncate">
-                {displayAddress.nombreDireccion || 'Dirección'}
-              </span>
-            </div>
-            <span className="text-[11px] font-normal truncate w-full block leading-tight">
-              {displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
-            </span>
-          </div>
-          <ChevronDown className="w-4 h-4 flex-shrink-0" />
+          <MapPin className="w-5 h-5 text-black" />
         </button>
 
         {open && (

@@ -82,6 +82,43 @@ export default function PaymentForm({
     });
   }, []);
 
+  const loadSavedCards = async () => {
+    try {
+      setIsLoadingCards(true);
+      const encryptedCards =
+        await profileService.getUserPaymentMethodsEncrypted(
+          authContext.user?.id
+        );
+
+      const decryptedCards: DBCard[] = encryptedCards
+        .map((encCard) => {
+          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
+            encCard.encryptedData
+          );
+          if (!decrypted) return null;
+
+          return {
+            id: decrypted.cardId as unknown as string,
+            ultimos_dijitos: decrypted.last4Digits,
+            marca: decrypted.brand?.toLowerCase() || undefined,
+            banco: decrypted.banco || undefined,
+            tipo_tarjeta: decrypted.tipo || undefined,
+            es_predeterminada: false,
+            activa: true,
+            nombre_titular: decrypted.cardHolderName || undefined,
+          } as DBCard;
+        })
+        .filter((card): card is DBCard => card !== null);
+
+      setSavedCards(decryptedCards);
+    } catch (error) {
+      console.error("❌ Error cargando tarjetas:", error);
+      setSavedCards([]);
+    } finally {
+      setIsLoadingCards(false);
+    }
+  };
+
   // Cargar tarjetas guardadas al montar
   useEffect(() => {
     if (authContext.user?.id) {
@@ -121,42 +158,6 @@ export default function PaymentForm({
     }
   }, [savedCards, onFetchZeroInterest]);
 
-  const loadSavedCards = async () => {
-    try {
-      setIsLoadingCards(true);
-      const encryptedCards =
-        await profileService.getUserPaymentMethodsEncrypted(
-          authContext.user?.id
-        );
-
-      const decryptedCards: DBCard[] = encryptedCards
-        .map((encCard) => {
-          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
-            encCard.encryptedData
-          );
-          if (!decrypted) return null;
-
-          return {
-            id: decrypted.cardId as unknown as string,
-            ultimos_dijitos: decrypted.last4Digits,
-            marca: decrypted.brand?.toLowerCase() || undefined,
-            banco: decrypted.banco || undefined,
-            tipo_tarjeta: decrypted.tipo || undefined,
-            es_predeterminada: false,
-            activa: true,
-            nombre_titular: decrypted.cardHolderName || undefined,
-          } as DBCard;
-        })
-        .filter((card): card is DBCard => card !== null);
-
-      setSavedCards(decryptedCards);
-    } catch (error) {
-      console.error("❌ Error cargando tarjetas:", error);
-      setSavedCards([]);
-    } finally {
-      setIsLoadingCards(false);
-    }
-  };
 
   // Obtener tarjeta predeterminada
   const defaultCard =

@@ -3,13 +3,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useDynamicBanner } from '@/hooks/useDynamicBanner';
-import { parseCoordinates } from '@/utils/bannerCoordinates';
+import { parsePosition, positionToCSS } from '@/utils/bannerCoordinates';
+import type { BannerPosition } from '@/types/banner';
 
 type CSS = React.CSSProperties;
 
-const percentPos = (coords?: string): CSS => {
-  const { x, y } = parseCoordinates(coords || '4-4');
-  return { left: `${(x / 8) * 100}%`, top: `${(y / 8) * 100}%` };
+/**
+ * Convierte una BannerPosition parseada a estilos CSS porcentuales simples
+ * (usado como fallback cuando no se puede calcular la posición exacta)
+ */
+const positionToPercentCSS = (position: BannerPosition | null): CSS => {
+  if (!position) {
+    return { left: '50%', top: '50%' };
+  }
+  return { left: `${position.x}%`, top: `${position.y}%` };
 };
 
 async function loadImage(src?: string) {
@@ -72,12 +79,11 @@ export default function DynamicBannerClean({ placement, className = '', showOver
   const [deskStyle, setDeskStyle] = useState<CSS | undefined>();
   const [mobStyle, setMobStyle] = useState<CSS | undefined>();
 
-  const compute = async (coords?: string, wrapper?: HTMLDivElement | null, mediaSrc?: string) => {
-    if (!wrapper) return undefined;
+  const compute = async (position: BannerPosition | null, wrapper?: HTMLDivElement | null, mediaSrc?: string) => {
+    if (!wrapper || !position) return undefined;
     const wrapRect = wrapper.getBoundingClientRect();
-    const { x: gx, y: gy } = parseCoordinates(coords || '4-4');
-    const lPct = (gx / 8) * 100;
-    const tPct = (gy / 8) * 100;
+    const lPct = position.x;
+    const tPct = position.y;
 
     const video = wrapper.querySelector('video');
     if (video instanceof HTMLVideoElement) {
@@ -110,8 +116,22 @@ export default function DynamicBannerClean({ placement, className = '', showOver
     let mounted = true;
     const run = async () => {
       if (!banner) return;
-      const d = await compute(banner.coordinates ?? undefined, desktopRef.current, (banner.desktop_video_url || banner.desktop_image_url) ?? undefined);
-      const m = await compute(banner.coordinates_mobile ?? undefined, mobileRef.current, (banner.mobile_video_url || banner.mobile_image_url) ?? undefined);
+      
+      // Parsear posiciones del nuevo sistema
+      const desktopPosition = parsePosition(banner.position_desktop);
+      const mobilePosition = parsePosition(banner.position_mobile);
+      
+      const d = await compute(
+        desktopPosition,
+        desktopRef.current,
+        (banner.desktop_video_url || banner.desktop_image_url) ?? undefined
+      );
+      const m = await compute(
+        mobilePosition,
+        mobileRef.current,
+        (banner.mobile_video_url || banner.mobile_image_url) ?? undefined
+      );
+      
       if (!mounted) return;
       setDeskStyle(d);
       setMobStyle(m);
@@ -165,8 +185,21 @@ export default function DynamicBannerClean({ placement, className = '', showOver
         </div>
 
         <div className="absolute inset-0 z-20">
-          <BannerContent title={banner.title} description={banner.description} cta={banner.cta} color={banner.color_font} positionStyle={deskStyle ?? percentPos(banner.coordinates ?? undefined)} />
-          <BannerContent title={banner.title} description={banner.description} cta={banner.cta} color={banner.color_font} positionStyle={mobStyle ?? percentPos(banner.coordinates_mobile ?? undefined)} isMobile />
+          <BannerContent 
+            title={banner.title} 
+            description={banner.description} 
+            cta={banner.cta} 
+            color={banner.color_font} 
+            positionStyle={deskStyle ?? positionToPercentCSS(parsePosition(banner.position_desktop))} 
+          />
+          <BannerContent 
+            title={banner.title} 
+            description={banner.description} 
+            cta={banner.cta} 
+            color={banner.color_font} 
+            positionStyle={mobStyle ?? positionToPercentCSS(parsePosition(banner.position_mobile))} 
+            isMobile 
+          />
         </div>
 
         <div className="pointer-events-none px-4 md:px-6 lg:px-8 xl:px-12 py-6 md:py-8" />

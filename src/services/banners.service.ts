@@ -7,6 +7,7 @@
 
 import { apiClient } from '@/lib/api';
 import type { Banner, BannerApiResponse, HeroBannerConfig } from '@/types/banner';
+import { parsePosition, parseTextStyles } from '@/utils/bannerCoordinates';
 
 /**
  * Servicio singleton para gestionar banners del API
@@ -93,6 +94,13 @@ class BannersService {
     const desktopImage = banner.desktop_image_url || '';
     const mobileImage = banner.mobile_image_url || '';
 
+    // Parsear posiciones del nuevo sistema
+    const positionDesktop = parsePosition(banner.position_desktop);
+    const positionMobile = parsePosition(banner.position_mobile);
+
+    // Parsear estilos de texto (puede ser null)
+    const textStyles = parseTextStyles(banner.text_styles);
+
     return {
       videoSrc: desktopVideo,
       mobileVideoSrc: mobileVideo,
@@ -106,11 +114,14 @@ class BannersService {
       ctaText: banner.cta || 'Ver más',
       ctaLink: banner.link_url || '#',
       textColor: banner.color_font || '#000000',
-      coordinates: banner.coordinates || '4-4', // Centro por defecto
-      coordinatesMobile: banner.coordinates_mobile || '4-6', // Centro-abajo por defecto
-  // Mostrar el contenido cuando el video termine por defecto.
-  // Si en el futuro el API incluye un flag específico, podemos mapearlo aquí.
-  showContentOnEnd: true,
+      // Posiciones parseadas
+      positionDesktop: positionDesktop || undefined,
+      positionMobile: positionMobile || undefined,
+      // Estilos de texto personalizados
+      textStyles: textStyles,
+      // Mostrar el contenido cuando el video termine por defecto.
+      // Si en el futuro el API incluye un flag específico, podemos mapearlo aquí.
+      showContentOnEnd: true,
       autoplay: true,
       loop: false,
       muted: true,

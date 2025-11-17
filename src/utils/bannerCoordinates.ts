@@ -1,72 +1,104 @@
 /**
- * Utilidades para el Sistema de Coordenadas 9x9
+ * Utilidades para el Sistema de Posicionamiento de Banners
  *
- * Convierte coordenadas del formato "x-y" del API a estilos CSS
- * para posicionar contenido en los banners.
+ * Sistema de posiciones JSON con porcentajes del API
+ * position_desktop/mobile: JSON con x,y porcentuales (0-100)
  */
 
-import type { BannerCoordinates } from '@/types/banner';
+import type { BannerPosition, BannerTextStyles } from '@/types/banner';
 
 /**
- * Parsea una cadena de coordenadas en formato "x-y" a objeto BannerCoordinates
+ * Parsea una cadena JSON de posición del API a objeto BannerPosition
  *
- * @param coordinates - String en formato "x-y" donde x,y van de 0-8
- * @returns Objeto con coordenadas x,y. Usa (4,4) como fallback si es inválido
+ * @param positionJson - String JSON en formato {"x":50,"y":50,"imageWidth":1920,"imageHeight":1080}
+ * @returns Objeto BannerPosition o null si es inválido
  *
  * @example
- * parseCoordinates("2-5") // { x: 2, y: 5 }
- * parseCoordinates("invalid") // { x: 4, y: 4 } + console.warn
+ * parsePosition('{"x":26.69,"y":55.53,"imageWidth":1920,"imageHeight":1080}')
+ * // { x: 26.69, y: 55.53, imageWidth: 1920, imageHeight: 1080 }
  */
-export function parseCoordinates(coordinates: string): BannerCoordinates {
-  const fallback: BannerCoordinates = { x: 4, y: 4 }; // Centro
-
-  if (!coordinates || typeof coordinates !== 'string') {
-    console.warn('[BannerCoordinates] Invalid coordinates:', coordinates, '- Using center fallback');
-    return fallback;
+export function parsePosition(positionJson: string | null | undefined): BannerPosition | null {
+  if (!positionJson) {
+    console.warn('[BannerPosition] Empty position JSON - returning null');
+    return null;
   }
 
-  const parts = coordinates.split('-');
-  if (parts.length !== 2) {
-    console.warn('[BannerCoordinates] Invalid format:', coordinates, '- Expected "x-y" format');
-    return fallback;
+  try {
+    const parsed = JSON.parse(positionJson) as BannerPosition;
+
+    // Validar que tenga las propiedades necesarias
+    if (
+      typeof parsed.x !== 'number' ||
+      typeof parsed.y !== 'number'
+    ) {
+      console.warn('[BannerPosition] Invalid position format:', parsed);
+      return null;
+    }
+
+    // Validar rangos (porcentajes deben estar entre 0-100)
+    if (parsed.x < 0 || parsed.x > 100 || parsed.y < 0 || parsed.y > 100) {
+      console.warn('[BannerPosition] Position out of range (0-100):', parsed);
+      return null;
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error('[BannerPosition] Failed to parse position JSON:', error);
+    return null;
   }
-
-  const x = Number.parseInt(parts[0], 10);
-  const y = Number.parseInt(parts[1], 10);
-
-  // Validar que estén en el rango 0-8
-  if (Number.isNaN(x) || Number.isNaN(y) || x < 0 || x > 8 || y < 0 || y > 8) {
-    console.warn('[BannerCoordinates] Out of range:', { x, y }, '- Expected 0-8');
-    return fallback;
-  }
-
-  return { x, y };
 }
 
 /**
- * Convierte coordenadas "x-y" a estilos CSS para posicionamiento absoluto
+ * Convierte un objeto BannerPosition a estilos CSS para posicionamiento absoluto
  *
- * @param coordinates - String en formato "x-y" donde x,y van de 0-8
+ * @param position - Objeto BannerPosition con porcentajes x,y
  * @returns Objeto con propiedades left, top y transform para CSS
  *
  * @example
- * coordinatesToCSS("2-5")
- * // { left: "25%", top: "62.5%", transform: "translate(-50%, -50%)" }
+ * positionToCSS({ x: 26.69, y: 55.53, imageWidth: 1920, imageHeight: 1080 })
+ * // { left: "26.69%", top: "55.53%", transform: "translate(-50%, -50%)" }
  */
-export function coordinatesToCSS(coordinates: string): {
+export function positionToCSS(position: BannerPosition | null): {
   left: string;
   top: string;
   transform: string;
 } {
-  const { x, y } = parseCoordinates(coordinates);
-
-  // Convertir coordenadas 0-8 a porcentajes
-  const leftPercent = (x / 8) * 100;
-  const topPercent = (y / 8) * 100;
+  // Fallback al centro si no hay posición
+  if (!position) {
+    return {
+      left: '50%',
+      top: '50%',
+      transform: 'translate(-50%, -50%)',
+    };
+  }
 
   return {
-    left: `${leftPercent}%`,
-    top: `${topPercent}%`,
+    left: `${position.x}%`,
+    top: `${position.y}%`,
     transform: 'translate(-50%, -50%)', // Centrar desde el punto de anclaje
   };
+}
+
+/**
+ * Parsea una cadena JSON de estilos de texto del API a objeto BannerTextStyles
+ *
+ * @param textStylesJson - String JSON con estilos de texto (puede ser null)
+ * @returns Objeto BannerTextStyles o null si no hay estilos o es inválido
+ *
+ * @example
+ * parseTextStyles('{"title":{"fontSize":"2rem","fontWeight":"700"},...}')
+ * // { title: { fontSize: "2rem", fontWeight: "700" }, ... }
+ */
+export function parseTextStyles(textStylesJson: string | null | undefined): BannerTextStyles | null {
+  if (!textStylesJson) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(textStylesJson) as BannerTextStyles;
+    return parsed;
+  } catch (error) {
+    console.error('[BannerTextStyles] Failed to parse text styles JSON:', error);
+    return null;
+  }
 }

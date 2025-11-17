@@ -172,7 +172,7 @@ export default function Step7({ onBack }: Step7Props) {
             } else {
               bankCode = String(selectedBank);
             }
-          } catch (err) {
+          } catch {
             bankCode = selectedBank;
           }
           // If we have a code but no name, try to resolve the name from the banks API
@@ -183,7 +183,7 @@ export default function Step7({ onBack }: Step7Props) {
                 (b) => String(b.bankCode) === String(bankCode)
               );
               if (found) bankName = found.bankName;
-            } catch (e) {
+            } catch {
               // ignore failure to fetch banks
             }
           }

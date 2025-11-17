@@ -224,7 +224,7 @@ export default function PaymentForm({
                       </span>
                       {defaultCard.tipo_tarjeta && (
                         <span className="text-xs text-gray-500 uppercase">
-                          {defaultCard.tipo_tarjeta.includes("credit")
+                          {defaultCard.tipo_tarjeta.toUpperCase().includes("CREDIT")
                             ? "Crédito"
                             : "Débito"}
                         </span>
@@ -401,7 +401,7 @@ export default function PaymentForm({
                           </span>
                           {card.tipo_tarjeta && (
                             <span className="text-xs text-gray-500 uppercase">
-                              {card.tipo_tarjeta.includes("credit")
+                              {card.tipo_tarjeta.toUpperCase().includes("CREDIT")
                                 ? "Crédito"
                                 : "Débito"}
                             </span>

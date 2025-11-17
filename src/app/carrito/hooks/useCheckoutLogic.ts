@@ -114,7 +114,8 @@ export function useCheckoutLogic() {
 
   const handleUseNewCardChange = (useNew: boolean) => {
     setUseNewCard(useNew);
-    if (!useNew) {
+    // If user chooses to use a new card, clear selected saved card.
+    if (useNew) {
       setSelectedCardId(null);
     }
   };

@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { DBCard, DecryptedCardData } from "@/features/profile/types";
 import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
-import { payWithAddi, payWithCard, payWithPse } from "./utils";
+import { payWithAddi, payWithCard, payWithPse, fetchBanks } from "./utils";
 import { useCart } from "@/hooks/useCart";
 import {
   validateTradeInProducts,
@@ -174,6 +174,16 @@ export default function Step7({ onBack }: Step7Props) {
             }
           } catch (err) {
             bankCode = selectedBank;
+          }
+          // If we have a code but no name, try to resolve the name from the banks API
+          if (bankCode && !bankName) {
+            try {
+              const banks = await fetchBanks();
+              const found = banks.find((b) => String(b.bankCode) === String(bankCode));
+              if (found) bankName = found.bankName;
+            } catch (e) {
+              // ignore failure to fetch banks
+            }
           }
         }
 

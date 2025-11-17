@@ -5,7 +5,7 @@ import Sugerencias from "./Sugerencias";
 import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
-import { apiClient, type ProductApiData, productEndpoints } from "@/lib/api";
+import { apiClient, type ProductApiData, productEndpoints, type CandidateStoresResponse } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { safeGetLocalStorage } from "@/lib/localStorage";
@@ -210,13 +210,23 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             });
 
             if (response.success && response.data) {
-              const { stores } = response.data;
+              // 🔍 DEBUG: Mostrar respuesta completa del endpoint en consola
+              const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
+              console.log(`📦 Respuesta completa de candidate-stores para SKU ${product.sku}:`, {
+                fullResponse: responseData,
+                stores: responseData.stores,
+                canPickUp: responseData.canPickUp,
+                canPickup: responseData.canPickup,
+                default_direction: responseData.default_direction,
+                storesKeys: Object.keys(responseData.stores || {}),
+                storesCount: Object.values(responseData.stores || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0),
+              });
+              
+              const { stores } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
               const canPickUp =
-                (response.data as { canPickUp?: boolean; canPickup?: boolean })
-                  .canPickUp ??
-                (response.data as { canPickUp?: boolean; canPickup?: boolean })
-                  .canPickup ??
+                responseData.canPickUp ??
+                responseData.canPickup ??
                 false;
 
               let shippingCity = "BOGOTÁ";

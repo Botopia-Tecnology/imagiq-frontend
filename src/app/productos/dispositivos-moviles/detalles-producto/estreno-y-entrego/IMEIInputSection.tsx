@@ -109,7 +109,12 @@ export default function IMEIInputSection({
             }}
             placeholder="Ejemplo: 350204507061806"
             maxLength={15}
-            className={`w-full px-0 py-2 border-b-2 text-sm focus:outline-none transition-colors bg-transparent ${imeiBorderClass}`}
+            disabled={calculatingValue}
+            className={`w-full px-0 py-2 border-b-2 text-sm focus:outline-none transition-colors bg-transparent ${
+              calculatingValue 
+                ? 'border-gray-300 cursor-not-allowed opacity-50' 
+                : imeiBorderClass
+            }`}
             style={{ fontFamily: "SamsungSharpSans" }}
           />
           {imeiInput.length > 0 && imeiInput.length < 15 && (

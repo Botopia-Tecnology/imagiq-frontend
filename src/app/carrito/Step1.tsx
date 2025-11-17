@@ -560,31 +560,36 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // Handler para cuando se completa el Trade-In
   const handleCompleteTradeIn = (deviceName: string, value: number) => {
-    const newTradeInData = {
-      deviceName,
-      value,
-      completed: true,
-    };
-    setTradeInData(newTradeInData);
-    setIsTradeInModalOpen(false);
-
-    // Guardar en localStorage pero preservando propiedades previas (ej. detalles)
+    // Cargar datos desde localStorage (ya guardados por handleFinalContinue)
     try {
       const raw = localStorage.getItem("imagiq_trade_in");
-      let existing: Record<string, unknown> = {};
       if (raw) {
-        try {
-          existing = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          existing = {};
-        }
+        const stored = JSON.parse(raw) as { deviceName?: string; value?: number; completed?: boolean };
+        const newTradeInData = {
+          deviceName: stored.deviceName || deviceName,
+          value: stored.value || value,
+          completed: true,
+        };
+        setTradeInData(newTradeInData);
+      } else {
+        // Fallback si no está en localStorage
+        const newTradeInData = {
+          deviceName,
+          value,
+          completed: true,
+        };
+        setTradeInData(newTradeInData);
       }
-      const merged = { ...existing, ...newTradeInData };
-      localStorage.setItem("imagiq_trade_in", JSON.stringify(merged));
     } catch {
-      // fallback simple write
-      localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+      // Fallback simple
+      const newTradeInData = {
+        deviceName,
+        value,
+        completed: true,
+      };
+      setTradeInData(newTradeInData);
     }
+    setIsTradeInModalOpen(false);
   };
 
   // Handler para cancelar sin completar
@@ -611,6 +616,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           : undefined,
         isGuide: !tradeInData!.completed,
         showErrorSkeleton,
+        shippingCity: cartProducts.find(p => p.indRetoma === 1)?.shippingCity,
       }
     : null;
 
@@ -733,7 +739,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
                 !tradeInValidation.isValid
                   ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-sky-500 hover:bg-sky-600 cursor-pointer"
+                  : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}
               onClick={handleContinue}
               disabled={!tradeInValidation.isValid}

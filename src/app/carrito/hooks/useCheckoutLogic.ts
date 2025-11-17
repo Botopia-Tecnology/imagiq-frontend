@@ -1,19 +1,20 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
-import { PaymentMethod } from "../types";
+import { PaymentMethod, CheckZeroInterestResponse } from "../types";
 import {
   payWithAddi,
   payWithCard,
   payWithSavedCard,
   payWithPse,
+  checkZeroInterest,
 } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
-import { safeGetLocalStorage } from "@/lib/localStorage";
+import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
@@ -33,6 +34,10 @@ export function useCheckoutLogic() {
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   // Contador para forzar recarga de tarjetas guardadas
   const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
+
+  // Estados para cuotas sin interés
+  const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
+  const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
@@ -108,17 +113,41 @@ export function useCheckoutLogic() {
   };
 
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
-  const handleAddCardSuccess = () => {
+  const handleAddCardSuccess = (newCardId?: string) => {
     setIsAddCardModalOpen(false);
     setSavedCardsReloadCounter((c) => c + 1);
+
+    // Si se proporcionó el ID de la nueva tarjeta, consultar cuotas sin interés
+    if (newCardId) {
+      fetchZeroInterestInfo([newCardId]);
+    }
   };
 
   const handleUseNewCardChange = (useNew: boolean) => {
     setUseNewCard(useNew);
-    if (!useNew) {
+    if (useNew) {
+      // Si el usuario quiere usar una nueva tarjeta, limpiar la selección de tarjeta guardada
       setSelectedCardId(null);
     }
   };
+
+  // Función para consultar información de cuotas sin interés
+  const fetchZeroInterestInfo = useCallback(async (cardIds: string[]) => {
+    const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+
+    if (!userInfo.id || cardIds.length === 0) return;
+
+    setIsLoadingZeroInterest(true);
+    const result = await checkZeroInterest({
+      userId: userInfo.id,
+      cardIds,
+      productSkus: cartProducts.map(p => p.sku),
+      totalAmount: calculations.total,
+    });
+
+    setZeroInterestData(result);
+    setIsLoadingZeroInterest(false);
+  }, [cartProducts, calculations.total]);
 
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
   // useEffect(() => {
@@ -183,6 +212,11 @@ export function useCheckoutLogic() {
           "checkout-card-installments",
           card.installments || "1"
         );
+
+        // Guardar información de cuotas sin interés para usar en Step5
+        if (zeroInterestData) {
+          safeSetLocalStorage("checkout-zero-interest", zeroInterestData);
+        }
       } else {
         localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
@@ -477,6 +511,10 @@ export function useCheckoutLogic() {
     isAddCardModalOpen,
     savedCardsReloadCounter,
 
+    // Estados de cuotas sin interés
+    zeroInterestData,
+    isLoadingZeroInterest,
+
     // Handlers
     handleCardChange,
     handleCardErrorChange,
@@ -492,6 +530,9 @@ export function useCheckoutLogic() {
     handleCloseAddCardModal,
     handleAddCardSuccess,
     handleUseNewCardChange,
+
+    // Handlers de cuotas sin interés
+    fetchZeroInterestInfo,
 
     // Setters
     setAccepted,

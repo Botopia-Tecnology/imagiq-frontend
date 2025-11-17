@@ -5,6 +5,7 @@ import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detall
 import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import { CheckZeroInterestResponse } from "./types";
 
 interface Step5Props {
   onBack?: () => void;
@@ -22,6 +23,8 @@ interface InstallmentOption {
 export default function Step5({ onBack, onContinue }: Step5Props) {
   const { calculations, products } = useCart();
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
+  const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -36,6 +39,21 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     if (savedInstallments) {
       setSelectedInstallments(parseInt(savedInstallments));
     }
+
+    // Cargar datos de cuotas sin interés
+    try {
+      const stored = localStorage.getItem("checkout-zero-interest");
+      if (stored) {
+        const parsed = JSON.parse(stored) as CheckZeroInterestResponse;
+        setZeroInterestData(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading zero interest data:", error);
+    }
+
+    // Cargar ID de tarjeta seleccionada
+    const cardId = localStorage.getItem("checkout-saved-card-id");
+    setSelectedCardId(cardId);
 
     // Load Trade-In data
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
@@ -182,13 +200,15 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     }).format(price);
   };
 
-  // Obtener la tarjeta seleccionada del localStorage
-  const getSelectedCard = () => {
-    const savedCardId = localStorage.getItem("checkout-selected-card-id");
-    return savedCardId || null;
-  };
+  // Verificar si una cuota es elegible para cero interés
+  const isInstallmentEligibleForZeroInterest = (installments: number): boolean => {
+    if (!zeroInterestData?.cards || !selectedCardId) return false;
 
-  const selectedCardId = getSelectedCard();
+    const cardInfo = zeroInterestData.cards.find(c => c.id === selectedCardId);
+    if (!cardInfo?.eligibleForZeroInterest) return false;
+
+    return cardInfo.availableInstallments.includes(installments);
+  };
 
   return (
     <div className="min-h-screen w-full">
@@ -197,63 +217,65 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           {/* Formulario de selección de cuotas */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              <h2 className="text-[22px] font-bold mb-6">Elige las cuotas</h2>
-
-              {/* Información de la tarjeta seleccionada */}
-              {selectedCardId && (
-                <div className="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-8 bg-gradient-to-r from-red-500 to-orange-500 rounded flex items-center justify-center">
-                      <span className="text-white font-bold text-xs">CARD</span>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600">
-                        Tarjeta terminada en •••• {selectedCardId.slice(-4)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Título y tarjeta seleccionada */}
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-[22px] font-bold">Elige las cuotas</h2>
+                {selectedCardId && (
+                  <p className="text-sm text-gray-600">
+                    Tarjeta terminada en •••• {selectedCardId.slice(-4)}
+                  </p>
+                )}
+              </div>
 
               {/* Nota sobre intereses */}
               <p className="text-sm text-gray-600 mb-6">
-                * Los intereses serán aplicados por tu entidad bancaria.
+                * Los intereses serán manejados por tu entidad bancaria.
               </p>
 
               {/* Opciones de cuotas */}
               <div className="space-y-3">
-                {installmentOptions.map((option) => (
-                  <label
-                    key={option.installments}
-                    className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
-                      selectedInstallments === option.installments
-                        ? "border-black bg-gray-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="radio"
-                        name="installments"
-                        value={option.installments}
-                        checked={selectedInstallments === option.installments}
-                        onChange={() => handleInstallmentSelect(option.installments)}
-                        className="w-4 h-4 accent-black"
-                      />
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {option.installments}x {formatPrice(option.installmentAmount)}
-                        </p>
-                      </div>
-                    </div>
+                {installmentOptions.map((option) => {
+                  const isZeroInterest = isInstallmentEligibleForZeroInterest(option.installments);
 
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">
-                        {formatPrice(option.totalAmount)} *
-                      </p>
-                    </div>
-                  </label>
-                ))}
+                  return (
+                    <label
+                      key={option.installments}
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedInstallments === option.installments
+                          ? "border-black bg-gray-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="installments"
+                          value={option.installments}
+                          checked={selectedInstallments === option.installments}
+                          onChange={() => handleInstallmentSelect(option.installments)}
+                          className="w-4 h-4 accent-black"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {option.installments}x {formatPrice(option.installmentAmount)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-right">
+                        {isZeroInterest ? (
+                          <p className="text-sm font-semibold text-green-600">
+                            0% de interés
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-600">
+                            {formatPrice(option.totalAmount)} *
+                          </p>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </div>

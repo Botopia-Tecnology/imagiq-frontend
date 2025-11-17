@@ -31,6 +31,8 @@ export default function Step4({
     useNewCard,
     isAddCardModalOpen,
     savedCardsReloadCounter,
+    zeroInterestData,
+    isLoadingZeroInterest,
     handleCardChange,
     handleCardErrorChange,
     handlePaymentMethodChange,
@@ -41,6 +43,7 @@ export default function Step4({
     handleCloseAddCardModal,
     handleAddCardSuccess,
     handleUseNewCardChange,
+    fetchZeroInterestInfo,
     setSaveInfo,
   } = useCheckoutLogic();
 
@@ -159,6 +162,9 @@ export default function Step4({
             savedCardsReloadCounter={savedCardsReloadCounter}
             useNewCard={useNewCard}
             onUseNewCardChange={handleUseNewCardChange}
+            zeroInterestData={zeroInterestData}
+            isLoadingZeroInterest={isLoadingZeroInterest}
+            onFetchZeroInterest={fetchZeroInterestInfo}
           />
         </form>
 

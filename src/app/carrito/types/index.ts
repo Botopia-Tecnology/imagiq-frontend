@@ -49,3 +49,22 @@ export interface PsePaymentData extends BasicPaymentData {
   description: string;
 }
 export type PaymentMethod = "addi" | "tarjeta" | "pse";
+
+// Zero Interest Installments Types
+export interface CheckZeroInterestRequest {
+  userId: string;
+  cardIds: string[];
+  productSkus: string[];
+  totalAmount: number;
+}
+
+export interface CardZeroInterestInfo {
+  id: string;
+  eligibleForZeroInterest: boolean;
+  availableInstallments: number[];
+}
+
+export interface CheckZeroInterestResponse {
+  aplica: boolean;
+  cards: CardZeroInterestInfo[];
+}

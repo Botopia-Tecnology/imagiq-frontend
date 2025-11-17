@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { Plus, Check, CreditCard } from "lucide-react";
 import { DBCard } from "@/features/profile/types";
+import { CheckZeroInterestResponse } from "@/app/carrito/types";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
 
 interface SavedCardsSelectorProps {
@@ -12,6 +13,7 @@ interface SavedCardsSelectorProps {
   onCardSelect: (cardId: string) => void;
   onAddNewCard: () => void;
   isLoading?: boolean;
+  zeroInterestData?: CheckZeroInterestResponse | null;
 }
 
 const SavedCardsSelector: React.FC<SavedCardsSelectorProps> = ({
@@ -21,7 +23,18 @@ const SavedCardsSelector: React.FC<SavedCardsSelectorProps> = ({
   onCardSelect,
   onAddNewCard,
   isLoading = false,
+  zeroInterestData,
 }) => {
+  // Helper para obtener el máximo de cuotas sin interés de una tarjeta
+  const getMaxInstallments = (cardId: string): number | null => {
+    if (!zeroInterestData?.cards) return null;
+
+    const cardInfo = zeroInterestData.cards.find(c => c.id === cardId);
+    if (!cardInfo?.eligibleForZeroInterest) return null;
+
+    return Math.max(...cardInfo.availableInstallments);
+  };
+
   // Debug: Log cuando cambian las tarjetas
   useEffect(() => {
     console.log("🎴 [SavedCardsSelector] Tarjetas recibidas:", cards);
@@ -165,8 +178,20 @@ const SavedCardsSelector: React.FC<SavedCardsSelectorProps> = ({
                   </div>
                 </div>
 
+                {/* Badge de cuotas sin interés */}
+                {(() => {
+                  const maxInstallments = getMaxInstallments(String(card.id));
+                  return maxInstallments && maxInstallments > 1 ? (
+                    <div className="flex-shrink-0">
+                      <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold whitespace-nowrap">
+                        Hasta {maxInstallments} cuotas sin interés
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
+
                 {/* Tipo de tarjeta */}
-                {card.tipo_tarjeta && (
+                {card.tipo_tarjeta && !getMaxInstallments(String(card.id)) && (
                   <div className="flex-shrink-0">
                     <span className="text-xs text-gray-500 uppercase">
                       {card.tipo_tarjeta.includes("credit") ? "Crédito" : "Débito"}

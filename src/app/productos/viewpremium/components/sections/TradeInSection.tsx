@@ -98,14 +98,14 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
           />
         )}
 
-        {/* Estreno y Entrego section - Solo mostrar si NO está completado */}
+        {/* Entrego y Estreno section - Solo mostrar si NO está completado */}
         {!tradeInCompleted && (
           <div className="mb-3 md:mb-5">
           <h2 className="text-2xl font-bold text-gray-900 mb-1 md:mb-1.5">
-            Estreno y Entrego
+            Entrego y Estreno
           </h2>
           <p className="text-sm text-gray-900 mb-3 md:mb-4">
-            Selecciona Estreno y Entrego y recibe una oferta por tu dispositivo antiguo
+            Selecciona Entrego y Estreno y recibe una oferta por tu dispositivo antiguo
           </p>
 
           {/* Option cards */}
@@ -148,16 +148,16 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
         </div>
         )}
 
-        {/* Te presentamos Estreno y entrego & Pasarte de iOS a Galaxy */}
+        {/* Te presentamos Entrego y Estreno & Pasarte de iOS a Galaxy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-          {/* Te presentamos Estreno y entrego */}
+          {/* Te presentamos Entrego y Estreno */}
           <div className="bg-gray-100 p-2.5 rounded-lg shadow-sm border border-gray-100">
             <div className="flex items-center">
               <div className="w-16 h-16 flex-shrink-0 mr-3 rounded-lg bg-blue-50 flex items-center justify-center">
                 <RefreshCcw className="w-8 h-8 text-blue-600" strokeWidth={2} />
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-semibold text-black mb-0">Te presentamos Estreno y entrego</h3>
+                <h3 className="text-base font-semibold text-black mb-0">Te presentamos Entrego y Estreno</h3>
                 <p className="text-sm text-black">Entrega tu teléfono antiguo y si aceptas nuestra oferta, recibirás el valor en tu cuenta</p>
               </div>
             </div>

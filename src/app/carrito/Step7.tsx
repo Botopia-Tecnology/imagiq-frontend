@@ -484,7 +484,9 @@ export default function Step7({ onBack }: Step7Props) {
       console.log({ paymentData });
 
       // Determinar método de envío y código de bodega
-      const deliveryMethod = (localStorage.getItem("checkout-delivery-method") || "domicilio").toLowerCase();
+      const deliveryMethod = (
+        localStorage.getItem("checkout-delivery-method") || "domicilio"
+      ).toLowerCase();
       const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
@@ -492,7 +494,8 @@ export default function Step7({ onBack }: Step7Props) {
           const storeStr = localStorage.getItem("checkout-store");
           if (storeStr) {
             const parsedStore = JSON.parse(storeStr);
-            codigo_bodega = parsedStore?.codBodega || parsedStore?.codigo || undefined;
+            codigo_bodega =
+              parsedStore?.codBodega || parsedStore?.codigo || undefined;
           }
         } catch {
           // ignore

@@ -250,24 +250,27 @@ export function useCheckoutLogic() {
     // Activar estado de procesamiento
     setIsProcessing(true);
 
-      // Usar cálculos del hook useCart
-      const { total, shipping: envio } = calculations;
+    // Usar cálculos del hook useCart
+    const { total, shipping: envio } = calculations;
 
-      // Determinar método de envío y código de bodega desde localStorage
-      const deliveryMethod = (localStorage.getItem("checkout-delivery-method") || "domicilio").toLowerCase();
-      const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
-      let codigo_bodega: string | undefined = undefined;
-      if (deliveryMethod === "tienda") {
-        try {
-          const storeStr = localStorage.getItem("checkout-store");
-          if (storeStr) {
-            const parsedStore = JSON.parse(storeStr);
-            codigo_bodega = parsedStore?.codBodega || parsedStore?.codigo || undefined;
-          }
-        } catch {
-          // ignore parsing errors
+    // Determinar método de envío y código de bodega desde localStorage
+    const deliveryMethod = (
+      localStorage.getItem("checkout-delivery-method") || "domicilio"
+    ).toLowerCase();
+    const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
+    let codigo_bodega: string | undefined = undefined;
+    if (deliveryMethod === "tienda") {
+      try {
+        const storeStr = localStorage.getItem("checkout-store");
+        if (storeStr) {
+          const parsedStore = JSON.parse(storeStr);
+          codigo_bodega =
+            parsedStore?.codBodega || parsedStore?.codigo || undefined;
         }
+      } catch {
+        // ignore parsing errors
       }
+    }
 
     // Procesar pago
     try {

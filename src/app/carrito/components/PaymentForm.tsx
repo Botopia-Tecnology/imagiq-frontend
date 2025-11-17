@@ -69,7 +69,7 @@ export default function PaymentForm({
   const getMaxInstallments = (cardId: string): number | null => {
     if (!zeroInterestData?.cards) return null;
 
-    const cardInfo = zeroInterestData.cards.find(c => c.id === cardId);
+    const cardInfo = zeroInterestData.cards.find((c) => c.id === cardId);
     if (!cardInfo?.eligibleForZeroInterest) return null;
 
     return Math.max(...cardInfo.availableInstallments);
@@ -158,7 +158,6 @@ export default function PaymentForm({
     }
   }, [savedCards, onFetchZeroInterest]);
 
-
   // Obtener tarjeta predeterminada
   const defaultCard =
     savedCards.find((card) => card.es_predeterminada) || savedCards[0];
@@ -225,7 +224,9 @@ export default function PaymentForm({
                       </span>
                       {defaultCard.tipo_tarjeta && (
                         <span className="text-xs text-gray-500 uppercase">
-                          {defaultCard.tipo_tarjeta.toUpperCase().includes("CREDIT")
+                          {defaultCard.tipo_tarjeta
+                            .toUpperCase()
+                            .includes("CREDIT")
                             ? "Crédito"
                             : "Débito"}
                         </span>
@@ -402,7 +403,9 @@ export default function PaymentForm({
                           </span>
                           {card.tipo_tarjeta && (
                             <span className="text-xs text-gray-500 uppercase">
-                              {card.tipo_tarjeta.toUpperCase().includes("CREDIT")
+                              {card.tipo_tarjeta
+                                .toUpperCase()
+                                .includes("CREDIT")
                                 ? "Crédito"
                                 : "Débito"}
                             </span>
@@ -424,7 +427,9 @@ export default function PaymentForm({
                       </div>
                     </span>
                     {(() => {
-                      const maxInstallments = getMaxInstallments(String(card.id));
+                      const maxInstallments = getMaxInstallments(
+                        String(card.id)
+                      );
                       return maxInstallments && maxInstallments > 1 ? (
                         <span className="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-semibold whitespace-nowrap flex-shrink-0">
                           Hasta {maxInstallments} cuotas sin interés

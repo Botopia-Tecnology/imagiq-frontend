@@ -537,10 +537,10 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       }
 
       // Encontrar el nombreColor correspondiente desde el API
-      // Buscar la primera variante con este color para obtener su índice y extraer el nombre de desDetallada
+      // Buscar la primera variante con este color para obtener su índice y usar nombreColor directamente
       const firstVariantWithColor = allVariants.find(v => v.color === color);
       const nombreColorDisplay = firstVariantWithColor
-        ? extractColorName(apiProduct.desDetallada?.[firstVariantWithColor.index])
+        ? (apiProduct.nombreColor?.[firstVariantWithColor.index] || null)
         : null;
 
       return {

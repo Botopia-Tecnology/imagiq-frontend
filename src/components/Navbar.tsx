@@ -324,16 +324,27 @@ export default function Navbar() {
             {isAuthenticated ? (
               <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
             ) : (
-              <Image
-                src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-                alt="Samsung"
-                width={100}
-                height={32}
-                className={cn(
-                  "h-8 w-auto transition-all duration-300",
-                  shouldShowWhiteItemsMobile ? "brightness-0 invert" : ""
-                )}
-              />
+              <Link
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  posthogUtils.capture("logo_click", { source: "navbar_mobile_samsung" });
+                  navbar.router.push("/");
+                }}
+                aria-label="Inicio"
+                className="shrink-0"
+              >
+                <Image
+                  src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
+                  alt="Samsung"
+                  width={100}
+                  height={32}
+                  className={cn(
+                    "h-8 w-auto transition-all duration-300",
+                    shouldShowWhiteItemsMobile ? "brightness-0 invert" : ""
+                  )}
+                />
+              </Link>
             )}
           </div>
 

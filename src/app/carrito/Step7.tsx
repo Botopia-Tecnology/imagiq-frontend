@@ -49,7 +49,12 @@ interface ShippingData {
   type: "delivery" | "pickup";
   address?: string;
   city?: string;
-  store?: string;
+  store?: {
+    name: string;
+    address?: string;
+    city?: string;
+    schedule?: string;
+  };
 }
 
 interface BillingData {
@@ -195,17 +200,51 @@ export default function Step7({ onBack }: Step7Props) {
     }
 
     // Cargar dirección de envío
-    const shippingAddress = localStorage.getItem("checkout-address");
-    if (shippingAddress) {
-      try {
-        const parsed = JSON.parse(shippingAddress);
+    // Determinar método de entrega seleccionado
+    const deliveryMethod =
+      localStorage.getItem("checkout-delivery-method") || "domicilio";
+
+    if (deliveryMethod === "tienda") {
+      const storeStr = localStorage.getItem("checkout-store");
+      if (storeStr) {
+        try {
+          const parsedStore = JSON.parse(storeStr);
+          setShippingData({
+            type: "pickup",
+            store: {
+              name:
+                parsedStore.descripcion ||
+                parsedStore.nombre ||
+                "Tienda seleccionada",
+              address: parsedStore.direccion,
+              city: parsedStore.ciudad || parsedStore.departamento,
+              schedule: parsedStore.horario,
+            },
+          });
+        } catch (error) {
+          console.error("Error parsing checkout-store:", error);
+          setShippingData({
+            type: "pickup",
+          });
+        }
+      } else {
         setShippingData({
-          type: "delivery",
-          address: parsed.linea_uno,
-          city: parsed.ciudad,
+          type: "pickup",
         });
-      } catch (error) {
-        console.error("Error parsing shipping address:", error);
+      }
+    } else {
+      const shippingAddress = localStorage.getItem("checkout-address");
+      if (shippingAddress) {
+        try {
+          const parsed = JSON.parse(shippingAddress);
+          setShippingData({
+            type: "delivery",
+            address: parsed.linea_uno,
+            city: parsed.ciudad,
+          });
+        } catch (error) {
+          console.error("Error parsing shipping address:", error);
+        }
       }
     }
 
@@ -633,6 +672,34 @@ export default function Step7({ onBack }: Step7Props) {
                           {shippingData.city}
                         </p>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {shippingData.type === "pickup" && (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {shippingData.store?.name || "Recoger en tienda"}
+                        </p>
+                        {shippingData.store?.address && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {shippingData.store.address}
+                          </p>
+                        )}
+                        {shippingData.store?.city && (
+                          <p className="text-xs text-gray-500">
+                            {shippingData.store.city}
+                          </p>
+                        )}
+                        {shippingData.store?.schedule && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Horario: {shippingData.store.schedule}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}

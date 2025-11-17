@@ -91,6 +91,7 @@ function FlixmediaDetailsComponent({
     script.setAttribute('data-flix-price', '');
     script.setAttribute('data-flix-fallback-language', '');
     script.setAttribute('data-flix-lazy-load', 'false'); // Desactivar lazy loading para carga inmediata
+    script.setAttribute('data-flix-hotspot', 'false'); // Desactivar módulo de hotspot
 
     script.onload = () => {
       console.log('✅ Script de Flixmedia cargado');
@@ -133,9 +134,11 @@ function FlixmediaDetailsComponent({
       style.id = 'flixmedia-specifications-styles';
       style.textContent = `
         /* Ocultar elementos no deseados */
-
         #flix-specifications-inpage [flixtemplate-key="footnotes"],
-        #flix-specifications-inpage [flixtemplate-key="image_gallery"] {
+        #flix-specifications-inpage [flixtemplate-key="image_gallery"],
+        [class*="flix_hotspot"],
+        [id*="flix_hotspot"],
+        div[class*="hotspot"] {
           display: none !important;
           visibility: hidden !important;
         }
@@ -362,6 +365,14 @@ function FlixmediaDetailsComponent({
       setTimeout(() => {
         const container = document.getElementById('flix-specifications-inpage');
         if (!container) return;
+
+        // Eliminar cualquier div de hotspot que pueda haberse generado
+        const hotspotDivs = document.querySelectorAll('[class*="flix_hotspot"]');
+        hotspotDivs.forEach((el) => el.remove());
+
+        // Eliminar scripts de hotspot
+        const hotspotScripts = document.querySelectorAll('script[src*="hotspot"]');
+        hotspotScripts.forEach((el) => el.remove());
 
         // Ocultar elementos no deseados 'background_image',
         const toHide = [ 'footnotes','image_gallery'];

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
-import { productEndpoints } from "@/lib/api";
+import { productEndpoints, type CandidateStoresResponse, type CandidateStore } from "@/lib/api";
 
 export interface CartProduct {
   id: string;
@@ -124,9 +124,9 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
         : `EAN-${typeof p.id === "string" ? p.id : randId()}`;
 
     const skuPostback =
-      typeof p.skuPostback === "string"
+      typeof p.skuPostback === "string" && p.skuPostback.trim() !== ""
         ? p.skuPostback
-        : `SKU-${typeof p.id === "string" ? p.id : randId()}`;
+        : undefined;
 
     const puntos_q = typeof p.puntos_q === "number" ? p.puntos_q : 4;
     const price = asNumber(p.precio ?? p.price ?? 0, 0);
@@ -431,6 +431,15 @@ export function useCart(): UseCartReturn {
             STORAGE_KEYS.CART_ITEMS,
             JSON.stringify(newProducts)
           );
+          // 🔍 DEBUG: Verificar que skuPostback se guarda correctamente
+          const productWithSkuPostback = newProducts.find(p => p.skuPostback);
+          if (productWithSkuPostback) {
+            console.log('✅ skuPostback guardado en localStorage:', {
+              sku: productWithSkuPostback.sku,
+              skuPostback: productWithSkuPostback.skuPostback,
+              fullProduct: productWithSkuPostback
+            });
+          }
         } catch (error) {
           console.error("Error saving products to localStorage:", error);
         }
@@ -468,10 +477,22 @@ export function useCart(): UseCartReturn {
             });
 
             if (response.success && response.data) {
-              const { stores, default_direction } = response.data;
+              // 🔍 DEBUG: Mostrar respuesta completa del endpoint en consola
+              const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
+              console.log(`📦 Respuesta completa de candidate-stores para SKU ${product.sku} (useCart):`, {
+                fullResponse: responseData,
+                stores: responseData.stores,
+                canPickUp: responseData.canPickUp,
+                canPickup: responseData.canPickup,
+                default_direction: responseData.default_direction,
+                storesKeys: Object.keys(responseData.stores || {}),
+                storesCount: Object.values(responseData.stores || {}).reduce((acc: number, arr: CandidateStore[]) => acc + arr.length, 0),
+              });
+              
+              const { stores } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
-              const canPickUp = (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickUp ?? 
-                                (response.data as { canPickUp?: boolean; canPickup?: boolean }).canPickup ?? 
+              const canPickUp = responseData.canPickUp ?? 
+                                responseData.canPickup ?? 
                                 false;
 
               // Obtener la primera ciudad y tienda disponible

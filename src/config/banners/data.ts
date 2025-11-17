@@ -39,7 +39,7 @@ export const SMARTPHONES_TABLETS_BANNER: BannerConfig = {
   heightMobile: '180px',  // Altura en mobile
 
   // Control
-  enabled: true,  // true = mostrar, false = ocultar
+  enabled: false,  // Deshabilitado
 };
 
 /**

@@ -170,7 +170,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   };
 
   return (
-    <div ref={ref} className="w-full relative zoom-safe-container px-2 sm:px-4">
+    <div ref={ref} className="w-full relative zoom-safe-container px-2 sm:px-4 pb-10 md:pb-12">
       {/* Carrusel premium - estilo Samsung más grande */}
       <div className={`relative w-full pt-8 md:pt-6 transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
@@ -325,7 +325,11 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
           <>
             {/* Imagen del producto - más pequeña y simple con fondo transparente */}
             <div 
-              className="relative w-full flex items-center justify-center overflow-hidden zoom-safe-secondary-media"
+              className="relative w-full max-w-4xl mx-auto flex items-center justify-center overflow-hidden zoom-safe-secondary-media px-4 sm:px-8"
+              style={{
+                height: "min(70vh, 680px)",
+                minHeight: "320px",
+              }}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}

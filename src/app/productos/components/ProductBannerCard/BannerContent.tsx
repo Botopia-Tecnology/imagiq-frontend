@@ -5,6 +5,7 @@
 "use client";
 
 import Link from "next/link";
+import type { BannerTextStyles } from "@/types/banner";
 
 interface BannerContentProps {
   title: string | null;
@@ -14,6 +15,7 @@ interface BannerContentProps {
   colorFont: string;
   positionStyle: React.CSSProperties;
   isVisible: boolean;
+  textStyles?: BannerTextStyles | null;
 }
 
 export function BannerContent({
@@ -24,12 +26,13 @@ export function BannerContent({
   colorFont,
   positionStyle,
   isVisible,
+  textStyles,
 }: Readonly<BannerContentProps>) {
   if (!isVisible) return null;
 
   return (
     <div
-      className="absolute z-10 flex flex-col items-start justify-start"
+      className="absolute z-10 flex flex-col items-center justify-center text-center"
       style={{
         ...positionStyle,
         opacity: isVisible ? 1 : 0,
@@ -41,7 +44,10 @@ export function BannerContent({
       {title && (
         <h3
           className="text-2xl md:text-3xl font-bold mb-2 tracking-tight"
-          style={{ color: colorFont }}
+          style={{
+            color: colorFont,
+            ...(textStyles?.title || {}),
+          }}
         >
           {title}
         </h3>
@@ -51,7 +57,10 @@ export function BannerContent({
       {description && (
         <p
           className="text-base md:text-lg mb-4 font-normal"
-          style={{ color: colorFont }}
+          style={{
+            color: colorFont,
+            ...(textStyles?.description || {}),
+          }}
         >
           {description}
         </p>
@@ -66,6 +75,7 @@ export function BannerContent({
             color: colorFont,
             borderWidth: "2px",
             borderColor: colorFont,
+            ...(textStyles?.cta || {}),
           }}
         >
           {cta}

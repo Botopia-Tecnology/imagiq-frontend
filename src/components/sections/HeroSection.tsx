@@ -48,7 +48,10 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
       {config.heading && (
         <h1
           className={`${textSize} font-bold mb-3 tracking-tight`}
-          style={{ color: config.textColor }}
+          style={{
+            color: config.textColor,
+            ...(config.textStyles?.title || {}),
+          }}
         >
           {config.heading}
         </h1>
@@ -56,7 +59,10 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
       {config.subheading && (
         <p
           className={subSize}
-          style={{ color: config.textColor }}
+          style={{
+            color: config.textColor,
+            ...(config.textStyles?.description || {}),
+          }}
         >
           {config.subheading}
         </p>
@@ -69,6 +75,7 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
             color: config.textColor,
             borderWidth: '2px',
             borderColor: config.textColor,
+            ...(config.textStyles?.cta || {}),
           }}
         >
           {config.ctaText}

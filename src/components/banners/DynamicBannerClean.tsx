@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useDynamicBanner } from '@/hooks/useDynamicBanner';
-import { parsePosition, positionToCSS } from '@/utils/bannerCoordinates';
-import type { BannerPosition } from '@/types/banner';
+import { parsePosition, parseTextStyles } from '@/utils/bannerCoordinates';
+import type { BannerPosition, BannerTextStyles } from '@/types/banner';
 
 type CSS = React.CSSProperties;
 
@@ -53,18 +53,41 @@ interface BannerContentProps {
   color: string;
   positionStyle?: CSS;
   isMobile?: boolean;
+  textStyles?: BannerTextStyles | null;
 }
 
-function BannerContent({ title, description, cta, color, positionStyle, isMobile }: Readonly<BannerContentProps>) {
+function BannerContent({ title, description, cta, color, positionStyle, isMobile, textStyles }: Readonly<BannerContentProps>) {
   const final: CSS = { color, transform: 'translate(-50%, -50%)' };
   if (positionStyle) Object.assign(final, positionStyle);
   if (isMobile && !positionStyle?.left) final.left = '50%';
   return (
     <div className={`absolute max-w-2xl px-6 ${isMobile ? 'md:hidden flex flex-col items-center text-center' : 'hidden md:block'}`} style={final}>
-      {title && <h2 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-4">{title}</h2>}
-      {description && <p className="text-base md:text-xl lg:text-2xl mb-4 md:mb-6">{description}</p>}
+      {title && (
+        <h2 
+          className="text-3xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-4"
+          style={textStyles?.title || {}}
+        >
+          {title}
+        </h2>
+      )}
+      {description && (
+        <p 
+          className="text-base md:text-xl lg:text-2xl mb-4 md:mb-6"
+          style={textStyles?.description || {}}
+        >
+          {description}
+        </p>
+      )}
       {cta && (
-        <button className="px-6 py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 hover:scale-105" style={{ borderWidth: '2px', borderColor: color, backgroundColor: 'transparent' }}>
+        <button 
+          className="px-6 py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 hover:scale-105" 
+          style={{ 
+            borderWidth: '2px', 
+            borderColor: color, 
+            backgroundColor: 'transparent',
+            ...(textStyles?.cta || {})
+          }}
+        >
           {cta}
         </button>
       )}
@@ -144,6 +167,10 @@ export default function DynamicBannerClean({ placement, className = '', showOver
 
   if (loading) return <BannerSkeleton />;
   if (!banner) return <>{children || null}</>;
+  
+  // Parse text styles del nuevo sistema
+  const textStyles = parseTextStyles(banner.text_styles);
+  
   // prepare media nodes to avoid nested ternary expressions in JSX
   let desktopMedia: React.ReactNode = null;
   if (banner.desktop_video_url) {
@@ -191,6 +218,7 @@ export default function DynamicBannerClean({ placement, className = '', showOver
             cta={banner.cta} 
             color={banner.color_font} 
             positionStyle={deskStyle ?? positionToPercentCSS(parsePosition(banner.position_desktop))} 
+            textStyles={textStyles}
           />
           <BannerContent 
             title={banner.title} 
@@ -199,6 +227,7 @@ export default function DynamicBannerClean({ placement, className = '', showOver
             color={banner.color_font} 
             positionStyle={mobStyle ?? positionToPercentCSS(parsePosition(banner.position_mobile))} 
             isMobile 
+            textStyles={textStyles}
           />
         </div>
 

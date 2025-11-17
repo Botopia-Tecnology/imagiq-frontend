@@ -35,7 +35,7 @@ export default function HomePage() {
     offset: 80,
     duration: 600,
     direction: "up",
-  });
+  }); 
   const aiTVsReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,

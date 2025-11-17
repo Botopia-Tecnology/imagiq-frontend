@@ -75,13 +75,34 @@ export class AddressesService {
         );
       }
 
+      // Verificar si es la primera dirección del usuario
+      const existingAddresses = await this.getUserAddresses();
+      const isFirstAddress = existingAddresses.length === 0;
+
       console.log("📤 Enviando datos de dirección:", {
         ...requestData,
         placeDetails: requestData.placeDetails ? "PlaceDetails object" : "null",
+        isFirstAddress,
+        existingAddressesCount: existingAddresses.length,
       });
 
       const result = await apiPost<Address>("/api/addresses", requestData);
       console.log("✅ Dirección creada exitosamente:", result);
+
+      // Si es la primera dirección, marcarla automáticamente como predeterminada
+      if (isFirstAddress) {
+        try {
+          console.log("🔄 Es la primera dirección, estableciendo como predeterminada...");
+          const defaultAddress = await this.setDefaultAddress(result.id);
+          console.log("✅ Primera dirección marcada como predeterminada:", defaultAddress.nombreDireccion);
+          return defaultAddress;
+        } catch (setDefaultError) {
+          console.error("⚠️ Error estableciendo primera dirección como predeterminada:", setDefaultError);
+          // No lanzar error, la dirección ya fue creada exitosamente
+          // El usuario puede establecerla manualmente como predeterminada si es necesario
+        }
+      }
+
       return result;
     } catch (error: unknown) {
       console.error("❌ Error creando dirección:", error);
@@ -264,13 +285,19 @@ export class AddressesService {
           const newDefaultAddress = remainingAddresses[0];
           
           try {
-            console.log(`🔄 Estableciendo nueva dirección predeterminada: ${newDefaultAddress.id}`);
-            await this.setDefaultAddress(newDefaultAddress.id);
-            console.log(`✅ Nueva dirección predeterminada establecida: ${newDefaultAddress.nombreDireccion}`);
+            console.log(`🔄 Estableciendo nueva dirección predeterminada: ${newDefaultAddress.id} (${newDefaultAddress.nombreDireccion})`);
+            const updatedAddress = await this.setDefaultAddress(newDefaultAddress.id);
+            console.log(`✅ Nueva dirección predeterminada establecida en la base de datos:`, {
+              id: updatedAddress.id,
+              nombreDireccion: updatedAddress.nombreDireccion,
+              esPredeterminada: updatedAddress.esPredeterminada
+            });
           } catch (setDefaultError) {
             console.error("⚠️ Error estableciendo nueva dirección predeterminada:", setDefaultError);
-            // No lanzar error aquí, la eliminación ya fue exitosa
-            // El usuario puede establecer manualmente otra dirección como predeterminada si es necesario
+            // Re-lanzar el error para que el usuario sepa que hubo un problema
+            throw new Error(
+              `La dirección fue eliminada, pero hubo un error al establecer otra como predeterminada: ${setDefaultError instanceof Error ? setDefaultError.message : 'Error desconocido'}`
+            );
           }
         }
       } else if (totalAddresses === 1) {

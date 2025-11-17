@@ -4,6 +4,7 @@ import ProductCard from "./ProductCard";
 import Sugerencias from "./Sugerencias";
 import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
+import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
 import { apiClient, type ProductApiData, productEndpoints } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
@@ -11,6 +12,7 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import { tradeInEndpoints } from "@/lib/api";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import { toast } from "sonner";
 
 /**
  * Paso 1 del carrito de compras
@@ -33,6 +35,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     value: number;
     completed: boolean;
   } | null>(null);
+  
+  // Estado para controlar el modal de Trade-In
+  const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
 
   // Usar el hook centralizado useCart
   const {
@@ -59,6 +64,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   );
 
   // Cargar datos de Trade-In desde localStorage
+  // Si el producto aplica (indRetoma === 1) pero no hay trade-in activo, mostrar banner para guiar al usuario
   useEffect(() => {
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
@@ -70,8 +76,18 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       } catch (error) {
         console.error("❌ Error al cargar datos de Trade-In:", error);
       }
+    } else {
+      // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía
+      const productApplies = cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
+      if (productApplies) {
+        setTradeInData({
+          deviceName: cartProducts[0].name,
+          value: 0,
+          completed: false, // No está completado, solo es una guía
+        });
+      }
     }
-  }, []);
+  }, [cartProducts]);
 
   // Llamar a candidate-stores para cada producto en Step1
   useEffect(() => {
@@ -428,23 +444,30 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     hasMultipleProducts: boolean;
     errorMessage?: string;
   }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
+  
+  // Estado para mostrar skeleton del mensaje de error inicialmente
+  const [showErrorSkeleton, setShowErrorSkeleton] = React.useState(false);
 
   // Validar Trade-In cuando cambian los productos o el trade-in
   React.useEffect(() => {
     const validation = validateTradeInProducts(cartProducts);
     setTradeInValidation(validation);
     
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
       
-      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
-      const timeoutId = setTimeout(() => {
-        setTradeInData(null);
-      }, 5000);
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
       
-      return () => clearTimeout(timeoutId);
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
+    } else {
+      setShowErrorSkeleton(false);
     }
   }, [cartProducts, tradeInData]);
 
@@ -501,6 +524,39 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const handleRemoveTradeIn = () => {
     setTradeInData(null);
     localStorage.removeItem("imagiq_trade_in");
+    
+    // Si el producto aplica (indRetoma === 1), volver a mostrar el banner guía
+    if (cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1) {
+      setTradeInData({
+        deviceName: cartProducts[0].name,
+        value: 0,
+        completed: false, // No está completado, solo es una guía
+      });
+    }
+  };
+  
+  // Handler para abrir el modal de Trade-In
+  const handleOpenTradeInModal = () => {
+    setIsTradeInModalOpen(true);
+  };
+  
+  // Handler para cuando se completa el Trade-In
+  const handleCompleteTradeIn = (deviceName: string, value: number) => {
+    const newTradeInData = {
+      deviceName,
+      value,
+      completed: true,
+    };
+    setTradeInData(newTradeInData);
+    setIsTradeInModalOpen(false);
+    
+    // Guardar en localStorage
+    localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+  };
+  
+  // Handler para cancelar sin completar
+  const handleCancelWithoutCompletion = () => {
+    setIsTradeInModalOpen(false);
   };
 
   return (
@@ -577,14 +633,25 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}
-          {tradeInData?.completed && (
+          {/* Mostrar si está completado O si el producto aplica pero no está activo (para guiar al usuario) */}
+          {(tradeInData?.completed || (tradeInData && !tradeInData.completed && cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1)) && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
-              onEdit={handleRemoveTradeIn}
+              onEdit={tradeInData.completed ? handleRemoveTradeIn : handleOpenTradeInModal}
               validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+              isGuide={!tradeInData.completed}
+              showErrorSkeleton={showErrorSkeleton}
             />
           )}
+          
+          {/* Modal de Trade-In */}
+          <TradeInModal
+            isOpen={isTradeInModalOpen}
+            onClose={() => setIsTradeInModalOpen(false)}
+            onCompleteTradeIn={handleCompleteTradeIn}
+            onCancelWithoutCompletion={handleCancelWithoutCompletion}
+          />
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}

@@ -9,6 +9,7 @@ import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
 import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import { toast } from "sonner";
 
 export default function Step4({
   onBack,
@@ -84,17 +85,19 @@ export default function Step4({
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
     
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
       
-      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
-      const timeoutId = setTimeout(() => {
-        setTradeInData(null);
-      }, 5000);
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
       
-      return () => clearTimeout(timeoutId);
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
     }
   }, [products]);
 

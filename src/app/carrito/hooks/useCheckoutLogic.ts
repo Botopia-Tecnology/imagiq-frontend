@@ -1,18 +1,24 @@
 "use client";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
-import { PaymentMethod, BeneficiosDTO } from "../types";
+import {
+  PaymentMethod,
+  BeneficiosDTO,
+  CheckZeroInterestResponse,
+} from "../types";
 import {
   payWithAddi,
   payWithCard,
   payWithSavedCard,
   payWithPse,
+  checkZeroInterest,
 } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
+import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
@@ -32,6 +38,11 @@ export function useCheckoutLogic() {
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   // Contador para forzar recarga de tarjetas guardadas
   const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
+
+  // Estados para cuotas sin interés
+  const [zeroInterestData, setZeroInterestData] =
+    useState<CheckZeroInterestResponse | null>(null);
+  const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
@@ -107,9 +118,14 @@ export function useCheckoutLogic() {
   };
 
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
-  const handleAddCardSuccess = () => {
+  const handleAddCardSuccess = (newCardId?: string) => {
     setIsAddCardModalOpen(false);
     setSavedCardsReloadCounter((c) => c + 1);
+
+    // Si se proporcionó el ID de la nueva tarjeta, consultar cuotas sin interés
+    if (newCardId) {
+      fetchZeroInterestInfo([newCardId]);
+    }
   };
 
   const handleUseNewCardChange = (useNew: boolean) => {
@@ -120,20 +136,28 @@ export function useCheckoutLogic() {
     }
   };
 
-  // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
-  // useEffect(() => {
-  //   const syncCart = () => setCartProducts(getCartProducts());
-  //   window.addEventListener("storage", syncCart);
-  //   syncCart();
-  //   return () => window.removeEventListener("storage", syncCart);
-  // }, []);
+  // Función para consultar información de cuotas sin interés
+  const fetchZeroInterestInfo = useCallback(
+    async (cardIds: string[]) => {
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
 
-  // useEffect(() => {
-  //   if (typeof window !== "undefined") {
-  //     const d = localStorage.getItem("applied-discount");
-  //     setAppliedDiscount(d ? Number(d) : 0);
-  //   }
-  // }, []);
+      if (!userInfo.id || cardIds.length === 0) return;
+
+      setIsLoadingZeroInterest(true);
+      const result = await checkZeroInterest({
+        userId: userInfo.id,
+        cardIds,
+        productSkus: cartProducts.map((p) => p.sku),
+        totalAmount: calculations.total,
+      });
+
+      setZeroInterestData(result);
+      setIsLoadingZeroInterest(false);
+    },
+    [cartProducts, calculations.total]
+  );
+
+  // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
 
   // Función para validar y guardar datos de pago (sin procesar aún)
   const handleSavePaymentData = async (e: React.FormEvent) => {
@@ -183,6 +207,11 @@ export function useCheckoutLogic() {
           "checkout-card-installments",
           card.installments || "1"
         );
+
+        // Guardar información de cuotas sin interés para usar en Step5
+        if (zeroInterestData) {
+          safeSetLocalStorage("checkout-zero-interest", zeroInterestData);
+        }
       } else {
         localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
@@ -254,34 +283,25 @@ export function useCheckoutLogic() {
     // Usar cálculos del hook useCart
     const { total, shipping: envio } = calculations;
 
-    // Determinar método de envío y código de bodega desde localStorage
-    const deliveryMethod = (
-      localStorage.getItem("checkout-delivery-method") || "domicilio"
-    ).toLowerCase();
-    const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
-    let codigo_bodega: string | undefined = undefined;
-    if (deliveryMethod === "tienda") {
-      try {
-        const storeStr = localStorage.getItem("checkout-store");
-        if (storeStr) {
-          const parsedStore = JSON.parse(storeStr);
-          codigo_bodega =
-            parsedStore?.codBodega || parsedStore?.codigo || undefined;
-        }
-      } catch {
-        // ignore parsing errors
-      }
-    }
-
     // Procesar pago
     try {
-      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
-      const direction = JSON.parse(
-        localStorage.getItem("checkout-address") || "{}"
+      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      const direction = safeGetLocalStorage<{ id?: string }>(
+        "checkout-address",
+        {}
       );
-      const billing = JSON.parse(
-        localStorage.getItem("checkout-billing-data") || "{}"
-      );
+      const billing = safeGetLocalStorage<{
+        direccion?: { id?: string };
+        email?: string;
+        nombre?: string;
+        documento?: string;
+        tipoDocumento?: string;
+        telefono?: string;
+        type?: string;
+        nit?: string;
+        razonSocial?: string;
+        nombreRepresentante?: string;
+      }>("checkout-billing-data", {});
 
       const informacion_facturacion = {
         direccion_id: billing?.direccion?.id ?? direction?.id ?? "",
@@ -345,13 +365,12 @@ export function useCheckoutLogic() {
               skupostback: String(p.skuPostback),
               desDetallada: String(p.desDetallada),
             })),
-            metodo_envio,
-            codigo_bodega,
+            metodo_envio: 1,
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -394,14 +413,13 @@ export function useCheckoutLogic() {
                 skupostback: String(p.skuPostback),
                 desDetallada: String(p.desDetallada),
               })),
-              metodo_envio,
-              codigo_bodega,
+              metodo_envio: 1,
               shippingAmount: String(envio),
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
               informacion_facturacion,
               beneficios: (() => {
@@ -472,14 +490,13 @@ export function useCheckoutLogic() {
                 skupostback: String(p.skuPostback),
                 desDetallada: String(p.desDetallada),
               })),
-              metodo_envio,
-              codigo_bodega,
+              metodo_envio: 1,
               shippingAmount: String(envio),
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id,
-                direccionId: direction.id,
+                userId: userInfo.id || "",
+                direccionId: direction.id || "",
               },
               informacion_facturacion,
               beneficios: (() => {
@@ -545,13 +562,12 @@ export function useCheckoutLogic() {
               skupostback: String(p.skuPostback),
               desDetallada: String(p.desDetallada),
             })),
-            metodo_envio,
-            codigo_bodega,
+            metodo_envio: 1,
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id,
-              direccionId: direction.id,
+              userId: userInfo.id || "",
+              direccionId: direction.id || "",
             },
             informacion_facturacion,
             beneficios: (() => {
@@ -626,6 +642,10 @@ export function useCheckoutLogic() {
     isAddCardModalOpen,
     savedCardsReloadCounter,
 
+    // Estados de cuotas sin interés
+    zeroInterestData,
+    isLoadingZeroInterest,
+
     // Handlers
     handleCardChange,
     handleCardErrorChange,
@@ -641,6 +661,9 @@ export function useCheckoutLogic() {
     handleCloseAddCardModal,
     handleAddCardSuccess,
     handleUseNewCardChange,
+
+    // Handlers de cuotas sin interés
+    fetchZeroInterestInfo,
 
     // Setters
     setAccepted,

@@ -555,7 +555,7 @@ export function useCheckoutLogic() {
             },
             informacion_facturacion,
             beneficios: (() => {
-              const beneficios: any[] = [];
+              const beneficios: BeneficiosDTO[] = [];
               try {
                 const tradeStr = localStorage.getItem("imagiq_trade_in");
                 if (tradeStr) {

@@ -179,7 +179,9 @@ export default function Step7({ onBack }: Step7Props) {
           if (bankCode && !bankName) {
             try {
               const banks = await fetchBanks();
-              const found = banks.find((b) => String(b.bankCode) === String(bankCode));
+              const found = banks.find(
+                (b) => String(b.bankCode) === String(bankCode)
+              );
               if (found) bankName = found.bankName;
             } catch (e) {
               // ignore failure to fetch banks

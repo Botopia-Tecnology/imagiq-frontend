@@ -481,8 +481,8 @@ export default function Step7({ onBack }: Step7Props) {
                                 </span>
                                 {paymentData.savedCard.tipo_tarjeta && (
                                   <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.savedCard.tipo_tarjeta.includes(
-                                      "credit"
+                                    {paymentData.savedCard.tipo_tarjeta.toUpperCase().includes(
+                                      "CREDIT"
                                     )
                                       ? "Crédito"
                                       : "Débito"}
@@ -535,8 +535,8 @@ export default function Step7({ onBack }: Step7Props) {
                                 </span>
                                 {paymentData.cardData.cardType && (
                                   <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.cardData.cardType.includes(
-                                      "credit"
+                                    {paymentData.cardData.cardType.toUpperCase().includes(
+                                      "CREDIT"
                                     )
                                       ? "Crédito"
                                       : "Débito"}

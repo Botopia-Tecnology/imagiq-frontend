@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { MapPin, Check, Plus, X, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { MapPin, Check, Plus, X, ChevronDown, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/features/auth/context";
 import type { Address } from "@/types/address";
@@ -18,13 +19,16 @@ interface AddressDropdownProps {
 const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   showWhiteItems,
 }) => {
-  const { user, login } = useAuthContext();
-  const { address: currentAddress, isLoading: loadingDefault, invalidate } = useDefaultAddress('ENVIO');
+  const router = useRouter();
+  const { user, login, isAuthenticated } = useAuthContext();
+  const { address: currentAddress, isLoading: loadingDefault, invalidate, refetch } = useDefaultAddress('ENVIO');
   const [open, setOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isFetchingRef = useRef(false);
 
@@ -32,6 +36,14 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Cargar direcciones al inicio si no hay dirección predeterminada
+  useEffect(() => {
+    if (!loadingDefault && !currentAddress && user?.id && addresses.length === 0 && !isFetchingRef.current) {
+      fetchAddresses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingDefault, currentAddress, user?.id]);
 
   const handleToggle = () => {
     if (!open && addresses.length === 0 && !isFetchingRef.current) {
@@ -57,7 +69,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   };
 
   const handleSelectAddress = async (address: Address) => {
-    if (address.id === currentAddress?.id) {
+    const currentAddressId = currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
+    if (address.id === currentAddressId) {
       setOpen(false);
       return;
     }
@@ -98,30 +111,45 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   };
 
   const handleAddNewAddress = () => {
+    // Verificar si el usuario está autenticado antes de abrir el modal
+    if (!isAuthenticated || !user?.id) {
+      // Redirigir al login con redirect para volver después
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
+      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
+      return;
+    }
     setOpen(false);
     setShowModal(true);
   };
 
   const handleAddressAdded = async (newAddress: Address) => {
     console.log('🆕 Nueva dirección agregada:', newAddress);
+    
+    // Cerrar el modal primero para mejor UX
     setShowModal(false);
 
     // Invalidar cache del hook useDefaultAddress
     invalidate();
+    
+    // Refrescar lista de direcciones
+    await fetchAddresses();
+
+    // Pequeño delay para asegurar que el backend procese la dirección como predeterminada
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Forzar refetch de la dirección predeterminada
+    await refetch();
 
     // Invalidar cache del hook useShippingOrigin
     invalidateShippingOriginCache();
 
-    // Refrescar lista de direcciones
-    await fetchAddresses();
-
     // La nueva dirección ya es predeterminada por defecto en el backend
-    // Actualizar context con nueva dirección
+    // Actualizar context con nueva dirección usando los campos correctos
     if (user) {
       const defaultAddressFormat = {
         id: newAddress.id,
-        nombreDireccion: newAddress.lineaUno || 'Nueva dirección',
-        direccionFormateada: newAddress.lineaUno,
+        nombreDireccion: newAddress.nombreDireccion || newAddress.lineaUno || 'Nueva dirección',
+        direccionFormateada: newAddress.direccionFormateada || newAddress.lineaUno,
         ciudad: newAddress.ciudad,
         departamento: newAddress.departamento,
         esPredeterminada: true,
@@ -131,6 +159,58 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         ...user,
         defaultAddress: defaultAddressFormat,
       });
+    }
+  };
+
+  const handleDeleteClick = (addressId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir que se active el onClick del botón padre
+    setConfirmingDeleteId(addressId);
+  };
+
+  const handleCancelDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmingDeleteId(null);
+  };
+
+  const handleConfirmDelete = async (addressId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConfirmingDeleteId(null);
+    setDeletingId(addressId);
+
+    try {
+      console.log('🗑️ Eliminando dirección:', addressId);
+      await addressesService.deleteAddress(addressId);
+      console.log('✅ Dirección eliminada exitosamente');
+
+      // Remover de la lista local inmediatamente para mejor UX
+      const updatedAddresses = addresses.filter(addr => addr.id !== addressId);
+      setAddresses(updatedAddresses);
+
+      // Si se eliminó la dirección que se está mostrando, invalidar cache
+      const currentAddressId = currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
+      if (addressId === currentAddressId) {
+        invalidate();
+        await refetch();
+      }
+
+      // Refrescar lista completa desde el backend para asegurar sincronización
+      await fetchAddresses();
+
+      // Invalidar cache del hook useShippingOrigin
+      invalidateShippingOriginCache();
+
+      // Si no quedan direcciones, actualizar el contexto
+      if (updatedAddresses.length === 0 && user) {
+        await login({
+          ...user,
+          defaultAddress: null,
+        });
+      }
+    } catch (error) {
+      console.error("❌ Error eliminando dirección:", error);
+      alert('Error al eliminar la dirección. Por favor intenta de nuevo.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -162,8 +242,55 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     };
   }, [open]);
 
-  // Skeleton mientras carga la dirección predeterminada
-  if (loadingDefault || !currentAddress) {
+  // Si no hay usuario logueado, mostrar botón para agregar dirección que redirige al login
+  // Esta verificación debe ir ANTES del skeleton para que se muestre inmediatamente
+  if (!isAuthenticated || !user?.id) {
+    return (
+      <div className="relative" ref={dropdownRef}>
+        {/* Botón para Desktop (>= 1280px) */}
+        <button
+          className={cn(
+            "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+            showWhiteItems ? "text-white/90" : "text-black/80"
+          )}
+          onClick={handleAddNewAddress}
+          title="Agregar dirección"
+          style={{ lineHeight: "1.4" }}
+          type="button"
+        >
+          <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+          <span className="truncate block" style={{ lineHeight: "1.4" }}>
+            Agregar dirección
+          </span>
+          <Plus className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
+        </button>
+
+        {/* Botón para Mobile/Tablet (< 1280px) */}
+        <button
+          className={cn(
+            "xl:hidden flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer py-1 max-w-[200px] sm:max-w-[280px] pr-4",
+            showWhiteItems ? "text-white/90" : "text-black/80"
+          )}
+          onClick={handleAddNewAddress}
+          title="Agregar dirección"
+          type="button"
+        >
+          <div className="flex flex-col items-start gap-0 min-w-0 flex-1">
+            <div className="flex items-center gap-1 w-full">
+              <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="text-[11px] font-semibold truncate">
+                Agregar dirección
+              </span>
+            </div>
+          </div>
+          <Plus className="w-4 h-4 flex-shrink-0" />
+        </button>
+      </div>
+    );
+  }
+
+  // Skeleton mientras carga la dirección predeterminada (solo si hay usuario logueado)
+  if (loadingDefault) {
     return (
       <div className="relative" ref={dropdownRef}>
         {/* Skeleton para Desktop (>= 1280px) */}
@@ -188,6 +315,123 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     );
   }
 
+  // Determinar qué dirección mostrar: predeterminada o primera disponible
+  const displayAddress = currentAddress || (addresses.length > 0 ? addresses[0] : null);
+
+  // Si no hay dirección predeterminada ni direcciones disponibles, mostrar botón para agregar dirección
+  // También mostrar skeleton si está cargando direcciones
+  if (!displayAddress) {
+    if (loading || loadingDefault) {
+      // Mostrar skeleton mientras carga
+      return (
+        <div className="relative" ref={dropdownRef}>
+          {/* Skeleton para Desktop (>= 1280px) */}
+          <div className="hidden xl:flex items-center gap-1.5 max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
+            <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0" />
+            <div className="h-4 bg-gray-300 rounded animate-pulse flex-1" />
+            <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0 ml-1" />
+          </div>
+
+          {/* Skeleton para Mobile/Tablet (< 1280px) */}
+          <div className="xl:hidden flex items-center gap-2 max-w-[200px] sm:max-w-[280px] pr-4">
+            <div className="flex flex-col items-start gap-1 min-w-0 flex-1">
+              <div className="flex items-center gap-1 w-full">
+                <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0" />
+                <div className="h-3 bg-gray-300 rounded animate-pulse flex-1" />
+              </div>
+              <div className="h-3 bg-gray-300 rounded animate-pulse w-3/4" />
+            </div>
+            <div className="w-4 h-4 bg-gray-300 rounded animate-pulse flex-shrink-0" />
+          </div>
+        </div>
+      );
+    }
+    return (
+      <>
+        <div className="relative" ref={dropdownRef}>
+          {/* Botón para Desktop (>= 1280px) */}
+          <button
+            className={cn(
+              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+              showWhiteItems ? "text-white/90" : "text-black/80"
+            )}
+            onClick={handleAddNewAddress}
+            title="Agregar dirección"
+            style={{ lineHeight: "1.4" }}
+            type="button"
+          >
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate block" style={{ lineHeight: "1.4" }}>
+              Agregar dirección
+            </span>
+            <Plus className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
+          </button>
+
+          {/* Botón para Mobile/Tablet (< 1280px) */}
+          <button
+            className={cn(
+              "xl:hidden flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer py-1 max-w-[200px] sm:max-w-[280px] pr-4",
+              showWhiteItems ? "text-white/90" : "text-black/80"
+            )}
+            onClick={handleAddNewAddress}
+            title="Agregar dirección"
+            type="button"
+          >
+            <div className="flex flex-col items-start gap-0 min-w-0 flex-1">
+              <div className="flex items-center gap-1 w-full">
+                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="text-[11px] font-semibold truncate">
+                  Agregar dirección
+                </span>
+              </div>
+            </div>
+            <Plus className="w-4 h-4 flex-shrink-0" />
+          </button>
+        </div>
+
+        {/* Modal para agregar dirección */}
+        {showModal && isMounted && createPortal(
+          <div
+            className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
+            onClick={() => setShowModal(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  Agregar nueva dirección
+                </h2>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  type="button"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              <div className="overflow-y-auto p-6">
+                <AddNewAddressForm
+                  onAddressAdded={handleAddressAdded}
+                  onCancel={() => setShowModal(false)}
+                  withContainer={false}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+      </>
+    );
+  }
+
+  // Si llegamos aquí, displayAddress debe existir
+  if (!displayAddress) {
+    return null;
+  }
+
   return (
     <>
       <div className="relative" ref={dropdownRef}>
@@ -198,13 +442,13 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
             showWhiteItems ? "text-white/90" : "text-black/80"
           )}
           onClick={handleToggle}
-          title={currentAddress.direccionFormateada}
+          title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
           style={{ lineHeight: "1.4" }}
           type="button"
         >
           <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
           <span className="truncate block" style={{ lineHeight: "1.4" }}>
-            {currentAddress.direccionFormateada}
+            {displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
           </span>
           <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
         </button>
@@ -216,18 +460,18 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
             showWhiteItems ? "text-white/90" : "text-black/80"
           )}
           onClick={handleToggle}
-          title={currentAddress.direccionFormateada}
+          title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
           type="button"
         >
           <div className="flex flex-col items-start gap-0 min-w-0 flex-1">
             <div className="flex items-center gap-1 w-full">
               <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
               <span className="text-[11px] font-semibold truncate">
-                {currentAddress.nombreDireccion}
+                {displayAddress.nombreDireccion || 'Dirección'}
               </span>
             </div>
             <span className="text-[11px] font-normal truncate w-full block leading-tight">
-              {currentAddress.direccionFormateada}
+              {displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
             </span>
           </div>
           <ChevronDown className="w-4 h-4 flex-shrink-0" />
@@ -261,39 +505,103 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                   No hay direcciones registradas
                 </div>
               ) : (
-                addresses.map((address) => (
-                  <button
-                    key={address.id}
-                    className={cn(
-                      "w-full text-left px-4 py-4 hover:bg-gray-50 active:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0",
-                      address.id === currentAddress.id && "bg-blue-50 hover:bg-blue-100"
-                    )}
-                    onClick={() => handleSelectAddress(address)}
-                    type="button"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-gray-900 text-sm">
-                            {address.nombreDireccion}
-                          </span>
-                          {address.id === currentAddress.id && (
-                            <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-700 mt-1.5 leading-relaxed">
-                          {address.direccionFormateada}
-                        </p>
-                        {address.ciudad && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            {address.ciudad}
-                            {address.departamento && `, ${address.departamento}`}
+                addresses.map((address) => {
+                  const currentAddressId = currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
+                  const isSelected = address.id === currentAddressId;
+                  const isDeleting = deletingId === address.id;
+                  const isConfirming = confirmingDeleteId === address.id;
+                  return (
+                    <div
+                      key={address.id}
+                      className={cn(
+                        "w-full px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 group",
+                        isSelected && "bg-blue-50 hover:bg-blue-100",
+                        isConfirming && "bg-red-50"
+                      )}
+                    >
+                      {isConfirming ? (
+                        // Vista de confirmación
+                        <div className="flex flex-col gap-3">
+                          <p className="text-sm font-medium text-gray-900">
+                            ¿Eliminar esta dirección?
                           </p>
-                        )}
-                      </div>
+                          <p className="text-xs text-gray-600">
+                            Esta acción no se puede deshacer.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => handleConfirmDelete(address.id, e)}
+                              disabled={isDeleting}
+                              className="flex-1 px-3 py-2 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              type="button"
+                            >
+                              {isDeleting ? (
+                                <span className="flex items-center justify-center gap-2">
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  Eliminando...
+                                </span>
+                              ) : (
+                                'Eliminar'
+                              )}
+                            </button>
+                            <button
+                              onClick={handleCancelDelete}
+                              disabled={isDeleting}
+                              className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              type="button"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        // Vista normal
+                        <div className="flex items-start justify-between gap-3">
+                          <button
+                            className="flex-1 min-w-0 text-left"
+                            onClick={() => handleSelectAddress(address)}
+                            type="button"
+                            disabled={isDeleting}
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900 text-sm">
+                                {address.nombreDireccion}
+                              </span>
+                              {isSelected && (
+                                <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-700 mt-1.5 leading-relaxed">
+                              {address.direccionFormateada}
+                            </p>
+                            {address.ciudad && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {address.ciudad}
+                                {address.departamento && `, ${address.departamento}`}
+                              </p>
+                            )}
+                          </button>
+                          <button
+                            onClick={(e) => handleDeleteClick(address.id, e)}
+                            disabled={isDeleting}
+                            className={cn(
+                              "p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100",
+                              isDeleting && "opacity-100 cursor-not-allowed"
+                            )}
+                            type="button"
+                            title="Eliminar dirección"
+                          >
+                            {isDeleting ? (
+                              <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  </button>
-                ))
+                );
+                })
               )}
             </div>
 

@@ -320,21 +320,8 @@ export default function Navbar() {
               />
             </Link>
 
-            {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
-            {isAuthenticated ? (
-              <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
-            ) : (
-              <Image
-                src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-                alt="Samsung"
-                width={100}
-                height={32}
-                className={cn(
-                  "h-8 w-auto transition-all duration-300",
-                  shouldShowWhiteItemsMobile ? "brightness-0 invert" : ""
-                )}
-              />
-            )}
+            {/* Mostrar dirección (siempre, el componente maneja si está logueado o no) */}
+            <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
           </div>
 
           <div className="flex items-center gap-2 shrink-0">

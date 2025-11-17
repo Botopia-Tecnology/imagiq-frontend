@@ -1,20 +1,18 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
 import { useCart } from "@/hooks/useCart";
 import { CardData, CardErrors } from "../components/CreditCardForm";
-import { PaymentMethod, CheckZeroInterestResponse } from "../types";
+import { PaymentMethod, BeneficiosDTO } from "../types";
 import {
   payWithAddi,
   payWithCard,
   payWithSavedCard,
   payWithPse,
-  checkZeroInterest,
 } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
-import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
@@ -34,10 +32,6 @@ export function useCheckoutLogic() {
   const [isAddCardModalOpen, setIsAddCardModalOpen] = useState(false);
   // Contador para forzar recarga de tarjetas guardadas
   const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
-
-  // Estados para cuotas sin interés
-  const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
-  const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
@@ -113,41 +107,17 @@ export function useCheckoutLogic() {
   };
 
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
-  const handleAddCardSuccess = (newCardId?: string) => {
+  const handleAddCardSuccess = () => {
     setIsAddCardModalOpen(false);
     setSavedCardsReloadCounter((c) => c + 1);
-
-    // Si se proporcionó el ID de la nueva tarjeta, consultar cuotas sin interés
-    if (newCardId) {
-      fetchZeroInterestInfo([newCardId]);
-    }
   };
 
   const handleUseNewCardChange = (useNew: boolean) => {
     setUseNewCard(useNew);
-    if (useNew) {
-      // Si el usuario quiere usar una nueva tarjeta, limpiar la selección de tarjeta guardada
+    if (!useNew) {
       setSelectedCardId(null);
     }
   };
-
-  // Función para consultar información de cuotas sin interés
-  const fetchZeroInterestInfo = useCallback(async (cardIds: string[]) => {
-    const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-
-    if (!userInfo.id || cardIds.length === 0) return;
-
-    setIsLoadingZeroInterest(true);
-    const result = await checkZeroInterest({
-      userId: userInfo.id,
-      cardIds,
-      productSkus: cartProducts.map(p => p.sku),
-      totalAmount: calculations.total,
-    });
-
-    setZeroInterestData(result);
-    setIsLoadingZeroInterest(false);
-  }, [cartProducts, calculations.total]);
 
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
   // useEffect(() => {
@@ -212,11 +182,6 @@ export function useCheckoutLogic() {
           "checkout-card-installments",
           card.installments || "1"
         );
-
-        // Guardar información de cuotas sin interés para usar en Step5
-        if (zeroInterestData) {
-          safeSetLocalStorage("checkout-zero-interest", zeroInterestData);
-        }
       } else {
         localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
@@ -285,25 +250,34 @@ export function useCheckoutLogic() {
     // Activar estado de procesamiento
     setIsProcessing(true);
 
-    // Usar cálculos del hook useCart
-    const { total, shipping: envio } = calculations;
+      // Usar cálculos del hook useCart
+      const { total, shipping: envio } = calculations;
+
+      // Determinar método de envío y código de bodega desde localStorage
+      const deliveryMethod = (localStorage.getItem("checkout-delivery-method") || "domicilio").toLowerCase();
+      const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
+      let codigo_bodega: string | undefined = undefined;
+      if (deliveryMethod === "tienda") {
+        try {
+          const storeStr = localStorage.getItem("checkout-store");
+          if (storeStr) {
+            const parsedStore = JSON.parse(storeStr);
+            codigo_bodega = parsedStore?.codBodega || parsedStore?.codigo || undefined;
+          }
+        } catch {
+          // ignore parsing errors
+        }
+      }
 
     // Procesar pago
     try {
-      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-      const direction = safeGetLocalStorage<{ id?: string }>("checkout-address", {});
-      const billing = safeGetLocalStorage<{
-        direccion?: { id?: string };
-        email?: string;
-        nombre?: string;
-        documento?: string;
-        tipoDocumento?: string;
-        telefono?: string;
-        type?: string;
-        nit?: string;
-        razonSocial?: string;
-        nombreRepresentante?: string;
-      }>("checkout-billing-data", {});
+      const userInfo = JSON.parse(localStorage.getItem("imagiq_user") || "{}");
+      const direction = JSON.parse(
+        localStorage.getItem("checkout-address") || "{}"
+      );
+      const billing = JSON.parse(
+        localStorage.getItem("checkout-billing-data") || "{}"
+      );
 
       const informacion_facturacion = {
         direccion_id: billing?.direccion?.id ?? direction?.id ?? "",
@@ -321,7 +295,41 @@ export function useCheckoutLogic() {
       let res;
 
       switch (paymentMethod) {
-        case "addi":
+        case "addi": {
+          // Construir beneficios
+          const buildBeneficios = (): BeneficiosDTO[] => {
+            const beneficios: BeneficiosDTO[] = [];
+            try {
+              const tradeStr = localStorage.getItem("imagiq_trade_in");
+              if (tradeStr) {
+                const parsedTrade = JSON.parse(tradeStr);
+                if (parsedTrade?.completed) {
+                  beneficios.push({
+                    type: "entrego_y_estreno",
+                    dispositivo_a_recibir: parsedTrade.deviceName,
+                    valor_retoma: parsedTrade.value,
+                    detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                  });
+                }
+              }
+
+              const zeroStr = localStorage.getItem("checkout-zero-interest");
+              if (zeroStr) {
+                const parsedZero = JSON.parse(zeroStr);
+                const aplicaZero =
+                  parsedZero?.aplica_zero_interes || parsedZero?.aplica;
+                if (aplicaZero) {
+                  // Addi payments might not have a card id, but keep logic for completeness
+                  beneficios.push({ type: "0%_interes" });
+                }
+              }
+            } catch {
+              // ignore
+            }
+            if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+            return beneficios;
+          };
+
           res = await payWithAddi({
             currency: "COP",
             items: cartProducts.map((p) => ({
@@ -333,14 +341,16 @@ export function useCheckoutLogic() {
               skupostback: String(p.skuPostback),
               desDetallada: String(p.desDetallada),
             })),
-            metodo_envio: 1,
+            metodo_envio,
+            codigo_bodega,
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id || "",
-              direccionId: direction.id || "",
+              userId: userInfo.id,
+              direccionId: direction.id,
             },
             informacion_facturacion,
+            beneficios: buildBeneficios(),
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
@@ -362,8 +372,9 @@ export function useCheckoutLogic() {
             router.push(res.redirectUrl);
           }
           break;
+        }
 
-        case "tarjeta":
+        case "tarjeta": {
           // Verificar si usa tarjeta guardada o nueva
           if (selectedCardId && !useNewCard) {
             // Pago con tarjeta guardada
@@ -379,15 +390,66 @@ export function useCheckoutLogic() {
                 skupostback: String(p.skuPostback),
                 desDetallada: String(p.desDetallada),
               })),
-              metodo_envio: 1,
+              metodo_envio,
+              codigo_bodega,
               shippingAmount: String(envio),
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id || "",
-                direccionId: direction.id || "",
+                userId: userInfo.id,
+                direccionId: direction.id,
               },
               informacion_facturacion,
+              beneficios: (() => {
+                const beneficios: BeneficiosDTO[] = [];
+                try {
+                  const tradeStr = localStorage.getItem("imagiq_trade_in");
+                  if (tradeStr) {
+                    const parsedTrade = JSON.parse(tradeStr);
+                    if (parsedTrade?.completed) {
+                      beneficios.push({
+                        type: "entrego_y_estreno",
+                        dispositivo_a_recibir: parsedTrade.deviceName,
+                        valor_retoma: parsedTrade.value,
+                        detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                      });
+                    }
+                  }
+
+                  const zeroStr = localStorage.getItem(
+                    "checkout-zero-interest"
+                  );
+                  if (zeroStr) {
+                    const parsedZero = JSON.parse(zeroStr);
+                    const aplicaZero =
+                      parsedZero?.aplica_zero_interes || parsedZero?.aplica;
+                    if (aplicaZero) {
+                      const installmentsNum = Number(card.installments || 1);
+                      const cardId =
+                        selectedCardId ||
+                        localStorage.getItem("checkout-saved-card-id");
+                      const matched = parsedZero?.cards?.find(
+                        (c: {
+                          id: string;
+                          eligibleForZeroInterest: boolean;
+                          availableInstallments: number[];
+                        }) => String(c.id) === String(cardId)
+                      );
+                      if (
+                        matched?.eligibleForZeroInterest &&
+                        matched.availableInstallments?.includes(installmentsNum)
+                      ) {
+                        beneficios.push({ type: "0%_interes" });
+                      }
+                    }
+                  }
+                } catch {
+                  // ignore
+                }
+                if (beneficios.length === 0)
+                  return [{ type: "sin_beneficios" }];
+                return beneficios;
+              })(),
             });
           } else {
             // Pago con tarjeta nueva
@@ -406,15 +468,40 @@ export function useCheckoutLogic() {
                 skupostback: String(p.skuPostback),
                 desDetallada: String(p.desDetallada),
               })),
-              metodo_envio: 1,
+              metodo_envio,
+              codigo_bodega,
               shippingAmount: String(envio),
               totalAmount: String(total),
               currency: "COP",
               userInfo: {
-                userId: userInfo.id || "",
-                direccionId: direction.id || "",
+                userId: userInfo.id,
+                direccionId: direction.id,
               },
               informacion_facturacion,
+              beneficios: (() => {
+                const beneficios: BeneficiosDTO[] = [];
+                try {
+                  const tradeStr = localStorage.getItem("imagiq_trade_in");
+                  if (tradeStr) {
+                    const parsedTrade = JSON.parse(tradeStr);
+                    if (parsedTrade?.completed) {
+                      beneficios.push({
+                        type: "entrego_y_estreno",
+                        dispositivo_a_recibir: parsedTrade.deviceName,
+                        valor_retoma: parsedTrade.value,
+                        detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                      });
+                    }
+                  }
+
+                  // For new cards we don't have a card id to check zero interest eligibility
+                } catch {
+                  // ignore
+                }
+                if (beneficios.length === 0)
+                  return [{ type: "sin_beneficios" }];
+                return beneficios;
+              })(),
             });
           }
 
@@ -438,8 +525,9 @@ export function useCheckoutLogic() {
           }
           router.push(res.redirectionUrl);
           break;
+        }
 
-        case "pse":
+        case "pse": {
           res = await payWithPse({
             bank: selectedBank,
             description: "Imagiq Store",
@@ -453,14 +541,36 @@ export function useCheckoutLogic() {
               skupostback: String(p.skuPostback),
               desDetallada: String(p.desDetallada),
             })),
-            metodo_envio: 1,
+            metodo_envio,
+            codigo_bodega,
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
-              userId: userInfo.id || "",
-              direccionId: direction.id || "",
+              userId: userInfo.id,
+              direccionId: direction.id,
             },
             informacion_facturacion,
+            beneficios: (() => {
+              const beneficios: any[] = [];
+              try {
+                const tradeStr = localStorage.getItem("imagiq_trade_in");
+                if (tradeStr) {
+                  const parsedTrade = JSON.parse(tradeStr);
+                  if (parsedTrade?.completed) {
+                    beneficios.push({
+                      type: "entrego_y_estreno",
+                      dispositivo_a_recibir: parsedTrade.deviceName,
+                      valor_retoma: parsedTrade.value,
+                      detalles_dispositivo_a_recibir: parsedTrade.detalles,
+                    });
+                  }
+                }
+              } catch {
+                // ignore
+              }
+              if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+              return beneficios;
+            })(),
           });
           if ("error" in res) {
             // Check if it's an out-of-stock error
@@ -482,6 +592,7 @@ export function useCheckoutLogic() {
           }
           router.push(res.redirectUrl);
           break;
+        }
       }
     } catch (err) {
       console.error("Error al guardar datos de orden:", err);
@@ -511,10 +622,6 @@ export function useCheckoutLogic() {
     isAddCardModalOpen,
     savedCardsReloadCounter,
 
-    // Estados de cuotas sin interés
-    zeroInterestData,
-    isLoadingZeroInterest,
-
     // Handlers
     handleCardChange,
     handleCardErrorChange,
@@ -530,9 +637,6 @@ export function useCheckoutLogic() {
     handleCloseAddCardModal,
     handleAddCardSuccess,
     handleUseNewCardChange,
-
-    // Handlers de cuotas sin interés
-    fetchZeroInterestInfo,
 
     // Setters
     setAccepted,

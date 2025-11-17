@@ -12,6 +12,7 @@
 
 import * as Sentry from '@sentry/nextjs';
 import { sentryConfig } from './config';
+import { apiGet } from '@/lib/api-client';
 
 /** Flag para evitar inicializaciones múltiples */
 let sentryInitialized = false;
@@ -63,14 +64,14 @@ export async function initSentry(): Promise<void> {
     configLoading = true;
     console.log('[Sentry] Fetching configuration from backend...');
 
-    // Obtener la configuración desde el backend
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/custommer/analytics/sentry/config`);
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch Sentry config: ${response.status}`);
-    }
-
-    const config = await response.json();
+    // Obtener la configuración desde el backend con autenticación API Key
+    const config = await apiGet<{
+      dsn: string;
+      environment?: string;
+      tracesSampleRate?: number;
+      replaysSessionSampleRate?: number;
+      replaysOnErrorSampleRate?: number;
+    }>('/api/custommer/analytics/sentry/config');
 
     if (!config.dsn) {
       throw new Error('Sentry DSN not provided by backend');

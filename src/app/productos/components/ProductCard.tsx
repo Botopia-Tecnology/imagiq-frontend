@@ -679,8 +679,8 @@ export default function ProductCard({
               )}
           </div>
 
-          {/* Nombre de color del API (antes del selector) - Solo si debe mostrar selector */}
-          {showColorSelector && displayedSelectedColor?.nombreColorDisplay && (
+          {/* Nombre de color del API (antes del selector) - Mostrar siempre que haya nombreColorDisplay disponible */}
+          {displayedSelectedColor?.nombreColorDisplay && (
             <div className="px-3 mb-1">
               <p className="text-xs text-gray-600 font-medium">
                 {`Color: ${displayedSelectedColor.nombreColorDisplay}`}

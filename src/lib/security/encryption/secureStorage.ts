@@ -51,14 +51,26 @@ class SecureStorage implements Storage {
 
   /**
    * Encripta un valor usando Base64 + AES-256
+   *
+   * IMPORTANTE: Usa IV DETERMINISTA para evitar loops infinitos
+   * La IV se deriva del valor + encryption key usando HMAC
    */
   private encrypt(value: string): string {
     try {
       // Paso 1: Base64
       const base64 = btoa(unescape(encodeURIComponent(value)));
 
-      // Paso 2: AES-256
-      const encrypted = CryptoJS.AES.encrypt(base64, this.encryptionKey).toString();
+      // Paso 2: Generar IV determinista desde el valor (evita loops)
+      // Usar HMAC para generar IV de 128 bits (16 bytes) desde el contenido
+      const ivHash = CryptoJS.HmacSHA256(base64, this.encryptionKey).toString();
+      const iv = CryptoJS.enc.Hex.parse(ivHash.substring(0, 32)); // Primeros 16 bytes (32 hex chars)
+
+      // Paso 3: AES-256 con IV determinista
+      const encrypted = CryptoJS.AES.encrypt(base64, this.encryptionKey, {
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
+        padding: CryptoJS.pad.Pkcs7,
+      }).toString();
 
       return encrypted;
     } catch (error) {
@@ -68,10 +80,14 @@ class SecureStorage implements Storage {
 
   /**
    * Desencripta un valor usando AES-256 + Base64
+   *
+   * Intenta primero con IV determinista (nuevo formato)
+   * Si falla, intenta con decrypt estándar (formato legacy con salt aleatorio)
    */
   private decrypt(encryptedValue: string): string {
     try {
-      // Paso 1: AES-256 decrypt
+      // Intentar decrypt estándar primero (formato legacy o nuevo)
+      // CryptoJS automáticamente detecta el formato
       const decrypted = CryptoJS.AES.decrypt(encryptedValue, this.encryptionKey);
       const base64 = decrypted.toString(CryptoJS.enc.Utf8);
 

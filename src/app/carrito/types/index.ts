@@ -71,6 +71,7 @@ export interface CardPaymentData extends BasicPaymentData {
 
 export interface PsePaymentData extends BasicPaymentData {
   bank: string;
+  bankName: string;
   description: string;
 }
 export type PaymentMethod = "addi" | "tarjeta" | "pse";

@@ -81,6 +81,22 @@ export async function apiClient(
  */
 export async function apiGet<T = unknown>(endpoint: string): Promise<T> {
   const response = await apiClient(endpoint, { method: 'GET' });
+
+  // Manejar respuestas vacías (204 No Content o respuestas sin body)
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  // Verificar si la respuesta tiene contenido
+  const contentLength = response.headers.get('content-length');
+  const contentType = response.headers.get('content-type');
+
+  // Si no hay contenido o no es JSON, retornar undefined
+  if (contentLength === '0' || !contentType?.includes('application/json')) {
+    console.warn(`[API] Empty or non-JSON response from ${endpoint}`);
+    return undefined as T;
+  }
+
   return response.json();
 }
 

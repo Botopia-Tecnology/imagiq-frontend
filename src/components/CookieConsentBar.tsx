@@ -72,24 +72,43 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
 
   // Inicializa API global y chequea consentimiento al montar
   useEffect(() => {
+    console.log('[CookieConsentBar] Component mounted');
+    console.log('[CookieConsentBar] autoShow:', autoShow);
+    console.log('[CookieConsentBar] window:', typeof window !== 'undefined' ? 'defined' : 'undefined');
+
     // Inicializar API global window.getConsent()
     initConsentAPI();
 
-    if (!autoShow) return;
+    if (!autoShow) {
+      console.log('[CookieConsentBar] autoShow is false, skipping');
+      return;
+    }
+
+    // Verificar localStorage directamente
+    const storedConsent = typeof window !== 'undefined' ? localStorage.getItem('imagiq_consent') : null;
+    console.log('[CookieConsentBar] Raw localStorage value:', storedConsent);
 
     // Verificar si ya existe consentimiento
     const consent = getConsent();
+    console.log('[CookieConsentBar] Parsed consent:', consent);
+
     if (!consent) {
+      console.log('[CookieConsentBar] ✅ No consent found, will show banner in 1.5s');
       // Pequeño delay antes de mostrar para mejor UX
-      const timer = setTimeout(() => setIsVisible(true), 1500);
+      const timer = setTimeout(() => {
+        console.log('[CookieConsentBar] ⭐ SHOWING BANNER NOW');
+        setIsVisible(true);
+      }, 1500);
       return () => clearTimeout(timer);
+    } else {
+      console.log('[CookieConsentBar] ❌ Consent already exists, NOT showing banner:', consent);
     }
   }, [autoShow]);
 
   // Maneja la decisión de aceptar
   const handleAccept = async () => {
     // Guardar consentimiento de cookies
-    saveConsent({ analytics: true, ads: true });
+    saveConsent(true, true); // analytics: true, marketing: true
 
     // TAMBIÉN guardar consentimiento de ubicación
     saveLocationPermission(true);
@@ -131,7 +150,7 @@ const CookieConsentBar: React.FC<CookieConsentBarProps> = ({
   // Maneja la decisión de rechazar
   const handleReject = () => {
     // Solo guardar rechazo de cookies
-    saveConsent({ analytics: false, ads: false });
+    saveConsent(false, false); // analytics: false, marketing: false
 
     // NO guardar rechazo de ubicación (para volver a preguntar)
     // Limpiar cualquier rechazo previo de ubicación

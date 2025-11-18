@@ -50,6 +50,9 @@ const DEVTOOLS_SHORTCUTS = [
  * Verifica si un evento de teclado coincide con un shortcut bloqueado
  */
 function isBlockedShortcut(event: KeyboardEvent): boolean {
+  // Guard: verificar que event.key existe
+  if (!event.key) return false;
+
   const key = event.key.toUpperCase();
   const ctrl = event.ctrlKey;
   const shift = event.shiftKey;

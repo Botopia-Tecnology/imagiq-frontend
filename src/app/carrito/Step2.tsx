@@ -352,6 +352,9 @@ export default function Step2({
     setTradeInData(null);
   };
 
+  // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
+  const verifiedSkusRef = React.useRef<Set<string>>(new Set());
+
   // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
   useEffect(() => {
     if (cartProducts.length === 0) return;
@@ -362,10 +365,12 @@ export default function Step2({
         new Set(cartProducts.map((p) => p.sku))
       );
 
-      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
-        return product && product.indRetoma === undefined;
+        const needsVerification = product && product.indRetoma === undefined;
+        const notVerifiedYet = !verifiedSkusRef.current.has(sku);
+        return needsVerification && notVerifiedYet;
       });
 
       if (productsToVerify.length === 0) return;
@@ -387,6 +392,9 @@ export default function Step2({
           const result = response.data;
           const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
 
+          // Marcar SKU como verificado ANTES de actualizar localStorage (evita loop)
+          verifiedSkusRef.current.add(sku);
+
           // Actualizar localStorage con el resultado
           const storedProducts = JSON.parse(
             localStorage.getItem("cart-items") || "[]"
@@ -406,6 +414,8 @@ export default function Step2({
           window.dispatchEvent(customEvent);
           window.dispatchEvent(new Event("storage"));
         } catch (error) {
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
           // Silenciar errores, solo log en consola
           console.error(
             `❌ Error al verificar trade-in para SKU ${sku}:`,

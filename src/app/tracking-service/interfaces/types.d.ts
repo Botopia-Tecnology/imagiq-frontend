@@ -60,6 +60,7 @@ export interface OrderDetails
 
   // Propiedades específicas que pueden existir en ambos tipos
   metodo_envio?: string;
+  medio_pago?: number; // ID del método de envío: 1=Coordinadora, 2=Pickup, 3=Imagiq
   hora_recogida_autorizada?: string | null;
   token?: string;
   numero_guia?: string;

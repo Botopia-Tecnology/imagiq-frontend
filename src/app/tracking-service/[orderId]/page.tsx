@@ -8,11 +8,10 @@ import { OrderDetails, EnvioEvento, ProductoDetalle, TiendaInfo } from "../inter
 import {
   LoadingSpinner,
   ErrorView,
-  PickupOrderView,
   ShippingOrderView,
 } from "../components";
 import { ImagiqShippingView } from "@/app/imagiq-tracking/components/ImagiqShippingView";
-import { EnhancedPickupOrderView } from "@/app/pickup-tracking/components/EnhancedPickupOrderView";
+import { PickupShippingView } from "@/app/pickup-tracking/components/PickupShippingView";
 
 export default function TrackingService({
   params,
@@ -24,6 +23,7 @@ export default function TrackingService({
   const [isLoading, setIsLoading] = useState(true);
   const [pdfBase64, setPdfBase64] = useState<string>("");
   const [metodoEnvio, setMetodoEnvio] = useState<string>("");
+  const [medioPago, setMedioPago] = useState<number | undefined>(undefined);
   const [horaRecogida, setHoraRecogida] = useState<string>("");
   const [token, setToken] = useState<string>("");
   const [fechaCreacion, setFechaCreacion] = useState<string>("");
@@ -53,18 +53,36 @@ export default function TrackingService({
     }
   };
 
-  const isPickupOrder = (metodo: string) => {
-    return (
-      metodo?.toLowerCase().includes("recoger") ||
-      metodo?.toLowerCase().includes("tienda")
-    );
+  // Determinar el tipo de envío basado en medio_pago o fallback a metodo_envio
+  const getShippingType = (): "pickup" | "imagiq" | "coordinadora" => {
+    // Si tenemos medio_pago, usarlo directamente
+    if (medioPago !== undefined) {
+      if (medioPago === 2) return "pickup";
+      if (medioPago === 3) return "imagiq";
+      if (medioPago === 1) return "coordinadora";
+    }
+
+    // Fallback: inferir del metodo_envio si no hay medio_pago
+    if (metodoEnvio?.toLowerCase().includes("recoger") || metodoEnvio?.toLowerCase().includes("tienda")) {
+      return "pickup";
+    }
+    if (metodoEnvio?.toLowerCase().includes("imagiq")) {
+      return "imagiq";
+    }
+
+    // Por defecto, coordinadora
+    return "coordinadora";
   };
 
   useEffect(() => {
-    apiClient
-      .get<OrderDetails>(`/api/orders/shipping-info/${pathParams.orderId}`)
-      .then((res) => {
-        const data = res.data;
+    // Cargar información de la orden y método de envío en paralelo
+    Promise.all([
+      apiClient.get<OrderDetails>(`/api/orders/shipping-info/${pathParams.orderId}`),
+      apiClient.get<{ metodo_envio: number }>(`/api/orders/${pathParams.orderId}/delivery-method`)
+    ])
+      .then(([orderRes, deliveryMethodRes]) => {
+        const data = orderRes.data;
+        const deliveryMethod = deliveryMethodRes.data;
 
         // Extract envio data from the envios array if it exists
         const envioData = data.envios && data.envios.length > 0 ? data.envios[0] : data;
@@ -90,6 +108,8 @@ export default function TrackingService({
 
         // Set pickup-specific data (from OrderDetails or fallback to envioData)
         setMetodoEnvio(data.metodo_envio || "");
+        // Usar metodo_envio del endpoint específico, con fallback a medio_pago del shipping-info
+        setMedioPago(deliveryMethod.metodo_envio ?? data.medio_pago);
         setHoraRecogida(data.hora_recogida_autorizada || "");
         setToken(data.token || "");
         setFechaCreacion(data.fecha_creacion || "");
@@ -101,6 +121,12 @@ export default function TrackingService({
         setCiudadEntrega(data.ciudad_entrega || "");
         setNombreDestinatario(data.nombre_destinatario || "");
         setTelefonoDestinatario(data.telefono_destinatario || "");
+
+        console.log("📊 Método de envío detectado:", {
+          medio_pago_endpoint: deliveryMethod.metodo_envio,
+          medio_pago_shipping_info: data.medio_pago,
+          metodo_envio: data.metodo_envio,
+        });
 
         setIsLoading(false);
       })
@@ -123,52 +149,63 @@ export default function TrackingService({
     );
   }
 
-  // Helper function to determine if this is an IMAGIQ order
-  const isImagiqOrder = () => {
-    // Check if the order comes from IMAGIQ service
-    // This can be determined by checking if we have enhanced data (productos, direccionEntrega, etc.)
-    // or by checking the API endpoint structure
-    return productos.length > 0 || direccionEntrega || ciudadEntrega || nombreDestinatario;
-  };
+  // Determinar qué vista mostrar basándose en el tipo de envío
+  const shippingType = getShippingType();
+  const showPickup = shippingType === "pickup";
+  const showImagiq = shippingType === "imagiq";
+  const showCoordinadora = shippingType === "coordinadora";
 
-  // Determine which view to show
-  const showPickup = isPickupOrder(metodoEnvio);
-  const showEnhancedPickup = showPickup && (productos.length > 0 || tiendaInfo);
-  const showImagiqShipping = !showPickup && isImagiqOrder();
-  const showCoordinadoraShipping = !showPickup && !isImagiqOrder() && pdfBase64;
-  const showDefaultShipping = !showPickup && !isImagiqOrder() && !pdfBase64;
+  console.log("🎯 Vista a mostrar:", {
+    shippingType,
+    showPickup,
+    showImagiq,
+    showCoordinadora,
+  });
 
   return (
     <div className="bg-white pt-4 md:pt-5">
       {/* Main Content */}
       <main className="w-full max-w-7xl mx-auto px-2 sm:px-4">
+        {/* Debug: Shipping Method Display */}
+        {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-xs font-semibold text-blue-800 mb-2">
+              Debug: Método de envío
+            </p>
+            <div className="text-xs text-blue-700 space-y-1">
+              <p>
+                <strong>medio_pago:</strong> {medioPago !== undefined ? medioPago : "undefined"}
+              </p>
+              <p>
+                <strong>metodo_envio:</strong> {metodoEnvio || "N/A"}
+              </p>
+              <p>
+                <strong>Tipo detectado:</strong>{" "}
+                {shippingType === "pickup" && "📦 Pickup (2)"}
+                {shippingType === "imagiq" && "🚚 Imagiq (3)"}
+                {shippingType === "coordinadora" && "🚛 Coordinadora (1)"}
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* Tracking Content - full-bleed white, no card border */}
         <div className="bg-white max-w-7xl mx-auto" style={{ minHeight: "500px" }}>
-          {/* Enhanced Pickup View - with products */}
-          {showEnhancedPickup && (
-            <EnhancedPickupOrderView
+          {/* Pickup View - medio_pago: 2 */}
+          {showPickup && (
+            <PickupShippingView
               orderNumber={orderNumber}
               token={token}
+              fechaCreacion={fechaCreacion ? formatDate(fechaCreacion) : formatDate(new Date().toISOString())}
               horaRecogida={horaRecogida}
-              fechaCreacion={fechaCreacion}
+              direccionTienda={tiendaInfo?.direccion}
+              ciudadTienda={tiendaInfo?.ciudad}
               products={productos}
-              storeInfo={tiendaInfo}
-              formatDate={formatDate}
             />
           )}
 
-          {/* Basic Pickup View - fallback */}
-          {showPickup && !showEnhancedPickup && (
-            <PickupOrderView
-              orderNumber={orderNumber}
-              token={token}
-              horaRecogida={horaRecogida}
-              formatDate={formatDate}
-            />
-          )}
-
-          {/* IMAGIQ Shipping View - for IMAGIQ orders */}
-          {showImagiqShipping && (
+          {/* IMAGIQ Shipping View - medio_pago: 3 */}
+          {showImagiq && (
             <ImagiqShippingView
               orderNumber={orderNumber}
               estimatedInitDate={estimatedInitDate}
@@ -182,25 +219,14 @@ export default function TrackingService({
             />
           )}
 
-          {/* Coordinadora Shipping View - with PDF */}
-          {showCoordinadoraShipping && (
+          {/* Coordinadora Shipping View - medio_pago: 1 */}
+          {showCoordinadora && (
             <ShippingOrderView
               orderNumber={orderNumber}
               estimatedInitDate={estimatedInitDate}
               estimatedFinalDate={estimatedFinalDate}
               trackingSteps={trackingSteps}
               pdfBase64={pdfBase64}
-            />
-          )}
-
-          {/* Default Shipping View - when no PDF and not IMAGIQ */}
-          {showDefaultShipping && (
-            <ShippingOrderView
-              orderNumber={orderNumber}
-              estimatedInitDate={estimatedInitDate}
-              estimatedFinalDate={estimatedFinalDate}
-              trackingSteps={trackingSteps}
-              pdfBase64=""
             />
           )}
         </div>

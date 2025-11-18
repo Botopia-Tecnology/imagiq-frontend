@@ -26,6 +26,73 @@ export default function Step4OrderSummary({
     products,
   } = useCart();
 
+  // Obtener método de entrega desde localStorage - forzar lectura correcta
+  const getDeliveryMethodFromStorage = React.useCallback(() => {
+    if (typeof window === "undefined") return "domicilio";
+    try {
+      const method = localStorage.getItem("checkout-delivery-method");
+      // Validar que el método sea válido
+      if (method === "tienda" || method === "domicilio") {
+        return method;
+      }
+      return "domicilio";
+    } catch (error) {
+      console.error("Error reading delivery method from localStorage:", error);
+      return "domicilio";
+    }
+  }, []);
+
+  const [deliveryMethod, setDeliveryMethod] = React.useState<string>(() => 
+    getDeliveryMethodFromStorage()
+  );
+
+  // Actualizar el método de entrega cuando cambie
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const updateDeliveryMethod = () => {
+      const method = getDeliveryMethodFromStorage();
+      setDeliveryMethod((prev) => {
+        // Solo actualizar si cambió para evitar re-renders innecesarios
+        if (prev !== method) {
+          return method;
+        }
+        return prev;
+      });
+    };
+
+    // Actualizar inmediatamente al montar
+    updateDeliveryMethod();
+
+    // Escuchar cambios en localStorage (entre pestañas)
+    const handleStorageChange = () => {
+      updateDeliveryMethod();
+    };
+    window.addEventListener("storage", handleStorageChange);
+
+    // Escuchar evento personalizado cuando cambia el método de entrega
+    const handleDeliveryMethodChanged = () => {
+      updateDeliveryMethod();
+    };
+    window.addEventListener("delivery-method-changed", handleDeliveryMethodChanged);
+
+    // Verificar cambios más frecuentemente para detectar cambios en la misma pestaña
+    const interval = setInterval(updateDeliveryMethod, 50);
+
+    // También forzar actualización cuando el componente recibe foco
+    const handleFocus = () => {
+      updateDeliveryMethod();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("delivery-method-changed", handleDeliveryMethodChanged);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(interval);
+    };
+  }, [getDeliveryMethodFromStorage]);
+
   // Calcular ahorro total por descuentos de productos
   const productSavings = React.useMemo(() => {
     return products.reduce((total, product) => {
@@ -86,6 +153,22 @@ export default function Step4OrderSummary({
             </span>
           </div>
         )}
+
+        {/* Envío */}
+        <div className="flex justify-between text-sm">
+          <span>
+            {(() => {
+              // Forzar lectura directa desde localStorage como respaldo
+              const currentMethod = getDeliveryMethodFromStorage();
+              return currentMethod === "tienda" ? "Recoger en tienda" : "Envío a domicilio";
+            })()}
+          </span>
+          {calculations.shipping > 0 && (
+            <span className="font-semibold">
+              {cartFormatPrice(calculations.shipping)}
+            </span>
+          )}
+        </div>
 
         {/* Total: siempre string */}
         <div className="flex justify-between text-base font-bold mt-2">

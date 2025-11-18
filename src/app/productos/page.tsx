@@ -84,7 +84,7 @@ function ProductosContent() {
   );
 
   // Estados para paginación
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Estados para vista y ordenamiento
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");

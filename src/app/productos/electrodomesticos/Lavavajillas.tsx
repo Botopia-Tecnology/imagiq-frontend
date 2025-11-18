@@ -120,7 +120,7 @@ export default function LavavajillasSection() {
   const [sortBy, setSortBy] = useState("precio-mayor");
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Refs para sticky behavior
   const sidebarRef = useRef<HTMLDivElement>(null);

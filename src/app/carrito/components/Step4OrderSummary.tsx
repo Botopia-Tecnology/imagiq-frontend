@@ -3,12 +3,20 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
 
+interface ShippingVerification {
+  envio_imagiq: boolean;
+  todos_productos_im_it: boolean;
+  en_zona_cobertura: boolean;
+}
+
 interface Step4OrderSummaryProps {
   isProcessing?: boolean;
   onFinishPayment: () => void;
   buttonText?: string;
   onBack?: () => void;
   disabled?: boolean;
+  shippingVerification?: ShippingVerification | null;
+  deliveryMethod?: "delivery" | "pickup";
 }
 
 export default function Step4OrderSummary({
@@ -17,6 +25,8 @@ export default function Step4OrderSummary({
   buttonText = "Continuar",
   onBack,
   disabled = false,
+  shippingVerification,
+  deliveryMethod,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -42,7 +52,7 @@ export default function Step4OrderSummary({
     }
   }, []);
 
-  const [deliveryMethod, setDeliveryMethod] = React.useState<string>(() => 
+  const [localDeliveryMethod, setLocalDeliveryMethod] = React.useState<string>(() =>
     getDeliveryMethodFromStorage()
   );
 
@@ -52,7 +62,7 @@ export default function Step4OrderSummary({
 
     const updateDeliveryMethod = () => {
       const method = getDeliveryMethodFromStorage();
-      setDeliveryMethod((prev) => {
+      setLocalDeliveryMethod((prev) => {
         // Solo actualizar si cambió para evitar re-renders innecesarios
         if (prev !== method) {
           return method;
@@ -158,8 +168,11 @@ export default function Step4OrderSummary({
         <div className="flex justify-between text-sm">
           <span>
             {(() => {
-              // Forzar lectura directa desde localStorage como respaldo
-              const currentMethod = getDeliveryMethodFromStorage();
+              // Prefer prop value, fallback to local state or localStorage
+              const currentMethod = deliveryMethod === "pickup" ? "tienda" :
+                                   deliveryMethod === "delivery" ? "domicilio" :
+                                   localDeliveryMethod === "tienda" ? "tienda" :
+                                   getDeliveryMethodFromStorage();
               return currentMethod === "tienda" ? "Recoger en tienda" : "Envío a domicilio";
             })()}
           </span>
@@ -238,6 +251,37 @@ export default function Step4OrderSummary({
           )}
         </button>
       </div>
+
+      {/* Debug: Shipping Method Display */}
+      {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <p className="text-xs font-semibold text-yellow-800 mb-2">
+            Debug: Método de envío
+          </p>
+          <div className="text-xs text-yellow-700 space-y-1">
+            {deliveryMethod === "pickup" && (
+              <p className="font-medium">📦 Recogida en tienda</p>
+            )}
+            {deliveryMethod === "delivery" && shippingVerification && (
+              <>
+                {shippingVerification.envio_imagiq ? (
+                  <p className="font-medium">🚚 Envío Imagiq</p>
+                ) : (
+                  <p className="font-medium">🚛 Envío Coordinadora</p>
+                )}
+                <div className="mt-2 space-y-0.5 text-[10px]">
+                  <p>• envio_imagiq: {shippingVerification.envio_imagiq ? "true" : "false"}</p>
+                  <p>• todos_productos_im_it: {shippingVerification.todos_productos_im_it ? "true" : "false"}</p>
+                  <p>• en_zona_cobertura: {shippingVerification.en_zona_cobertura ? "true" : "false"}</p>
+                </div>
+              </>
+            )}
+            {deliveryMethod === "delivery" && !shippingVerification && (
+              <p className="text-yellow-600 italic">Verificando cobertura...</p>
+            )}
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

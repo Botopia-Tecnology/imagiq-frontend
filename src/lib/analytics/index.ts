@@ -29,8 +29,12 @@
  */
 
 // Controlador principal
-export { processAnalyticsEvent, initAnalytics, pushToDataLayer } from './controller';
-export type { AnalyticsUserData } from './controller';
+export {
+  processAnalyticsEvent,
+  initAnalytics,
+  pushToDataLayer,
+} from "./controller";
+export type { AnalyticsUserData } from "./controller";
 
 // Lógica de abandono (exponer para uso avanzado)
 export {
@@ -39,7 +43,7 @@ export {
   clearAbandonIntents,
   resolveCartAbandon,
   resolveCheckoutAbandon,
-} from './abandon';
+} from "./abandon";
 
 // Tipos (para TypeScript)
 export type {
@@ -52,21 +56,37 @@ export type {
   DlSearch,
   DlCheckoutProgress,
   DlCategoryClick,
-} from './types';
+} from "./types";
 
 // Utilidades (para uso avanzado)
-export { generateEventId, hashEmail, hashPhone, hashUserData } from './utils';
+export { generateEventId, hashEmail, hashPhone, hashUserData } from "./utils";
 
 // Mapeadores (para uso avanzado o testing)
-export { toGa4Event, toMetaEvent, toTiktokEvent } from './mappers';
-export type { GA4Event, MetaEvent, TikTokEvent } from './mappers';
+export { toGa4Event, toMetaEvent, toTiktokEvent } from "./mappers";
+export type { GA4Event, MetaEvent, TikTokEvent } from "./mappers";
 
 // Emisores (para uso avanzado)
-export { sendGa4, sendMeta, sendTiktok } from './emitters';
-export { identifyTiktokUser } from './emitters/emit.tiktok';
-export type { TikTokUserData } from './emitters/emit.tiktok';
-export type { GA4UserData } from './emitters/emit.ga4';
+export { sendGa4, sendMeta, sendTiktok } from "./emitters";
+export { identifyTiktokUser } from "./emitters/emit.tiktok";
+export type { TikTokUserData } from "./emitters/emit.tiktok";
+export type { GA4UserData } from "./emitters/emit.ga4";
 
 // Hooks de React para uso en componentes
-export { useAnalytics } from './hooks/useAnalytics';
-export { useAnalyticsWithUser } from './hooks/useAnalyticsWithUser';
+export { useAnalytics } from "./hooks/useAnalytics";
+export { useAnalyticsWithUser } from "./hooks/useAnalyticsWithUser";
+
+// Clarity - Identificación de usuarios
+export {
+  identifyUserInClarity,
+  reidentifyUserOnNavigation,
+  identifyUserWithPageId,
+} from "./clarity-identify";
+
+// Clarity - Debug utilities (solo para desarrollo)
+export {
+  getClarityDebugInfo,
+  logClarityStatus,
+  isClarityReady,
+  waitForClarity,
+  enableDebugMode,
+} from "./clarity-debug";

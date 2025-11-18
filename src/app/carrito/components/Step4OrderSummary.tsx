@@ -17,6 +17,7 @@ interface Step4OrderSummaryProps {
   disabled?: boolean;
   shippingVerification?: ShippingVerification | null;
   deliveryMethod?: "delivery" | "pickup";
+  isSticky?: boolean;
 }
 
 export default function Step4OrderSummary({
@@ -27,6 +28,7 @@ export default function Step4OrderSummary({
   disabled = false,
   shippingVerification,
   deliveryMethod,
+  isSticky = true,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -114,9 +116,14 @@ export default function Step4OrderSummary({
     }, 0);
   }, [products]);
 
+  const baseContainerClasses =
+    "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";
+  const stickyClasses = isSticky ? " sticky top-8" : "";
+  const containerClasses = `${baseContainerClasses}${stickyClasses}`;
+
   if (isEmpty) {
     return (
-      <aside className="bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5] sticky top-8">
+      <aside className={containerClasses}>
         <h2 className="font-bold text-lg">Resumen de compra</h2>
         <div className="flex flex-col items-center justify-center py-6">
           <p className="text-gray-500 text-center">Tu carrito está vacío</p>
@@ -133,7 +140,7 @@ export default function Step4OrderSummary({
   }
 
   return (
-    <aside className="bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5] sticky top-8">
+    <aside className={containerClasses}>
       <h2 className="font-bold text-lg">Resumen de compra</h2>
       <div className="flex flex-col gap-2">
         {/* Productos: mostrar precio ANTES del descuento para que el usuario vea el impacto */}

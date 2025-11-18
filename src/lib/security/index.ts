@@ -23,7 +23,7 @@ export * from './devtools/protection';
 
 /**
  * Inicializa el sistema de seguridad
- * - Sobrescribe localStorage con SecureStorage
+ * - Sobrescribe localStorage con SecureStorage (solo si NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION=true)
  * - Prepara el sistema para protección de DevTools
  */
 export function initializeSecurity(): void {
@@ -33,6 +33,15 @@ export function initializeSecurity(): void {
 
   // PREVENIR múltiples inicializaciones
   if ((window as Window & { __IMAGIQ_SECURITY_INITIALIZED__?: boolean }).__IMAGIQ_SECURITY_INITIALIZED__) {
+    return;
+  }
+
+  // Verificar si la protección está habilitada
+  const isProtectionEnabled = process.env.NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION !== 'false';
+
+  if (!isProtectionEnabled) {
+    // Marcar como inicializado para no reintentar
+    (window as Window & { __IMAGIQ_SECURITY_INITIALIZED__?: boolean }).__IMAGIQ_SECURITY_INITIALIZED__ = true;
     return;
   }
 

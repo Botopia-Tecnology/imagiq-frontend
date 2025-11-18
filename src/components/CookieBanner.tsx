@@ -140,9 +140,9 @@ export default function CookieBanner() {
           {/* Content */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-2">
-              <p className="text-base font-bold text-black">
-                🎁 ¡Desbloquea ofertas exclusivas y beneficios únicos!
-              </p>
+              <h2 className="text-lg font-bold text-black">
+                Desbloquea ofertas exclusivas para ti
+              </h2>
               <button
                 onClick={() => setExpanded(!expanded)}
                 className="text-gray-600 hover:text-black transition-colors"
@@ -157,78 +157,59 @@ export default function CookieBanner() {
             </div>
 
             {!expanded && (
-              <p className="text-sm text-gray-700 font-medium">
-                ✨ Acepta cookies y recibe{" "}
-                <span className="text-blue-600 font-bold">promociones personalizadas</span>,{" "}
-                <span className="text-green-600 font-bold">descuentos especiales</span> y{" "}
-                <span className="text-purple-600 font-bold">acceso anticipado</span> a lanzamientos Samsung.
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Recibe promociones personalizadas, descuentos en tiendas cercanas y acceso anticipado a lanzamientos Samsung.
               </p>
             )}
 
             {expanded && (
-              <div className="text-sm space-y-3 mt-3">
+              <div className="text-sm space-y-4 mt-3">
                 {/* Beneficios de aceptar */}
-                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
-                  <p className="font-bold text-gray-900 mb-2 flex items-center gap-2">
-                    <span className="text-xl">🎯</span>
-                    ¿Qué ganas al aceptar?
+                <div className="border-l-2 border-gray-900 pl-4 py-2">
+                  <p className="font-semibold text-gray-900 mb-3">
+                    Beneficios al aceptar cookies:
                   </p>
-                  <ul className="space-y-2 ml-6">
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span className="text-gray-700">
-                        <strong className="text-blue-600">Ofertas personalizadas</strong> según tus productos favoritos
-                      </span>
+                  <ul className="space-y-2.5">
+                    <li className="text-gray-700">
+                      <strong className="text-gray-900">Ofertas personalizadas</strong> según tus productos favoritos y búsquedas
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span className="text-gray-700">
-                        <strong className="text-purple-600">Descuentos exclusivos</strong> solo para ti
-                      </span>
+                    <li className="text-gray-700">
+                      <strong className="text-gray-900">Descuentos exclusivos</strong> y promociones en tiendas de tu zona
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span className="text-gray-700">
-                        <strong className="text-green-600">Acceso anticipado</strong> a nuevos Galaxy y promociones limitadas
-                      </span>
+                    <li className="text-gray-700">
+                      <strong className="text-gray-900">Acceso anticipado</strong> a lanzamientos de nuevos Galaxy
                     </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-green-600 font-bold">✓</span>
-                      <span className="text-gray-700">
-                        <strong className="text-orange-600">Recomendaciones inteligentes</strong> de productos Samsung
-                      </span>
+                    <li className="text-gray-700">
+                      <strong className="text-gray-900">Experiencia mejorada</strong> con recomendaciones inteligentes
                     </li>
                   </ul>
                 </div>
 
-                {/* Cookies técnicas */}
-                <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                  <p className="font-semibold text-gray-900 text-xs">
-                    🍪 Tecnologías que usamos:
-                  </p>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                    <div className="bg-white rounded p-2 border border-gray-200">
-                      <p className="font-semibold text-gray-800">📊 Análisis</p>
-                      <p className="text-gray-600 text-xs mt-1">
-                        Microsoft Clarity, Sentry - Mejoran la experiencia del sitio
+                {/* Información legal y técnica */}
+                <div className="border border-gray-200 rounded p-4 space-y-3 bg-gray-50">
+                  <div>
+                    <p className="font-semibold text-gray-900 mb-2 text-xs">
+                      Tecnologías que utilizamos:
+                    </p>
+                    <div className="space-y-1.5 text-xs text-gray-600">
+                      <p>
+                        <strong className="text-gray-900">Análisis:</strong> Microsoft Clarity y Sentry para mejorar la experiencia del sitio y detectar errores.
                       </p>
-                    </div>
-                    <div className="bg-white rounded p-2 border border-gray-200">
-                      <p className="font-semibold text-gray-800">📢 Marketing</p>
-                      <p className="text-gray-600 text-xs mt-1">
-                        Google Tag Manager, Meta, TikTok - Ofertas personalizadas
+                      <p>
+                        <strong className="text-gray-900">Marketing:</strong> Google Analytics, Meta (Facebook) y TikTok para mostrarte ofertas relevantes y medir el rendimiento de nuestras campañas.
                       </p>
                     </div>
                   </div>
 
-                  <div className="bg-blue-50 border border-blue-200 rounded p-2 mt-2">
-                    <p className="font-semibold text-blue-900 text-xs flex items-center gap-1">
-                      <span>🔒</span> Tu privacidad es importante
+                  <div className="border-l-2 border-gray-400 pl-3 py-1">
+                    <p className="font-semibold text-gray-900 text-xs mb-1">
+                      Protección de datos
                     </p>
-                    <p className="text-xs text-blue-800 mt-1">
-                      Aunque rechaces cookies, seguiremos mejorando el sitio con datos anónimos (sin identificarte).
-                      Cumplimos con la <strong>Ley 1581/2012 de Colombia</strong>.
+                    <p className="text-xs text-gray-600 leading-relaxed">
+                      Cumplimos con la <strong className="text-gray-900">Ley 1581/2012 de Protección de Datos Personales de Colombia</strong>.
+                      Si rechazas cookies, seguiremos recopilando datos anónimos y agregados (sin identificarte)
+                      para mejorar nuestro servicio. Tus datos personales solo se procesan con tu consentimiento expreso
+                      y nunca se venden a terceros.
                     </p>
                   </div>
 
@@ -236,9 +217,9 @@ export default function CookieBanner() {
                     href="/soporte/politica-cookies"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 underline font-semibold text-xs mt-2"
+                    className="inline-flex items-center gap-1 text-gray-900 hover:text-black underline font-medium text-xs"
                   >
-                    📖 Ver política de cookies completa →
+                    Ver política de cookies completa →
                   </a>
                 </div>
               </div>
@@ -246,22 +227,22 @@ export default function CookieBanner() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 flex-shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={handleReject}
-              className="text-sm text-gray-600 hover:text-black px-4 py-2 rounded transition-colors border border-gray-300"
+              className="text-sm text-gray-700 hover:text-gray-900 font-medium px-4 py-2 rounded-lg transition-colors border border-gray-300 hover:border-gray-400 bg-white"
             >
               Rechazar
             </button>
             <button
               onClick={handleAccept}
-              className="text-sm bg-black text-white hover:bg-gray-800 font-semibold rounded-lg px-6 py-2 transition-colors"
+              className="text-sm bg-black text-white hover:bg-gray-800 font-semibold rounded-lg px-6 py-2 transition-all shadow-sm hover:shadow-md"
             >
-              Aceptar Todo
+              Aceptar
             </button>
             <button
               onClick={handleClose}
-              className="text-gray-500 hover:text-black transition-colors p-1.5 rounded hover:bg-gray-100"
+              className="text-gray-400 hover:text-gray-600 transition-colors p-1.5 rounded-lg hover:bg-gray-100 hidden sm:block"
               aria-label="Cerrar"
             >
               <X className="h-5 w-5" />

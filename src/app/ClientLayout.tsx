@@ -8,8 +8,10 @@ import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import CookieBanner from "@/components/CookieBanner";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
+import { useClarityIdentity } from "@/hooks/useClarityIdentity";
 import VersionManager from "@/components/VersionManager";
 
 // Rutas donde el Navbar NO debe mostrarse
@@ -35,7 +37,8 @@ export default function ClientLayout({
   const pathname = usePathname();
   const hideNavbar = shouldHideNavbar(pathname || '');
   const { hideNavbar: hideNavbarDynamic } = useNavbarVisibility();
-  
+  const [isClient, setIsClient] = useState(false);
+
   // Precargar productos de todas las combinaciones posibles en background
   usePreloadAllProducts();
 
@@ -51,11 +54,8 @@ export default function ClientLayout({
     pathname === "/success-checkout" ||
     pathname === "/carrito/error-checkout";
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const [isClient, setIsClient] = useState(false);
+  // Identificación automática de usuarios en Clarity
+  useClarityIdentity();
 
   useEffect(() => {
     setIsClient(true);
@@ -64,6 +64,7 @@ export default function ClientLayout({
   return (
     <>
       <VersionManager />
+      <CookieBanner />
       <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
         {/* Solo monta el Navbar si no debe ocultarse por ruta ni por scroll dinámico */}
         {!hideNavbar && !hideNavbarDynamic && isClient && <Navbar />}

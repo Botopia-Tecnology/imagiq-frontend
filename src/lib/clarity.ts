@@ -7,16 +7,24 @@
 
 /**
  * Tipo para el objeto global de Clarity
+ * Compatible con Identify API (custom user tracking)
  */
 declare global {
   interface Window {
     clarity?: {
       (action: 'event', eventName: string): void;
-      (action: 'identify', userId: string): void;
       (action: 'set', key: string, value: string | number | boolean): void;
       (action: 'consent', granted: boolean): void;
       (action: 'upgrade', userId: string): void;
       (action: 'set', key: 'project', projectId: string): void;
+      // Identify API con custom user ID
+      (
+        command: 'identify',
+        customUserId: string,
+        customSessionId?: string,
+        customPageId?: string,
+        friendlyName?: string
+      ): void;
       q?: [action: string, ...params: unknown[]][];
     };
   }
@@ -46,18 +54,26 @@ export function clarityEvent(eventName: string): void {
 /**
  * Identifica al usuario actual en Clarity
  *
- * IMPORTANTE: Pasar solo un hash o ID anónimo, nunca información personal
+ * IMPORTANTE: El userId será hasheado automáticamente por Clarity antes de enviarlo
  *
- * @param userId - ID hasheado o anónimo del usuario
+ * @param userId - ID del usuario (email recomendado)
+ * @param sessionId - ID de sesión opcional
+ * @param pageId - ID de página opcional
+ * @param friendlyName - Nombre visible en dashboard opcional
  * @example
  * ```ts
- * clarityIdentify('user_abc123_hashed');
+ * clarityIdentify('user@example.com', undefined, undefined, 'Juan Pérez');
  * ```
  */
-export function clarityIdentify(userId: string): void {
+export function clarityIdentify(
+  userId: string,
+  sessionId?: string,
+  pageId?: string,
+  friendlyName?: string
+): void {
   try {
     if (typeof window !== 'undefined' && window.clarity) {
-      window.clarity('identify', userId);
+      window.clarity('identify', userId, sessionId, pageId, friendlyName);
     }
   } catch (error) {
     console.debug('Clarity identify error:', error);

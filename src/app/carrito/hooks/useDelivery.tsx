@@ -1,5 +1,5 @@
 "use client"
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Direccion } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
@@ -98,13 +98,14 @@ export const useDelivery = () => {
   const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
   const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(null);
   const [addresses, setAddresses] = useState<Direccion[]>([]);
-  
+  const [canPickUp, setCanPickUp] = useState<boolean>(true); // Estado para saber si se puede recoger en tienda
+
   // Cargar método de entrega desde localStorage al inicio
   const [deliveryMethod, setDeliveryMethodState] = useState<string>(() => {
     if (typeof window === "undefined") return "domicilio";
     return localStorage.getItem("checkout-delivery-method") || "domicilio";
   });
-  
+
   // Wrapper para setDeliveryMethod que también guarda en localStorage
   const setDeliveryMethod = (method: string) => {
     setDeliveryMethodState(method);
@@ -114,7 +115,7 @@ export const useDelivery = () => {
       window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method } }));
     }
   };
-  
+
   const [storesLoading, setStoresLoading] = useState(true);
   const { products } = useCart();
 
@@ -132,12 +133,11 @@ export const useDelivery = () => {
     }
   }, []);
 
-  // Cargar tiendas desde candidate-stores (solo donde se puede recoger el producto)
-  useEffect(() => {
-    const fetchCandidateStores = async () => {
+  // Función para cargar tiendas candidatas
+  const fetchCandidateStores = useCallback(async () => {
       try {
         setStoresLoading(true);
-        
+
         // Obtener user_id
         const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
           "imagiq_user",
@@ -148,13 +148,17 @@ export const useDelivery = () => {
         if (!userId || products.length === 0) {
           setStores([]);
           setFilteredStores([]);
+          setCanPickUp(true);
           setStoresLoading(false);
           return;
         }
 
+        // Variable para rastrear si TODOS los productos tienen pickup disponible
+        let allProductsHavePickup = true;
+
         // Obtener todas las tiendas candidatas para todos los productos
         const allCandidateStores = new Map<string, { store: CandidateStore; city: string }>();
-        
+
         // Hacer petición para cada producto
         for (const product of products) {
           try {
@@ -164,14 +168,20 @@ export const useDelivery = () => {
             });
 
             if (response.success && response.data) {
-              // Solo usar tiendas donde canPickUp es true
+              // Verificar si el producto tiene pickup disponible
               const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              const canPickUp = 
-                responseData.canPickUp ?? 
-                responseData.canPickup ?? 
+              const productCanPickUp =
+                responseData.canPickUp ??
+                responseData.canPickup ??
                 false;
 
-              if (canPickUp && responseData.stores) {
+              // Si algún producto no tiene pickup, marcar como false
+              if (!productCanPickUp) {
+                allProductsHavePickup = false;
+              }
+
+              // SIEMPRE agregar las tiendas, independientemente de si canPickUp es true o false
+              if (responseData.stores) {
                 // Agregar todas las tiendas de todas las ciudades
                 Object.entries(responseData.stores).forEach(([city, cityStores]) => {
                   cityStores.forEach((store) => {
@@ -191,37 +201,76 @@ export const useDelivery = () => {
           }
         }
 
-        // Convertir CandidateStore a FormattedStore
-        const formattedStoresPromises = Array.from(allCandidateStores.values()).map(
-          ({ store, city }) => candidateStoreToFormattedStore(store, city)
-        );
-        
-        const formattedStoresResults = await Promise.all(formattedStoresPromises);
-        const validStores = formattedStoresResults.filter(
-          (store): store is FormattedStore => store !== null
-        );
+        // Procesar tiendas candidatas SIEMPRE que haya tiendas en la respuesta
+        let physicalStores: FormattedStore[] = [];
 
-        // Filtrar centros de distribución
-        const physicalStores = validStores.filter((store) => {
-          const descripcion = normalizeText(store.descripcion);
-          return !descripcion.includes("centro de distribucion") && 
-                 !descripcion.includes("centro distribucion") &&
-                 !descripcion.includes("bodega");
-        });
+        if (allCandidateStores.size > 0) {
+          // Convertir CandidateStore a FormattedStore
+          const formattedStoresPromises = Array.from(allCandidateStores.values()).map(
+            ({ store, city }) => candidateStoreToFormattedStore(store, city)
+          );
 
+          const formattedStoresResults = await Promise.all(formattedStoresPromises);
+          const validStores = formattedStoresResults.filter(
+            (store): store is FormattedStore => store !== null
+          );
+
+          // Filtrar centros de distribución y bodegas
+          physicalStores = validStores.filter((store) => {
+            const descripcion = normalizeText(store.descripcion);
+            const codigo = store.codigo?.toString().trim() || "";
+
+            // Excluir centros de distribución, bodegas, y código "001"
+            return !descripcion.includes("centro de distribucion") &&
+                   !descripcion.includes("centro distribucion") &&
+                   !descripcion.includes("bodega") &&
+                   codigo !== "001";
+          });
+        }
+
+        // Establecer canPickUp basado en allProductsHavePickup
+        setCanPickUp(allProductsHavePickup);
+
+        // SIEMPRE mostrar las tiendas del endpoint candidate-stores
         setStores(physicalStores);
         setFilteredStores(physicalStores);
       } catch (error) {
         console.error("Error loading candidate stores:", error);
         setStores([]);
         setFilteredStores([]);
+        setCanPickUp(true);
       } finally {
         setStoresLoading(false);
       }
+  }, [products]);
+
+  // Cargar tiendas desde candidate-stores (solo donde se puede recoger el producto)
+  // Si no hay pickup disponible, cargar TODAS las tiendas
+  useEffect(() => {
+    fetchCandidateStores();
+  }, [fetchCandidateStores]);
+
+  // Escuchar cambios de dirección predeterminada desde el navbar
+  useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      console.log('🔄 Evento de cambio de dirección recibido:', event.type);
+      console.log('🔄 Dirección predeterminada cambiada desde navbar, recargando tiendas...');
+      fetchCandidateStores();
     };
 
-    fetchCandidateStores();
-  }, [products]);
+    // Escuchar el evento storage que se dispara cuando cambia la dirección
+    window.addEventListener('storage', handleAddressChange);
+
+    // También escuchar eventos personalizados si existen
+    window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    console.log('✅ Listeners de cambio de dirección configurados en useDelivery');
+
+    return () => {
+      window.removeEventListener('storage', handleAddressChange);
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+    };
+  }, [fetchCandidateStores]);
 
   // Cargar direcciones del usuario usando AddressesService
   useEffect(() => {
@@ -332,5 +381,8 @@ export const useDelivery = () => {
     setDeliveryMethod,
     canContinue,
     storesLoading,
+    canPickUp,
+    stores,
+    refreshStores: fetchCandidateStores,
   };
 };

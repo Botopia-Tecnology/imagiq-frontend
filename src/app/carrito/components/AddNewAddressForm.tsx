@@ -122,7 +122,7 @@ export default function AddNewAddressForm({
         nombreDireccion: formData.nombreDireccion,
         tipoDireccion: formData.tipoDireccion,
         tipo: formData.usarMismaParaFacturacion ? 'AMBOS' : 'ENVIO',
-        esPredeterminada: false, // No marcar como predeterminada desde checkout
+        esPredeterminada: true, // Marcar como predeterminada automáticamente
         placeDetails: transformedPlaceDetails as PlaceDetails,
         complemento: formData.complemento || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,

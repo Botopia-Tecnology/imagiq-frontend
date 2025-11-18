@@ -19,12 +19,10 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
     <div className="space-y-4">
       <h2 className="text-xl font-semibold text-gray-900">Forma de entrega</h2>
 
-      {!canContinue && (
+      {!canContinue && deliveryMethod === "domicilio" && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-          <p className="text-sm text-red-600">
-            {deliveryMethod === "domicilio"
-              ? "Por favor selecciona una dirección para continuar."
-              : "Por favor selecciona una tienda para continuar."}
+          <p className="text-sm font-bold text-gray-900">
+            Por favor selecciona una dirección para continuar.
           </p>
         </div>
       )}

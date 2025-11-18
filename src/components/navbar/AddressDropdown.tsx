@@ -52,6 +52,33 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingDefault, currentAddress, user?.id]);
 
+  // Escuchar cambios de dirección desde otros componentes (ej: carrito)
+  useEffect(() => {
+    const handleExternalAddressChange = async () => {
+      console.log('🔄 Evento de cambio de dirección recibido en navbar desde otro componente');
+
+      // Invalidar cache de useDefaultAddress
+      invalidate();
+
+      // Refrescar la dirección predeterminada
+      await refetch();
+
+      // Refrescar lista de direcciones
+      if (user?.id) {
+        await fetchAddresses();
+      }
+
+      console.log('✅ Navbar actualizado con la nueva dirección');
+    };
+
+    window.addEventListener('address-changed', handleExternalAddressChange);
+
+    return () => {
+      window.removeEventListener('address-changed', handleExternalAddressChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invalidate, refetch, user?.id]);
+
   const handleToggle = () => {
     if (!open && addresses.length === 0 && !isFetchingRef.current) {
       fetchAddresses();
@@ -110,6 +137,12 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         });
         console.log('✅ Context actualizado con nueva dirección');
       }
+
+      // Disparar evento personalizado para notificar el cambio de dirección
+      console.log('🔔 Disparando evento address-changed desde handleSelectAddress');
+      window.dispatchEvent(new CustomEvent('address-changed', { detail: { address } }));
+      window.dispatchEvent(new Event('storage')); // También disparar storage event
+
       setOpen(false);
     } catch (error) {
       console.error("❌ Error setting default address:", error);
@@ -131,18 +164,15 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
 
   const handleAddressAdded = async (newAddress: Address) => {
     console.log('🆕 Nueva dirección agregada:', newAddress);
-    
+
     // Cerrar el modal primero para mejor UX
     setShowModal(false);
 
     // Invalidar cache del hook useDefaultAddress
     invalidate();
-    
+
     // Refrescar lista de direcciones
     await fetchAddresses();
-
-    // Pequeño delay para asegurar que el backend procese la dirección como predeterminada
-    await new Promise(resolve => setTimeout(resolve, 300));
 
     // Forzar refetch de la dirección predeterminada
     await refetch();
@@ -167,6 +197,11 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         defaultAddress: defaultAddressFormat,
       });
     }
+
+    // Disparar evento personalizado para notificar el cambio de dirección
+    console.log('🔔 Disparando evento address-changed desde handleAddressAdded');
+    window.dispatchEvent(new CustomEvent('address-changed', { detail: { address: newAddress } }));
+    window.dispatchEvent(new Event('storage')); // También disparar storage event
   };
 
   const handleDeleteClick = (addressId: string, e: React.MouseEvent) => {

@@ -610,7 +610,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
         })()}
 
         {/* Entregas */}
-        <div className="mb-3 pb-32 md:pb-3 lg:border-b border-gray-200">
+        <div className="mb-3 pb-6 md:pb-3 border-gray-200">
           <p className="text-[11px] text-gray-600">Entregas: en 1-3 días laborables</p>
         </div>
       </div>

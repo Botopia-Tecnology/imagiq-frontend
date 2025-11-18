@@ -1,5 +1,6 @@
 // Sección de Beneficios Imagiq
 // Componente reutilizable para mostrar los beneficios de la tienda
+"use client";
 import React from "react";
 import Image, { StaticImageData } from "next/image";
 import settingIcon from "@/img/iconos/Setting_line.png";
@@ -25,7 +26,7 @@ export const benefits: Benefit[] = [
   {
     icon: percentIcon,
     title: "0% de interés en",
-    subtitle: "tarjetas débito",
+    subtitle: "débito/crédito",
   },
   {
     icon: settingIcon,
@@ -34,8 +35,8 @@ export const benefits: Benefit[] = [
   },
   {
     icon: addiIcon,
-    title: "Retira en más de 14",
-    subtitle: "ciudades de Colombia",
+    title: "Retira en más de 35",
+    subtitle: "tiendas en Colombia",
   },
 ];
 
@@ -74,57 +75,46 @@ const BenefitItem: React.FC<Benefit> = ({ icon, title, subtitle }) => (
   </div>
 );
 
-/**
- * Sección de Beneficios Imagiq
- * Replica fielmente el diseño de la imagen de referencia
- * Responsive, modular y profesional
- */
-const BenefitsSection: React.FC = () => (
-  <section
-    className="w-full pt-4 md:pt-6 pb-8 md:pb-12 bg-[#fafbfc]"
-    aria-labelledby="benefits-title"
-  >
-    <div className="max-w-6xl mx-auto px-4 md:px-0">
-      {/* Encabezado */}
-      <div className="text-center mb-8 md:mb-10">
-        <h2
-          id="benefits-title"
-          className="text-2xl md:text-3xl font-light text-[#222] mb-2"
-          style={{ fontFamily: "SamsungSharpSans" }}
-        >
-          Beneficios imagiq
-        </h2>
-        <p
-          className="text-sm md:text-base text-gray-500 font-light"
-          style={{ fontFamily: "SamsungSharpSans" }}
-        >
-          Compra con confianza y disfruta de ventajas exclusivas
-        </p>
-      </div>
-      {/* Lista de beneficios - Responsive: horizontal scroll en móvil, vertical en desktop */}
-      <div className="w-full">
-        {/* Móvil: fila horizontal con scroll */}
-        <div
-          className="flex flex-row gap-6 overflow-x-auto whitespace-nowrap scroll-smooth md:hidden pb-2"
-          style={{ WebkitOverflowScrolling: "touch" }}
-          tabIndex={0}
-          aria-label="Beneficios imagiq"
-        >
-          {benefits.map((benefit, idx) => (
-            <div key={idx} className="inline-block min-w-[180px] max-w-[220px]">
-              <BenefitItem {...benefit} />
-            </div>
-          ))}
+const BenefitsSection: React.FC = () => {
+  const [paused, setPaused] = React.useState(false);
+  const duplicated = [...benefits, ...benefits, ...benefits];
+
+  return (
+    <section className="w-full pt-4 md:pt-6 pb-8 md:pb-12 bg-[#fafbfc]">
+      <style jsx>{`
+        @keyframes scroll { to { transform: translateX(calc(-100% / 3)); } }
+        .carousel { animation: scroll 15s linear infinite; }
+        .carousel.paused { animation-play-state: paused; }
+      `}</style>
+      
+      <div className="max-w-6xl mx-auto px-4 md:px-0">
+        <div className="text-center mb-8 md:mb-10">
+          <h2 className="text-2xl md:text-3xl font-light text-[#222] mb-2" style={{ fontFamily: "SamsungSharpSans" }}>
+            Beneficios imagiq
+          </h2>
+          <p className="text-sm md:text-base text-gray-500 font-light" style={{ fontFamily: "SamsungSharpSans" }}>
+            Compra con confianza y disfruta de ventajas exclusivas
+          </p>
         </div>
-        {/* Desktop: vertical como siempre */}
-        <div className="hidden md:flex md:flex-row md:justify-center md:gap-12 items-center w-full">
-          {benefits.map((benefit, idx) => (
-            <BenefitItem key={idx} {...benefit} />
-          ))}
+        
+        <div className="md:hidden overflow-x-auto scroll-smooth" 
+          onTouchStart={() => setPaused(true)} 
+          onTouchEnd={() => setPaused(false)}>
+          <div className={`flex gap-6 carousel ${paused ? 'paused' : ''}`}>
+            {duplicated.map((b, i) => (
+              <div key={i} className="min-w-[180px] flex-shrink-0">
+                <BenefitItem {...b} />
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        <div className="hidden md:flex md:justify-center md:gap-12">
+          {benefits.map((b, i) => <BenefitItem key={i} {...b} />)}
         </div>
       </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 export default BenefitsSection;

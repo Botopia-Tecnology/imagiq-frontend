@@ -8,7 +8,7 @@
 import { useState, useEffect } from "react";
 import { useHeroBanner } from "@/hooks/useHeroBanner";
 import { useHeroContext } from "@/contexts/HeroContext";
-import { coordinatesToCSS } from "@/utils/bannerCoordinates";
+import { positionToCSS } from "@/utils/bannerCoordinates";
 import Link from "next/link";
 import type { HeroBannerConfig } from "@/types/banner";
 
@@ -48,7 +48,10 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
       {config.heading && (
         <h1
           className={`${textSize} font-bold mb-3 tracking-tight`}
-          style={{ color: config.textColor }}
+          style={{
+            color: config.textColor,
+            ...(config.textStyles?.title || {}),
+          }}
         >
           {config.heading}
         </h1>
@@ -56,7 +59,10 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
       {config.subheading && (
         <p
           className={subSize}
-          style={{ color: config.textColor }}
+          style={{
+            color: config.textColor,
+            ...(config.textStyles?.description || {}),
+          }}
         >
           {config.subheading}
         </p>
@@ -69,6 +75,7 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
             color: config.textColor,
             borderWidth: '2px',
             borderColor: config.textColor,
+            ...(config.textStyles?.cta || {}),
           }}
         >
           {config.ctaText}
@@ -139,9 +146,9 @@ export default function HeroSection() {
     );
   }
 
-  // Estilos de posicionamiento con coordenadas
-  const desktopPositionStyle = coordinatesToCSS(config.coordinates);
-  const mobilePositionStyle = coordinatesToCSS(config.coordinatesMobile);
+  // Estilos de posicionamiento con el nuevo sistema
+  const desktopPositionStyle = positionToCSS(config.positionDesktop ?? null);
+  const mobilePositionStyle = positionToCSS(config.positionMobile ?? null);
 
   // Variables para decidir si mostrar el contenido del Hero
   const hasAnyVideo = Boolean(config.videoSrc || config.mobileVideoSrc);

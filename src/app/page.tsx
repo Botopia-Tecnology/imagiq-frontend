@@ -22,7 +22,6 @@ import StoresCarousel from "@/components/StoresCarousel";
 import ProductShowcase from "@/components/sections/ProductShowcase";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
-import CookieConsentBar from "@/components/CookieConsentBar";
 
 export default function HomePage() {
   // Configuración para animaciones scroll reveal
@@ -35,7 +34,7 @@ export default function HomePage() {
     offset: 80,
     duration: 600,
     direction: "up",
-  });
+  }); 
   const aiTVsReveal = useScrollReveal<HTMLDivElement>({
     offset: 80,
     duration: 600,
@@ -175,7 +174,6 @@ export default function HomePage() {
           <CTASection />
         </motion.div>
       </div>
-      <CookieConsentBar moreInfoUrl="/privacidad" />
     </>
   );
 }

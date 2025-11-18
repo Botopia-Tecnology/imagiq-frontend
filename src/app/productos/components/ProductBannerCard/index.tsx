@@ -10,7 +10,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { coordinatesToCSS } from "@/utils/bannerCoordinates";
+import { parsePosition, positionToCSS, parseTextStyles } from "@/utils/bannerCoordinates";
 import type { Banner } from "@/types/banner";
 import { BannerMedia } from "./BannerMedia";
 import { BannerContent } from "./BannerContent";
@@ -27,8 +27,10 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
   const showImmediately = !hasVideo;
   const effectiveVideoEnded = showImmediately || videoEnded;
 
-  // Estilos de posicionamiento del contenido
-  const positionStyle = coordinatesToCSS(config.coordinates);
+  // Estilos de posicionamiento del contenido usando el nuevo sistema
+  const position = parsePosition(config.position_desktop);
+  const positionStyle = positionToCSS(position);
+  const textStyles = parseTextStyles(config.text_styles);
 
   const handleVideoEnd = () => {
     setVideoEnded(true);
@@ -56,6 +58,7 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
         colorFont={config.color_font}
         positionStyle={positionStyle}
         isVisible={effectiveVideoEnded}
+        textStyles={textStyles}
       />
 
       {/* Overlay clickeable si no tiene CTA pero tiene link */}

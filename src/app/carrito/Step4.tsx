@@ -8,7 +8,11 @@ import AddCardForm from "@/components/forms/AddCardForm";
 import { useCheckoutLogic } from "./hooks/useCheckoutLogic";
 import { useAuthContext } from "@/features/auth/context";
 import { useCart } from "@/hooks/useCart";
-import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import {
+  validateTradeInProducts,
+  getTradeInValidationMessage,
+} from "./utils/validateTradeIn";
+import { toast } from "sonner";
 
 export default function Step4({
   onBack,
@@ -30,6 +34,8 @@ export default function Step4({
     useNewCard,
     isAddCardModalOpen,
     savedCardsReloadCounter,
+    zeroInterestData,
+    isLoadingZeroInterest,
     handleCardChange,
     handleCardErrorChange,
     handlePaymentMethodChange,
@@ -40,6 +46,7 @@ export default function Step4({
     handleCloseAddCardModal,
     handleAddCardSuccess,
     handleUseNewCardChange,
+    fetchZeroInterestInfo,
     setSaveInfo,
   } = useCheckoutLogic();
 
@@ -83,18 +90,25 @@ export default function Step4({
   React.useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
-    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
+    if (
+      !validation.isValid &&
+      validation.errorMessage &&
+      validation.errorMessage.includes("Te removimos")
+    ) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
-      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
-      const timeoutId = setTimeout(() => {
-        setTradeInData(null);
-      }, 5000);
-      
-      return () => clearTimeout(timeoutId);
+
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
+
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description:
+          "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
     }
   }, [products]);
 
@@ -156,6 +170,9 @@ export default function Step4({
             savedCardsReloadCounter={savedCardsReloadCounter}
             useNewCard={useNewCard}
             onUseNewCardChange={handleUseNewCardChange}
+            zeroInterestData={zeroInterestData}
+            isLoadingZeroInterest={isLoadingZeroInterest}
+            onFetchZeroInterest={fetchZeroInterestInfo}
           />
         </form>
 
@@ -180,7 +197,11 @@ export default function Step4({
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
-              validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+              validationError={
+                !tradeInValidation.isValid
+                  ? getTradeInValidationMessage(tradeInValidation)
+                  : undefined
+              }
             />
           )}
         </div>

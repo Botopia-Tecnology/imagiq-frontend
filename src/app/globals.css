@@ -739,6 +739,68 @@ Requirements: 1.4, 1.5, 3.4
   padding-right: clamp(0.5rem, 2vw, 1rem);
 }
 
+/* Zoom-safe media containers for carruseles premium */
+.zoom-safe-media,
+.zoom-safe-secondary-media {
+  width: 100%;
+  max-width: 100%;
+}
+
+.zoom-safe-media {
+  min-height: clamp(260px, 55vh, 660px);
+  max-height: clamp(320px, 65vh, 720px);
+}
+
+.zoom-safe-secondary-media {
+  min-height: clamp(320px, 60vh, 700px);
+  max-height: clamp(380px, 70vh, 760px);
+}
+
+.zoom-safe-media img,
+.zoom-safe-media video,
+.zoom-safe-secondary-media img,
+.zoom-safe-secondary-media video {
+  max-height: 100%;
+}
+
+.zoom-safe-dots {
+  gap: clamp(0.35rem, 1vw, 0.6rem);
+}
+
+.zoom-safe-dot {
+  width: clamp(0.4rem, 0.7vw, 0.6rem);
+  height: clamp(0.4rem, 0.7vw, 0.6rem);
+  border-radius: 9999px;
+  transition: background-color 0.3s ease, transform 0.3s ease, width 0.3s ease;
+}
+
+.zoom-safe-dot-active {
+  width: clamp(0.45rem, 0.9vw, 0.7rem);
+  height: clamp(0.45rem, 0.9vw, 0.7rem);
+  background-color: #000;
+}
+
+.zoom-safe-dot-inactive {
+  background-color: #d1d5db;
+}
+
+.zoom-safe-dot-inactive:hover {
+  background-color: #4b5563;
+  transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+  .zoom-safe-media {
+    min-height: clamp(220px, 58vw, 480px);
+    max-height: clamp(260px, 65vw, 520px);
+  }
+
+  .zoom-safe-secondary-media {
+    min-height: clamp(220px, 65vw, 460px);
+    max-height: clamp(260px, 72vw, 520px);
+  }
+}
+
 /* Zoom-safe container with container queries support */
 .zoom-safe-container {
   container-type: inline-size;

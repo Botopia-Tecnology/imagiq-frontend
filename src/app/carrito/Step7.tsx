@@ -13,12 +13,17 @@ import {
 } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
+import { toast } from "sonner";
 import { DBCard, DecryptedCardData } from "@/features/profile/types";
 import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
-import { payWithAddi, payWithCard, payWithPse } from "./utils";
+import { payWithAddi, payWithCard, payWithPse, fetchBanks } from "./utils";
 import { useCart } from "@/hooks/useCart";
-import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import {
+  validateTradeInProducts,
+  getTradeInValidationMessage,
+} from "./utils/validateTradeIn";
+import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
 
 interface Step7Props {
   onBack?: () => void;
@@ -47,7 +52,12 @@ interface ShippingData {
   type: "delivery" | "pickup";
   address?: string;
   city?: string;
-  store?: string;
+  store?: {
+    name: string;
+    address?: string;
+    city?: string;
+    schedule?: string;
+  };
 }
 
 interface BillingData {
@@ -80,6 +90,8 @@ export default function Step7({ onBack }: Step7Props) {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const [zeroInterestData, setZeroInterestData] =
+    useState<CheckZeroInterestResponse | null>(null);
   const { products, calculations } = useCart();
 
   // Trade-In state management
@@ -160,8 +172,20 @@ export default function Step7({ onBack }: Step7Props) {
             } else {
               bankCode = String(selectedBank);
             }
-          } catch (err) {
+          } catch {
             bankCode = selectedBank;
+          }
+          // If we have a code but no name, try to resolve the name from the banks API
+          if (bankCode && !bankName) {
+            try {
+              const banks = await fetchBanks();
+              const found = banks.find(
+                (b) => String(b.bankCode) === String(bankCode)
+              );
+              if (found) bankName = found.bankName;
+            } catch {
+              // ignore failure to fetch banks
+            }
           }
         }
 
@@ -180,18 +204,63 @@ export default function Step7({ onBack }: Step7Props) {
 
     loadPaymentData();
 
+    // Cargar datos de cuotas sin interés
+    try {
+      const stored = localStorage.getItem("checkout-zero-interest");
+      if (stored) {
+        const parsed = JSON.parse(stored) as CheckZeroInterestResponse;
+        setZeroInterestData(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading zero interest data:", error);
+    }
+
     // Cargar dirección de envío
-    const shippingAddress = localStorage.getItem("checkout-address");
-    if (shippingAddress) {
-      try {
-        const parsed = JSON.parse(shippingAddress);
+    // Determinar método de entrega seleccionado
+    const deliveryMethod =
+      localStorage.getItem("checkout-delivery-method") || "domicilio";
+
+    if (deliveryMethod === "tienda") {
+      const storeStr = localStorage.getItem("checkout-store");
+      if (storeStr) {
+        try {
+          const parsedStore = JSON.parse(storeStr);
+          setShippingData({
+            type: "pickup",
+            store: {
+              name:
+                parsedStore.descripcion ||
+                parsedStore.nombre ||
+                "Tienda seleccionada",
+              address: parsedStore.direccion,
+              city: parsedStore.ciudad || parsedStore.departamento,
+              schedule: parsedStore.horario,
+            },
+          });
+        } catch (error) {
+          console.error("Error parsing checkout-store:", error);
+          setShippingData({
+            type: "pickup",
+          });
+        }
+      } else {
         setShippingData({
-          type: "delivery",
-          address: parsed.linea_uno,
-          city: parsed.ciudad,
+          type: "pickup",
         });
-      } catch (error) {
-        console.error("Error parsing shipping address:", error);
+      }
+    } else {
+      const shippingAddress = localStorage.getItem("checkout-address");
+      if (shippingAddress) {
+        try {
+          const parsed = JSON.parse(shippingAddress);
+          setShippingData({
+            type: "delivery",
+            address: parsed.linea_uno,
+            city: parsed.ciudad,
+          });
+        } catch (error) {
+          console.error("Error parsing shipping address:", error);
+        }
       }
     }
 
@@ -238,13 +307,104 @@ export default function Step7({ onBack }: Step7Props) {
   useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
-    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
+    if (
+      !validation.isValid &&
+      validation.errorMessage &&
+      validation.errorMessage.includes("Te removimos")
+    ) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
+
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description:
+          "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
     }
   }, [products]);
+
+  // Calcular si la compra aplica para 0% interés y guardarlo en localStorage
+  useEffect(() => {
+    try {
+      const computeAndStore = () => {
+        // Leer objeto existente en localStorage (si existe)
+        const storedStr = localStorage.getItem("checkout-zero-interest");
+        let storedObj: Record<string, unknown> | null = null;
+        if (storedStr) {
+          try {
+            storedObj = JSON.parse(storedStr);
+          } catch {
+            storedObj = null;
+          }
+        }
+
+        // Determinar valor global 'aplica' (preferir datos ya cargados en zeroInterestData)
+        const globalAplica =
+          typeof zeroInterestData?.aplica !== "undefined"
+            ? zeroInterestData?.aplica
+            : storedObj?.aplica ?? false;
+
+        // Obtener id de tarjeta seleccionada (preferir paymentData.savedCard)
+        const savedCardId =
+          paymentData?.savedCard?.id ??
+          (localStorage.getItem("checkout-saved-card-id") || null);
+
+        // Obtener cuotas seleccionadas
+        const installmentsFromState = paymentData?.installments;
+        const installmentsFromStorage = localStorage.getItem(
+          "checkout-installments"
+        );
+        const installments =
+          typeof installmentsFromState !== "undefined" &&
+          installmentsFromState !== null
+            ? Number(installmentsFromState)
+            : installmentsFromStorage
+            ? Number.parseInt(installmentsFromStorage)
+            : undefined;
+
+        let aplica_zero_interes = false;
+
+        if (globalAplica && savedCardId && zeroInterestData?.cards) {
+          const matched = zeroInterestData.cards.find(
+            (c) => String(c.id) === String(savedCardId)
+          );
+          if (
+            matched &&
+            matched.eligibleForZeroInterest &&
+            typeof installments !== "undefined" &&
+            matched.availableInstallments.includes(installments)
+          ) {
+            aplica_zero_interes = true;
+          }
+        }
+
+        // Actualizar el objeto en localStorage sin eliminar otras propiedades
+        const updatedObj = {
+          ...(storedObj || (zeroInterestData ? { ...zeroInterestData } : {})),
+          aplica_zero_interes,
+        };
+
+        try {
+          localStorage.setItem(
+            "checkout-zero-interest",
+            JSON.stringify(updatedObj)
+          );
+        } catch (err) {
+          console.error(
+            "Error saving checkout-zero-interest to localStorage",
+            err
+          );
+        }
+      };
+
+      computeAndStore();
+    } catch (err) {
+      console.error("Error computing aplica_zero_interes:", err);
+    }
+  }, [paymentData, zeroInterestData]);
 
   const handleConfirmOrder = async () => {
     // Validar Trade-In antes de confirmar
@@ -277,9 +437,82 @@ export default function Step7({ onBack }: Step7Props) {
     };
 
     try {
+      // Helper to build beneficios array
+      const buildBeneficios = (): BeneficiosDTO[] => {
+        const beneficios: BeneficiosDTO[] = [];
+        try {
+          // Trade-In (entrego_y_estreno)
+          const tradeStr = localStorage.getItem("imagiq_trade_in");
+          if (tradeStr) {
+            const parsedTrade = JSON.parse(tradeStr);
+            if (parsedTrade?.completed) {
+              beneficios.push({
+                type: "entrego_y_estreno",
+                dispositivo_a_recibir: parsedTrade.deviceName,
+                valor_retoma: parsedTrade.value,
+                detalles_dispositivo_a_recibir: parsedTrade.detalles,
+              });
+            }
+          }
+
+          // 0% interes
+          const zeroStr = localStorage.getItem("checkout-zero-interest");
+          if (zeroStr) {
+            const parsedZero = JSON.parse(zeroStr);
+            const aplicaZero =
+              parsedZero?.aplica_zero_interes || parsedZero?.aplica;
+            if (aplicaZero && paymentData?.method === "tarjeta") {
+              const cardId =
+                paymentData?.savedCard?.id ||
+                localStorage.getItem("checkout-saved-card-id");
+              const installments =
+                paymentData?.installments ??
+                Number.parseInt(
+                  localStorage.getItem("checkout-installments") || "0"
+                );
+              const matched = parsedZero?.cards?.find(
+                (c: {
+                  id: string;
+                  eligibleForZeroInterest: boolean;
+                  availableInstallments: number[];
+                }) => String(c.id) === String(cardId)
+              );
+              if (
+                matched?.eligibleForZeroInterest &&
+                matched.availableInstallments?.includes(Number(installments))
+              ) {
+                beneficios.push({ type: "0%_interes" });
+              }
+            }
+          }
+        } catch {
+          // ignore
+        }
+        if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
+        return beneficios;
+      };
       // Aquí irá la lógica para procesar el pago
       // Por ahora solo simulamos un delay
       console.log({ paymentData });
+
+      // Determinar método de envío y código de bodega
+      const deliveryMethod = (
+        localStorage.getItem("checkout-delivery-method") || "domicilio"
+      ).toLowerCase();
+      const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
+      let codigo_bodega: string | undefined = undefined;
+      if (deliveryMethod === "tienda") {
+        try {
+          const storeStr = localStorage.getItem("checkout-store");
+          if (storeStr) {
+            const parsedStore = JSON.parse(storeStr);
+            codigo_bodega =
+              parsedStore?.codBodega || parsedStore?.codigo || undefined;
+          }
+        } catch {
+          // ignore
+        }
+      }
 
       switch (paymentData?.method) {
         case "tarjeta": {
@@ -291,12 +524,16 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
+              skupostback:
+                String(p.skuPostback) === ""
+                  ? String(p.sku)
+                  : String(p.skuPostback),
               desDetallada: String(p.desDetallada),
               ean: String(p.ean),
             })),
             totalAmount: String(calculations.total),
-            metodo_envio: 1,
+            metodo_envio,
+            codigo_bodega,
             shippingAmount: String(calculations.shipping),
             userInfo: {
               direccionId: billingData.direccion?.id || "",
@@ -304,6 +541,7 @@ export default function Step7({ onBack }: Step7Props) {
             },
             cardTokenId: paymentData.savedCard?.id || "",
             informacion_facturacion,
+            beneficios: buildBeneficios(),
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -327,12 +565,14 @@ export default function Step7({ onBack }: Step7Props) {
             })),
             bank: paymentData.bank || "",
             description: "Pago de pedido en Imagiq",
-            metodo_envio: 1,
+            metodo_envio,
+            codigo_bodega,
             userInfo: {
               direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
             informacion_facturacion,
+            beneficios: buildBeneficios(),
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -354,12 +594,14 @@ export default function Step7({ onBack }: Step7Props) {
               desDetallada: String(p.desDetallada),
               ean: String(p.ean),
             })),
-            metodo_envio: 1,
+            metodo_envio,
+            codigo_bodega,
             userInfo: {
               direccionId: billingData.direccion?.id || "",
               userId: authContext.user?.id || "",
             },
             informacion_facturacion,
+            beneficios: buildBeneficios(),
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -389,6 +631,19 @@ export default function Step7({ onBack }: Step7Props) {
       default:
         return method;
     }
+  };
+
+  // Verificar si las cuotas seleccionadas son elegibles para cero interés
+  const isInstallmentEligibleForZeroInterest = (
+    installments: number,
+    cardId: string
+  ): boolean => {
+    if (!zeroInterestData?.cards) return false;
+
+    const cardInfo = zeroInterestData.cards.find((c) => c.id === cardId);
+    if (!cardInfo?.eligibleForZeroInterest) return false;
+
+    return cardInfo.availableInstallments.includes(installments);
   };
 
   return (
@@ -451,9 +706,9 @@ export default function Step7({ onBack }: Step7Props) {
                                 </span>
                                 {paymentData.savedCard.tipo_tarjeta && (
                                   <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.savedCard.tipo_tarjeta.includes(
-                                      "credit"
-                                    )
+                                    {paymentData.savedCard.tipo_tarjeta
+                                      .toUpperCase()
+                                      .includes("CREDIT")
                                       ? "Crédito"
                                       : "Débito"}
                                   </span>
@@ -476,6 +731,15 @@ export default function Step7({ onBack }: Step7Props) {
                               <span className="text-gray-600">Cuotas:</span>
                               <span className="font-medium text-gray-900">
                                 {paymentData.installments}x
+                                {paymentData.savedCard &&
+                                  isInstallmentEligibleForZeroInterest(
+                                    paymentData.installments,
+                                    String(paymentData.savedCard.id)
+                                  ) && (
+                                    <span className="ml-2 text-green-600 font-semibold">
+                                      (sin interés)
+                                    </span>
+                                  )}
                               </span>
                             </div>
                           )}
@@ -499,9 +763,9 @@ export default function Step7({ onBack }: Step7Props) {
                                 </span>
                                 {paymentData.cardData.cardType && (
                                   <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.cardData.cardType.includes(
-                                      "credit"
-                                    )
+                                    {paymentData.cardData.cardType
+                                      .toUpperCase()
+                                      .includes("CREDIT")
                                       ? "Crédito"
                                       : "Débito"}
                                   </span>
@@ -524,6 +788,23 @@ export default function Step7({ onBack }: Step7Props) {
                               <span className="text-gray-600">Cuotas:</span>
                               <span className="font-medium text-gray-900">
                                 {paymentData.installments}x
+                                {(() => {
+                                  // Para tarjetas nuevas, intentar obtener el ID de localStorage
+                                  const savedCardId = localStorage.getItem(
+                                    "checkout-saved-card-id"
+                                  );
+                                  return (
+                                    savedCardId &&
+                                    isInstallmentEligibleForZeroInterest(
+                                      paymentData.installments,
+                                      savedCardId
+                                    ) && (
+                                      <span className="ml-2 text-green-600 font-semibold">
+                                        (sin interés)
+                                      </span>
+                                    )
+                                  );
+                                })()}
                               </span>
                             </div>
                           )}
@@ -588,6 +869,34 @@ export default function Step7({ onBack }: Step7Props) {
                           {shippingData.city}
                         </p>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {shippingData.type === "pickup" && (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          {shippingData.store?.name || "Recoger en tienda"}
+                        </p>
+                        {shippingData.store?.address && (
+                          <p className="text-xs text-gray-600 mt-1">
+                            {shippingData.store.address}
+                          </p>
+                        )}
+                        {shippingData.store?.city && (
+                          <p className="text-xs text-gray-500">
+                            {shippingData.store.city}
+                          </p>
+                        )}
+                        {shippingData.store?.schedule && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            Horario: {shippingData.store.schedule}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -724,7 +1033,11 @@ export default function Step7({ onBack }: Step7Props) {
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
-                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+                validationError={
+                  !tradeInValidation.isValid
+                    ? getTradeInValidationMessage(tradeInValidation)
+                    : undefined
+                }
               />
             )}
           </div>

@@ -275,13 +275,9 @@ export default function ProductCard({
 
   const handleColorSelect = (color: ProductColor) => {
     if (apiProduct) {
-      // Buscar el color correcto en las opciones del API
-      const colorOption = productSelection.getColorOptions().find(
-        opt => opt.nombreColorDisplay === color.label || opt.color === color.label || opt.hex === color.hex
-      );
-      
-      const colorToSelect = colorOption?.color || color.label;
-      productSelection.selectColor(colorToSelect);
+      // El color.name contiene el valor hexadecimal del campo "color" de la API
+      // Usar directamente ese valor para seleccionar
+      productSelection.selectColor(color.name);
     } else {
       // Usar el sistema legacy
       setSelectedColorLocal(color);
@@ -683,8 +679,8 @@ export default function ProductCard({
               )}
           </div>
 
-          {/* Nombre de color del API (antes del selector) - Solo si debe mostrar selector */}
-          {showColorSelector && displayedSelectedColor?.nombreColorDisplay && (
+          {/* Nombre de color del API (antes del selector) - Mostrar siempre que haya nombreColorDisplay disponible */}
+          {displayedSelectedColor?.nombreColorDisplay && (
             <div className="px-3 mb-1">
               <p className="text-xs text-gray-600 font-medium">
                 {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
@@ -711,30 +707,7 @@ export default function ProductCard({
                         }))
                       : colors
                   }
-                  selectedColor={
-                    apiProduct
-                      ? productSelection.getColorOptions().find(
-                          (colorOption) =>
-                            colorOption.color === productSelection.selection.selectedColor
-                        ) ? {
-                          name: productSelection.selection.selectedColor || "",
-                          hex: productSelection.getColorOptions().find(
-                            (colorOption) =>
-                              colorOption.color === productSelection.selection.selectedColor
-                          )?.hex || "#808080",
-                          label: productSelection.getColorOptions().find(
-                            (colorOption) =>
-                              colorOption.color === productSelection.selection.selectedColor
-                          )?.nombreColorDisplay || productSelection.selection.selectedColor || "",
-                          nombreColorDisplay: productSelection.getColorOptions().find(
-                            (colorOption) =>
-                              colorOption.color === productSelection.selection.selectedColor
-                          )?.nombreColorDisplay || undefined,
-                          sku: "",
-                          ean: "",
-                        } : null
-                      : selectedColor
-                  }
+                  selectedColor={displayedSelectedColor}
                   onColorSelect={handleColorSelect}
                   onShowMore={handleCardClick}
                 />

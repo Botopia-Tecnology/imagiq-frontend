@@ -7,7 +7,12 @@ import IMEIInputSection from "./IMEIInputSection";
 import InitialQuestionsSection from "./InitialQuestionsSection";
 import CombinedConditionQuestions from "./CombinedConditionQuestions";
 import DisqualificationMessage from "./DisqualificationMessage";
-import type { Brand, DeviceModel, DeviceCapacity, DeviceCategory } from "./types";
+import type {
+  Brand,
+  DeviceModel,
+  DeviceCapacity,
+  DeviceCategory,
+} from "./types";
 import type { TradeInStep } from "./hooks/useTradeInFlow";
 
 interface ModalStepContentProps {
@@ -32,6 +37,8 @@ interface ModalStepContentProps {
   readonly imeiInput: string;
   readonly tradeInValue: number;
   readonly calculatingValue: boolean;
+  readonly termsAccepted?: boolean;
+  readonly onTermsAcceptedChange?: (accepted: boolean) => void;
   readonly onSelectCategory: (category: string) => void;
   readonly onSelectBrand: (brand: Brand) => void;
   readonly onSelectModel: (model: DeviceModel) => void;
@@ -69,6 +76,8 @@ export default function ModalStepContent({
   imeiInput,
   tradeInValue,
   calculatingValue,
+  termsAccepted,
+  onTermsAcceptedChange,
   onSelectCategory,
   onSelectBrand,
   onSelectModel,
@@ -83,6 +92,22 @@ export default function ModalStepContent({
   onImeiChange,
   onClose,
 }: ModalStepContentProps) {
+  const handleScreenTurnsOnAnswer = (answer: boolean) => {
+    onScreenTurnsOnAnswer(answer);
+  };
+
+  const handleDeviceFreeAnswer = (answer: boolean) => {
+    onDeviceFreeAnswer(answer);
+  };
+
+  const handleDamageFreeAnswer = (answer: boolean) => {
+    onDamageFreeAnswer(answer);
+  };
+
+  const handleGoodConditionAnswer = (answer: boolean) => {
+    onGoodConditionAnswer(answer);
+  };
+
   if (loadingData) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -142,8 +167,8 @@ export default function ModalStepContent({
       <InitialQuestionsSection
         screenTurnsOn={screenTurnsOn}
         deviceFreeInColombia={deviceFreeInColombia}
-        onScreenTurnsOnAnswer={onScreenTurnsOnAnswer}
-        onDeviceFreeAnswer={onDeviceFreeAnswer}
+        onScreenTurnsOnAnswer={handleScreenTurnsOnAnswer}
+        onDeviceFreeAnswer={handleDeviceFreeAnswer}
       />
     );
   }
@@ -153,8 +178,8 @@ export default function ModalStepContent({
       <CombinedConditionQuestions
         damageFreeAnswer={damageFreeAnswer}
         goodConditionAnswer={goodConditionAnswer}
-        onDamageFreeAnswer={onDamageFreeAnswer}
-        onGoodConditionAnswer={onGoodConditionAnswer}
+        onDamageFreeAnswer={handleDamageFreeAnswer}
+        onGoodConditionAnswer={handleGoodConditionAnswer}
       />
     );
   }
@@ -170,6 +195,8 @@ export default function ModalStepContent({
         onImeiChange={onImeiChange}
         tradeInValue={tradeInValue}
         calculatingValue={calculatingValue}
+        termsAccepted={termsAccepted}
+        onTermsAcceptedChange={onTermsAcceptedChange}
       />
     );
   }

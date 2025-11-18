@@ -14,6 +14,7 @@ import { Direccion } from "@/types/user";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints } from "@/lib/api";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
+import { toast } from "sonner";
 
 export default function Step3({
   onBack,
@@ -39,6 +40,7 @@ export default function Step3({
     deliveryMethod,
     setDeliveryMethod,
     canContinue,
+    storesLoading,
   } = useDelivery();
 
   // Trade-In state management
@@ -57,8 +59,8 @@ export default function Step3({
         if (parsed.completed) {
           setTradeInData(parsed);
           // IMPORTANTE: Si hay trade-in, forzar método a "tienda" inmediatamente
+          // setDeliveryMethod ya guarda automáticamente en localStorage
           setDeliveryMethod("tienda");
-          localStorage.setItem("checkout-delivery-method", "tienda");
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
@@ -85,8 +87,8 @@ export default function Step3({
   // SOLO si NO hay trade-in activo
   React.useEffect(() => {
     if (!hasActiveTradeIn && hasProductWithoutPickup && deliveryMethod === "tienda") {
+      // setDeliveryMethod ya guarda automáticamente en localStorage
       setDeliveryMethod("domicilio");
-      localStorage.setItem("checkout-delivery-method", "domicilio");
     }
   }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
 
@@ -95,14 +97,14 @@ export default function Step3({
     if (hasActiveTradeIn) {
       // Forzar cambio a tienda si está en domicilio
       if (deliveryMethod === "domicilio") {
+        // setDeliveryMethod ya guarda automáticamente en localStorage
         setDeliveryMethod("tienda");
-        localStorage.setItem("checkout-delivery-method", "tienda");
       }
       // También prevenir que se cambie a domicilio
       const savedMethod = localStorage.getItem("checkout-delivery-method");
       if (savedMethod === "domicilio") {
+        // setDeliveryMethod ya guarda automáticamente en localStorage
         setDeliveryMethod("tienda");
-        localStorage.setItem("checkout-delivery-method", "tienda");
       }
     }
   }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod]);
@@ -187,17 +189,19 @@ export default function Step3({
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
     
-    // Si el producto ya no aplica (indRetoma === 0), mostrar el mensaje primero y luego limpiar después de un delay
+    // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
       
-      // Mantener el tradeInData en el estado por 5 segundos para que el usuario pueda ver el mensaje
-      const timeoutId = setTimeout(() => {
-        setTradeInData(null);
-      }, 5000);
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
       
-      return () => clearTimeout(timeoutId);
+      // Mostrar notificación toast
+      toast.error("Cupón removido", {
+        description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
+        duration: 5000,
+      });
     }
   }, [products]);
 
@@ -207,6 +211,17 @@ export default function Step3({
     if (!validation.isValid) {
       alert(getTradeInValidationMessage(validation));
       return;
+    }
+
+    // IMPORTANTE: Verificar y guardar el método de entrega en localStorage antes de continuar
+    if (typeof window !== "undefined") {
+      const currentMethod = localStorage.getItem("checkout-delivery-method");
+      // Si no existe o es diferente al método actual, guardarlo
+      if (!currentMethod || currentMethod !== deliveryMethod) {
+        localStorage.setItem("checkout-delivery-method", deliveryMethod);
+        // Disparar evento para notificar el cambio
+        window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method: deliveryMethod } }));
+      }
     }
 
     // Track del evento add_payment_info para analytics
@@ -233,8 +248,8 @@ export default function Step3({
     if (hasActiveTradeIn && method === "domicilio") {
       return; // No hacer nada, mantener en tienda
     }
+    // setDeliveryMethod ya guarda automáticamente en localStorage
     setDeliveryMethod(method);
-    localStorage.setItem("checkout-delivery-method", method);
   };
 
   const selectedStoreChanged = (store: typeof selectedStore) => {
@@ -290,6 +305,7 @@ export default function Step3({
                     selectedStore={selectedStore}
                     onQueryChange={setStoreQuery}
                     onStoreSelect={selectedStoreChanged}
+                    storesLoading={storesLoading}
                   />
                 </div>
               )}

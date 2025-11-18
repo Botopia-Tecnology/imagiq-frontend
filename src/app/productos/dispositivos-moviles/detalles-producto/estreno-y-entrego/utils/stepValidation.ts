@@ -11,7 +11,8 @@ export function isStepValid(
   initialAnswers: InitialAnswers,
   damageFreeAnswer: boolean | null,
   goodConditionAnswer: boolean | null,
-  imeiInput: string
+  imeiInput: string,
+  termsAccepted?: boolean
 ): boolean {
   if (currentStep === 1) return isStep1Valid;
 
@@ -24,7 +25,9 @@ export function isStepValid(
     return damageFreeAnswer !== null && goodConditionAnswer !== null;
   }
 
-  if (currentStep === 6) return imeiInput.trim().length === 15;
+  if (currentStep === 6) {
+    return imeiInput.trim().length === 15 && (termsAccepted === true);
+  }
 
   return false;
 }

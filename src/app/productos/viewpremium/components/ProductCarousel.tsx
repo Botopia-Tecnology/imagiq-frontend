@@ -22,8 +22,14 @@ const VideoPlayer: React.FC<{
   onVideoEnd?: () => void;
   onVideoStart?: () => void;
   isPlaying?: boolean;
-  onPlayPause?: () => void;
-}> = ({ src, onVideoEnd, onVideoStart, isPlaying = false, onPlayPause }) => {
+  onTogglePlayState?: (isPlaying: boolean) => void;
+}> = ({
+  src,
+  onVideoEnd,
+  onVideoStart,
+  isPlaying = false,
+  onTogglePlayState,
+}) => {
   const [videoError, setVideoError] = useState(false);
   const [hasPlayed, setHasPlayed] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -40,15 +46,21 @@ const VideoPlayer: React.FC<{
     );
   }
 
-  const handlePlayPause = () => {
-    if (videoRef.current) {
-      if (videoRef.current.paused) {
-        videoRef.current.play();
+  const handlePlayPause = async () => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    try {
+      if (video.paused) {
+        await video.play();
+        onTogglePlayState?.(true);
       } else {
-        videoRef.current.pause();
+        video.pause();
+        onTogglePlayState?.(false);
       }
+    } catch (error) {
+      console.warn("Error al alternar reproducción:", error);
     }
-    onPlayPause?.();
   };
 
   return (
@@ -66,10 +78,15 @@ const VideoPlayer: React.FC<{
           onEnded={() => {
             setHasPlayed(true);
             onVideoEnd?.();
+            onTogglePlayState?.(false);
           }}
           onPlay={() => {
             setHasPlayed(true);
             onVideoStart?.();
+            onTogglePlayState?.(true);
+          }}
+          onPause={() => {
+            onTogglePlayState?.(false);
           }}
           onError={(e) => {
             console.error('Error loading video:', src, e);
@@ -80,15 +97,15 @@ const VideoPlayer: React.FC<{
       {/* Botón de pausa/play dentro del video - parte inferior derecha */}
       <button
         onClick={handlePlayPause}
-        className="absolute bottom-4 right-6 md:bottom-12 md:right-8 w-10 h-10 md:w-11 md:h-11 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-50"
+        className="absolute bottom-3 right-5 md:bottom-6 md:right-8 w-8 h-8 md:w-9 md:h-9 rounded-full bg-black/70 hover:bg-black/90 backdrop-blur-sm flex items-center justify-center transition-all hover:scale-110 z-50"
       >
         {isPlaying ? (
-          <div className="w-2.5 h-2.5 md:w-3 md:h-3 flex gap-0.5">
-            <div className="w-0.5 md:w-1 h-2.5 md:h-3 bg-white rounded-sm"></div>
-            <div className="w-0.5 md:w-1 h-2.5 md:h-3 bg-white rounded-sm"></div>
+          <div className="flex items-center gap-0.5">
+            <span className="block w-[3.5px] h-3.5 md:h-4 bg-white rounded-sm" />
+            <span className="block w-[3.5px] h-3.5 md:h-4 bg-white rounded-sm" />
           </div>
         ) : (
-          <div className="w-0 h-0 border-l-[5px] md:border-l-[6px] border-l-white border-t-[3px] md:border-t-[4px] border-t-transparent border-b-[3px] md:border-b-[4px] border-b-transparent ml-0.5"></div>
+          <div className="w-0 h-0 border-l-[7px] md:border-l-[8px] border-l-white border-t-[4px] md:border-t-[4.5px] border-t-transparent border-b-[4px] md:border-b-[4.5px] border-b-transparent" />
         )}
       </button>
     </div>
@@ -153,7 +170,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
   };
 
   return (
-    <div ref={ref} className="w-full relative">
+    <div ref={ref} className="w-full relative zoom-safe-container px-2 sm:px-4 pb-10 md:pb-12">
       {/* Carrusel premium - estilo Samsung más grande */}
       <div className={`relative w-full pt-8 md:pt-6 transition-all duration-700 ease-in-out ${showStickyCarousel ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'}`}>
         {(() => {
@@ -174,10 +191,16 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
             );
 
             return (
-            <>
+            <div
+              className="relative w-full"
+              style={{
+                paddingTop: "clamp(0.75rem, 2vw, 1.5rem)",
+                paddingBottom: "clamp(1rem, 3vw, 3rem)",
+              }}
+            >
               {/* Imagen principal - estilo Samsung más grande */}
               <div 
-                className={`relative w-full h-[220px] md:h-[700px] bg-transparent flex items-center justify-center ${isVideo ? 'overflow-visible' : 'overflow-hidden'}`}
+                className={`relative w-full bg-transparent flex items-center justify-center ${isVideo ? 'overflow-visible' : 'overflow-hidden'} zoom-safe-media`}
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
@@ -188,22 +211,13 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                       <div className="relative w-full h-full flex items-center justify-center">
                         <VideoPlayer
                           src={currentSrc}
-                          alt={`${product.name} - ${currentImageSet === 'premium' ? 'Premium' : 'Producto'} ${currentImageIndex + 1}`}
+                          alt={`${product.name} - ${
+                            currentImageSet === "premium" ? "Premium" : "Producto"
+                          } ${currentImageIndex + 1}`}
                           onVideoStart={handleVideoStart}
                           onVideoEnd={handleVideoEnd}
                           isPlaying={isVideoPlaying}
-                          onPlayPause={() => {
-                            const video = document.querySelector('video');
-                            if (video) {
-                              if (video.paused) {
-                                video.play();
-                                setIsVideoPlaying(true);
-                              } else {
-                                video.pause();
-                                setIsVideoPlaying(false);
-                              }
-                            }
-                          }}
+                          onTogglePlayState={setIsVideoPlaying}
                         />
                       </div>
                     );
@@ -246,22 +260,53 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
                 )}
               </div>
 
-              {/* Puntos de navegación - PARA AMBOS CARRUSELES - CÍRCULOS */}
+              {/* Puntos de navegación */}
               {currentImages.length > 1 && (
-                <div className="flex justify-center gap-2 mt-2 md:-mt-2 mb-4">
-                  {currentImages.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => setCurrentImageIndex(index)}
-                      className={`w-3 h-3 rounded-full transition-all duration-300 ${index === currentImageIndex
-                        ? "bg-black scale-110"
-                        : "bg-gray-300 hover:bg-gray-400 hover:scale-105"
-                        }`}
-                    />
-                  ))}
-                </div>
+                <>
+                  {/* Indicadores mobile/tablet */}
+                  <div className="w-full flex justify-center lg:hidden">
+                  <div
+                    className="flex justify-center items-center zoom-safe-dots"
+                    style={{
+                      marginTop: "clamp(0.5rem, 1.5vw, 1rem)",
+                      marginBottom: "clamp(0.75rem, 2vw, 1.5rem)",
+                    }}
+                  >
+                      {currentImages.map((_, index) => (
+                        <button
+                          key={index}
+                          onClick={() => setCurrentImageIndex(index)}
+                          className={`zoom-safe-dot ${
+                            index === currentImageIndex
+                              ? "zoom-safe-dot-active"
+                              : "zoom-safe-dot-inactive"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Indicadores desktop */}
+                  <div className="hidden lg:block">
+                    <div className="absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-[200%] z-40">
+                      <div className="flex justify-center items-center zoom-safe-dots">
+                        {currentImages.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentImageIndex(index)}
+                            className={`zoom-safe-dot ${
+                              index === currentImageIndex
+                                ? "zoom-safe-dot-active"
+                                : "zoom-safe-dot-inactive"
+                            }`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
-            </>
+            </div>
             );
           })() : (
             <div className="w-full h-[220px] md:h-[700px] bg-transparent flex items-center justify-center text-gray-500 text-lg font-semibold">
@@ -280,7 +325,11 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
           <>
             {/* Imagen del producto - más pequeña y simple con fondo transparente */}
             <div 
-              className="relative w-full h-[220px] md:h-[600px] flex items-center justify-center overflow-hidden"
+              className="relative w-full max-w-4xl mx-auto flex items-center justify-center overflow-hidden zoom-safe-secondary-media px-4 sm:px-8"
+              style={{
+                height: "min(70vh, 680px)",
+                minHeight: "320px",
+              }}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -290,15 +339,19 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
 
                 return (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={currentSrc}
-                    src={currentSrc}
-                    alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
-                    className="w-full h-full object-contain"
-                    onError={(e) => {
-                      console.error('Error loading image:', currentSrc, e);
-                    }}
-                  />
+                  <div className="w-full h-full flex items-center justify-center">
+                    <img
+                      key={currentSrc}
+                      src={currentSrc}
+                      alt={`${product.name} - ${selectedColor} ${(currentImageIndex % productImages.length) + 1}`}
+                      className="w-full h-full object-contain"
+                      style={{ maxWidth: "100%", maxHeight: "100%" }}
+                      loading="lazy"
+                      onError={(e) => {
+                        console.error('Error loading image:', currentSrc, e);
+                      }}
+                    />
+                  </div>
                 );
               })()}
             </div>
@@ -313,7 +366,7 @@ const ProductCarousel = forwardRef<HTMLDivElement, ProductCarouselProps>(({
             </div>
           </>
         ) : (
-          <div className="w-full h-[220px] md:h-[500px] bg-transparent flex items-center justify-center text-gray-500 text-lg font-semibold rounded-2xl">
+          <div className="w-full bg-transparent flex items-center justify-center text-gray-500 text-lg font-semibold rounded-2xl zoom-safe-secondary-media">
             <div className="text-center">
               <div className="text-4xl mb-2">🎨</div>
               <div>No hay fotos específicas para el color {selectedColor}</div>

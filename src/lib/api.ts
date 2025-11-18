@@ -651,6 +651,8 @@ export interface CandidateStore {
   place_ID: string;
   distance: number;
   horario: string;
+  ciudad?: string;  // Ciudad de la tienda (puede venir en la respuesta)
+  codDane?: string | number;  // Código DANE (puede venir en la respuesta)
 }
 
 export interface DefaultDirection {

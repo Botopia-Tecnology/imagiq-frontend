@@ -57,6 +57,8 @@ export default function TradeInModal({
     setIsModelDropdownOpen,
     setIsCapacityDropdownOpen,
     setImeiInput,
+    termsAccepted,
+    setTermsAccepted,
     resetForm,
   } = useTradeInForm({ tradeInData: safeTradeInData, isOpen });
 
@@ -95,6 +97,11 @@ export default function TradeInModal({
       categories: safeTradeInData.categories,
       selectedCategory: formState.selectedCategory,
       deviceState: flowState.deviceState,
+      flowState: {
+        initialAnswers: flowState.initialAnswers,
+        damageFreeAnswer: flowState.damageFreeAnswer,
+        goodConditionAnswer: flowState.goodConditionAnswer,
+      },
     });
 
   useEffect(() => {
@@ -111,7 +118,8 @@ export default function TradeInModal({
     flowState.initialAnswers,
     flowState.damageFreeAnswer,
     flowState.goodConditionAnswer,
-    imeiInput
+    imeiInput,
+    termsAccepted
   );
 
   const modalContent = (
@@ -183,6 +191,8 @@ export default function TradeInModal({
                 imeiInput={imeiInput}
                 tradeInValue={tradeInValue}
                 calculatingValue={calculatingValue}
+                termsAccepted={termsAccepted}
+                onTermsAcceptedChange={setTermsAccepted}
                 onSelectCategory={setSelectedCategory}
                 onSelectBrand={(brand) => {
                   setSelectedBrand(brand);

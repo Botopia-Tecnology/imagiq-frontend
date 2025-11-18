@@ -1,5 +1,5 @@
 "use client";
-import { AddiPaymentData, CardPaymentData, PsePaymentData } from "../types";
+import { AddiPaymentData, CardPaymentData, PsePaymentData, CheckZeroInterestRequest, CheckZeroInterestResponse } from "../types";
 import { apiPost, apiGet } from "@/lib/api-client";
 
 export async function payWithAddi(
@@ -85,5 +85,22 @@ export async function fetchBanks(): Promise<{ bankCode: string; bankName: string
       });
     }
     throw error;
+  }
+}
+
+/**
+ * Check which cards are eligible for zero interest installments
+ * Returns null on error to fail silently and not block the checkout flow
+ */
+export async function checkZeroInterest(
+  request: CheckZeroInterestRequest
+): Promise<CheckZeroInterestResponse | null> {
+  try {
+    const data = await apiPost<CheckZeroInterestResponse>('/api/payments/check-zero-interest', request);
+    return data;
+  } catch (error) {
+    console.error("Error checking zero interest:", error);
+    // Fail silently - don't block the checkout flow
+    return null;
   }
 }

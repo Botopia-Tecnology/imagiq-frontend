@@ -2,13 +2,18 @@
 
 import React, { useState, useEffect } from "react";
 import { RefreshCcw } from "lucide-react";
-import { TradeInModal, TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
+import {
+  TradeInModal,
+  TradeInCompletedSummary,
+} from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 
 interface TradeInSectionProps {
   onTradeInComplete?: (deviceName: string, value: number) => void;
 }
 
-const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) => {
+const TradeInSection: React.FC<TradeInSectionProps> = ({
+  onTradeInComplete,
+}) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [tradeInCompleted, setTradeInCompleted] = useState(false);
@@ -17,7 +22,7 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
 
   // Cargar datos de Trade-In desde localStorage al montar el componente
   useEffect(() => {
-    const storedTradeIn = localStorage.getItem('imagiq_trade_in');
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const data = JSON.parse(storedTradeIn);
@@ -25,26 +30,26 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
           setTradeInCompleted(true);
           setTradeInValue(data.value);
           setTradeInDeviceName(data.deviceName);
-          setSelectedOption('yes');
+          setSelectedOption("yes");
         }
       } catch (error) {
-        console.error('Error al cargar datos de Trade-In:', error);
+        console.error("Error al cargar datos de Trade-In:", error);
       }
     }
   }, []);
 
   const handleYesClick = () => {
-    setSelectedOption('yes');
+    setSelectedOption("yes");
     setIsModalOpen(true);
   };
 
   const handleNoClick = () => {
-    setSelectedOption('no');
+    setSelectedOption("no");
     setTradeInCompleted(false);
     setTradeInValue(0);
     setTradeInDeviceName("");
     // Limpiar localStorage si el usuario dice "No, gracias"
-    localStorage.removeItem('imagiq_trade_in');
+    localStorage.removeItem("imagiq_trade_in");
   };
 
   const handleModalClose = () => {
@@ -67,7 +72,21 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
       completed: true,
       timestamp: new Date().toISOString(),
     };
-    localStorage.setItem('imagiq_trade_in', JSON.stringify(tradeInData));
+    try {
+      const raw = localStorage.getItem("imagiq_trade_in");
+      let existing: Record<string, unknown> = {};
+      if (raw) {
+        try {
+          existing = JSON.parse(raw) as Record<string, unknown>;
+        } catch {
+          existing = {};
+        }
+      }
+      const merged = { ...existing, ...tradeInData };
+      localStorage.setItem("imagiq_trade_in", JSON.stringify(merged));
+    } catch {
+      localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+    }
 
     if (onTradeInComplete) {
       onTradeInComplete(deviceName, value);
@@ -98,67 +117,79 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
           />
         )}
 
-        {/* Estreno y Entrego section - Solo mostrar si NO está completado */}
+        {/* Entrego y Estreno section - Solo mostrar si NO está completado */}
         {!tradeInCompleted && (
           <div className="mb-3 md:mb-5">
-          <h2 className="text-2xl font-bold text-gray-900 mb-1 md:mb-1.5">
-            Estreno y Entrego
-          </h2>
-          <p className="text-sm text-gray-900 mb-3 md:mb-4">
-            Selecciona Estreno y Entrego y recibe una oferta por tu dispositivo antiguo
-          </p>
+            <h2 className="text-2xl font-bold text-gray-900 mb-1 md:mb-1.5">
+              Entrego y Estreno
+            </h2>
+            <p className="text-sm text-gray-900 mb-3 md:mb-4">
+              Selecciona Entrego y Estreno y recibe una oferta por tu
+              dispositivo antiguo
+            </p>
 
-          {/* Option cards */}
-          <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 mb-2 md:mb-3">
-            <div
-              className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors ${selectedOption === 'yes'
-                ? 'border-blue-500'
-                : 'border-gray-300 hover:border-blue-500'
+            {/* Option cards */}
+            <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 mb-2 md:mb-3">
+              <div
+                className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors ${
+                  selectedOption === "yes"
+                    ? "border-blue-500"
+                    : "border-gray-300 hover:border-blue-500"
                 }`}
-              onClick={handleYesClick}
-            >
-              <div className="flex items-start justify-between">
-                <span className="font-semibold text-sm text-gray-900">Sí, por favor</span>
-                {tradeInCompleted && tradeInValue > 0 && (
-                  <div className="text-right">
-                    <p className="text-xs text-gray-600 mb-0">Ahorra hasta</p>
-                    <p className="text-lg md:text-base text-blue-600">
-                      $ {tradeInValue.toLocaleString('es-CO')}
-                    </p>
-                  </div>
+                onClick={handleYesClick}
+              >
+                <div className="flex items-start justify-between">
+                  <span className="font-semibold text-sm text-gray-900">
+                    Sí, por favor
+                  </span>
+                  {tradeInCompleted && tradeInValue > 0 && (
+                    <div className="text-right">
+                      <p className="text-xs text-gray-600 mb-0">Ahorra hasta</p>
+                      <p className="text-lg md:text-base text-blue-600">
+                        $ {tradeInValue.toLocaleString("es-CO")}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {tradeInCompleted && tradeInDeviceName && (
+                  <p className="text-[11px] text-gray-500 mt-1.5">
+                    Dispositivo: {tradeInDeviceName}
+                  </p>
                 )}
               </div>
-              {tradeInCompleted && tradeInDeviceName && (
-                <p className="text-[11px] text-gray-500 mt-1.5">
-                  Dispositivo: {tradeInDeviceName}
-                </p>
-              )}
-            </div>
 
-            <div
-              className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors flex items-center ${selectedOption === 'no'
-                ? 'border-blue-500'
-                : 'border-gray-300 hover:border-blue-500'
+              <div
+                className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors flex items-center ${
+                  selectedOption === "no"
+                    ? "border-blue-500"
+                    : "border-gray-300 hover:border-blue-500"
                 }`}
-              onClick={handleNoClick}
-            >
-              <span className="font-semibold text-sm text-gray-900">No, gracias</span>
+                onClick={handleNoClick}
+              >
+                <span className="font-semibold text-sm text-gray-900">
+                  No, gracias
+                </span>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
-        {/* Te presentamos Estreno y entrego & Pasarte de iOS a Galaxy */}
+        {/* Te presentamos Entrego y Estreno & Pasarte de iOS a Galaxy */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
-          {/* Te presentamos Estreno y entrego */}
+          {/* Te presentamos Entrego y Estreno */}
           <div className="bg-gray-100 p-2.5 rounded-lg shadow-sm border border-gray-100">
             <div className="flex items-center">
               <div className="w-16 h-16 flex-shrink-0 mr-3 rounded-lg bg-blue-50 flex items-center justify-center">
                 <RefreshCcw className="w-8 h-8 text-blue-600" strokeWidth={2} />
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-semibold text-black mb-0">Te presentamos Estreno y entrego</h3>
-                <p className="text-sm text-black">Entrega tu teléfono antiguo y si aceptas nuestra oferta, recibirás el valor en tu cuenta</p>
+                <h3 className="text-base font-semibold text-black mb-0">
+                  Te presentamos Entrego y Estreno
+                </h3>
+                <p className="text-sm text-black">
+                  Entrega tu teléfono antiguo y si aceptas nuestra oferta,
+                  recibirás el valor en tu cuenta
+                </p>
               </div>
             </div>
           </div>
@@ -175,9 +206,16 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
                 />
               </div>
               <div className="flex-1">
-                <h3 className="text-base font-semibold text-black mb-0">¡Pasarte de iOS a Galaxy es muy fácil!</h3>
-                <p className="text-black text-xs mb-0">Cambia de teléfono, conserva lo importante con Smart Switch</p>
-                <p className="text-black text-[11px]">*Se aplican términos y condiciones. Visita la página de Smart Switch para obtener más información.</p>
+                <h3 className="text-base font-semibold text-black mb-0">
+                  ¡Pasarte de iOS a Galaxy es muy fácil!
+                </h3>
+                <p className="text-black text-xs mb-0">
+                  Cambia de teléfono, conserva lo importante con Smart Switch
+                </p>
+                <p className="text-black text-[11px]">
+                  *Se aplican términos y condiciones. Visita la página de Smart
+                  Switch para obtener más información.
+                </p>
               </div>
             </div>
           </div>
@@ -197,4 +235,3 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({ onTradeInComplete }) =>
 };
 
 export default TradeInSection;
-

@@ -25,6 +25,14 @@ interface UseTradeInHandlersProps {
   categories: DeviceCategory[];
   selectedCategory: string;
   deviceState: DeviceState | null;
+  flowState?: {
+    initialAnswers?: {
+      screenTurnsOn?: boolean | null;
+      deviceFreeInColombia?: boolean | null;
+    };
+    damageFreeAnswer?: boolean | null;
+    goodConditionAnswer?: boolean | null;
+  };
 }
 
 export function useTradeInHandlers({
@@ -44,6 +52,7 @@ export function useTradeInHandlers({
   categories,
   selectedCategory,
   deviceState,
+  flowState,
 }: UseTradeInHandlersProps) {
   const handleClose = useCallback(() => {
     resetForm();
@@ -69,6 +78,38 @@ export function useTradeInHandlers({
     // Construir el nombre del dispositivo
     const deviceName = `${selectedBrand?.name || ''} ${selectedModel?.name || ''} ${selectedCapacity?.name || ''}`.trim();
 
+    // Guardar en localStorage solo cuando se completa el proceso
+    // Primero limpiar cualquier trade-in anterior
+    if (globalThis.window !== undefined) {
+      localStorage.removeItem("imagiq_trade_in");
+    }
+
+    // Construir el objeto de detalles desde el flowState
+    const detalles: Record<string, boolean> = {};
+    if (flowState?.initialAnswers?.screenTurnsOn !== null && flowState?.initialAnswers?.screenTurnsOn !== undefined) {
+      detalles.pantalla_enciende_mas_30_segundos = flowState.initialAnswers.screenTurnsOn;
+    }
+    if (flowState?.initialAnswers?.deviceFreeInColombia !== null && flowState?.initialAnswers?.deviceFreeInColombia !== undefined) {
+      detalles.libre_uso_sin_bloqueo_operador = flowState.initialAnswers.deviceFreeInColombia;
+    }
+    if (flowState?.damageFreeAnswer !== null && flowState?.damageFreeAnswer !== undefined) {
+      detalles.sin_danos_graves = flowState.damageFreeAnswer;
+    }
+    if (flowState?.goodConditionAnswer !== null && flowState?.goodConditionAnswer !== undefined) {
+      detalles.buen_estado = flowState.goodConditionAnswer;
+    }
+
+    // Guardar el nuevo trade-in en localStorage
+    if (globalThis.window !== undefined) {
+      const tradeInData = {
+        deviceName,
+        value: tradeInValue,
+        completed: true,
+        detalles: Object.keys(detalles).length > 0 ? detalles : undefined,
+      };
+      localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+    }
+
     // Llamar al callback con la información completa
     onCompleteTradeIn?.(deviceName, tradeInValue);
 
@@ -76,7 +117,7 @@ export function useTradeInHandlers({
     resetFlow();
     onContinue?.();
     onClose();
-  }, [resetForm, resetFlow, onContinue, onClose, onCompleteTradeIn, tradeInValue, selectedBrand, selectedModel, selectedCapacity]);
+  }, [resetForm, resetFlow, onContinue, onClose, onCompleteTradeIn, tradeInValue, selectedBrand, selectedModel, selectedCapacity, flowState]);
 
   const getStepTitle = useCallback((currentStep: TradeInStep): StepTitle => {
     switch (currentStep) {

@@ -304,7 +304,7 @@ export default function Navbar() {
                 navbar.router.push("/");
               }}
               aria-label="Inicio"
-              className="shrink-0"
+              className="flex items-center gap-2 shrink-0"
             >
               <Image
                 src={
@@ -318,26 +318,27 @@ export default function Navbar() {
                 className="h-10 w-10 transition-all duration-300"
                 priority
               />
-            </Link>
-
-            {/* Mostrar dirección si el usuario está autenticado, sino mostrar logo Samsung */}
-            {isAuthenticated ? (
-              <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
-            ) : (
               <Image
                 src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
                 alt="Samsung"
+                height={30}
                 width={100}
-                height={32}
                 className={cn(
-                  "h-8 w-auto transition-all duration-300",
-                  shouldShowWhiteItemsMobile ? "brightness-0 invert" : ""
+                  "h-7 w-auto transition-all duration-300",
+                  shouldShowWhiteItemsMobile && "brightness-0 invert"
                 )}
+                priority
               />
-            )}
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {/* Dirección antes del carrito en mobile/tablet */}
+            {isAuthenticated && (
+              <div className="flex-shrink-0 -ml-2" style={{ display: 'flex', alignItems: 'center' }}>
+                <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
+              </div>
+            )}
             <CartIcon
               count={navbar.itemCount}
               showBump={false}

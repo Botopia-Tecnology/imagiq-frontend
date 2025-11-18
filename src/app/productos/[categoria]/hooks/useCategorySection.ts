@@ -32,7 +32,7 @@ export function useCategoryPagination(
   categoriaApiCode?:string,
 ) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Refs para rastrear si ya se inicializó y los valores previos
   const isInitializedRef = useRef(false);

@@ -526,7 +526,7 @@ export const useProducts = (
         const searchParams = {
           precioMin: 1,
           page: page,
-          limit: 15,
+          limit: 50,
         };
 
         const response = await productEndpoints.search(query, searchParams);

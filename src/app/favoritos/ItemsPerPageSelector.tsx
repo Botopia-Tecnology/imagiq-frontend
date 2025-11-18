@@ -10,7 +10,7 @@ interface ItemsPerPageSelectorProps {
   className?: string;
 }
 
-const ITEMS_PER_PAGE_OPTIONS = [10, 15, 20, 25, 50];
+const ITEMS_PER_PAGE_OPTIONS = [50, 75, 100];
 
 export default function ItemsPerPageSelector({
   itemsPerPage,

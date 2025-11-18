@@ -77,31 +77,23 @@ const data = secureStorage.getDecrypted('key', defaultValue);
 
 ## 🛡️ Protección contra DevTools
 
-### Modos de Protección
+### Protección Simplificada
 
-#### 1. **Aggressive** (Producción recomendado)
-- Detecta apertura de DevTools
-- Limpia TODO el localStorage y sessionStorage
-- Redirige a `/login`
-- Bloquea shortcuts (F12, Cmd+Option+I, etc.)
-- Bloquea click derecho
+El sistema de protección ahora se controla con una sola variable de entorno:
 
-#### 2. **Moderate** (Staging)
-- Detecta apertura de DevTools
-- Muestra modal de advertencia
-- Limpia solo datos sensibles (tokens, passwords)
-- Bloquea shortcuts
-- Permite continuar navegando
+**`NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION`**
 
-#### 3. **Passive** (Desarrollo)
-- Solo muestra warning educativo
-- No limpia datos
-- No bloquea shortcuts
-- Solo informa al usuario
+- **`true`**: Activa protección completa
+  - Encripta todo el localStorage con AES-256
+  - Bloquea shortcuts de DevTools (F12, Cmd+Option+I, etc.)
+  - Bloquea click derecho
+  - Bloquea Ctrl+U (ver código fuente)
 
-#### 4. **Disabled**
-- Completamente desactivado
-- Útil para desarrollo local
+- **`false`**: Desactiva protección (ideal para desarrollo)
+  - localStorage en texto plano (sin encriptación)
+  - Todos los shortcuts habilitados
+  - Click derecho habilitado
+  - Código fuente visible
 
 ### Técnicas de Detección
 
@@ -149,17 +141,13 @@ stop();
 # .env.local
 
 # Clave maestra de encriptación (YA EXISTE)
-# IMPORTANTE: NUNCA cambiar esta key en producción
+# IMPORTANTE: NUNCA cambiar esta key en producción o se perderán todos los datos encriptados
 NEXT_PUBLIC_FRONTEND_ENCRYPTION_KEY=7a8f9d2e6b4c1a5e3f7d9b2c4a6e8f0d1c3e5a7b9d2f4a6c8e0b3d5f7a9c1e3f
 
-# Activar/desactivar protección de DevTools
-# En desarrollo: false
-# En producción: true
+# Protección de seguridad (encriptación + bloqueo de DevTools)
+# true = Activa encriptación de localStorage + bloqueo de DevTools
+# false = Desactiva toda protección (ideal para desarrollo)
 NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION=true
-
-# Modo de seguridad
-# Opciones: aggressive | moderate | passive | disabled
-NEXT_PUBLIC_SECURITY_MODE=aggressive
 ```
 
 ### Configuración por Entorno
@@ -167,19 +155,11 @@ NEXT_PUBLIC_SECURITY_MODE=aggressive
 **Desarrollo Local:**
 ```bash
 NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION=false
-NEXT_PUBLIC_SECURITY_MODE=passive
 ```
 
-**Staging:**
+**Staging/Producción:**
 ```bash
 NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION=true
-NEXT_PUBLIC_SECURITY_MODE=moderate
-```
-
-**Producción:**
-```bash
-NEXT_PUBLIC_ENABLE_DEVTOOLS_PROTECTION=true
-NEXT_PUBLIC_SECURITY_MODE=aggressive
 ```
 
 ---

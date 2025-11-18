@@ -143,16 +143,13 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
               const stockTotal = productSelection.selectedStockTotal ?? 0;
               const variant = productSelection.selectedVariant;
               const cantidadTiendas = variant?.cantidadTiendas || 0;
-              const variantIndex = variant?.index ?? 0;
-              const cantidadTiendasReserva = product.apiProduct?.cantidadTiendasReserva?.[variantIndex] || 0;
-              const stockCentroDistribuciones = Math.max(0, stockTotal - cantidadTiendasReserva);
-              const stockTiendas = cantidadTiendasReserva;
-              const stockCalculado = stockCentroDistribuciones + (stockTiendas - cantidadTiendas);
-              
+              const stockCentroDistribuciones = Math.max(0, stockTotal);
+              const stockCalculado = stockCentroDistribuciones;
+
               return (
                 <div className="text-sm text-gray-600 space-y-0.5">
                   <p>
-                    Stock disponible ({stockCalculado}): Centro: {stockCentroDistribuciones} | Tiendas: {stockTiendas} | Cant. tiendas: {cantidadTiendas}
+                    Stock disponible: {stockCalculado} | Cant. tiendas: {cantidadTiendas}
                   </p>
                 </div>
               );

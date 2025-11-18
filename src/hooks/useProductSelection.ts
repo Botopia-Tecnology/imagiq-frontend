@@ -22,7 +22,7 @@ export interface ProductVariant {
   precioeccommerce: number;
   stockTotal: number;
   cantidadTiendas: number; // Cantidad de tiendas con stock > 0
-  stockDisponible: number; // Stock ajustado: stockTotal - cantidadTiendasReserva, donde cantidadTiendasReserva excluye bodega 001
+  stockDisponible: number; // Stock total disponible
   imagePreviewUrl?: string;
   urlRender3D?: string;
   desDetallada?: string;
@@ -108,8 +108,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     for (let i = 0; i < maxLength; i++) {
       const stockTotal = apiProduct.stockTotal[i] || 0;
       const cantidadTiendas = apiProduct.cantidadTiendas?.[i] || 0;
-      const cantidadTiendasReserva = apiProduct.cantidadTiendasReserva?.[i] || 0;
-      const stockDisponible = Math.max(0, stockTotal - cantidadTiendasReserva);
+      const stockDisponible = Math.max(0, stockTotal);
 
       variants.push({
         index: i,

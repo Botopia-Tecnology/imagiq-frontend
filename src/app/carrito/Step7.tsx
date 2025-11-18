@@ -24,6 +24,7 @@ import {
   getTradeInValidationMessage,
 } from "./utils/validateTradeIn";
 import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
+import { apiPost } from "@/lib/api-client";
 
 interface Step7Props {
   onBack?: () => void;
@@ -60,6 +61,12 @@ interface ShippingData {
   };
 }
 
+interface ShippingVerification {
+  envio_imagiq: boolean;
+  todos_productos_im_it: boolean;
+  en_zona_cobertura: boolean;
+}
+
 interface BillingData {
   type: "natural" | "juridica";
   nombre: string;
@@ -92,6 +99,8 @@ export default function Step7({ onBack }: Step7Props) {
   const [billingData, setBillingData] = useState<BillingData | null>(null);
   const [zeroInterestData, setZeroInterestData] =
     useState<CheckZeroInterestResponse | null>(null);
+  const [shippingVerification, setShippingVerification] =
+    useState<ShippingVerification | null>(null);
   const { products, calculations } = useCart();
 
   // Trade-In state management
@@ -325,6 +334,68 @@ export default function Step7({ onBack }: Step7Props) {
       });
     }
   }, [products]);
+
+  // Verificar cobertura cuando los productos estén cargados
+  useEffect(() => {
+    const verifyWhenProductsReady = async () => {
+      // Solo ejecutar si hay productos y es envío a domicilio
+      if (products.length === 0 || shippingData?.type !== "delivery") {
+        return;
+      }
+
+      // Verificar si TODOS los productos tienen canPickUp: true
+      const allProductsHavePickup = products.every(
+        (product) => product.canPickUp === true
+      );
+
+      console.log("📦 Verificando pickup de productos:", {
+        productos: products.map((p) => ({ sku: p.sku, canPickUp: p.canPickUp })),
+        allProductsHavePickup,
+      });
+
+      // Si algún producto NO tiene pickup, directamente es Coordinadora
+      if (!allProductsHavePickup) {
+        console.log("🚛 Envío Coordinadora (productos sin pickup disponible)");
+        setShippingVerification({
+          envio_imagiq: false,
+          todos_productos_im_it: false,
+          en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
+        });
+        return;
+      }
+
+      // Si TODOS tienen pickup, verificar cobertura Imagiq
+      const shippingAddress = localStorage.getItem("checkout-address");
+      if (!shippingAddress) return;
+
+      try {
+        const parsed = JSON.parse(shippingAddress);
+        const requestBody = {
+          direccion_id: parsed.id,
+          skus: products.map((p) => p.sku),
+        };
+
+        console.log("🚚 Verificando cobertura de envío (useEffect):", requestBody);
+
+        const data = await apiPost<ShippingVerification>(
+          "/api/addresses/zonas-cobertura/verificar-por-id",
+          requestBody
+        );
+
+        console.log("✅ Respuesta de verificación (useEffect):", data);
+
+        setShippingVerification({
+          envio_imagiq: data.envio_imagiq || false,
+          todos_productos_im_it: data.todos_productos_im_it || false,
+          en_zona_cobertura: data.en_zona_cobertura || false,
+        });
+      } catch (error) {
+        console.error("❌ Error verifying shipping coverage (useEffect):", error);
+      }
+    };
+
+    verifyWhenProductsReady();
+  }, [products, shippingData]);
 
   // Calcular si la compra aplica para 0% interés y guardarlo en localStorage
   useEffect(() => {
@@ -573,6 +644,7 @@ export default function Step7({ onBack }: Step7Props) {
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
+            bankName: paymentData.bankName || "",
           });
           if ("error" in res) {
             throw new Error(res.message);
@@ -1025,6 +1097,8 @@ export default function Step7({ onBack }: Step7Props) {
               onBack={onBack}
               buttonText="Confirmar y pagar"
               disabled={isProcessing || !tradeInValidation.isValid}
+              shippingVerification={shippingVerification}
+              deliveryMethod={shippingData?.type}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

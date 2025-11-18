@@ -10,6 +10,9 @@ import { samsungSharpSans } from "./fonts";
 // Usaremos una variable CSS --font-inter definida en globals.css como fallback.
 import "./globals.css";
 
+// 🔐 SECURITY: La inicialización del sistema de encriptación se hace en ClientLayout.tsx
+// (debe ejecutarse en el cliente, no en el servidor)
+
 import { AuthProvider } from "@/features/auth/context";
 import { CartProvider } from "@/features/cart/CartContext";
 import { AnalyticsProvider } from "@/features/analytics/AnalyticsContext";
@@ -28,6 +31,8 @@ import { PointsProvider } from "@/contexts/PointsContext";
 import { SelectedStoreProvider } from "@/contexts/SelectedStoreContext";
 import { HeroProvider } from "@/contexts/HeroContext";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
+import DevToolsGuard from "@/components/security/DevToolsGuard";
+import SecurityInitializer from "@/components/security/SecurityInitializer";
 // Si necesitas Inter desde Google Fonts en entornos con internet,
 // reactivar la importación desde next/font/google o agregar el CSS manual.
 
@@ -140,10 +145,12 @@ export default function RootLayout({
     >
       <head></head>
       <body className="antialiased">
-        <AnalyticsScripts />
-        <AnalyticsInit />
+        <SecurityInitializer>
+          <AnalyticsScripts />
+          <AnalyticsInit />
 
-        <ResponsiveProvider>
+          <DevToolsGuard>
+            <ResponsiveProvider>
           <HeroProvider>
             <ProductProvider>
               <NavbarVisibilityProvider>
@@ -191,6 +198,8 @@ export default function RootLayout({
             </ProductProvider>
           </HeroProvider>
         </ResponsiveProvider>
+          </DevToolsGuard>
+        </SecurityInitializer>
       </body>
     </html>
   );

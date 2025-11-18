@@ -551,6 +551,7 @@ export function useCheckoutLogic() {
         case "pse": {
           res = await payWithPse({
             bank: selectedBank,
+            bankName: selectedBankName,
             description: "Imagiq Store",
             currency: "COP",
             items: cartProducts.map((p) => ({

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { User, Menu, Heart, MapPin } from "lucide-react";
+import { User, Menu, Heart, MapPin, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -373,13 +373,14 @@ export default function Navbar() {
                       type="button"
                       onClick={onClick}
                       className={cn(
-                        "w-full flex items-center gap-1 text-[12px] font-semibold truncate hover:opacity-80 transition-opacity",
+                        "w-full flex items-center gap-1.5 text-[12px] font-semibold truncate hover:opacity-80 transition-opacity",
                         shouldShowWhiteItemsMobile ? "text-white" : "text-black"
                       )}
                       title={mobileAddressLabel}
                     >
                       <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate text-left">{mobileAddressLabel}</span>
+                      <span className="truncate text-left flex-1">{mobileAddressLabel}</span>
+                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
                     </button>
                   )}
                 />

@@ -698,6 +698,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             onFinishPayment={handleContinue}
             buttonText="Continuar pago"
             disabled={cartProducts.length === 0 || !tradeInValidation.isValid}
+            isSticky={false}
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}

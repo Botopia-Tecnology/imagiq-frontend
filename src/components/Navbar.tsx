@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, type CSSProperties } from "react";
+import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { User, Menu, Heart } from "lucide-react";
+import { User, Menu, Heart, MapPin, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -15,6 +15,7 @@ import OfertasDropdown from "./dropdowns/ofertas";
 import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import { useAuthContext } from "@/features/auth/context";
+import { useDefaultAddress } from "@/hooks/useDefaultAddress";
 import AddressDropdown from "./navbar/AddressDropdown";
 import {
   MobileMenu,
@@ -26,12 +27,40 @@ import { hasDropdownMenu, getDropdownPosition } from "./navbar/utils/helpers";
 import { isStaticCategoryUuid } from "@/constants/staticCategories";
 import type { DropdownName, NavItem } from "./navbar/types";
 
+type AddressLike = {
+  ciudad?: string | null;
+  direccionFormateada?: string | null;
+  lineaUno?: string | null;
+  nombreDireccion?: string | null;
+};
+
+const getShortAddressLabel = (address: AddressLike | null): string => {
+  if (!address) return "";
+
+  const candidates = [
+    address.direccionFormateada,
+    address.lineaUno,
+    address.ciudad,
+    address.nombreDireccion,
+  ];
+
+  const rawValue = candidates.find(
+    (value): value is string => typeof value === "string" && value.trim().length > 0
+  );
+
+  if (!rawValue) return "";
+
+  const normalized = rawValue.trim();
+  return normalized.length > 32 ? `${normalized.slice(0, 32)}…` : normalized;
+};
+
 export default function Navbar() {
   const navbar = useNavbarLogic();
   const { theme } = useHeroContext();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { getNavbarRoutes, loading } = useVisibleCategories();
-  const { isAuthenticated } = useAuthContext();
+  const { isAuthenticated, user } = useAuthContext();
+  const { address: defaultMobileAddress } = useDefaultAddress("ENVIO");
 
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
@@ -216,6 +245,22 @@ export default function Navbar() {
     ? theme === "light"
     : navbar.showWhiteItemsMobile;
 
+  const mobileAddressData = useMemo<AddressLike | null>(
+    () =>
+      (defaultMobileAddress as AddressLike | null) ??
+      ((user?.defaultAddress as AddressLike | null) ?? null),
+    [defaultMobileAddress, user?.defaultAddress]
+  );
+
+  const mobileAddressLabel = useMemo(
+    () => getShortAddressLabel(mobileAddressData),
+    [mobileAddressData]
+  );
+
+  const shouldShowMobileAddressLabel = Boolean(
+    isAuthenticated && mobileAddressData && mobileAddressLabel.length > 0
+  );
+
   const getIconColorClasses = (forMobile = false): string => {
     // Si hay un dropdown activo, siempre negro
     if (navbar.activeDropdown) {
@@ -318,27 +363,55 @@ export default function Navbar() {
                 className="h-10 w-10 transition-all duration-300"
                 priority
               />
-              <Image
-                src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
-                alt="Samsung"
-                height={30}
-                width={100}
-                className={cn(
-                  "h-7 w-auto transition-all duration-300",
-                  shouldShowWhiteItemsMobile && "brightness-0 invert"
-                )}
-                priority
-              />
             </Link>
+            {shouldShowMobileAddressLabel ? (
+              <div className="flex-1 min-w-0 xl:hidden">
+                <AddressDropdown
+                  showWhiteItems={shouldShowWhiteItemsMobile}
+                  renderMobileTrigger={({ onClick }) => (
+                    <button
+                      type="button"
+                      onClick={onClick}
+                      className={cn(
+                        "w-full flex items-center gap-1.5 text-[12px] font-semibold truncate hover:opacity-80 transition-opacity",
+                        shouldShowWhiteItemsMobile ? "text-white" : "text-black"
+                      )}
+                      title={mobileAddressLabel}
+                    >
+                      <MapPin className="w-4 h-4 flex-shrink-0" />
+                      <span className="truncate text-left flex-1">{mobileAddressLabel}</span>
+                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                    </button>
+                  )}
+                />
+              </div>
+            ) : (
+              <Link
+                href="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  posthogUtils.capture("logo_click", { source: "navbar_samsung" });
+                  navbar.router.push("/");
+                }}
+                aria-label="Inicio Samsung"
+                className="flex items-center"
+              >
+                <Image
+                  src="https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg"
+                  alt="Samsung"
+                  height={30}
+                  width={100}
+                  className={cn(
+                    "h-7 w-auto transition-all duration-300",
+                    shouldShowWhiteItemsMobile && "brightness-0 invert"
+                  )}
+                  priority
+                />
+              </Link>
+            )}
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {/* Dirección antes del carrito en mobile/tablet */}
-            {isAuthenticated && (
-              <div className="flex-shrink-0 -ml-2" style={{ display: 'flex', alignItems: 'center' }}>
-                <AddressDropdown showWhiteItems={shouldShowWhiteItemsMobile} />
-              </div>
-            )}
             <CartIcon
               count={navbar.itemCount}
               showBump={false}

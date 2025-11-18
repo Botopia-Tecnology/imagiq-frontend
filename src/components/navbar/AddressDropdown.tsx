@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { MapPin, Check, Plus, X, ChevronDown, Trash2 } from "lucide-react";
@@ -14,10 +14,17 @@ import { addressesService } from "@/services/addresses.service";
 
 interface AddressDropdownProps {
   showWhiteItems: boolean;
+  renderMobileTrigger?: (params: {
+    onClick: () => void;
+    isOpen: boolean;
+    showWhiteItems: boolean;
+    displayAddress?: Address | null;
+  }) => ReactNode;
 }
 
 const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   showWhiteItems,
+  renderMobileTrigger,
 }) => {
   const router = useRouter();
   const { user, login, isAuthenticated } = useAuthContext();
@@ -482,18 +489,27 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
         </button>
 
-        {/* Botón para Mobile/Tablet (< 1280px) - Solo icono, igual al carrito */}
-        <button
-          className={cn(
-            "xl:hidden flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity cursor-pointer",
-            "text-black"
-          )}
-          onClick={handleToggle}
-          title={displayAddress.direccionFormateada || displayAddress.lineaUno || displayAddress.ciudad || 'Dirección'}
-          type="button"
-        >
-          <MapPin className="w-5 h-5 text-black" />
-        </button>
+        {/* Botón para Mobile/Tablet (< 1280px) */}
+        {renderMobileTrigger ? (
+          <>{renderMobileTrigger({
+            onClick: handleToggle,
+            isOpen: open,
+            showWhiteItems,
+            displayAddress,
+          })}</>
+        ) : (
+          <button
+            className={cn(
+              "xl:hidden flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity cursor-pointer",
+              "text-black"
+            )}
+            onClick={handleToggle}
+            title={displayAddress.direccionFormateada || displayAddress.lineaUno || displayAddress.ciudad || 'Dirección'}
+            type="button"
+          >
+            <MapPin className="w-5 h-5 text-black" />
+          </button>
+        )}
 
         {open && (
           <div

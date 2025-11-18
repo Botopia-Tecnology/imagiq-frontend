@@ -41,6 +41,9 @@ export default function Step3({
     setDeliveryMethod,
     canContinue,
     storesLoading,
+    canPickUp,
+    stores,
+    refreshStores,
   } = useDelivery();
 
   // Trade-In state management
@@ -316,6 +319,10 @@ export default function Step3({
                     onQueryChange={setStoreQuery}
                     onStoreSelect={selectedStoreChanged}
                     storesLoading={storesLoading}
+                    canPickUp={canPickUp}
+                    allStores={stores}
+                    onAddressAdded={addAddress}
+                    onRefreshStores={refreshStores}
                   />
                 </div>
               )}
@@ -328,7 +335,7 @@ export default function Step3({
               onFinishPayment={handleContinue}
               buttonText="Continuar"
               onBack={onBack}
-              disabled={!canContinue || !tradeInValidation.isValid}
+              disabled={!canContinue || !tradeInValidation.isValid || (deliveryMethod === "tienda" && !canPickUp)}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

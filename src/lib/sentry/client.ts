@@ -73,8 +73,10 @@ export async function initSentry(): Promise<void> {
       replaysOnErrorSampleRate?: number;
     }>('/api/custommer/analytics/sentry/config');
 
-    if (!config.dsn) {
-      throw new Error('Sentry DSN not provided by backend');
+    if (!config || !config.dsn) {
+      console.warn('[Sentry] Configuration not available from backend, skipping initialization');
+      configLoading = false;
+      return;
     }
 
     console.log('[Sentry] Configuration received, initializing SDK...');

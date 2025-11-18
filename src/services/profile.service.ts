@@ -4,6 +4,7 @@
  */
 
 import { apiGet, apiPost, apiPut } from "@/lib/api-client";
+import { EncryptedCard } from "../features/profile/types";
 
 /**
  * Interface para la respuesta completa del perfil del usuario
@@ -182,7 +183,7 @@ export class ProfileService {
    * Llama al endpoint /api/payments/cards/:userId que devuelve datos encriptados
    * IMPORTANTE: Los datos vienen encriptados y deben ser desencriptados con encryptionService
    */
-  public async getUserPaymentMethodsEncrypted(userId?: string): Promise<import('../features/profile/types').EncryptedCard[]> {
+  public async getUserPaymentMethodsEncrypted(userId?: string): Promise<EncryptedCard[]> {
     try {
       const id = userId || this.getUserId();
       if (!id) {
@@ -191,7 +192,7 @@ export class ProfileService {
 
       console.log("📤 Solicitando tarjetas encriptadas para usuario:", id);
 
-      const result = await apiGet<import('../features/profile/types').EncryptedCard[]>(`/api/payments/cards/${id}`);
+      const result = await apiGet<EncryptedCard[]>(`/api/payments/cards/${id}`);
       console.log("✅ Tarjetas encriptadas obtenidas:", result);
       return result;
     } catch (error: unknown) {

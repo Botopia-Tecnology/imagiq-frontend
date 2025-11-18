@@ -573,6 +573,7 @@ export default function Step7({ onBack }: Step7Props) {
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
+            bankName: paymentData.bankName || "",
           });
           if ("error" in res) {
             throw new Error(res.message);

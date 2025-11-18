@@ -98,9 +98,39 @@ export const useDelivery = () => {
   const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
   const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(null);
   const [addresses, setAddresses] = useState<Direccion[]>([]);
-  const [deliveryMethod, setDeliveryMethod] = useState("domicilio");
+  
+  // Cargar método de entrega desde localStorage al inicio
+  const [deliveryMethod, setDeliveryMethodState] = useState<string>(() => {
+    if (typeof window === "undefined") return "domicilio";
+    return localStorage.getItem("checkout-delivery-method") || "domicilio";
+  });
+  
+  // Wrapper para setDeliveryMethod que también guarda en localStorage
+  const setDeliveryMethod = (method: string) => {
+    setDeliveryMethodState(method);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("checkout-delivery-method", method);
+      // Disparar evento personalizado para notificar cambios
+      window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method } }));
+    }
+  };
+  
   const [storesLoading, setStoresLoading] = useState(true);
   const { products } = useCart();
+
+  // Cargar método de entrega desde localStorage cuando se monta el componente
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const savedMethod = localStorage.getItem("checkout-delivery-method");
+    if (savedMethod && (savedMethod === "tienda" || savedMethod === "domicilio")) {
+      setDeliveryMethodState((current) => {
+        if (current !== savedMethod) {
+          return savedMethod;
+        }
+        return current;
+      });
+    }
+  }, []);
 
   // Cargar tiendas desde candidate-stores (solo donde se puede recoger el producto)
   useEffect(() => {

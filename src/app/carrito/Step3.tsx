@@ -50,8 +50,14 @@ export default function Step3({
     value: number;
   } | null>(null);
 
+  // Ref para evitar múltiples ejecuciones del useEffect (previene loop infinito)
+  const tradeInLoadedRef = React.useRef(false);
+
   // Load Trade-In data from localStorage y forzar método a "tienda" si hay trade-in
   React.useEffect(() => {
+    // Solo ejecutar una vez
+    if (tradeInLoadedRef.current) return;
+
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
@@ -61,10 +67,14 @@ export default function Step3({
           // IMPORTANTE: Si hay trade-in, forzar método a "tienda" inmediatamente
           // setDeliveryMethod ya guarda automáticamente en localStorage
           setDeliveryMethod("tienda");
+          tradeInLoadedRef.current = true;
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
       }
+    } else {
+      // Marcar como cargado incluso si no hay trade-in
+      tradeInLoadedRef.current = true;
     }
   }, [setDeliveryMethod]);
 

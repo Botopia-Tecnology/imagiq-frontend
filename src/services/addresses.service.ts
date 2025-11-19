@@ -86,6 +86,9 @@ export class AddressesService {
         existingAddressesCount: existingAddresses.length,
       });
 
+      // Log detallado del body que se enviará
+      console.log("📦 Body completo que se enviará al backend:", JSON.stringify(requestData, null, 2));
+
       const result = await apiPost<Address>("/api/addresses", requestData);
       console.log("✅ Dirección creada exitosamente:", result);
 

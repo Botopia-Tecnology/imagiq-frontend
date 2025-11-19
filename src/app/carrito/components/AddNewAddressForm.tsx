@@ -107,6 +107,7 @@ export default function AddNewAddressForm({
       }
 
       // Transformar PlaceDetails al formato esperado por el backend
+      // Incluir todos los campos opcionales si están disponibles
       const transformedPlaceDetails = {
         placeId: selectedAddress.placeId,
         formattedAddress: selectedAddress.formattedAddress,
@@ -115,6 +116,15 @@ export default function AddNewAddressForm({
         longitude,
         addressComponents: selectedAddress.addressComponents || [],
         types: selectedAddress.types || [],
+        // Campos opcionales - incluir solo si existen
+        ...(selectedAddress.postalCode && { postalCode: selectedAddress.postalCode }),
+        ...(selectedAddress.city && { city: selectedAddress.city }),
+        ...(selectedAddress.department && { department: selectedAddress.department }),
+        ...(selectedAddress.locality && { locality: selectedAddress.locality }),
+        ...(selectedAddress.neighborhood && { neighborhood: selectedAddress.neighborhood }),
+        ...(selectedAddress.vicinity && { vicinity: selectedAddress.vicinity }),
+        ...(selectedAddress.url && { url: selectedAddress.url }),
+        ...(selectedAddress.nomenclature && { nomenclature: selectedAddress.nomenclature }),
       };
 
       // Crear dirección de envío
@@ -122,7 +132,7 @@ export default function AddNewAddressForm({
         nombreDireccion: formData.nombreDireccion,
         tipoDireccion: formData.tipoDireccion,
         tipo: formData.usarMismaParaFacturacion ? 'AMBOS' : 'ENVIO',
-        esPredeterminada: false, // No marcar como predeterminada desde checkout
+        esPredeterminada: true, // Marcar como predeterminada automáticamente
         placeDetails: transformedPlaceDetails as PlaceDetails,
         complemento: formData.complemento || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,
@@ -154,6 +164,7 @@ export default function AddNewAddressForm({
         }
 
         // Transformar PlaceDetails de facturación al formato esperado por el backend
+        // Incluir todos los campos opcionales si están disponibles
         const transformedBillingPlaceDetails = {
           placeId: selectedBillingAddress.placeId,
           formattedAddress: selectedBillingAddress.formattedAddress,
@@ -162,6 +173,15 @@ export default function AddNewAddressForm({
           longitude: billingLongitude,
           addressComponents: selectedBillingAddress.addressComponents || [],
           types: selectedBillingAddress.types || [],
+          // Campos opcionales - incluir solo si existen
+          ...(selectedBillingAddress.postalCode && { postalCode: selectedBillingAddress.postalCode }),
+          ...(selectedBillingAddress.city && { city: selectedBillingAddress.city }),
+          ...(selectedBillingAddress.department && { department: selectedBillingAddress.department }),
+          ...(selectedBillingAddress.locality && { locality: selectedBillingAddress.locality }),
+          ...(selectedBillingAddress.neighborhood && { neighborhood: selectedBillingAddress.neighborhood }),
+          ...(selectedBillingAddress.vicinity && { vicinity: selectedBillingAddress.vicinity }),
+          ...(selectedBillingAddress.url && { url: selectedBillingAddress.url }),
+          ...(selectedBillingAddress.nomenclature && { nomenclature: selectedBillingAddress.nomenclature }),
         };
 
         const billingAddressRequest: CreateAddressRequest = {

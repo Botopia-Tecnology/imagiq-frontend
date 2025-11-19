@@ -35,7 +35,7 @@ interface OfertasSectionProps {
 export default function OfertasSection({ seccion }: OfertasSectionProps) {
   // Estados para paginación
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(15);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Memoizar los filtros para evitar recreaciones innecesarias
   const initialFilters = useMemo(() => {

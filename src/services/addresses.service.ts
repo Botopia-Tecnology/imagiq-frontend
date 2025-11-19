@@ -86,18 +86,25 @@ export class AddressesService {
         existingAddressesCount: existingAddresses.length,
       });
 
+      // Log detallado del body que se enviará
+      console.log("📦 Body completo que se enviará al backend:", JSON.stringify(requestData, null, 2));
+
       const result = await apiPost<Address>("/api/addresses", requestData);
       console.log("✅ Dirección creada exitosamente:", result);
 
-      // Si es la primera dirección, marcarla automáticamente como predeterminada
-      if (isFirstAddress) {
+      // Si es la primera dirección O si se marcó como predeterminada,
+      // llamar a setDefaultAddress para desactivar las demás
+      if (isFirstAddress || addressData.esPredeterminada) {
         try {
-          console.log("🔄 Es la primera dirección, estableciendo como predeterminada...");
+          const reason = isFirstAddress
+            ? "Es la primera dirección"
+            : "Fue marcada como predeterminada";
+          console.log(`🔄 ${reason}, estableciendo como predeterminada y desactivando las demás...`);
           const defaultAddress = await this.setDefaultAddress(result.id);
-          console.log("✅ Primera dirección marcada como predeterminada:", defaultAddress.nombreDireccion);
+          console.log("✅ Dirección marcada como predeterminada:", defaultAddress.nombreDireccion);
           return defaultAddress;
         } catch (setDefaultError) {
-          console.error("⚠️ Error estableciendo primera dirección como predeterminada:", setDefaultError);
+          console.error("⚠️ Error estableciendo dirección como predeterminada:", setDefaultError);
           // No lanzar error, la dirección ya fue creada exitosamente
           // El usuario puede establecerla manualmente como predeterminada si es necesario
         }

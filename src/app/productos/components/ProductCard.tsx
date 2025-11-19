@@ -171,9 +171,8 @@ export default function ProductCard({
     }
   );
 
-  // Verificar si la VARIANTE SELECCIONADA está sin stock (usando stock ajustado)
+  // Verificar si la VARIANTE SELECCIONADA está sin stock
   // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
-  // Stock ajustado = stockTotal - cantidadTiendasReserva, excluyendo bodega 001
   const isOutOfStock =
     (productSelection.selectedVariant?.stockDisponible ?? 0) <= 0;
 

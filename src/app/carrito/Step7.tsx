@@ -570,7 +570,22 @@ export default function Step7({ onBack }: Step7Props) {
       const deliveryMethod = (
         localStorage.getItem("checkout-delivery-method") || "domicilio"
       ).toLowerCase();
-      const metodo_envio = deliveryMethod === "tienda" ? 2 : 1;
+
+      // Determinar metodo_envio: 1=Coordinadora, 2=Pickup, 3=Imagiq
+      let metodo_envio = 1; // Por defecto Coordinadora
+      if (deliveryMethod === "tienda") {
+        metodo_envio = 2; // Pickup en tienda
+      } else if (deliveryMethod === "domicilio" && shippingVerification?.envio_imagiq === true) {
+        metodo_envio = 3; // Envío Imagiq
+      }
+
+      console.log("📦 Método de envío a guardar:", {
+        deliveryMethod,
+        metodo_envio,
+        envio_imagiq: shippingVerification?.envio_imagiq,
+        shippingVerification
+      });
+
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
         try {

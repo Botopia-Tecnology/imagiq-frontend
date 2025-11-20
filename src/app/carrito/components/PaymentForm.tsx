@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { Plus, Check } from "lucide-react";
 import { SiVisa, SiMastercard, SiAmericanexpress } from "react-icons/si";
@@ -82,7 +82,7 @@ export default function PaymentForm({
     });
   }, []);
 
-  const loadSavedCards = async () => {
+  const loadSavedCards = useCallback(async () => {
     try {
       setIsLoadingCards(true);
       const encryptedCards =
@@ -95,6 +95,7 @@ export default function PaymentForm({
           const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
             encCard.encryptedData
           );
+          console.log("Decrypted card data:", decrypted);
           if (!decrypted) return null;
 
           return {
@@ -117,22 +118,21 @@ export default function PaymentForm({
     } finally {
       setIsLoadingCards(false);
     }
-  };
+  }, [authContext.user?.id]);
 
   // Cargar tarjetas guardadas al montar
   useEffect(() => {
     if (authContext.user?.id) {
       loadSavedCards();
     }
-  }, [authContext.user?.id]);
+  }, [authContext.user?.id, loadSavedCards]);
 
   // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
   useEffect(() => {
-    if (authContext.user?.id && savedCardsReloadCounter !== undefined) {
+    if (authContext.user?.id && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
       loadSavedCards();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedCardsReloadCounter]);
+  }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
 
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas
   useEffect(() => {
@@ -162,6 +162,9 @@ export default function PaymentForm({
   const defaultCard =
     savedCards.find((card) => card.es_predeterminada) || savedCards[0];
 
+  console.log("📋 Tarjetas guardadas:", savedCards);
+  console.log("⭐ Tarjeta predeterminada:", defaultCard);
+
   // Filtrar tarjetas activas y no expiradas, excluyendo la predeterminada (ya está en Recomendados)
   const activeCards = savedCards.filter((card) => {
     if (!card.activa) return false;
@@ -176,6 +179,8 @@ export default function PaymentForm({
     // Excluir la tarjeta que ya está en Recomendados
     return defaultCard ? String(card.id) !== String(defaultCard.id) : true;
   });
+
+  console.log("✅ Tarjetas activas (sin predeterminada):", activeCards);
 
   return (
     <div>
@@ -335,7 +340,7 @@ export default function PaymentForm({
       </div>
 
       {/* Sección de Tarjetas guardadas */}
-      {activeCards.length > 0 && (
+      {activeCards.length > 0 ? (
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
@@ -442,7 +447,19 @@ export default function PaymentForm({
             </div>
           )}
         </div>
-      )}
+      ): (<div className="flex items-center justify-between mb-3">
+            <h3 className="text-base font-semibold text-gray-700">
+              Tarjetas guardadas
+            </h3>
+            <button
+              type="button"
+              onClick={onOpenAddCardModal}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-black text-white hover:bg-gray-800 font-medium transition-colors rounded-lg"
+            >
+              <Plus className="w-4 h-4" />
+              Agregar
+            </button>
+          </div>)}
 
       {/* Formulario de nueva tarjeta (si el usuario elige agregar) */}
       {paymentMethod === "tarjeta" && useNewCard && (

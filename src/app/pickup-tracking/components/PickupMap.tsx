@@ -9,18 +9,48 @@ import "leaflet/dist/leaflet.css";
 interface PickupMapProps {
   direccionTienda?: string;
   ciudadTienda?: string;
+  nombreTienda?: string;
+  descripcionTienda?: string;
+  latitudTienda?: string;
+  longitudTienda?: string;
 }
 
 export default function PickupMap({
-  direccionTienda = "Carrera 11 #82-71, Centro Comercial Andino", // Tienda IMAGIQ por defecto
-  ciudadTienda = "Bogotá",
+  direccionTienda,
+  ciudadTienda,
+  nombreTienda,
+  descripcionTienda,
+  latitudTienda,
+  longitudTienda,
 }: Readonly<PickupMapProps>) {
-  const fullTiendaAddress = direccionTienda
-    ? `${direccionTienda}, ${ciudadTienda}`
-    : "Tienda IMAGIQ";
+  // Remover "Ses" del inicio de la descripción si existe
+  const nombreTiendaFormateado = descripcionTienda
+    ? descripcionTienda.replace(/^Ses\s+/i, '').trim()
+    : nombreTienda || "Tienda IMAGIQ";
 
-  // Coordenadas de la tienda IMAGIQ (Centro Comercial Andino)
-  const tiendaCoords: [number, number] = [4.6682, -74.0538];
+  // Construir dirección completa
+  const fullTiendaAddress = direccionTienda && ciudadTienda
+    ? `${direccionTienda}, ${ciudadTienda}`
+    : direccionTienda || nombreTiendaFormateado || "Ubicación de la tienda";
+
+  // Coordenadas de la tienda (usar coordenadas reales de la API)
+  const tiendaCoords: [number, number] | null = (() => {
+    if (latitudTienda && longitudTienda) {
+      const lat = Number.parseFloat(String(latitudTienda).trim());
+      const lng = Number.parseFloat(String(longitudTienda).trim());
+      // Validar que sean números válidos y dentro de rangos razonables
+      if (!Number.isNaN(lat) && !Number.isNaN(lng) && 
+          lat >= -90 && lat <= 90 && 
+          lng >= -180 && lng <= 180) {
+        return [lat, lng];
+      }
+    }
+    // Si hay dirección pero no coordenadas, usar coordenadas por defecto de Bogotá
+    if (direccionTienda) {
+      return [4.6097, -74.0817]; // Bogotá centro como fallback
+    }
+    return null;
+  })();
 
   // Icono para la tienda (azul)
   const tiendaIcon = L.divIcon({
@@ -39,7 +69,7 @@ export default function PickupMap({
   });
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
       {/* Header */}
       <div className="bg-white p-6 border-b border-gray-200">
         <div className="flex items-center justify-between">
@@ -68,70 +98,85 @@ export default function PickupMap({
             <div>
               <h3 className="font-semibold text-black text-base mb-1">Ubicación de la tienda</h3>
               <p className="text-sm text-gray-500">
-                {fullTiendaAddress}
+                {nombreTiendaFormateado}
               </p>
+              {direccionTienda && (
+                <p className="text-xs text-gray-600 mt-1">
+                  {fullTiendaAddress}
+                </p>
+              )}
             </div>
           </div>
           
           {/* Navigation Buttons - Moved to header */}
-          <div className="flex gap-2">
-            <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullTiendaAddress)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-400 text-white rounded-[12px] hover:bg-gray-500 transition text-sm font-medium shadow-sm"
-            >
-              <Image 
-                src="https://res.cloudinary.com/dgnqk0ucm/image/upload/v1762445116/Google_Maps_icon__2020.svg_r4s0ks.png" 
-                alt="Google Maps"
-                width={14}
-                height={16}
-                className="w-3.5 h-4"
-              />
-              Maps
-            </a>
-            <a
-              href={`https://waze.com/ul?q=${encodeURIComponent(fullTiendaAddress)}&navigate=yes`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-3 py-2 bg-[#33CCFF] text-white rounded-[12px] hover:bg-[#00B8E6] transition text-sm font-medium shadow-sm"
-            >
-              <Image 
-                src="https://res.cloudinary.com/dgnqk0ucm/image/upload/v1762445166/unnamed_jfcf46.png" 
-                alt="Waze"
-                width={16}
-                height={16}
-                className="w-4 h-4"
-              />
-              Waze
-            </a>
-          </div>
+          {(direccionTienda || nombreTiendaFormateado) && (
+            <div className="flex gap-2">
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullTiendaAddress)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-gray-400 text-white rounded-[12px] hover:bg-gray-500 transition text-sm font-medium shadow-sm"
+              >
+                <Image 
+                  src="https://res.cloudinary.com/dgnqk0ucm/image/upload/v1762445116/Google_Maps_icon__2020.svg_r4s0ks.png" 
+                  alt="Google Maps"
+                  width={14}
+                  height={16}
+                  className="w-3.5 h-4"
+                />
+                Maps
+              </a>
+              <a
+                href={`https://waze.com/ul?q=${encodeURIComponent(fullTiendaAddress)}&navigate=yes`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-[#33CCFF] text-white rounded-[12px] hover:bg-[#00B8E6] transition text-sm font-medium shadow-sm"
+              >
+                <Image 
+                  src="https://res.cloudinary.com/dgnqk0ucm/image/upload/v1762445166/unnamed_jfcf46.png" 
+                  alt="Waze"
+                  width={16}
+                  height={16}
+                  className="w-4 h-4"
+                />
+                Waze
+              </a>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Interactive Map */}
-      <div className="relative w-full h-[350px]">
-        <MapContainer
-          center={tiendaCoords}
-          zoom={15}
-          scrollWheelZoom={true}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+      {(tiendaCoords || direccionTienda || nombreTiendaFormateado) && (
+        <div className="relative w-full h-[350px]">
+          {tiendaCoords ? (
+            <MapContainer
+              center={tiendaCoords}
+              zoom={15}
+              scrollWheelZoom={true}
+              style={{ width: "100%", height: "100%" }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
 
-          {/* Marcador de la Tienda */}
-          <Marker position={tiendaCoords} icon={tiendaIcon}>
-            <Popup>
-              <b>Tienda IMAGIQ</b>
-              <br />
-              {direccionTienda}
-            </Popup>
-          </Marker>
-        </MapContainer>
-      </div>
+              {/* Marcador de la Tienda */}
+              <Marker position={tiendaCoords} icon={tiendaIcon}>
+                <Popup>
+                  <b>{nombreTiendaFormateado}</b>
+                  <br />
+                  {fullTiendaAddress}
+                </Popup>
+              </Marker>
+            </MapContainer>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+              <p className="text-gray-500">Cargando mapa...</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Store Info - Instructions */}
       <div className="px-6 py-4 bg-white border-t border-gray-200">

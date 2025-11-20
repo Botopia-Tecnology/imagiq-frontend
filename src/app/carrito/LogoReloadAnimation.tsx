@@ -105,12 +105,12 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               <stop offset="1" stopColor="#fff" stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* Ola azul animada solo dentro del logo PNG */}
+          {/* Ola blanca animada solo dentro del logo PNG */}
           <g>
             <path
               id="wave-path"
               d="M0,420 Q250,380 500,420 Q750,460 1000,420 L1000,420 L0,420 Z"
-              fill="#0057B7"
+              fill="#FFFFFF"
               opacity="0.92"
               mask="url(#wave-logo-mask)"
             >
@@ -158,7 +158,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             height="420"
             style={{
               filter:
-                "brightness(0) invert(1) drop-shadow(0 32px 160px #0057B7) drop-shadow(0 0px 80px #fff8)",
+                "brightness(0) invert(1) drop-shadow(0 2px 8px #2020201a) drop-shadow(0 0px 80px #fff8)",
               opacity: 0,
               transform: "scale(1)",
               transition: "transform 1.2s cubic-bezier(0.77,0,0.175,1)",
@@ -197,10 +197,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       className="fixed inset-0 z-50 flex flex-col items-center justify-center logo-reload-animate-fadeInLogo"
       style={{
         minHeight: "100vh",
-        background:
-          "linear-gradient(135deg, #0057B7 0%, #0a2a5c 60%, #1e90ff 100%)",
-        backgroundSize: "200% 200%",
-        animation: "logo-reload-bgMove 16s ease-in-out infinite alternate",
+        background: "#000000",
         padding: "0 0.5rem",
       }}
       role="dialog"

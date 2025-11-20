@@ -85,7 +85,7 @@ export interface MetaCapiEvent {
   /** URL donde ocurrió el evento */
   event_source_url: string;
   /** Fuente del evento (siempre 'website' para web) */
-  action_source: 'website';
+  action_source: "website";
   /** Datos del usuario */
   user_data: MetaCapiUserData;
   /** Datos personalizados del evento */
@@ -145,6 +145,25 @@ export interface TikTokEventsApiEvent {
 }
 
 /**
+ * Respuesta de TikTok Events API
+ */
+export interface TikTokApiResponse {
+  code: number;
+  message: string;
+  request_id?: string;
+  data?: Record<string, unknown>;
+}
+
+/**
+ * Respuesta de Meta Conversions API
+ */
+export interface MetaApiResponse {
+  events_received?: number;
+  messages?: string[];
+  fbtrace_id?: string;
+}
+
+/**
  * Respuesta del backend para envío de CAPI
  */
 export interface CapiResponse {
@@ -153,5 +172,5 @@ export interface CapiResponse {
   /** Mensaje de error si falló */
   error?: string;
   /** Respuesta de Meta/TikTok */
-  platform_response?: Record<string, string | number | boolean>;
+  platform_response?: TikTokApiResponse | MetaApiResponse;
 }

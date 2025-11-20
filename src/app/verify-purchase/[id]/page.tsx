@@ -41,7 +41,7 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
   }, [orderId, router]);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#0057B7] via-[#0a2a5c] to-[#1e90ff]">
+    <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#ffffff] via-[#969696] to-[#000000]">
       <LogoReloadAnimation
         open={isLoading}
         onFinish={orderId ? verifyOrder : undefined}

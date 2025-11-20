@@ -5,7 +5,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useHeroBanner } from "@/hooks/useHeroBanner";
 import { useHeroContext } from "@/contexts/HeroContext";
 import { positionToCSS } from "@/utils/bannerCoordinates";
@@ -86,17 +86,75 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
 }
 
 export default function HeroSection() {
-  const { config, loading } = useHeroBanner();
+  const { configs, config, loading } = useHeroBanner();
   const { setTextColor } = useHeroContext();
   const [videoEnded, setVideoEnded] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
 
+  // NUEVO: Estados para el carrusel
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const BANNER_DISPLAY_DURATION = 5000; // 5 segundos
+
+  // NUEVO: Config actualmente visible
+  const currentConfig = configs[currentBannerIndex] || config;
+
+  // NUEVO: Función para avanzar al siguiente banner (con loop)
+  const goToNextBanner = () => {
+    setCurrentBannerIndex((prevIndex) => {
+      const nextIndex = prevIndex + 1;
+      return nextIndex >= configs.length ? 0 : nextIndex;
+    });
+  };
+
+  // NUEVO: Handler cuando termina un video
+  const handleVideoEndCarousel = () => {
+    if (configs.length > 1) {
+      timerRef.current = setTimeout(() => {
+        goToNextBanner();
+      }, BANNER_DISPLAY_DURATION);
+    }
+  };
+
+  // NUEVO: Efecto para gestionar el carrusel automático
+  useEffect(() => {
+    if (configs.length <= 1) {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const currentBannerData = configs[currentBannerIndex];
+    const hasVideo = Boolean(currentBannerData?.videoSrc || currentBannerData?.mobileVideoSrc);
+
+    if (!hasVideo) {
+      timerRef.current = setTimeout(() => {
+        goToNextBanner();
+      }, BANNER_DISPLAY_DURATION);
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBannerIndex, configs.length]);
+
   // Sincronizar color del Hero con el Navbar
   useEffect(() => {
-    if (config.textColor) {
-      setTextColor(config.textColor);
+    if (currentConfig.textColor) {
+      setTextColor(currentConfig.textColor);
     }
-  }, [config.textColor, setTextColor]);
+  }, [currentConfig.textColor, setTextColor]);
 
   // Efecto de scroll para reducir el video
   useEffect(() => {
@@ -127,12 +185,12 @@ export default function HeroSection() {
   }, []);
 
   const handleVideoEnd = () => {
-    if (config.showContentOnEnd) {
+    if (currentConfig.showContentOnEnd) {
       setVideoEnded(true);
     }
 
-    // El loop ya está manejado por el atributo loop del video
-    // No es necesario reproducir manualmente
+    // NUEVO: Si hay múltiples banners, avanzar al siguiente después del video
+    handleVideoEndCarousel();
   };
 
   if (loading) {
@@ -147,13 +205,13 @@ export default function HeroSection() {
   }
 
   // Estilos de posicionamiento con el nuevo sistema
-  const desktopPositionStyle = positionToCSS(config.positionDesktop ?? null);
-  const mobilePositionStyle = positionToCSS(config.positionMobile ?? null);
+  const desktopPositionStyle = positionToCSS(currentConfig.positionDesktop ?? null);
+  const mobilePositionStyle = positionToCSS(currentConfig.positionMobile ?? null);
 
   // Variables para decidir si mostrar el contenido del Hero
-  const hasAnyVideo = Boolean(config.videoSrc || config.mobileVideoSrc);
+  const hasAnyVideo = Boolean(currentConfig.videoSrc || currentConfig.mobileVideoSrc);
   const showImmediately = !hasAnyVideo; // no hay video -> mostrar siempre
-  const canShow = showImmediately || Boolean(config.showContentOnEnd);
+  const canShow = showImmediately || Boolean(currentConfig.showContentOnEnd);
   // Cuando mostramos inmediatamente forzamos videoEnded=true para que el contenido sea visible
   const effectiveVideoEnded = showImmediately ? true : videoEnded;
 
@@ -170,18 +228,19 @@ export default function HeroSection() {
       <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
         {/* Desktop media */}
         <div className="hidden md:block absolute inset-0">
-          {config.videoSrc ? (
+          {currentConfig.videoSrc ? (
             <>
               {/* Desktop video */}
               <video
+                key={`hero-desktop-video-${currentBannerIndex}`}
                 className="h-full object-cover"
                 autoPlay
                 muted
-                loop={config.loop}
+                loop={currentConfig.loop}
                 playsInline
                 preload="metadata"
                 onEnded={handleVideoEnd}
-                poster={config.imageSrc || undefined}
+                poster={currentConfig.imageSrc || undefined}
                 style={{
                   opacity: videoEnded ? 0 : 1,
                   width: `${100 - scrollProgress * 8}%`,
@@ -190,14 +249,14 @@ export default function HeroSection() {
                   transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
                 }}
               >
-                <source src={config.videoSrc} type="video/mp4" />
+                <source src={currentConfig.videoSrc} type="video/mp4" />
               </video>
               {/* Desktop poster image - shown when video ends */}
-              {config.imageSrc && (
+              {currentConfig.imageSrc && (
                 <div
                   className="absolute top-0 left-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${config.imageSrc})`,
+                    backgroundImage: `url(${currentConfig.imageSrc})`,
                     opacity: videoEnded ? 1 : 0,
                     width: `${100 - scrollProgress * 8}%`,
                     height: '100%',
@@ -209,11 +268,12 @@ export default function HeroSection() {
             </>
           ) : (
             /* Desktop image only */
-            config.imageSrc && (
+            currentConfig.imageSrc && (
               <div
+                key={`hero-desktop-image-${currentBannerIndex}`}
                 className="w-full h-full bg-cover bg-center"
                 style={{
-                  backgroundImage: `url(${config.imageSrc})`,
+                  backgroundImage: `url(${currentConfig.imageSrc})`,
                   width: `${100 - scrollProgress * 8}%`,
                   marginLeft: `${scrollProgress * 4}%`,
                   marginRight: `${scrollProgress * 4}%`,
@@ -226,18 +286,19 @@ export default function HeroSection() {
 
         {/* Mobile media */}
         <div className="md:hidden absolute inset-0">
-          {config.mobileVideoSrc ? (
+          {currentConfig.mobileVideoSrc ? (
             <>
               {/* Mobile video */}
               <video
+                key={`hero-mobile-video-${currentBannerIndex}`}
                 className="h-full object-cover"
                 autoPlay
                 muted
-                loop={config.loop}
+                loop={currentConfig.loop}
                 playsInline
                 preload="metadata"
                 onEnded={handleVideoEnd}
-                poster={config.mobileImageSrc || undefined}
+                poster={currentConfig.mobileImageSrc || undefined}
                 style={{
                   opacity: videoEnded ? 0 : 1,
                   width: `${100 - scrollProgress * 8}%`,
@@ -246,14 +307,14 @@ export default function HeroSection() {
                   transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
                 }}
               >
-                <source src={config.mobileVideoSrc} type="video/mp4" />
+                <source src={currentConfig.mobileVideoSrc} type="video/mp4" />
               </video>
               {/* Mobile poster image - shown when video ends */}
-              {config.mobileImageSrc && (
+              {currentConfig.mobileImageSrc && (
                 <div
                   className="absolute top-0 left-0 bg-cover bg-center"
                   style={{
-                    backgroundImage: `url(${config.mobileImageSrc})`,
+                    backgroundImage: `url(${currentConfig.mobileImageSrc})`,
                     opacity: videoEnded ? 1 : 0,
                     width: `${100 - scrollProgress * 8}%`,
                     height: '100%',
@@ -265,11 +326,12 @@ export default function HeroSection() {
             </>
           ) : (
             /* Mobile image only */
-            config.mobileImageSrc && (
+            currentConfig.mobileImageSrc && (
               <div
+                key={`hero-mobile-image-${currentBannerIndex}`}
                 className="w-full h-full bg-cover bg-center"
                 style={{
-                  backgroundImage: `url(${config.mobileImageSrc})`,
+                  backgroundImage: `url(${currentConfig.mobileImageSrc})`,
                   width: `${100 - scrollProgress * 8}%`,
                   marginLeft: `${scrollProgress * 4}%`,
                   marginRight: `${scrollProgress * 4}%`,
@@ -285,18 +347,36 @@ export default function HeroSection() {
       {canShow ? (
         <>
           <HeroContent
-            config={config}
+            config={currentConfig}
             videoEnded={effectiveVideoEnded}
             positionStyle={desktopPositionStyle}
           />
           <HeroContent
-            config={config}
+            config={currentConfig}
             videoEnded={effectiveVideoEnded}
             positionStyle={mobilePositionStyle}
             isMobile
           />
         </>
       ) : null}
+
+      {/* NUEVO: Indicadores de carrusel (solo si hay múltiples banners) */}
+      {configs.length > 1 && (
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-40 flex gap-2">
+          {configs.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentBannerIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                index === currentBannerIndex
+                  ? 'bg-white w-8'
+                  : 'bg-white/50 hover:bg-white/75'
+              }`}
+              aria-label={`Ir al banner ${index + 1}`}
+            />
+          ))}
+        </div>
+      )}
     </section>
   );
 }

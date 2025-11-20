@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useDynamicBanner } from '@/hooks/useDynamicBanner';
 import { parsePosition, parseTextStyles } from '@/utils/bannerCoordinates';
-import type { BannerPosition, BannerTextStyles } from '@/types/banner';
+import type { Banner, BannerPosition, BannerTextStyles } from '@/types/banner';
 
 type CSS = React.CSSProperties;
 
@@ -96,11 +96,44 @@ function BannerContent({ title, description, cta, color, positionStyle, isMobile
 }
 
 export default function DynamicBannerClean({ placement, className = '', showOverlay = false, children }: Readonly<DynamicBannerProps>) {
-  const { banner, loading } = useDynamicBanner(placement);
+  const { banners, loading } = useDynamicBanner(placement);
   const desktopRef = useRef<HTMLDivElement | null>(null);
   const mobileRef = useRef<HTMLDivElement | null>(null);
   const [deskStyle, setDeskStyle] = useState<CSS | undefined>();
   const [mobStyle, setMobStyle] = useState<CSS | undefined>();
+
+  // NUEVO: Estados para el carrusel
+  const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const desktopVideoRef = useRef<HTMLVideoElement | null>(null);
+  const mobileVideoRef = useRef<HTMLVideoElement | null>(null);
+
+  // NUEVO: Constante de tiempo para mostrar banner (5 segundos)
+  // Este tiempo se usa para banners sin video Y después de que termine un video
+  const BANNER_DISPLAY_DURATION = 5000;
+
+  // NUEVO: Banner actualmente visible
+  const currentBanner = banners[currentBannerIndex] || null;
+
+  // NUEVO: Función para avanzar al siguiente banner (con loop)
+  const goToNextBanner = () => {
+    setCurrentBannerIndex((prevIndex) => {
+      const nextIndex = prevIndex + 1;
+      // Si llegamos al final, volver al inicio (loop)
+      return nextIndex >= banners.length ? 0 : nextIndex;
+    });
+  };
+
+  // NUEVO: Handler cuando termina un video
+  const handleVideoEnd = () => {
+    // Solo aplicar si hay múltiples banners
+    if (banners.length > 1) {
+      // Esperar BANNER_DISPLAY_DURATION adicionales después de que termine el video
+      timerRef.current = setTimeout(() => {
+        goToNextBanner();
+      }, BANNER_DISPLAY_DURATION);
+    }
+  };
 
   const compute = async (position: BannerPosition | null, wrapper?: HTMLDivElement | null, mediaSrc?: string) => {
     if (!wrapper || !position) return undefined;
@@ -135,26 +168,66 @@ export default function DynamicBannerClean({ placement, className = '', showOver
     return { left: `${lPct}%`, top: `${tPct}%` };
   };
 
+  // NUEVO: Efecto para gestionar el carrusel automático
+  useEffect(() => {
+    // Si no hay banners o solo hay uno, no necesitamos carrusel
+    if (banners.length <= 1) {
+      // Limpiar cualquier timer existente
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
+    }
+
+    // Limpiar timer anterior si existe
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+
+    const currentBannerData = banners[currentBannerIndex];
+    const hasVideo = Boolean(currentBannerData?.desktop_video_url || currentBannerData?.mobile_video_url);
+
+    // Si no tiene video, mostrar por BANNER_DISPLAY_DURATION
+    if (!hasVideo) {
+      timerRef.current = setTimeout(() => {
+        goToNextBanner();
+      }, BANNER_DISPLAY_DURATION);
+    }
+    // Si tiene video, el timer se establecerá en handleVideoEnd
+
+    // Cleanup
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBannerIndex, banners.length]);
+
+  // Efecto para calcular posiciones del banner actual
   useEffect(() => {
     let mounted = true;
     const run = async () => {
-      if (!banner) return;
-      
+      if (!currentBanner) return;
+
       // Parsear posiciones del nuevo sistema
-      const desktopPosition = parsePosition(banner.position_desktop);
-      const mobilePosition = parsePosition(banner.position_mobile);
-      
+      const desktopPosition = parsePosition(currentBanner.position_desktop);
+      const mobilePosition = parsePosition(currentBanner.position_mobile);
+
       const d = await compute(
         desktopPosition,
         desktopRef.current,
-        (banner.desktop_video_url || banner.desktop_image_url) ?? undefined
+        (currentBanner.desktop_video_url || currentBanner.desktop_image_url) ?? undefined
       );
       const m = await compute(
         mobilePosition,
         mobileRef.current,
-        (banner.mobile_video_url || banner.mobile_image_url) ?? undefined
+        (currentBanner.mobile_video_url || currentBanner.mobile_image_url) ?? undefined
       );
-      
+
       if (!mounted) return;
       setDeskStyle(d);
       setMobStyle(m);
@@ -163,38 +236,66 @@ export default function DynamicBannerClean({ placement, className = '', showOver
     const onRes = () => run();
     window.addEventListener('resize', onRes);
     return () => { mounted = false; window.removeEventListener('resize', onRes); };
-  }, [banner]);
+  }, [currentBanner]);
 
   if (loading) return <BannerSkeleton />;
-  if (!banner) return <>{children || null}</>;
-  
+  if (!currentBanner) return <>{children || null}</>;
+
   // Parse text styles del nuevo sistema
-  const textStyles = parseTextStyles(banner.text_styles);
+  const textStyles = parseTextStyles(currentBanner.text_styles);
   
   // prepare media nodes to avoid nested ternary expressions in JSX
   let desktopMedia: React.ReactNode = null;
-  if (banner.desktop_video_url) {
+  if (currentBanner.desktop_video_url) {
     desktopMedia = (
-      <video autoPlay muted loop playsInline preload="metadata" poster={banner.desktop_image_url || undefined} className="w-full h-full object-contain">
-        <source src={banner.desktop_video_url} type="video/mp4" />
+      <video
+        ref={desktopVideoRef}
+        autoPlay
+        muted
+        playsInline
+        preload="metadata"
+        poster={currentBanner.desktop_image_url || undefined}
+        className="w-full h-full object-contain"
+        onEnded={handleVideoEnd}
+        key={`desktop-video-${currentBannerIndex}`}
+      >
+        <source src={currentBanner.desktop_video_url} type="video/mp4" />
       </video>
     );
-  } else if (banner.desktop_image_url) {
+  } else if (currentBanner.desktop_image_url) {
     desktopMedia = (
-      <div className="w-full h-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${banner.desktop_image_url})` }} />
+      <div
+        className="w-full h-full bg-contain bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${currentBanner.desktop_image_url})` }}
+        key={`desktop-image-${currentBannerIndex}`}
+      />
     );
   }
 
   let mobileMedia: React.ReactNode = null;
-  if (banner.mobile_video_url) {
+  if (currentBanner.mobile_video_url) {
     mobileMedia = (
-      <video autoPlay muted loop playsInline preload="metadata" poster={banner.mobile_image_url || undefined} className="w-full h-full object-contain">
-        <source src={banner.mobile_video_url} type="video/mp4" />
+      <video
+        ref={mobileVideoRef}
+        autoPlay
+        muted
+        playsInline
+        preload="metadata"
+        poster={currentBanner.mobile_image_url || undefined}
+        className="w-full h-full object-contain"
+        onEnded={handleVideoEnd}
+        key={`mobile-video-${currentBannerIndex}`}
+      >
+        <source src={currentBanner.mobile_video_url} type="video/mp4" />
       </video>
     );
-  } else if (banner.mobile_image_url) {
+  } else if (currentBanner.mobile_image_url) {
     mobileMedia = (
-      <div className="w-full h-full bg-contain bg-center bg-no-repeat" style={{ backgroundImage: `url(${banner.mobile_image_url})` }} />
+      <div
+        className="w-full h-full bg-contain bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${currentBanner.mobile_image_url})` }}
+        key={`mobile-image-${currentBannerIndex}`}
+      />
     );
   }
 
@@ -212,29 +313,47 @@ export default function DynamicBannerClean({ placement, className = '', showOver
         </div>
 
         <div className="absolute inset-0 z-20">
-          <BannerContent 
-            title={banner.title} 
-            description={banner.description} 
-            cta={banner.cta} 
-            color={banner.color_font} 
-            positionStyle={deskStyle ?? positionToPercentCSS(parsePosition(banner.position_desktop))} 
+          <BannerContent
+            title={currentBanner.title}
+            description={currentBanner.description}
+            cta={currentBanner.cta}
+            color={currentBanner.color_font}
+            positionStyle={deskStyle ?? positionToPercentCSS(parsePosition(currentBanner.position_desktop))}
             textStyles={textStyles}
           />
-          <BannerContent 
-            title={banner.title} 
-            description={banner.description} 
-            cta={banner.cta} 
-            color={banner.color_font} 
-            positionStyle={mobStyle ?? positionToPercentCSS(parsePosition(banner.position_mobile))} 
-            isMobile 
+          <BannerContent
+            title={currentBanner.title}
+            description={currentBanner.description}
+            cta={currentBanner.cta}
+            color={currentBanner.color_font}
+            positionStyle={mobStyle ?? positionToPercentCSS(parsePosition(currentBanner.position_mobile))}
+            isMobile
             textStyles={textStyles}
           />
         </div>
+
+        {/* NUEVO: Indicadores de carrusel (solo si hay múltiples banners) */}
+        {banners.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 z-30 flex gap-2">
+            {banners.map((_: Banner, index: number) => (
+              <button
+                key={index}
+                onClick={() => setCurrentBannerIndex(index)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                  index === currentBannerIndex
+                    ? 'bg-white w-8'
+                    : 'bg-white/50 hover:bg-white/75'
+                }`}
+                aria-label={`Ir al banner ${index + 1}`}
+              />
+            ))}
+          </div>
+        )}
 
         <div className="pointer-events-none px-4 md:px-6 lg:px-8 xl:px-12 py-6 md:py-8" />
       </div>
     </div>
   );
 
-  return banner.link_url ? <Link href={banner.link_url} className="block">{content}</Link> : content;
+  return currentBanner.link_url ? <Link href={currentBanner.link_url} className="block">{content}</Link> : content;
 }

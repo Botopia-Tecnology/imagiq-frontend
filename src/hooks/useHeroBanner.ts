@@ -41,7 +41,9 @@ const DEFAULT_HERO_CONFIG: HeroBannerConfig = {
  * Valor de retorno del hook
  */
 export interface UseHeroBannerReturn {
-  /** Configuración del Hero (desde API o fallback) */
+  /** Array de configuraciones del Hero - NUEVO para carruseles */
+  configs: HeroBannerConfig[];
+  /** Configuración del Hero (primer banner o fallback) - LEGACY para backward compatibility */
   config: HeroBannerConfig;
   /** True mientras carga el banner del API */
   loading: boolean;
@@ -52,37 +54,46 @@ export interface UseHeroBannerReturn {
 }
 
 /**
- * Hook para obtener el Hero banner desde el API
+ * Hook para obtener banners del Hero desde el API
  *
- * @returns Configuración del Hero, loading state y función refetch
+ * NUEVO: Ahora retorna un array de configuraciones para soportar carruseles
+ * cuando hay múltiples banners activos con placement="hero".
+ *
+ * @returns Array de configuraciones del Hero, loading state y función refetch
  *
  * @example
- * const { config, loading } = useHeroBanner();
+ * const { configs, config, loading } = useHeroBanner();
+ * // configs: Array de todos los banners
+ * // config: Primer banner o fallback (para backward compatibility)
  */
 export function useHeroBanner(): UseHeroBannerReturn {
-  const [config, setConfig] = useState<HeroBannerConfig>(DEFAULT_HERO_CONFIG);
+  const [configs, setConfigs] = useState<HeroBannerConfig[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBanner = useCallback(async () => {
+  const fetchBanners = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const banner = await bannersService.getFirstBannerByPlacement('hero');
+      // CAMBIO: Obtener TODOS los banners del placement (no solo el primero)
+      const banners = await bannersService.getBannersByPlacement('hero');
 
-      if (banner) {
-        const mappedConfig = bannersService.mapBannerToHeroConfig(banner);
-        setConfig(mappedConfig);
+      if (banners.length > 0) {
+        const mappedConfigs = banners.map(banner =>
+          bannersService.mapBannerToHeroConfig(banner)
+        );
+        setConfigs(mappedConfigs);
+        console.log(`[useHeroBanner] Found ${banners.length} banner(s) for placement "hero"`);
       } else {
-        console.warn('[useHeroBanner] No banner found for placement "hero" - Using default config');
-        setConfig(DEFAULT_HERO_CONFIG);
+        console.warn('[useHeroBanner] No banners found for placement "hero" - Using default config');
+        setConfigs([DEFAULT_HERO_CONFIG]);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[useHeroBanner] Failed to fetch hero banner:', errorMessage);
+      console.error('[useHeroBanner] Failed to fetch hero banners:', errorMessage);
       setError(errorMessage);
-      setConfig(DEFAULT_HERO_CONFIG);
+      setConfigs([DEFAULT_HERO_CONFIG]);
     } finally {
       setLoading(false);
     }
@@ -90,13 +101,14 @@ export function useHeroBanner(): UseHeroBannerReturn {
 
   // Fetch al montar
   useEffect(() => {
-    fetchBanner();
-  }, [fetchBanner]);
+    fetchBanners();
+  }, [fetchBanners]);
 
   return {
-    config,
+    configs,
+    config: configs[0] || DEFAULT_HERO_CONFIG, // LEGACY: Primer config para backward compatibility
     loading,
     error,
-    refetch: fetchBanner,
+    refetch: fetchBanners,
   };
 }

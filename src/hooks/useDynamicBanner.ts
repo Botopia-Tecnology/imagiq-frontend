@@ -15,9 +15,11 @@ import type { Banner } from '@/types/banner';
  * Valor de retorno del hook
  */
 export interface UseDynamicBannerReturn {
-  /** Banner obtenido del API o null si no existe */
+  /** Array de banners obtenidos del API (vacío si no existen) - NUEVO para carruseles */
+  banners: Banner[];
+  /** Primer banner o null - LEGACY para backward compatibility */
   banner: Banner | null;
-  /** True mientras carga el banner */
+  /** True mientras carga los banners */
   loading: boolean;
   /** Mensaje de error si falla la petición */
   error: string | null;
@@ -26,35 +28,42 @@ export interface UseDynamicBannerReturn {
 }
 
 /**
- * Hook para obtener un banner por placement
+ * Hook para obtener banners por placement
+ *
+ * NUEVO: Ahora retorna un array de banners para soportar carruseles
+ * cuando hay múltiples banners activos del mismo placement.
  *
  * @param placement - Nombre del placement (ej: "home-2", "home-3")
- * @returns Banner, loading state y función refetch
+ * @returns Array de banners, loading state y función refetch
  *
  * @example
- * const { banner, loading } = useDynamicBanner('home-2');
+ * const { banners, loading } = useDynamicBanner('home-2');
+ * // banners puede ser: [], [banner1], o [banner1, banner2, ...]
  */
 export function useDynamicBanner(placement: string): UseDynamicBannerReturn {
-  const [banner, setBanner] = useState<Banner | null>(null);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBanner = useCallback(async () => {
+  const fetchBanners = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const fetchedBanner = await bannersService.getFirstBannerByPlacement(placement);
-      setBanner(fetchedBanner);
+      // CAMBIO: Obtener TODOS los banners del placement (no solo el primero)
+      const fetchedBanners = await bannersService.getBannersByPlacement(placement);
+      setBanners(fetchedBanners);
 
-      if (!fetchedBanner) {
-        console.warn(`[useDynamicBanner] No banner found for placement "${placement}"`);
+      if (fetchedBanners.length === 0) {
+        console.warn(`[useDynamicBanner] No banners found for placement "${placement}"`);
+      } else {
+        console.log(`[useDynamicBanner] Found ${fetchedBanners.length} banner(s) for placement "${placement}"`);
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error(`[useDynamicBanner] Failed to fetch banner for "${placement}":`, errorMessage);
+      console.error(`[useDynamicBanner] Failed to fetch banners for "${placement}":`, errorMessage);
       setError(errorMessage);
-      setBanner(null);
+      setBanners([]);
     } finally {
       setLoading(false);
     }
@@ -62,13 +71,14 @@ export function useDynamicBanner(placement: string): UseDynamicBannerReturn {
 
   // Fetch cuando cambia el placement
   useEffect(() => {
-    fetchBanner();
-  }, [fetchBanner]);
+    fetchBanners();
+  }, [fetchBanners]);
 
   return {
-    banner,
+    banners,
+    banner: banners[0] || null, // LEGACY: Primer banner para backward compatibility
     loading,
     error,
-    refetch: fetchBanner,
+    refetch: fetchBanners,
   };
 }

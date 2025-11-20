@@ -322,6 +322,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     };
   }, [cartProducts]);
 
+  // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
+  const verifiedSkusRef = useRef<Set<string>>(new Set());
+
   // Verificar indRetoma para cada producto único en el carrito
   useEffect(() => {
     if (cartProducts.length === 0) return;
@@ -330,10 +333,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       // Obtener SKUs únicos (sin duplicados)
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
-      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
-        return product && product.indRetoma === undefined;
+        const needsVerification = product && product.indRetoma === undefined;
+        const notVerifiedYet = !verifiedSkusRef.current.has(sku);
+        return needsVerification && notVerifiedYet;
       });
 
       if (productsToVerify.length === 0) return;
@@ -363,8 +368,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               sku,
               indRetoma: result.indRetoma ?? (result.aplica ? 1 : 0),
             });
+            // Marcar SKU como verificado cuando tiene éxito
+            verifiedSkusRef.current.add(sku);
           } else {
             results.push(null);
+            // También marcar como verificado en caso de error para no reintentar infinitamente
+            verifiedSkusRef.current.add(sku);
           }
         } catch (error) {
           console.error(
@@ -372,6 +381,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             error
           );
           results.push(null);
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
         } finally {
           // Remover de loading cuando termine
           setLoadingIndRetoma((prev) => {

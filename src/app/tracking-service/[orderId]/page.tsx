@@ -327,7 +327,6 @@ export default function TrackingService({
               orderNumber={orderNumber}
               estimatedInitDate={estimatedInitDate}
               estimatedFinalDate={estimatedFinalDate}
-              trackingSteps={trackingSteps}
               direccionEntrega={direccionEntrega}
               ciudadEntrega={ciudadEntrega}
               nombreDestinatario={nombreDestinatario}

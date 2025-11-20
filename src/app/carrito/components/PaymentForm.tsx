@@ -1,19 +1,17 @@
 "use client";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Plus, Check } from "lucide-react";
 import { SiVisa, SiMastercard, SiAmericanexpress } from "react-icons/si";
 import CreditCardForm, { CardData, CardErrors } from "./CreditCardForm";
 import SaveInfoCheckbox from "./SaveInfoCheckbox";
 import { PaymentMethod, CheckZeroInterestResponse } from "../types";
-import { profileService } from "@/services/profile.service";
 import { useAuthContext } from "@/features/auth/context";
-import { DBCard, DecryptedCardData } from "@/features/profile/types";
-import { encryptionService } from "@/lib/encryption";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
 import pseLogo from "@/img/iconos/logo-pse.png";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import { fetchBanks } from "../utils";
+import { useCardsCache } from "../hooks/useCardsCache";
 
 interface PaymentFormProps {
   paymentMethod: string;
@@ -59,8 +57,7 @@ export default function PaymentForm({
   onFetchZeroInterest,
 }: PaymentFormProps) {
   const authContext = useAuthContext();
-  const [savedCards, setSavedCards] = useState<DBCard[]>([]);
-  const [isLoadingCards, setIsLoadingCards] = useState(false);
+  const { savedCards, isLoadingCards, loadSavedCards } = useCardsCache();
   const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
     []
   );
@@ -82,44 +79,6 @@ export default function PaymentForm({
     });
   }, []);
 
-  const loadSavedCards = useCallback(async () => {
-    try {
-      setIsLoadingCards(true);
-      const encryptedCards =
-        await profileService.getUserPaymentMethodsEncrypted(
-          authContext.user?.id
-        );
-
-      const decryptedCards: DBCard[] = encryptedCards
-        .map((encCard) => {
-          const decrypted = encryptionService.decryptJSON<DecryptedCardData>(
-            encCard.encryptedData
-          );
-          console.log("Decrypted card data:", decrypted);
-          if (!decrypted) return null;
-
-          return {
-            id: decrypted.cardId as unknown as string,
-            ultimos_dijitos: decrypted.last4Digits,
-            marca: decrypted.brand?.toLowerCase() || undefined,
-            banco: decrypted.banco || undefined,
-            tipo_tarjeta: decrypted.tipo || undefined,
-            es_predeterminada: false,
-            activa: true,
-            nombre_titular: decrypted.cardHolderName || undefined,
-          } as DBCard;
-        })
-        .filter((card): card is DBCard => card !== null);
-
-      setSavedCards(decryptedCards);
-    } catch (error) {
-      console.error("❌ Error cargando tarjetas:", error);
-      setSavedCards([]);
-    } finally {
-      setIsLoadingCards(false);
-    }
-  }, [authContext.user?.id]);
-
   // Cargar tarjetas guardadas al montar
   useEffect(() => {
     if (authContext.user?.id) {
@@ -130,7 +89,7 @@ export default function PaymentForm({
   // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
   useEffect(() => {
     if (authContext.user?.id && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
-      loadSavedCards();
+      loadSavedCards(true); // true = forzar recarga
     }
   }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
 
@@ -162,9 +121,6 @@ export default function PaymentForm({
   const defaultCard =
     savedCards.find((card) => card.es_predeterminada) || savedCards[0];
 
-  console.log("📋 Tarjetas guardadas:", savedCards);
-  console.log("⭐ Tarjeta predeterminada:", defaultCard);
-
   // Filtrar tarjetas activas y no expiradas, excluyendo la predeterminada (ya está en Recomendados)
   const activeCards = savedCards.filter((card) => {
     if (!card.activa) return false;
@@ -180,7 +136,45 @@ export default function PaymentForm({
     return defaultCard ? String(card.id) !== String(defaultCard.id) : true;
   });
 
-  console.log("✅ Tarjetas activas (sin predeterminada):", activeCards);
+
+  // Mostrar skeleton completo solo cuando se están cargando las tarjetas inicialmente
+  // O cuando se está cargando zero interest PERO aún no tenemos tarjetas cargadas
+  const shouldShowFullSkeleton = isLoadingCards || (isLoadingZeroInterest && savedCards.length === 0);
+
+  if (shouldShowFullSkeleton) {
+    return (
+      <div>
+        <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+
+        <div className="animate-pulse space-y-6">
+          {/* Skeleton de Recomendados */}
+          <div>
+            <div className="h-5 w-32 bg-gray-200 rounded mb-3"></div>
+            <div className="rounded-xl overflow-hidden p-6 bg-gray-100 border border-gray-200">
+              <div className="space-y-4">
+                <div className="h-16 bg-gray-200 rounded-lg"></div>
+                <div className="h-16 bg-gray-200 rounded-lg"></div>
+                <div className="h-16 bg-gray-200 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Skeleton de Tarjetas guardadas */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-5 w-40 bg-gray-200 rounded"></div>
+              <div className="h-9 w-24 bg-gray-200 rounded-lg"></div>
+            </div>
+            <div className="space-y-3">
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
+              <div className="h-20 bg-gray-200 rounded-lg"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -356,16 +350,8 @@ export default function PaymentForm({
             </button>
           </div>
 
-          {isLoadingCards || isLoadingZeroInterest ? (
-            <div className="animate-pulse space-y-3">
-              <div className="h-20 bg-gray-200 rounded-lg"></div>
-              <div className="h-20 bg-gray-200 rounded-lg"></div>
-              <div className="h-20 bg-gray-200 rounded-lg"></div>
-              <div className="h-20 bg-gray-200 rounded-lg"></div>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {activeCards.map((card) => {
+          <div className="flex flex-col gap-3">
+            {activeCards.map((card) => {
                 const isSelected =
                   paymentMethod === "tarjeta" &&
                   selectedCardId === String(card.id);
@@ -444,10 +430,9 @@ export default function PaymentForm({
                   </label>
                 );
               })}
-            </div>
-          )}
+          </div>
         </div>
-      ): (<div className="flex items-center justify-between mb-3">
+      ) : (<div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
               Tarjetas guardadas
             </h3>

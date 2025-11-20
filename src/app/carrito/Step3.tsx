@@ -15,6 +15,7 @@ import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints } from "@/lib/api";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import { useCardsCache } from "./hooks/useCardsCache";
 
 export default function Step3({
   onBack,
@@ -45,6 +46,53 @@ export default function Step3({
     stores,
     refreshStores,
   } = useDelivery();
+
+  // Hook para precarga de tarjetas y zero interest
+  const { preloadCards, preloadZeroInterest } = useCardsCache();
+
+  // Precargar tarjetas y zero interest en segundo plano al entrar al Step3
+  React.useEffect(() => {
+    const preloadData = async () => {
+      // Primero precargar las tarjetas
+      await preloadCards();
+
+      // Luego precargar zero interest si hay productos en el carrito
+      if (products.length > 0) {
+        // Obtener las tarjetas del caché para usarlas en la precarga
+        const storedUser = localStorage.getItem("imagiq_user");
+        if (storedUser) {
+          try {
+            const user = JSON.parse(storedUser);
+            if (user?.id) {
+              // Hacer la petición de tarjetas para obtener los IDs
+              const { profileService } = await import("@/services/profile.service");
+              const { encryptionService } = await import("@/lib/encryption");
+              const encryptedCards = await profileService.getUserPaymentMethodsEncrypted(user.id);
+
+              const cardIds = encryptedCards
+                .map((encCard) => {
+                  const decrypted = encryptionService.decryptJSON<{ cardId: string }>(encCard.encryptedData);
+                  return decrypted?.cardId;
+                })
+                .filter((id): id is string => id !== undefined);
+
+              if (cardIds.length > 0) {
+                await preloadZeroInterest(
+                  cardIds,
+                  products.map((p) => p.sku),
+                  calculations.total
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Error en precarga de zero interest:", error);
+          }
+        }
+      }
+    };
+
+    preloadData();
+  }, [preloadCards, preloadZeroInterest, products, calculations.total]);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = React.useState<{

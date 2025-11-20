@@ -1,4 +1,7 @@
-import { TrackingHeader, TrackingTimeline } from "@/app/tracking-service/components";
+"use client";
+
+import { useEffect, useState } from "react";
+import { TrackingHeader } from "@/app/tracking-service/components";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 
@@ -41,10 +44,6 @@ interface ImagiqShippingViewProps {
   orderNumber: string;
   estimatedInitDate: string;
   estimatedFinalDate: string;
-  trackingSteps: Array<{
-    evento: string;
-    time_stamp: string;
-  }>;
   direccionEntrega?: string;
   ciudadEntrega?: string;
   nombreDestinatario?: string;
@@ -59,7 +58,6 @@ export function ImagiqShippingView({
   orderNumber,
   estimatedInitDate,
   estimatedFinalDate,
-  trackingSteps,
   direccionEntrega,
   ciudadEntrega,
   products = [],
@@ -67,6 +65,29 @@ export function ImagiqShippingView({
   latitudDestino,
   longitudDestino,
 }: Readonly<ImagiqShippingViewProps>) {
+  const [currentProductIndex, setCurrentProductIndex] = useState(0);
+
+  useEffect(() => {
+    setCurrentProductIndex(0);
+  }, [products]);
+
+  const hasMultipleProducts = products.length > 1;
+  const currentProduct =
+    products.length > 0 ? products[currentProductIndex] : undefined;
+
+  const goToPrevProduct = () => {
+    if (!hasMultipleProducts) return;
+    setCurrentProductIndex((prevIndex) =>
+      prevIndex === 0 ? products.length - 1 : prevIndex - 1
+    );
+  };
+
+  const goToNextProduct = () => {
+    if (!hasMultipleProducts) return;
+    setCurrentProductIndex((prevIndex) =>
+      prevIndex === products.length - 1 ? 0 : prevIndex + 1
+    );
+  };
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
@@ -87,8 +108,8 @@ export function ImagiqShippingView({
             descripcionOrigen={tiendaOrigen?.descripcion}
             direccionDestino={direccionEntrega}
             ciudadDestino={ciudadEntrega}
-            latitudOrigen={tiendaOrigen?.latitud ? parseFloat(tiendaOrigen.latitud) : undefined}
-            longitudOrigen={tiendaOrigen?.longitud ? parseFloat(tiendaOrigen.longitud) : undefined}
+            latitudOrigen={tiendaOrigen?.latitud ? Number.parseFloat(tiendaOrigen.latitud) : undefined}
+            longitudOrigen={tiendaOrigen?.longitud ? Number.parseFloat(tiendaOrigen.longitud) : undefined}
             latitudDestino={latitudDestino}
             longitudDestino={longitudDestino}
           />
@@ -100,83 +121,131 @@ export function ImagiqShippingView({
             {/* Content */}
             {products.length > 0 ? (
               <div className="p-6 pb-3">
-                {products.map((product, index) => (
-                  <div key={product.id} className="space-y-2">
-                    {/* Header: Productos en tu pedido (izq) + Nombre y Precio (der) */}
-                    <div className="pb-3 border-b border-gray-200">
-                      <div className="flex items-start justify-between gap-4 mb-2">
-                        {/* Izquierda: Ícono + "Productos en tu pedido" */}
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
-                            <svg
-                              className="w-5 h-5 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-                              />
-                            </svg>
-                          </div>
-                          <div>
-                            <h2 className="font-semibold text-black text-base">
-                              Productos en tu pedido
-                            </h2>
-                            <p className="text-sm text-gray-500">
-                              {products.length} {products.length === 1 ? 'producto' : 'productos'}
-                            </p>
-                          </div>
+                <div className="space-y-4">
+                  {/* Header: Productos en tu pedido (izq) + Nombre y Precio (der) */}
+                  <div className="pb-3 border-b border-gray-200">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      {/* Izquierda: Ícono + "Productos en tu pedido" */}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-900 rounded-full flex items-center justify-center flex-shrink-0">
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
+                            />
+                          </svg>
                         </div>
-
-                        {/* Derecha: Nombre del producto y Precio */}
-                        <div className="text-right">
-                          <h3 className="font-semibold text-gray-900 text-lg mb-1">
-                            {product.nombre}
-                          </h3>
-                          {product.precio && (
-                            <span className="text-2xl font-bold text-[#17407A]">
-                              ${product.precio.toLocaleString('es-CO')}
-                            </span>
-                          )}
+                        <div>
+                          <h2 className="font-semibold text-black text-base">
+                            Productos en tu pedido
+                          </h2>
+                          <p className="text-sm text-gray-500">
+                            {products.length}{" "}
+                            {products.length === 1 ? "producto" : "productos"}
+                          </p>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Imagen centrada sin fondo */}
-                    <div className="w-full h-[420px] flex items-center justify-center">
-                      {product.imagen ? (
-                        <div className="relative w-full h-full">
-                          <Image
-                            src={product.imagen}
-                            alt={product.nombre}
-                            fill
-                            className="object-contain"
-                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                            priority={index < 2}
-                          />
-                        </div>
-                      ) : (
-                        <svg
-                          className="w-32 h-32 text-gray-300"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                      )}
+                      {/* Derecha: Nombre del producto y Precio */}
+                      <div className="text-right">
+                        <h3 className="font-semibold text-gray-900 text-lg mb-1">
+                          {currentProduct?.nombre || "Producto sin nombre"}
+                        </h3>
+                        {currentProduct?.precio && (
+                          <span className="text-2xl font-bold text-[#17407A]">
+                            $
+                            {currentProduct.precio.toLocaleString("es-CO")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
-                ))}
+
+                  {/* Imagen centrada sin fondo */}
+                  <div className="relative w-full h-[420px] flex items-center justify-center">
+                    {currentProduct?.imagen ? (
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={currentProduct.imagen}
+                          alt={currentProduct.nombre}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                          priority
+                        />
+                      </div>
+                    ) : (
+                      <svg
+                        className="w-32 h-32 text-gray-300"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                        />
+                      </svg>
+                    )}
+
+                    {hasMultipleProducts && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={goToPrevProduct}
+                          aria-label="Ver producto anterior"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition disabled:opacity-40"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M15 19l-7-7 7-7"
+                            />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={goToNextProduct}
+                          aria-label="Ver siguiente producto"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-lg transition disabled:opacity-40"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </button>
+                        <div className="absolute bottom-4 right-4 bg-gray-900/80 text-white text-xs font-medium px-3 py-1 rounded-full">
+                          Producto {currentProductIndex + 1} de {products.length}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex-1 p-12">

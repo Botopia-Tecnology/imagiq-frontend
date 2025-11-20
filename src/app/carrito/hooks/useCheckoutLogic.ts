@@ -15,15 +15,22 @@ import {
   payWithCard,
   payWithSavedCard,
   payWithPse,
-  checkZeroInterest,
 } from "../utils";
 import { validateCardFields } from "../utils/cardValidation";
 import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
+import { useCardsCache } from "./useCardsCache";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
   const { products: cartProducts, appliedDiscount, calculations } = useCart();
+
+  // Hook de caché para zero interest
+  const {
+    zeroInterestData: cachedZeroInterestData,
+    isLoadingZeroInterest: cachedIsLoadingZeroInterest,
+    loadZeroInterest
+  } = useCardsCache();
 
   // Estados principales
   const [error, setError] = useState("");
@@ -39,10 +46,9 @@ export function useCheckoutLogic() {
   // Contador para forzar recarga de tarjetas guardadas
   const [savedCardsReloadCounter, setSavedCardsReloadCounter] = useState(0);
 
-  // Estados para cuotas sin interés
-  const [zeroInterestData, setZeroInterestData] =
-    useState<CheckZeroInterestResponse | null>(null);
-  const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
+  // Usar datos del caché para zero interest
+  const zeroInterestData = cachedZeroInterestData;
+  const isLoadingZeroInterest = cachedIsLoadingZeroInterest;
 
   const [card, setCard] = useState<CardData>(() => {
     let cedula = "";
@@ -136,25 +142,18 @@ export function useCheckoutLogic() {
     }
   };
 
-  // Función para consultar información de cuotas sin interés
+  // Función para consultar información de cuotas sin interés (ahora usa el caché)
   const fetchZeroInterestInfo = useCallback(
     async (cardIds: string[]) => {
-      const userInfo = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      if (cardIds.length === 0) return;
 
-      if (!userInfo.id || cardIds.length === 0) return;
-
-      setIsLoadingZeroInterest(true);
-      const result = await checkZeroInterest({
-        userId: userInfo.id,
+      await loadZeroInterest(
         cardIds,
-        productSkus: cartProducts.map((p) => p.sku),
-        totalAmount: calculations.total,
-      });
-
-      setZeroInterestData(result);
-      setIsLoadingZeroInterest(false);
+        cartProducts.map((p) => p.sku),
+        calculations.total
+      );
     },
-    [cartProducts, calculations.total]
+    [cartProducts, calculations.total, loadZeroInterest]
   );
 
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart

@@ -264,34 +264,44 @@ export function AddressAutocomplete({
       </div>
 
       {/* Dropdown de predicciones */}
-      {isOpen && predictions.length > 0 && (
-        <div ref={dropdownRef} className={dropdownClasses}>
-          <ul role="listbox" id="address-listbox" className="py-1">
-            {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
-            {predictions.map((prediction, _index) => (
-              <li
-                key={prediction.placeId}
-                role="option"
-                aria-selected="false"
-                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
-                onClick={() => handlePredictionSelect(prediction)}
-              >
-                <div className="flex items-start space-x-3">
-                  <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium text-gray-900 truncate">
-                      {prediction.structuredFormatting?.mainText || prediction.mainText}
-                    </div>
-                    <div className="text-sm text-gray-500 truncate">
-                      {prediction.structuredFormatting?.secondaryText || prediction.secondaryText}
+      {(() => {
+        // IMPORTANTE: Esta IIFE evita un race condition en el cierre del dropdown
+        return isOpen && predictions.length > 0 && (
+          <div ref={dropdownRef} className={dropdownClasses}>
+            <ul role="listbox" id="address-listbox" className="py-1">
+              {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+              {predictions.map((prediction, _index) => (
+                <li
+                  key={prediction.placeId}
+                  role="option"
+                  aria-selected="false"
+                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                  }}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handlePredictionSelect(prediction);
+                  }}
+                >
+                  <div className="flex items-start space-x-3">
+                    <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-gray-900 truncate">
+                        {prediction.structuredFormatting?.mainText || prediction.mainText}
+                      </div>
+                      <div className="text-sm text-gray-500 truncate">
+                        {prediction.structuredFormatting?.secondaryText || prediction.secondaryText}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        );
+      })()}
 
       {/* Estado vacío cuando se busca pero no hay resultados */}
       {isOpen && !isLoading && predictions.length === 0 && inputValue.trim() && (

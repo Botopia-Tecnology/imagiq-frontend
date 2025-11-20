@@ -7,24 +7,48 @@ import "leaflet/dist/leaflet.css";
 
 interface DeliveryMapProps {
   direccionOrigen?: string;
+  descripcionOrigen?: string;
   direccionDestino?: string;
   ciudadDestino?: string;
+  latitudOrigen?: number;
+  longitudOrigen?: number;
+  latitudDestino?: number;
+  longitudDestino?: number;
 }
 
 export function DeliveryMap({
-  direccionOrigen = "Carrera 11 #82-71, Centro Comercial Andino", // Tienda IMAGIQ por defecto
+  direccionOrigen,
+  descripcionOrigen,
   direccionDestino,
-  ciudadDestino = "Bogotá",
+  ciudadDestino,
+  latitudOrigen,
+  longitudOrigen,
+  latitudDestino,
+  longitudDestino,
 }: Readonly<DeliveryMapProps>) {
-  const fullDestinoAddress = direccionDestino
+  const fullDestinoAddress = direccionDestino && ciudadDestino
     ? `${direccionDestino}, ${ciudadDestino}`
-    : "Dirección de entrega";
+    : direccionDestino || "Dirección de entrega";
 
-  // Coordenadas de la tienda IMAGIQ (Centro Comercial Andino)
-  const origenCoords: [number, number] = [4.6682, -74.0538];
+  // Remover "Ses" del inicio de la descripción si existe
+  const descripcionOrigenFormateada = descripcionOrigen
+    ? descripcionOrigen.replace(/^Ses\s+/i, '').trim()
+    : undefined;
 
-  // Coordenadas por defecto para el destino (Bogotá centro)
-  const [destinoCoords, setDestinoCoords] = useState<[number, number]>([4.6097, -74.0817]);
+  const fullOrigenAddress = direccionOrigen && descripcionOrigenFormateada
+    ? `${direccionOrigen}, ${descripcionOrigenFormateada}`
+    : direccionOrigen || descripcionOrigenFormateada || "Origen";
+
+  // Usar coordenadas proporcionadas, no valores por defecto
+  const origenCoords: [number, number] | null = latitudOrigen && longitudOrigen
+    ? [latitudOrigen, longitudOrigen]
+    : null;
+
+  const [destinoCoords, setDestinoCoords] = useState<[number, number] | null>(
+    latitudDestino && longitudDestino
+      ? [latitudDestino, longitudDestino]
+      : null
+  );
 
   // Componente para centrar el mapa en la ruta
   function CenterRouteButton({ origen, destino }: { origen: [number, number]; destino: [number, number] }) {
@@ -127,9 +151,12 @@ export function DeliveryMap({
     popupAnchor: [0, -50],
   });
 
-  // Geocodificar la dirección de destino si existe
+  // Actualizar coordenadas de destino si se proporcionan
   useEffect(() => {
-    if (direccionDestino) {
+    if (latitudDestino && longitudDestino) {
+      setDestinoCoords([latitudDestino, longitudDestino]);
+    } else if (direccionDestino) {
+      // Fallback: geocodificar solo si no hay coordenadas
       const geocodeAddress = async () => {
         try {
           const response = await fetch(
@@ -137,7 +164,7 @@ export function DeliveryMap({
           );
           const data = await response.json();
           if (data && data.length > 0) {
-            setDestinoCoords([parseFloat(data[0].lat), parseFloat(data[0].lon)]);
+            setDestinoCoords([Number.parseFloat(data[0].lat), Number.parseFloat(data[0].lon)]);
           }
         } catch (error) {
           console.error("Error geocoding address:", error);
@@ -145,7 +172,7 @@ export function DeliveryMap({
       };
       geocodeAddress();
     }
-  }, [direccionDestino, fullDestinoAddress]);
+  }, [direccionDestino, latitudDestino, longitudDestino, fullDestinoAddress]);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
@@ -183,51 +210,57 @@ export function DeliveryMap({
       </div>
 
       {/* Interactive Map */}
-      <div className="relative w-full h-[350px]">
-        <MapContainer
-          center={origenCoords}
-          zoom={13}
-          scrollWheelZoom={true}
-          style={{ width: "100%", height: "100%" }}
-        >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+      {origenCoords && (
+        <div className="relative w-full h-[350px]">
+          <MapContainer
+            center={origenCoords}
+            zoom={13}
+            scrollWheelZoom={true}
+            style={{ width: "100%", height: "100%" }}
+          >
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
 
-          {/* Marcador de Origen (Tienda IMAGIQ) */}
-          <Marker position={origenCoords} icon={origenIcon}>
-            <Popup>
-              <b>A - Tienda IMAGIQ</b>
-              <br />
-              {direccionOrigen}
-            </Popup>
-          </Marker>
+            {/* Marcador de Origen (Tienda IMAGIQ) */}
+            <Marker position={origenCoords} icon={origenIcon}>
+              <Popup>
+                <b>A - Tienda IMAGIQ</b>
+                <br />
+                {fullOrigenAddress}
+              </Popup>
+            </Marker>
 
-          {/* Marcador de Destino */}
-          <Marker position={destinoCoords} icon={destinoIcon}>
-            <Popup>
-              <b>B - Tu Dirección</b>
-              <br />
-              {fullDestinoAddress}
-            </Popup>
-          </Marker>
+            {/* Marcador de Destino */}
+            {destinoCoords && (
+              <>
+                <Marker position={destinoCoords} icon={destinoIcon}>
+                  <Popup>
+                    <b>B - Tu Dirección</b>
+                    <br />
+                    {fullDestinoAddress}
+                  </Popup>
+                </Marker>
 
-          {/* Línea de ruta entre origen y destino */}
-          <Polyline
-            positions={[origenCoords, destinoCoords]}
-            pathOptions={{
-              color: "#17407A",
-              weight: 4,
-              opacity: 0.7,
-              dashArray: "10, 10",
-            }}
-          />
+                {/* Línea de ruta entre origen y destino */}
+                <Polyline
+                  positions={[origenCoords, destinoCoords]}
+                  pathOptions={{
+                    color: "#17407A",
+                    weight: 4,
+                    opacity: 0.7,
+                    dashArray: "10, 10",
+                  }}
+                />
 
-          {/* Botón para centrar la ruta */}
-          <CenterRouteButton origen={origenCoords} destino={destinoCoords} />
-        </MapContainer>
-      </div>
+                {/* Botón para centrar la ruta */}
+                <CenterRouteButton origen={origenCoords} destino={destinoCoords} />
+              </>
+            )}
+          </MapContainer>
+        </div>
+      )}
 
       {/* Route Info */}
       <div className="p-4 bg-white border-t border-gray-200">
@@ -243,7 +276,7 @@ export function DeliveryMap({
               </span>
             </div>
             <p className="text-sm text-gray-500 ml-8">
-              {direccionOrigen}
+              {fullOrigenAddress}
             </p>
           </div>
 

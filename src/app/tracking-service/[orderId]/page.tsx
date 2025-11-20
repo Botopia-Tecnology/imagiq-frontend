@@ -33,6 +33,8 @@ export default function TrackingService({
   const [ciudadEntrega, setCiudadEntrega] = useState<string>("");
   const [nombreDestinatario, setNombreDestinatario] = useState<string>("");
   const [telefonoDestinatario, setTelefonoDestinatario] = useState<string>("");
+  const [latitudDestino, setLatitudDestino] = useState<number | undefined>(undefined);
+  const [longitudDestino, setLongitudDestino] = useState<number | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
   const pathParams = use(params);
 
@@ -75,63 +77,181 @@ export default function TrackingService({
   };
 
   useEffect(() => {
-    // Cargar información de la orden y método de envío en paralelo
-    Promise.all([
-      apiClient.get<OrderDetails>(`/api/orders/shipping-info/${pathParams.orderId}`),
-      apiClient.get<{ metodo_envio: number }>(`/api/orders/${pathParams.orderId}/delivery-method`)
-    ])
-      .then(([orderRes, deliveryMethodRes]) => {
-        const data = orderRes.data;
+    // Primero obtener el método de envío para saber qué endpoint usar
+    apiClient.get<{ metodo_envio: number }>(`/api/orders/${pathParams.orderId}/delivery-method`)
+      .then((deliveryMethodRes) => {
         const deliveryMethod = deliveryMethodRes.data;
+        const metodoEnvio = deliveryMethod.metodo_envio;
 
-        // Extract envio data from the envios array if it exists
-        const envioData = data.envios && data.envios.length > 0 ? data.envios[0] : data;
+        // Seleccionar el endpoint correcto según el método de envío
+        let orderEndpoint = `/api/orders/shipping-info/${pathParams.orderId}`;
+        if (metodoEnvio === 3) {
+          // IMAGIQ - usar endpoint específico
+          orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
+        } else if (metodoEnvio === 2) {
+          // Pickup - usar endpoint específico
+          orderEndpoint = `/api/orders/${pathParams.orderId}/tiendas`;
+        }
+        // metodoEnvio === 1 (Coordinadora) usa shipping-info
 
-        // Set common data
-        setOrderNumber(envioData.numero_guia || data.orden_id || "...");
+        return Promise.all([
+          apiClient.get<OrderDetails>(orderEndpoint),
+          Promise.resolve(deliveryMethodRes)
+        ]);
+      })
+      .then(([orderRes, deliveryMethodRes]) => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const data = orderRes.data as any;
+        const deliveryMethod = deliveryMethodRes.data;
+        const metodoEnvio = deliveryMethod.metodo_envio;
 
-        // Handle shipping-specific data
-        if (envioData.tiempo_entrega_estimado) {
-          const fechaCreacion = new Date(data.fecha_creacion);
-          const dias = Number.parseInt(envioData.tiempo_entrega_estimado);
+        // Manejar datos según el método de envío
+        let numeroGuia = "";
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let productosData: any[] = [];
+        let tiendaData = null;
+        let direccionEntrega = "";
+        let ciudadEntrega = "";
 
-          fechaCreacion.setDate(fechaCreacion.getDate() + dias);
-          setEstimatedInitDate(formatDate(fechaCreacion.toISOString()));
+        if (metodoEnvio === 3) {
+          // IMAGIQ - estructura diferente con data.envio
+          const envioData = data.envio || {};
+          productosData = data.items || [];
+          tiendaData = envioData.tienda_origen || null;
+          direccionEntrega = envioData.direccion_destino?.linea_uno || envioData.direccion_destino?.direccion_formateada || "";
+          ciudadEntrega = "";
 
-          fechaCreacion.setDate(fechaCreacion.getDate() + dias + 2);
-          setEstimatedFinalDate(formatDate(fechaCreacion.toISOString()));
+          // Guardar coordenadas de destino para IMAGIQ
+          if (envioData.direccion_destino?.latitud && envioData.direccion_destino?.longitud) {
+            setLatitudDestino(parseFloat(String(envioData.direccion_destino.latitud)));
+            setLongitudDestino(parseFloat(String(envioData.direccion_destino.longitud)));
+          }
+
+          // Set order number from envio
+          numeroGuia = envioData.numero_guia || data.serial_id || data.id || "...";
+
+          // Handle estimated delivery date
+          if (envioData.tiempo_entrega_estimado && data.fecha_creacion) {
+            const fechaCreacion = new Date(data.fecha_creacion);
+            const dias = Number.parseInt(String(envioData.tiempo_entrega_estimado));
+
+            fechaCreacion.setDate(fechaCreacion.getDate() + dias);
+            setEstimatedInitDate(formatDate(fechaCreacion.toISOString()));
+
+            fechaCreacion.setDate(fechaCreacion.getDate() + 1);
+            setEstimatedFinalDate(formatDate(fechaCreacion.toISOString()));
+          }
+
+          // IMAGIQ no tiene eventos de tracking como Coordinadora
+          setTrackingSteps([]);
+          setPdfBase64("");
+
+        } else if (metodoEnvio === 2) {
+          // PICKUP - estructura con data.items y data.tienda
+          productosData = data.items || [];
+          
+          // Mapear datos de la tienda explícitamente - asegurar que todos los campos se mapeen
+          if (data.tienda && (data.tienda.direccion || data.tienda.ciudad || data.tienda.descripcion)) {
+            // Asegurar que direccion y ciudad siempre tengan valores (requeridos por la interfaz)
+            // Manejar null/undefined y hacer trim
+            const direccionTienda = (data.tienda.direccion != null && data.tienda.direccion !== "")
+              ? String(data.tienda.direccion).trim()
+              : "";
+            const ciudadTienda = (data.tienda.ciudad != null && data.tienda.ciudad !== "")
+              ? String(data.tienda.ciudad).trim()
+              : "";
+            
+            tiendaData = {
+              nombre: (data.tienda.nombre != null && data.tienda.nombre !== "") 
+                ? String(data.tienda.nombre).trim() 
+                : undefined,
+              descripcion: (data.tienda.descripcion != null && data.tienda.descripcion !== "") 
+                ? String(data.tienda.descripcion).trim() 
+                : undefined,
+              direccion: direccionTienda || "Tienda IMAGIQ",
+              ciudad: ciudadTienda || "Bogotá",
+              telefono: (data.tienda.telefono != null && data.tienda.telefono !== "") 
+                ? String(data.tienda.telefono).trim() 
+                : undefined,
+              horario: (data.tienda.horario != null && data.tienda.horario !== "") 
+                ? String(data.tienda.horario).trim() 
+                : undefined,
+              latitud: (data.tienda.latitud != null && data.tienda.latitud !== "") 
+                ? String(data.tienda.latitud).trim() 
+                : undefined,
+              longitud: (data.tienda.longitud != null && data.tienda.longitud !== "") 
+                ? String(data.tienda.longitud).trim() 
+                : undefined,
+            };
+          } else {
+            tiendaData = null;
+          }
+
+          numeroGuia = data.serial_id || data.id || "...";
+          setHoraRecogida(data.recogida_tienda?.hora_recogida_autorizada || "");
+          setToken(data.token?.token || "");
+
+        } else {
+          // COORDINADORA - estructura con data.envios
+          const envioData = data.envios && data.envios.length > 0 ? data.envios[0] : data;
+          productosData = data.productos || [];
+          tiendaData = data.tienda || null;
+          direccionEntrega = data.direccion_entrega || "";
+          ciudadEntrega = data.ciudad_entrega || "";
+
+          numeroGuia = envioData.numero_guia || data.orden_id || "...";
+
+          // Handle shipping-specific data
+          if (envioData.tiempo_entrega_estimado && data.fecha_creacion) {
+            const fechaCreacion = new Date(data.fecha_creacion);
+            const dias = Number.parseInt(String(envioData.tiempo_entrega_estimado));
+
+            fechaCreacion.setDate(fechaCreacion.getDate() + dias);
+            setEstimatedInitDate(formatDate(fechaCreacion.toISOString()));
+
+            fechaCreacion.setDate(fechaCreacion.getDate() + dias + 2);
+            setEstimatedFinalDate(formatDate(fechaCreacion.toISOString()));
+          }
+
+          setTrackingSteps(envioData.eventos || []);
+          setPdfBase64(envioData.pdf_base64 || "");
         }
 
-        // Set tracking data
-        setTrackingSteps(envioData.eventos || []);
-        setPdfBase64(envioData.pdf_base64 || "");
-
-        // Set pickup-specific data (from OrderDetails or fallback to envioData)
+        // Set common data
+        setOrderNumber(numeroGuia);
         setMetodoEnvio(data.metodo_envio || "");
-        // Usar metodo_envio del endpoint específico, con fallback a medio_pago del shipping-info
         setMedioPago(deliveryMethod.metodo_envio ?? data.medio_pago);
-        setHoraRecogida(data.hora_recogida_autorizada || "");
-        setToken(data.token || "");
         setFechaCreacion(data.fecha_creacion || "");
 
-        // Set new enhanced data
-        setProductos(data.productos || []);
-        setTiendaInfo(data.tienda);
-        setDireccionEntrega(data.direccion_entrega || "");
-        setCiudadEntrega(data.ciudad_entrega || "");
+        // Map productos to match ProductoDetalle interface
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mappedProductos: ProductoDetalle[] = productosData.map((producto: any) => ({
+          id: String(producto.id || ''),
+          nombre: String(producto.nombre || ''),
+          imagen: String(producto.imagen || producto.image_preview_url || ''),
+          cantidad: Number(producto.cantidad || 0),
+          precio: producto.precio ? Number(producto.precio) : (producto.unit_price ? parseFloat(String(producto.unit_price)) : undefined),
+        }));
+
+        setProductos(mappedProductos);
+        // Set tiendaInfo - debe tener al menos direccion o ciudad para ser válido
+        if (tiendaData && (tiendaData.direccion || tiendaData.ciudad)) {
+          setTiendaInfo(tiendaData);
+        } else {
+          setTiendaInfo(undefined);
+        }
+        setDireccionEntrega(direccionEntrega);
+        setCiudadEntrega(ciudadEntrega || "");
         setNombreDestinatario(data.nombre_destinatario || "");
         setTelefonoDestinatario(data.telefono_destinatario || "");
-
-        console.log("📊 Método de envío detectado:", {
-          medio_pago_endpoint: deliveryMethod.metodo_envio,
-          medio_pago_shipping_info: data.medio_pago,
-          metodo_envio: data.metodo_envio,
-        });
 
         setIsLoading(false);
       })
       .catch((error) => {
-        console.error("Error fetching order data:", error);
+        console.error("❌ ERROR AL CARGAR DATOS:");
+        console.error("Error completo:", error);
+        console.error("Mensaje:", error?.message);
+        console.error("Response:", error?.response?.data);
         setError(
           "No se pudo cargar la información del pedido. Por favor, intenta nuevamente."
         );
@@ -154,13 +274,6 @@ export default function TrackingService({
   const showPickup = shippingType === "pickup";
   const showImagiq = shippingType === "imagiq";
   const showCoordinadora = shippingType === "coordinadora";
-
-  console.log("🎯 Vista a mostrar:", {
-    shippingType,
-    showPickup,
-    showImagiq,
-    showCoordinadora,
-  });
 
   return (
     <div className="bg-white pt-4 md:pt-5">
@@ -200,6 +313,10 @@ export default function TrackingService({
               horaRecogida={horaRecogida}
               direccionTienda={tiendaInfo?.direccion}
               ciudadTienda={tiendaInfo?.ciudad}
+              nombreTienda={tiendaInfo?.nombre}
+              descripcionTienda={tiendaInfo?.descripcion}
+              latitudTienda={tiendaInfo?.latitud}
+              longitudTienda={tiendaInfo?.longitud}
               products={productos}
             />
           )}
@@ -216,6 +333,9 @@ export default function TrackingService({
               nombreDestinatario={nombreDestinatario}
               telefonoDestinatario={telefonoDestinatario}
               products={productos}
+              tiendaOrigen={tiendaInfo}
+              latitudDestino={latitudDestino}
+              longitudDestino={longitudDestino}
             />
           )}
 

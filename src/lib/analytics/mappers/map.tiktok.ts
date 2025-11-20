@@ -28,6 +28,7 @@ export interface TikTokEvent {
     value?: number;
     currency?: string;
     query?: string;
+    search_string?: string;
     description?: string;
     event_data?: Record<string, unknown>;
   };

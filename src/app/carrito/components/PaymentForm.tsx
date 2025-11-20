@@ -137,9 +137,14 @@ export default function PaymentForm({
   });
 
 
-  // Mostrar skeleton completo solo cuando se están cargando las tarjetas inicialmente
-  // O cuando se está cargando zero interest PERO aún no tenemos tarjetas cargadas
-  const shouldShowFullSkeleton = isLoadingCards || (isLoadingZeroInterest && savedCards.length === 0);
+  // Mostrar skeleton completo cuando:
+  // 1. Se están cargando las tarjetas inicialmente
+  // 2. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
+  // 3. Aún no se han cargado las tarjetas (primera vez que se monta el componente)
+  const shouldShowFullSkeleton =
+    isLoadingCards ||
+    (isLoadingZeroInterest && savedCards.length === 0) ||
+    (!isLoadingCards && savedCards.length === 0 && authContext.user?.id);
 
   if (shouldShowFullSkeleton) {
     return (

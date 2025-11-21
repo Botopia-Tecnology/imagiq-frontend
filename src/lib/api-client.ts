@@ -69,7 +69,8 @@ export async function apiClient(
         console.error('⚠️ Rate limit excedido:', error.message);
         throw error;
       }
-      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      const data = await response?.json();
+      throw new Error(data?.message ?? `HTTP Error ${response.status}: ${response.statusText}`);
     }
 
     return response;

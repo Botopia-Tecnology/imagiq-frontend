@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/api-client";
 
-export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promise<{ id: string }>>; }>) {
+export default function VerifyPurchase(
+  props: Readonly<{ params: Readonly<Promise<{ id: string }>> }>
+) {
   const { params } = props;
   const [orderId, setOrderId] = useState<string | null>(null);
   const router = useRouter();
@@ -29,12 +31,24 @@ export default function VerifyPurchase(props: Readonly<{ params: Readonly<Promis
         // Mantener la animación visible durante la redirección
         router.push(`/success-checkout/${orderId}`);
       } else {
-        console.error("Verification failed with status:", data.status, data.message);
-        router.push("/error-checkout");
+        console.error(
+          "Verification failed with status:",
+          data.status,
+          data.message
+        );
+        router.push(
+          `/error-checkout?error=${encodeURIComponent(
+            data.message || "Error desconocido en la verificación"
+          )}`
+        );
       }
     } catch (error) {
       console.error("Error verifying order:", error);
-      router.push("/error-checkout");
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Error desconocido en la verificación";
+      router.push(`/error-checkout?error=${encodeURIComponent(errorMessage)}`);
     }
     // NO hacer setIsLoading(false) para mantener la animación visible
     // hasta que la nueva página cargue completamente

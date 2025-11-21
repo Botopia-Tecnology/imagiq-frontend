@@ -22,6 +22,7 @@ interface Step4OrderSummaryProps {
   isSticky?: boolean;
   isStep1?: boolean; // Indica si estamos en Step1 para calcular canPickUp global
   onCanPickUpReady?: (isReady: boolean, isLoading: boolean) => void; // Callback para notificar cuando canPickUp está listo
+  error?: string | string[] | null;
 }
 
 export default function Step4OrderSummary({
@@ -35,6 +36,7 @@ export default function Step4OrderSummary({
   isSticky = true,
   isStep1 = false,
   onCanPickUpReady,
+  error,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -60,8 +62,8 @@ export default function Step4OrderSummary({
     }
   }, []);
 
-  const [localDeliveryMethod, setLocalDeliveryMethod] = React.useState<string>(() =>
-    getDeliveryMethodFromStorage()
+  const [localDeliveryMethod, setLocalDeliveryMethod] = React.useState<string>(
+    () => getDeliveryMethodFromStorage()
   );
 
   // Actualizar el método de entrega cuando cambie
@@ -92,7 +94,10 @@ export default function Step4OrderSummary({
     const handleDeliveryMethodChanged = () => {
       updateDeliveryMethod();
     };
-    window.addEventListener("delivery-method-changed", handleDeliveryMethodChanged);
+    window.addEventListener(
+      "delivery-method-changed",
+      handleDeliveryMethodChanged
+    );
 
     // Verificar cambios más frecuentemente para detectar cambios en la misma pestaña
     const interval = setInterval(updateDeliveryMethod, 50);
@@ -105,7 +110,10 @@ export default function Step4OrderSummary({
 
     return () => {
       window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("delivery-method-changed", handleDeliveryMethodChanged);
+      window.removeEventListener(
+        "delivery-method-changed",
+        handleDeliveryMethodChanged
+      );
       window.removeEventListener("focus", handleFocus);
       clearInterval(interval);
     };
@@ -115,7 +123,8 @@ export default function Step4OrderSummary({
   const productSavings = React.useMemo(() => {
     return products.reduce((total, product) => {
       if (product.originalPrice && product.originalPrice > product.price) {
-        const saving = (product.originalPrice - product.price) * product.quantity;
+        const saving =
+          (product.originalPrice - product.price) * product.quantity;
         return total + saving;
       }
       return total;
@@ -123,15 +132,18 @@ export default function Step4OrderSummary({
   }, [products]);
 
   // Estado para canPickUp global y debug
-  const [globalCanPickUp, setGlobalCanPickUp] = React.useState<boolean | null>(null);
+  const [globalCanPickUp, setGlobalCanPickUp] = React.useState<boolean | null>(
+    null
+  );
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(false);
 
   // Llamar a candidate-stores con TODOS los productos del carrito agrupados en una sola petición
   // Ejecutar en Step1 y en otros steps si la variable de debug está activa
   const fetchGlobalCanPickUp = React.useCallback(async () => {
     // Solo calcular en Step1, o en otros steps si la variable de debug está activa
-    const shouldFetch = isStep1 || (process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true");
-    
+    const shouldFetch =
+      isStep1 || process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true";
+
     if (!shouldFetch || products.length === 0) {
       if (!shouldFetch) {
         setGlobalCanPickUp(null);
@@ -167,10 +179,14 @@ export default function Step4OrderSummary({
       });
 
       if (response.success && response.data) {
-        const responseData = response.data as { canPickUp?: boolean; canPickup?: boolean };
+        const responseData = response.data as {
+          canPickUp?: boolean;
+          canPickup?: boolean;
+        };
         // Obtener canPickUp de la respuesta (puede venir como canPickUp o canPickup)
-        const canPickUpValue = responseData.canPickUp ?? responseData.canPickup ?? false;
-        
+        const canPickUpValue =
+          responseData.canPickUp ?? responseData.canPickup ?? false;
+
         // El canPickUp global es el que responde el endpoint con todos los productos
         setGlobalCanPickUp(canPickUpValue);
       } else {
@@ -183,7 +199,7 @@ export default function Step4OrderSummary({
       setIsLoadingCanPickUp(false);
     }
   }, [products, isStep1]);
-  
+
   // También calcular canPickUp global en otros steps si la variable de debug está activa
   React.useEffect(() => {
     if (!isStep1 && process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true") {
@@ -205,50 +221,69 @@ export default function Step4OrderSummary({
 
   // Escuchar cambios de dirección (desde header O desde checkout) cuando la variable de debug está activa o en Step1
   React.useEffect(() => {
-    const shouldListen = isStep1 || (process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true");
+    const shouldListen =
+      isStep1 || process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true";
     if (!shouldListen) return;
 
     const handleAddressChange = (event: Event) => {
-      console.log('🔄 Evento de cambio de dirección recibido en Step4OrderSummary:', event.type);
-      console.log('🔄 Dirección cambió, recalculando canPickUp global...');
+      console.log(
+        "🔄 Evento de cambio de dirección recibido en Step4OrderSummary:",
+        event.type
+      );
+      console.log("🔄 Dirección cambió, recalculando canPickUp global...");
       // Recalcular canPickUp global cuando cambia la dirección
       fetchGlobalCanPickUp();
     };
 
     const handleStorageChange = (e: StorageEvent) => {
       // Escuchar cambios en checkout-address o imagiq_default_address
-      if (e.key === 'checkout-address' || e.key === 'imagiq_default_address') {
-        console.log('🔄 Cambio detectado en localStorage (Step4OrderSummary):', e.key);
+      if (e.key === "checkout-address" || e.key === "imagiq_default_address") {
+        console.log(
+          "🔄 Cambio detectado en localStorage (Step4OrderSummary):",
+          e.key
+        );
         handleAddressChange(e);
       }
     };
 
     // Escuchar evento storage (para cambios entre tabs)
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
 
     // Escuchar eventos personalizados desde header
-    window.addEventListener('address-changed', handleAddressChange);
+    window.addEventListener("address-changed", handleAddressChange);
 
     // Escuchar eventos personalizados desde checkout
-    window.addEventListener('checkout-address-changed', handleAddressChange);
+    window.addEventListener("checkout-address-changed", handleAddressChange);
 
     // También verificar cambios periódicamente en la misma tab
-    let lastCheckoutAddress = localStorage.getItem('checkout-address');
-    let lastDefaultAddress = localStorage.getItem('imagiq_default_address');
+    let lastCheckoutAddress = localStorage.getItem("checkout-address");
+    let lastDefaultAddress = localStorage.getItem("imagiq_default_address");
 
     const checkAddressChanges = () => {
-      const currentCheckoutAddress = localStorage.getItem('checkout-address');
-      const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
+      const currentCheckoutAddress = localStorage.getItem("checkout-address");
+      const currentDefaultAddress = localStorage.getItem(
+        "imagiq_default_address"
+      );
 
-      if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
-        console.log('🔄 Cambio detectado en checkout-address (polling - Step4OrderSummary)');
-        handleAddressChange(new Event('checkout-address-changed'));
+      if (
+        currentCheckoutAddress !== lastCheckoutAddress &&
+        lastCheckoutAddress !== null
+      ) {
+        console.log(
+          "🔄 Cambio detectado en checkout-address (polling - Step4OrderSummary)"
+        );
+        handleAddressChange(new Event("checkout-address-changed"));
         lastCheckoutAddress = currentCheckoutAddress;
       }
 
-      if (currentDefaultAddress !== lastDefaultAddress && lastDefaultAddress !== null) {
-        console.log('🔄 Cambio detectado en imagiq_default_address (polling - Step4OrderSummary)');
-        handleAddressChange(new Event('address-changed'));
+      if (
+        currentDefaultAddress !== lastDefaultAddress &&
+        lastDefaultAddress !== null
+      ) {
+        console.log(
+          "🔄 Cambio detectado en imagiq_default_address (polling - Step4OrderSummary)"
+        );
+        handleAddressChange(new Event("address-changed"));
         lastDefaultAddress = currentDefaultAddress;
       }
     };
@@ -256,9 +291,12 @@ export default function Step4OrderSummary({
     const intervalId = setInterval(checkAddressChanges, 500);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('address-changed', handleAddressChange);
-      window.removeEventListener('checkout-address-changed', handleAddressChange);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("address-changed", handleAddressChange);
+      window.removeEventListener(
+        "checkout-address-changed",
+        handleAddressChange
+      );
       clearInterval(intervalId);
     };
   }, [fetchGlobalCanPickUp, isStep1]);
@@ -268,25 +306,33 @@ export default function Step4OrderSummary({
     if (!isStep1) return;
 
     const handleStorageChange = (e: Event | StorageEvent) => {
-      const key = 'detail' in e && e.detail && typeof e.detail === 'object' && 'key' in e.detail 
-        ? (e.detail as { key?: string }).key 
-        : 'key' in e ? e.key : null;
-      
-      if (key === 'cart-items') {
-        console.log('🔄 Productos del carrito cambiaron (cantidad o nuevo producto), recalculando canPickUp global...');
+      const key =
+        "detail" in e &&
+        e.detail &&
+        typeof e.detail === "object" &&
+        "key" in e.detail
+          ? (e.detail as { key?: string }).key
+          : "key" in e
+          ? e.key
+          : null;
+
+      if (key === "cart-items") {
+        console.log(
+          "🔄 Productos del carrito cambiaron (cantidad o nuevo producto), recalculando canPickUp global..."
+        );
         // Recalcular canPickUp global cuando cambian los productos
         fetchGlobalCanPickUp();
       }
     };
 
     // Escuchar cambios en cart-items (cuando se agregan productos desde sugerencias o cambia la cantidad)
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener("storage", handleStorageChange);
     // También escuchar evento personalizado
-    window.addEventListener('localStorageChange', handleStorageChange);
+    window.addEventListener("localStorageChange", handleStorageChange);
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('localStorageChange', handleStorageChange);
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleStorageChange);
     };
   }, [fetchGlobalCanPickUp]);
 
@@ -328,7 +374,9 @@ export default function Step4OrderSummary({
         {/* Descuento por productos */}
         {productSavings > 0 && (
           <div className="flex justify-between text-sm">
-            <span className="text-green-600 font-medium">Descuento productos</span>
+            <span className="text-green-600 font-medium">
+              Descuento productos
+            </span>
             <span className="text-green-600 font-semibold">
               -{cartFormatPrice(productSavings)}
             </span>
@@ -350,11 +398,17 @@ export default function Step4OrderSummary({
           <span>
             {(() => {
               // Prefer prop value, fallback to local state or localStorage
-              const currentMethod = deliveryMethod === "pickup" ? "tienda" :
-                                   deliveryMethod === "delivery" ? "domicilio" :
-                                   localDeliveryMethod === "tienda" ? "tienda" :
-                                   getDeliveryMethodFromStorage();
-              return currentMethod === "tienda" ? "Recoger en tienda" : "Envío a domicilio";
+              const currentMethod =
+                deliveryMethod === "pickup"
+                  ? "tienda"
+                  : deliveryMethod === "delivery"
+                  ? "domicilio"
+                  : localDeliveryMethod === "tienda"
+                  ? "tienda"
+                  : getDeliveryMethodFromStorage();
+              return currentMethod === "tienda"
+                ? "Recoger en tienda"
+                : "Envío a domicilio";
             })()}
           </span>
           {calculations.shipping > 0 && (
@@ -371,6 +425,36 @@ export default function Step4OrderSummary({
         </div>
       </div>
 
+      {/* Mostrar error si existe */}
+      {error && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
+          role="alert"
+        >
+          <span className="block sm:inline"> {error}</span>
+        </div>
+      )}
+
+      {/* Mensaje de T&C */}
+      <div className="text-xs text-gray-600 text-left">
+        Al comprar aceptas nuestros{" "}
+        <a
+          href="/terminos-y-condiciones"
+          target="_blank"
+          className="text-black underline hover:text-gray-700"
+        >
+          términos y condiciones
+        </a>{" "}
+        y{" "}
+        <a
+          href="/politicas-de-privacidad"
+          target="_blank"
+          className="text-black underline hover:text-gray-700"
+        >
+          políticas de privacidad
+        </a>
+      </div>
+
       <div className="flex gap-3">
         {/* Botón de volver (opcional) */}
         {onBack && (
@@ -385,7 +469,9 @@ export default function Step4OrderSummary({
         <button
           type="button"
           className={`flex-1 bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
-            isProcessing || disabled ? "opacity-70 cursor-not-allowed" : "cursor-pointer"
+            isProcessing || disabled
+              ? "opacity-70 cursor-not-allowed"
+              : "cursor-pointer"
           }`}
           disabled={isProcessing || disabled}
           data-testid="checkout-finish-btn"
@@ -393,7 +479,10 @@ export default function Step4OrderSummary({
           onClick={onFinishPayment}
         >
           {isProcessing ? (
-            <span className="flex items-center justify-center gap-2" aria-live="polite">
+            <span
+              className="flex items-center justify-center gap-2"
+              aria-live="polite"
+            >
               <svg
                 className="animate-spin h-5 w-5 text-white"
                 viewBox="0 0 24 24"
@@ -540,7 +629,9 @@ export default function Step4OrderSummary({
             ) : globalCanPickUp === null ? (
               <p className="text-yellow-600 italic">No disponible</p>
             ) : (
-              <p className="font-medium">canPickUp global: {globalCanPickUp ? "true" : "false"}</p>
+              <p className="font-medium">
+                canPickUp global: {globalCanPickUp ? "true" : "false"}
+              </p>
             )}
           </div>
         </div>

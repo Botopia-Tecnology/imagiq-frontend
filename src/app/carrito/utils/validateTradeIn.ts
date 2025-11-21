@@ -39,11 +39,12 @@ export function validateTradeInProducts(products: CartProduct[]): {
   }
 
   // Validación 2: Buscar productos que tienen indRetoma === 0 o undefined (no aplican para el beneficio)
+  // IMPORTANTE: indRetoma === 0 significa NO aplica, indRetoma === 1 significa SÍ aplica
   const productsWithoutRetoma = products.filter(
     (product) => product.indRetoma === 0 || product.indRetoma === undefined
   );
 
-  // Si hay productos con indRetoma === 0 y había un trade-in activo, significa que el producto cambió de 1 a 0
+  // Si hay productos con indRetoma === 0 (no aplican) y había un trade-in activo, significa que el producto cambió de 1 (aplicaba) a 0 (no aplica)
   // IMPORTANTE: Solo mostrar el mensaje "Te removimos" si había un trade-in activo en localStorage
   if (productsWithoutRetoma.length > 0 && hasActiveTradeIn) {
     return {

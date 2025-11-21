@@ -518,6 +518,7 @@ export interface ProductApiData {
   alto?: number[];
   largo?: number[];
   peso?: number[];
+  device?: string[]; // Dispositivo al que está dirigido el accesorio (ej: "Galaxy S24", "Galaxy Watch")
 }
 
 export interface FavoriteApiResponse {

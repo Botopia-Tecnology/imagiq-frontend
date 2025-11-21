@@ -45,6 +45,7 @@ interface ProductData {
   colors: ProductColor[];
   description?: string;
   specs?: { label: string; value: string }[];
+  model?: string;
 }
 
 export default function ViewProductAppliance({
@@ -144,6 +145,7 @@ export default function ViewProductAppliance({
       quantity: 1,
       sku: safeProduct.id, // Add required sku property
       ean: safeProduct.id,
+      modelo: safeProduct.model || "", // Modelo para sugerencias relacionadas
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);

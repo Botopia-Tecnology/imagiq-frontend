@@ -848,12 +848,13 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           </div>
 
           {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
+          <aside className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               disabled={!tradeInValidation.isValid}
+              isSticky={false}
               deliveryMethod={
                 typeof window !== "undefined"
                   ? (() => {
@@ -867,7 +868,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               }
             />
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
@@ -876,7 +877,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
-          </div>
+          </aside>
         </div>
       </div>
     </div>

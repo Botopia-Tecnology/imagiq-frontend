@@ -487,13 +487,14 @@ export default function Step3({
           </div>
 
           {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
+          <aside className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               buttonText="Continuar"
               onBack={onBack}
               disabled={!canContinue || !tradeInValidation.isValid}
               isProcessing={isWaitingForCanPickUp}
+              isSticky={false}
               deliveryMethod={
                 deliveryMethod === "tienda"
                   ? "pickup"
@@ -505,7 +506,7 @@ export default function Step3({
               }
             />
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
@@ -515,7 +516,7 @@ export default function Step3({
                 showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
               />
             )}
-          </div>
+          </aside>
         </div>
       </div>
     </div>

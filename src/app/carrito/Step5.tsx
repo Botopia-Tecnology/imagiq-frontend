@@ -95,6 +95,9 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
 
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
         description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
@@ -302,12 +305,13 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           </div>
 
           {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
+          <aside className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               disabled={selectedInstallments === null || !tradeInValidation.isValid}
+              isSticky={false}
               deliveryMethod={
                 typeof window !== "undefined"
                   ? (() => {
@@ -321,7 +325,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               }
             />
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
@@ -330,7 +334,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
                 validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
-          </div>
+          </aside>
         </div>
       </div>
     </div>

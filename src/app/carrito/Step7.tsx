@@ -330,6 +330,9 @@ export default function Step7({ onBack }: Step7Props) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
 
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
         description:
@@ -1303,7 +1306,7 @@ export default function Step7({ onBack }: Step7Props) {
           </div>
 
           {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
+          <aside className="lg:col-span-1 space-y-4">
             {isLoadingShippingMethod ? (
               /* Skeleton del resumen mientras carga */
               <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
@@ -1382,6 +1385,7 @@ export default function Step7({ onBack }: Step7Props) {
                 onBack={onBack}
                 buttonText="Confirmar y pagar"
                 disabled={isProcessing || !tradeInValidation.isValid}
+                isSticky={false}
                 shippingVerification={shippingVerification}
                 deliveryMethod={shippingData?.type}
                 error={error}
@@ -1492,7 +1496,7 @@ export default function Step7({ onBack }: Step7Props) {
               )}
             </div>
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
@@ -1505,7 +1509,7 @@ export default function Step7({ onBack }: Step7Props) {
                 }
               />
             )}
-          </div>
+          </aside>
         </div>
       </div>
     </div>

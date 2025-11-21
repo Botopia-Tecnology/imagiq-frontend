@@ -71,17 +71,27 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         console.error("❌ Error al cargar datos de Trade-In:", error);
       }
     } else {
+      // Verificar si el usuario está logueado
+      const user = safeGetLocalStorage<{ id?: string; user_id?: string; email?: string }>("imagiq_user", {});
+      const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
+      
       // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía
-      // El canPickUp global se calcula en Step4OrderSummary
+      // En el paso 1: si el usuario NO está logueado, NO considerar canPickUp
+      // Si el usuario está logueado, considerar canPickUp
       const productApplies =
         cartProducts.length === 1 && 
         cartProducts[0]?.indRetoma === 1;
+      
       if (productApplies) {
-        setTradeInData({
-          deviceName: cartProducts[0].name,
-          value: 0,
-          completed: false, // No está completado, solo es una guía
-        });
+        // Usuario no logueado: mostrar banner sin considerar canPickUp
+        // Usuario logueado: solo mostrar si canPickUp === true
+        if (!isUserLoggedIn || cartProducts[0]?.canPickUp === true) {
+          setTradeInData({
+            deviceName: cartProducts[0].name,
+            value: 0,
+            completed: false, // No está completado, solo es una guía
+          });
+        }
       }
     }
   }, [cartProducts]);
@@ -345,15 +355,30 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     setTradeInData(null);
     localStorage.removeItem("imagiq_trade_in");
 
-    // Si el producto aplica (indRetoma === 1 Y canPickUp === true), volver a mostrar el banner guía
-    if (cartProducts.length === 1 && 
-        cartProducts[0]?.indRetoma === 1 && 
-        cartProducts[0]?.canPickUp === true) {
-      setTradeInData({
-        deviceName: cartProducts[0].name,
-        value: 0,
-        completed: false, // No está completado, solo es una guía
-      });
+    // Verificar si el usuario está logueado
+    const user = safeGetLocalStorage<{ id?: string; user_id?: string; email?: string }>("imagiq_user", {});
+    const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
+
+    // Si el producto aplica (indRetoma === 1), mostrar el banner guía
+    // En el paso 1: si el usuario NO está logueado, NO considerar canPickUp
+    // Si el usuario está logueado, considerar canPickUp
+    const productApplies = cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
+    if (productApplies) {
+      if (!isUserLoggedIn) {
+        // Usuario no logueado en paso 1: mostrar banner sin considerar canPickUp
+        setTradeInData({
+          deviceName: cartProducts[0].name,
+          value: 0,
+          completed: false, // No está completado, solo es una guía
+        });
+      } else if (cartProducts[0]?.canPickUp === true) {
+        // Usuario logueado: considerar canPickUp
+        setTradeInData({
+          deviceName: cartProducts[0].name,
+          value: 0,
+          completed: false, // No está completado, solo es una guía
+        });
+      }
     }
   };
 
@@ -364,7 +389,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // Handler para cuando se completa el Trade-In
   const handleCompleteTradeIn = (deviceName: string, value: number) => {
-    // Cargar datos desde localStorage (ya guardados por handleFinalContinue)
+    // IMPORTANTE: Cargar datos desde localStorage (ya guardados por handleFinalContinue)
+    // Si no existe en localStorage, guardarlo como respaldo (importante para usuarios NO logueados)
     try {
       const raw = localStorage.getItem("imagiq_trade_in");
       if (raw) {
@@ -376,21 +402,34 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         };
         setTradeInData(newTradeInData);
       } else {
-        // Fallback si no está en localStorage
-        const newTradeInData = {
+        // Fallback: guardar en localStorage si no existe (importante para usuarios NO logueados)
+        const tradeInData = {
           deviceName,
           value,
           completed: true,
         };
-        setTradeInData(newTradeInData);
+        try {
+          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+          console.log("✅ Trade-in guardado en localStorage (respaldo):", tradeInData);
+        } catch (error) {
+          console.error("❌ Error al guardar trade-in en localStorage (respaldo):", error);
+        }
+        setTradeInData(tradeInData);
       }
-    } catch {
-      // Fallback simple
+    } catch (error) {
+      // Fallback simple: guardar en localStorage como último recurso
+      console.error("❌ Error al cargar trade-in desde localStorage:", error);
       const newTradeInData = {
         deviceName,
         value,
         completed: true,
       };
+      try {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+        console.log("✅ Trade-in guardado en localStorage (fallback):", newTradeInData);
+      } catch (storageError) {
+        console.error("❌ Error al guardar trade-in en localStorage (fallback):", storageError);
+      }
       setTradeInData(newTradeInData);
     }
     setIsTradeInModalOpen(false);
@@ -401,13 +440,19 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     setIsTradeInModalOpen(false);
   };
 
+  // Verificar si el usuario está logueado (se recalcula en cada render para estar actualizado)
+  const user = safeGetLocalStorage<{ id?: string; user_id?: string; email?: string }>("imagiq_user", {});
+  const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
+
   const shouldShowTradeInBanner =
     !!tradeInData &&
     (tradeInData.completed ||
       (!tradeInData.completed &&
         cartProducts.length === 1 &&
         cartProducts[0]?.indRetoma === 1 &&
-        cartProducts[0]?.canPickUp === true));
+        // En el paso 1: si el usuario NO está logueado, NO considerar canPickUp
+        // Si el usuario está logueado, considerar canPickUp
+        (!isUserLoggedIn || cartProducts[0]?.canPickUp === true)));
 
   const tradeInSummaryProps = shouldShowTradeInBanner
     ? {
@@ -421,7 +466,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           : undefined,
         isGuide: !tradeInData!.completed,
         showErrorSkeleton,
-        shippingCity: cartProducts.find(p => p.indRetoma === 1 && p.canPickUp === true)?.shippingCity,
+        shippingCity: cartProducts.find(p => p.indRetoma === 1 && (!isUserLoggedIn || p.canPickUp === true))?.shippingCity,
       }
     : null;
 

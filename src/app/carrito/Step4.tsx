@@ -209,7 +209,7 @@ export default function Step4({
         </form>
 
         {/* Resumen de compra y Trade-In */}
-        <div className="space-y-4">
+        <aside className="space-y-4">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -221,6 +221,7 @@ export default function Step4({
             onBack={onBack}
             buttonText="Continuar"
             disabled={isProcessing || !tradeInValidation.isValid}
+            isSticky={false}
             deliveryMethod={
               typeof window !== "undefined"
                 ? (() => {
@@ -234,7 +235,7 @@ export default function Step4({
             }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen */}
+          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
           {tradeInData?.completed && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
@@ -247,7 +248,7 @@ export default function Step4({
               }
             />
           )}
-        </div>
+        </aside>
       </div>
     </div>
   );

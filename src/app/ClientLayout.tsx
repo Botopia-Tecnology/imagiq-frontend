@@ -46,13 +46,20 @@ export default function ClientLayout({
   const safeChildren =
     typeof children === "number" && isNaN(children) ? null : children;
 
-  // Ocultar el Footer solo en /carrito, /ofertas y las rutas de animaciones
+  // Ocultar el Footer solo en /carrito (sin step), /ofertas y las rutas de animaciones
+  // Mostrar el Footer en /carrito/step2 y otros pasos del carrito
+  const isCarritoStep = pathname?.startsWith("/carrito/step");
   const hideFooter =
-    pathname === "/carrito" ||
+    (!isCarritoStep && (pathname === "/carrito" || pathname === "/carrito/")) ||
     pathname === "/ofertas" ||
     pathname === "/charging-result" ||
     pathname === "/success-checkout" ||
     pathname === "/carrito/error-checkout";
+
+  // Debug: verificar si el footer debe mostrarse
+  if (typeof window !== "undefined" && pathname?.includes("/carrito/step2")) {
+    console.log("🔍 Footer debug - pathname:", pathname, "hideFooter:", hideFooter, "isCarritoStep:", isCarritoStep);
+  }
 
   // Identificación automática de usuarios en Clarity
   useClarityIdentity();

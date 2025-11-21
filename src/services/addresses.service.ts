@@ -20,6 +20,7 @@ export interface CreateAddressRequest {
   complemento?: string;
   instruccionesEntrega?: string;
   puntoReferencia?: string;
+  ciudad?: string; // Ciudad seleccionada por el usuario
   usuarioId?: string; // Para usuarios invitados sin JWT
 }
 
@@ -87,7 +88,10 @@ export class AddressesService {
       });
 
       // Log detallado del body que se enviará
-      console.log("📦 Body completo que se enviará al backend:", JSON.stringify(requestData, null, 2));
+      console.log(
+        "📦 Body completo que se enviará al backend:",
+        JSON.stringify(requestData, null, 2)
+      );
 
       const result = await apiPost<Address>("/api/addresses", requestData);
       console.log("✅ Dirección creada exitosamente:", result);
@@ -99,12 +103,20 @@ export class AddressesService {
           const reason = isFirstAddress
             ? "Es la primera dirección"
             : "Fue marcada como predeterminada";
-          console.log(`🔄 ${reason}, estableciendo como predeterminada y desactivando las demás...`);
+          console.log(
+            `🔄 ${reason}, estableciendo como predeterminada y desactivando las demás...`
+          );
           const defaultAddress = await this.setDefaultAddress(result.id);
-          console.log("✅ Dirección marcada como predeterminada:", defaultAddress.nombreDireccion);
+          console.log(
+            "✅ Dirección marcada como predeterminada:",
+            defaultAddress.nombreDireccion
+          );
           return defaultAddress;
         } catch (setDefaultError) {
-          console.error("⚠️ Error estableciendo dirección como predeterminada:", setDefaultError);
+          console.error(
+            "⚠️ Error estableciendo dirección como predeterminada:",
+            setDefaultError
+          );
           // No lanzar error, la dirección ya fue creada exitosamente
           // El usuario puede establecerla manualmente como predeterminada si es necesario
         }
@@ -230,7 +242,9 @@ export class AddressesService {
     addressId: string
   ): Promise<{ message: string }> {
     try {
-      return await apiDelete<{ message: string }>(`/api/addresses/${addressId}`);
+      return await apiDelete<{ message: string }>(
+        `/api/addresses/${addressId}`
+      );
     } catch (error: unknown) {
       const errorMessage =
         error instanceof Error ? error.message : "Error desactivando dirección";
@@ -259,10 +273,12 @@ export class AddressesService {
       }
 
       const usuarioId = userInfo.id || userInfo.email || "";
-      
+
       // Obtener todas las direcciones antes de eliminar para verificar si la eliminada era predeterminada
       const allAddresses = await this.getUserAddresses();
-      const addressToDelete = allAddresses.find(addr => addr.id === addressId);
+      const addressToDelete = allAddresses.find(
+        (addr) => addr.id === addressId
+      );
       const wasDefault = addressToDelete?.esPredeterminada || false;
       const totalAddresses = allAddresses.length;
 
@@ -270,54 +286,70 @@ export class AddressesService {
       const endpoint = `/api/addresses/${addressId}?usuarioId=${encodeURIComponent(
         usuarioId
       )}`;
-      
-      console.log('🗑️ Eliminando dirección:', {
+
+      console.log("🗑️ Eliminando dirección:", {
         addressId,
         usuarioId,
         endpoint,
         wasDefault,
-        totalAddresses
+        totalAddresses,
       });
-      
+
       const result = await apiDelete<{ message: string }>(endpoint);
 
       // Si la dirección eliminada era predeterminada y quedan otras direcciones, establecer una nueva como predeterminada
       // Si no hay más direcciones, simplemente se elimina y ya está
       if (wasDefault && totalAddresses > 1) {
         // Obtener las direcciones restantes después de la eliminación
-        const remainingAddresses = allAddresses.filter(addr => addr.id !== addressId);
-        
+        const remainingAddresses = allAddresses.filter(
+          (addr) => addr.id !== addressId
+        );
+
         if (remainingAddresses.length > 0) {
           // Buscar la primera dirección disponible que no sea la eliminada
           const newDefaultAddress = remainingAddresses[0];
-          
+
           try {
-            console.log(`🔄 Estableciendo nueva dirección predeterminada: ${newDefaultAddress.id} (${newDefaultAddress.nombreDireccion})`);
-            const updatedAddress = await this.setDefaultAddress(newDefaultAddress.id);
-            console.log(`✅ Nueva dirección predeterminada establecida en la base de datos:`, {
-              id: updatedAddress.id,
-              nombreDireccion: updatedAddress.nombreDireccion,
-              esPredeterminada: updatedAddress.esPredeterminada
-            });
+            console.log(
+              `🔄 Estableciendo nueva dirección predeterminada: ${newDefaultAddress.id} (${newDefaultAddress.nombreDireccion})`
+            );
+            const updatedAddress = await this.setDefaultAddress(
+              newDefaultAddress.id
+            );
+            console.log(
+              `✅ Nueva dirección predeterminada establecida en la base de datos:`,
+              {
+                id: updatedAddress.id,
+                nombreDireccion: updatedAddress.nombreDireccion,
+                esPredeterminada: updatedAddress.esPredeterminada,
+              }
+            );
           } catch (setDefaultError) {
-            console.error("⚠️ Error estableciendo nueva dirección predeterminada:", setDefaultError);
+            console.error(
+              "⚠️ Error estableciendo nueva dirección predeterminada:",
+              setDefaultError
+            );
             // Re-lanzar el error para que el usuario sepa que hubo un problema
             throw new Error(
-              `La dirección fue eliminada, pero hubo un error al establecer otra como predeterminada: ${setDefaultError instanceof Error ? setDefaultError.message : 'Error desconocido'}`
+              `La dirección fue eliminada, pero hubo un error al establecer otra como predeterminada: ${
+                setDefaultError instanceof Error
+                  ? setDefaultError.message
+                  : "Error desconocido"
+              }`
             );
           }
         }
       } else if (totalAddresses === 1) {
         // Si era la única dirección, simplemente se elimina y ya está
-        console.log('ℹ️ Se eliminó la última dirección. No hay más direcciones para establecer como predeterminada.');
+        console.log(
+          "ℹ️ Se eliminó la última dirección. No hay más direcciones para establecer como predeterminada."
+        );
       }
 
       return result;
     } catch (error: unknown) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Error eliminando dirección";
+        error instanceof Error ? error.message : "Error eliminando dirección";
       throw new Error(errorMessage);
     }
   }

@@ -121,15 +121,23 @@ export default function Step4({
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3...');
-        router.push('/carrito/step3');
+        console.log(
+          "🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3..."
+        );
+        router.push("/carrito/step3");
       }
     };
 
-    window.addEventListener('address-changed', handleAddressChange as EventListener);
+    window.addEventListener(
+      "address-changed",
+      handleAddressChange as EventListener
+    );
 
     return () => {
-      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+      window.removeEventListener(
+        "address-changed",
+        handleAddressChange as EventListener
+      );
     };
   }, [router]);
 
@@ -158,7 +166,10 @@ export default function Step4({
         showCloseButton={false}
       >
         <AddCardForm
-          userId={authContext.user?.id || ""}
+          userId={
+            authContext.user?.id ||
+            JSON.parse(localStorage.getItem("imagiq_user")!).id
+          }
           onSuccess={handleAddCardSuccess}
           onCancel={handleCloseAddCardModal}
           showAsModal={true}

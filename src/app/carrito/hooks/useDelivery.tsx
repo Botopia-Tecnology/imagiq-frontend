@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState, useEffect, useCallback } from "react";
 import { Direccion } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
@@ -6,7 +6,11 @@ import type { Address } from "@/types/address";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { storesService } from "@/services/stores.service";
 import type { FormattedStore } from "@/types/store";
-import { productEndpoints, type CandidateStore, type CandidateStoresResponse } from "@/lib/api";
+import {
+  productEndpoints,
+  type CandidateStore,
+  type CandidateStoresResponse,
+} from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
 
 /**
@@ -16,10 +20,10 @@ const addressToDireccion = (address: Address): Direccion => {
   return {
     id: address.id,
     usuario_id: address.usuarioId,
-    email: '', // Se llenará del localStorage si es necesario
+    email: "", // Se llenará del localStorage si es necesario
     linea_uno: address.direccionFormateada,
     codigo_dane: address.codigo_dane, // Backend lo llena
-    ciudad: address.ciudad || '',
+    ciudad: address.ciudad || "",
     pais: address.pais,
     esPredeterminada: address.esPredeterminada,
   };
@@ -48,11 +52,14 @@ const candidateStoreToFormattedStore = async (
   try {
     // Obtener todas las tiendas para buscar la información completa
     const allStores = await storesService.getFormattedStores();
-    
+
     // Buscar la tienda por codBodega o nombre_tienda
     const matchedStore = allStores.find((store) => {
-      const codBodegaMatch = String(store.codBodega) === String(candidateStore.codBodega);
-      const nombreMatch = normalizeText(store.descripcion) === normalizeText(candidateStore.nombre_tienda);
+      const codBodegaMatch =
+        String(store.codBodega) === String(candidateStore.codBodega);
+      const nombreMatch =
+        normalizeText(store.descripcion) ===
+        normalizeText(candidateStore.nombre_tienda);
       return codBodegaMatch || nombreMatch;
     });
 
@@ -62,10 +69,12 @@ const candidateStoreToFormattedStore = async (
 
     // Si no se encuentra, crear un FormattedStore básico con los datos disponibles
     // Esto es un fallback en caso de que la tienda no esté en el listado completo
-    const codDane = candidateStore.codDane 
-      ? (typeof candidateStore.codDane === 'string' ? parseInt(candidateStore.codDane) : candidateStore.codDane)
+    const codDane = candidateStore.codDane
+      ? typeof candidateStore.codDane === "string"
+        ? parseInt(candidateStore.codDane)
+        : candidateStore.codDane
       : 0;
-    
+
     return {
       codigo: parseInt(candidateStore.codBodega) || 0,
       descripcion: candidateStore.nombre_tienda,
@@ -96,7 +105,9 @@ export const useDelivery = () => {
   const [storeQuery, setStoreQuery] = useState("");
   const [stores, setStores] = useState<FormattedStore[]>([]);
   const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
-  const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(null);
+  const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(
+    null
+  );
   const [addresses, setAddresses] = useState<Direccion[]>([]);
   const [canPickUp, setCanPickUp] = useState<boolean>(true); // Estado para saber si se puede recoger en tienda
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
@@ -113,7 +124,9 @@ export const useDelivery = () => {
     if (typeof window !== "undefined") {
       localStorage.setItem("checkout-delivery-method", method);
       // Disparar evento personalizado para notificar cambios
-      window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method } }));
+      window.dispatchEvent(
+        new CustomEvent("delivery-method-changed", { detail: { method } })
+      );
     }
   };
 
@@ -124,7 +137,10 @@ export const useDelivery = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const savedMethod = localStorage.getItem("checkout-delivery-method");
-    if (savedMethod && (savedMethod === "tienda" || savedMethod === "domicilio")) {
+    if (
+      savedMethod &&
+      (savedMethod === "tienda" || savedMethod === "domicilio")
+    ) {
       setDeliveryMethodState((current) => {
         if (current !== savedMethod) {
           return savedMethod;
@@ -137,15 +153,15 @@ export const useDelivery = () => {
   // Función para cargar tiendas candidatas
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
-      try {
-        setStoresLoading(true);
+    try {
+      setStoresLoading(true);
 
-        // Obtener user_id
-        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
-          "imagiq_user",
-          {}
-        );
-        const userId = user?.id || user?.user_id;
+      // Obtener user_id
+      const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+        "imagiq_user",
+        {}
+      );
+      const userId = user?.id || user?.user_id;
 
         if (!userId || products.length === 0) {
           setStores([]);
@@ -331,7 +347,9 @@ export const useDelivery = () => {
 
     const intervalId = setInterval(checkAddressChanges, 500);
 
-    console.log('✅ Listeners de cambio de dirección configurados en useDelivery');
+    console.log(
+      "✅ Listeners de cambio de dirección configurados en useDelivery"
+    );
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
@@ -348,7 +366,8 @@ export const useDelivery = () => {
       {}
     );
     if (userInfo && (userInfo.id || userInfo.email)) {
-      addressesService.getUserAddresses()
+      addressesService
+        .getUserAddresses()
         .then((addresses: Address[]) => {
           // Convertir Address[] a Direccion[] para mantener compatibilidad
           const direcciones = addresses.map(addressToDireccion);
@@ -374,7 +393,8 @@ export const useDelivery = () => {
             normalizeText(s.direccion).includes(normalizedQuery) ||
             normalizeText(s.ciudad).includes(normalizedQuery) ||
             normalizeText(s.departamento).includes(normalizedQuery) ||
-            (s.ubicacion_cc && normalizeText(s.ubicacion_cc).includes(normalizedQuery))
+            (s.ubicacion_cc &&
+              normalizeText(s.ubicacion_cc).includes(normalizedQuery))
         )
       );
     }
@@ -383,11 +403,16 @@ export const useDelivery = () => {
   // Autocompletar dirección si está guardada
   useEffect(() => {
     if (deliveryMethod === "domicilio" && typeof window !== "undefined") {
-      const saved = JSON.parse(
-        localStorage.getItem("checkout-address") || "{}"
-      ) as Direccion;
-      if (saved && saved.id) {
-        setAddress(saved);
+      const savedAddress = localStorage.getItem("checkout-address");
+      if (savedAddress && savedAddress !== "undefined") {
+        try {
+          const saved = JSON.parse(savedAddress) as Direccion;
+          if (saved.id) {
+            setAddress(saved);
+          }
+        } catch (error) {
+          console.error("Error parsing saved address:", error);
+        }
       }
     }
   }, [deliveryMethod]);
@@ -420,7 +445,8 @@ export const useDelivery = () => {
   const addAddress = () => {
     // Esta función solo refresca la lista de direcciones
     // La creación real se hace en AddNewAddressForm
-    addressesService.getUserAddresses()
+    addressesService
+      .getUserAddresses()
       .then((addresses: Address[]) => {
         // Convertir Address[] a Direccion[] para mantener compatibilidad
         const direcciones = addresses.map(addressToDireccion);

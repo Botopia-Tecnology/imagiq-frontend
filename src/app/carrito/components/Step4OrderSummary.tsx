@@ -510,6 +510,113 @@ export default function Step4OrderSummary({
         </button>
       </div>
 
+      {/* Información de compra - Términos, financiamiento y envío */}
+      <div className="flex flex-col gap-3 text-xs leading-relaxed">
+        {/* Términos y Condiciones - Centrado y pegado al botón */}
+        <p className="text-gray-700 text-center mt-3">
+          Al continuar con tu compra, aceptas los{" "}
+          <a
+            href="/soporte/politicas-generales"
+            target="_blank"
+            className="text-blue-600 underline hover:text-blue-700 font-semibold"
+          >
+            Términos y Condiciones
+          </a>{" "}
+          y utilizaremos tus datos personales de acuerdo a nuestra{" "}
+          <a
+            href="/soporte/tratamiento-datos-personales"
+            target="_blank"
+            className="text-blue-600 underline hover:text-blue-700 font-semibold"
+          >
+            política de privacidad
+          </a>
+          .
+        </p>
+
+        {/* Espacio entre secciones */}
+        <div className="mt-3"></div>
+
+        {/* Contenedor con padding lateral para información de financiamiento y envío */}
+        <div className="flex flex-col gap-3 px-2.5">
+          {/* Información de Financiamiento */}
+          <div className="flex gap-3 items-start">
+            <div className="shrink-0">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M8 14C8 12.3431 9.34315 11 11 11H29C30.6569 11 32 12.3431 32 14V26C32 27.6569 30.6569 29 29 29H11C9.34315 29 8 27.6569 8 26V14Z"
+                  stroke="#222"
+                  strokeWidth="1.5"
+                />
+                <path d="M8 17H32" stroke="#222" strokeWidth="1.5" />
+                <rect x="13" y="23" width="7" height="2.5" rx="1.25" fill="#222" />
+              </svg>
+            </div>
+            <p className="font-semibold text-black">
+              Compra sin interés a 3, 6, 12 o 24 cuotas pagando con tarjetas de
+              nuestros bancos aliados: Bancolombia y Davivienda. Aplican{" "}
+              <a
+                href="/soporte/tyc-bancolombia"
+                target="_blank"
+                className="text-blue-600 underline hover:text-blue-700 font-semibold"
+              >
+                T&C Bancolombia
+              </a>{" "}
+              y{" "}
+              <a
+                href="/soporte/tyc-davivienda"
+                target="_blank"
+                className="text-blue-600 underline hover:text-blue-700 font-semibold"
+              >
+                T&C Davivienda
+              </a>
+              .
+            </p>
+          </div>
+
+          {/* Información de Envío */}
+          <div className="flex gap-3 items-start">
+            <div className="shrink-0">
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 40 40"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                {/* Camión de envío */}
+                <path
+                  d="M9 16C9 14.8954 9.89543 14 11 14H21C22.1046 14 23 14.8954 23 16V29H9V16Z"
+                  stroke="#222"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M23 21H26.5858C27.1162 21 27.6249 21.2107 28 21.5858L30.4142 24C30.7893 24.3751 31 24.8838 31 25.4142V29H23V21Z"
+                  stroke="#222"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <circle cx="14" cy="29" r="2.5" stroke="#222" strokeWidth="1.5" />
+                <circle cx="27" cy="29" r="2.5" stroke="#222" strokeWidth="1.5" />
+                <path d="M9 19H23" stroke="#222" strokeWidth="1.5" />
+              </svg>
+            </div>
+            <p className="font-semibold text-black">
+              Envío gratis a toda Colombia. Si compras en Bogotá antes de las
+              11:00 am productos de la categoría Smartphones y Accesorios,
+              recibirás tu pedido el mismo día
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Debug: canPickUp global (solo cuando la variable de entorno está activa) */}
       {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">

@@ -62,6 +62,25 @@ export default function PaymentForm({
     []
   );
 
+  // Helper para obtener el userId (autenticado o invitado)
+  const getUserId = (): string | null => {
+    if (authContext.user?.id) {
+      return authContext.user.id;
+    }
+
+    try {
+      const storedUser = localStorage.getItem("imagiq_user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return parsedUser.id || null;
+      }
+    } catch (error) {
+    
+    }
+
+    return null;
+  };
+
   // Helper para obtener el máximo de cuotas sin interés de una tarjeta
   const getMaxInstallments = (cardId: string): number | null => {
     if (!zeroInterestData?.cards) return null;
@@ -81,20 +100,24 @@ export default function PaymentForm({
 
   // Cargar tarjetas guardadas al montar
   useEffect(() => {
-    if (authContext.user?.id) {
+    const userId = getUserId();
+    
+    if (userId) {
       loadSavedCards();
     }
   }, [authContext.user?.id, loadSavedCards]);
 
   // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
   useEffect(() => {
-    if (authContext.user?.id && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
+    const userId = getUserId();
+    if (userId && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
       loadSavedCards(true); // true = forzar recarga
     }
   }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
 
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas
   useEffect(() => {
+    
     if (
       savedCards.length > 0 &&
       !selectedCardId &&
@@ -123,6 +146,7 @@ export default function PaymentForm({
 
   // Filtrar tarjetas activas y no expiradas, excluyendo la predeterminada (ya está en Recomendados)
   const activeCards = savedCards.filter((card) => {
+  
     if (!card.activa) return false;
     if (card.fecha_vencimiento) {
       const [month, year] = card.fecha_vencimiento.split("/");
@@ -144,7 +168,7 @@ export default function PaymentForm({
   const shouldShowFullSkeleton =
     isLoadingCards ||
     (isLoadingZeroInterest && savedCards.length === 0) ||
-    (!isLoadingCards && savedCards.length === 0 && authContext.user?.id);
+    (!isLoadingCards && savedCards.length === 0 && getUserId() !== null);
 
   if (shouldShowFullSkeleton) {
     return (

@@ -697,7 +697,7 @@ export default function Step7({ onBack }: Step7Props) {
             shippingAmount: String(calculations.shipping),
             userInfo: {
               direccionId: billingData.direccion?.id || "",
-              userId: authContext.user?.id || "",
+              userId: authContext.user?.id || JSON.parse(localStorage.getItem("imagiq_user")!).id
             },
             cardTokenId: paymentData.savedCard?.id || "",
             informacion_facturacion,
@@ -759,7 +759,7 @@ export default function Step7({ onBack }: Step7Props) {
             codigo_bodega,
             userInfo: {
               direccionId: billingData.direccion?.id || "",
-              userId: authContext.user?.id || "",
+              userId: authContext.user?.id || JSON.parse(localStorage.getItem("imagiq_user")!).id,
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),

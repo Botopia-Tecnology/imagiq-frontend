@@ -12,16 +12,17 @@
  * - Redirección a la página de carrito al cerrar
  */
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import CheckoutErrorOverlay from "../carrito/CheckoutErrorOverlay";
 
 export default function ErrorCheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [open, setOpen] = useState(true);
 
-  // Obtener mensaje de error personalizado si existe (por ahora no se usa)
-  const errorMessage = undefined;
+  // Obtener mensaje de error personalizado desde los parámetros de búsqueda
+  const errorMessage = searchParams.get("error") || undefined;
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {
@@ -63,7 +64,7 @@ export default function ErrorCheckoutPage() {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#dc2626]">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
       <CheckoutErrorOverlay
         open={open}
         onClose={handleClose}

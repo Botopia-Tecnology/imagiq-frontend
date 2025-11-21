@@ -36,6 +36,8 @@ export interface CartProduct {
   ram?: string;
   skuPostback?: string;
   desDetallada?:string;
+  /** Modelo del producto (ej: "Galaxy S24", "Galaxy Watch") - usado para sugerencias relacionadas */
+  modelo?: string;
   /** Indica si el producto puede ser recogido en tienda (canPickUp) */
   canPickUp?: boolean;
   /** Indica si el producto aplica para retoma (indRetoma: 1 = aplica, 0 = no aplica) */
@@ -142,6 +144,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     const capacity = asString(p.capacity);
     const ram = asString(p.ram);
     const desDetallada = asString(p.desDetallada);
+    const modelo = asString(p.modelo);
     const canPickUp = typeof p.canPickUp === "boolean" ? p.canPickUp : undefined;
     const indRetoma = typeof p.indRetoma === "number" ? p.indRetoma : undefined;
 
@@ -165,6 +168,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       ram,
       skuPostback,
       desDetallada,
+      modelo,
       canPickUp,
       indRetoma,
     };

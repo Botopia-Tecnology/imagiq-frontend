@@ -341,6 +341,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         ean: producto.ean[0] || "",
         desDetallada:
           producto.desDetallada[0] || producto.nombreMarket?.[0] || "",
+        modelo: producto.modelo?.[0] || "",
       };
 
       // Agregar al carrito
@@ -579,7 +580,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
       <div className="max-w-6xl mx-auto mt-8 mb-4 md:mb-0">
-        <Sugerencias onAdd={handleAddSugerencia} />
+        <Sugerencias onAdd={handleAddSugerencia} cartProducts={cartProducts} />
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}

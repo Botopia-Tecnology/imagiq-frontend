@@ -397,6 +397,7 @@ export default function ProductCard({
         ram: productSelection.selection.selectedMemoriaram || undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: apiProduct?.modelo?.[0] || "",
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos

@@ -2,6 +2,8 @@
 import React from "react";
 import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
+import { productEndpoints } from "@/lib/api";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 interface ShippingVerification {
   envio_imagiq: boolean;
@@ -18,6 +20,8 @@ interface Step4OrderSummaryProps {
   shippingVerification?: ShippingVerification | null;
   deliveryMethod?: "delivery" | "pickup";
   isSticky?: boolean;
+  isStep1?: boolean; // Indica si estamos en Step1 para calcular canPickUp global
+  onCanPickUpReady?: (isReady: boolean, isLoading: boolean) => void; // Callback para notificar cuando canPickUp está listo
 }
 
 export default function Step4OrderSummary({
@@ -29,6 +33,8 @@ export default function Step4OrderSummary({
   shippingVerification,
   deliveryMethod,
   isSticky = true,
+  isStep1 = false,
+  onCanPickUpReady,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -115,6 +121,174 @@ export default function Step4OrderSummary({
       return total;
     }, 0);
   }, [products]);
+
+  // Estado para canPickUp global y debug
+  const [globalCanPickUp, setGlobalCanPickUp] = React.useState<boolean | null>(null);
+  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(false);
+
+  // Llamar a candidate-stores con TODOS los productos del carrito agrupados en una sola petición
+  // Ejecutar en Step1 y en otros steps si la variable de debug está activa
+  const fetchGlobalCanPickUp = React.useCallback(async () => {
+    // Solo calcular en Step1, o en otros steps si la variable de debug está activa
+    const shouldFetch = isStep1 || (process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true");
+    
+    if (!shouldFetch || products.length === 0) {
+      if (!shouldFetch) {
+        setGlobalCanPickUp(null);
+      }
+      return;
+    }
+
+    setIsLoadingCanPickUp(true);
+    try {
+      // Obtener user_id del localStorage
+      const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+        "imagiq_user",
+        {}
+      );
+      const userId = user?.id || user?.user_id;
+
+      if (!userId) {
+        setIsLoadingCanPickUp(false);
+        setGlobalCanPickUp(null);
+        return;
+      }
+
+      // Preparar TODOS los productos del carrito para una sola petición
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      // Llamar al endpoint con TODOS los productos agrupados
+      const response = await productEndpoints.getCandidateStores({
+        products: productsToCheck,
+        user_id: userId,
+      });
+
+      if (response.success && response.data) {
+        const responseData = response.data as { canPickUp?: boolean; canPickup?: boolean };
+        // Obtener canPickUp de la respuesta (puede venir como canPickUp o canPickup)
+        const canPickUpValue = responseData.canPickUp ?? responseData.canPickup ?? false;
+        
+        // El canPickUp global es el que responde el endpoint con todos los productos
+        setGlobalCanPickUp(canPickUpValue);
+      } else {
+        setGlobalCanPickUp(false);
+      }
+    } catch (error) {
+      console.error("❌ Error al verificar canPickUp global:", error);
+      setGlobalCanPickUp(false);
+    } finally {
+      setIsLoadingCanPickUp(false);
+    }
+  }, [products, isStep1]);
+  
+  // También calcular canPickUp global en otros steps si la variable de debug está activa
+  React.useEffect(() => {
+    if (!isStep1 && process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true") {
+      fetchGlobalCanPickUp();
+    }
+  }, [fetchGlobalCanPickUp, isStep1]);
+
+  // Notificar cuando canPickUp está listo (no está cargando)
+  React.useEffect(() => {
+    if (isStep1 && onCanPickUpReady) {
+      onCanPickUpReady(!isLoadingCanPickUp, isLoadingCanPickUp);
+    }
+  }, [isStep1, isLoadingCanPickUp, onCanPickUpReady]);
+
+  // Ejecutar cuando cambian los productos
+  React.useEffect(() => {
+    fetchGlobalCanPickUp();
+  }, [fetchGlobalCanPickUp]);
+
+  // Escuchar cambios de dirección (desde header O desde checkout) cuando la variable de debug está activa o en Step1
+  React.useEffect(() => {
+    const shouldListen = isStep1 || (process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true");
+    if (!shouldListen) return;
+
+    const handleAddressChange = (event: Event) => {
+      console.log('🔄 Evento de cambio de dirección recibido en Step4OrderSummary:', event.type);
+      console.log('🔄 Dirección cambió, recalculando canPickUp global...');
+      // Recalcular canPickUp global cuando cambia la dirección
+      fetchGlobalCanPickUp();
+    };
+
+    const handleStorageChange = (e: StorageEvent) => {
+      // Escuchar cambios en checkout-address o imagiq_default_address
+      if (e.key === 'checkout-address' || e.key === 'imagiq_default_address') {
+        console.log('🔄 Cambio detectado en localStorage (Step4OrderSummary):', e.key);
+        handleAddressChange(e);
+      }
+    };
+
+    // Escuchar evento storage (para cambios entre tabs)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Escuchar eventos personalizados desde header
+    window.addEventListener('address-changed', handleAddressChange);
+
+    // Escuchar eventos personalizados desde checkout
+    window.addEventListener('checkout-address-changed', handleAddressChange);
+
+    // También verificar cambios periódicamente en la misma tab
+    let lastCheckoutAddress = localStorage.getItem('checkout-address');
+    let lastDefaultAddress = localStorage.getItem('imagiq_default_address');
+
+    const checkAddressChanges = () => {
+      const currentCheckoutAddress = localStorage.getItem('checkout-address');
+      const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
+
+      if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
+        console.log('🔄 Cambio detectado en checkout-address (polling - Step4OrderSummary)');
+        handleAddressChange(new Event('checkout-address-changed'));
+        lastCheckoutAddress = currentCheckoutAddress;
+      }
+
+      if (currentDefaultAddress !== lastDefaultAddress && lastDefaultAddress !== null) {
+        console.log('🔄 Cambio detectado en imagiq_default_address (polling - Step4OrderSummary)');
+        handleAddressChange(new Event('address-changed'));
+        lastDefaultAddress = currentDefaultAddress;
+      }
+    };
+
+    const intervalId = setInterval(checkAddressChanges, 500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('address-changed', handleAddressChange);
+      window.removeEventListener('checkout-address-changed', handleAddressChange);
+      clearInterval(intervalId);
+    };
+  }, [fetchGlobalCanPickUp, isStep1]);
+
+  // Escuchar cuando se agregan productos al carrito o cambia la cantidad (solo en Step1)
+  React.useEffect(() => {
+    if (!isStep1) return;
+
+    const handleStorageChange = (e: Event | StorageEvent) => {
+      const key = 'detail' in e && e.detail && typeof e.detail === 'object' && 'key' in e.detail 
+        ? (e.detail as { key?: string }).key 
+        : 'key' in e ? e.key : null;
+      
+      if (key === 'cart-items') {
+        console.log('🔄 Productos del carrito cambiaron (cantidad o nuevo producto), recalculando canPickUp global...');
+        // Recalcular canPickUp global cuando cambian los productos
+        fetchGlobalCanPickUp();
+      }
+    };
+
+    // Escuchar cambios en cart-items (cuando se agregan productos desde sugerencias o cambia la cantidad)
+    window.addEventListener('storage', handleStorageChange);
+    // También escuchar evento personalizado
+    window.addEventListener('localStorageChange', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageChange', handleStorageChange);
+    };
+  }, [fetchGlobalCanPickUp]);
 
   const baseContainerClasses =
     "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";
@@ -231,9 +405,9 @@ export default function Step4OrderSummary({
           onClick={onFinishPayment}
         >
           {isProcessing ? (
-            <span className="flex items-center gap-2" aria-live="polite">
+            <span className="flex items-center justify-center gap-2" aria-live="polite">
               <svg
-                className="animate-spin h-5 w-5 mr-2 text-green-500"
+                className="animate-spin h-5 w-5 text-white"
                 viewBox="0 0 24 24"
               >
                 <circle
@@ -251,7 +425,7 @@ export default function Step4OrderSummary({
                   d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                 />
               </svg>
-              <span>Procesando…</span>
+              <span>{buttonText}</span>
             </span>
           ) : (
             buttonText
@@ -259,32 +433,19 @@ export default function Step4OrderSummary({
         </button>
       </div>
 
-      {/* Debug: Shipping Method Display */}
+      {/* Debug: canPickUp global (solo cuando la variable de entorno está activa) */}
       {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs font-semibold text-yellow-800 mb-2">
-            Debug: Método de envío
+            Debug: canPickUp global
           </p>
-          <div className="text-xs text-yellow-700 space-y-1">
-            {deliveryMethod === "pickup" && (
-              <p className="font-medium">📦 Recogida en tienda</p>
-            )}
-            {deliveryMethod === "delivery" && shippingVerification && (
-              <>
-                {shippingVerification.envio_imagiq ? (
-                  <p className="font-medium">🚚 Envío Imagiq</p>
-                ) : (
-                  <p className="font-medium">🚛 Envío Coordinadora</p>
-                )}
-                <div className="mt-2 space-y-0.5 text-[10px]">
-                  <p>• envio_imagiq: {shippingVerification.envio_imagiq ? "true" : "false"}</p>
-                  <p>• todos_productos_im_it: {shippingVerification.todos_productos_im_it ? "true" : "false"}</p>
-                  <p>• en_zona_cobertura: {shippingVerification.en_zona_cobertura ? "true" : "false"}</p>
-                </div>
-              </>
-            )}
-            {deliveryMethod === "delivery" && !shippingVerification && (
-              <p className="text-yellow-600 italic">Verificando cobertura...</p>
+          <div className="text-xs text-yellow-700">
+            {isLoadingCanPickUp ? (
+              <p className="text-yellow-600 italic">Verificando...</p>
+            ) : globalCanPickUp === null ? (
+              <p className="text-yellow-600 italic">No disponible</p>
+            ) : (
+              <p className="font-medium">canPickUp global: {globalCanPickUp ? "true" : "false"}</p>
             )}
           </div>
         </div>

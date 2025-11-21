@@ -6,6 +6,8 @@ interface DeliveryMethodSelectorProps {
   canContinue: boolean;
   disableHomeDelivery?: boolean;
   disableReason?: string;
+  disableStorePickup?: boolean;
+  disableStorePickupReason?: string;
 }
 
 export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
@@ -14,6 +16,8 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
   canContinue,
   disableHomeDelivery = false,
   disableReason,
+  disableStorePickup = false,
+  disableStorePickupReason,
 }) => {
   return (
     <div className="space-y-4">

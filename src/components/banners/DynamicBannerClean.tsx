@@ -241,96 +241,113 @@ export default function DynamicBannerClean({ placement, className = '', showOver
   if (loading) return <BannerSkeleton />;
   if (!currentBanner) return <>{children || null}</>;
 
-  // Parse text styles del nuevo sistema
-  const textStyles = parseTextStyles(currentBanner.text_styles);
-  
-  // prepare media nodes to avoid nested ternary expressions in JSX
-  let desktopMedia: React.ReactNode = null;
-  if (currentBanner.desktop_video_url) {
-    desktopMedia = (
-      <video
-        ref={desktopVideoRef}
-        autoPlay
-        muted
-        playsInline
-        preload="metadata"
-        poster={currentBanner.desktop_image_url || undefined}
-        className="w-full h-full object-contain"
-        onEnded={handleVideoEnd}
-        key={`desktop-video-${currentBannerIndex}`}
-      >
-        <source src={currentBanner.desktop_video_url} type="video/mp4" />
-      </video>
-    );
-  } else if (currentBanner.desktop_image_url) {
-    desktopMedia = (
-      <div
-        className="w-full h-full bg-contain bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${currentBanner.desktop_image_url})` }}
-        key={`desktop-image-${currentBannerIndex}`}
-      />
-    );
-  }
-
-  let mobileMedia: React.ReactNode = null;
-  if (currentBanner.mobile_video_url) {
-    mobileMedia = (
-      <video
-        ref={mobileVideoRef}
-        autoPlay
-        muted
-        playsInline
-        preload="metadata"
-        poster={currentBanner.mobile_image_url || undefined}
-        className="w-full h-full object-contain"
-        onEnded={handleVideoEnd}
-        key={`mobile-video-${currentBannerIndex}`}
-      >
-        <source src={currentBanner.mobile_video_url} type="video/mp4" />
-      </video>
-    );
-  } else if (currentBanner.mobile_image_url) {
-    mobileMedia = (
-      <div
-        className="w-full h-full bg-contain bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${currentBanner.mobile_image_url})` }}
-        key={`mobile-image-${currentBannerIndex}`}
-      />
-    );
-  }
-
   const content = (
     <div className={`relative w-full ${className}`}>
       <div className="relative max-w-[1440px] mx-auto min-h-[700px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
         {showOverlay && <div className="absolute inset-0 bg-black/30 z-10" />}
 
-        <div ref={desktopRef} className="hidden md:block absolute inset-0">
-          {desktopMedia}
-        </div>
+        {/* Todos los banners en posición absoluta con transición fade + slide */}
+        {banners.map((banner, index) => {
+          const isActive = index === currentBannerIndex;
+          const desktopPosition = parsePosition(banner.position_desktop);
+          const mobilePosition = parsePosition(banner.position_mobile);
+          const bannerTextStyles = parseTextStyles(banner.text_styles);
 
-        <div ref={mobileRef} className="block md:hidden absolute inset-0">
-          {mobileMedia}
-        </div>
+          let bannerDesktopMedia: React.ReactNode = null;
+          if (banner.desktop_video_url) {
+            bannerDesktopMedia = (
+              <video
+                ref={isActive ? desktopVideoRef : null}
+                autoPlay={isActive}
+                muted
+                playsInline
+                preload="metadata"
+                poster={banner.desktop_image_url || undefined}
+                className="w-full h-full object-contain"
+                onEnded={isActive ? handleVideoEnd : undefined}
+                key={`desktop-video-${index}`}
+              >
+                <source src={banner.desktop_video_url} type="video/mp4" />
+              </video>
+            );
+          } else if (banner.desktop_image_url) {
+            bannerDesktopMedia = (
+              <div
+                className="w-full h-full bg-contain bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${banner.desktop_image_url})` }}
+                key={`desktop-image-${index}`}
+              />
+            );
+          }
 
-        <div className="absolute inset-0 z-20">
-          <BannerContent
-            title={currentBanner.title}
-            description={currentBanner.description}
-            cta={currentBanner.cta}
-            color={currentBanner.color_font}
-            positionStyle={deskStyle ?? positionToPercentCSS(parsePosition(currentBanner.position_desktop))}
-            textStyles={textStyles}
-          />
-          <BannerContent
-            title={currentBanner.title}
-            description={currentBanner.description}
-            cta={currentBanner.cta}
-            color={currentBanner.color_font}
-            positionStyle={mobStyle ?? positionToPercentCSS(parsePosition(currentBanner.position_mobile))}
-            isMobile
-            textStyles={textStyles}
-          />
-        </div>
+          let bannerMobileMedia: React.ReactNode = null;
+          if (banner.mobile_video_url) {
+            bannerMobileMedia = (
+              <video
+                ref={isActive ? mobileVideoRef : null}
+                autoPlay={isActive}
+                muted
+                playsInline
+                preload="metadata"
+                poster={banner.mobile_image_url || undefined}
+                className="w-full h-full object-contain"
+                onEnded={isActive ? handleVideoEnd : undefined}
+                key={`mobile-video-${index}`}
+              >
+                <source src={banner.mobile_video_url} type="video/mp4" />
+              </video>
+            );
+          } else if (banner.mobile_image_url) {
+            bannerMobileMedia = (
+              <div
+                className="w-full h-full bg-contain bg-center bg-no-repeat"
+                style={{ backgroundImage: `url(${banner.mobile_image_url})` }}
+                key={`mobile-image-${index}`}
+              />
+            );
+          }
+
+          return (
+            <div
+              key={banner.id}
+              className="absolute inset-0 transition-all duration-700 ease-in-out"
+              style={{
+                opacity: isActive ? 1 : 0,
+                transform: isActive ? 'translateX(0)' : 'translateX(-30px)',
+                pointerEvents: isActive ? 'auto' : 'none',
+                zIndex: isActive ? 1 : 0
+              }}
+            >
+              <div ref={isActive ? desktopRef : null} className="hidden md:block absolute inset-0">
+                {bannerDesktopMedia}
+              </div>
+
+              <div ref={isActive ? mobileRef : null} className="block md:hidden absolute inset-0">
+                {bannerMobileMedia}
+              </div>
+
+              <div className="absolute inset-0 z-20">
+                <BannerContent
+                  title={banner.title}
+                  description={banner.description}
+                  cta={banner.cta}
+                  color={banner.color_font}
+                  positionStyle={isActive && deskStyle ? deskStyle : positionToPercentCSS(desktopPosition)}
+                  textStyles={bannerTextStyles}
+                />
+                <BannerContent
+                  title={banner.title}
+                  description={banner.description}
+                  cta={banner.cta}
+                  color={banner.color_font}
+                  positionStyle={isActive && mobStyle ? mobStyle : positionToPercentCSS(mobilePosition)}
+                  isMobile
+                  textStyles={bannerTextStyles}
+                />
+              </div>
+            </div>
+          );
+        })}
 
         {/* NUEVO: Indicadores de carrusel (solo si hay múltiples banners) */}
         {banners.length > 1 && (

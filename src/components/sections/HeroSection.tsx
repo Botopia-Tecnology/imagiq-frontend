@@ -96,6 +96,9 @@ export default function HeroSection() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const BANNER_DISPLAY_DURATION = 5000; // 5 segundos
 
+  // NUEVO: Trackear qué videos ya se reprodujeron (para no reproducirlos de nuevo en el loop)
+  const playedVideosRef = useRef<Set<number>>(new Set());
+
   // NUEVO: Config actualmente visible
   const currentConfig = configs[currentBannerIndex] || config;
 
@@ -110,11 +113,19 @@ export default function HeroSection() {
   // NUEVO: Handler cuando termina un video
   const handleVideoEndCarousel = () => {
     if (configs.length > 1) {
+      // Marcar este video como reproducido
+      playedVideosRef.current.add(currentBannerIndex);
+
       timerRef.current = setTimeout(() => {
         goToNextBanner();
       }, BANNER_DISPLAY_DURATION);
     }
   };
+
+  // NUEVO: Reiniciar videoEnded cuando cambia el banner
+  useEffect(() => {
+    setVideoEnded(false);
+  }, [currentBannerIndex]);
 
   // NUEVO: Efecto para gestionar el carrusel automático
   useEffect(() => {
@@ -133,12 +144,15 @@ export default function HeroSection() {
 
     const currentBannerData = configs[currentBannerIndex];
     const hasVideo = Boolean(currentBannerData?.videoSrc || currentBannerData?.mobileVideoSrc);
+    const videoAlreadyPlayed = playedVideosRef.current.has(currentBannerIndex);
 
-    if (!hasVideo) {
+    // Si no tiene video O si el video ya se reprodujo antes, solo mostrar por 5 segundos
+    if (!hasVideo || videoAlreadyPlayed) {
       timerRef.current = setTimeout(() => {
         goToNextBanner();
       }, BANNER_DISPLAY_DURATION);
     }
+    // Si tiene video y no se ha reproducido, el timer se establecerá en handleVideoEnd
 
     return () => {
       if (timerRef.current) {
@@ -224,141 +238,169 @@ export default function HeroSection() {
       }}
       data-hero="true"
     >
-      {/* Media de fondo */}
-      <div className="absolute inset-0 transition-opacity duration-1000 ease-in-out">
-        {/* Desktop media */}
-        <div className="hidden md:block absolute inset-0">
-          {currentConfig.videoSrc ? (
-            <>
-              {/* Desktop video */}
-              <video
-                key={`hero-desktop-video-${currentBannerIndex}`}
-                className="h-full object-cover"
-                autoPlay
-                muted
-                loop={currentConfig.loop}
-                playsInline
-                preload="metadata"
-                onEnded={handleVideoEnd}
-                poster={currentConfig.imageSrc || undefined}
-                style={{
-                  opacity: videoEnded ? 0 : 1,
-                  width: `${100 - scrollProgress * 8}%`,
-                  marginLeft: `${scrollProgress * 4}%`,
-                  marginRight: `${scrollProgress * 4}%`,
-                  transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
-                }}
-              >
-                <source src={currentConfig.videoSrc} type="video/mp4" />
-              </video>
-              {/* Desktop poster image - shown when video ends */}
-              {currentConfig.imageSrc && (
-                <div
-                  className="absolute top-0 left-0 bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url(${currentConfig.imageSrc})`,
-                    opacity: videoEnded ? 1 : 0,
-                    width: `${100 - scrollProgress * 8}%`,
-                    height: '100%',
-                    marginLeft: `${scrollProgress * 4}%`,
-                    transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
-                  }}
-                />
-              )}
-            </>
-          ) : (
-            /* Desktop image only */
-            currentConfig.imageSrc && (
-              <div
-                key={`hero-desktop-image-${currentBannerIndex}`}
-                className="w-full h-full bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${currentConfig.imageSrc})`,
-                  width: `${100 - scrollProgress * 8}%`,
-                  marginLeft: `${scrollProgress * 4}%`,
-                  marginRight: `${scrollProgress * 4}%`,
-                  transition: "width 0.3s ease-out, margin 0.3s ease-out",
-                }}
-              />
-            )
-          )}
-        </div>
+      {/* Todos los banners en posición absoluta con transición fade + slide */}
+      {configs.map((config, index) => {
+        const isActive = index === currentBannerIndex;
+        const videoAlreadyPlayed = playedVideosRef.current.has(index);
+        const bannerVideoEnded = isActive ? videoEnded : false;
+        const hasAnyVideoBanner = Boolean(config.videoSrc || config.mobileVideoSrc);
+        const showImmediatelyBanner = !hasAnyVideoBanner;
+        const canShowBanner = showImmediatelyBanner || Boolean(config.showContentOnEnd);
+        // Si el video ya se reprodujo antes, mostrar contenido inmediatamente
+        const effectiveVideoEndedBanner = showImmediatelyBanner || videoAlreadyPlayed ? true : bannerVideoEnded;
+        const desktopPositionStyleBanner = positionToCSS(config.positionDesktop ?? null);
+        const mobilePositionStyleBanner = positionToCSS(config.positionMobile ?? null);
 
-        {/* Mobile media */}
-        <div className="md:hidden absolute inset-0">
-          {currentConfig.mobileVideoSrc ? (
-            <>
-              {/* Mobile video */}
-              <video
-                key={`hero-mobile-video-${currentBannerIndex}`}
-                className="h-full object-cover"
-                autoPlay
-                muted
-                loop={currentConfig.loop}
-                playsInline
-                preload="metadata"
-                onEnded={handleVideoEnd}
-                poster={currentConfig.mobileImageSrc || undefined}
-                style={{
-                  opacity: videoEnded ? 0 : 1,
-                  width: `${100 - scrollProgress * 8}%`,
-                  marginLeft: `${scrollProgress * 4}%`,
-                  marginRight: `${scrollProgress * 4}%`,
-                  transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
-                }}
-              >
-                <source src={currentConfig.mobileVideoSrc} type="video/mp4" />
-              </video>
-              {/* Mobile poster image - shown when video ends */}
-              {currentConfig.mobileImageSrc && (
-                <div
-                  className="absolute top-0 left-0 bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url(${currentConfig.mobileImageSrc})`,
-                    opacity: videoEnded ? 1 : 0,
-                    width: `${100 - scrollProgress * 8}%`,
-                    height: '100%',
-                    marginLeft: `${scrollProgress * 4}%`,
-                    transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
-                  }}
-                />
-              )}
-            </>
-          ) : (
-            /* Mobile image only */
-            currentConfig.mobileImageSrc && (
-              <div
-                key={`hero-mobile-image-${currentBannerIndex}`}
-                className="w-full h-full bg-cover bg-center"
-                style={{
-                  backgroundImage: `url(${currentConfig.mobileImageSrc})`,
-                  width: `${100 - scrollProgress * 8}%`,
-                  marginLeft: `${scrollProgress * 4}%`,
-                  marginRight: `${scrollProgress * 4}%`,
-                  transition: "width 0.3s ease-out, margin 0.3s ease-out",
-                }}
-              />
-            )
-          )}
-        </div>
-      </div>
+        // Si el video ya se reprodujo, mostrar solo la imagen
+        const shouldShowVideoDesktop = config.videoSrc && !videoAlreadyPlayed && isActive;
+        const shouldShowVideoMobile = config.mobileVideoSrc && !videoAlreadyPlayed && isActive;
 
-      {/* Contenido con coordenadas dinámicas */}
-      {canShow ? (
-        <>
-          <HeroContent
-            config={currentConfig}
-            videoEnded={effectiveVideoEnded}
-            positionStyle={desktopPositionStyle}
-          />
-          <HeroContent
-            config={currentConfig}
-            videoEnded={effectiveVideoEnded}
-            positionStyle={mobilePositionStyle}
-            isMobile
-          />
-        </>
-      ) : null}
+        return (
+          <div
+            key={index}
+            className="absolute inset-0 transition-all duration-700 ease-in-out"
+            style={{
+              opacity: isActive ? 1 : 0,
+              transform: isActive ? 'translateX(0)' : 'translateX(-30px)',
+              pointerEvents: isActive ? 'auto' : 'none',
+              zIndex: isActive ? 1 : 0
+            }}
+          >
+            {/* Desktop media */}
+            <div className="hidden md:block absolute inset-0">
+              {shouldShowVideoDesktop ? (
+                <>
+                  {/* Desktop video */}
+                  <video
+                    key={`hero-desktop-video-${index}`}
+                    className="h-full object-cover"
+                    autoPlay={isActive}
+                    muted
+                    loop={config.loop}
+                    playsInline
+                    preload="metadata"
+                    onEnded={isActive ? handleVideoEnd : undefined}
+                    poster={config.imageSrc || undefined}
+                    style={{
+                      opacity: bannerVideoEnded ? 0 : 1,
+                      width: `${100 - scrollProgress * 8}%`,
+                      marginLeft: `${scrollProgress * 4}%`,
+                      marginRight: `${scrollProgress * 4}%`,
+                      transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
+                    }}
+                  >
+                    <source src={config.videoSrc} type="video/mp4" />
+                  </video>
+                  {/* Desktop poster image - shown when video ends */}
+                  {config.imageSrc && (
+                    <div
+                      className="absolute top-0 left-0 bg-cover bg-center"
+                      style={{
+                        backgroundImage: `url(${config.imageSrc})`,
+                        opacity: bannerVideoEnded ? 1 : 0,
+                        width: `${100 - scrollProgress * 8}%`,
+                        height: '100%',
+                        marginLeft: `${scrollProgress * 4}%`,
+                        transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
+                      }}
+                    />
+                  )}
+                </>
+              ) : (
+                /* Desktop image only (o video ya reproducido) */
+                config.imageSrc && (
+                  <div
+                    key={`hero-desktop-image-${index}`}
+                    className="w-full h-full bg-cover bg-center"
+                    style={{
+                      backgroundImage: `url(${config.imageSrc})`,
+                      width: `${100 - scrollProgress * 8}%`,
+                      marginLeft: `${scrollProgress * 4}%`,
+                      marginRight: `${scrollProgress * 4}%`,
+                      transition: "width 0.3s ease-out, margin 0.3s ease-out",
+                    }}
+                  />
+                )
+              )}
+            </div>
+
+            {/* Mobile media */}
+            <div className="md:hidden absolute inset-0">
+              {shouldShowVideoMobile ? (
+                <>
+                  {/* Mobile video */}
+                  <video
+                    key={`hero-mobile-video-${index}`}
+                    className="h-full object-cover"
+                    autoPlay={isActive}
+                    muted
+                    loop={config.loop}
+                    playsInline
+                    preload="metadata"
+                    onEnded={isActive ? handleVideoEnd : undefined}
+                    poster={config.mobileImageSrc || undefined}
+                    style={{
+                      opacity: bannerVideoEnded ? 0 : 1,
+                      width: `${100 - scrollProgress * 8}%`,
+                      marginLeft: `${scrollProgress * 4}%`,
+                      marginRight: `${scrollProgress * 4}%`,
+                      transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
+                    }}
+                  >
+                    <source src={config.mobileVideoSrc} type="video/mp4" />
+                  </video>
+                  {/* Mobile poster image - shown when video ends */}
+                  {config.mobileImageSrc && (
+                    <div
+                      className="absolute top-0 left-0 bg-cover bg-center"
+                      style={{
+                        backgroundImage: `url(${config.mobileImageSrc})`,
+                        opacity: bannerVideoEnded ? 1 : 0,
+                        width: `${100 - scrollProgress * 8}%`,
+                        height: '100%',
+                        marginLeft: `${scrollProgress * 4}%`,
+                        transition: "opacity 0.5s ease-in-out, width 0.3s ease-out, margin 0.3s ease-out",
+                      }}
+                    />
+                  )}
+                </>
+              ) : (
+                /* Mobile image only (o video ya reproducido) */
+                config.mobileImageSrc && (
+                  <div
+                    key={`hero-mobile-image-${index}`}
+                    className="w-full h-full bg-cover bg-center"
+                    style={{
+                      backgroundImage: `url(${config.mobileImageSrc})`,
+                      width: `${100 - scrollProgress * 8}%`,
+                      marginLeft: `${scrollProgress * 4}%`,
+                      marginRight: `${scrollProgress * 4}%`,
+                      transition: "width 0.3s ease-out, margin 0.3s ease-out",
+                    }}
+                  />
+                )
+              )}
+            </div>
+
+            {/* Contenido específico de este banner */}
+            {canShowBanner || videoAlreadyPlayed ? (
+              <>
+                <HeroContent
+                  config={config}
+                  videoEnded={effectiveVideoEndedBanner}
+                  positionStyle={desktopPositionStyleBanner}
+                />
+                <HeroContent
+                  config={config}
+                  videoEnded={effectiveVideoEndedBanner}
+                  positionStyle={mobilePositionStyleBanner}
+                  isMobile
+                />
+              </>
+            ) : null}
+          </div>
+        );
+      })}
 
       {/* NUEVO: Indicadores de carrusel (solo si hay múltiples banners) */}
       {configs.length > 1 && (

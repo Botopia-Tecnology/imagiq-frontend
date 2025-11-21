@@ -20,6 +20,7 @@ export interface CreateAddressRequest {
   complemento?: string;
   instruccionesEntrega?: string;
   puntoReferencia?: string;
+  ciudad?: string; // Ciudad seleccionada por el usuario
   usuarioId?: string; // Para usuarios invitados sin JWT
 }
 

@@ -274,32 +274,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Estado para saber si canPickUp global está cargando
   const [isLoadingCanPickUpGlobal, setIsLoadingCanPickUpGlobal] = React.useState(false);
 
-  // Estado para controlar el loading cuando se espera canPickUp
-  const [isWaitingForCanPickUp, setIsWaitingForCanPickUp] = React.useState(false);
-
   // Callback para recibir el estado de canPickUp desde Step4OrderSummary
+  // Solo actualiza el estado, el avance automático se maneja en Step4OrderSummary
   const handleCanPickUpReady = React.useCallback((isReady: boolean, isLoading: boolean) => {
     setIsLoadingCanPickUpGlobal(isLoading);
-    
-    // Si estábamos esperando y ya terminó, avanzar automáticamente
-    if (isWaitingForCanPickUp && !isLoading) {
-      console.log('✅ canPickUp calculado, avanzando automáticamente...');
-      setIsWaitingForCanPickUp(false);
-      
-      // Track del evento begin_checkout para analytics
-      trackBeginCheckout(
-        cartProducts.map((p) => ({
-          item_id: p.sku,
-          item_name: p.name,
-          price: Number(p.price),
-          quantity: p.quantity,
-        })),
-        total
-      );
-      
-      onContinue();
-    }
-  }, [isWaitingForCanPickUp, cartProducts, total, onContinue]);
+    // El avance automático ahora se maneja en Step4OrderSummary con userClickedWhileLoading
+  }, []);
 
   // Función para manejar el click en continuar pago
   const handleContinue = async () => {
@@ -315,46 +295,27 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       return;
     }
 
-    // IMPORTANTE: Si canPickUp global no está listo, esperar hasta que lo esté
+    // IMPORTANTE: Si canPickUp global está cargando, la nueva lógica en Step4OrderSummary
+    // se encargará de avanzar automáticamente cuando termine (usando userClickedWhileLoading)
+    // Solo necesitamos esperar si ya terminó de cargar
     if (isLoadingCanPickUpGlobal) {
-      console.log('⏳ Esperando a que canPickUp global se calcule...');
-      setIsWaitingForCanPickUp(true);
-      
-      // El callback handleCanPickUpReady se encargará de avanzar automáticamente cuando termine
-      // También esperamos con timeout por seguridad
-      try {
-        const maxWait = 10000; // 10 segundos
-        const startTime = Date.now();
-
-        while (isLoadingCanPickUpGlobal && (Date.now() - startTime) < maxWait) {
-          await new Promise(resolve => setTimeout(resolve, 100));
-        }
-
-        // Si aún está cargando después del timeout, mostrar error
-        if (isLoadingCanPickUpGlobal) {
-          console.error('❌ Timeout esperando canPickUp global');
-          setIsWaitingForCanPickUp(false);
-          alert('Hubo un problema al verificar la disponibilidad de recogida. Por favor intenta de nuevo.');
-          return;
-        }
-      } catch (error) {
-        console.error('Error esperando canPickUp:', error);
-        setIsWaitingForCanPickUp(false);
-      }
-    } else {
-      // Si ya se calculó, continuar normalmente
-      trackBeginCheckout(
-        cartProducts.map((p) => ({
-          item_id: p.sku,
-          item_name: p.name,
-          price: Number(p.price),
-          quantity: p.quantity,
-        })),
-        total
-      );
-
-      onContinue();
+      console.log('⏳ canPickUp está cargando, Step4OrderSummary avanzará automáticamente cuando termine...');
+      // No hacer nada aquí, dejar que Step4OrderSummary maneje el avance automático
+      return;
     }
+
+    // Si ya se calculó o no está cargando, continuar normalmente
+    trackBeginCheckout(
+      cartProducts.map((p) => ({
+        item_id: p.sku,
+        item_name: p.name,
+        price: Number(p.price),
+        quantity: p.quantity,
+      })),
+      total
+    );
+
+    onContinue();
   };
 
   // UX: feedback visual al agregar sugerencia usando el hook centralizado
@@ -535,13 +496,34 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         {/* Resumen de compra y Trade-In - Solo Desktop */}
         <aside className="hidden md:block space-y-4">
           <Step4OrderSummary
-            onFinishPayment={handleContinue}
+            onFinishPayment={() => {
+              // Validar Trade-In antes de continuar
+              const validation = validateTradeInProducts(cartProducts);
+              if (!validation.isValid) {
+                const message = getTradeInValidationMessage(validation);
+                alert(message);
+                return;
+              }
+
+              // Track del evento begin_checkout para analytics
+              trackBeginCheckout(
+                cartProducts.map((p) => ({
+                  item_id: p.sku,
+                  item_name: p.name,
+                  price: Number(p.price),
+                  quantity: p.quantity,
+                })),
+                total
+              );
+
+              onContinue();
+            }}
             buttonText="Continuar pago"
             disabled={cartProducts.length === 0 || !tradeInValidation.isValid}
             isSticky={false}
             isStep1={true}
             onCanPickUpReady={handleCanPickUpReady}
-            isProcessing={isWaitingForCanPickUp}
+            shouldCalculateCanPickUp={true}
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}
@@ -581,14 +563,14 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             {/* Botón continuar */}
             <button
               className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-                !tradeInValidation.isValid || isWaitingForCanPickUp
+                !tradeInValidation.isValid || isLoadingCanPickUpGlobal
                   ? "bg-gray-400 cursor-not-allowed opacity-70"
                   : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}
               onClick={handleContinue}
-              disabled={!tradeInValidation.isValid || isWaitingForCanPickUp}
+              disabled={!tradeInValidation.isValid || isLoadingCanPickUpGlobal}
             >
-              {isWaitingForCanPickUp ? (
+              {isLoadingCanPickUpGlobal ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />

@@ -347,7 +347,6 @@ export default function Step3({
           if (storesLoading) {
             console.error('❌ Timeout esperando canPickUp en Step3');
             setIsWaitingForCanPickUp(false);
-            alert('Hubo un problema al verificar la disponibilidad de recogida. Por favor intenta de nuevo.');
           }
           // Si terminó de cargar, el useEffect se encargará de avanzar
         }
@@ -495,6 +494,15 @@ export default function Step3({
               onBack={onBack}
               disabled={!canContinue || !tradeInValidation.isValid}
               isProcessing={isWaitingForCanPickUp}
+              deliveryMethod={
+                deliveryMethod === "tienda"
+                  ? "pickup"
+                  : deliveryMethod === "domicilio"
+                  ? "delivery"
+                  : deliveryMethod === "delivery" || deliveryMethod === "pickup"
+                  ? deliveryMethod
+                  : undefined
+              }
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

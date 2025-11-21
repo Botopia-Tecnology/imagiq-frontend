@@ -308,6 +308,17 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               onBack={onBack}
               buttonText="Continuar"
               disabled={selectedInstallments === null || !tradeInValidation.isValid}
+              deliveryMethod={
+                typeof window !== "undefined"
+                  ? (() => {
+                      const method = localStorage.getItem("checkout-delivery-method");
+                      if (method === "tienda") return "pickup";
+                      if (method === "domicilio") return "delivery";
+                      if (method === "delivery" || method === "pickup") return method;
+                      return undefined;
+                    })()
+                  : undefined
+              }
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

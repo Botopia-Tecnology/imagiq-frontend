@@ -11,6 +11,7 @@ import AddNewAddressForm from "../../app/carrito/components/AddNewAddressForm";
 import { invalidateShippingOriginCache } from "@/hooks/useShippingOrigin";
 import { useDefaultAddress } from "@/hooks/useDefaultAddress";
 import { addressesService } from "@/services/addresses.service";
+import { syncAddress, syncNewAddress } from "@/lib/addressSync";
 
 interface AddressDropdownProps {
   showWhiteItems: boolean;
@@ -110,38 +111,20 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     }
 
     try {
-      console.log('🔄 Cambiando dirección predeterminada:', address);
-      const result = await addressesService.setDefaultAddress(address.id);
-      console.log('✅ Dirección actualizada correctamente:', result);
+      // Usar utility centralizada para sincronizar dirección
+      await syncAddress({
+        address,
+        userEmail: user?.email,
+        user,
+        loginFn: login,
+        fromHeader: true,
+      });
 
       // Invalidar cache del hook useDefaultAddress
       invalidate();
 
-      // Invalidar cache del hook useShippingOrigin
-      invalidateShippingOriginCache();
-
-      // Actualizar user en context con nueva dirección
-      if (user) {
-        const defaultAddressFormat = {
-          id: address.id,
-          nombreDireccion: address.nombreDireccion,
-          direccionFormateada: address.direccionFormateada,
-          ciudad: address.ciudad,
-          departamento: address.departamento,
-          esPredeterminada: true,
-        };
-
-        await login({
-          ...user,
-          defaultAddress: defaultAddressFormat,
-        });
-        console.log('✅ Context actualizado con nueva dirección');
-      }
-
-      // Disparar evento personalizado para notificar el cambio de dirección
-      console.log('🔔 Disparando evento address-changed desde handleSelectAddress');
-      window.dispatchEvent(new CustomEvent('address-changed', { detail: { address } }));
-      window.dispatchEvent(new Event('storage')); // También disparar storage event
+      // Refrescar la dirección actual
+      await refetch();
 
       setOpen(false);
     } catch (error) {
@@ -168,40 +151,27 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     // Cerrar el modal primero para mejor UX
     setShowModal(false);
 
-    // Invalidar cache del hook useDefaultAddress
-    invalidate();
-
-    // Refrescar lista de direcciones
-    await fetchAddresses();
-
-    // Forzar refetch de la dirección predeterminada
-    await refetch();
-
-    // Invalidar cache del hook useShippingOrigin
-    invalidateShippingOriginCache();
-
-    // La nueva dirección ya es predeterminada por defecto en el backend
-    // Actualizar context con nueva dirección usando los campos correctos
-    if (user) {
-      const defaultAddressFormat = {
-        id: newAddress.id,
-        nombreDireccion: newAddress.nombreDireccion || newAddress.lineaUno || 'Nueva dirección',
-        direccionFormateada: newAddress.direccionFormateada || newAddress.lineaUno,
-        ciudad: newAddress.ciudad,
-        departamento: newAddress.departamento,
-        esPredeterminada: true,
-      };
-
-      await login({
-        ...user,
-        defaultAddress: defaultAddressFormat,
+    try {
+      // Usar utility centralizada para sincronizar nueva dirección
+      await syncNewAddress({
+        address: newAddress,
+        userEmail: user?.email,
+        user,
+        loginFn: login,
+        fromHeader: true,
       });
-    }
 
-    // Disparar evento personalizado para notificar el cambio de dirección
-    console.log('🔔 Disparando evento address-changed desde handleAddressAdded');
-    window.dispatchEvent(new CustomEvent('address-changed', { detail: { address: newAddress } }));
-    window.dispatchEvent(new Event('storage')); // También disparar storage event
+      // Invalidar cache del hook useDefaultAddress
+      invalidate();
+
+      // Refrescar lista de direcciones
+      await fetchAddresses();
+
+      // Forzar refetch de la dirección predeterminada
+      await refetch();
+    } catch (error) {
+      console.error('❌ Error al sincronizar nueva dirección:', error);
+    }
   };
 
   const handleDeleteClick = (addressId: string, e: React.MouseEvent) => {

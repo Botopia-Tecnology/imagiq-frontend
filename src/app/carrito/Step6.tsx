@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { Direccion } from "@/types/user";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
@@ -38,6 +39,7 @@ interface BillingData {
 }
 
 export default function Step6({ onBack, onContinue }: Step6Props) {
+  const router = useRouter();
   const { user } = useAuthContext();
   const { products } = useCart();
 
@@ -82,15 +84,15 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
+
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
+
       // Quitar el banner inmediatamente
       setTradeInData(null);
-      
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
         description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
@@ -98,6 +100,25 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       });
     }
   }, [products]);
+
+  // Redirigir a Step3 si la dirección cambia desde el header
+  useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log('🔄 Dirección cambiada desde header en Step6, redirigiendo a Step3...');
+        router.push('/carrito/step3');
+      }
+    };
+
+    window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+    };
+  }, [router]);
 
   // Convertir Address a Direccion
   const addressToDireccion = (address: Address): Direccion => {

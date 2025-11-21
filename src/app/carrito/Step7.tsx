@@ -25,6 +25,8 @@ import {
 } from "./utils/validateTradeIn";
 import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
 import { apiPost } from "@/lib/api-client";
+import { safeGetLocalStorage } from "@/lib/localStorage";
+import { productEndpoints } from "@/lib/api";
 
 interface Step7Props {
   onBack?: () => void;
@@ -335,6 +337,25 @@ export default function Step7({ onBack }: Step7Props) {
     }
   }, [products]);
 
+  // Redirigir a Step3 si la dirección cambia desde el header
+  useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log('🔄 Dirección cambiada desde header en Step7, redirigiendo a Step3...');
+        router.push('/carrito/step3');
+      }
+    };
+
+    window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+    };
+  }, [router]);
+
   // Verificar cobertura cuando los productos estén cargados
   useEffect(() => {
     const verifyWhenProductsReady = async () => {
@@ -343,54 +364,107 @@ export default function Step7({ onBack }: Step7Props) {
         return;
       }
 
-      // Verificar si TODOS los productos tienen canPickUp: true
-      const allProductsHavePickup = products.every(
-        (product) => product.canPickUp === true
-      );
+      // PASO 1: Obtener canPickUp global del endpoint candidate-stores
+      try {
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+          "imagiq_user",
+          {}
+        );
+        const userId = user?.id || user?.user_id;
 
-      console.log("📦 Verificando pickup de productos:", {
-        productos: products.map((p) => ({ sku: p.sku, canPickUp: p.canPickUp })),
-        allProductsHavePickup,
-      });
+        if (!userId) {
+          console.log("🚛 No hay userId, usando Coordinadora");
+          setShippingVerification({
+            envio_imagiq: false,
+            todos_productos_im_it: false,
+            en_zona_cobertura: true,
+          });
+          return;
+        }
 
-      // Si algún producto NO tiene pickup, directamente es Coordinadora
-      if (!allProductsHavePickup) {
-        console.log("🚛 Envío Coordinadora (productos sin pickup disponible)");
+        // Preparar TODOS los productos del carrito para una sola petición
+        const productsToCheck = products.map((p) => ({
+          sku: p.sku,
+          quantity: p.quantity,
+        }));
+
+        console.log("📦 Verificando canPickUp global...", { productsToCheck, userId });
+
+        // Llamar al endpoint con TODOS los productos agrupados
+        const response = await productEndpoints.getCandidateStores({
+          products: productsToCheck,
+          user_id: userId,
+        });
+
+        if (response.success && response.data) {
+          const responseData = response.data as { canPickUp?: boolean; canPickup?: boolean };
+          // Obtener canPickUp global de la respuesta
+          const globalCanPickUp = responseData.canPickUp ?? responseData.canPickup ?? false;
+
+          console.log("📦 canPickUp global obtenido:", globalCanPickUp);
+
+          // PASO 2: Si canPickUp global es FALSE → Directamente Coordinadora
+          if (!globalCanPickUp) {
+            console.log("🚛 Envío Coordinadora (canPickUp global es false)");
+            setShippingVerification({
+              envio_imagiq: false,
+              todos_productos_im_it: false,
+              en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
+            });
+            return;
+          }
+
+          // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
+          console.log("✅ canPickUp global es true, verificando cobertura Imagiq...");
+
+          const shippingAddress = localStorage.getItem("checkout-address");
+          if (!shippingAddress) {
+            console.log("🚛 No hay dirección, usando Coordinadora");
+            setShippingVerification({
+              envio_imagiq: false,
+              todos_productos_im_it: false,
+              en_zona_cobertura: true,
+            });
+            return;
+          }
+
+          const parsed = JSON.parse(shippingAddress);
+          const requestBody = {
+            direccion_id: parsed.id,
+            skus: products.map((p) => p.sku),
+          };
+
+          console.log("🚚 Verificando cobertura de envío Imagiq:", requestBody);
+
+          const data = await apiPost<ShippingVerification>(
+            "/api/addresses/zonas-cobertura/verificar-por-id",
+            requestBody
+          );
+
+          console.log("✅ Respuesta de verificación (useEffect):", data);
+
+          setShippingVerification({
+            envio_imagiq: data.envio_imagiq || false,
+            todos_productos_im_it: data.todos_productos_im_it || false,
+            en_zona_cobertura: data.en_zona_cobertura || false,
+          });
+        } else {
+          // Si falla la petición de candidate-stores, usar Coordinadora
+          console.log("🚛 Error en candidate-stores, usando Coordinadora");
+          setShippingVerification({
+            envio_imagiq: false,
+            todos_productos_im_it: false,
+            en_zona_cobertura: true,
+          });
+        }
+      } catch (error) {
+        console.error("❌ Error verifying shipping coverage (useEffect):", error);
+        // En caso de error, usar Coordinadora por defecto
         setShippingVerification({
           envio_imagiq: false,
           todos_productos_im_it: false,
-          en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
+          en_zona_cobertura: true,
         });
-        return;
-      }
-
-      // Si TODOS tienen pickup, verificar cobertura Imagiq
-      const shippingAddress = localStorage.getItem("checkout-address");
-      if (!shippingAddress) return;
-
-      try {
-        const parsed = JSON.parse(shippingAddress);
-        const requestBody = {
-          direccion_id: parsed.id,
-          skus: products.map((p) => p.sku),
-        };
-
-        console.log("🚚 Verificando cobertura de envío (useEffect):", requestBody);
-
-        const data = await apiPost<ShippingVerification>(
-          "/api/addresses/zonas-cobertura/verificar-por-id",
-          requestBody
-        );
-
-        console.log("✅ Respuesta de verificación (useEffect):", data);
-
-        setShippingVerification({
-          envio_imagiq: data.envio_imagiq || false,
-          todos_productos_im_it: data.todos_productos_im_it || false,
-          en_zona_cobertura: data.en_zona_cobertura || false,
-        });
-      } catch (error) {
-        console.error("❌ Error verifying shipping coverage (useEffect):", error);
       }
     };
 
@@ -1115,6 +1189,48 @@ export default function Step7({ onBack }: Step7Props) {
               shippingVerification={shippingVerification}
               deliveryMethod={shippingData?.type}
             />
+
+            {/* Información del método de envío */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+              <p className="text-sm font-bold text-blue-900 mb-3">
+                📦 Método de envío
+              </p>
+              <div className="space-y-2 text-sm text-blue-800">
+                {shippingData?.type === "pickup" ? (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold">Método:</span>
+                      <span className="text-green-700 font-bold">🏪 Recoge en tienda</span>
+                    </div>
+                    {shippingData.store?.name && (
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold">Tienda:</span>
+                        <span>{shippingData.store.name}</span>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-start gap-2">
+                      <span className="font-semibold">Método:</span>
+                      {shippingVerification?.envio_imagiq === true ? (
+                        <span className="text-green-700 font-bold">🚚 Envío Imagiq</span>
+                      ) : (
+                        <span className="text-orange-700 font-bold">🚛 Envío Coordinadora</span>
+                      )}
+                    </div>
+                    <div className="mt-2 p-2 bg-white/50 rounded border border-blue-200">
+                      <p className="text-xs font-semibold mb-1">Detalles de verificación:</p>
+                      <div className="text-xs space-y-1">
+                        <p>• envio_imagiq: {shippingVerification?.envio_imagiq ? <span className="text-green-600 font-bold">true</span> : <span className="text-red-600 font-bold">false</span>}</p>
+                        <p>• todos_productos_im_it: {shippingVerification?.todos_productos_im_it ? <span className="text-green-600 font-bold">true</span> : <span className="text-red-600 font-bold">false</span>}</p>
+                        <p>• en_zona_cobertura: {shippingVerification?.en_zona_cobertura ? <span className="text-green-600 font-bold">true</span> : <span className="text-red-600 font-bold">false</span>}</p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
 
             {/* Banner de Trade-In - Debajo del resumen */}
             {tradeInData?.completed && (

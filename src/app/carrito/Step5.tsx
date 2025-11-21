@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useCart } from "@/hooks/useCart";
@@ -21,6 +22,7 @@ interface InstallmentOption {
 }
 
 export default function Step5({ onBack, onContinue }: Step5Props) {
+  const router = useRouter();
   const { calculations, products } = useCart();
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
   const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
@@ -87,12 +89,12 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
+
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
         description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
@@ -100,6 +102,25 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
       });
     }
   }, [products]);
+
+  // Redirigir a Step3 si la dirección cambia desde el header
+  useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log('🔄 Dirección cambiada desde header en Step5, redirigiendo a Step3...');
+        router.push('/carrito/step3');
+      }
+    };
+
+    window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+    };
+  }, [router]);
 
   // Calcular opciones de cuotas basadas en el total del carrito
   const calculateInstallments = (): InstallmentOption[] => {

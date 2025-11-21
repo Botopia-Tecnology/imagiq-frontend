@@ -15,6 +15,9 @@ import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints } from "@/lib/api";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import { useCardsCache } from "./hooks/useCardsCache";
+import { useAuthContext } from "@/features/auth/context";
+import { syncAddress, direccionToAddress } from "@/lib/addressSync";
 
 export default function Step3({
   onBack,
@@ -25,6 +28,7 @@ export default function Step3({
 }) {
   const { products, appliedDiscount, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
+  const { user, login } = useAuthContext();
   const {
     address,
     setAddress,
@@ -44,7 +48,55 @@ export default function Step3({
     canPickUp,
     stores,
     refreshStores,
+    addressLoading,
   } = useDelivery();
+
+  // Hook para precarga de tarjetas y zero interest
+  const { preloadCards, preloadZeroInterest } = useCardsCache();
+
+  // Precargar tarjetas y zero interest en segundo plano al entrar al Step3
+  React.useEffect(() => {
+    const preloadData = async () => {
+      // Primero precargar las tarjetas
+      await preloadCards();
+
+      // Luego precargar zero interest si hay productos en el carrito
+      if (products.length > 0) {
+        // Obtener las tarjetas del caché para usarlas en la precarga
+        const storedUser = localStorage.getItem("imagiq_user");
+        if (storedUser) {
+          try {
+            const user = JSON.parse(storedUser);
+            if (user?.id) {
+              // Hacer la petición de tarjetas para obtener los IDs
+              const { profileService } = await import("@/services/profile.service");
+              const { encryptionService } = await import("@/lib/encryption");
+              const encryptedCards = await profileService.getUserPaymentMethodsEncrypted(user.id);
+
+              const cardIds = encryptedCards
+                .map((encCard) => {
+                  const decrypted = encryptionService.decryptJSON<{ cardId: string }>(encCard.encryptedData);
+                  return decrypted?.cardId;
+                })
+                .filter((id): id is string => id !== undefined);
+
+              if (cardIds.length > 0) {
+                await preloadZeroInterest(
+                  cardIds,
+                  products.map((p) => p.sku),
+                  calculations.total
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Error en precarga de zero interest:", error);
+          }
+        }
+      }
+    };
+
+    preloadData();
+  }, [preloadCards, preloadZeroInterest, products, calculations.total]);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = React.useState<{
@@ -122,6 +174,9 @@ export default function Step3({
     }
   }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod]);
 
+  // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
+  const verifiedSkusRef = React.useRef<Set<string>>(new Set());
+
   // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
   React.useEffect(() => {
     if (products.length === 0) return;
@@ -132,10 +187,12 @@ export default function Step3({
         new Set(products.map((p) => p.sku))
       );
 
-      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = products.find((p) => p.sku === sku);
-        return product && product.indRetoma === undefined;
+        const needsVerification = product && product.indRetoma === undefined;
+        const notVerifiedYet = !verifiedSkusRef.current.has(sku);
+        return needsVerification && notVerifiedYet;
       });
 
       if (productsToVerify.length === 0) return;
@@ -157,6 +214,9 @@ export default function Step3({
           const result = response.data;
           const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
 
+          // Marcar SKU como verificado ANTES de actualizar localStorage (evita loop)
+          verifiedSkusRef.current.add(sku);
+
           // Actualizar localStorage con el resultado
           const storedProducts = JSON.parse(
             localStorage.getItem("cart-items") || "[]"
@@ -176,6 +236,8 @@ export default function Step3({
           window.dispatchEvent(customEvent);
           window.dispatchEvent(new Event("storage"));
         } catch (error) {
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
           // Silenciar errores, solo log en consola
           console.error(
             `❌ Error al verificar trade-in para SKU ${sku}:`,
@@ -187,6 +249,49 @@ export default function Step3({
 
     verifyTradeIn();
   }, [products]);
+
+  // Estado para controlar el loading manual cuando se espera canPickUp
+  const [isWaitingForCanPickUp, setIsWaitingForCanPickUp] = React.useState(false);
+
+  // Escuchar cuando storesLoading cambia para avanzar automáticamente
+  React.useEffect(() => {
+    // Si estábamos esperando y terminó de cargar, avanzar automáticamente
+    if (isWaitingForCanPickUp && !storesLoading) {
+      console.log('✅ canPickUp calculado en Step3, avanzando automáticamente...');
+      setIsWaitingForCanPickUp(false);
+      
+      // Validar Trade-In antes de continuar
+      const validation = validateTradeInProducts(products);
+      if (!validation.isValid) {
+        alert(getTradeInValidationMessage(validation));
+        return;
+      }
+
+      // IMPORTANTE: Verificar y guardar el método de entrega en localStorage antes de continuar
+      if (typeof window !== "undefined") {
+        const currentMethod = localStorage.getItem("checkout-delivery-method");
+        if (!currentMethod || currentMethod !== deliveryMethod) {
+          localStorage.setItem("checkout-delivery-method", deliveryMethod);
+          window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method: deliveryMethod } }));
+        }
+      }
+
+      // Track del evento add_payment_info para analytics
+      trackAddPaymentInfo(
+        products.map((p) => ({
+          item_id: p.sku,
+          item_name: p.name,
+          price: Number(p.price),
+          quantity: p.quantity,
+        })),
+        calculations.subtotal
+      );
+
+      if (typeof onContinue === "function") {
+        onContinue();
+      }
+    }
+  }, [isWaitingForCanPickUp, storesLoading, products, deliveryMethod, calculations.subtotal, onContinue, trackAddPaymentInfo]);
 
   // UX: Navegación al siguiente paso
   // Estado para validación de Trade-In
@@ -226,6 +331,31 @@ export default function Step3({
       return;
     }
 
+    // IMPORTANTE: Si está cargando canPickUp y el método es tienda, esperar
+    if (storesLoading && deliveryMethod === "tienda") {
+      console.log('⏳ Esperando a que canPickUp se calcule en Step3...');
+      setIsWaitingForCanPickUp(true);
+      
+      // El useEffect se encargará de avanzar cuando termine storesLoading
+      // También esperamos con timeout por seguridad
+      const maxWait = 10000;
+      const startTime = Date.now();
+      
+      const checkLoading = setInterval(() => {
+        if (!storesLoading || (Date.now() - startTime) >= maxWait) {
+          clearInterval(checkLoading);
+          if (storesLoading) {
+            console.error('❌ Timeout esperando canPickUp en Step3');
+            setIsWaitingForCanPickUp(false);
+            alert('Hubo un problema al verificar la disponibilidad de recogida. Por favor intenta de nuevo.');
+          }
+          // Si terminó de cargar, el useEffect se encargará de avanzar
+        }
+      }, 100);
+      
+      return;
+    }
+
     // IMPORTANTE: Verificar y guardar el método de entrega en localStorage antes de continuar
     if (typeof window !== "undefined") {
       const currentMethod = localStorage.getItem("checkout-delivery-method");
@@ -252,9 +382,34 @@ export default function Step3({
       onContinue();
     }
   };
-  const handleAddressChange = (newAddress: Direccion) => {
+  const handleAddressChange = async (newAddress: Direccion) => {
+    // Actualizar estado local inmediatamente para mejor UX
     setAddress(newAddress);
-    localStorage.setItem("checkout-address", JSON.stringify(newAddress));
+
+    // Si la dirección tiene id, sincronizar con el backend y otros componentes
+    if (newAddress.id) {
+      try {
+        // Convertir Direccion a Address para usar la utility centralizada
+        const addressFormat = direccionToAddress(newAddress);
+
+        // Usar utility centralizada para sincronizar dirección
+        await syncAddress({
+          address: addressFormat,
+          userEmail: user?.email || newAddress.email,
+          user,
+          loginFn: login,
+          fromHeader: false, // Viene del checkout
+        });
+      } catch (error) {
+        console.error('⚠️ Error al sincronizar dirección predeterminada:', error);
+        // No bloquear el flujo si falla la sincronización
+        // Guardar al menos en localStorage
+        localStorage.setItem("checkout-address", JSON.stringify(newAddress));
+      }
+    } else {
+      // Si no tiene id, solo guardar en localStorage (nueva dirección no guardada)
+      localStorage.setItem("checkout-address", JSON.stringify(newAddress));
+    }
   };
   const handleDeliveryMethodChange = (method: string) => {
     // Si hay trade-in activo, no permitir cambiar a domicilio
@@ -283,6 +438,8 @@ export default function Step3({
                 canContinue={canContinue}
                 disableHomeDelivery={hasActiveTradeIn}
                 disableReason={hasActiveTradeIn ? "Para aplicar el beneficio Estreno y Entrego solo puedes recoger en tienda" : undefined}
+                disableStorePickup={!canPickUp && !hasActiveTradeIn}
+                disableStorePickupReason={!canPickUp && !hasActiveTradeIn ? "Este producto no está disponible para recoger en tienda" : undefined}
               />
 
               {deliveryMethod === "domicilio" && !hasActiveTradeIn && (
@@ -294,23 +451,24 @@ export default function Step3({
                     onAddressChange={handleAddressChange}
                     onEditToggle={setAddressEdit}
                     onAddressAdded={addAddress}
+                    addressLoading={addressLoading}
                   />
                 </div>
               )}
 
-              {/* Mostrar opción de recoger en tienda si:
-                  - NO hay productos sin pickup, O
-                  - Hay trade-in activo (siempre permitir recoger en tienda) */}
-              {(!hasProductWithoutPickup || hasActiveTradeIn) && (
-                <div className="mt-6">
-                  <StorePickupSelector
-                    deliveryMethod={deliveryMethod}
-                    onMethodChange={handleDeliveryMethodChange}
-                  />
-                </div>
-              )}
+              {/* Mostrar opción de recoger en tienda siempre, pero deshabilitada si canPickUp es false y no hay trade-in */}
+              <div className="mt-6">
+                <StorePickupSelector
+                  deliveryMethod={deliveryMethod}
+                  onMethodChange={handleDeliveryMethodChange}
+                  disabled={!canPickUp && !hasActiveTradeIn}
+                />
+              </div>
 
-              {deliveryMethod === "tienda" && (
+              {/* Mostrar selector de tiendas solo si:
+                  - El método es "tienda" Y canPickUp global es true
+                  - O hay trade-in activo (siempre permitir recoger en tienda) */}
+              {deliveryMethod === "tienda" && (canPickUp || hasActiveTradeIn) && (
                 <div className="mt-6">
                   <StoreSelector
                     storeQuery={storeQuery}
@@ -335,7 +493,8 @@ export default function Step3({
               onFinishPayment={handleContinue}
               buttonText="Continuar"
               onBack={onBack}
-              disabled={!canContinue || !tradeInValidation.isValid || (deliveryMethod === "tienda" && !canPickUp)}
+              disabled={!canContinue || !tradeInValidation.isValid}
+              isProcessing={isWaitingForCanPickUp}
             />
 
             {/* Banner de Trade-In - Debajo del resumen */}

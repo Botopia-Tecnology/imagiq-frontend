@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import PaymentForm from "./components/PaymentForm";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
@@ -21,6 +22,7 @@ export default function Step4({
   onBack?: () => void;
   onContinue?: () => void;
 }) {
+  const router = useRouter();
   const authContext = useAuthContext();
   const { products } = useCart();
   const {
@@ -111,6 +113,25 @@ export default function Step4({
       });
     }
   }, [products]);
+
+  // Redirigir a Step3 si la dirección cambia desde el header
+  React.useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log('🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3...');
+        router.push('/carrito/step3');
+      }
+    };
+
+    window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+    };
+  }, [router]);
 
   const handleContinueToNextStep = async (e: React.FormEvent) => {
     // Validar Trade-In antes de continuar

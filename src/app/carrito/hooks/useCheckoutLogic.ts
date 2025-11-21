@@ -29,7 +29,7 @@ export function useCheckoutLogic() {
   const {
     zeroInterestData: cachedZeroInterestData,
     isLoadingZeroInterest: cachedIsLoadingZeroInterest,
-    loadZeroInterest
+    loadZeroInterest,
   } = useCardsCache();
 
   // Estados principales

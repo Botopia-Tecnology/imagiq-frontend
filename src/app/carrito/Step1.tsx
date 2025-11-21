@@ -5,7 +5,7 @@ import Sugerencias from "./Sugerencias";
 import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
-import { apiClient, type ProductApiData, productEndpoints, type CandidateStoresResponse } from "@/lib/api";
+import { apiClient, type ProductApiData } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { safeGetLocalStorage } from "@/lib/localStorage";
@@ -52,15 +52,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     loadingShippingInfo,
   } = useCart();
 
-  // Ref para evitar múltiples llamadas a candidate-stores
-  const candidateStoresFetchedRef = useRef<Set<string>>(new Set());
-  const previousProductsRef = useRef<string>("");
-  const fetchingRef = useRef<boolean>(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Estado para rastrear qué productos están cargando canPickUp
-  const [loadingCanPickUp, setLoadingCanPickUp] = useState<Set<string>>(
-    new Set()
-  );
   // Estado para rastrear qué productos están cargando indRetoma
   const [loadingIndRetoma, setLoadingIndRetoma] = useState<Set<string>>(
     new Set()
@@ -81,8 +72,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       }
     } else {
       // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía
+      // El canPickUp global se calcula en Step4OrderSummary
       const productApplies =
-        cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
+        cartProducts.length === 1 && 
+        cartProducts[0]?.indRetoma === 1;
       if (productApplies) {
         setTradeInData({
           deviceName: cartProducts[0].name,
@@ -93,234 +86,11 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     }
   }, [cartProducts]);
 
-  // Llamar a candidate-stores para cada producto en Step1
-  useEffect(() => {
-    // Limpiar timeout anterior si existe
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+  // El canPickUp global se calcula en Step4OrderSummary con todos los productos del carrito
 
-    // Debounce: esperar 500ms antes de hacer las peticiones para evitar rate limiting
-    timeoutRef.current = setTimeout(async () => {
-      // Evitar múltiples ejecuciones simultáneas
-      if (fetchingRef.current) {
-        return;
-      }
+  // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
+  const verifiedSkusRef = useRef<Set<string>>(new Set());
 
-      if (cartProducts.length === 0) {
-        fetchingRef.current = false;
-        return;
-      }
-
-      fetchingRef.current = true;
-
-      try {
-        // Crear una clave única basada en los productos actuales para detectar cambios
-        const currentProductsKey = cartProducts
-          .map((p) => `${p.sku}-${p.quantity}`)
-          .sort((a, b) => a.localeCompare(b))
-          .join(",");
-
-        // Si los productos no han cambiado, no hacer nada (evitar peticiones duplicadas)
-        if (previousProductsRef.current === currentProductsKey) {
-          fetchingRef.current = false;
-          return;
-        }
-
-        // Si los productos cambiaron, limpiar el ref solo para los productos que ya no existen
-        const previousProductsSet = new Set(
-          previousProductsRef.current.split(",").filter(Boolean)
-        );
-        const currentProductKeysSet = new Set(
-          cartProducts.map((p) => `${p.sku}-${p.quantity}`)
-        );
-
-        // Limpiar solo las claves que ya no existen
-        for (const key of previousProductsSet) {
-          if (!currentProductKeysSet.has(key)) {
-            candidateStoresFetchedRef.current.delete(key);
-          }
-        }
-
-        // Actualizar la referencia
-        previousProductsRef.current = currentProductsKey;
-
-        // Obtener user_id del localStorage
-        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
-          "imagiq_user",
-          {}
-        );
-        const userId = user?.id || user?.user_id;
-
-        if (!userId) {
-          fetchingRef.current = false;
-          return;
-        }
-
-        // Filtrar productos que necesitan la petición (solo si no tienen canPickUp definido Y no están en el ref)
-        const productsToFetch = cartProducts.filter((product) => {
-          const productKey = `${product.sku}-${product.quantity}`;
-          // Solo hacer petición si:
-          // 1. No está en el ref (nunca se ha consultado)
-          // 2. Y no tiene canPickUp definido (undefined)
-          // Si ya tiene canPickUp (true o false), no hacer petición
-          const isInRef = candidateStoresFetchedRef.current.has(productKey);
-          const hasCanPickUp = product.canPickUp !== undefined;
-
-          // Solo hacer petición si NO está en el ref Y NO tiene canPickUp
-          return !isInRef && !hasCanPickUp;
-        });
-
-        if (productsToFetch.length === 0) {
-          fetchingRef.current = false;
-          // Limpiar loading si no hay productos para cargar
-          setLoadingCanPickUp(new Set());
-          return;
-        }
-
-        // Marcar productos como cargando
-        const productKeysToLoad = productsToFetch.map(
-          (p) => `${p.sku}-${p.quantity}`
-        );
-        setLoadingCanPickUp(new Set(productKeysToLoad));
-
-        // Hacer petición para cada producto con delay entre peticiones para evitar rate limiting
-        const results: Array<{
-          sku: string;
-          canPickUp: boolean;
-          shippingCity: string;
-          shippingStore: string;
-        } | null> = [];
-
-        for (let i = 0; i < productsToFetch.length; i++) {
-          const product = productsToFetch[i];
-          const productKey = `${product.sku}-${product.quantity}`;
-
-          // Agregar delay entre peticiones (excepto la primera)
-          if (i > 0) {
-            await new Promise((resolve) => setTimeout(resolve, 300)); // 300ms entre peticiones
-          }
-
-          try {
-            candidateStoresFetchedRef.current.add(productKey);
-
-            const response = await productEndpoints.getCandidateStores({
-              products: [{ sku: product.sku, quantity: product.quantity }],
-              user_id: userId,
-            });
-
-            if (response.success && response.data) {
-              // 🔍 DEBUG: Mostrar respuesta completa del endpoint en consola
-              const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              console.log(`📦 Respuesta completa de candidate-stores para SKU ${product.sku}:`, {
-                fullResponse: responseData,
-                stores: responseData.stores,
-                canPickUp: responseData.canPickUp,
-                canPickup: responseData.canPickup,
-                default_direction: responseData.default_direction,
-                storesKeys: Object.keys(responseData.stores || {}),
-                storesCount: Object.values(responseData.stores || {}).reduce((acc, arr) => acc + (Array.isArray(arr) ? arr.length : 0), 0),
-              });
-              
-              const { stores } = responseData;
-              // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
-              const canPickUp =
-                responseData.canPickUp ??
-                responseData.canPickup ??
-                false;
-
-              let shippingCity = "BOGOTÁ";
-              let shippingStore = "";
-
-              const storeEntries = Object.entries(stores);
-              if (storeEntries.length > 0) {
-                const [firstCity, firstCityStores] = storeEntries[0];
-                shippingCity = firstCity;
-                if (firstCityStores.length > 0) {
-                  shippingStore = firstCityStores[0].nombre_tienda.trim();
-                }
-              }
-
-              results.push({
-                sku: product.sku,
-                canPickUp,
-                shippingCity,
-                shippingStore,
-              });
-            } else {
-              console.error(
-                `❌ Error en la respuesta de candidate-stores para ${product.sku}:`,
-                response.message
-              );
-              results.push(null);
-            }
-          } catch (error) {
-            console.error(
-              `❌ Error al llamar a candidate-stores para ${product.sku}:`,
-              error
-            );
-            results.push(null);
-          } finally {
-            // Remover de loading cuando termine (éxito o error)
-            setLoadingCanPickUp((prev) => {
-              const newSet = new Set(prev);
-              newSet.delete(productKey);
-              return newSet;
-            });
-          }
-        }
-
-        // Actualizar localStorage una sola vez con todos los cambios
-        const storedProducts = JSON.parse(
-          localStorage.getItem("cart-items") || "[]"
-        ) as Array<Record<string, unknown>>;
-        const updatedProducts = storedProducts.map((p) => {
-          const result = results.find((r) => r && r.sku === p.sku);
-          if (result) {
-            return {
-              ...p,
-              shippingCity: result.shippingCity,
-              shippingStore: result.shippingStore,
-              canPickUp: result.canPickUp,
-            };
-          }
-          return p;
-        });
-        localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
-
-        // Disparar evento storage personalizado para que el hook useCart se actualice
-        // Usamos un evento personalizado porque el evento 'storage' nativo solo se dispara entre tabs
-        const customEvent = new CustomEvent("localStorageChange", {
-          detail: { key: "cart-items" },
-        });
-        window.dispatchEvent(customEvent);
-
-        // También disparar el evento storage estándar por compatibilidad
-        window.dispatchEvent(new Event("storage"));
-
-        // Forzar actualización adicional después de un pequeño delay para asegurar sincronización
-        setTimeout(() => {
-          window.dispatchEvent(new Event("storage"));
-          window.dispatchEvent(customEvent);
-        }, 100);
-
-        // Limpiar todos los loading después de actualizar localStorage
-        setLoadingCanPickUp(new Set());
-      } catch (error) {
-        console.error("❌ Error al obtener usuario:", error);
-        // Limpiar loading en caso de error
-        setLoadingCanPickUp(new Set());
-        fetchingRef.current = false;
-      }
-    }, 500); // Debounce de 500ms
-
-    // Cleanup: limpiar timeout si el componente se desmonta o cambian los productos
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, [cartProducts]);
 
   // Verificar indRetoma para cada producto único en el carrito
   useEffect(() => {
@@ -330,10 +100,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       // Obtener SKUs únicos (sin duplicados)
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
-      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido)
+      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
-        return product && product.indRetoma === undefined;
+        const needsVerification = product && product.indRetoma === undefined;
+        const notVerifiedYet = !verifiedSkusRef.current.has(sku);
+        return needsVerification && notVerifiedYet;
       });
 
       if (productsToVerify.length === 0) return;
@@ -363,8 +135,12 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               sku,
               indRetoma: result.indRetoma ?? (result.aplica ? 1 : 0),
             });
+            // Marcar SKU como verificado cuando tiene éxito
+            verifiedSkusRef.current.add(sku);
           } else {
             results.push(null);
+            // También marcar como verificado en caso de error para no reintentar infinitamente
+            verifiedSkusRef.current.add(sku);
           }
         } catch (error) {
           console.error(
@@ -372,6 +148,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             error
           );
           results.push(null);
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
         } finally {
           // Remover de loading cuando termine
           setLoadingIndRetoma((prev) => {
@@ -418,16 +196,21 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Cambiar cantidad de producto usando el hook
   const handleQuantityChange = (idx: number, cantidad: number) => {
     const product = cartProducts[idx];
-    const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-    const productId = product?.sku;
     if (product) {
-      apiClient.put(
-        `/api/cart/${user?.id ?? "unregistered"}/items/${productId}`,
-        {
-          quantity: cantidad,
-        }
-      );
+      // Actualizar cantidad usando el hook
+      // El canPickUp global se recalculará automáticamente en Step4OrderSummary
       updateQuantity(product.sku, cantidad);
+      
+      // También actualizar en el backend si el usuario está registrado
+      const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
+      if (user?.id) {
+        apiClient.put(
+          `/api/cart/${user.id}/items/${product.sku}`,
+          {
+            quantity: cantidad,
+          }
+        );
+      }
     }
   };
 
@@ -488,8 +271,38 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     }
   }, [cartProducts, tradeInData]);
 
+  // Estado para saber si canPickUp global está cargando
+  const [isLoadingCanPickUpGlobal, setIsLoadingCanPickUpGlobal] = React.useState(false);
+
+  // Estado para controlar el loading cuando se espera canPickUp
+  const [isWaitingForCanPickUp, setIsWaitingForCanPickUp] = React.useState(false);
+
+  // Callback para recibir el estado de canPickUp desde Step4OrderSummary
+  const handleCanPickUpReady = React.useCallback((isReady: boolean, isLoading: boolean) => {
+    setIsLoadingCanPickUpGlobal(isLoading);
+    
+    // Si estábamos esperando y ya terminó, avanzar automáticamente
+    if (isWaitingForCanPickUp && !isLoading) {
+      console.log('✅ canPickUp calculado, avanzando automáticamente...');
+      setIsWaitingForCanPickUp(false);
+      
+      // Track del evento begin_checkout para analytics
+      trackBeginCheckout(
+        cartProducts.map((p) => ({
+          item_id: p.sku,
+          item_name: p.name,
+          price: Number(p.price),
+          quantity: p.quantity,
+        })),
+        total
+      );
+      
+      onContinue();
+    }
+  }, [isWaitingForCanPickUp, cartProducts, total, onContinue]);
+
   // Función para manejar el click en continuar pago
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (cartProducts.length === 0) {
       return;
     }
@@ -502,18 +315,46 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       return;
     }
 
-    // Track del evento begin_checkout para analytics
-    trackBeginCheckout(
-      cartProducts.map((p) => ({
-        item_id: p.sku,
-        item_name: p.name,
-        price: Number(p.price),
-        quantity: p.quantity,
-      })),
-      total
-    );
+    // IMPORTANTE: Si canPickUp global no está listo, esperar hasta que lo esté
+    if (isLoadingCanPickUpGlobal) {
+      console.log('⏳ Esperando a que canPickUp global se calcule...');
+      setIsWaitingForCanPickUp(true);
+      
+      // El callback handleCanPickUpReady se encargará de avanzar automáticamente cuando termine
+      // También esperamos con timeout por seguridad
+      try {
+        const maxWait = 10000; // 10 segundos
+        const startTime = Date.now();
 
-    onContinue();
+        while (isLoadingCanPickUpGlobal && (Date.now() - startTime) < maxWait) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        // Si aún está cargando después del timeout, mostrar error
+        if (isLoadingCanPickUpGlobal) {
+          console.error('❌ Timeout esperando canPickUp global');
+          setIsWaitingForCanPickUp(false);
+          alert('Hubo un problema al verificar la disponibilidad de recogida. Por favor intenta de nuevo.');
+          return;
+        }
+      } catch (error) {
+        console.error('Error esperando canPickUp:', error);
+        setIsWaitingForCanPickUp(false);
+      }
+    } else {
+      // Si ya se calculó, continuar normalmente
+      trackBeginCheckout(
+        cartProducts.map((p) => ({
+          item_id: p.sku,
+          item_name: p.name,
+          price: Number(p.price),
+          quantity: p.quantity,
+        })),
+        total
+      );
+
+      onContinue();
+    }
   };
 
   // UX: feedback visual al agregar sugerencia usando el hook centralizado
@@ -543,8 +384,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     setTradeInData(null);
     localStorage.removeItem("imagiq_trade_in");
 
-    // Si el producto aplica (indRetoma === 1), volver a mostrar el banner guía
-    if (cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1) {
+    // Si el producto aplica (indRetoma === 1 Y canPickUp === true), volver a mostrar el banner guía
+    if (cartProducts.length === 1 && 
+        cartProducts[0]?.indRetoma === 1 && 
+        cartProducts[0]?.canPickUp === true) {
       setTradeInData({
         deviceName: cartProducts[0].name,
         value: 0,
@@ -602,7 +445,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     (tradeInData.completed ||
       (!tradeInData.completed &&
         cartProducts.length === 1 &&
-        cartProducts[0]?.indRetoma === 1));
+        cartProducts[0]?.indRetoma === 1 &&
+        cartProducts[0]?.canPickUp === true));
 
   const tradeInSummaryProps = shouldShowTradeInBanner
     ? {
@@ -616,7 +460,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           : undefined,
         isGuide: !tradeInData!.completed,
         showErrorSkeleton,
-        shippingCity: cartProducts.find(p => p.indRetoma === 1)?.shippingCity,
+        shippingCity: cartProducts.find(p => p.indRetoma === 1 && p.canPickUp === true)?.shippingCity,
       }
     : null;
 
@@ -653,13 +497,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
                     capacity={product.capacity}
                     ram={product.ram}
                     desDetallada={product.desDetallada}
-                    canPickUp={product.canPickUp}
                     isLoadingShippingInfo={
                       loadingShippingInfo[product.sku] || false
                     }
-                    isLoadingCanPickUp={loadingCanPickUp.has(
-                      `${product.sku}-${product.quantity}`
-                    )}
                     isLoadingIndRetoma={loadingIndRetoma.has(product.sku)}
                     indRetoma={product.indRetoma}
                     onQuantityChange={(cantidad) =>
@@ -699,6 +539,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             buttonText="Continuar pago"
             disabled={cartProducts.length === 0 || !tradeInValidation.isValid}
             isSticky={false}
+            isStep1={true}
+            onCanPickUpReady={handleCanPickUpReady}
+            isProcessing={isWaitingForCanPickUp}
           />
 
           {/* Banner de Trade-In - Debajo del resumen */}
@@ -738,14 +581,24 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             {/* Botón continuar */}
             <button
               className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-                !tradeInValidation.isValid
-                  ? "bg-gray-400 cursor-not-allowed"
+                !tradeInValidation.isValid || isWaitingForCanPickUp
+                  ? "bg-gray-400 cursor-not-allowed opacity-70"
                   : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}
               onClick={handleContinue}
-              disabled={!tradeInValidation.isValid}
+              disabled={!tradeInValidation.isValid || isWaitingForCanPickUp}
             >
-              Continuar pago
+              {isWaitingForCanPickUp ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Verificando...
+                </span>
+              ) : (
+                "Continuar pago"
+              )}
             </button>
           </div>
         </div>

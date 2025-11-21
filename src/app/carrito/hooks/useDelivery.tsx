@@ -99,6 +99,7 @@ export const useDelivery = () => {
   const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(null);
   const [addresses, setAddresses] = useState<Direccion[]>([]);
   const [canPickUp, setCanPickUp] = useState<boolean>(true); // Estado para saber si se puede recoger en tienda
+  const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
 
   // Cargar método de entrega desde localStorage al inicio
   const [deliveryMethod, setDeliveryMethodState] = useState<string>(() => {
@@ -134,6 +135,7 @@ export const useDelivery = () => {
   }, []);
 
   // Función para cargar tiendas candidatas
+  // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
       try {
         setStoresLoading(true);
@@ -148,97 +150,95 @@ export const useDelivery = () => {
         if (!userId || products.length === 0) {
           setStores([]);
           setFilteredStores([]);
-          setCanPickUp(true);
+          setCanPickUp(false);
           setStoresLoading(false);
           return;
         }
 
-        // Variable para rastrear si TODOS los productos tienen pickup disponible
-        let allProductsHavePickup = true;
+        // Preparar TODOS los productos del carrito para una sola petición
+        const productsToCheck = products.map((p) => ({
+          sku: p.sku,
+          quantity: p.quantity,
+        }));
 
-        // Obtener todas las tiendas candidatas para todos los productos
-        const allCandidateStores = new Map<string, { store: CandidateStore; city: string }>();
+        // Llamar al endpoint con TODOS los productos agrupados
+        const response = await productEndpoints.getCandidateStores({
+          products: productsToCheck,
+          user_id: userId,
+        });
 
-        // Hacer petición para cada producto
-        for (const product of products) {
-          try {
-            const response = await productEndpoints.getCandidateStores({
-              products: [{ sku: product.sku, quantity: product.quantity }],
-              user_id: userId,
+        if (response.success && response.data) {
+          const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
+          
+          // Obtener canPickUp global de la respuesta
+          const globalCanPickUp = responseData.canPickUp ?? responseData.canPickup ?? false;
+          
+          // Establecer canPickUp global
+          setCanPickUp(globalCanPickUp);
+
+          // Solo procesar tiendas si canPickUp global es true
+          // Si es false, no mostrar tiendas
+          if (globalCanPickUp && responseData.stores) {
+            // Obtener todas las tiendas de la respuesta global
+            const allCandidateStores = new Map<string, { store: CandidateStore; city: string }>();
+
+            // Agregar todas las tiendas de todas las ciudades de la respuesta global
+            Object.entries(responseData.stores).forEach(([city, cityStores]) => {
+              cityStores.forEach((store) => {
+                const storeCity = store.ciudad || city;
+                const key = `${store.codBodega}-${storeCity}`;
+                if (!allCandidateStores.has(key)) {
+                  allCandidateStores.set(key, { store, city: storeCity });
+                }
+              });
             });
 
-            if (response.success && response.data) {
-              // Verificar si el producto tiene pickup disponible
-              const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              const productCanPickUp =
-                responseData.canPickUp ??
-                responseData.canPickup ??
-                false;
+            // Procesar tiendas candidatas
+            let physicalStores: FormattedStore[] = [];
 
-              // Si algún producto no tiene pickup, marcar como false
-              if (!productCanPickUp) {
-                allProductsHavePickup = false;
-              }
+            if (allCandidateStores.size > 0) {
+              // Convertir CandidateStore a FormattedStore
+              const formattedStoresPromises = Array.from(allCandidateStores.values()).map(
+                ({ store, city }) => candidateStoreToFormattedStore(store, city)
+              );
 
-              // SIEMPRE agregar las tiendas, independientemente de si canPickUp es true o false
-              if (responseData.stores) {
-                // Agregar todas las tiendas de todas las ciudades
-                Object.entries(responseData.stores).forEach(([city, cityStores]) => {
-                  cityStores.forEach((store) => {
-                    // Usar codBodega como clave única para evitar duplicados
-                    // Usar la ciudad de la tienda si está disponible, sino usar la clave del objeto
-                    const storeCity = store.ciudad || city;
-                    const key = `${store.codBodega}-${storeCity}`;
-                    if (!allCandidateStores.has(key)) {
-                      allCandidateStores.set(key, { store, city: storeCity });
-                    }
-                  });
-                });
-              }
+              const formattedStoresResults = await Promise.all(formattedStoresPromises);
+              const validStores = formattedStoresResults.filter(
+                (store): store is FormattedStore => store !== null
+              );
+
+              // Filtrar centros de distribución y bodegas
+              physicalStores = validStores.filter((store) => {
+                const descripcion = normalizeText(store.descripcion);
+                const codigo = store.codigo?.toString().trim() || "";
+
+                // Excluir centros de distribución, bodegas, y código "001"
+                return !descripcion.includes("centro de distribucion") &&
+                       !descripcion.includes("centro distribucion") &&
+                       !descripcion.includes("bodega") &&
+                       codigo !== "001";
+              });
             }
-          } catch (error) {
-            console.error(`Error fetching candidate stores for product ${product.sku}:`, error);
+
+            // Mostrar solo las tiendas que devolvió el endpoint global
+            setStores(physicalStores);
+            setFilteredStores(physicalStores);
+          } else {
+            // Si canPickUp global es false, no mostrar tiendas
+            setStores([]);
+            setFilteredStores([]);
           }
+        } else {
+          // Si falla la petición, no hay pickup disponible
+          setCanPickUp(false);
+          setStores([]);
+          setFilteredStores([]);
         }
-
-        // Procesar tiendas candidatas SIEMPRE que haya tiendas en la respuesta
-        let physicalStores: FormattedStore[] = [];
-
-        if (allCandidateStores.size > 0) {
-          // Convertir CandidateStore a FormattedStore
-          const formattedStoresPromises = Array.from(allCandidateStores.values()).map(
-            ({ store, city }) => candidateStoreToFormattedStore(store, city)
-          );
-
-          const formattedStoresResults = await Promise.all(formattedStoresPromises);
-          const validStores = formattedStoresResults.filter(
-            (store): store is FormattedStore => store !== null
-          );
-
-          // Filtrar centros de distribución y bodegas
-          physicalStores = validStores.filter((store) => {
-            const descripcion = normalizeText(store.descripcion);
-            const codigo = store.codigo?.toString().trim() || "";
-
-            // Excluir centros de distribución, bodegas, y código "001"
-            return !descripcion.includes("centro de distribucion") &&
-                   !descripcion.includes("centro distribucion") &&
-                   !descripcion.includes("bodega") &&
-                   codigo !== "001";
-          });
-        }
-
-        // Establecer canPickUp basado en allProductsHavePickup
-        setCanPickUp(allProductsHavePickup);
-
-        // SIEMPRE mostrar las tiendas del endpoint candidate-stores
-        setStores(physicalStores);
-        setFilteredStores(physicalStores);
       } catch (error) {
         console.error("Error loading candidate stores:", error);
         setStores([]);
         setFilteredStores([]);
-        setCanPickUp(true);
+        setCanPickUp(false);
       } finally {
         setStoresLoading(false);
       }
@@ -250,25 +250,94 @@ export const useDelivery = () => {
     fetchCandidateStores();
   }, [fetchCandidateStores]);
 
-  // Escuchar cambios de dirección predeterminada desde el navbar
+  // Escuchar cambios de dirección (desde header O desde checkout)
   useEffect(() => {
-    const handleAddressChange = (event: Event) => {
-      console.log('🔄 Evento de cambio de dirección recibido:', event.type);
-      console.log('🔄 Dirección predeterminada cambiada desde navbar, recargando tiendas...');
+    const handleAddressChange = async (event: Event) => {
+      console.log('🔄 Evento de cambio de dirección recibido en useDelivery:', event.type);
+
+      // Verificar si el cambio viene del header
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log('🔄 Cambio de dirección desde header, actualizando dirección en Step3...');
+
+        // Mostrar skeleton
+        setAddressLoading(true);
+
+        // Esperar un momento para mostrar el skeleton
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        // Leer la nueva dirección de localStorage
+        try {
+          const saved = JSON.parse(
+            localStorage.getItem("checkout-address") || "{}"
+          ) as Direccion;
+
+          if (saved && saved.id) {
+            console.log('✅ Actualizando dirección en Step3:', saved);
+            setAddress(saved);
+          }
+        } catch (error) {
+          console.error('❌ Error al leer dirección de localStorage:', error);
+        } finally {
+          // Ocultar skeleton
+          setAddressLoading(false);
+        }
+      }
+
+      console.log('🔄 Dirección cambió, recalculando canPickUp global y tiendas...');
+      // Recalcular canPickUp global y tiendas cuando cambia la dirección
       fetchCandidateStores();
     };
 
-    // Escuchar el evento storage que se dispara cuando cambia la dirección
-    window.addEventListener('storage', handleAddressChange);
+    const handleStorageChange = (e: StorageEvent) => {
+      // Escuchar cambios en checkout-address o imagiq_default_address
+      if (e.key === 'checkout-address' || e.key === 'imagiq_default_address') {
+        console.log('🔄 Cambio detectado en localStorage:', e.key);
+        handleAddressChange(e);
+      }
+    };
 
-    // También escuchar eventos personalizados si existen
+    // Escuchar evento storage (para cambios entre tabs)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Escuchar eventos personalizados desde header
     window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    // Escuchar eventos personalizados desde checkout
+    window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
+
+    // También verificar cambios periódicamente en la misma tab (porque storage solo funciona entre tabs)
+    let lastCheckoutAddress = localStorage.getItem('checkout-address');
+    let lastDefaultAddress = localStorage.getItem('imagiq_default_address');
+
+    const checkAddressChanges = () => {
+      const currentCheckoutAddress = localStorage.getItem('checkout-address');
+      const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
+
+      if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
+        console.log('🔄 Cambio detectado en checkout-address (polling)');
+        handleAddressChange(new Event('checkout-address-changed'));
+        lastCheckoutAddress = currentCheckoutAddress;
+      }
+
+      if (currentDefaultAddress !== lastDefaultAddress && lastDefaultAddress !== null) {
+        console.log('🔄 Cambio detectado en imagiq_default_address (polling)');
+        handleAddressChange(new Event('address-changed'));
+        lastDefaultAddress = currentDefaultAddress;
+      }
+    };
+
+    const intervalId = setInterval(checkAddressChanges, 500);
 
     console.log('✅ Listeners de cambio de dirección configurados en useDelivery');
 
     return () => {
-      window.removeEventListener('storage', handleAddressChange);
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('address-changed', handleAddressChange as EventListener);
+      window.removeEventListener('checkout-address-changed', handleAddressChange as EventListener);
+      clearInterval(intervalId);
     };
   }, [fetchCandidateStores]);
 
@@ -384,5 +453,6 @@ export const useDelivery = () => {
     canPickUp,
     stores,
     refreshStores: fetchCandidateStores,
+    addressLoading, // Exportar estado de loading para mostrar skeleton
   };
 };

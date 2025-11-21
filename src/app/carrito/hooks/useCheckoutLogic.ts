@@ -121,6 +121,8 @@ export function useCheckoutLogic() {
 
   const handleCloseAddCardModal = () => {
     setIsAddCardModalOpen(false);
+    // Forzar recarga de tarjetas guardadas al cerrar el modal
+    setSavedCardsReloadCounter((c) => c + 1);
   };
 
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas

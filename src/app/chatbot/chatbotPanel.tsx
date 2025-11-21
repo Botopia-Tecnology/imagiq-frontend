@@ -6,8 +6,10 @@ import Step3 from "./step3";
 import Step4 from "./step4";
 import { Bot, X } from "lucide-react";
 
-// Importa la función para enviar mensajes a Gemini
-import { sendMessageToGemini } from "./apikey";
+// Importa el servicio del agente conversacional
+import { sendMessageToAgent } from "@/services/chatbot.service";
+// Importa el componente de mensaje formateado
+import { FormattedMessage } from "@/components/chatbot/FormattedMessage";
 
 export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void }>) {
   const [step, setStep] = useState(0);
@@ -21,6 +23,7 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
     },
   ]);
   const [loading, setLoading] = useState(false);
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined);
 
   const handleNext = () => setStep((prev) => prev + 1);
   const handleReset = () => setStep(0);
@@ -29,7 +32,7 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
     setInput(e.target.value);
   };
 
-  // Nuevo: Enviar mensaje a Gemini y mostrar respuesta
+  // Enviar mensaje al agente conversacional
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -39,12 +42,19 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
     setLoading(true);
 
     try {
-      const botReply = await sendMessageToGemini(userMessage);
-      setMessages((prev) => [...prev, { from: "bot", text: botReply }]);
+      const response = await sendMessageToAgent(userMessage, sessionId);
+      
+      // Guardar session_id para mantener el contexto
+      if (response.session_id) {
+        setSessionId(response.session_id);
+      }
+      
+      // Mostrar el campo answer al usuario
+      setMessages((prev) => [...prev, { from: "bot", text: response.answer }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { from: "bot", text: "Ocurrió un error al contactar a Gemini." },
+        { from: "bot", text: "Ocurrió un error al contactar al asistente." },
       ]);
     } finally {
       setLoading(false);
@@ -57,12 +67,19 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
     setLoading(true);
 
     try {
-      const botReply = await sendMessageToGemini(optionText);
-      setMessages((prev) => [...prev, { from: "bot", text: botReply }]);
+      const response = await sendMessageToAgent(optionText, sessionId);
+      
+      // Guardar session_id para mantener el contexto
+      if (response.session_id) {
+        setSessionId(response.session_id);
+      }
+      
+      // Mostrar el campo answer al usuario
+      setMessages((prev) => [...prev, { from: "bot", text: response.answer }]);
     } catch {
       setMessages((prev) => [
         ...prev,
-        { from: "bot", text: "Ocurrió un error al contactar a Gemini." },
+        { from: "bot", text: "Ocurrió un error al contactar al asistente." },
       ]);
     } finally {
       setLoading(false);
@@ -114,7 +131,7 @@ style={{
                     : "bg-gradient-to-br from-gray-700 to-gray-800 text-white self-end ml-auto"
                 }`}
               >
-                {msg.text}
+                <FormattedMessage text={msg.text} />
               </div>
             ))}
             {loading && (
@@ -205,6 +222,3 @@ style={{
     </div>
   );
 }
-
-// Exporta la función para usarla en otros componentes si es necesario
-export { sendMessageToGemini } from "./apikey";

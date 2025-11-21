@@ -374,7 +374,8 @@ export default function DynamicBannerClean({
                 opacity: isActive ? 1 : 0,
                 transform: isActive ? 'translateX(0)' : 'translateX(-30px)',
                 pointerEvents: isActive ? 'auto' : 'none',
-                zIndex: isActive ? 1 : 0
+                zIndex: isActive ? 1 : 0,
+                willChange: 'opacity, transform'
               }}
             >
               <div

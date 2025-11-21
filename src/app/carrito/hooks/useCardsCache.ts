@@ -41,37 +41,56 @@ export function useCardsCache() {
   const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
   const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
 
+  // Helper para obtener el userId (autenticado o invitado)
+  const getUserId = useCallback((): string | null => {
+    if (authContext.user?.id) {
+      return authContext.user.id;
+    }
+
+    try {
+      const storedUser = localStorage.getItem("imagiq_user");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        return parsedUser.id || null;
+      }
+    } catch (error) {
+      
+    }
+
+    return null;
+  }, [authContext.user?.id]);
+
   // Verificar si el caché es válido
   const isCacheValid = useCallback(() => {
     const now = Date.now();
+    const userId = getUserId();
     return (
       cardsCache.data !== null &&
-      cardsCache.userId === authContext.user?.id &&
+      cardsCache.userId === userId &&
       now - cardsCache.timestamp < CACHE_DURATION
     );
-  }, [authContext.user?.id]);
+  }, [getUserId]);
 
   // Cargar tarjetas (con o sin caché)
   const loadSavedCards = useCallback(async (forceReload = false) => {
-    if (!authContext.user?.id) {
+    const userId = getUserId();
+    if (!userId) {
       setSavedCards([]);
       return;
     }
 
     // Si el caché es válido y no se fuerza la recarga, usar caché
     if (!forceReload && isCacheValid() && cardsCache.data) {
-      console.log("📦 Usando tarjetas desde caché");
+      
       setSavedCards(cardsCache.data);
       return;
     }
 
     try {
-      console.log("🔄 Cargando tarjetas desde API...");
+      
       setIsLoadingCards(true);
       const encryptedCards =
-        await profileService.getUserPaymentMethodsEncrypted(
-          authContext.user?.id
-        );
+        await profileService.getUserPaymentMethodsEncrypted(userId);
 
       const decryptedCards: DBCard[] = encryptedCards
         .map((encCard) => {
@@ -97,36 +116,35 @@ export function useCardsCache() {
       cardsCache = {
         data: decryptedCards,
         timestamp: Date.now(),
-        userId: authContext.user?.id || null,
+        userId: userId,
       };
 
       setSavedCards(decryptedCards);
-      console.log("✅ Tarjetas cargadas y guardadas en caché");
+    
     } catch (error) {
-      console.error("❌ Error cargando tarjetas:", error);
+      
       setSavedCards([]);
       // No actualizar caché en caso de error
     } finally {
       setIsLoadingCards(false);
     }
-  }, [authContext.user?.id, isCacheValid]);
+  }, [getUserId, isCacheValid]);
 
   // Precargar tarjetas sin mostrar loading (para precarga anticipada)
   const preloadCards = useCallback(async () => {
-    if (!authContext.user?.id) return;
+    const userId = getUserId();
+    if (!userId) return;
 
     // Si ya hay caché válido, no hacer nada
     if (isCacheValid() && cardsCache.data) {
-      console.log("📦 Caché de tarjetas ya válido, no es necesario precargar");
+      
       return;
     }
 
     try {
-      console.log("⚡ Precargando tarjetas en segundo plano...");
+     
       const encryptedCards =
-        await profileService.getUserPaymentMethodsEncrypted(
-          authContext.user?.id
-        );
+        await profileService.getUserPaymentMethodsEncrypted(userId);
 
       const decryptedCards: DBCard[] = encryptedCards
         .map((encCard) => {
@@ -152,14 +170,14 @@ export function useCardsCache() {
       cardsCache = {
         data: decryptedCards,
         timestamp: Date.now(),
-        userId: authContext.user?.id || null,
+        userId: userId,
       };
 
-      console.log("✅ Tarjetas precargadas exitosamente");
+     
     } catch (error) {
-      console.error("❌ Error precargando tarjetas:", error);
+      
     }
-  }, [authContext.user?.id, isCacheValid]);
+  }, [getUserId, isCacheValid]);
 
   // Invalidar caché manualmente
   const invalidateCache = useCallback(() => {
@@ -188,37 +206,39 @@ export function useCardsCache() {
   const isZeroInterestCacheValid = useCallback(
     (cardIds: string[], productSkus: string[], totalAmount: number) => {
       const now = Date.now();
+      const userId = getUserId();
       const cacheKey = generateZeroInterestCacheKey(cardIds, productSkus, totalAmount);
       return (
         zeroInterestCache.data !== null &&
-        zeroInterestCache.userId === authContext.user?.id &&
+        zeroInterestCache.userId === userId &&
         zeroInterestCache.cacheKey === cacheKey &&
         now - zeroInterestCache.timestamp < CACHE_DURATION
       );
     },
-    [authContext.user?.id, generateZeroInterestCacheKey]
+    [getUserId, generateZeroInterestCacheKey]
   );
 
   // Cargar zero interest (con o sin caché)
   const loadZeroInterest = useCallback(
     async (cardIds: string[], productSkus: string[], totalAmount: number, forceReload = false) => {
-      if (!authContext.user?.id || cardIds.length === 0) {
+      const userId = getUserId();
+      if (!userId || cardIds.length === 0) {
         setZeroInterestData(null);
         return;
       }
 
       // Si el caché es válido y no se fuerza la recarga, usar caché
       if (!forceReload && isZeroInterestCacheValid(cardIds, productSkus, totalAmount) && zeroInterestCache.data) {
-        console.log("📦 Usando zero interest desde caché");
+     
         setZeroInterestData(zeroInterestCache.data);
         return;
       }
 
       try {
-        console.log("🔄 Cargando zero interest desde API...");
+       
         setIsLoadingZeroInterest(true);
         const result = await checkZeroInterest({
-          userId: authContext.user.id,
+          userId,
           cardIds,
           productSkus,
           totalAmount,
@@ -229,37 +249,38 @@ export function useCardsCache() {
         zeroInterestCache = {
           data: result,
           timestamp: Date.now(),
-          userId: authContext.user.id,
+          userId,
           cacheKey,
         };
 
         setZeroInterestData(result);
-        console.log("✅ Zero interest cargado y guardado en caché");
+  
       } catch (error) {
-        console.error("❌ Error cargando zero interest:", error);
+        
         setZeroInterestData(null);
       } finally {
         setIsLoadingZeroInterest(false);
       }
     },
-    [authContext.user?.id, isZeroInterestCacheValid, generateZeroInterestCacheKey]
+    [getUserId, isZeroInterestCacheValid, generateZeroInterestCacheKey]
   );
 
   // Precargar zero interest sin mostrar loading
   const preloadZeroInterest = useCallback(
     async (cardIds: string[], productSkus: string[], totalAmount: number) => {
-      if (!authContext.user?.id || cardIds.length === 0) return;
+      const userId = getUserId();
+      if (!userId || cardIds.length === 0) return;
 
       // Si ya hay caché válido, no hacer nada
       if (isZeroInterestCacheValid(cardIds, productSkus, totalAmount) && zeroInterestCache.data) {
-        console.log("📦 Caché de zero interest ya válido, no es necesario precargar");
+     
         return;
       }
 
       try {
-        console.log("⚡ Precargando zero interest en segundo plano...");
+       
         const result = await checkZeroInterest({
-          userId: authContext.user.id,
+          userId,
           cardIds,
           productSkus,
           totalAmount,
@@ -270,16 +291,16 @@ export function useCardsCache() {
         zeroInterestCache = {
           data: result,
           timestamp: Date.now(),
-          userId: authContext.user.id,
+          userId,
           cacheKey,
         };
 
-        console.log("✅ Zero interest precargado exitosamente");
+    
       } catch (error) {
-        console.error("❌ Error precargando zero interest:", error);
+  
       }
     },
-    [authContext.user?.id, isZeroInterestCacheValid, generateZeroInterestCacheKey]
+    [getUserId, isZeroInterestCacheValid, generateZeroInterestCacheKey]
   );
 
   return {

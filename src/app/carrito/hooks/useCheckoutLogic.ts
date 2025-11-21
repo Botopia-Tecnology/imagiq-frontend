@@ -126,10 +126,14 @@ export function useCheckoutLogic() {
   };
 
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
-  const handleAddCardSuccess = (newCardId?: string) => {
+  const handleAddCardSuccess = async (newCardId?: string) => {
     setIsAddCardModalOpen(false);
+    
+    // Forzar recarga de tarjetas - la tarjeta se seleccionará automáticamente en PaymentForm después de recargar
     setSavedCardsReloadCounter((c) => c + 1);
-
+    setPaymentMethod("tarjeta");
+    setUseNewCard(false);
+    
     // Si se proporcionó el ID de la nueva tarjeta, consultar cuotas sin interés
     if (newCardId) {
       fetchZeroInterestInfo([newCardId]);
@@ -174,15 +178,9 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      // Si usa una tarjeta guardada, no validar campos
-      if (!selectedCardId || useNewCard) {
-        const validation = validateCardFields(card, isAmex);
-        setCardErrors(validation.errors);
-        valid = !validation.hasError && valid;
-      }
-      // Si usa tarjeta guardada, verificar que haya seleccionado una
-      else if (!selectedCardId) {
-        setError("Debes seleccionar una tarjeta o agregar una nueva");
+      // Verificar que haya seleccionado una tarjeta guardada
+      if (!selectedCardId) {
+        setError("Debes seleccionar una tarjeta. Si no tienes tarjetas guardadas, agrega una desde tu perfil.");
         valid = false;
       }
     }
@@ -202,7 +200,8 @@ export function useCheckoutLogic() {
     localStorage.setItem("checkout-payment-method", paymentMethod);
 
     if (paymentMethod === "tarjeta") {
-      if (selectedCardId && !useNewCard) {
+      // Solo guardar tarjetas guardadas (ya no se permiten nuevas tarjetas en step 4)
+      if (selectedCardId) {
         localStorage.setItem("checkout-saved-card-id", selectedCardId);
         localStorage.setItem(
           "checkout-card-installments",
@@ -213,8 +212,6 @@ export function useCheckoutLogic() {
         if (zeroInterestData) {
           safeSetLocalStorage("checkout-zero-interest", zeroInterestData);
         }
-      } else {
-        localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
     } else if (paymentMethod === "pse") {
       // Guardar tanto código como nombre del banco para uso en resumen
@@ -240,15 +237,9 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      // Si usa una tarjeta guardada, no validar campos
-      if (!selectedCardId || useNewCard) {
-        const validation = validateCardFields(card, isAmex);
-        setCardErrors(validation.errors);
-        valid = !validation.hasError && valid;
-      }
-      // Si usa tarjeta guardada, verificar que haya seleccionado una
-      else if (!selectedCardId) {
-        setError("Debes seleccionar una tarjeta o agregar una nueva");
+      // Verificar que haya seleccionado una tarjeta guardada
+      if (!selectedCardId) {
+        setError("Debes seleccionar una tarjeta. Si no tienes tarjetas guardadas, agrega una desde tu perfil.");
         valid = false;
       }
     }
@@ -399,8 +390,8 @@ export function useCheckoutLogic() {
         }
 
         case "tarjeta": {
-          // Verificar si usa tarjeta guardada o nueva
-          if (selectedCardId && !useNewCard) {
+          // Solo se permite pago con tarjeta guardada (ya no se permiten nuevas tarjetas en step 4)
+          if (selectedCardId) {
             // Pago con tarjeta guardada
             res = await payWithSavedCard({
               cardId: selectedCardId,

@@ -225,10 +225,19 @@ export default function Step4OrderSummary({
     fetchGlobalCanPickUp();
   }, [fetchGlobalCanPickUp]);
   
-  // Resetear userClickedWhileLoading solo cuando cambian los productos o shouldCalculateCanPickUp
+  // Resetear userClickedWhileLoading cuando cambian los productos, shouldCalculateCanPickUp, o cuando canPickUp termina de cargar
   React.useEffect(() => {
     setUserClickedWhileLoading(false);
   }, [products.length, shouldCalculateCanPickUp]);
+
+  // Resetear userClickedWhileLoading cuando canPickUp termina de cargar (para evitar bloqueos)
+  React.useEffect(() => {
+    if (!isLoadingCanPickUp && userClickedWhileLoading) {
+      // Si canPickUp ya terminó de cargar y userClickedWhileLoading está en true, resetearlo
+      // Esto permite que el usuario pueda hacer clic normalmente si canPickUp ya cargó
+      setUserClickedWhileLoading(false);
+    }
+  }, [isLoadingCanPickUp, userClickedWhileLoading]);
 
   // Notificar cuando canPickUp está listo (no está cargando)
   React.useEffect(() => {
@@ -531,17 +540,20 @@ export default function Step4OrderSummary({
           aria-busy={isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)}
           onClick={() => {
             // Si está cargando canPickUp cuando el usuario hace clic, marcar que hizo clic y esperar
-            if (isLoadingCanPickUp) {
+            // Solo para pasos 1-6 donde shouldCalculateCanPickUp es true
+            if (isLoadingCanPickUp && shouldCalculateCanPickUp) {
               console.log('👆 Usuario hizo clic mientras canPickUp está cargando, esperando...');
               setUserClickedWhileLoading(true);
               return; // No ejecutar onFinishPayment todavía, el useEffect se encargará
             }
-            // Si no está cargando, ejecutar normalmente
-            console.log('👆 Usuario hizo clic, canPickUp ya terminó, ejecutando onFinishPayment inmediatamente');
+            // Si no está cargando o estamos en Step7 (no calcula canPickUp), ejecutar inmediatamente
+            console.log('👆 Usuario hizo clic, ejecutando onFinishPayment inmediatamente');
+            // Resetear userClickedWhileLoading por si acaso quedó en true
+            setUserClickedWhileLoading(false);
             onFinishPayment();
           }}
         >
-          {userClickedWhileLoading && isLoadingCanPickUp ? (
+          {(isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)) ? (
             <span
               className="flex items-center justify-center gap-2"
               aria-live="polite"

@@ -23,6 +23,7 @@ interface Step4OrderSummaryProps {
   isStep1?: boolean; // Indica si estamos en Step1 para calcular canPickUp global
   onCanPickUpReady?: (isReady: boolean, isLoading: boolean) => void; // Callback para notificar cuando canPickUp está listo
   error?: string | string[] | null;
+  shouldCalculateCanPickUp?: boolean; // Indica si debe calcular canPickUp (por defecto true en Steps 1-6, false en Step7)
 }
 
 export default function Step4OrderSummary({
@@ -37,6 +38,7 @@ export default function Step4OrderSummary({
   isStep1 = false,
   onCanPickUpReady,
   error,
+  shouldCalculateCanPickUp = true, // Por defecto true (Steps 1-6)
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -136,17 +138,28 @@ export default function Step4OrderSummary({
     null
   );
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(false);
+  // Estado para rastrear si el usuario hizo clic en el botón mientras está cargando
+  const [userClickedWhileLoading, setUserClickedWhileLoading] = React.useState(false);
+  // Ref para guardar la función onFinishPayment y evitar ejecuciones múltiples
+  const onFinishPaymentRef = React.useRef(onFinishPayment);
+  
+  // Actualizar la ref cuando cambie la función
+  React.useEffect(() => {
+    onFinishPaymentRef.current = onFinishPayment;
+  }, [onFinishPayment]);
 
   // Llamar a candidate-stores con TODOS los productos del carrito agrupados en una sola petición
-  // Ejecutar en Step1 y en otros steps si la variable de debug está activa
+  // Ejecutar en Steps 1-6 (cuando shouldCalculateCanPickUp es true)
   const fetchGlobalCanPickUp = React.useCallback(async () => {
-    // Solo calcular en Step1, o en otros steps si la variable de debug está activa
+    // Solo calcular si shouldCalculateCanPickUp es true (Steps 1-6) o si la variable de debug está activa
     const shouldFetch =
-      isStep1 || process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true";
+      shouldCalculateCanPickUp ||
+      process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true";
 
     if (!shouldFetch || products.length === 0) {
       if (!shouldFetch) {
         setGlobalCanPickUp(null);
+        setIsLoadingCanPickUp(false);
       }
       return;
     }
@@ -161,10 +174,13 @@ export default function Step4OrderSummary({
       const userId = user?.id || user?.user_id;
 
       if (!userId) {
+        console.warn("⚠️ No se encontró userId en localStorage. Usuario no logueado?");
         setIsLoadingCanPickUp(false);
         setGlobalCanPickUp(null);
         return;
       }
+
+      console.log("✅ userId encontrado:", userId);
 
       // Preparar TODOS los productos del carrito para una sola petición
       const productsToCheck = products.map((p) => ({
@@ -196,16 +212,23 @@ export default function Step4OrderSummary({
       console.error("❌ Error al verificar canPickUp global:", error);
       setGlobalCanPickUp(false);
     } finally {
+      console.log('🔄 Finalizando carga de canPickUp, isLoadingCanPickUp será false');
       setIsLoadingCanPickUp(false);
+      // NO resetear userClickedWhileLoading aquí - se resetea en el useEffect después de ejecutar onFinishPayment
     }
-  }, [products, isStep1]);
+  }, [products, shouldCalculateCanPickUp]);
 
-  // También calcular canPickUp global en otros steps si la variable de debug está activa
+  // Calcular canPickUp global cuando cambian los productos o shouldCalculateCanPickUp
   React.useEffect(() => {
-    if (!isStep1 && process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true") {
-      fetchGlobalCanPickUp();
-    }
-  }, [fetchGlobalCanPickUp, isStep1]);
+    // NO resetear userClickedWhileLoading aquí - solo cuando cambian los productos o shouldCalculateCanPickUp
+    // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
+    fetchGlobalCanPickUp();
+  }, [fetchGlobalCanPickUp]);
+  
+  // Resetear userClickedWhileLoading solo cuando cambian los productos o shouldCalculateCanPickUp
+  React.useEffect(() => {
+    setUserClickedWhileLoading(false);
+  }, [products.length, shouldCalculateCanPickUp]);
 
   // Notificar cuando canPickUp está listo (no está cargando)
   React.useEffect(() => {
@@ -213,6 +236,56 @@ export default function Step4OrderSummary({
       onCanPickUpReady(!isLoadingCanPickUp, isLoadingCanPickUp);
     }
   }, [isStep1, isLoadingCanPickUp, onCanPickUpReady]);
+
+  // Ejecutar onFinishPayment automáticamente cuando termine de cargar canPickUp
+  // y el usuario había hecho clic mientras estaba cargando (pasos 1-6)
+  React.useEffect(() => {
+    console.log('🔍 useEffect avance automático:', {
+      userClickedWhileLoading,
+      isLoadingCanPickUp,
+      shouldCalculateCanPickUp,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Solo avanzar si:
+    // 1. El usuario hizo clic mientras estaba cargando
+    // 2. Ya terminó de cargar (isLoadingCanPickUp es false)
+    // 3. shouldCalculateCanPickUp es true (pasos 1-6, no Step7)
+    if (userClickedWhileLoading && !isLoadingCanPickUp && shouldCalculateCanPickUp) {
+      console.log('✅ CONDICIÓN CUMPLIDA: canPickUp terminó de cargar, avanzando automáticamente...', {
+        userClickedWhileLoading,
+        isLoadingCanPickUp,
+        shouldCalculateCanPickUp
+      });
+      
+      // Guardar el estado antes de resetearlo
+      const shouldExecute = userClickedWhileLoading;
+      
+      // Resetear el estado inmediatamente para evitar ejecuciones múltiples
+      setUserClickedWhileLoading(false);
+      
+      // Ejecutar la función usando la ref para evitar problemas de dependencias
+      if (shouldExecute) {
+        // Ejecutar inmediatamente sin delay para forzar el avance
+        console.log('🚀 EJECUTANDO onFinishPayment automáticamente AHORA...');
+        try {
+          onFinishPaymentRef.current();
+          console.log('✅ onFinishPayment ejecutado correctamente');
+        } catch (error) {
+          console.error('❌ Error al ejecutar onFinishPayment:', error);
+        }
+      }
+    } else {
+      console.log('⏸️ Condición NO cumplida para avance automático:', {
+        userClickedWhileLoading,
+        isLoadingCanPickUp,
+        shouldCalculateCanPickUp,
+        reason: !userClickedWhileLoading ? 'Usuario no hizo clic' : 
+                isLoadingCanPickUp ? 'Aún está cargando' : 
+                !shouldCalculateCanPickUp ? 'No debe calcular canPickUp' : 'Desconocido'
+      });
+    }
+  }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp]);
 
   // Ejecutar cuando cambian los productos
   React.useEffect(() => {
@@ -435,26 +508,6 @@ export default function Step4OrderSummary({
         </div>
       )}
 
-      {/* Mensaje de T&C */}
-      <div className="text-xs text-gray-600 text-left">
-        Al comprar aceptas nuestros{" "}
-        <a
-          href="/terminos-y-condiciones"
-          target="_blank"
-          className="text-black underline hover:text-gray-700"
-        >
-          términos y condiciones
-        </a>{" "}
-        y{" "}
-        <a
-          href="/politicas-de-privacidad"
-          target="_blank"
-          className="text-black underline hover:text-gray-700"
-        >
-          políticas de privacidad
-        </a>
-      </div>
-
       <div className="flex gap-3">
         {/* Botón de volver (opcional) */}
         {onBack && (
@@ -469,16 +522,26 @@ export default function Step4OrderSummary({
         <button
           type="button"
           className={`flex-1 bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
-            isProcessing || disabled
+            isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
               ? "opacity-70 cursor-not-allowed"
               : "cursor-pointer"
           }`}
-          disabled={isProcessing || disabled}
+          disabled={isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)}
           data-testid="checkout-finish-btn"
-          aria-busy={isProcessing}
-          onClick={onFinishPayment}
+          aria-busy={isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)}
+          onClick={() => {
+            // Si está cargando canPickUp cuando el usuario hace clic, marcar que hizo clic y esperar
+            if (isLoadingCanPickUp) {
+              console.log('👆 Usuario hizo clic mientras canPickUp está cargando, esperando...');
+              setUserClickedWhileLoading(true);
+              return; // No ejecutar onFinishPayment todavía, el useEffect se encargará
+            }
+            // Si no está cargando, ejecutar normalmente
+            console.log('👆 Usuario hizo clic, canPickUp ya terminó, ejecutando onFinishPayment inmediatamente');
+            onFinishPayment();
+          }}
         >
-          {isProcessing ? (
+          {userClickedWhileLoading && isLoadingCanPickUp ? (
             <span
               className="flex items-center justify-center gap-2"
               aria-live="polite"
@@ -627,7 +690,9 @@ export default function Step4OrderSummary({
             {isLoadingCanPickUp ? (
               <p className="text-yellow-600 italic">Verificando...</p>
             ) : globalCanPickUp === null ? (
-              <p className="text-yellow-600 italic">No disponible</p>
+              <p className="text-yellow-600 italic">
+                No disponible - Verifica que estés logueado y tengas productos en el carrito
+              </p>
             ) : (
               <p className="font-medium">
                 canPickUp global: {globalCanPickUp ? "true" : "false"}

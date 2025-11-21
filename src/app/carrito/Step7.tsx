@@ -105,6 +105,7 @@ export default function Step7({ onBack }: Step7Props) {
     useState<ShippingVerification | null>(null);
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
+  const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -370,8 +371,12 @@ export default function Step7({ onBack }: Step7Props) {
     const verifyWhenProductsReady = async () => {
       // Solo ejecutar si hay productos y es envío a domicilio
       if (products.length === 0 || shippingData?.type !== "delivery") {
+        setIsLoadingShippingMethod(false);
         return;
       }
+
+      // Iniciar loading
+      setIsLoadingShippingMethod(true);
 
       // PASO 1: Obtener canPickUp global del endpoint candidate-stores
       try {
@@ -388,6 +393,7 @@ export default function Step7({ onBack }: Step7Props) {
             todos_productos_im_it: false,
             en_zona_cobertura: true,
           });
+          setIsLoadingShippingMethod(false);
           return;
         }
 
@@ -427,6 +433,7 @@ export default function Step7({ onBack }: Step7Props) {
               todos_productos_im_it: false,
               en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
             });
+            setIsLoadingShippingMethod(false);
             return;
           }
 
@@ -443,6 +450,7 @@ export default function Step7({ onBack }: Step7Props) {
               todos_productos_im_it: false,
               en_zona_cobertura: true,
             });
+            setIsLoadingShippingMethod(false);
             return;
           }
 
@@ -466,6 +474,7 @@ export default function Step7({ onBack }: Step7Props) {
             todos_productos_im_it: data.todos_productos_im_it || false,
             en_zona_cobertura: data.en_zona_cobertura || false,
           });
+          setIsLoadingShippingMethod(false);
         } else {
           // Si falla la petición de candidate-stores, usar Coordinadora
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
@@ -474,6 +483,7 @@ export default function Step7({ onBack }: Step7Props) {
             todos_productos_im_it: false,
             en_zona_cobertura: true,
           });
+          setIsLoadingShippingMethod(false);
         }
       } catch (error) {
         console.error(
@@ -486,6 +496,7 @@ export default function Step7({ onBack }: Step7Props) {
           todos_productos_im_it: false,
           en_zona_cobertura: true,
         });
+        setIsLoadingShippingMethod(false);
       }
     };
 
@@ -844,19 +855,97 @@ export default function Step7({ onBack }: Step7Props) {
     <div className="min-h-screen w-full">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Confirma tu pedido
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Revisa todos los detalles antes de confirmar tu compra
-          </p>
+          {isLoadingShippingMethod ? (
+            <div className="animate-pulse">
+              <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+              <div className="h-5 w-96 bg-gray-200 rounded"></div>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Confirma tu pedido
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Revisa todos los detalles antes de confirmar tu compra
+              </p>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sección de resumen */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Método de pago */}
-            {paymentData && (
+            {isLoadingShippingMethod ? (
+              /* Skeleton de toda la sección mientras carga */
+              <>
+                {/* Skeleton Método de pago */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="h-20 bg-gray-100 rounded-lg"></div>
+                  </div>
+                </div>
+
+                {/* Skeleton Método de entrega */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-40 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-16 bg-gray-100 rounded-lg"></div>
+                </div>
+
+                {/* Skeleton Datos de facturación */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Método de pago */}
+                {paymentData && (
               <div className="bg-white rounded-lg p-6 border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
@@ -1209,27 +1298,122 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
               </div>
             )}
+              </>
+            )}
           </div>
 
           {/* Resumen de compra y Trade-In */}
           <div className="lg:col-span-1 space-y-4">
-            <Step4OrderSummary
-              isProcessing={isProcessing}
-              onFinishPayment={handleConfirmOrder}
-              onBack={onBack}
-              buttonText="Confirmar y pagar"
-              disabled={isProcessing || !tradeInValidation.isValid}
-              shippingVerification={shippingVerification}
-              deliveryMethod={shippingData?.type}
-              error={error}
-            />
+            {isLoadingShippingMethod ? (
+              /* Skeleton del resumen mientras carga */
+              <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
+                <div className="space-y-4">
+                  {/* Título */}
+                  <div className="h-6 w-40 bg-gray-200 rounded"></div>
+
+                  {/* Líneas de precios */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-28 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-36 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="pt-4">
+                    <div className="flex justify-between mb-4">
+                      <div className="h-5 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-5 w-28 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Mensaje T&C */}
+                  <div className="space-y-2">
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="h-12 w-full bg-gray-300 rounded-lg"></div>
+
+                  {/* Términos centrados */}
+                  <div className="mt-3 space-y-2">
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-5/6 bg-gray-200 rounded mx-auto"></div>
+                    <div className="h-3 w-4/6 bg-gray-200 rounded mx-auto"></div>
+                  </div>
+
+                  {/* Información de financiamiento y envío */}
+                  <div className="mt-6 space-y-4">
+                    {/* Financiamiento */}
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded shrink-0"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-full bg-gray-200 rounded"></div>
+                        <div className="h-3 w-5/6 bg-gray-200 rounded"></div>
+                        <div className="h-3 w-4/6 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+
+                    {/* Envío */}
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded shrink-0"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-full bg-gray-200 rounded"></div>
+                        <div className="h-3 w-5/6 bg-gray-200 rounded"></div>
+                        <div className="h-3 w-3/6 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Step4OrderSummary
+                isProcessing={isProcessing}
+                onFinishPayment={handleConfirmOrder}
+                onBack={onBack}
+                buttonText="Confirmar y pagar"
+                disabled={isProcessing || !tradeInValidation.isValid}
+                shippingVerification={shippingVerification}
+                deliveryMethod={shippingData?.type}
+                error={error}
+                shouldCalculateCanPickUp={false}
+              />
+            )}
             {/* Información del método de envío */}
             <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-bold text-blue-900 mb-3">
-                📦 Método de envío
-              </p>
-              <div className="space-y-2 text-sm text-blue-800">
-                {shippingData?.type === "pickup" ? (
+              {isLoadingShippingMethod ? (
+                /* Skeleton mientras carga - incluye título */
+                <div className="animate-pulse space-y-3">
+                  <div className="h-4 w-40 bg-blue-200 rounded mb-3"></div>
+                  <div className="flex items-start gap-2">
+                    <div className="h-4 w-16 bg-blue-200 rounded"></div>
+                    <div className="h-4 w-32 bg-blue-200 rounded"></div>
+                  </div>
+                  <div className="p-2 bg-white/50 rounded border border-blue-200">
+                    <div className="h-3 w-40 bg-blue-200 rounded mb-2"></div>
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-full bg-blue-200 rounded"></div>
+                      <div className="h-3 w-full bg-blue-200 rounded"></div>
+                      <div className="h-3 w-full bg-blue-200 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm font-bold text-blue-900 mb-3">
+                    📦 Método de envío
+                  </p>
+                <div className="space-y-2 text-sm text-blue-800">
+                  {shippingData?.type === "pickup" ? (
                   <>
                     <div className="flex items-start gap-2">
                       <span className="font-semibold">Método:</span>
@@ -1303,7 +1487,9 @@ export default function Step7({ onBack }: Step7Props) {
                     </div>
                   </>
                 )}
-              </div>
+                </div>
+                </>
+              )}
             </div>
 
             {/* Banner de Trade-In - Debajo del resumen */}

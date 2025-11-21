@@ -140,6 +140,19 @@ export default function PaymentForm({
     }
   }, [savedCards, onFetchZeroInterest]);
 
+  // Activar automáticamente "useNewCard" cuando no hay tarjetas guardadas
+  useEffect(() => {
+    if (
+      savedCards.length === 0 &&
+      !useNewCard &&
+      paymentMethod === "tarjeta" &&
+      !isLoadingCards
+    ) {
+      // Si no hay tarjetas guardadas, activar automáticamente el modo de nueva tarjeta
+      onUseNewCardChange(true);
+    }
+  }, [savedCards.length, useNewCard, paymentMethod, isLoadingCards, onUseNewCardChange]);
+
   // Obtener tarjeta predeterminada
   const defaultCard =
     savedCards.find((card) => card.es_predeterminada) || savedCards[0];
@@ -164,11 +177,9 @@ export default function PaymentForm({
   // Mostrar skeleton completo cuando:
   // 1. Se están cargando las tarjetas inicialmente
   // 2. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
-  // 3. Aún no se han cargado las tarjetas (primera vez que se monta el componente)
   const shouldShowFullSkeleton =
     isLoadingCards ||
-    (isLoadingZeroInterest && savedCards.length === 0) ||
-    (!isLoadingCards && savedCards.length === 0 && getUserId() !== null);
+    (isLoadingZeroInterest && savedCards.length === 0);
 
   if (shouldShowFullSkeleton) {
     return (
@@ -461,9 +472,11 @@ export default function PaymentForm({
               })}
           </div>
         </div>
-      ) : (<div className="flex items-center justify-between mb-3">
+      ) : (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
-              Tarjetas guardadas
+              No tienes tarjetas guardadas
             </h3>
             <button
               type="button"
@@ -471,12 +484,17 @@ export default function PaymentForm({
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-black text-white hover:bg-gray-800 font-medium transition-colors rounded-lg"
             >
               <Plus className="w-4 h-4" />
-              Agregar
+              Agregar desde perfil
             </button>
-          </div>)}
+          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Ingresa los datos de tu tarjeta para continuar con el pago
+          </p>
+        </div>
+      )}
 
-      {/* Formulario de nueva tarjeta (si el usuario elige agregar) */}
-      {paymentMethod === "tarjeta" && useNewCard && (
+      {/* Formulario de nueva tarjeta (si el usuario elige agregar O no tiene tarjetas guardadas) */}
+      {paymentMethod === "tarjeta" && (useNewCard || activeCards.length === 0) && (
         <div className="mb-6">
           <h3 className="text-base font-semibold text-gray-700 mb-3">
             Nueva tarjeta
@@ -505,8 +523,8 @@ export default function PaymentForm({
         </div>
       )}
 
-      {/* Save info checkbox - solo mostrar si usa nueva tarjeta */}
-      {paymentMethod === "tarjeta" && useNewCard && (
+      {/* Save info checkbox - solo mostrar si usa nueva tarjeta o no tiene tarjetas guardadas */}
+      {paymentMethod === "tarjeta" && (useNewCard || activeCards.length === 0) && (
         <SaveInfoCheckbox checked={saveInfo} onChange={onSaveInfoChange} />
       )}
     </div>

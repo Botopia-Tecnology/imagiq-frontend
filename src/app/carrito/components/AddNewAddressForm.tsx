@@ -117,8 +117,6 @@ export default function AddNewAddressForm({
         throw new Error("No se ha seleccionado una dirección válida");
       }
 
-      console.log("📍 Selected address object:", selectedAddress);
-
       // Obtener coordenadas de manera segura - manejar diferentes estructuras posibles
       let latitude: number;
       let longitude: number;
@@ -182,21 +180,12 @@ export default function AddNewAddressForm({
         ciudad: formData.ciudad || undefined,
       };
 
-      console.log(
-        "📤 Creando dirección de envío en checkout:",
-        shippingAddressRequest
-      );
       const shippingResponse = await addressesService.createAddress(
         shippingAddressRequest
       );
-      console.log("✅ Dirección de envío creada:", shippingResponse);
 
       // Si no usa la misma dirección, crear dirección de facturación separada
       if (!formData.usarMismaParaFacturacion && selectedBillingAddress) {
-        console.log(
-          "📍 Selected billing address object:",
-          selectedBillingAddress
-        );
 
         // Obtener coordenadas de la dirección de facturación de manera segura
         let billingLatitude: number;
@@ -269,14 +258,9 @@ export default function AddNewAddressForm({
           ciudad: formData.ciudad || undefined,
         };
 
-        console.log(
-          "📤 Creando dirección de facturación en checkout:",
+        await addressesService.createAddress(
           billingAddressRequest
         );
-        const billingResponse = await addressesService.createAddress(
-          billingAddressRequest
-        );
-        console.log("✅ Dirección de facturación creada:", billingResponse);
       }
 
       // Callback with the created address
@@ -373,7 +357,6 @@ export default function AddNewAddressForm({
   };
 
   const handleAddressSelect = (place: PlaceDetails) => {
-    console.log("✅ Dirección de envío seleccionada en checkout:", place);
     setSelectedAddress(place as ExtendedPlaceDetails);
     
     // Auto-completar la ciudad si está disponible en PlaceDetails
@@ -407,7 +390,6 @@ export default function AddNewAddressForm({
   };
 
   const handleBillingAddressSelect = (place: PlaceDetails) => {
-    console.log("✅ Dirección de facturación seleccionada en checkout:", place);
     setSelectedBillingAddress(place as ExtendedPlaceDetails);
     
     // Auto-completar la ciudad si está disponible en PlaceDetails

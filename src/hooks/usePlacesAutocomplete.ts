@@ -169,10 +169,7 @@ export function usePlacesAutocomplete({
    * Función para búsqueda sin debounce
    */
   const performSearch = useCallback(async (query: string) => {
-    console.log('[usePlacesAutocomplete] performSearch called with:', query);
-
     if (!isMountedRef.current || !query.trim()) {
-      console.log('[usePlacesAutocomplete] Returning early - not mounted or empty query');
       return;
     }
 
@@ -180,14 +177,12 @@ export function usePlacesAutocomplete({
 
     // Evitar búsquedas duplicadas
     if (lastSearchRef.current === trimmedQuery) {
-      console.log('[usePlacesAutocomplete] Duplicate search, skipping');
       return;
     }
     lastSearchRef.current = trimmedQuery;
 
     // Verificar longitud mínima
     if (trimmedQuery.length < (defaultOptions.minLength || 3)) {
-      console.log('[usePlacesAutocomplete] Query too short:', trimmedQuery.length);
       setState(prev => ({
         ...prev,
         predictions: [],
@@ -196,7 +191,6 @@ export function usePlacesAutocomplete({
       return;
     }
 
-    console.log('[usePlacesAutocomplete] Making API call for:', trimmedQuery);
     setState(prev => ({
       ...prev,
       isLoading: true,
@@ -205,7 +199,6 @@ export function usePlacesAutocomplete({
 
     try {
       const response = await placesService.searchPlaces(trimmedQuery, defaultOptions);
-      console.log('[usePlacesAutocomplete] API Response:', response);
 
       if (!isMountedRef.current) return;
 
@@ -361,20 +354,14 @@ export function usePlacesAutocomplete({
    * Efecto para buscar cuando cambia el input
    */
   useEffect(() => {
-    console.log('[usePlacesAutocomplete] useEffect triggered with inputValue:', inputValue);
-    console.log('[usePlacesAutocomplete] isSelectingPlace:', isSelectingPlaceRef.current);
-
     // No buscar si estamos en proceso de seleccionar un lugar
     if (isSelectingPlaceRef.current) {
-      console.log('[usePlacesAutocomplete] Skipping search - selecting place');
       return;
     }
 
     if (inputValue.trim()) {
-      console.log('[usePlacesAutocomplete] Calling debouncedSearch');
       debouncedSearchRef.current(inputValue);
     } else {
-      console.log('[usePlacesAutocomplete] Clearing results - empty input');
       setState(prev => ({
         ...prev,
         predictions: [],

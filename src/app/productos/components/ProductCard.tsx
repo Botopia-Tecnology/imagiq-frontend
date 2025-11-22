@@ -555,7 +555,7 @@ export default function ProductCard({
           transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
         }}
         className={cn(
-          "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
+          "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full h-full flex flex-col mx-auto",
           className
         )}
       >
@@ -613,7 +613,7 @@ export default function ProductCard({
         </div>
 
         {/* Contenido del producto */}
-        <div className="py-2 space-y-2">
+        <div className="py-2 space-y-2 flex-1 flex flex-col">
           {/* Título del producto */}
           <div className="px-3 min-h-[48px]">
             <h3 className="text-base font-bold line-clamp-2 text-black">
@@ -769,7 +769,7 @@ export default function ProductCard({
             )}
 
           {/* Precio */}
-          <div className="px-3 space-y-3 mt-2">
+          <div className="px-3 space-y-3 mt-auto">
             {finalCurrentPrice && (
               <div className="space-y-1 min-h-[32px]">
                 {(() => {

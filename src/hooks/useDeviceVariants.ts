@@ -6,6 +6,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useProductSelection, type ColorOption, type StorageOption as ProductStorageOption, type ProductVariant as ProductSelectionVariant } from './useProductSelection';
 import { productEndpoints, type ProductApiData } from '@/lib/api';
+import { isBundle } from '@/lib/productMapper';
 
 export type { ColorOption } from './useProductSelection';
 
@@ -47,7 +48,11 @@ export function useDeviceVariants(productId: string): UseDeviceVariantsReturn {
         setLoading(true);
         const response = await productEndpoints.getById(productId);
         if (response.success && response.data.products.length > 0) {
-          setApiProduct(response.data.products[0]);
+          const firstItem = response.data.products[0];
+          // Solo establecer si es un producto, no un bundle
+          if (!isBundle(firstItem)) {
+            setApiProduct(firstItem);
+          }
         }
       } catch (error) {
         console.error('Error loading product:', error);

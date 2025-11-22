@@ -11,14 +11,23 @@ import SkeletonCard from "@/components/SkeletonCard";
 import ProductCard, {
   type ProductCardProps,
 } from "../../components/ProductCard";
+import BundleCard from "../../components/BundleCard";
 import { useFavorites } from "@/features/products/useProducts";
 import GuestDataModal from "../../components/GuestDataModal";
 import { ProductBannerCard } from "../../components/ProductBannerCard";
 import { insertBannersInGrid } from "../../utils/insertBanners";
 import type { Banner } from "@/types/banner";
+import { combineProductsAndBundles } from "@/lib/productMapper";
+import type { BundleCardProps } from "@/lib/productMapper";
+
+// Tipos para items con flag interno de bundle
+type ProductWithFlag = ProductCardProps & { __isBundle: false };
+type BundleWithFlag = BundleCardProps & { __isBundle: true };
+type ItemWithFlag = ProductWithFlag | BundleWithFlag;
 
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
+  bundles: BundleCardProps[];
   loading: boolean;
   isLoadingMore?: boolean;
   error: string | null;
@@ -39,6 +48,7 @@ export const CategoryProductsGrid = forwardRef<
     (
     {
       products,
+      bundles,
       loading,
       isLoadingMore = false,
       error,
@@ -56,15 +66,46 @@ export const CategoryProductsGrid = forwardRef<
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
-    // Mezclar productos con banners
+    // Combinar productos y bundles primero (bundles van primero)
+    const mixedItems = useMemo(() =>
+      combineProductsAndBundles(products, bundles, true),
+      [products, bundles]
+    );
+
+    // Mezclar productos+bundles con banners
     const gridItems = useMemo(() => {
       console.log('[ProductsGrid] Banner recibido:', banner);
       console.log('[ProductsGrid] Total productos:', products.length);
-      const items = insertBannersInGrid(products, banner, 15);
-      console.log('[ProductsGrid] Total items en grid:', items.length);
+      console.log('[ProductsGrid] Total bundles:', bundles.length);
+      console.log('[ProductsGrid] Total items mezclados:', mixedItems.length);
+
+      // Convertir mixedItems al formato que espera insertBannersInGrid
+      // insertBannersInGrid espera ProductCardProps[], así que necesitamos adaptar
+      const itemsForBannerInsertion = mixedItems.map((item): ItemWithFlag => {
+        if (item.itemType === 'bundle') {
+          // Para bundles, crear un objeto compatible con ProductCardProps
+          // pero mantener una referencia al bundle original
+          const { itemType, ...bundleData } = item;
+          return {
+            ...bundleData,
+            __isBundle: true as const,
+          };
+        } else {
+          const { itemType, ...productData } = item;
+          return {
+            ...productData,
+            __isBundle: false as const,
+          };
+        }
+      });
+
+      // insertBannersInGrid trata los items como ProductCardProps, pero nosotros hemos añadido __isBundle
+      // Esto es seguro porque insertBannersInGrid solo lee propiedades comunes (id, etc.) y no modifica el tipo
+      const items = insertBannersInGrid(itemsForBannerInsertion as unknown as ProductCardProps[], banner, 15);
+      console.log('[ProductsGrid] Total items en grid (con banners):', items.length);
       console.log('[ProductsGrid] Items:', items.map(i => ({ type: i.type, key: i.key })));
       return items;
-    }, [products, banner]);
+    }, [mixedItems, banner, products.length, bundles.length]);
 
     const handleAddToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");
@@ -122,7 +163,7 @@ export const CategoryProductsGrid = forwardRef<
     return (
       <div
         ref={ref}
-        className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}
+        className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6 items-stretch" : "flex flex-wrap"}
       >
         {/* Mostrar skeletons cuando loading es true (incluyendo cambio de página) */}
         {loading ? (
@@ -135,14 +176,14 @@ export const CategoryProductsGrid = forwardRef<
           </>
         ) : (
           <>
-            {/* Mostrar mensaje solo cuando terminó de cargar, NO hay productos Y ya se cargó al menos una vez */}
-            {products.length === 0 && hasLoadedOnce && (
+            {/* Mostrar mensaje solo cuando terminó de cargar, NO hay productos ni bundles Y ya se cargó al menos una vez */}
+            {products.length === 0 && bundles.length === 0 && hasLoadedOnce && (
               <div className="col-span-full w-full text-center py-12 text-gray-500">
                 No se encontraron {categoryName.toLowerCase()} con los filtros seleccionados.
               </div>
             )}
 
-            {/* Renderizar productos y banners mezclados */}
+            {/* Renderizar productos, bundles y banners mezclados */}
             {gridItems.length > 0 && (
               <>
                 {gridItems.map((item, index) => {
@@ -164,27 +205,49 @@ export const CategoryProductsGrid = forwardRef<
                     );
                   }
 
-                  const product = item.data as ProductCardProps;
-                  return (
-                    <div
-                      key={item.key}
-                      className="w-full"
-                    >
-                      <ProductCard
-                        key={product.id}
-                        {...product}
-                        isFavorite={isFavorite(product.id)}
-                        onToggleFavorite={(productId: string) => {
-                          if (isFavorite(productId)) {
-                            handleRemoveToFavorites(productId);
-                          } else {
-                            handleAddToFavorites(productId);
-                          }
-                        }}
-                        className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
-                      />
-                    </div>
-                  );
+                  // Verificar si es un bundle o un producto
+                  const itemData = item.data as ItemWithFlag;
+                  const isBundle = itemData.__isBundle === true;
+
+                  if (isBundle) {
+                    // Renderizar BundleCard
+                    const { __isBundle, ...bundleProps } = itemData;
+                    return (
+                      <div
+                        key={item.key}
+                        className="w-full h-full"
+                      >
+                        <BundleCard
+                          {...bundleProps}
+                          className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+                        />
+                      </div>
+                    );
+                  } else {
+                    // Renderizar ProductCard
+                    const { __isBundle, ...productProps } = itemData;
+                    const product = productProps as ProductCardProps;
+                    return (
+                      <div
+                        key={item.key}
+                        className="w-full h-full"
+                      >
+                        <ProductCard
+                          key={product.id}
+                          {...product}
+                          isFavorite={isFavorite(product.id)}
+                          onToggleFavorite={(productId: string) => {
+                            if (isFavorite(productId)) {
+                              handleRemoveToFavorites(productId);
+                            } else {
+                              handleAddToFavorites(productId);
+                            }
+                          }}
+                          className={viewMode === "list" ? "flex-row mx-auto" : "mx-auto"}
+                        />
+                      </div>
+                    );
+                  }
                 })}
 
                 {/* Skeletons de lazy loading - solo cuando isLoadingMore es true */}

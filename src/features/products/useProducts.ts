@@ -19,6 +19,8 @@ import {
 import {
   mapApiProductsToFrontend,
   groupProductsByCategory,
+  mapApiProductsAndBundles,
+  BundleCardProps,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
@@ -39,6 +41,7 @@ type UserInfo = {
 
 interface UseProductsReturn {
   products: ProductCardProps[];
+  bundles: BundleCardProps[]; // Nuevo: lista de bundles
   groupedProducts: Record<string, ProductCardProps[]>;
   loading: boolean;
   isLoadingMore: boolean; // Estado de carga para lazy loading (append)
@@ -106,6 +109,7 @@ export const useProducts = (
   initialFilters?: ProductFilters | (() => ProductFilters) | null
 ): UseProductsReturn => {
   const [products, setProducts] = useState<ProductCardProps[]>([]);
+  const [bundles, setBundles] = useState<BundleCardProps[]>([]); // Nuevo: estado para bundles
   const [groupedProducts, setGroupedProducts] = useState<
     Record<string, ProductCardProps[]>
   >({});
@@ -313,8 +317,9 @@ export const useProducts = (
           const menuSubmenuChanged = menuUuidChangedForCache || submenuUuidChangedForCache;
 
           if (isPageChange || filtersChanged || menuSubmenuChanged) {
-            // Cambio de página o filtros: limpiar productos y mostrar skeletons inmediatamente
+            // Cambio de página o filtros: limpiar productos, bundles y mostrar skeletons inmediatamente
             setProducts([]);
+            setBundles([]); // Limpiar bundles también
             productsRef.current = [];
             setLoading(true);
             setError(null);
@@ -329,15 +334,16 @@ export const useProducts = (
               hasCachedData = true;
               // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
               const apiData = cachedResponse.data;
-              const mappedProducts = mapApiProductsToFrontend(apiData.products);
-              
+              const { products: mappedProducts, bundles: mappedBundles } = mapApiProductsAndBundles(apiData.products);
+
               // IMPORTANTE: Establecer todos los estados de forma síncrona
               // React batch automáticamente los setState en el mismo render,
               // pero establecer loading en false primero asegura que no se muestren skeletons
               setError(null);
-              
-              // Establecer productos y metadatos de forma síncrona
+
+              // Establecer productos, bundles y metadatos de forma síncrona
               setProducts(mappedProducts);
+              setBundles(mappedBundles); // Nuevo: establecer bundles
               productsRef.current = mappedProducts; // Actualizar ref
               setGroupedProducts(groupProductsByCategory(mappedProducts));
               setTotalItems(apiData.totalItems);
@@ -361,10 +367,11 @@ export const useProducts = (
               // Pero NO limpiar productos ni mostrar loading
             } else {
               // No hay caché, mostrar loading normalmente
-              // Limpiar productos para mostrar skeletons
+              // Limpiar productos y bundles para mostrar skeletons
               setLoading(true);
               setError(null);
               setProducts([]);
+              setBundles([]); // Limpiar bundles también
               productsRef.current = []; // Actualizar ref
               // Actualizar referencia de filtros
               previousFiltersRef.current = filterKey;
@@ -381,7 +388,7 @@ export const useProducts = (
         const controller = new AbortController();
         abortRef.current = controller;
 
-        const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
+        const response = await productEndpoints.getFilteredV2(apiParams, { signal: controller.signal });
 
         // Capturar el valor de hasCachedData para usar en el callback
         const wasCached = hasCachedData;
@@ -402,9 +409,10 @@ export const useProducts = (
             }
             
             const apiData = response.data;
-            const mappedProducts = mapApiProductsToFrontend(apiData.products);
+            const { products: mappedProducts, bundles: mappedBundles } = mapApiProductsAndBundles(apiData.products);
 
             if (append) {
+              // Append para lazy loading
               setProducts((prev) => {
                 // Crear un Set con los IDs existentes para evitar duplicados
                 const existingIds = new Set(prev.map(p => p.id));
@@ -412,25 +420,33 @@ export const useProducts = (
                 const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
                 const updatedProducts = [...prev, ...newProducts];
                 productsRef.current = updatedProducts; // Actualizar ref
-                
+
                 // Verificar si todavía hay más productos que cargar
                 const lazyLimit = filters.lazyLimit || 6;
                 const limit = filters.limit || 20;
                 const currentOffset = customOffset !== undefined ? customOffset : (filters.lazyOffset || 0);
                 const nextOffset = currentOffset + lazyLimit;
-                
+
                 // Si no hay productos nuevos o se alcanzó el límite, no hay más
                 if (newProducts.length === 0 || nextOffset >= limit || (apiData.totalItems > 0 && nextOffset >= apiData.totalItems)) {
                   setHasMoreInCurrentPage(false);
                 }
-                
+
                 return updatedProducts;
+              });
+
+              // Append bundles también
+              setBundles((prev) => {
+                const existingIds = new Set(prev.map(b => b.id));
+                const newBundles = mappedBundles.filter(b => !existingIds.has(b.id));
+                return [...prev, ...newBundles];
               });
             } else {
               // Solo actualizar productos si no había datos del caché o si los datos son diferentes
               // Esto evita "parpadeo" cuando los datos del caché ya están mostrados
               if (!wasCached) {
                 setProducts(mappedProducts);
+                setBundles(mappedBundles); // Actualizar bundles también
                 productsRef.current = mappedProducts; // Actualizar ref
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
                 // Resetear offset y estado cuando no es append
@@ -445,18 +461,30 @@ export const useProducts = (
                   // Si los productos son diferentes, actualizar
                   const prevIds = new Set(prev.map(p => p.id));
                   const newIds = new Set(mappedProducts.map(p => p.id));
-                  const areDifferent = 
+                  const areDifferent =
                     prev.length !== mappedProducts.length ||
                     !Array.from(prevIds).every(id => newIds.has(id)) ||
                     !Array.from(newIds).every(id => prevIds.has(id));
-                  
+
                   if (areDifferent) {
                     productsRef.current = mappedProducts; // Actualizar ref
                     return mappedProducts;
                   }
                   return prev; // Mantener productos actuales si son los mismos
                 });
-                
+
+                // Actualizar bundles también si son diferentes
+                setBundles((prev) => {
+                  const prevIds = new Set(prev.map(b => b.id));
+                  const newIds = new Set(mappedBundles.map(b => b.id));
+                  const areDifferent =
+                    prev.length !== mappedBundles.length ||
+                    !Array.from(prevIds).every(id => newIds.has(id)) ||
+                    !Array.from(newIds).every(id => prevIds.has(id));
+
+                  return areDifferent ? mappedBundles : prev;
+                });
+
                 // Siempre actualizar metadatos (totalItems, paginación, etc.)
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
                 if (!filters.lazyOffset && customOffset === undefined) {
@@ -758,6 +786,7 @@ export const useProducts = (
 
   return {
     products,
+    bundles, // Nuevo: retornar bundles
     groupedProducts,
     loading,
     isLoadingMore,

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { productEndpoints, type ProductApiData } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import type { CartProduct } from "@/hooks/useCart";
+import { isBundle } from "@/lib/productMapper";
 
 // Cache keys para sessionStorage
 const CACHE_KEY = "sugerencias_accesorios_cache";
@@ -266,7 +267,11 @@ export default function Sugerencias({
       const compatibleAccessories: ProductApiData[] = [];
       const universalAccessories: ProductApiData[] = [];
 
-      for (const product of allProducts) {
+      for (const item of allProducts) {
+        // Filtrar bundles - solo procesar productos regulares
+        if (isBundle(item)) continue;
+
+        const product = item; // TypeScript ahora sabe que es ProductApiData
         const sku = product.sku[0];
         if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
         seenSkus.add(sku);

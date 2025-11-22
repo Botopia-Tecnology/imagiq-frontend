@@ -190,6 +190,52 @@ export const productEndpoints = {
       return p;
     };
   })(),
+  getFilteredV2: (() => {
+    const inFlightByKey: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
+    
+    // Función para normalizar parámetros y crear clave de deduplicación
+    // Ignora parámetros no críticos que no afectan qué productos se obtienen
+    const normalizeParams = (params: ProductFilterParams): string => {
+      const critical: Record<string, string> = {};
+      
+      // Solo incluir parámetros críticos que afectan qué productos se obtienen
+      if (params.categoria) critical.categoria = String(params.categoria);
+      if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
+      if (params.submenuUuid) critical.submenuUuid = String(params.submenuUuid);
+      if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
+      if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
+      if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
+      
+      // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
+      
+      return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
+    };
+    
+    return (params: ProductFilterParams, init?: RequestInit) => {
+      const normalizedKey = normalizeParams(params);
+      
+      // Construir URL completa para la petición real (con todos los parámetros)
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          searchParams.append(key, String(value));
+        }
+      });
+      const url = `/api/products/v2/filtered?${searchParams.toString()}`;
+
+      // Usar clave normalizada para deduplicación
+      if (inFlightByKey[normalizedKey]) {
+        return inFlightByKey[normalizedKey] as Promise<ApiResponse<ProductApiResponse>>;
+      }
+
+      const p = apiClient.get<ProductApiResponse>(url, init).finally(() => {
+        // liberar inmediatamente al resolver/rechazar para no cachear respuestas
+        delete inFlightByKey[normalizedKey];
+      });
+      inFlightByKey[normalizedKey] = p;
+      return p;
+    };
+  })(),
   getById: (id: string) =>
     apiClient.get<ProductApiResponse>(`/api/products/${id}`),
   getByCategory: (category: string) =>
@@ -472,7 +518,7 @@ export interface FavoriteFilterParams {
 
 // API Response types
 export interface ProductApiResponse {
-  products: ProductApiData[];
+  products: ProductOrBundleApiData[]; // Ahora acepta tanto productos como bundles
   totalItems: number;
   totalPages: number;
   currentPage: number;
@@ -480,7 +526,26 @@ export interface ProductApiResponse {
   hasPreviousPage: boolean;
 }
 
+export interface BundleApiData {
+  isBundle: true;
+  product_sku: string; // SKU del bundle
+  modelo: string; // Nombre del bundle
+  categoria: string;
+  menu: string;
+  submenu: string;
+  bundle_price: number; // Precio normal del bundle
+  bundle_discount: number; // Precio con descuento del bundle
+  ind_entre_estre: number;
+  fecha_inicio: string;
+  fecha_final: string;
+  hora_inicio: string;
+  hora_final: string;
+  skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
+  imagePreviewUrl?: string; // Imagen preview del bundle (próximamente)
+}
+
 export interface ProductApiData {
+  isBundle?: false; // Indicador para distinguir de bundles
   codigoMarketBase: string;
   codigoMarket: string[];
   nombreMarket: string[];
@@ -520,6 +585,9 @@ export interface ProductApiData {
   peso?: number[];
   device?: string[]; // Dispositivo al que está dirigido el accesorio (ej: "Galaxy S24", "Galaxy Watch")
 }
+
+// Tipo unión para productos y bundles
+export type ProductOrBundleApiData = ProductApiData | BundleApiData;
 
 export interface FavoriteApiResponse {
   products: ProductApiData[];

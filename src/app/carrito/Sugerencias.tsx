@@ -81,151 +81,71 @@ function setCacheUniversalData(productos: ProductApiData[]): void {
 
 /**
  * Extrae los modelos únicos de los productos del carrito
+ * SOLO usa el campo modelo directo, sin intentar extraerlo del nombre
+ * Retorna objetos con el modelo original (para display) y normalizado (para comparación)
  */
-function extractUniqueModelos(cartProducts: CartProduct[]): string[] {
-  const modelos = new Set<string>();
+function extractUniqueModelos(cartProducts: CartProduct[]): { original: string; normalized: string }[] {
+  const modelosMap = new Map<string, string>(); // normalized -> original
 
   for (const product of cartProducts) {
-    let modelo = product.modelo;
+    const modelo = product.modelo;
 
-    if (!modelo || !modelo.trim()) {
-      const sourceName = product.desDetallada || product.name || "";
-      modelo = extractModeloFromName(sourceName);
-    }
-
+    // Solo agregar si hay un modelo válido
     if (modelo && modelo.trim()) {
-      modelos.add(modelo.trim());
-    }
-  }
+      const original = modelo.trim();
+      const normalized = original.toLowerCase();
 
-  return Array.from(modelos);
-}
-
-/**
- * Intenta extraer el modelo del nombre del producto
- */
-function extractModeloFromName(name: string): string {
-  if (!name) return "";
-
-  const cleanName = name.replace(/^Samsung\s+/i, "").trim();
-
-  const patterns = [
-    /Galaxy\s+(?:S|A|Z)\d+\s*(?:Ultra|Plus|\+|FE|Pro|Lite)?/i,
-    /Galaxy\s+M\d+\s*(?:Pro|Lite)?/i,
-    /Galaxy\s+Tab\s*\w*\d*\s*(?:Ultra|Plus|\+|FE)?/i,
-    /Galaxy\s+Watch\s*\d*\s*(?:Ultra|Classic|Active)?/i,
-    /Galaxy\s+Buds\s*\d*\s*(?:Pro|Plus|\+|Live|FE)?/i,
-    /Galaxy\s+Fit\s*\d*\s*(?:Pro|e)?/i,
-    /Galaxy\s+Book\s*\d*\s*(?:Pro|Go|Flex|Ion|S)?/i,
-    /Galaxy\s+(?:Z\s*)?(?:Fold|Flip)\s*\d*/i,
-    /Galaxy\s+Ring/i,
-    /Galaxy\s+\w+/i,
-  ];
-
-  for (const pattern of patterns) {
-    const match = cleanName.match(pattern);
-    if (match) {
-      return match[0].trim();
-    }
-  }
-
-  const galaxyMatch = cleanName.match(/Galaxy\s+\S+/i);
-  if (galaxyMatch) {
-    return galaxyMatch[0].trim();
-  }
-
-  const words = cleanName
-    .split(/\s+/)
-    .filter(w => !(/^\d+GB$/i.test(w) || /^\d+TB$/i.test(w) || /^(Negro|Blanco|Azul|Verde|Morado|Gris|Plata|Dorado|Rosa|Crema|Grafito|Titanio)$/i.test(w)))
-    .slice(0, 3);
-
-  return words.join(" ");
-}
-
-/**
- * Normaliza un string para comparación fuzzy
- */
-function normalizeForFuzzy(str: string): string {
-  return str
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/[^\w\s]/g, "")
-    .trim();
-}
-
-/**
- * Calcula un score de similitud entre dos strings
- */
-function fuzzyMatchScore(modelo: string, device: string): number {
-  if (!modelo || !device) return 0;
-
-  const normalizedModelo = normalizeForFuzzy(modelo);
-  const normalizedDevice = normalizeForFuzzy(device);
-
-  if (normalizedModelo === normalizedDevice) return 1;
-  if (normalizedDevice.includes(normalizedModelo)) return 0.9;
-  if (normalizedModelo.includes(normalizedDevice)) return 0.85;
-
-  const modeloTokens = normalizedModelo.split(" ").filter(t => t.length > 1);
-  const deviceTokens = normalizedDevice.split(" ").filter(t => t.length > 1);
-
-  if (modeloTokens.length === 0 || deviceTokens.length === 0) return 0;
-
-  let matchCount = 0;
-  for (const mt of modeloTokens) {
-    for (const dt of deviceTokens) {
-      if (mt === dt) {
-        matchCount += 1;
-        break;
-      }
-      if (mt.includes(dt) || dt.includes(mt)) {
-        matchCount += 0.5;
-        break;
+      // Guardar el primer modelo original encontrado para cada normalizado
+      if (!modelosMap.has(normalized)) {
+        modelosMap.set(normalized, original);
       }
     }
   }
 
-  const score = matchCount / Math.max(modeloTokens.length, deviceTokens.length);
+  return Array.from(modelosMap.entries()).map(([normalized, original]) => ({
+    original,
+    normalized,
+  }));
+}
 
-  const seriesPattern = /(?:s|a|z|m)\d+/i;
-  const modeloSeries = normalizedModelo.match(seriesPattern)?.[0];
-  const deviceSeries = normalizedDevice.match(seriesPattern)?.[0];
-
-  if (modeloSeries && deviceSeries && modeloSeries === deviceSeries) {
-    return Math.min(1, score + 0.3);
-  }
-
-  return score;
+/**
+ * Normaliza un string para comparación exacta
+ * - Convierte a minúsculas
+ * - Elimina espacios extra
+ * - Trim
+ */
+function normalizeForExactMatch(str: string): string {
+  if (!str) return "";
+  return str.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 /**
  * Verifica si un accesorio es compatible con alguno de los modelos del carrito
+ * usando MATCH EXACTO (case-insensitive)
  */
 function isAccessoryCompatible(
   accessory: ProductApiData,
-  modelos: string[],
-  minScore: number = 0.5
-): { compatible: boolean; score: number } {
+  modelos: { original: string; normalized: string }[]
+): boolean {
   const deviceValues = accessory.device || [];
 
-  if (deviceValues.length === 0) {
-    return { compatible: false, score: 0 };
+  if (deviceValues.length === 0 || modelos.length === 0) {
+    return false;
   }
 
-  let maxScore = 0;
+  // Set de modelos normalizados del carrito
+  const normalizedModelos = new Set(modelos.map(m => m.normalized));
 
-  for (const modelo of modelos) {
-    for (const device of deviceValues) {
-      const score = fuzzyMatchScore(modelo, device);
-      maxScore = Math.max(maxScore, score);
+  // Buscar match exacto entre device del accesorio y modelo del carrito
+  for (const device of deviceValues) {
+    const normalizedDevice = normalizeForExactMatch(device);
 
-      if (maxScore >= 0.9) {
-        return { compatible: true, score: maxScore };
-      }
+    if (normalizedModelos.has(normalizedDevice)) {
+      return true;
     }
   }
 
-  return { compatible: maxScore >= minScore, score: maxScore };
+  return false;
 }
 
 /**
@@ -241,7 +161,7 @@ function hasStock(product: ProductApiData): boolean {
 /**
  * Verifica si el caché es válido
  */
-function getCachedData(modelos: string[]): ProductApiData[] | null {
+function getCachedData(modelos: { original: string; normalized: string }[]): ProductApiData[] | null {
   if (typeof window === "undefined") return null;
 
   try {
@@ -257,10 +177,10 @@ function getCachedData(modelos: string[]): ProductApiData[] | null {
     }
 
     const cachedModelosSet = new Set(data.modelos);
-    const currentModelosSet = new Set(modelos);
+    const currentModelosNormalized = modelos.map(m => m.normalized);
 
-    if (cachedModelosSet.size !== currentModelosSet.size) return null;
-    for (const m of modelos) {
+    if (cachedModelosSet.size !== currentModelosNormalized.length) return null;
+    for (const m of currentModelosNormalized) {
       if (!cachedModelosSet.has(m)) return null;
     }
 
@@ -273,12 +193,12 @@ function getCachedData(modelos: string[]): ProductApiData[] | null {
 /**
  * Guarda datos en caché
  */
-function setCacheData(modelos: string[], productos: ProductApiData[]): void {
+function setCacheData(modelos: { original: string; normalized: string }[], productos: ProductApiData[]): void {
   if (typeof window === "undefined") return;
 
   try {
     const data: CacheData = {
-      modelos,
+      modelos: modelos.map(m => m.normalized),
       productos,
       timestamp: Date.now(),
     };
@@ -300,18 +220,7 @@ export default function Sugerencias({
   const [loading, setLoading] = useState(true);
 
   // Extraer modelos únicos de los productos del carrito
-  const modelos = useMemo(() => {
-    const extracted = extractUniqueModelos(cartProducts);
-    if (process.env.NODE_ENV === 'development' && cartProducts.length > 0) {
-      console.log('🛒 Sugerencias - cartProducts:', cartProducts.map(p => ({
-        name: p.name,
-        modelo: p.modelo,
-        desDetallada: p.desDetallada,
-      })));
-      console.log('🔍 Sugerencias - modelos extraídos:', extracted);
-    }
-    return extracted;
-  }, [cartProducts]);
+  const modelos = useMemo(() => extractUniqueModelos(cartProducts), [cartProducts]);
 
   // SKUs de productos ya en el carrito (para no sugerirlos)
   const cartSkus = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
@@ -324,12 +233,24 @@ export default function Sugerencias({
   }, [cartProducts.length]);
 
   const fetchAccessoriosRelacionados = useCallback(async () => {
+    // Intentar usar caché primero
+    const cachedCompatibles = getCachedData(modelos);
+    const cachedUniversal = getCachedUniversalData();
+
+    // Si tenemos ambos caches válidos, usarlos directamente
+    if (cachedCompatibles && cachedUniversal) {
+      setSugerenciasCompatibles(cachedCompatibles.filter(p => !cartSkus.has(p.sku[0])));
+      setSugerenciasUniversales(cachedUniversal.filter(p => !cartSkus.has(p.sku[0])));
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const response = await productEndpoints.getFiltered({
         subcategoria: "Accesorios",
-        limit: 100,
+        limit: 50, // Reducido de 100 - solo necesitamos ~8 productos
         sortBy: "precio",
         sortOrder: "desc",
       });
@@ -342,10 +263,8 @@ export default function Sugerencias({
 
       const allProducts = response.data.products;
       const seenSkus = new Set<string>();
-      const compatibleAccessories: Array<{ product: ProductApiData; score: number }> = [];
+      const compatibleAccessories: ProductApiData[] = [];
       const universalAccessories: ProductApiData[] = [];
-
-      const cachedUniversal = getCachedUniversalData();
 
       for (const product of allProducts) {
         const sku = product.sku[0];
@@ -356,42 +275,32 @@ export default function Sugerencias({
         if (!hasStock(product)) continue;
 
         if (isUniversalAccessory(product)) {
-          universalAccessories.push(product);
+          if (universalAccessories.length < 4) universalAccessories.push(product);
         } else if (modelos.length > 0) {
-          const { compatible, score } = isAccessoryCompatible(product, modelos);
-          if (compatible) {
-            compatibleAccessories.push({ product, score });
+          const isCompatible = isAccessoryCompatible(product, modelos);
+          if (isCompatible && compatibleAccessories.length < 4) {
+            compatibleAccessories.push(product);
           }
         }
+
+        // Early exit si ya tenemos suficientes
+        if (compatibleAccessories.length >= 4 && universalAccessories.length >= 4) break;
       }
 
+      // Ordenar por precio (mayor primero)
       compatibleAccessories.sort((a, b) => {
-        if (b.score !== a.score) return b.score - a.score;
-        const priceA = a.product.precioeccommerce?.[0] || a.product.precioNormal?.[0] || 0;
-        const priceB = b.product.precioeccommerce?.[0] || b.product.precioNormal?.[0] || 0;
+        const priceA = a.precioeccommerce?.[0] || a.precioNormal?.[0] || 0;
+        const priceB = b.precioeccommerce?.[0] || b.precioNormal?.[0] || 0;
         return priceB - priceA;
       });
 
-      const matchedProducts = compatibleAccessories.map(a => a.product).slice(0, 4);
-      setSugerenciasCompatibles(matchedProducts);
-      setCacheData(modelos, matchedProducts);
+      setSugerenciasCompatibles(compatibleAccessories);
+      setCacheData(modelos, compatibleAccessories);
 
-      const universalProducts = cachedUniversal || universalAccessories.slice(0, 4);
-      setSugerenciasUniversales(universalProducts);
-      if (!cachedUniversal) {
-        setCacheUniversalData(universalProducts);
-      }
+      setSugerenciasUniversales(universalAccessories);
+      setCacheUniversalData(universalAccessories);
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🎯 Sugerencias:', {
-          modelosBuscados: modelos,
-          compatiblesEncontrados: matchedProducts.length,
-          universalesEncontrados: universalProducts.length,
-        });
-      }
-
-    } catch (error) {
-      console.error("Error fetching accessories:", error);
+    } catch {
       setSugerenciasCompatibles([]);
       setSugerenciasUniversales([]);
     } finally {
@@ -463,9 +372,9 @@ export default function Sugerencias({
     return null;
   }
 
-  // Construir el título dinámico
+  // Construir el título dinámico (usar el modelo original para display)
   const titulo = modelos.length > 0
-    ? `Agrega a tu compra para tu ${modelos[0]}`
+    ? `Agrega a tu compra para tu ${modelos[0].original}`
     : "Agrega a tu compra";
 
   return (

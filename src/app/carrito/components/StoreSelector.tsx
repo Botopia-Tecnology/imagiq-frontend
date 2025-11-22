@@ -17,6 +17,8 @@ interface StoreSelectorProps {
   onAddressAdded?: () => void;
   onRefreshStores?: () => void;
   availableCities?: string[];
+  hasActiveTradeIn?: boolean;
+  availableStoresWhenCanPickUpFalse?: FormattedStore[];
 }
 
 
@@ -32,6 +34,8 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   onAddressAdded,
   onRefreshStores,
   availableCities = [],
+  hasActiveTradeIn = false,
+  availableStoresWhenCanPickUpFalse = [],
 }) => {
   const [showAddAddressModal, setShowAddAddressModal] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
@@ -54,37 +58,147 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
     // Disparar eventos para que el navbar se actualice
     console.log('🔔 Disparando evento address-changed desde carrito');
-    window.dispatchEvent(new CustomEvent('address-changed', { detail: { address: newAddress } }));
-    window.dispatchEvent(new Event('storage')); // También disparar storage event
+    globalThis.window.dispatchEvent(new CustomEvent('address-changed', { detail: { address: newAddress } }));
+    globalThis.window.dispatchEvent(new Event('storage')); // También disparar storage event
   };
+
+  // Determinar qué tiendas mostrar cuando canPickUp es false pero hay Trade In activo
+  const storesToShowWhenCanPickUpFalse = hasActiveTradeIn && availableStoresWhenCanPickUpFalse.length > 0
+    ? availableStoresWhenCanPickUpFalse
+    : [];
+
+  // DEBUG: Log para ver qué tiendas tenemos disponibles
+  React.useEffect(() => {
+    if (canPickUp === false && !storesLoading) {
+      console.log('🔍 StoreSelector - canPickUp=false:', {
+        availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
+        storesToShowWhenCanPickUpFalse: storesToShowWhenCanPickUpFalse.length,
+        availableCities: availableCities.length,
+        hasActiveTradeIn,
+      });
+    }
+  }, [canPickUp, storesLoading, availableStoresWhenCanPickUpFalse.length, storesToShowWhenCanPickUpFalse.length, availableCities.length, hasActiveTradeIn]);
 
   return (
     <div className="space-y-4">
-      {!canPickUp && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+      {/* Mostrar skeleton mientras carga */}
+      {storesLoading && (
+        <div className="p-4 bg-white border-2 border-gray-200 rounded-lg shadow-sm animate-pulse">
+          <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
+          <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+          <div className="h-3 bg-gray-200 rounded w-5/6 mb-4"></div>
+          <div className="space-y-2 mb-4">
+            <div className="h-16 bg-gray-200 rounded"></div>
+            <div className="h-16 bg-gray-200 rounded"></div>
+            <div className="h-16 bg-gray-200 rounded"></div>
+          </div>
+          <div className="h-10 bg-gray-200 rounded"></div>
+        </div>
+      )}
+
+      {/* Mostrar mensaje de advertencia cuando canPickUp es false Y ya terminó de cargar */}
+      {/* IMPORTANTE: Las tiendas vienen de availableStoresWhenCanPickUpFalse que se llena desde candidate-stores */}
+      {canPickUp === false && !storesLoading && (
+        <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg shadow-sm">
           <p className="text-sm font-bold text-gray-900 mb-2">
             El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada.
           </p>
-          <p className="text-xs text-gray-700 mb-2">
+          <p className="text-xs text-gray-700 mb-3">
             Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
           </p>
-          {availableCities.length > 0 && (
-            <div className="mb-3 p-2 bg-white rounded border border-red-100">
-              <p className="text-xs font-semibold text-gray-900 mb-1">
-                El producto está disponible en las siguientes ciudades:
-              </p>
-              <div className="flex flex-wrap gap-1">
-                {availableCities.map((city, index) => (
-                  <span
-                    key={index}
-                    className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded border border-blue-200"
-                  >
-                    {city}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+          
+          {/* Mostrar tiendas específicas si hay Trade In activo */}
+          {(() => {
+            if (hasActiveTradeIn && storesToShowWhenCanPickUpFalse.length > 0) {
+              return (
+                <div className="mb-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <p className="text-xs font-semibold text-gray-900 mb-2">
+                    El producto está disponible en las siguientes tiendas:
+                  </p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {storesToShowWhenCanPickUpFalse.map((store) => (
+                      <div
+                        key={store.codigo}
+                        className="p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors"
+                      >
+                        <div className="font-semibold text-sm text-gray-900">{store.descripcion}</div>
+                        <div className="text-xs text-gray-600 mt-0.5">
+                          {store.direccion}, {store.ciudad}
+                        </div>
+                        {store.ubicacion_cc && (
+                          <div className="text-xs text-gray-500 mt-0.5">{store.ubicacion_cc}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            // Si hay tiendas disponibles cuando canPickUp es false, agruparlas por ciudad y mostrar nombre de tienda
+            if (availableStoresWhenCanPickUpFalse.length > 0) {
+              // Agrupar tiendas por ciudad
+              const storesByCity = availableStoresWhenCanPickUpFalse.reduce((acc, store) => {
+                const city = store.ciudad || 'Sin ciudad';
+                if (!acc[city]) {
+                  acc[city] = [];
+                }
+                acc[city].push(store);
+                return acc;
+              }, {} as Record<string, typeof availableStoresWhenCanPickUpFalse>);
+
+              return (
+                <div className="mb-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <p className="text-xs font-semibold text-gray-900 mb-2">
+                    El producto está disponible en las siguientes tiendas:
+                  </p>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {Object.entries(storesByCity).map(([city, cityStores]) => (
+                      <div key={city} className="space-y-1">
+                        <div className="text-xs font-bold text-gray-700 uppercase">{city}</div>
+                        {cityStores.map((store) => (
+                          <div
+                            key={store.codigo}
+                            className="ml-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                          >
+                            <div className="font-semibold text-sm text-gray-900">{store.descripcion}</div>
+                            <div className="text-xs text-gray-600 mt-0.5">
+                              {store.direccion}
+                            </div>
+                            {store.ubicacion_cc && (
+                              <div className="text-xs text-gray-500 mt-0.5">{store.ubicacion_cc}</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            
+            // Fallback: Si solo hay ciudades pero no tiendas, mostrar ciudades
+            if (availableCities.length > 0) {
+              return (
+                <div className="mb-3 p-2 bg-white rounded border border-gray-200">
+                  <p className="text-xs font-semibold text-gray-900 mb-1">
+                    El producto está disponible en las siguientes ciudades:
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {availableCities.map((city) => (
+                      <span
+                        key={city}
+                        className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded border border-blue-200"
+                      >
+                        {city}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            }
+            return null;
+          })()}
+          
           <button
             onClick={() => setShowAddAddressModal(true)}
             className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"
@@ -94,7 +208,9 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
         </div>
       )}
 
-      {(
+      {/* IMPORTANTE: Mostrar selector de tiendas solo cuando canPickUp es true */}
+      {/* Cuando canPickUp es false, el mensaje de arriba ya muestra las tiendas disponibles */}
+      {canPickUp && (
         <>
           <div className="flex gap-2">
             <input
@@ -110,33 +226,67 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
           </div>
 
           <div className="max-h-48 overflow-y-auto border rounded-lg bg-white shadow">
-            {storesLoading ? (
-              <div className="p-4 text-gray-500 text-sm">
-                Cargando tiendas...
-              </div>
-            ) : filteredStores.length === 0 ? (
-              <div className="p-4 text-gray-500 text-sm">
-                No se encontraron tiendas.
-              </div>
-            ) : (
-              filteredStores.map((store) => (
-                <div
-                  key={store.codigo}
-                  className={`p-3 cursor-pointer hover:bg-blue-50 ${
-                    selectedStore?.codigo === store.codigo ? "bg-blue-100" : ""
-                  }`}
-                  onClick={() => onStoreSelect(store)}
-                >
-                  <div className="font-semibold text-sm">{store.descripcion}</div>
-                  <div className="text-xs text-gray-600">
-                    {store.direccion}, {store.ciudad}
+            {(() => {
+              if (storesLoading) {
+                return (
+                  <div className="p-4 text-gray-500 text-sm">
+                    Cargando tiendas...
                   </div>
-                  {store.ubicacion_cc && (
-                    <div className="text-xs text-gray-400">{store.ubicacion_cc}</div>
-                  )}
-                </div>
-              ))
-            )}
+                );
+              }
+              
+              // IMPORTANTE: Usar las tiendas correctas según canPickUp
+              // Si canPickUp es true, usar filteredStores
+              // Si canPickUp es false pero hay tiendas en availableStoresWhenCanPickUpFalse, usarlas
+              const storesToDisplay = canPickUp ? filteredStores : availableStoresWhenCanPickUpFalse;
+              const allStoresToCheck = canPickUp ? allStores : availableStoresWhenCanPickUpFalse;
+              
+              // IMPORTANTE: Verificar si realmente hay tiendas disponibles
+              const hasStores = allStoresToCheck.length > 0;
+              const hasFilteredResults = storesToDisplay.length > 0;
+              
+              if (!hasFilteredResults) {
+                // Si hay una búsqueda activa y hay tiendas pero no coinciden con la búsqueda
+                if (storeQuery.trim() !== "" && hasStores) {
+                  return (
+                    <div className="p-4 text-gray-500 text-sm">
+                      No se encontraron tiendas que coincidan con &quot;{storeQuery}&quot;.
+                    </div>
+                  );
+                }
+                // Si no hay búsqueda y no hay tiendas disponibles
+                if (!hasStores) {
+                  return (
+                    <div className="p-4 text-gray-500 text-sm">
+                      No se encontraron tiendas disponibles.
+                    </div>
+                  );
+                }
+              }
+              
+              // Si hay resultados filtrados, mostrarlos
+              return storesToDisplay.map((store) => {
+                const isSelected = selectedStore?.codigo === store.codigo;
+                return (
+                  <button
+                    key={store.codigo}
+                    type="button"
+                    className={`w-full text-left p-3 cursor-pointer hover:bg-blue-50 ${
+                      isSelected ? "bg-blue-100" : ""
+                    }`}
+                    onClick={() => onStoreSelect(store)}
+                  >
+                    <div className="font-semibold text-sm">{store.descripcion}</div>
+                    <div className="text-xs text-gray-600">
+                      {store.direccion}, {store.ciudad}
+                    </div>
+                    {store.ubicacion_cc && (
+                      <div className="text-xs text-gray-400">{store.ubicacion_cc}</div>
+                    )}
+                  </button>
+                );
+              });
+            })()}
           </div>
 
           {selectedStore && (
@@ -161,16 +311,24 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
       {/* Modal para agregar dirección - usando Portal para renderizar fuera del componente */}
       {showAddAddressModal && isMounted && createPortal(
-        <div
-          className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50"
-          onClick={() => setShowAddAddressModal(false)}
-        >
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50">
+          <button
+            type="button"
+            aria-label="Cerrar modal"
+            className="absolute inset-0 w-full h-full border-0 bg-transparent p-0 cursor-default"
+            onClick={() => setShowAddAddressModal(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setShowAddAddressModal(false);
+              }
+            }}
+          />
           <div
-            className="bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
-            onClick={(e) => e.stopPropagation()}
+            aria-labelledby="modal-title"
+            className="relative bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
           >
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
                 Agregar nueva dirección
               </h2>
               <button

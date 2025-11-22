@@ -137,7 +137,7 @@ export default function TradeInCompletedSummary({
             ) : (
               <>
                 <p className="text-xs text-gray-700 leading-relaxed">
-                  Este es un valor aproximado del beneficio Entrego y Estreno al que aplicaste. Aplican TyC*
+                  Este es un valor aproximado del beneficio Entrego y Estreno al que aplicaste. Este valor se desembolsa en la tienda. Aplican TyC*
                 </p>
                 {showStorePickupMessage && (
                   <p className="text-xs text-gray-700 leading-relaxed font-medium">

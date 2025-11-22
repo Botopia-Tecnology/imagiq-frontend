@@ -1421,109 +1421,111 @@ export default function Step7({ onBack }: Step7Props) {
                 shouldCalculateCanPickUp={false}
               />
             )}
-            {/* Información del método de envío */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              {isLoadingShippingMethod ? (
-                /* Skeleton mientras carga - incluye título */
-                <div className="animate-pulse space-y-3">
-                  <div className="h-4 w-40 bg-blue-200 rounded mb-3"></div>
-                  <div className="flex items-start gap-2">
-                    <div className="h-4 w-16 bg-blue-200 rounded"></div>
-                    <div className="h-4 w-32 bg-blue-200 rounded"></div>
-                  </div>
-                  <div className="p-2 bg-white/50 rounded border border-blue-200">
-                    <div className="h-3 w-40 bg-blue-200 rounded mb-2"></div>
-                    <div className="space-y-1.5">
-                      <div className="h-3 w-full bg-blue-200 rounded"></div>
-                      <div className="h-3 w-full bg-blue-200 rounded"></div>
-                      <div className="h-3 w-full bg-blue-200 rounded"></div>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <p className="text-sm font-bold text-blue-900 mb-3">
-                    📦 Método de envío
-                  </p>
-                <div className="space-y-2 text-sm text-blue-800">
-                  {shippingData?.type === "pickup" ? (
-                  <>
+            {/* Información del método de envío - Solo se muestra cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                {isLoadingShippingMethod ? (
+                  /* Skeleton mientras carga - incluye título */
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 w-40 bg-blue-200 rounded mb-3"></div>
                     <div className="flex items-start gap-2">
-                      <span className="font-semibold">Método:</span>
-                      <span className="text-green-700 font-bold">
-                        🏪 Recoge en tienda
-                      </span>
+                      <div className="h-4 w-16 bg-blue-200 rounded"></div>
+                      <div className="h-4 w-32 bg-blue-200 rounded"></div>
                     </div>
-                    {shippingData.store?.name && (
-                      <div className="flex items-start gap-2">
-                        <span className="font-semibold">Tienda:</span>
-                        <span>{shippingData.store.name}</span>
+                    <div className="p-2 bg-white/50 rounded border border-blue-200">
+                      <div className="h-3 w-40 bg-blue-200 rounded mb-2"></div>
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-full bg-blue-200 rounded"></div>
+                        <div className="h-3 w-full bg-blue-200 rounded"></div>
+                        <div className="h-3 w-full bg-blue-200 rounded"></div>
                       </div>
-                    )}
-                  </>
+                    </div>
+                  </div>
                 ) : (
                   <>
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold">Método:</span>
-                      {shippingVerification?.envio_imagiq === true ? (
-                        <span className="text-green-700 font-bold">
-                          🚚 Envío Imagiq
-                        </span>
+                    <p className="text-sm font-bold text-blue-900 mb-3">
+                      📦 Método de envío
+                    </p>
+                    <div className="space-y-2 text-sm text-blue-800">
+                      {shippingData?.type === "pickup" ? (
+                        <>
+                          <div className="flex items-start gap-2">
+                            <span className="font-semibold">Método:</span>
+                            <span className="text-green-700 font-bold">
+                              🏪 Recoge en tienda
+                            </span>
+                          </div>
+                          {shippingData.store?.name && (
+                            <div className="flex items-start gap-2">
+                              <span className="font-semibold">Tienda:</span>
+                              <span>{shippingData.store.name}</span>
+                            </div>
+                          )}
+                        </>
                       ) : (
-                        <span className="text-orange-700 font-bold">
-                          🚛 Envío Coordinadora
-                        </span>
+                        <>
+                          <div className="flex items-start gap-2">
+                            <span className="font-semibold">Método:</span>
+                            {shippingVerification?.envio_imagiq === true ? (
+                              <span className="text-green-700 font-bold">
+                                🚚 Envío Imagiq
+                              </span>
+                            ) : (
+                              <span className="text-orange-700 font-bold">
+                                🚛 Envío Coordinadora
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 p-2 bg-white/50 rounded border border-blue-200">
+                            <p className="text-xs font-semibold mb-1">
+                              Detalles de verificación:
+                            </p>
+                            <div className="text-xs space-y-1">
+                              <p>
+                                • envio_imagiq:{" "}
+                                {shippingVerification?.envio_imagiq ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • todos_productos_im_it:{" "}
+                                {shippingVerification?.todos_productos_im_it ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • en_zona_cobertura:{" "}
+                                {shippingVerification?.en_zona_cobertura ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </>
                       )}
-                    </div>
-                    <div className="mt-2 p-2 bg-white/50 rounded border border-blue-200">
-                      <p className="text-xs font-semibold mb-1">
-                        Detalles de verificación:
-                      </p>
-                      <div className="text-xs space-y-1">
-                        <p>
-                          • envio_imagiq:{" "}
-                          {shippingVerification?.envio_imagiq ? (
-                            <span className="text-green-600 font-bold">
-                              true
-                            </span>
-                          ) : (
-                            <span className="text-red-600 font-bold">
-                              false
-                            </span>
-                          )}
-                        </p>
-                        <p>
-                          • todos_productos_im_it:{" "}
-                          {shippingVerification?.todos_productos_im_it ? (
-                            <span className="text-green-600 font-bold">
-                              true
-                            </span>
-                          ) : (
-                            <span className="text-red-600 font-bold">
-                              false
-                            </span>
-                          )}
-                        </p>
-                        <p>
-                          • en_zona_cobertura:{" "}
-                          {shippingVerification?.en_zona_cobertura ? (
-                            <span className="text-green-600 font-bold">
-                              true
-                            </span>
-                          ) : (
-                            <span className="text-red-600 font-bold">
-                              false
-                            </span>
-                          )}
-                        </p>
-                      </div>
                     </div>
                   </>
                 )}
-                </div>
-                </>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (

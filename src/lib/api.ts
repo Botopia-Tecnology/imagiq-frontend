@@ -722,6 +722,8 @@ export interface CandidateStore {
   horario: string;
   ciudad?: string;  // Ciudad de la tienda (puede venir en la respuesta)
   codDane?: string | number;  // Código DANE (puede venir en la respuesta)
+  telefono?: string;  // Teléfono de la tienda (puede venir en la respuesta)
+  extension?: string;  // Extensión del teléfono (puede venir en la respuesta)
 }
 
 export interface DefaultDirection {

@@ -163,7 +163,7 @@ export const CategoryProductsGrid = forwardRef<
     return (
       <div
         ref={ref}
-        className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6" : "flex flex-wrap"}
+        className={viewMode === "grid" ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-5 lg:gap-6 items-stretch" : "flex flex-wrap"}
       >
         {/* Mostrar skeletons cuando loading es true (incluyendo cambio de página) */}
         {loading ? (
@@ -215,7 +215,7 @@ export const CategoryProductsGrid = forwardRef<
                     return (
                       <div
                         key={item.key}
-                        className="w-full"
+                        className="w-full h-full"
                       >
                         <BundleCard
                           {...bundleProps}
@@ -230,7 +230,7 @@ export const CategoryProductsGrid = forwardRef<
                     return (
                       <div
                         key={item.key}
-                        className="w-full"
+                        className="w-full h-full"
                       >
                         <ProductCard
                           key={product.id}

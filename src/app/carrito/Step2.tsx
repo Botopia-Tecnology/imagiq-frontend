@@ -212,10 +212,48 @@ export default function Step2({
       });
       localStorage.setItem("checkout-address", JSON.stringify(data.address));
       localStorage.setItem("imagiq_user", JSON.stringify(data.user));
-    } catch {
-      setError(
-        "No se pudo guardar la información localmente. Intenta de nuevo."
-      );
+    } catch (error) {
+      // Intentar extraer el mensaje de error del response
+      let errorMessage = "";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "object" && error !== null) {
+        // Intentar obtener el mensaje del objeto de error
+        const errorObj = error as { message?: string; data?: { message?: string } };
+        errorMessage = errorObj.message || errorObj.data?.message || String(error);
+      } else {
+        errorMessage = String(error);
+      }
+
+      // Verificar si el error es porque el correo ya está asociado a una cuenta
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      if (
+        lowerErrorMessage.includes("internal server error") ||
+        lowerErrorMessage.includes("ya existe") ||
+        lowerErrorMessage.includes("ya está registrado") ||
+        lowerErrorMessage.includes("already exists") ||
+        (lowerErrorMessage.includes("email") && (lowerErrorMessage.includes("registered") || lowerErrorMessage.includes("existe"))) ||
+        lowerErrorMessage.includes("usuario ya existe") ||
+        lowerErrorMessage.includes("correo ya existe") ||
+        lowerErrorMessage.includes("duplicate") ||
+        lowerErrorMessage.includes("conflict")
+      ) {
+        setError(
+          `El correo ${guestForm.email} ya está asociado a una cuenta. Por favor, inicia sesión para continuar.`
+        );
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: "Este correo ya está registrado. Inicia sesión para continuar.",
+        }));
+        return;
+      }
+      
+      // Para otros errores, mostrar el mensaje del backend o un mensaje genérico más útil
+      if (errorMessage && errorMessage !== "Request failed" && !errorMessage.toLowerCase().includes("internal server error")) {
+        setError(errorMessage);
+      } else {
+        setError("Ocurrió un error al procesar tu información. Por favor, verifica los datos e intenta de nuevo.");
+      }
       return;
     }
     setLoading(true);
@@ -292,7 +330,6 @@ export default function Step2({
       "imagiq_user",
       {}
     );
-    console.log(haveAccount);
     if (haveAccount.email) {
       router.push("/carrito/step3");
     }
@@ -338,7 +375,6 @@ export default function Step2({
         };
         try {
           localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInDataToSave));
-          console.log("✅ Trade-in guardado en localStorage (respaldo):", tradeInDataToSave);
         } catch (error) {
           console.error("❌ Error al guardar trade-in en localStorage (respaldo):", error);
         }
@@ -354,7 +390,6 @@ export default function Step2({
       };
       try {
         localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
-        console.log("✅ Trade-in guardado en localStorage (fallback):", newTradeInData);
       } catch (storageError) {
         console.error("❌ Error al guardar trade-in en localStorage (fallback):", storageError);
       }
@@ -376,6 +411,8 @@ export default function Step2({
 
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = React.useRef<Set<string>>(new Set());
+  // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
+  const failedSkusRef = React.useRef<Set<string>>(new Set());
 
   // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
   useEffect(() => {
@@ -386,11 +423,13 @@ export default function Step2({
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
       // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
+      // PROTECCIÓN: NO verificar SKUs que ya fallaron anteriormente
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
         const needsVerification = product && product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        return needsVerification && notVerifiedYet;
+        const notFailedBefore = !failedSkusRef.current.has(sku); // PROTECCIÓN: no reintentar fallos
+        return needsVerification && notVerifiedYet && notFailedBefore;
       });
 
       if (productsToVerify.length === 0) return;
@@ -398,6 +437,13 @@ export default function Step2({
       // Verificar cada SKU único en segundo plano
       for (let i = 0; i < productsToVerify.length; i++) {
         const sku = productsToVerify[i];
+
+        // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
+        if (failedSkusRef.current.has(sku)) {
+          console.error(`🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`);
+          verifiedSkusRef.current.add(sku); // Marcar como verificado para no intentar de nuevo
+          continue; // Saltar este SKU
+        }
 
         // Agregar delay entre peticiones (excepto la primera)
         if (i > 0) {
@@ -407,13 +453,19 @@ export default function Step2({
         try {
           const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
           if (!response.success || !response.data) {
-            throw new Error("Error al verificar trade-in");
+            // Si falla la petición, marcar como fallido
+            failedSkusRef.current.add(sku);
+            console.error(`🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`);
+            verifiedSkusRef.current.add(sku);
+            continue;
           }
           const result = response.data;
           const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
 
           // Marcar SKU como verificado ANTES de actualizar localStorage (evita loop)
           verifiedSkusRef.current.add(sku);
+          // Limpiar de fallos si existía
+          failedSkusRef.current.delete(sku);
 
           // Actualizar localStorage con el resultado
           const storedProducts = JSON.parse(
@@ -434,13 +486,15 @@ export default function Step2({
           window.dispatchEvent(customEvent);
           window.dispatchEvent(new Event("storage"));
         } catch (error) {
-          // También marcar como verificado en caso de error para no reintentar infinitamente
-          verifiedSkusRef.current.add(sku);
-          // Silenciar errores, solo log en consola
+          // Si hay un error en el catch, también marcar como fallido
+          failedSkusRef.current.add(sku);
           console.error(
-            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            `🚫 Error al verificar trade-in para SKU ${sku} - Petición bloqueada para evitar sobrecargar BD:`,
             error
           );
+          console.error(`🚫 SKU ${sku} NO se reintentará automáticamente.`);
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
         }
       }
     };
@@ -727,12 +781,7 @@ export default function Step2({
             />
           )}
 
-          {/* Mensajes de error/success */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+          {/* Mensaje de éxito */}
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
               ¡Compra realizada como invitado!

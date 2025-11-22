@@ -16,6 +16,41 @@ import {
 } from '@/types/places.types';
 import { placesService } from '@/services/places.service';
 
+/**
+ * Limpia la dirección formateada eliminando duplicados de ciudades y departamentos
+ * Ejemplo: "Calle X, Bogotá, D.C., Bogotá, Bogotá, D.C., Colombia" 
+ * -> "Calle X, Bogotá, D.C., Colombia"
+ */
+function cleanFormattedAddress(address: string): string {
+  if (!address) return address;
+  
+  // Dividir la dirección por comas
+  const parts = address.split(',').map(part => part.trim());
+  const cleaned: string[] = [];
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    const lowerPart = part.toLowerCase();
+    
+    // Si es el último elemento (país), siempre incluirlo
+    if (i === parts.length - 1) {
+      cleaned.push(part);
+      continue;
+    }
+    
+    // Si ya vimos esta parte recientemente (últimas 2 posiciones), saltarla
+    // Esto evita duplicados consecutivos pero permite que aparezca en diferentes contextos
+    const recentParts = cleaned.slice(-2).map(p => p.toLowerCase());
+    if (recentParts.includes(lowerPart)) {
+      continue;
+    }
+    
+    cleaned.push(part);
+  }
+  
+  return cleaned.join(', ');
+}
+
 interface UsePlacesAutocompleteProps {
   /**
    * Opciones de configuración del autocompletado
@@ -275,19 +310,28 @@ export function usePlacesAutocomplete({
       if (!isMountedRef.current) return;
 
       if (response.status === 'OK') {
+        // Limpiar la dirección para eliminar duplicados de ciudades
+        const cleanedAddress = cleanFormattedAddress(response.place.formattedAddress);
+        
+        // Crear un nuevo objeto PlaceDetails con la dirección limpia
+        const cleanedPlace: PlaceDetails = {
+          ...response.place,
+          formattedAddress: cleanedAddress
+        };
+        
         setState(prev => ({
           ...prev,
           isLoading: false,
-          selectedPlace: response.place,
+          selectedPlace: cleanedPlace,
           predictions: [], // Limpiar predicciones después de seleccionar
           error: null
         }));
 
-        // Actualizar el valor del input con la dirección seleccionada
-        setInputValue(response.place.formattedAddress);
+        // Actualizar el valor del input con la dirección seleccionada (limpiada)
+        setInputValue(cleanedAddress);
 
-        // Llamar callback
-        onPlaceSelectRef.current?.(response.place);
+        // Llamar callback con el lugar limpio
+        onPlaceSelectRef.current?.(cleanedPlace);
 
         // Resetear flag después de completar la selección
         setTimeout(() => {

@@ -71,27 +71,19 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         console.error("❌ Error al cargar datos de Trade-In:", error);
       }
     } else {
-      // Verificar si el usuario está logueado
-      const user = safeGetLocalStorage<{ id?: string; user_id?: string; email?: string }>("imagiq_user", {});
-      const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
-      
-      // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía
-      // En el paso 1: si el usuario NO está logueado, NO considerar canPickUp
-      // Si el usuario está logueado, considerar canPickUp
+      // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía SIEMPRE
+      // Sin importar canPickUp o si el usuario está logueado
       const productApplies =
         cartProducts.length === 1 && 
         cartProducts[0]?.indRetoma === 1;
       
       if (productApplies) {
-        // Usuario no logueado: mostrar banner sin considerar canPickUp
-        // Usuario logueado: solo mostrar si canPickUp === true
-        if (!isUserLoggedIn || cartProducts[0]?.canPickUp === true) {
-          setTradeInData({
-            deviceName: cartProducts[0].name,
-            value: 0,
-            completed: false, // No está completado, solo es una guía
-          });
-        }
+        // Mostrar banner siempre si el producto tiene indRetoma === 1
+        setTradeInData({
+          deviceName: cartProducts[0].name,
+          value: 0,
+          completed: false, // No está completado, solo es una guía
+        });
       }
     }
   }, [cartProducts]);
@@ -100,6 +92,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = useRef<Set<string>>(new Set());
+  // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
+  const failedSkusRef = useRef<Set<string>>(new Set());
 
 
   // Verificar indRetoma para cada producto único en el carrito
@@ -111,11 +105,13 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
       // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
+      // PROTECCIÓN: NO verificar SKUs que ya fallaron anteriormente
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
         const needsVerification = product && product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        return needsVerification && notVerifiedYet;
+        const notFailedBefore = !failedSkusRef.current.has(sku); // PROTECCIÓN: no reintentar fallos
+        return needsVerification && notVerifiedYet && notFailedBefore;
       });
 
       if (productsToVerify.length === 0) return;
@@ -132,6 +128,19 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       for (let i = 0; i < productsToVerify.length; i++) {
         const sku = productsToVerify[i];
 
+        // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
+        if (failedSkusRef.current.has(sku)) {
+          console.error(`🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`);
+          results.push(null);
+          verifiedSkusRef.current.add(sku); // Marcar como verificado para no intentar de nuevo
+          setLoadingIndRetoma((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(sku);
+            return newSet;
+          });
+          continue; // Saltar este SKU
+        }
+
         // Agregar delay entre peticiones (excepto la primera)
         if (i > 0) {
           await new Promise((resolve) => setTimeout(resolve, 200));
@@ -147,16 +156,24 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
             });
             // Marcar SKU como verificado cuando tiene éxito
             verifiedSkusRef.current.add(sku);
+            // Limpiar de fallos si existía
+            failedSkusRef.current.delete(sku);
           } else {
+            // Si falla la petición, marcar como fallido
+            failedSkusRef.current.add(sku);
+            console.error(`🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`);
             results.push(null);
             // También marcar como verificado en caso de error para no reintentar infinitamente
             verifiedSkusRef.current.add(sku);
           }
         } catch (error) {
+          // Si hay un error en el catch, también marcar como fallido
+          failedSkusRef.current.add(sku);
           console.error(
-            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            `🚫 Error al verificar trade-in para SKU ${sku} - Petición bloqueada para evitar sobrecargar BD:`,
             error
           );
+          console.error(`🚫 SKU ${sku} NO se reintentará automáticamente.`);
           results.push(null);
           // También marcar como verificado en caso de error para no reintentar infinitamente
           verifiedSkusRef.current.add(sku);
@@ -309,7 +326,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     // se encargará de avanzar automáticamente cuando termine (usando userClickedWhileLoading)
     // Solo necesitamos esperar si ya terminó de cargar
     if (isLoadingCanPickUpGlobal) {
-      console.log('⏳ canPickUp está cargando, Step4OrderSummary avanzará automáticamente cuando termine...');
       // No hacer nada aquí, dejar que Step4OrderSummary maneje el avance automático
       return;
     }
@@ -356,30 +372,29 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     setTradeInData(null);
     localStorage.removeItem("imagiq_trade_in");
 
-    // Verificar si el usuario está logueado
-    const user = safeGetLocalStorage<{ id?: string; user_id?: string; email?: string }>("imagiq_user", {});
-    const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
+    // FORZAR cambio a "domicilio" si el método está en "tienda" (sin importar si está autenticado o no)
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        // Forzar cambio inmediatamente
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
 
-    // Si el producto aplica (indRetoma === 1), mostrar el banner guía
-    // En el paso 1: si el usuario NO está logueado, NO considerar canPickUp
-    // Si el usuario está logueado, considerar canPickUp
+    // Si el producto aplica (indRetoma === 1), mostrar el banner guía SIEMPRE
+    // Sin importar canPickUp o si el usuario está logueado
     const productApplies = cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
     if (productApplies) {
-      if (!isUserLoggedIn) {
-        // Usuario no logueado en paso 1: mostrar banner sin considerar canPickUp
-        setTradeInData({
-          deviceName: cartProducts[0].name,
-          value: 0,
-          completed: false, // No está completado, solo es una guía
-        });
-      } else if (cartProducts[0]?.canPickUp === true) {
-        // Usuario logueado: considerar canPickUp
-        setTradeInData({
-          deviceName: cartProducts[0].name,
-          value: 0,
-          completed: false, // No está completado, solo es una guía
-        });
-      }
+      // Mostrar banner siempre si el producto tiene indRetoma === 1
+      setTradeInData({
+        deviceName: cartProducts[0].name,
+        value: 0,
+        completed: false, // No está completado, solo es una guía
+      });
     }
   };
 
@@ -411,7 +426,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         };
         try {
           localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
-          console.log("✅ Trade-in guardado en localStorage (respaldo):", tradeInData);
         } catch (error) {
           console.error("❌ Error al guardar trade-in en localStorage (respaldo):", error);
         }
@@ -427,7 +441,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       };
       try {
         localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
-        console.log("✅ Trade-in guardado en localStorage (fallback):", newTradeInData);
       } catch (storageError) {
         console.error("❌ Error al guardar trade-in en localStorage (fallback):", storageError);
       }
@@ -445,15 +458,17 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   const user = safeGetLocalStorage<{ id?: string; user_id?: string; email?: string }>("imagiq_user", {});
   const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
 
+  // Mostrar el banner SIEMPRE si el producto tiene indRetoma === 1, sin importar canPickUp
   const shouldShowTradeInBanner =
     !!tradeInData &&
     (tradeInData.completed ||
       (!tradeInData.completed &&
         cartProducts.length === 1 &&
-        cartProducts[0]?.indRetoma === 1 &&
-        // En el paso 1: si el usuario NO está logueado, NO considerar canPickUp
-        // Si el usuario está logueado, considerar canPickUp
-        (!isUserLoggedIn || cartProducts[0]?.canPickUp === true)));
+        cartProducts[0]?.indRetoma === 1));
+  
+  // Verificar si canPickUp es false para mostrar mensaje informativo
+  const productCanPickUp = cartProducts.length === 1 ? cartProducts[0]?.canPickUp : undefined;
+  const showCanPickUpMessage = isUserLoggedIn && productCanPickUp === false;
 
   const tradeInSummaryProps = shouldShowTradeInBanner
     ? {
@@ -467,7 +482,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           : undefined,
         isGuide: !tradeInData!.completed,
         showErrorSkeleton,
-        shippingCity: cartProducts.find(p => p.indRetoma === 1 && (!isUserLoggedIn || p.canPickUp === true))?.shippingCity,
+        shippingCity: cartProducts.find(p => p.indRetoma === 1)?.shippingCity,
+        showCanPickUpMessage: showCanPickUpMessage,
       }
     : null;
 

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Direccion } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
@@ -111,6 +111,13 @@ export const useDelivery = () => {
   const [addresses, setAddresses] = useState<Direccion[]>([]);
   const [canPickUp, setCanPickUp] = useState<boolean>(true); // Estado para saber si se puede recoger en tienda
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
+  const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
+  
+  // Ref para prevenir llamadas infinitas a fetchCandidateStores
+  const isFetchingRef = useRef(false);
+  const lastFetchTimeRef = useRef(0);
+  const lastAddressIdRef = useRef<string | null>(null); // Para rastrear última dirección procesada
+  const isRemovingTradeInRef = useRef(false); // Para prevenir llamadas durante eliminación de trade-in
 
   // Cargar método de entrega desde localStorage al inicio
   const [deliveryMethod, setDeliveryMethodState] = useState<string>(() => {
@@ -120,13 +127,27 @@ export const useDelivery = () => {
 
   // Wrapper para setDeliveryMethod que también guarda en localStorage
   const setDeliveryMethod = (method: string) => {
+    // Validar que el método sea válido
+    if (method !== "tienda" && method !== "domicilio") {
+      console.error(`⚠️ Método de entrega inválido: ${method}. Usando "domicilio" por defecto.`);
+      method = "domicilio";
+    }
+    
     setDeliveryMethodState(method);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("checkout-delivery-method", method);
-      // Disparar evento personalizado para notificar cambios
-      window.dispatchEvent(
-        new CustomEvent("delivery-method-changed", { detail: { method } })
-      );
+    
+    // Guardar en localStorage inmediatamente (importante para usuarios invitados)
+    if (typeof globalThis.window !== "undefined") {
+      try {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", method);
+        // Disparar evento personalizado para notificar cambios
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method } })
+        );
+        // También disparar evento storage para compatibilidad
+        globalThis.window.dispatchEvent(new Event("storage"));
+      } catch (error) {
+        console.error("Error al guardar método de entrega en localStorage:", error);
+      }
     }
   };
 
@@ -134,26 +155,72 @@ export const useDelivery = () => {
   const { products } = useCart();
 
   // Cargar método de entrega desde localStorage cuando se monta el componente
+  // También escuchar cambios en localStorage para sincronizar entre componentes
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedMethod = localStorage.getItem("checkout-delivery-method");
-    if (
-      savedMethod &&
-      (savedMethod === "tienda" || savedMethod === "domicilio")
-    ) {
-      setDeliveryMethodState((current) => {
-        if (current !== savedMethod) {
-          return savedMethod;
-        }
-        return current;
-      });
-    }
+    if (globalThis.window === undefined) return;
+    
+    const updateFromStorage = () => {
+      const savedMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (
+        savedMethod &&
+        (savedMethod === "tienda" || savedMethod === "domicilio")
+      ) {
+        setDeliveryMethodState((current) => {
+          // Solo actualizar si el valor cambió
+          if (current !== savedMethod) {
+            return savedMethod;
+          }
+          return current;
+        });
+      }
+    };
+    
+    // Cargar al montar
+    updateFromStorage();
+    
+    // Escuchar cambios en localStorage (solo entre pestañas, no en la misma pestaña)
+    const handleStorageChange = (e: StorageEvent) => {
+      // Solo actualizar si el cambio viene de otra pestaña
+      if (e.key === "checkout-delivery-method") {
+        updateFromStorage();
+      }
+    };
+    globalThis.window.addEventListener("storage", handleStorageChange);
+    
+    // Escuchar evento personalizado (para cambios en la misma pestaña)
+    const handleDeliveryMethodChanged = () => {
+      updateFromStorage();
+    };
+    globalThis.window.addEventListener("delivery-method-changed", handleDeliveryMethodChanged);
+    
+    return () => {
+      globalThis.window?.removeEventListener("storage", handleStorageChange);
+      globalThis.window?.removeEventListener("delivery-method-changed", handleDeliveryMethodChanged);
+    };
   }, []);
 
   // Función para cargar tiendas candidatas
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
+    // PROTECCIÓN CRÍTICA: NO hacer peticiones durante eliminación de trade-in
+    if (isRemovingTradeInRef.current) {
+      return;
+    }
+    
+    // Prevenir llamadas múltiples simultáneas
+    if (isFetchingRef.current) {
+      return;
+    }
+    
+    // Prevenir llamadas muy frecuentes (debounce de 3000ms - AUMENTADO)
+    const now = Date.now();
+    if (now - lastFetchTimeRef.current < 3000) {
+      return;
+    }
+    
     try {
+      isFetchingRef.current = true;
+      lastFetchTimeRef.current = now;
       setStoresLoading(true);
 
       // Obtener user_id
@@ -168,6 +235,7 @@ export const useDelivery = () => {
           setFilteredStores([]);
           setCanPickUp(false);
           setStoresLoading(false);
+          isFetchingRef.current = false;
           return;
         }
 
@@ -177,6 +245,32 @@ export const useDelivery = () => {
           quantity: p.quantity,
         }));
 
+        // Crear hash único de la petición (productos + userId + dirección)
+        const currentAddressId = lastAddressIdRef.current || '';
+        const requestHash = JSON.stringify({
+          products: productsToCheck,
+          userId,
+          addressId: currentAddressId,
+        });
+
+        // PROTECCIÓN CRÍTICA: Si esta misma petición ya falló antes, NO reintentar
+        if (failedRequestHashRef.current === requestHash) {
+          console.error("🚫 Esta petición ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.");
+          setStores([]);
+          setFilteredStores([]);
+          setCanPickUp(false);
+          setStoresLoading(false);
+          isFetchingRef.current = false;
+          return;
+        }
+
+        // Si el hash es el mismo que la última petición exitosa, no hacer nada
+        if (lastSuccessfulHashRef.current === requestHash) {
+          setStoresLoading(false);
+          isFetchingRef.current = false;
+          return;
+        }
+
         // Llamar al endpoint con TODOS los productos agrupados
         const response = await productEndpoints.getCandidateStores({
           products: productsToCheck,
@@ -184,6 +278,13 @@ export const useDelivery = () => {
         });
 
         if (response.success && response.data) {
+          // Si la petición fue exitosa, marcar el hash como exitoso
+          lastSuccessfulHashRef.current = requestHash;
+          // Limpiar el hash de fallo si existía
+          if (failedRequestHashRef.current === requestHash) {
+            failedRequestHashRef.current = null;
+          }
+
           const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
           
           // Obtener canPickUp global de la respuesta
@@ -191,6 +292,17 @@ export const useDelivery = () => {
           
           // Establecer canPickUp global
           setCanPickUp(globalCanPickUp);
+
+          // Guardar ciudades disponibles (incluso si canPickUp es false)
+          if (responseData.stores) {
+            const cities = Object.keys(responseData.stores).filter(city => {
+              const cityStores = responseData.stores[city];
+              return cityStores && cityStores.length > 0;
+            });
+            setAvailableCities(cities);
+          } else {
+            setAvailableCities([]);
+          }
 
           // Solo procesar tiendas si canPickUp global es true
           // Si es false, no mostrar tiendas
@@ -245,38 +357,106 @@ export const useDelivery = () => {
             setFilteredStores([]);
           }
         } else {
+          // Si falla la petición, marcar este hash como fallido
+          failedRequestHashRef.current = requestHash;
+          console.error(`🚫 Petición falló. Hash bloqueado: ${requestHash.substring(0, 50)}...`);
+          console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
+          
           // Si falla la petición, no hay pickup disponible
           setCanPickUp(false);
           setStores([]);
           setFilteredStores([]);
         }
       } catch (error) {
-        console.error("Error loading candidate stores:", error);
+        // Si hay un error en el catch, también marcar como fallido
+        const currentAddressId = lastAddressIdRef.current || '';
+        const productsToCheck = products.map((p) => ({
+          sku: p.sku,
+          quantity: p.quantity,
+        }));
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+          "imagiq_user",
+          {}
+        );
+        const userId = user?.id || user?.user_id;
+        const requestHash = JSON.stringify({
+          products: productsToCheck,
+          userId,
+          addressId: currentAddressId,
+        });
+        
+        failedRequestHashRef.current = requestHash;
+        console.error("🚫 Error loading candidate stores - Petición bloqueada para evitar sobrecargar BD:", error);
+        console.error(`🚫 Hash bloqueado: ${requestHash.substring(0, 50)}...`);
+        console.error("🚫 Esta petición NO se reintentará automáticamente.");
+        
         setStores([]);
         setFilteredStores([]);
         setCanPickUp(false);
       } finally {
         setStoresLoading(false);
+        isFetchingRef.current = false;
       }
   }, [products]);
 
   // Cargar tiendas desde candidate-stores (solo donde se puede recoger el producto)
   // Si no hay pickup disponible, cargar TODAS las tiendas
+  // PROTECCIÓN: Solo ejecutar una vez al montar o cuando cambian los productos significativamente
+  const productsHashRef = useRef<string>('');
   useEffect(() => {
-    fetchCandidateStores();
-  }, [fetchCandidateStores]);
+    // Crear un hash de los productos para detectar cambios reales
+    const productsHash = JSON.stringify(products.map(p => ({ sku: p.sku, quantity: p.quantity })));
+    
+    // Solo ejecutar si realmente cambiaron los productos O es la primera vez
+    if (productsHashRef.current === '' || productsHashRef.current !== productsHash) {
+      productsHashRef.current = productsHash;
+      
+      // Verificar que NO estemos eliminando trade-in
+      if (!isRemovingTradeInRef.current) {
+        fetchCandidateStores();
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [products]); // Depender de products completo pero con protección de hash
 
   // Escuchar cambios de dirección (desde header O desde checkout)
   useEffect(() => {
     const handleAddressChange = async (event: Event) => {
-      console.log('🔄 Evento de cambio de dirección recibido en useDelivery:', event.type);
+      // Prevenir llamadas durante eliminación de trade-in
+      if (isRemovingTradeInRef.current) {
+        return;
+      }
+
+      // Verificar si el evento es realmente de cambio de dirección
+      const customEvent = event as CustomEvent;
+      const eventType = event.type;
+      
+      // Ignorar eventos que no son de dirección
+      if (eventType === 'delivery-method-changed' || eventType === 'storage') {
+        const key = (event as StorageEvent).key;
+        if (key && key !== 'checkout-address' && key !== 'imagiq_default_address') {
+          return; // No es un cambio de dirección
+        }
+      }
+
+      // Verificar si realmente cambió la dirección
+      const currentAddress = localStorage.getItem('checkout-address');
+      if (currentAddress) {
+        try {
+          const parsed = JSON.parse(currentAddress) as Direccion;
+          if (parsed.id === lastAddressIdRef.current) {
+            return;
+          }
+          lastAddressIdRef.current = parsed.id || null;
+        } catch (error) {
+          // Si no se puede parsear, continuar
+        }
+      }
 
       // Verificar si el cambio viene del header
-      const customEvent = event as CustomEvent;
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Cambio de dirección desde header, actualizando dirección en Step3...');
 
         // Mostrar skeleton
         setAddressLoading(true);
@@ -291,8 +471,8 @@ export const useDelivery = () => {
           ) as Direccion;
 
           if (saved && saved.id) {
-            console.log('✅ Actualizando dirección en Step3:', saved);
             setAddress(saved);
+            lastAddressIdRef.current = saved.id;
           }
         } catch (error) {
           console.error('❌ Error al leer dirección de localStorage:', error);
@@ -302,7 +482,11 @@ export const useDelivery = () => {
         }
       }
 
-      console.log('🔄 Dirección cambió, recalculando canPickUp global y tiendas...');
+      // PROTECCIÓN CRÍTICA: Verificar que NO estemos eliminando trade-in antes de llamar
+      if (isRemovingTradeInRef.current) {
+        return;
+      }
+      
       // Recalcular canPickUp global y tiendas cuando cambia la dirección
       fetchCandidateStores();
     };
@@ -310,10 +494,16 @@ export const useDelivery = () => {
     const handleStorageChange = (e: StorageEvent) => {
       // Escuchar cambios en checkout-address o imagiq_default_address
       if (e.key === 'checkout-address' || e.key === 'imagiq_default_address') {
-        console.log('🔄 Cambio detectado en localStorage:', e.key);
         handleAddressChange(e);
       }
     };
+
+    // Escuchar evento de eliminación de trade-in
+    const handleRemovingTradeIn = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      isRemovingTradeInRef.current = customEvent.detail?.removing || false;
+    };
+    window.addEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
 
     // Escuchar evento storage (para cambios entre tabs)
     window.addEventListener('storage', handleStorageChange);
@@ -323,38 +513,53 @@ export const useDelivery = () => {
 
     // Escuchar eventos personalizados desde checkout
     window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
+    
+    // Escuchar delivery-method-changed pero solo si NO viene con skipFetch
+    const handleDeliveryMethodChanged = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      // Si viene con skipFetch, no hacer nada (viene de eliminación de trade-in)
+      if (customEvent.detail?.skipFetch) {
+        return;
+      }
+      // Si no viene skipFetch, puede ser un cambio legítimo, pero no llamar fetchCandidateStores
+      // porque no es un cambio de dirección
+    };
+    window.addEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
 
     // También verificar cambios periódicamente en la misma tab (porque storage solo funciona entre tabs)
+    // PERO DESHABILITAR durante eliminación de trade-in
     let lastCheckoutAddress = localStorage.getItem('checkout-address');
     let lastDefaultAddress = localStorage.getItem('imagiq_default_address');
 
     const checkAddressChanges = () => {
+      // PROTECCIÓN CRÍTICA: NO hacer nada si estamos eliminando trade-in
+      if (isRemovingTradeInRef.current) {
+        return;
+      }
+      
       const currentCheckoutAddress = localStorage.getItem('checkout-address');
       const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
 
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
-        console.log('🔄 Cambio detectado en checkout-address (polling)');
         handleAddressChange(new Event('checkout-address-changed'));
         lastCheckoutAddress = currentCheckoutAddress;
       }
 
       if (currentDefaultAddress !== lastDefaultAddress && lastDefaultAddress !== null) {
-        console.log('🔄 Cambio detectado en imagiq_default_address (polling)');
         handleAddressChange(new Event('address-changed'));
         lastDefaultAddress = currentDefaultAddress;
       }
     };
 
-    const intervalId = setInterval(checkAddressChanges, 500);
-
-    console.log(
-      "✅ Listeners de cambio de dirección configurados en useDelivery"
-    );
+    // AUMENTAR intervalo a 2000ms para reducir peticiones
+    const intervalId = setInterval(checkAddressChanges, 2000);
 
     return () => {
+      window.removeEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('address-changed', handleAddressChange as EventListener);
       window.removeEventListener('checkout-address-changed', handleAddressChange as EventListener);
+      window.removeEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
       clearInterval(intervalId);
     };
   }, [fetchCandidateStores]);
@@ -480,5 +685,6 @@ export const useDelivery = () => {
     stores,
     refreshStores: fetchCandidateStores,
     addressLoading, // Exportar estado de loading para mostrar skeleton
+    availableCities,
   };
 };

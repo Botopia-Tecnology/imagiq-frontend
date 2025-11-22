@@ -49,6 +49,7 @@ export default function Step3({
     stores,
     refreshStores,
     addressLoading,
+    availableCities,
   } = useDelivery();
 
   // Hook para precarga de tarjetas y zero interest
@@ -107,6 +108,9 @@ export default function Step3({
 
   // Ref para evitar múltiples ejecuciones del useEffect (previene loop infinito)
   const tradeInLoadedRef = React.useRef(false);
+  
+  // Ref para rastrear si acabamos de eliminar el trade-in (evita que useEffect revierta el cambio)
+  const justRemovedTradeInRef = React.useRef(false);
 
   // Load Trade-In data from localStorage y forzar método a "tienda" si hay trade-in
   React.useEffect(() => {
@@ -135,8 +139,55 @@ export default function Step3({
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
+    // Marcar que acabamos de eliminar el trade-in (evitar que useEffect revierta el cambio)
+    justRemovedTradeInRef.current = true;
+    
+    // Marcar en useDelivery que estamos eliminando trade-in (previene fetchCandidateStores)
+    // HACERLO INMEDIATAMENTE antes de cualquier otra cosa
+    if (globalThis.window) {
+      // Usar un evento personalizado para notificar a useDelivery
+      globalThis.window.dispatchEvent(
+        new CustomEvent("removing-trade-in", { detail: { removing: true } })
+      );
+    }
+    
+    // PRIMERO: Eliminar el trade-in para que hasActiveTradeIn sea false inmediatamente
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // SEGUNDO: Forzar cambio a "domicilio" DESPUÉS de eliminar el trade-in
+    // Verificar el método actual desde localStorage y estado
+    const currentMethodFromStorage = globalThis.window?.localStorage.getItem("checkout-delivery-method");
+    const currentMethod = currentMethodFromStorage || deliveryMethod;
+    
+    // SIEMPRE cambiar a domicilio si está en tienda (sin importar autenticación)
+    if (currentMethod === "tienda" || deliveryMethod === "tienda") {
+      // 1. Forzar directamente en localStorage PRIMERO (fuente de verdad)
+      if (globalThis.window) {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+      }
+      
+      // 2. Cambiar usando el hook (actualiza el estado del componente)
+      setDeliveryMethod("domicilio");
+      
+      // 3. Disparar eventos para sincronizar con otros componentes (pero NO storage para evitar loops)
+      if (globalThis.window) {
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio", skipFetch: true } })
+        );
+        // NO disparar evento storage aquí para evitar que handleAddressChange se ejecute
+      }
+    }
+    
+    // Resetear los flags después de un delay MÁS LARGO para asegurar que todo se procese
+    setTimeout(() => {
+      justRemovedTradeInRef.current = false;
+      if (globalThis.window) {
+        globalThis.window.dispatchEvent(
+          new CustomEvent("removing-trade-in", { detail: { removing: false } })
+        );
+      }
+    }, 3000); // AUMENTADO a 3 segundos para asegurar que todo se procese
   };
 
   // IMPORTANTE: Si hay trade-in activo, solo permitir recoger en tienda
@@ -158,24 +209,31 @@ export default function Step3({
   }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
 
   // Forzar método de entrega a "tienda" si hay trade-in activo (ejecutar inmediatamente)
+  // IMPORTANTE: NO ejecutar si acabamos de eliminar el trade-in (evitar revertir el cambio)
   React.useEffect(() => {
+    // Si acabamos de eliminar el trade-in, NO hacer nada
+    if (justRemovedTradeInRef.current) {
+      return;
+    }
+    
+    // Solo forzar a "tienda" si hay trade-in activo
     if (hasActiveTradeIn) {
       // Forzar cambio a tienda si está en domicilio
       if (deliveryMethod === "domicilio") {
-        // setDeliveryMethod ya guarda automáticamente en localStorage
         setDeliveryMethod("tienda");
       }
-      // También prevenir que se cambie a domicilio
-      const savedMethod = localStorage.getItem("checkout-delivery-method");
+      // También prevenir que se cambie a domicilio desde localStorage
+      const savedMethod = globalThis.window?.localStorage.getItem("checkout-delivery-method");
       if (savedMethod === "domicilio") {
-        // setDeliveryMethod ya guarda automáticamente en localStorage
         setDeliveryMethod("tienda");
       }
     }
   }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod]);
-
+  
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = React.useRef<Set<string>>(new Set());
+  // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
+  const failedSkusRef = React.useRef<Set<string>>(new Set());
 
   // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
   React.useEffect(() => {
@@ -188,11 +246,13 @@ export default function Step3({
       );
 
       // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
+      // PROTECCIÓN: NO verificar SKUs que ya fallaron anteriormente
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = products.find((p) => p.sku === sku);
         const needsVerification = product && product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        return needsVerification && notVerifiedYet;
+        const notFailedBefore = !failedSkusRef.current.has(sku); // PROTECCIÓN: no reintentar fallos
+        return needsVerification && notVerifiedYet && notFailedBefore;
       });
 
       if (productsToVerify.length === 0) return;
@@ -200,6 +260,13 @@ export default function Step3({
       // Verificar cada SKU único en segundo plano
       for (let i = 0; i < productsToVerify.length; i++) {
         const sku = productsToVerify[i];
+
+        // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
+        if (failedSkusRef.current.has(sku)) {
+          console.error(`🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`);
+          verifiedSkusRef.current.add(sku); // Marcar como verificado para no intentar de nuevo
+          continue; // Saltar este SKU
+        }
 
         // Agregar delay entre peticiones (excepto la primera)
         if (i > 0) {
@@ -209,13 +276,19 @@ export default function Step3({
         try {
           const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
           if (!response.success || !response.data) {
-            throw new Error('Error al verificar trade-in');
+            // Si falla la petición, marcar como fallido
+            failedSkusRef.current.add(sku);
+            console.error(`🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`);
+            verifiedSkusRef.current.add(sku);
+            continue;
           }
           const result = response.data;
           const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
 
           // Marcar SKU como verificado ANTES de actualizar localStorage (evita loop)
           verifiedSkusRef.current.add(sku);
+          // Limpiar de fallos si existía
+          failedSkusRef.current.delete(sku);
 
           // Actualizar localStorage con el resultado
           const storedProducts = JSON.parse(
@@ -236,13 +309,15 @@ export default function Step3({
           window.dispatchEvent(customEvent);
           window.dispatchEvent(new Event("storage"));
         } catch (error) {
-          // También marcar como verificado en caso de error para no reintentar infinitamente
-          verifiedSkusRef.current.add(sku);
-          // Silenciar errores, solo log en consola
+          // Si hay un error en el catch, también marcar como fallido
+          failedSkusRef.current.add(sku);
           console.error(
-            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            `🚫 Error al verificar trade-in para SKU ${sku} - Petición bloqueada para evitar sobrecargar BD:`,
             error
           );
+          console.error(`🚫 SKU ${sku} NO se reintentará automáticamente.`);
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
         }
       }
     };
@@ -257,7 +332,6 @@ export default function Step3({
   React.useEffect(() => {
     // Si estábamos esperando y terminó de cargar, avanzar automáticamente
     if (isWaitingForCanPickUp && !storesLoading) {
-      console.log('✅ canPickUp calculado en Step3, avanzando automáticamente...');
       setIsWaitingForCanPickUp(false);
       
       // Validar Trade-In antes de continuar
@@ -333,7 +407,6 @@ export default function Step3({
 
     // IMPORTANTE: Si está cargando canPickUp y el método es tienda, esperar
     if (storesLoading && deliveryMethod === "tienda") {
-      console.log('⏳ Esperando a que canPickUp se calcule en Step3...');
       setIsWaitingForCanPickUp(true);
       
       // El useEffect se encargará de avanzar cuando termine storesLoading
@@ -480,6 +553,7 @@ export default function Step3({
                     allStores={stores}
                     onAddressAdded={addAddress}
                     onRefreshStores={refreshStores}
+                    availableCities={availableCities}
                   />
                 </div>
               )}

@@ -9,6 +9,8 @@ import {
 } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
 import { useCities } from "@/hooks/useCities";
+import { useAuthContext } from "@/features/auth/context";
+import { syncAddress } from "@/lib/addressSync";
 
 // Tipo extendido para manejar diferentes estructuras de PlaceDetails
 type ExtendedPlaceDetails = PlaceDetails & {
@@ -31,6 +33,7 @@ export default function AddNewAddressForm({
   onCancel,
   withContainer = true,
 }: AddNewAddressFormProps) {
+  const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAddress, setSelectedAddress] =
     useState<ExtendedPlaceDetails | null>(null);
@@ -71,13 +74,10 @@ export default function AddNewAddressForm({
       newErrors.nombreDireccion = "El nombre de la dirección es requerido";
     }
 
-    // Solo validar ciudad si no está auto-completada o si está vacía
+    // Solo validar ciudad si NO está auto-completada (campo visible)
+    // Si está auto-completada, la ciudad viene de Google Maps y es válida
     if (!isCityAutoCompleted && !formData.ciudad.trim()) {
       newErrors.ciudad = "La ciudad es requerida";
-    } else if (isCityAutoCompleted && !formData.ciudad.trim()) {
-      // Si está marcada como auto-completada pero no tiene valor, hay un error
-      newErrors.ciudad = "Error al auto-completar la ciudad. Por favor, selecciónala manualmente.";
-      setIsCityAutoCompleted(false); // Permitir selección manual
     }
 
     // Validar dirección de facturación si no usa la misma
@@ -177,7 +177,8 @@ export default function AddNewAddressForm({
         complemento: formData.complemento || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,
         puntoReferencia: formData.puntoReferencia || undefined,
-        ciudad: formData.ciudad || undefined,
+        // Solo enviar ciudad si es un código válido (string numérico)
+        ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
       };
 
       const shippingResponse = await addressesService.createAddress(
@@ -255,12 +256,52 @@ export default function AddNewAddressForm({
           instruccionesEntrega:
             formData.instruccionesEntregaFacturacion || undefined,
           puntoReferencia: formData.puntoReferenciaFacturacion || undefined,
-          ciudad: formData.ciudad || undefined,
+          // Solo enviar ciudad si es un código válido (string numérico)
+          ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
         };
 
         await addressesService.createAddress(
           billingAddressRequest
         );
+      }
+
+      // Sincronizar la dirección con el header y localStorage
+      try {
+        // Obtener email del usuario desde localStorage si no está autenticado
+        let userEmail = user?.email || '';
+        if (!userEmail && globalThis.window !== undefined) {
+          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+          userEmail = userInfo?.email || '';
+        }
+
+        await syncAddress({
+          address: shippingResponse,
+          userEmail,
+          user,
+          loginFn: login,
+          fromHeader: false, // Viene del checkout/formulario
+        });
+      } catch (syncError) {
+        console.error('⚠️ Error al sincronizar dirección con el header:', syncError);
+        // No bloquear el flujo si falla la sincronización
+        // Al menos guardar en localStorage
+        if (globalThis.window !== undefined) {
+          let userEmail = user?.email || '';
+          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+          userEmail = userInfo?.email || userEmail;
+          const checkoutAddress = {
+            id: shippingResponse.id,
+            usuario_id: shippingResponse.usuarioId || '',
+            email: userEmail,
+            linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
+            codigo_dane: shippingResponse.codigo_dane || '',
+            ciudad: shippingResponse.ciudad || '',
+            pais: shippingResponse.pais || 'Colombia',
+            esPredeterminada: true,
+          };
+          globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+          globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
+        }
       }
 
       // Callback with the created address
@@ -334,8 +375,14 @@ export default function AddNewAddressForm({
   const findCityCodeByName = (cityName: string): string => {
     if (!cityName) return "";
 
+    // Limpiar el nombre de la ciudad (remover "D.C.", comas, etc.)
+    const cleanCityName = cityName
+      .split(',')[0] // Tomar solo la primera parte antes de la coma
+      .replaceAll(/D\.C\./gi, '') // Remover "D.C."
+      .trim();
+
     // Normalizar el nombre de la ciudad para comparación
-    const normalizedName = cityName
+    const normalizedName = cleanCityName
       .toLowerCase()
       .normalize("NFD")
       .replaceAll(/[\u0300-\u036f]/g, ""); // Remover acentos
@@ -346,11 +393,17 @@ export default function AddNewAddressForm({
         .toLowerCase()
         .normalize("NFD")
         .replaceAll(/[\u0300-\u036f]/g, "");
-      return (
-        normalizedCityName === normalizedName ||
-        normalizedCityName.includes(normalizedName) ||
-        normalizedName.includes(normalizedCityName)
-      );
+      
+      // Comparar nombres normalizados
+      const exactMatch = normalizedCityName === normalizedName;
+      const partialMatch = normalizedCityName.includes(normalizedName) || 
+                          normalizedName.includes(normalizedCityName);
+      
+      // También verificar si el nombre original contiene la ciudad (sin normalizar)
+      const originalMatch = c.nombre.toLowerCase().includes(cleanCityName.toLowerCase()) ||
+                           cleanCityName.toLowerCase().includes(c.nombre.toLowerCase());
+      
+      return exactMatch || partialMatch || originalMatch;
     });
 
     return city?.codigo || "";
@@ -365,7 +418,7 @@ export default function AddNewAddressForm({
       const cityCode = findCityCodeByName(extractedCity);
       if (cityCode) {
         setFormData((prev) => ({ ...prev, ciudad: cityCode }));
-        setIsCityAutoCompleted(true); // Marcar como auto-completada
+        setIsCityAutoCompleted(true); // Marcar como auto-completada y ocultar campo
         // Limpiar error de ciudad si existe
         setErrors((prev) => {
           const newErrors = { ...prev };
@@ -373,12 +426,18 @@ export default function AddNewAddressForm({
           return newErrors;
         });
       } else {
-        // Si no se encuentra la ciudad, permitir selección manual
+        // Si no se encuentra la ciudad en la lista, mostrar el campo
+        // para que el usuario pueda seleccionarla manualmente
         setIsCityAutoCompleted(false);
         setFormData((prev) => ({ ...prev, ciudad: "" }));
+        // Mostrar un error informativo
+        setErrors((prev) => ({
+          ...prev,
+          ciudad: `No se encontró la ciudad "${extractedCity}" en la lista. Por favor, selecciónala manualmente.`,
+        }));
       }
     } else {
-      // Si no hay ciudad en la dirección, permitir selección manual
+      // Si no hay ciudad en la dirección, mostrar campo para selección manual
       setIsCityAutoCompleted(false);
       setFormData((prev) => ({ ...prev, ciudad: "" }));
     }

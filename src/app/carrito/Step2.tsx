@@ -11,6 +11,7 @@ import { apiPost } from "@/lib/api-client";
 import { tradeInEndpoints } from "@/lib/api";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
+import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
 import {
   validateTradeInProducts,
   getTradeInValidationMessage,
@@ -80,6 +81,9 @@ export default function Step2({
     deviceName: string;
     value: number;
   } | null>(null);
+
+  // Estado para controlar el modal de Trade-In
+  const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
 
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo
@@ -307,10 +311,67 @@ export default function Step2({
     }
   }, [router]);
 
-  // Handle Trade-In removal
+  // Handler para abrir el modal de Trade-In (para cambiar producto)
+  const handleOpenTradeInModal = () => {
+    setIsTradeInModalOpen(true);
+  };
+
+  // Handler para cuando se completa el Trade-In
+  const handleCompleteTradeIn = (deviceName: string, value: number) => {
+    // Cargar datos desde localStorage (ya guardados por handleFinalContinue)
+    try {
+      const raw = localStorage.getItem("imagiq_trade_in");
+      if (raw) {
+        const stored = JSON.parse(raw) as { deviceName?: string; value?: number; completed?: boolean };
+        const newTradeInData = {
+          deviceName: stored.deviceName || deviceName,
+          value: stored.value || value,
+          completed: true,
+        };
+        setTradeInData(newTradeInData);
+      } else {
+        // Fallback: guardar en localStorage si no existe (importante para usuarios NO logueados)
+        const tradeInDataToSave = {
+          deviceName,
+          value,
+          completed: true,
+        };
+        try {
+          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInDataToSave));
+          console.log("✅ Trade-in guardado en localStorage (respaldo):", tradeInDataToSave);
+        } catch (error) {
+          console.error("❌ Error al guardar trade-in en localStorage (respaldo):", error);
+        }
+        setTradeInData(tradeInDataToSave);
+      }
+    } catch (error) {
+      // Fallback simple: guardar en localStorage como último recurso
+      console.error("❌ Error al cargar trade-in desde localStorage:", error);
+      const newTradeInData = {
+        deviceName,
+        value,
+        completed: true,
+      };
+      try {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+        console.log("✅ Trade-in guardado en localStorage (fallback):", newTradeInData);
+      } catch (storageError) {
+        console.error("❌ Error al guardar trade-in en localStorage (fallback):", storageError);
+      }
+      setTradeInData(newTradeInData);
+    }
+    setIsTradeInModalOpen(false);
+  };
+
+  // Handler para cancelar sin completar
+  const handleCancelWithoutCompletion = () => {
+    setIsTradeInModalOpen(false);
+  };
+
+  // Handle Trade-In removal (ahora abre el modal para cambiar producto)
   const handleRemoveTradeIn = () => {
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
+    // Abrir modal para cambiar producto en lugar de remover directamente
+    handleOpenTradeInModal();
   };
 
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
@@ -388,9 +449,9 @@ export default function Step2({
   }, [cartProducts]);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 relative z-10">
+    <div className="w-full bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-32 md:pb-16 relative">
       {/* Fondo blanco sólido para cubrir cualquier animación de fondo */}
-      <div className="fixed inset-0 bg-white -z-10" />
+      <div className="fixed inset-0 bg-white -z-10 pointer-events-none" />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Login y invitado */}
         <div className="col-span-2 flex flex-col gap-8">
@@ -626,7 +687,7 @@ export default function Step2({
           </div>
         </div>
         {/* Resumen de compra con Step4OrderSummary */}
-        <div className="flex flex-col gap-4">
+        <aside className="flex flex-col gap-4">
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             onBack={onBack}
@@ -638,6 +699,7 @@ export default function Step2({
               !tradeInValidation.isValid
             }
             isProcessing={loading}
+            isSticky={false}
             deliveryMethod={
               typeof window !== "undefined"
                 ? (() => {
@@ -651,7 +713,7 @@ export default function Step2({
             }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen */}
+          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
           {tradeInData?.completed && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
@@ -676,8 +738,16 @@ export default function Step2({
               ¡Compra realizada como invitado!
             </div>
           )}
-        </div>
+        </aside>
       </div>
+
+      {/* Modal de Trade-In para cambiar producto */}
+      <TradeInModal
+        isOpen={isTradeInModalOpen}
+        onClose={() => setIsTradeInModalOpen(false)}
+        onCompleteTradeIn={handleCompleteTradeIn}
+        onCancelWithoutCompletion={handleCancelWithoutCompletion}
+      />
     </div>
   );
 }

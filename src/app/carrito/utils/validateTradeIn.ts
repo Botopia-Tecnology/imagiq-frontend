@@ -38,13 +38,17 @@ export function validateTradeInProducts(products: CartProduct[]): {
     };
   }
 
-  // Validación 2: Buscar productos que tienen indRetoma === 0 o undefined (no aplican para el beneficio)
-  // IMPORTANTE: indRetoma === 0 significa NO aplica, indRetoma === 1 significa SÍ aplica
+  // Validación 2: Buscar productos que tienen indRetoma === 0 (no aplican para el beneficio)
+  // IMPORTANTE: 
+  // - indRetoma === 0 significa NO aplica
+  // - indRetoma === 1 significa SÍ aplica
+  // - indRetoma === undefined significa que aún no se ha verificado, NO tratarlo como "no aplica"
   const productsWithoutRetoma = products.filter(
-    (product) => product.indRetoma === 0 || product.indRetoma === undefined
+    (product) => product.indRetoma === 0
   );
 
-  // Si hay productos con indRetoma === 0 (no aplican) y había un trade-in activo, significa que el producto cambió de 1 (aplicaba) a 0 (no aplica)
+  // Si hay productos con indRetoma === 0 (no aplican) y había un trade-in activo, 
+  // significa que el producto cambió de 1 (aplicaba) a 0 (no aplica)
   // IMPORTANTE: Solo mostrar el mensaje "Te removimos" si había un trade-in activo en localStorage
   if (productsWithoutRetoma.length > 0 && hasActiveTradeIn) {
     return {
@@ -61,6 +65,23 @@ export function validateTradeInProducts(products: CartProduct[]): {
     return {
       isValid: false,
       productsWithoutRetoma,
+      hasMultipleProducts: false,
+    };
+  }
+
+  // IMPORTANTE: Si el producto tiene indRetoma === undefined, no validar aún (aún no se ha verificado)
+  // Solo validar cuando indRetoma está definido (0 o 1)
+  const productsWithUndefined = products.filter(
+    (product) => product.indRetoma === undefined
+  );
+  
+  // Si hay productos con indRetoma undefined y hay un trade-in activo, mantener el trade-in
+  // hasta que se verifique el indRetoma
+  if (productsWithUndefined.length > 0 && hasActiveTradeIn) {
+    // Mantener el trade-in activo hasta que se verifique indRetoma
+    return {
+      isValid: true,
+      productsWithoutRetoma: [],
       hasMultipleProducts: false,
     };
   }

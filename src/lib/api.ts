@@ -365,15 +365,59 @@ export const categoriesEndpoints = {
       }
 
       inFlight = (async () => {
-        const resp = await apiClient.get<VisibleCategoryComplete[]>('/api/categorias/visibles/completas');
+        // Intentar primero con V2 (incluye estadísticas de bundles)
+        let resp = await apiClient.get<VisibleCategoryCompleteV2[]>('/api/categorias/v2/visibles/completas');
+        
+        // Si V2 falla, hacer fallback a V1
+        if (!resp.success || !resp.data) {
+          resp = await apiClient.get<VisibleCategoryComplete[]>('/api/categorias/visibles/completas');
+        }
+        
         if (resp.success && resp.data) {
-          cache = (resp.data as VisibleCategoryComplete[])
+          // Convertir V2 a formato compatible con V1 si es necesario
+          const categories = (resp.data as (VisibleCategoryComplete | VisibleCategoryCompleteV2)[])
+            .filter(c => c.activo)
+            .sort((a, b) => a.orden - b.orden);
+          
+          cache = categories as VisibleCategoryComplete[];
+          lastError = null;
+        } else {
+          cache = cache || [];
+          lastError = resp.message || 'Error al cargar categorías completas';
+        }
+      })();
+
+      await inFlight;
+      inFlight = null;
+      return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+    };
+  })(),
+
+  // Nueva función para obtener categorías completas V2 con estadísticas de bundles
+  getCompleteCategoriesV2: (() => {
+    let cache: VisibleCategoryCompleteV2[] | undefined;
+    let inFlight: Promise<void> | null = null;
+    let lastError: string | null = null;
+
+    return async (): Promise<ApiResponse<VisibleCategoryCompleteV2[]>> => {
+      if (cache) {
+        return { data: cache, success: true };
+      }
+      if (inFlight) {
+        await inFlight;
+        return { data: cache ?? [], success: !lastError, message: lastError || undefined };
+      }
+
+      inFlight = (async () => {
+        const resp = await apiClient.get<VisibleCategoryCompleteV2[]>('/api/categorias/v2/visibles/completas');
+        if (resp.success && resp.data) {
+          cache = (resp.data as VisibleCategoryCompleteV2[])
             .filter(c => c.activo)
             .sort((a, b) => a.orden - b.orden);
           lastError = null;
         } else {
           cache = cache || [];
-          lastError = resp.message || 'Error al cargar categorías completas';
+          lastError = resp.message || 'Error al cargar categorías completas V2';
         }
       })();
 
@@ -397,7 +441,7 @@ const submenusByMenuInFlight: Record<string, Promise<void> | undefined> = {};
  * Esto evita múltiples peticiones HTTP al backend
  * Guarda tanto arrays con submenús como arrays vacíos para evitar futuras peticiones
  */
-export const populateSubmenusCache = (completeCategories: VisibleCategoryComplete[]): void => {
+export const populateSubmenusCache = (completeCategories: (VisibleCategoryComplete | VisibleCategoryCompleteV2)[]): void => {
   completeCategories.forEach((category) => {
     category.menus?.forEach((menu) => {
       if (menu.uuid && menu.submenus !== undefined) {
@@ -666,6 +710,24 @@ export interface VisibleCategoryComplete {
   createdAt: string;
   updatedAt: string;
   menus: Menu[];
+}
+
+// V2 interfaces with bundle statistics
+export interface SubmenuV2 extends Submenu {
+  totalBundles?: number;
+  bundlesActive?: number;
+}
+
+export interface MenuV2 extends Menu {
+  totalBundles?: number;
+  bundlesActive?: number;
+  submenus?: SubmenuV2[];
+}
+
+export interface VisibleCategoryCompleteV2 extends VisibleCategoryComplete {
+  totalBundles?: number;
+  bundlesActive?: number;
+  menus: MenuV2[];
 }
 
 // Trade-in (Entrego y Estreno) types

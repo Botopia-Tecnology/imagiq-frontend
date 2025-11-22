@@ -30,21 +30,6 @@ export default function HomePage() {
     duration: 700,
     direction: "up",
   });
-  const galaxyShowcaseReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  }); 
-  const aiTVsReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
-  const bespokeAIReveal = useScrollReveal<HTMLDivElement>({
-    offset: 80,
-    duration: 600,
-    direction: "up",
-  });
   // const categoriesReveal = useScrollReveal<HTMLDivElement>({
   //   offset: 80,
   //   duration: 600,
@@ -101,30 +86,24 @@ export default function HomePage() {
         <motion.div ref={heroReveal.ref} {...heroReveal.motionProps}>
           <HeroSection />
         </motion.div>
-        <motion.div
-          ref={galaxyShowcaseReveal.ref}
-          {...galaxyShowcaseReveal.motionProps}
-        >
-          <DynamicBanner placement="home-2" className="mt-6 md:mt-8 lg:mt-12">
-            <GalaxyShowcaseBanner />
-          </DynamicBanner>
-        </motion.div>
+        {/* Removed Framer Motion to avoid conflicts with internal carousel animations */}
+        <DynamicBanner placement="home-2" className="mt-6 md:mt-8 lg:mt-12">
+          <GalaxyShowcaseBanner />
+        </DynamicBanner>
         <motion.div ref={showcaseReveal.ref} {...showcaseReveal.motionProps}>
           <ProductShowcase />
         </motion.div>
-        <motion.div ref={aiTVsReveal.ref} {...aiTVsReveal.motionProps}>
-          <DynamicBanner placement="home-3" className="mt-6 md:mt-8 lg:mt-12">
-            <AITVsBanner />
-          </DynamicBanner>
-        </motion.div>
+        {/* Removed Framer Motion to avoid conflicts with internal carousel animations */}
+        <DynamicBanner placement="home-3" className="mt-6 md:mt-8 lg:mt-12">
+          <AITVsBanner />
+        </DynamicBanner>
         <TVProductsGrid />
-        <motion.div ref={bespokeAIReveal.ref} {...bespokeAIReveal.motionProps}>
-          {/* Usar banner dinámico desde el placement "home-4".
-              Si no hay banner en el API, renderizamos el fallback `BespokeAIBanner`. */}
-          <DynamicBanner placement="home-4" className="mt-6 md:mt-8 lg:mt-12">
-            <BespokeAIBanner />
-          </DynamicBanner>
-        </motion.div>
+        {/* Removed Framer Motion to avoid conflicts with internal carousel animations */}
+        {/* Usar banner dinámico desde el placement "home-4".
+            Si no hay banner en el API, renderizamos el fallback `BespokeAIBanner`. */}
+        <DynamicBanner placement="home-4" className="mt-6 md:mt-8 lg:mt-12">
+          <BespokeAIBanner />
+        </DynamicBanner>
         <AppliancesProductsGrid />
         {/* <motion.div
           ref={categoriesReveal.ref}

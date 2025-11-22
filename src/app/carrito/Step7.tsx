@@ -111,7 +111,7 @@ export default function Step7({ onBack }: Step7Props) {
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
-  const [loggedUser, setLoggedUser] = useSecureStorage<User | null>(
+  const [loggedUser, _] = useSecureStorage<User | null>(
     "imagiq_user",
     null
   );

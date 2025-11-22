@@ -27,6 +27,8 @@ import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
 import { apiPost } from "@/lib/api-client";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { productEndpoints } from "@/lib/api";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 interface Step7Props {
   onBack?: () => void;
@@ -105,6 +107,10 @@ export default function Step7({ onBack }: Step7Props) {
     useState<ShippingVerification | null>(null);
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
+  const [loggedUser, setLoggedUser] = useSecureStorage<User | null>(
+    "imagiq_user",
+    null
+  );
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -721,9 +727,7 @@ export default function Step7({ onBack }: Step7Props) {
             shippingAmount: String(calculations.shipping),
             userInfo: {
               direccionId: billingData.direccion?.id || "",
-              userId:
-                authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+              userId: authContext.user?.id || String(loggedUser?.id),
             },
             cardTokenId: paymentData.savedCard?.id || "",
             informacion_facturacion,
@@ -758,7 +762,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                String(loggedUser?.id),
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -791,7 +795,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                String(loggedUser?.id),
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),

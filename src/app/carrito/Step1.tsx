@@ -1,21 +1,20 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import ProductCard from "./ProductCard";
-import Sugerencias from "./Sugerencias";
-import { useCart } from "@/hooks/useCart";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
-import { apiClient, type ProductApiData } from "@/lib/api";
-import { getCloudinaryUrl } from "@/lib/cloudinary";
+import { useCart } from "@/hooks/useCart";
 import { useAnalyticsWithUser } from "@/lib/analytics";
-import { safeGetLocalStorage } from "@/lib/localStorage";
-import Step4OrderSummary from "./components/Step4OrderSummary";
-import { tradeInEndpoints } from "@/lib/api";
-import {
-  validateTradeInProducts,
-  getTradeInValidationMessage,
-} from "./utils/validateTradeIn";
+import { tradeInEndpoints, type ProductApiData } from "@/lib/api";
+import { apiDelete, apiPut } from "@/lib/api-client";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
+import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import Step4OrderSummary from "./components/Step4OrderSummary";
+import ProductCard from "./ProductCard";
+import Sugerencias from "./Sugerencias";
+import {
+  getTradeInValidationMessage,
+  validateTradeInProducts,
+} from "./utils/validateTradeIn";
 
 /**
  * Paso 1 del carrito de compras
@@ -74,8 +73,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía
       // El canPickUp global se calcula en Step4OrderSummary
       const productApplies =
-        cartProducts.length === 1 && 
-        cartProducts[0]?.indRetoma === 1;
+        cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
       if (productApplies) {
         setTradeInData({
           deviceName: cartProducts[0].name,
@@ -90,7 +88,6 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = useRef<Set<string>>(new Set());
-
 
   // Verificar indRetoma para cada producto único en el carrito
   useEffect(() => {
@@ -200,17 +197,10 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       // Actualizar cantidad usando el hook
       // El canPickUp global se recalculará automáticamente en Step4OrderSummary
       updateQuantity(product.sku, cantidad);
-      
-      // También actualizar en el backend si el usuario está registrado
-      const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-      if (user?.id) {
-        apiClient.put(
-          `/api/cart/${user.id}/items/${product.sku}`,
-          {
-            quantity: cantidad,
-          }
-        );
-      }
+
+      apiPut(`/api/cart/items/${product.sku}`, {
+        quantity: cantidad,
+      });
     }
   };
 
@@ -218,12 +208,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   // Esto evita el problema de actualizar el estado durante el renderizado
   const handleRemove = (idx: number) => {
     const product = cartProducts[idx];
-    const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
     const productId = product?.sku;
     if (product) {
-      apiClient.delete(
-        `/api/cart/${user?.id ?? "unregistered"}/items/${productId}`
-      );
+      apiDelete(`/api/cart/items/${productId}`);
       setTimeout(() => {
         removeProduct(product.sku);
       }, 0);
@@ -272,34 +259,39 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
   }, [cartProducts, tradeInData]);
 
   // Estado para saber si canPickUp global está cargando
-  const [isLoadingCanPickUpGlobal, setIsLoadingCanPickUpGlobal] = React.useState(false);
+  const [isLoadingCanPickUpGlobal, setIsLoadingCanPickUpGlobal] =
+    React.useState(false);
 
   // Estado para controlar el loading cuando se espera canPickUp
-  const [isWaitingForCanPickUp, setIsWaitingForCanPickUp] = React.useState(false);
+  const [isWaitingForCanPickUp, setIsWaitingForCanPickUp] =
+    React.useState(false);
 
   // Callback para recibir el estado de canPickUp desde Step4OrderSummary
-  const handleCanPickUpReady = React.useCallback((isReady: boolean, isLoading: boolean) => {
-    setIsLoadingCanPickUpGlobal(isLoading);
-    
-    // Si estábamos esperando y ya terminó, avanzar automáticamente
-    if (isWaitingForCanPickUp && !isLoading) {
-      console.log('✅ canPickUp calculado, avanzando automáticamente...');
-      setIsWaitingForCanPickUp(false);
-      
-      // Track del evento begin_checkout para analytics
-      trackBeginCheckout(
-        cartProducts.map((p) => ({
-          item_id: p.sku,
-          item_name: p.name,
-          price: Number(p.price),
-          quantity: p.quantity,
-        })),
-        total
-      );
-      
-      onContinue();
-    }
-  }, [isWaitingForCanPickUp, cartProducts, total, onContinue]);
+  const handleCanPickUpReady = React.useCallback(
+    (isReady: boolean, isLoading: boolean) => {
+      setIsLoadingCanPickUpGlobal(isLoading);
+
+      // Si estábamos esperando y ya terminó, avanzar automáticamente
+      if (isWaitingForCanPickUp && !isLoading) {
+        console.log("✅ canPickUp calculado, avanzando automáticamente...");
+        setIsWaitingForCanPickUp(false);
+
+        // Track del evento begin_checkout para analytics
+        trackBeginCheckout(
+          cartProducts.map((p) => ({
+            item_id: p.sku,
+            item_name: p.name,
+            price: Number(p.price),
+            quantity: p.quantity,
+          })),
+          total
+        );
+
+        onContinue();
+      }
+    },
+    [isWaitingForCanPickUp, cartProducts, total, onContinue]
+  );
 
   // Función para manejar el click en continuar pago
   const handleContinue = async () => {
@@ -317,28 +309,30 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
     // IMPORTANTE: Si canPickUp global no está listo, esperar hasta que lo esté
     if (isLoadingCanPickUpGlobal) {
-      console.log('⏳ Esperando a que canPickUp global se calcule...');
+      console.log("⏳ Esperando a que canPickUp global se calcule...");
       setIsWaitingForCanPickUp(true);
-      
+
       // El callback handleCanPickUpReady se encargará de avanzar automáticamente cuando termine
       // También esperamos con timeout por seguridad
       try {
         const maxWait = 10000; // 10 segundos
         const startTime = Date.now();
 
-        while (isLoadingCanPickUpGlobal && (Date.now() - startTime) < maxWait) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+        while (isLoadingCanPickUpGlobal && Date.now() - startTime < maxWait) {
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
 
         // Si aún está cargando después del timeout, mostrar error
         if (isLoadingCanPickUpGlobal) {
-          console.error('❌ Timeout esperando canPickUp global');
+          console.error("❌ Timeout esperando canPickUp global");
           setIsWaitingForCanPickUp(false);
-          alert('Hubo un problema al verificar la disponibilidad de recogida. Por favor intenta de nuevo.');
+          alert(
+            "Hubo un problema al verificar la disponibilidad de recogida. Por favor intenta de nuevo."
+          );
           return;
         }
       } catch (error) {
-        console.error('Error esperando canPickUp:', error);
+        console.error("Error esperando canPickUp:", error);
         setIsWaitingForCanPickUp(false);
       }
     } else {
@@ -385,9 +379,11 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     localStorage.removeItem("imagiq_trade_in");
 
     // Si el producto aplica (indRetoma === 1 Y canPickUp === true), volver a mostrar el banner guía
-    if (cartProducts.length === 1 && 
-        cartProducts[0]?.indRetoma === 1 && 
-        cartProducts[0]?.canPickUp === true) {
+    if (
+      cartProducts.length === 1 &&
+      cartProducts[0]?.indRetoma === 1 &&
+      cartProducts[0]?.canPickUp === true
+    ) {
       setTradeInData({
         deviceName: cartProducts[0].name,
         value: 0,
@@ -407,7 +403,11 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     try {
       const raw = localStorage.getItem("imagiq_trade_in");
       if (raw) {
-        const stored = JSON.parse(raw) as { deviceName?: string; value?: number; completed?: boolean };
+        const stored = JSON.parse(raw) as {
+          deviceName?: string;
+          value?: number;
+          completed?: boolean;
+        };
         const newTradeInData = {
           deviceName: stored.deviceName || deviceName,
           value: stored.value || value,
@@ -460,7 +460,9 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
           : undefined,
         isGuide: !tradeInData!.completed,
         showErrorSkeleton,
-        shippingCity: cartProducts.find(p => p.indRetoma === 1 && p.canPickUp === true)?.shippingCity,
+        shippingCity: cartProducts.find(
+          (p) => p.indRetoma === 1 && p.canPickUp === true
+        )?.shippingCity,
       }
     : null;
 
@@ -591,8 +593,20 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
               {isWaitingForCanPickUp ? (
                 <span className="flex items-center justify-center gap-2">
                   <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                    />
                   </svg>
                   Verificando...
                 </span>

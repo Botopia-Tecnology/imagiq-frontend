@@ -14,6 +14,8 @@ import {
   getTradeInValidationMessage,
 } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 export default function Step4({
   onBack,
@@ -51,6 +53,10 @@ export default function Step4({
     fetchZeroInterestInfo,
     setSaveInfo,
   } = useCheckoutLogic();
+  const [loggedUser, setLoggedUser] = useSecureStorage<User | null>(
+    "imagiq_user",
+    null
+  );
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = React.useState<{
@@ -166,10 +172,7 @@ export default function Step4({
         showCloseButton={false}
       >
         <AddCardForm
-          userId={
-            authContext.user?.id ||
-            JSON.parse(localStorage.getItem("imagiq_user")!).id
-          }
+          userId={authContext.user?.id || String(loggedUser?.id)}
           onSuccess={handleAddCardSuccess}
           onCancel={handleCloseAddCardModal}
           showAsModal={true}

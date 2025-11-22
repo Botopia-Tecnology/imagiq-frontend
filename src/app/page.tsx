@@ -22,6 +22,7 @@ import StoresCarousel from "@/components/StoresCarousel";
 import ProductShowcase from "@/components/sections/ProductShowcase";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { apiGet } from "@/lib/api-client";
 
 export default function HomePage() {
   // Configuración para animaciones scroll reveal

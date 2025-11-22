@@ -220,18 +220,7 @@ export default function Sugerencias({
   const [loading, setLoading] = useState(true);
 
   // Extraer modelos únicos de los productos del carrito
-  const modelos = useMemo(() => {
-    const extracted = extractUniqueModelos(cartProducts);
-    if (process.env.NODE_ENV === 'development' && cartProducts.length > 0) {
-      console.log('🛒 Sugerencias - cartProducts:', cartProducts.map(p => ({
-        name: p.name,
-        modelo: p.modelo,
-        desDetallada: p.desDetallada,
-      })));
-      console.log('🔍 Sugerencias - modelos extraídos:', extracted);
-    }
-    return extracted;
-  }, [cartProducts]);
+  const modelos = useMemo(() => extractUniqueModelos(cartProducts), [cartProducts]);
 
   // SKUs de productos ya en el carrito (para no sugerirlos)
   const cartSkus = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
@@ -244,12 +233,24 @@ export default function Sugerencias({
   }, [cartProducts.length]);
 
   const fetchAccessoriosRelacionados = useCallback(async () => {
+    // Intentar usar caché primero
+    const cachedCompatibles = getCachedData(modelos);
+    const cachedUniversal = getCachedUniversalData();
+
+    // Si tenemos ambos caches válidos, usarlos directamente
+    if (cachedCompatibles && cachedUniversal) {
+      setSugerenciasCompatibles(cachedCompatibles.filter(p => !cartSkus.has(p.sku[0])));
+      setSugerenciasUniversales(cachedUniversal.filter(p => !cartSkus.has(p.sku[0])));
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const response = await productEndpoints.getFiltered({
         subcategoria: "Accesorios",
-        limit: 100,
+        limit: 50, // Reducido de 100 - solo necesitamos ~8 productos
         sortBy: "precio",
         sortOrder: "desc",
       });
@@ -265,8 +266,6 @@ export default function Sugerencias({
       const compatibleAccessories: ProductApiData[] = [];
       const universalAccessories: ProductApiData[] = [];
 
-      const cachedUniversal = getCachedUniversalData();
-
       for (const product of allProducts) {
         const sku = product.sku[0];
         if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
@@ -276,13 +275,16 @@ export default function Sugerencias({
         if (!hasStock(product)) continue;
 
         if (isUniversalAccessory(product)) {
-          universalAccessories.push(product);
+          if (universalAccessories.length < 4) universalAccessories.push(product);
         } else if (modelos.length > 0) {
           const isCompatible = isAccessoryCompatible(product, modelos);
-          if (isCompatible) {
+          if (isCompatible && compatibleAccessories.length < 4) {
             compatibleAccessories.push(product);
           }
         }
+
+        // Early exit si ya tenemos suficientes
+        if (compatibleAccessories.length >= 4 && universalAccessories.length >= 4) break;
       }
 
       // Ordenar por precio (mayor primero)
@@ -292,26 +294,13 @@ export default function Sugerencias({
         return priceB - priceA;
       });
 
-      const matchedProducts = compatibleAccessories.slice(0, 4);
-      setSugerenciasCompatibles(matchedProducts);
-      setCacheData(modelos, matchedProducts);
+      setSugerenciasCompatibles(compatibleAccessories);
+      setCacheData(modelos, compatibleAccessories);
 
-      const universalProducts = cachedUniversal || universalAccessories.slice(0, 4);
-      setSugerenciasUniversales(universalProducts);
-      if (!cachedUniversal) {
-        setCacheUniversalData(universalProducts);
-      }
+      setSugerenciasUniversales(universalAccessories);
+      setCacheUniversalData(universalAccessories);
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🎯 Sugerencias:', {
-          modelosBuscados: modelos,
-          compatiblesEncontrados: matchedProducts.length,
-          universalesEncontrados: universalProducts.length,
-        });
-      }
-
-    } catch (error) {
-      console.error("Error fetching accessories:", error);
+    } catch {
       setSugerenciasCompatibles([]);
       setSugerenciasUniversales([]);
     } finally {

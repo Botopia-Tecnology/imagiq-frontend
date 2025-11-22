@@ -78,14 +78,17 @@ export function AddressAutocomplete({
   } = usePlacesAutocomplete({
     options: defaultOptions,
     onPlaceSelect: (place) => {
+      // Asegurar que el dropdown esté cerrado
+      setIsOpen(false);
       onPlaceSelect?.(place);
       if (clearOnSelect) {
         reset();
       }
-      setIsOpen(false);
     },
     onError: (error) => {
       console.error('Error en autocompletado:', error);
+      // Cerrar dropdown incluso si hay error
+      setIsOpen(false);
     },
     validateCoverage: shouldValidateCoverage
   });
@@ -114,6 +117,8 @@ export function AddressAutocomplete({
    * Maneja la selección de una predicción
    */
   const handlePredictionSelect = async (prediction: PlacePrediction) => {
+    // Cerrar dropdown inmediatamente al seleccionar
+    setIsOpen(false);
     await selectPlace(prediction);
   };
 

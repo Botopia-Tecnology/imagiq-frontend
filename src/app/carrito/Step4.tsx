@@ -84,6 +84,18 @@ export default function Step4({
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -212,7 +224,7 @@ export default function Step4({
         </form>
 
         {/* Resumen de compra y Trade-In */}
-        <div className="space-y-4">
+        <aside className="space-y-4">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -224,9 +236,21 @@ export default function Step4({
             onBack={onBack}
             buttonText="Continuar"
             disabled={isProcessing || !tradeInValidation.isValid}
+            isSticky={false}
+            deliveryMethod={
+              typeof window !== "undefined"
+                ? (() => {
+                    const method = localStorage.getItem("checkout-delivery-method");
+                    if (method === "tienda") return "pickup";
+                    if (method === "domicilio") return "delivery";
+                    if (method === "delivery" || method === "pickup") return method;
+                    return undefined;
+                  })()
+                : undefined
+            }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen */}
+          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
           {tradeInData?.completed && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
@@ -239,7 +263,7 @@ export default function Step4({
               }
             />
           )}
-        </div>
+        </aside>
       </div>
     </div>
   );

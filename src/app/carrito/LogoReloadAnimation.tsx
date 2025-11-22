@@ -15,9 +15,9 @@ type LogoReloadAnimationProps = {
   onFinish?: () => void;
 };
 
-// Logo Samsung desde Cloudinary (SVG vectorial - mejor calidad)
+// Logo Samsung desde Cloudinary (PNG - mejor compatibilidad con Safari en máscaras SVG)
 const LOGO_SRC =
-  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg";
+  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.png";
 
 /**
  * LogoReloadAnimation
@@ -33,9 +33,19 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
 }) => {
   // Estado para controlar el cambio de texto
   const [showSecondText, setShowSecondText] = useState(false);
+  // Estado para controlar la pre-carga de la imagen (fix Safari)
+  const [imageLoaded, setImageLoaded] = useState(false);
 
   // Callback para finalizar solo cuando la animación SVG termina
   const animationRef = useRef<SVGAnimateElement | null>(null);
+
+  // Pre-cargar la imagen del logo para Safari (fix CORS/loading issues)
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setImageLoaded(true);
+    img.onerror = () => setImageLoaded(true); // Mostrar de todos modos si falla
+    img.src = LOGO_SRC;
+  }, []);
   useEffect(() => {
     if (open && animationRef.current) {
       const animateNode = animationRef.current;
@@ -90,7 +100,14 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           <defs>
             {/* Máscara SVG: la ola azul sube solo dentro del logo PNG */}
             <mask id="wave-logo-mask">
-              <image href={LOGO_SRC} x="0" y="0" width="1000" height="420" />
+              <image
+                href={LOGO_SRC}
+                x="0"
+                y="0"
+                width="1000"
+                height="420"
+                crossOrigin="anonymous"
+              />
             </mask>
             <linearGradient
               id="shine"
@@ -156,6 +173,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             y="0"
             width="1000"
             height="420"
+            crossOrigin="anonymous"
             style={{
               filter:
                 "brightness(0) invert(1) drop-shadow(0 2px 8px #2020201a) drop-shadow(0 0px 80px #fff8)",
@@ -189,7 +207,8 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
   ); // Solo se recrea cuando cambia el texto, manteniendo la animación SVG intacta
 
   // Early return después de todos los hooks para cumplir con Rules of Hooks
-  if (!open) return null;
+  // No mostrar hasta que la imagen esté cargada (fix Safari)
+  if (!open || !imageLoaded) return null;
 
   // Render principal
   return (

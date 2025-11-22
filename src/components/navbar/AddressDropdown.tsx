@@ -11,7 +11,7 @@ import AddNewAddressForm from "../../app/carrito/components/AddNewAddressForm";
 import { invalidateShippingOriginCache } from "@/hooks/useShippingOrigin";
 import { useDefaultAddress } from "@/hooks/useDefaultAddress";
 import { addressesService } from "@/services/addresses.service";
-import { syncAddress, syncNewAddress } from "@/lib/addressSync";
+import { syncAddress, syncNewAddress, direccionToAddress } from "@/lib/addressSync";
 
 interface AddressDropdownProps {
   showWhiteItems: boolean;
@@ -39,11 +39,66 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isFetchingRef = useRef(false);
+  const [guestAddress, setGuestAddress] = useState<Address | null>(null);
 
   // Verificar si estamos en el cliente
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Para usuarios invitados, leer dirección de localStorage
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      try {
+        const savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+        if (savedAddress) {
+          const direccion = JSON.parse(savedAddress);
+          // Convertir Direccion a Address usando la función helper
+          const address = direccionToAddress(direccion) as Address;
+          setGuestAddress(address);
+        } else {
+          setGuestAddress(null);
+        }
+      } catch (error) {
+        console.error('Error reading guest address from localStorage:', error);
+        setGuestAddress(null);
+      }
+    } else {
+      setGuestAddress(null);
+    }
+  }, [isAuthenticated, user?.id]);
+
+  // Escuchar cambios en localStorage para usuarios invitados
+  useEffect(() => {
+    if (!isAuthenticated || !user?.id) {
+      const handleStorageChange = (e: StorageEvent | Event) => {
+        const key = (e as StorageEvent).key;
+        if (key === 'checkout-address' || key === 'imagiq_default_address' || !key) {
+          try {
+            const savedAddress = globalThis.window?.localStorage.getItem('checkout-address');
+            if (savedAddress) {
+              const direccion = JSON.parse(savedAddress);
+              const address = direccionToAddress(direccion) as Address;
+              setGuestAddress(address);
+            } else {
+              setGuestAddress(null);
+            }
+          } catch (error) {
+            console.error('Error reading guest address from localStorage:', error);
+            setGuestAddress(null);
+          }
+        }
+      };
+
+      globalThis.window?.addEventListener('storage', handleStorageChange);
+      globalThis.window?.addEventListener('checkout-address-changed', handleStorageChange as EventListener);
+
+      return () => {
+        globalThis.window?.removeEventListener('storage', handleStorageChange);
+        globalThis.window?.removeEventListener('checkout-address-changed', handleStorageChange as EventListener);
+      };
+    }
+  }, [isAuthenticated, user?.id]);
 
   // Cargar direcciones al inicio si no hay dirección predeterminada
   useEffect(() => {
@@ -254,9 +309,81 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     };
   }, [open]);
 
-  // Si no hay usuario logueado, mostrar botón para agregar dirección que redirige al login
-  // Esta verificación debe ir ANTES del skeleton para que se muestre inmediatamente
+  // Si no hay usuario logueado pero hay dirección en localStorage, mostrarla
+  // Si no hay dirección, mostrar botón para agregar dirección que redirige al login
   if (!isAuthenticated || !user?.id) {
+    // Si hay dirección de invitado, mostrarla
+    if (guestAddress) {
+      const displayAddress = guestAddress;
+      return (
+        <div className="relative" ref={dropdownRef}>
+          {/* Botón para Desktop (>= 1280px) - Una línea */}
+          <button
+            className={cn(
+              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+              showWhiteItems ? "text-white/90" : "text-black/80"
+            )}
+            onClick={handleToggle}
+            title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
+            style={{ lineHeight: "1.4" }}
+            type="button"
+          >
+            <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
+            <span className="truncate block" style={{ lineHeight: "1.4" }}>
+              {displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
+            </span>
+            <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
+          </button>
+
+          {/* Botón para Mobile/Tablet (< 1280px) */}
+          {renderMobileTrigger ? (
+            <>{renderMobileTrigger({
+              onClick: handleToggle,
+              isOpen: open,
+              showWhiteItems,
+              displayAddress,
+            })}</>
+          ) : (
+            <button
+              className={cn(
+                "xl:hidden flex items-center justify-center w-10 h-10 hover:opacity-80 transition-opacity cursor-pointer",
+                "text-black"
+              )}
+              onClick={handleToggle}
+              title={displayAddress.direccionFormateada || displayAddress.lineaUno || displayAddress.ciudad || 'Dirección'}
+              type="button"
+            >
+              <MapPin className="w-5 h-5 text-black" />
+            </button>
+          )}
+
+          {/* Dropdown para mostrar la dirección (solo lectura para invitados) */}
+          {open && (
+            <div
+              className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-4">
+                <div className="mb-3">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-2">Dirección de envío</h3>
+                  <p className="text-sm text-gray-700">
+                    {displayAddress.direccionFormateada || displayAddress.lineaUno}
+                  </p>
+                  {displayAddress.ciudad && (
+                    <p className="text-xs text-gray-500 mt-1">{displayAddress.ciudad}</p>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500 italic">
+                  Inicia sesión para gestionar tus direcciones
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Si no hay dirección, mostrar botón para agregar dirección
     return (
       <div className="relative" ref={dropdownRef}>
         {/* Botón para Desktop (>= 1280px) */}

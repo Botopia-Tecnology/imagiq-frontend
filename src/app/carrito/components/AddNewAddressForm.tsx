@@ -9,6 +9,8 @@ import {
 } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
 import { useCities } from "@/hooks/useCities";
+import { useAuthContext } from "@/features/auth/context";
+import { syncAddress } from "@/lib/addressSync";
 
 // Tipo extendido para manejar diferentes estructuras de PlaceDetails
 type ExtendedPlaceDetails = PlaceDetails & {
@@ -31,6 +33,7 @@ export default function AddNewAddressForm({
   onCancel,
   withContainer = true,
 }: AddNewAddressFormProps) {
+  const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedAddress, setSelectedAddress] =
     useState<ExtendedPlaceDetails | null>(null);
@@ -58,6 +61,7 @@ export default function AddNewAddressForm({
   });
   const { cities } = useCities();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isCityAutoCompleted, setIsCityAutoCompleted] = useState(false);
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
@@ -70,7 +74,9 @@ export default function AddNewAddressForm({
       newErrors.nombreDireccion = "El nombre de la dirección es requerido";
     }
 
-    if (!formData.ciudad.trim()) {
+    // Solo validar ciudad si NO está auto-completada (campo visible)
+    // Si está auto-completada, la ciudad viene de Google Maps y es válida
+    if (!isCityAutoCompleted && !formData.ciudad.trim()) {
       newErrors.ciudad = "La ciudad es requerida";
     }
 
@@ -86,7 +92,8 @@ export default function AddNewAddressForm({
           "El nombre de la dirección de facturación es requerido";
       }
 
-      if (!formData.ciudad.trim()) {
+      // Solo validar ciudad si no está auto-completada
+      if (!isCityAutoCompleted && !formData.ciudad.trim()) {
         newErrors.ciudad = "La ciudad es requerida para facturación";
       }
     }
@@ -109,8 +116,6 @@ export default function AddNewAddressForm({
       if (!selectedAddress) {
         throw new Error("No se ha seleccionado una dirección válida");
       }
-
-      console.log("📍 Selected address object:", selectedAddress);
 
       // Obtener coordenadas de manera segura - manejar diferentes estructuras posibles
       let latitude: number;
@@ -172,24 +177,16 @@ export default function AddNewAddressForm({
         complemento: formData.complemento || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,
         puntoReferencia: formData.puntoReferencia || undefined,
-        ciudad: formData.ciudad || undefined,
+        // Solo enviar ciudad si es un código válido (string numérico)
+        ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
       };
 
-      console.log(
-        "📤 Creando dirección de envío en checkout:",
-        shippingAddressRequest
-      );
       const shippingResponse = await addressesService.createAddress(
         shippingAddressRequest
       );
-      console.log("✅ Dirección de envío creada:", shippingResponse);
 
       // Si no usa la misma dirección, crear dirección de facturación separada
       if (!formData.usarMismaParaFacturacion && selectedBillingAddress) {
-        console.log(
-          "📍 Selected billing address object:",
-          selectedBillingAddress
-        );
 
         // Obtener coordenadas de la dirección de facturación de manera segura
         let billingLatitude: number;
@@ -259,17 +256,52 @@ export default function AddNewAddressForm({
           instruccionesEntrega:
             formData.instruccionesEntregaFacturacion || undefined,
           puntoReferencia: formData.puntoReferenciaFacturacion || undefined,
-          ciudad: formData.ciudad || undefined,
+          // Solo enviar ciudad si es un código válido (string numérico)
+          ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
         };
 
-        console.log(
-          "📤 Creando dirección de facturación en checkout:",
+        await addressesService.createAddress(
           billingAddressRequest
         );
-        const billingResponse = await addressesService.createAddress(
-          billingAddressRequest
-        );
-        console.log("✅ Dirección de facturación creada:", billingResponse);
+      }
+
+      // Sincronizar la dirección con el header y localStorage
+      try {
+        // Obtener email del usuario desde localStorage si no está autenticado
+        let userEmail = user?.email || '';
+        if (!userEmail && globalThis.window !== undefined) {
+          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+          userEmail = userInfo?.email || '';
+        }
+
+        await syncAddress({
+          address: shippingResponse,
+          userEmail,
+          user,
+          loginFn: login,
+          fromHeader: false, // Viene del checkout/formulario
+        });
+      } catch (syncError) {
+        console.error('⚠️ Error al sincronizar dirección con el header:', syncError);
+        // No bloquear el flujo si falla la sincronización
+        // Al menos guardar en localStorage
+        if (globalThis.window !== undefined) {
+          let userEmail = user?.email || '';
+          const userInfo = JSON.parse(globalThis.window.localStorage.getItem('imagiq_user') || '{}');
+          userEmail = userInfo?.email || userEmail;
+          const checkoutAddress = {
+            id: shippingResponse.id,
+            usuario_id: shippingResponse.usuarioId || '',
+            email: userEmail,
+            linea_uno: shippingResponse.direccionFormateada || shippingResponse.lineaUno || '',
+            codigo_dane: shippingResponse.codigo_dane || '',
+            ciudad: shippingResponse.ciudad || '',
+            pais: shippingResponse.pais || 'Colombia',
+            esPredeterminada: true,
+          };
+          globalThis.window.localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+          globalThis.window.localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
+        }
       }
 
       // Callback with the created address
@@ -292,6 +324,7 @@ export default function AddNewAddressForm({
       });
       setSelectedAddress(null);
       setSelectedBillingAddress(null);
+      setIsCityAutoCompleted(false);
     } catch (error) {
       console.error("Error al agregar dirección:", error);
       const errorMessage =
@@ -303,6 +336,10 @@ export default function AddNewAddressForm({
   };
 
   const handleInputChange = (field: string, value: string) => {
+    // Si intentan modificar la ciudad y fue auto-completada, no permitirlo
+    if (field === "ciudad" && isCityAutoCompleted) {
+      return;
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -310,9 +347,101 @@ export default function AddNewAddressForm({
     }
   };
 
+  // Helper para extraer la ciudad de PlaceDetails
+  const extractCityFromPlace = (place: PlaceDetails): string => {
+    // Primero intentar usar el campo city directo
+    if (place.city) {
+      return place.city;
+    }
+
+    // Si no, buscar en addressComponents
+    const getAddressComponent = (componentTypes: string[]) => {
+      const component = place.addressComponents?.find((comp) =>
+        componentTypes.some((type) => comp.types.includes(type))
+      );
+      return component?.longName || component?.shortName || "";
+    };
+
+    return (
+      getAddressComponent([
+        "locality",
+        "administrative_area_level_2",
+        "sublocality",
+      ]) || ""
+    );
+  };
+
+  // Helper para encontrar el código de ciudad por nombre
+  const findCityCodeByName = (cityName: string): string => {
+    if (!cityName) return "";
+
+    // Limpiar el nombre de la ciudad (remover "D.C.", comas, etc.)
+    const cleanCityName = cityName
+      .split(',')[0] // Tomar solo la primera parte antes de la coma
+      .replaceAll(/D\.C\./gi, '') // Remover "D.C."
+      .trim();
+
+    // Normalizar el nombre de la ciudad para comparación
+    const normalizedName = cleanCityName
+      .toLowerCase()
+      .normalize("NFD")
+      .replaceAll(/[\u0300-\u036f]/g, ""); // Remover acentos
+
+    // Buscar coincidencia exacta o parcial
+    const city = cities.find((c) => {
+      const normalizedCityName = c.nombre
+        .toLowerCase()
+        .normalize("NFD")
+        .replaceAll(/[\u0300-\u036f]/g, "");
+      
+      // Comparar nombres normalizados
+      const exactMatch = normalizedCityName === normalizedName;
+      const partialMatch = normalizedCityName.includes(normalizedName) || 
+                          normalizedName.includes(normalizedCityName);
+      
+      // También verificar si el nombre original contiene la ciudad (sin normalizar)
+      const originalMatch = c.nombre.toLowerCase().includes(cleanCityName.toLowerCase()) ||
+                           cleanCityName.toLowerCase().includes(c.nombre.toLowerCase());
+      
+      return exactMatch || partialMatch || originalMatch;
+    });
+
+    return city?.codigo || "";
+  };
+
   const handleAddressSelect = (place: PlaceDetails) => {
-    console.log("✅ Dirección de envío seleccionada en checkout:", place);
     setSelectedAddress(place as ExtendedPlaceDetails);
+    
+    // Auto-completar la ciudad si está disponible en PlaceDetails
+    const extractedCity = extractCityFromPlace(place);
+    if (extractedCity) {
+      const cityCode = findCityCodeByName(extractedCity);
+      if (cityCode) {
+        setFormData((prev) => ({ ...prev, ciudad: cityCode }));
+        setIsCityAutoCompleted(true); // Marcar como auto-completada y ocultar campo
+        // Limpiar error de ciudad si existe
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.ciudad;
+          return newErrors;
+        });
+      } else {
+        // Si no se encuentra la ciudad en la lista, mostrar el campo
+        // para que el usuario pueda seleccionarla manualmente
+        setIsCityAutoCompleted(false);
+        setFormData((prev) => ({ ...prev, ciudad: "" }));
+        // Mostrar un error informativo
+        setErrors((prev) => ({
+          ...prev,
+          ciudad: `No se encontró la ciudad "${extractedCity}" en la lista. Por favor, selecciónala manualmente.`,
+        }));
+      }
+    } else {
+      // Si no hay ciudad en la dirección, mostrar campo para selección manual
+      setIsCityAutoCompleted(false);
+      setFormData((prev) => ({ ...prev, ciudad: "" }));
+    }
+    
     // Clear address error when address is selected
     if (errors.address) {
       setErrors((prev) => ({ ...prev, address: "" }));
@@ -320,8 +449,25 @@ export default function AddNewAddressForm({
   };
 
   const handleBillingAddressSelect = (place: PlaceDetails) => {
-    console.log("✅ Dirección de facturación seleccionada en checkout:", place);
     setSelectedBillingAddress(place as ExtendedPlaceDetails);
+    
+    // Auto-completar la ciudad si está disponible en PlaceDetails
+    // (usar la misma ciudad para facturación si no se ha especificado otra)
+    if (!formData.ciudad) {
+      const extractedCity = extractCityFromPlace(place);
+      if (extractedCity) {
+        const cityCode = findCityCodeByName(extractedCity);
+        if (cityCode) {
+          setFormData((prev) => ({ ...prev, ciudad: cityCode }));
+          setIsCityAutoCompleted(true); // Marcar como auto-completada
+          // Limpiar error de ciudad si existe
+          if (errors.ciudad) {
+            setErrors((prev) => ({ ...prev, ciudad: "" }));
+          }
+        }
+      }
+    }
+    
     // Clear billing address error when address is selected
     if (errors.billingAddress) {
       setErrors((prev) => ({ ...prev, billingAddress: "" }));
@@ -426,33 +572,35 @@ export default function AddNewAddressForm({
           )}
         </div>
 
-        {/* Ciudad */}
-        <div>
-          <label
-            htmlFor="ciudad"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Ciudad *
-          </label>
-          <select
-            id="ciudad"
-            value={formData.ciudad}
-            onChange={(e) => handleInputChange("ciudad", e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-              errors.ciudad ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">-- Selecciona una ciudad --</option>
-            {cities.map((city) => (
-              <option key={city.codigo} value={city.codigo}>
-                {city.nombre}
-              </option>
-            ))}
-          </select>
-          {errors.ciudad && (
-            <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>
-          )}
-        </div>
+        {/* Ciudad - Solo se muestra si NO fue auto-completada desde Google Maps */}
+        {!isCityAutoCompleted && (
+          <div>
+            <label
+              htmlFor="ciudad"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Ciudad *
+            </label>
+            <select
+              id="ciudad"
+              value={formData.ciudad}
+              onChange={(e) => handleInputChange("ciudad", e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                errors.ciudad ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="">-- Selecciona una ciudad --</option>
+              {cities.map((city) => (
+                <option key={city.codigo} value={city.codigo}>
+                  {city.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.ciudad && (
+              <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Campos adicionales para dirección de envío */}

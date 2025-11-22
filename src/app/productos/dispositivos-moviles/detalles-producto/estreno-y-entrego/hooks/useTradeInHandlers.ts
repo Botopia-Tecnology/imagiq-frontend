@@ -78,7 +78,8 @@ export function useTradeInHandlers({
     // Construir el nombre del dispositivo
     const deviceName = `${selectedBrand?.name || ''} ${selectedModel?.name || ''} ${selectedCapacity?.name || ''}`.trim();
 
-    // Guardar en localStorage solo cuando se completa el proceso
+    // IMPORTANTE: Guardar en localStorage cuando se completa el proceso
+    // Esto funciona tanto para usuarios logueados como NO logueados
     // Primero limpiar cualquier trade-in anterior
     if (globalThis.window !== undefined) {
       localStorage.removeItem("imagiq_trade_in");
@@ -99,15 +100,22 @@ export function useTradeInHandlers({
       detalles.buen_estado = flowState.goodConditionAnswer;
     }
 
-    // Guardar el nuevo trade-in en localStorage
+    // IMPORTANTE: Guardar el nuevo trade-in en localStorage
+    // Esto es CRÍTICO para usuarios NO logueados, ya que es la única forma de persistir el trade-in
+    // También funciona para usuarios logueados como respaldo
     if (globalThis.window !== undefined) {
-      const tradeInData = {
-        deviceName,
-        value: tradeInValue,
-        completed: true,
-        detalles: Object.keys(detalles).length > 0 ? detalles : undefined,
-      };
-      localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+      try {
+        const tradeInData = {
+          deviceName,
+          value: tradeInValue,
+          completed: true,
+          detalles: Object.keys(detalles).length > 0 ? detalles : undefined,
+        };
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+        console.log("✅ Trade-in guardado en localStorage (funciona para usuarios logueados y NO logueados):", tradeInData);
+      } catch (error) {
+        console.error("❌ Error al guardar trade-in en localStorage:", error);
+      }
     }
 
     // Llamar al callback con la información completa

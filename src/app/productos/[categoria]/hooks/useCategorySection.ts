@@ -321,7 +321,8 @@ export function useCategoryProducts(
     // hasLoadedOnce indica si ya se completó al menos una carga
     hasLoadedOnce,
     // forceKey para forzar re-mount del grid cuando cambia la sección
-    forceKey
+    forceKey,
+    // bundles ya viene en productsResult, así que se incluye automáticamente con el spread
   };
 }
 

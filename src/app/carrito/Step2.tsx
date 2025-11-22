@@ -11,6 +11,7 @@ import { apiPost } from "@/lib/api-client";
 import { tradeInEndpoints } from "@/lib/api";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
+import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
 import {
   validateTradeInProducts,
   getTradeInValidationMessage,
@@ -40,8 +41,8 @@ export default function Step2({
   onBack,
   onContinue,
 }: {
-  onBack?: () => void;
-  onContinue?: () => void;
+  readonly onBack?: () => void;
+  readonly onContinue?: () => void;
 }) {
   // Usar el hook centralizado useCart
   const { products: cartProducts } = useCart();
@@ -81,14 +82,17 @@ export default function Step2({
     value: number;
   } | null>(null);
 
+  // Estado para controlar el modal de Trade-In
+  const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
+
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo
   const filters = {
-    cedula: (v: string) => v.replace(/[^0-9]/g, ""),
-    celular: (v: string) => v.replace(/[^0-9]/g, ""),
-    nombre: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-    apellido: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-    email: (v: string) => v.replace(/\s/g, ""),
+    cedula: (v: string) => v.replaceAll(/\D/g, ""),
+    celular: (v: string) => v.replaceAll(/\D/g, ""),
+    nombre: (v: string) => v.replaceAll(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+    apellido: (v: string) => v.replaceAll(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+    email: (v: string) => v.replaceAll(/\s/g, ""),
     tipo_documento: (v: string) => v, // No filter needed for select
   };
 
@@ -114,7 +118,7 @@ export default function Step2({
       if (!v) return "Por favor escribe tu número de cédula.";
       if (v.length < 6 || v.length > 10)
         return "La cédula debe tener entre 6 y 10 números.";
-      if (!/^([1-9][0-9]{5,9})$/.test(v))
+      if (!/^([1-9]\d{5,9})$/.test(v))
         return "La cédula debe empezar con un número diferente de cero.";
       return "";
     },
@@ -122,7 +126,7 @@ export default function Step2({
       if (!v) return "Por favor escribe tu número de celular.";
       if (v.length !== 10)
         return "El celular debe tener exactamente 10 números.";
-      if (!/^3[0-9]{9}$/.test(v))
+      if (!/^3\d{9}$/.test(v))
         return "El celular colombiano debe empezar con '3' y tener 10 dígitos.";
       return "";
     },
@@ -144,10 +148,10 @@ export default function Step2({
       celular: "",
       tipo_documento: "",
     };
-    Object.keys(errors).forEach((key) => {
+    for (const key of Object.keys(errors)) {
       // @ts-expect-error Type mismatch due to dynamic key access; all keys are validated and safe here
       errors[key] = validators[key](form[key].trim());
-    });
+    }
     return errors;
   }
 
@@ -168,7 +172,7 @@ export default function Step2({
 
   // Validar formulario invitado
   const isGuestFormValid = Object.values(validateFields(guestForm)).every(
-    (err) => !err
+    Boolean
   );
 
   /**
@@ -190,8 +194,8 @@ export default function Step2({
     }
 
     // Guardar dirección y cédula en localStorage para autocompletar en Step3 y Step4
-    if (typeof window !== "undefined") {
-      localStorage.setItem("checkout-document", guestForm.cedula);
+    if (globalThis.window !== undefined) {
+      globalThis.window.localStorage.setItem("checkout-document", guestForm.cedula);
     }
 
     // Guardar en localStorage bajo la clave 'guest-payment-info'
@@ -208,10 +212,48 @@ export default function Step2({
       });
       localStorage.setItem("checkout-address", JSON.stringify(data.address));
       localStorage.setItem("imagiq_user", JSON.stringify(data.user));
-    } catch {
-      setError(
-        "No se pudo guardar la información localmente. Intenta de nuevo."
-      );
+    } catch (error) {
+      // Intentar extraer el mensaje de error del response
+      let errorMessage = "";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === "object" && error !== null) {
+        // Intentar obtener el mensaje del objeto de error
+        const errorObj = error as { message?: string; data?: { message?: string } };
+        errorMessage = errorObj.message || errorObj.data?.message || String(error);
+      } else {
+        errorMessage = String(error);
+      }
+
+      // Verificar si el error es porque el correo ya está asociado a una cuenta
+      const lowerErrorMessage = errorMessage.toLowerCase();
+      if (
+        lowerErrorMessage.includes("internal server error") ||
+        lowerErrorMessage.includes("ya existe") ||
+        lowerErrorMessage.includes("ya está registrado") ||
+        lowerErrorMessage.includes("already exists") ||
+        (lowerErrorMessage.includes("email") && (lowerErrorMessage.includes("registered") || lowerErrorMessage.includes("existe"))) ||
+        lowerErrorMessage.includes("usuario ya existe") ||
+        lowerErrorMessage.includes("correo ya existe") ||
+        lowerErrorMessage.includes("duplicate") ||
+        lowerErrorMessage.includes("conflict")
+      ) {
+        setError(
+          `El correo ${guestForm.email} ya está asociado a una cuenta. Por favor, inicia sesión para continuar.`
+        );
+        setFieldErrors((prev) => ({
+          ...prev,
+          email: "Este correo ya está registrado. Inicia sesión para continuar.",
+        }));
+        return;
+      }
+      
+      // Para otros errores, mostrar el mensaje del backend o un mensaje genérico más útil
+      if (errorMessage && errorMessage !== "Request failed" && !errorMessage.toLowerCase().includes("internal server error")) {
+        setError(errorMessage);
+      } else {
+        setError("Ocurrió un error al procesar tu información. Por favor, verifica los datos e intenta de nuevo.");
+      }
       return;
     }
     setLoading(true);
@@ -241,8 +283,8 @@ export default function Step2({
 
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (
-      !validation.isValid &&
-      validation.errorMessage &&
+      validation.isValid === false &&
+      validation.errorMessage !== undefined &&
       validation.errorMessage.includes("Te removimos")
     ) {
       // Limpiar localStorage inmediatamente
@@ -288,7 +330,6 @@ export default function Step2({
       "imagiq_user",
       {}
     );
-    console.log(haveAccount);
     if (haveAccount.email) {
       router.push("/carrito/step3");
     }
@@ -307,14 +348,71 @@ export default function Step2({
     }
   }, [router]);
 
-  // Handle Trade-In removal
+  // Handler para abrir el modal de Trade-In (para cambiar producto)
+  const handleOpenTradeInModal = () => {
+    setIsTradeInModalOpen(true);
+  };
+
+  // Handler para cuando se completa el Trade-In
+  const handleCompleteTradeIn = (deviceName: string, value: number) => {
+    // Cargar datos desde localStorage (ya guardados por handleFinalContinue)
+    try {
+      const raw = localStorage.getItem("imagiq_trade_in");
+      if (raw) {
+        const stored = JSON.parse(raw) as { deviceName?: string; value?: number; completed?: boolean };
+        const newTradeInData = {
+          deviceName: stored.deviceName || deviceName,
+          value: stored.value || value,
+          completed: true,
+        };
+        setTradeInData(newTradeInData);
+      } else {
+        // Fallback: guardar en localStorage si no existe (importante para usuarios NO logueados)
+        const tradeInDataToSave = {
+          deviceName,
+          value,
+          completed: true,
+        };
+        try {
+          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInDataToSave));
+        } catch (error) {
+          console.error("❌ Error al guardar trade-in en localStorage (respaldo):", error);
+        }
+        setTradeInData(tradeInDataToSave);
+      }
+    } catch (error) {
+      // Fallback simple: guardar en localStorage como último recurso
+      console.error("❌ Error al cargar trade-in desde localStorage:", error);
+      const newTradeInData = {
+        deviceName,
+        value,
+        completed: true,
+      };
+      try {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+      } catch (storageError) {
+        console.error("❌ Error al guardar trade-in en localStorage (fallback):", storageError);
+      }
+      setTradeInData(newTradeInData);
+    }
+    setIsTradeInModalOpen(false);
+  };
+
+  // Handler para cancelar sin completar
+  const handleCancelWithoutCompletion = () => {
+    setIsTradeInModalOpen(false);
+  };
+
+  // Handle Trade-In removal (ahora abre el modal para cambiar producto)
   const handleRemoveTradeIn = () => {
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
+    // Abrir modal para cambiar producto en lugar de remover directamente
+    handleOpenTradeInModal();
   };
 
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = React.useRef<Set<string>>(new Set());
+  // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
+  const failedSkusRef = React.useRef<Set<string>>(new Set());
 
   // Verificar indRetoma para cada producto único en segundo plano (sin mostrar nada en UI)
   useEffect(() => {
@@ -325,11 +423,13 @@ export default function Step2({
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
       // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
+      // PROTECCIÓN: NO verificar SKUs que ya fallaron anteriormente
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
         const needsVerification = product && product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        return needsVerification && notVerifiedYet;
+        const notFailedBefore = !failedSkusRef.current.has(sku); // PROTECCIÓN: no reintentar fallos
+        return needsVerification && notVerifiedYet && notFailedBefore;
       });
 
       if (productsToVerify.length === 0) return;
@@ -337,6 +437,13 @@ export default function Step2({
       // Verificar cada SKU único en segundo plano
       for (let i = 0; i < productsToVerify.length; i++) {
         const sku = productsToVerify[i];
+
+        // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
+        if (failedSkusRef.current.has(sku)) {
+          console.error(`🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`);
+          verifiedSkusRef.current.add(sku); // Marcar como verificado para no intentar de nuevo
+          continue; // Saltar este SKU
+        }
 
         // Agregar delay entre peticiones (excepto la primera)
         if (i > 0) {
@@ -346,13 +453,19 @@ export default function Step2({
         try {
           const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
           if (!response.success || !response.data) {
-            throw new Error("Error al verificar trade-in");
+            // Si falla la petición, marcar como fallido
+            failedSkusRef.current.add(sku);
+            console.error(`🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`);
+            verifiedSkusRef.current.add(sku);
+            continue;
           }
           const result = response.data;
           const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
 
           // Marcar SKU como verificado ANTES de actualizar localStorage (evita loop)
           verifiedSkusRef.current.add(sku);
+          // Limpiar de fallos si existía
+          failedSkusRef.current.delete(sku);
 
           // Actualizar localStorage con el resultado
           const storedProducts = JSON.parse(
@@ -370,16 +483,18 @@ export default function Step2({
           const customEvent = new CustomEvent("localStorageChange", {
             detail: { key: "cart-items" },
           });
-          window.dispatchEvent(customEvent);
-          window.dispatchEvent(new Event("storage"));
+          globalThis.dispatchEvent(customEvent);
+          globalThis.dispatchEvent(new Event("storage"));
         } catch (error) {
-          // También marcar como verificado en caso de error para no reintentar infinitamente
-          verifiedSkusRef.current.add(sku);
-          // Silenciar errores, solo log en consola
+          // Si hay un error en el catch, también marcar como fallido
+          failedSkusRef.current.add(sku);
           console.error(
-            `❌ Error al verificar trade-in para SKU ${sku}:`,
+            `🚫 Error al verificar trade-in para SKU ${sku} - Petición bloqueada para evitar sobrecargar BD:`,
             error
           );
+          console.error(`🚫 SKU ${sku} NO se reintentará automáticamente.`);
+          // También marcar como verificado en caso de error para no reintentar infinitamente
+          verifiedSkusRef.current.add(sku);
         }
       }
     };
@@ -388,9 +503,9 @@ export default function Step2({
   }, [cartProducts]);
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 relative z-10">
+    <div className="w-full bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-32 md:pb-16 relative">
       {/* Fondo blanco sólido para cubrir cualquier animación de fondo */}
-      <div className="fixed inset-0 bg-white -z-10" />
+      <div className="fixed inset-0 bg-white -z-10 pointer-events-none" />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
         {/* Login y invitado */}
         <div className="col-span-2 flex flex-col gap-8">
@@ -626,7 +741,7 @@ export default function Step2({
           </div>
         </div>
         {/* Resumen de compra con Step4OrderSummary */}
-        <div className="flex flex-col gap-4">
+        <aside className="flex flex-col gap-4">
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             onBack={onBack}
@@ -638,35 +753,50 @@ export default function Step2({
               !tradeInValidation.isValid
             }
             isProcessing={loading}
+            isSticky={false}
+            deliveryMethod={
+              globalThis.window !== undefined
+                ? (() => {
+                    const method = globalThis.window.localStorage.getItem("checkout-delivery-method");
+                    if (method === "tienda") return "pickup";
+                    if (method === "domicilio") return "delivery";
+                    if (method === "delivery" || method === "pickup") return method;
+                    return undefined;
+                  })()
+                : undefined
+            }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen */}
+          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
           {tradeInData?.completed && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
               validationError={
-                !tradeInValidation.isValid
+                tradeInValidation.isValid === false
                   ? getTradeInValidationMessage(tradeInValidation)
                   : undefined
               }
             />
           )}
 
-          {/* Mensajes de error/success */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-              {error}
-            </div>
-          )}
+          {/* Mensaje de éxito */}
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
               ¡Compra realizada como invitado!
             </div>
           )}
-        </div>
+        </aside>
       </div>
+
+      {/* Modal de Trade-In para cambiar producto */}
+      <TradeInModal
+        isOpen={isTradeInModalOpen}
+        onClose={() => setIsTradeInModalOpen(false)}
+        onCompleteTradeIn={handleCompleteTradeIn}
+        onCancelWithoutCompletion={handleCancelWithoutCompletion}
+      />
     </div>
   );
 }

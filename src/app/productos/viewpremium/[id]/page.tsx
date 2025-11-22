@@ -135,7 +135,8 @@ export default function ProductViewPage({ params }) {
         capacity: productSelection.selection.selectedCapacity || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
         skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
+        desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: product.apiProduct?.modelo?.[0] || "",
       });
     } finally {
       setLoadingCart(false);

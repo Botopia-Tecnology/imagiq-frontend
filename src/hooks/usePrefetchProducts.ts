@@ -167,7 +167,7 @@ export function usePrefetchProducts() {
 
       try {
         // Llamada silenciosa a la API (sin mostrar loading ni errores)
-        const response = await productEndpoints.getFiltered(params);
+        const response = await productEndpoints.getFilteredV2(params);
 
         // Verificar si la respuesta indica un error 429
         // El backend devuelve statusCode: 429 en la respuesta

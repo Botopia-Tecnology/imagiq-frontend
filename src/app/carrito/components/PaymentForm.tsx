@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Plus, Check } from "lucide-react";
-import { SiVisa, SiMastercard, SiAmericanexpress } from "react-icons/si";
-import CreditCardForm, { CardData, CardErrors } from "./CreditCardForm";
-import SaveInfoCheckbox from "./SaveInfoCheckbox";
+import { CardData, CardErrors } from "./CreditCardForm";
 import { PaymentMethod, CheckZeroInterestResponse } from "../types";
 import { useAuthContext } from "@/features/auth/context";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
@@ -115,22 +113,32 @@ export default function PaymentForm({
     }
   }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
 
-  // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas
+  // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas o después de agregar una nueva
   useEffect(() => {
-    
     if (
       savedCards.length > 0 &&
-      !selectedCardId &&
-      paymentMethod === "tarjeta"
+      paymentMethod === "tarjeta" &&
+      !isLoadingCards
     ) {
-      const defaultCard =
-        savedCards.find((card) => card.es_predeterminada) || savedCards[0];
-      if (defaultCard) {
-        onCardSelect(String(defaultCard.id));
+      // Si se incrementó el contador de recarga (se agregó una nueva tarjeta), siempre seleccionar la predeterminada o la primera
+      // Si no hay tarjeta seleccionada, también seleccionar la predeterminada o la primera
+      const shouldSelectCard = !selectedCardId || savedCardsReloadCounter !== undefined;
+      
+      if (shouldSelectCard) {
+        const defaultCard =
+          savedCards.find((card) => card.es_predeterminada) || savedCards[0];
+        if (defaultCard) {
+          onCardSelect(String(defaultCard.id));
+          onUseNewCardChange(false);
+          // Cambiar método de pago a tarjeta si no está seleccionado
+          if (paymentMethod !== "tarjeta") {
+            onPaymentMethodChange("tarjeta");
+          }
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedCards.length, paymentMethod]);
+  }, [savedCards.length, paymentMethod, savedCardsReloadCounter, isLoadingCards]);
 
   // Llamar a fetchZeroInterestInfo cuando se cargan las tarjetas
   useEffect(() => {
@@ -139,6 +147,7 @@ export default function PaymentForm({
       onFetchZeroInterest(cardIds);
     }
   }, [savedCards, onFetchZeroInterest]);
+
 
   // Obtener tarjeta predeterminada
   const defaultCard =
@@ -164,11 +173,9 @@ export default function PaymentForm({
   // Mostrar skeleton completo cuando:
   // 1. Se están cargando las tarjetas inicialmente
   // 2. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
-  // 3. Aún no se han cargado las tarjetas (primera vez que se monta el componente)
   const shouldShowFullSkeleton =
     isLoadingCards ||
-    (isLoadingZeroInterest && savedCards.length === 0) ||
-    (!isLoadingCards && savedCards.length === 0 && getUserId() !== null);
+    (isLoadingZeroInterest && savedCards.length === 0);
 
   if (shouldShowFullSkeleton) {
     return (
@@ -461,9 +468,11 @@ export default function PaymentForm({
               })}
           </div>
         </div>
-      ) : (<div className="flex items-center justify-between mb-3">
+      ) : (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
-              Tarjetas guardadas
+              No tienes tarjetas guardadas
             </h3>
             <button
               type="button"
@@ -471,44 +480,15 @@ export default function PaymentForm({
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-black text-white hover:bg-gray-800 font-medium transition-colors rounded-lg"
             >
               <Plus className="w-4 h-4" />
-              Agregar
+              Agregar desde perfil
             </button>
-          </div>)}
-
-      {/* Formulario de nueva tarjeta (si el usuario elige agregar) */}
-      {paymentMethod === "tarjeta" && useNewCard && (
-        <div className="mb-6">
-          <h3 className="text-base font-semibold text-gray-700 mb-3">
-            Nueva tarjeta
-          </h3>
-          <div
-            className="rounded-xl overflow-hidden p-6"
-            style={{
-              boxShadow: "0 2px 8px #0001",
-              background: "#fff",
-              border: "1px solid #E5E5E5",
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
-              <SiVisa className="w-11 h-6 text-[#1A1F71]" />
-              <SiMastercard className="w-11 h-6 text-[#EB001B]" />
-              <SiAmericanexpress className="w-11 h-6 text-[#006FCF]" />
-            </div>
-            <CreditCardForm
-              card={card}
-              cardErrors={cardErrors}
-              onCardChange={onCardChange}
-              onErrorChange={onCardErrorChange}
-              isVisible={true}
-            />
           </div>
+          <p className="text-sm text-gray-600 mb-4">
+            Agrega una tarjeta desde tu perfil para continuar con el pago
+          </p>
         </div>
       )}
 
-      {/* Save info checkbox - solo mostrar si usa nueva tarjeta */}
-      {paymentMethod === "tarjeta" && useNewCard && (
-        <SaveInfoCheckbox checked={saveInfo} onChange={onSaveInfoChange} />
-      )}
     </div>
   );
 }

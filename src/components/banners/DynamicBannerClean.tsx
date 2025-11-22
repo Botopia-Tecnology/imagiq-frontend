@@ -11,12 +11,12 @@
  * - Indicadores de navegación
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { useDynamicBanner } from '@/hooks/useDynamicBanner';
-import { useCarouselController } from '@/hooks/useCarouselController';
-import { parsePosition, parseTextStyles } from '@/utils/bannerCoordinates';
-import type { Banner, BannerPosition, BannerTextStyles } from '@/types/banner';
+import React, { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useDynamicBanner } from "@/hooks/useDynamicBanner";
+import { useCarouselController } from "@/hooks/useCarouselController";
+import { parsePosition, parseTextStyles } from "@/utils/bannerCoordinates";
+import type { Banner, BannerPosition, BannerTextStyles } from "@/types/banner";
 
 type CSS = React.CSSProperties;
 
@@ -52,7 +52,7 @@ interface BannerContentProps {
  */
 const positionToPercentCSS = (position: BannerPosition | null): CSS => {
   if (!position) {
-    return { left: '50%', top: '50%' };
+    return { left: "50%", top: "50%" };
   }
   return { left: `${position.x}%`, top: `${position.y}%` };
 };
@@ -96,24 +96,24 @@ function BannerContent({
   isMobile,
   textStyles,
   videoEnded,
-  linkUrl
+  linkUrl,
 }: Readonly<BannerContentProps>) {
   const final: CSS = {
     color,
-    transform: 'translate(-50%, -50%)',
+    transform: "translate(-50%, -50%)",
     opacity: videoEnded ? 1 : 0,
     transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s",
     pointerEvents: videoEnded ? "auto" : "none",
   };
   if (positionStyle) Object.assign(final, positionStyle);
-  if (isMobile && !positionStyle?.left) final.left = '50%';
+  if (isMobile && !positionStyle?.left) final.left = "50%";
 
   const content = (
     <div
       className={`absolute max-w-2xl px-6 ${
         isMobile
-          ? 'md:hidden flex flex-col items-center text-center'
-          : 'hidden md:block'
+          ? "md:hidden flex flex-col items-center text-center"
+          : "hidden md:block"
       }`}
       style={final}
     >
@@ -138,10 +138,10 @@ function BannerContent({
           href={linkUrl}
           className="inline-block px-6 py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 hover:scale-105"
           style={{
-            borderWidth: '2px',
+            borderWidth: "2px",
             borderColor: color,
-            backgroundColor: 'transparent',
-            ...(textStyles?.cta || {})
+            backgroundColor: "transparent",
+            ...(textStyles?.cta || {}),
           }}
         >
           {cta}
@@ -158,7 +158,7 @@ function BannerContent({
  */
 export default function DynamicBannerClean({
   placement,
-  className = '',
+  className = "",
   showOverlay = false,
   children,
   displayDuration = 5000,
@@ -190,22 +190,26 @@ export default function DynamicBannerClean({
     const tPct = position.y;
 
     // Intentar con video primero
-    const video = wrapper.querySelector('video');
+    const video = wrapper.querySelector("video");
     if (video instanceof HTMLVideoElement) {
       const r = video.getBoundingClientRect();
       return {
         left: `${r.left - wrapRect.left + (lPct / 100) * r.width}px`,
-        top: `${r.top - wrapRect.top + (tPct / 100) * r.height}px`
+        top: `${r.top - wrapRect.top + (tPct / 100) * r.height}px`,
       };
     }
 
     // Intentar con imagen existente
-    const imgEl = wrapper.querySelector('img');
-    if (imgEl instanceof HTMLImageElement && imgEl.naturalWidth && imgEl.naturalHeight) {
+    const imgEl = wrapper.querySelector("img");
+    if (
+      imgEl instanceof HTMLImageElement &&
+      imgEl.naturalWidth &&
+      imgEl.naturalHeight
+    ) {
       const r = imgEl.getBoundingClientRect();
       return {
         left: `${r.left - wrapRect.left + (lPct / 100) * r.width}px`,
-        top: `${r.top - wrapRect.top + (tPct / 100) * r.height}px`
+        top: `${r.top - wrapRect.top + (tPct / 100) * r.height}px`,
       };
     }
 
@@ -223,7 +227,7 @@ export default function DynamicBannerClean({
         const offT = (cH - displayH) / 2;
         return {
           left: `${offL + (lPct / 100) * displayW}px`,
-          top: `${offT + (tPct / 100) * displayH}px`
+          top: `${offT + (tPct / 100) * displayH}px`,
         };
       }
     }
@@ -248,12 +252,14 @@ export default function DynamicBannerClean({
       const d = await compute(
         desktopPosition,
         desktopRef.current,
-        (currentBanner.desktop_video_url || currentBanner.desktop_image_url) ?? undefined
+        (currentBanner.desktop_video_url || currentBanner.desktop_image_url) ??
+          undefined
       );
       const m = await compute(
         mobilePosition,
         mobileRef.current,
-        (currentBanner.mobile_video_url || currentBanner.mobile_image_url) ?? undefined
+        (currentBanner.mobile_video_url || currentBanner.mobile_image_url) ??
+          undefined
       );
 
       if (!mounted) return;
@@ -263,10 +269,10 @@ export default function DynamicBannerClean({
 
     run();
     const onRes = () => run();
-    window.addEventListener('resize', onRes);
+    window.addEventListener("resize", onRes);
     return () => {
       mounted = false;
-      window.removeEventListener('resize', onRes);
+      window.removeEventListener("resize", onRes);
     };
   }, [banners, controller.currentIndex]);
 
@@ -372,10 +378,10 @@ export default function DynamicBannerClean({
               className="absolute inset-0 transition-all duration-700 ease-in-out"
               style={{
                 opacity: isActive ? 1 : 0,
-                transform: isActive ? 'translateX(0)' : 'translateX(-30px)',
-                pointerEvents: isActive ? 'auto' : 'none',
+                transform: isActive ? "translateX(0)" : "translateX(-30px)",
+                pointerEvents: isActive ? "auto" : "none",
                 zIndex: isActive ? 1 : 0,
-                willChange: 'opacity, transform'
+                willChange: "opacity, transform",
               }}
             >
               <div
@@ -436,8 +442,8 @@ export default function DynamicBannerClean({
                 onClick={() => controller.goToIndex(index)}
                 className={`w-2 h-2 rounded-full transition-all duration-300 ${
                   index === controller.currentIndex
-                    ? 'bg-white w-8'
-                    : 'bg-white/50 hover:bg-white/75'
+                    ? "bg-white w-8"
+                    : "bg-white/50 hover:bg-white/75"
                 }`}
                 aria-label={`Ir al banner ${index + 1}`}
               />
@@ -454,5 +460,7 @@ export default function DynamicBannerClean({
     <Link href={currentBanner.link_url} className="block">
       {content}
     </Link>
-  ) : content;
+  ) : (
+    content
+  );
 }

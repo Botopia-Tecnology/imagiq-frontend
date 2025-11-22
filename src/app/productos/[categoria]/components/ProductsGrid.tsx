@@ -20,6 +20,11 @@ import type { Banner } from "@/types/banner";
 import { combineProductsAndBundles } from "@/lib/productMapper";
 import type { BundleCardProps } from "@/lib/productMapper";
 
+// Tipos para items con flag interno de bundle
+type ProductWithFlag = ProductCardProps & { __isBundle: false };
+type BundleWithFlag = BundleCardProps & { __isBundle: true };
+type ItemWithFlag = ProductWithFlag | BundleWithFlag;
+
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
   bundles: BundleCardProps[];
@@ -76,25 +81,27 @@ export const CategoryProductsGrid = forwardRef<
 
       // Convertir mixedItems al formato que espera insertBannersInGrid
       // insertBannersInGrid espera ProductCardProps[], así que necesitamos adaptar
-      const itemsForBannerInsertion = mixedItems.map(item => {
+      const itemsForBannerInsertion = mixedItems.map((item): ItemWithFlag => {
         if (item.itemType === 'bundle') {
           // Para bundles, crear un objeto compatible con ProductCardProps
           // pero mantener una referencia al bundle original
           const { itemType, ...bundleData } = item;
           return {
             ...bundleData,
-            __isBundle: true, // Flag interno para identificar bundles después
-          } as any;
+            __isBundle: true as const,
+          };
         } else {
           const { itemType, ...productData } = item;
           return {
             ...productData,
-            __isBundle: false,
-          } as any;
+            __isBundle: false as const,
+          };
         }
       });
 
-      const items = insertBannersInGrid(itemsForBannerInsertion, banner, 15);
+      // insertBannersInGrid trata los items como ProductCardProps, pero nosotros hemos añadido __isBundle
+      // Esto es seguro porque insertBannersInGrid solo lee propiedades comunes (id, etc.) y no modifica el tipo
+      const items = insertBannersInGrid(itemsForBannerInsertion as unknown as ProductCardProps[], banner, 15);
       console.log('[ProductsGrid] Total items en grid (con banners):', items.length);
       console.log('[ProductsGrid] Items:', items.map(i => ({ type: i.type, key: i.key })));
       return items;
@@ -199,7 +206,7 @@ export const CategoryProductsGrid = forwardRef<
                   }
 
                   // Verificar si es un bundle o un producto
-                  const itemData = item.data as any;
+                  const itemData = item.data as ItemWithFlag;
                   const isBundle = itemData.__isBundle === true;
 
                   if (isBundle) {

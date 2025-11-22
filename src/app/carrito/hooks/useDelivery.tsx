@@ -142,7 +142,7 @@ export const useDelivery = () => {
     setDeliveryMethodState(method);
     
     // Guardar en localStorage inmediatamente (importante para usuarios invitados)
-    if (globalThis.window !== undefined) {
+    if (typeof globalThis.window !== "undefined") {
       try {
         globalThis.window.localStorage.setItem("checkout-delivery-method", method);
         // Disparar evento personalizado para notificar cambios
@@ -210,17 +210,20 @@ export const useDelivery = () => {
   const fetchCandidateStores = useCallback(async () => {
     // PROTECCIÓN CRÍTICA: NO hacer peticiones durante eliminación de trade-in
     if (isRemovingTradeInRef.current) {
+      console.log("🚫 fetchCandidateStores BLOQUEADO: eliminando trade-in");
       return;
     }
     
     // Prevenir llamadas múltiples simultáneas
     if (isFetchingRef.current) {
+      console.log("⏸️ fetchCandidateStores ya está en ejecución, omitiendo llamada");
       return;
     }
     
     // Prevenir llamadas muy frecuentes (debounce de 3000ms - AUMENTADO)
     const now = Date.now();
     if (now - lastFetchTimeRef.current < 3000) {
+      console.log("⏸️ fetchCandidateStores llamado muy recientemente, omitiendo llamada");
       return;
     }
     
@@ -295,7 +298,7 @@ export const useDelivery = () => {
           const responseData = response.data;
           
           // Obtener canPickUp global de la respuesta
-          const globalCanPickUp = responseData.canPickUp ?? responseData.canPickup ?? false;
+          const globalCanPickUp = responseData.canPickUp ?? false;
           
           // Establecer canPickUp global
           setCanPickUp(globalCanPickUp);
@@ -420,8 +423,10 @@ export const useDelivery = () => {
       productsHashRef.current = productsHash;
       
       // Verificar que NO estemos eliminando trade-in
-      if (isRemovingTradeInRef.current === false) {
+      if (!isRemovingTradeInRef.current) {
         fetchCandidateStores();
+      } else {
+        console.log("🚫 useEffect fetchCandidateStores BLOQUEADO: eliminando trade-in");
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,6 +437,7 @@ export const useDelivery = () => {
     const handleAddressChange = async (event: Event) => {
       // Prevenir llamadas durante eliminación de trade-in
       if (isRemovingTradeInRef.current) {
+        console.log('⏸️ Omitiendo handleAddressChange durante eliminación de trade-in');
         return;
       }
 
@@ -448,18 +454,21 @@ export const useDelivery = () => {
       }
 
       // Verificar si realmente cambió la dirección
-      const currentAddress = globalThis.window.localStorage.getItem('checkout-address');
+      const currentAddress = localStorage.getItem('checkout-address');
       if (currentAddress) {
         try {
           const parsed = JSON.parse(currentAddress) as Direccion;
           if (parsed.id === lastAddressIdRef.current) {
+            console.log('⏸️ Dirección no cambió realmente, omitiendo recálculo');
             return;
           }
           lastAddressIdRef.current = parsed.id || null;
         } catch {
-          // Si no se puede parsear, continuar sin hacer nada
+          // Si no se puede parsear, continuar
         }
       }
+
+      console.log('🔄 Evento de cambio de dirección recibido en useDelivery:', eventType);
 
       // Verificar si el cambio viene del header
       const fromHeader = customEvent.detail?.fromHeader;
@@ -492,9 +501,11 @@ export const useDelivery = () => {
 
       // PROTECCIÓN CRÍTICA: Verificar que NO estemos eliminando trade-in antes de llamar
       if (isRemovingTradeInRef.current) {
+        console.log('🚫 Omitiendo fetchCandidateStores: eliminando trade-in');
         return;
       }
       
+      console.log('🔄 Dirección cambió, recalculando canPickUp global y tiendas...');
       // Recalcular canPickUp global y tiendas cuando cambia la dirección
       fetchCandidateStores();
     };
@@ -511,7 +522,7 @@ export const useDelivery = () => {
       const customEvent = event as CustomEvent;
       isRemovingTradeInRef.current = customEvent.detail?.removing || false;
     };
-    globalThis.window.addEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
+    window.addEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
 
     // Escuchar evento storage (para cambios entre tabs)
     globalThis.window.addEventListener('storage', handleStorageChange);
@@ -520,24 +531,25 @@ export const useDelivery = () => {
     globalThis.window.addEventListener('address-changed', handleAddressChange as EventListener);
 
     // Escuchar eventos personalizados desde checkout
-    globalThis.window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
+    window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
     
     // Escuchar delivery-method-changed pero solo si NO viene con skipFetch
     const handleDeliveryMethodChanged = (event: Event) => {
       const customEvent = event as CustomEvent;
       // Si viene con skipFetch, no hacer nada (viene de eliminación de trade-in)
       if (customEvent.detail?.skipFetch) {
+        console.log('⏸️ Omitiendo fetchCandidateStores por skipFetch en delivery-method-changed');
         return;
       }
       // Si no viene skipFetch, puede ser un cambio legítimo, pero no llamar fetchCandidateStores
       // porque no es un cambio de dirección
     };
-    globalThis.window.addEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
+    window.addEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
 
     // También verificar cambios periódicamente en la misma tab (porque storage solo funciona entre tabs)
     // PERO DESHABILITAR durante eliminación de trade-in
-    let lastCheckoutAddress = globalThis.window.localStorage.getItem('checkout-address');
-    let lastDefaultAddress = globalThis.window.localStorage.getItem('imagiq_default_address');
+    let lastCheckoutAddress = localStorage.getItem('checkout-address');
+    let lastDefaultAddress = localStorage.getItem('imagiq_default_address');
 
     const checkAddressChanges = () => {
       // PROTECCIÓN CRÍTICA: NO hacer nada si estamos eliminando trade-in
@@ -545,8 +557,8 @@ export const useDelivery = () => {
         return;
       }
       
-      const currentCheckoutAddress = globalThis.window.localStorage.getItem('checkout-address');
-      const currentDefaultAddress = globalThis.window.localStorage.getItem('imagiq_default_address');
+      const currentCheckoutAddress = localStorage.getItem('checkout-address');
+      const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
 
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
         handleAddressChange(new Event('checkout-address-changed'));
@@ -562,12 +574,16 @@ export const useDelivery = () => {
     // AUMENTAR intervalo a 2000ms para reducir peticiones
     const intervalId = setInterval(checkAddressChanges, 2000);
 
+    console.log(
+      "✅ Listeners de cambio de dirección configurados en useDelivery"
+    );
+
     return () => {
-      globalThis.window.removeEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
-      globalThis.window.removeEventListener('storage', handleStorageChange);
-      globalThis.window.removeEventListener('address-changed', handleAddressChange as EventListener);
-      globalThis.window.removeEventListener('checkout-address-changed', handleAddressChange as EventListener);
-      globalThis.window.removeEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
+      window.removeEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+      window.removeEventListener('checkout-address-changed', handleAddressChange as EventListener);
+      window.removeEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
       clearInterval(intervalId);
     };
   }, [fetchCandidateStores]);

@@ -311,7 +311,7 @@ export default function Step7({ onBack }: Step7Props) {
     setTradeInData(null);
     
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
-    if (globalThis.window !== undefined) {
+    if (typeof globalThis.window !== "undefined") {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
       if (currentMethod === "tienda") {
         globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");

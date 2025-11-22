@@ -139,6 +139,8 @@ export default function Step3({
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
+    console.log("🚫 INICIANDO eliminación de trade-in - BLOQUEANDO todas las peticiones");
+    
     // Marcar que acabamos de eliminar el trade-in (evitar que useEffect revierta el cambio)
     justRemovedTradeInRef.current = true;
     
@@ -149,6 +151,7 @@ export default function Step3({
       globalThis.window.dispatchEvent(
         new CustomEvent("removing-trade-in", { detail: { removing: true } })
       );
+      console.log("✅ Evento 'removing-trade-in' disparado - peticiones BLOQUEADAS");
     }
     
     // PRIMERO: Eliminar el trade-in para que hasActiveTradeIn sea false inmediatamente
@@ -165,6 +168,7 @@ export default function Step3({
       // 1. Forzar directamente en localStorage PRIMERO (fuente de verdad)
       if (globalThis.window) {
         globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        console.log("✅ Método de entrega forzado a 'domicilio' en localStorage");
       }
       
       // 2. Cambiar usando el hook (actualiza el estado del componente)
@@ -181,6 +185,7 @@ export default function Step3({
     
     // Resetear los flags después de un delay MÁS LARGO para asegurar que todo se procese
     setTimeout(() => {
+      console.log("✅ Finalizando bloqueo de peticiones después de eliminación de trade-in");
       justRemovedTradeInRef.current = false;
       if (globalThis.window) {
         globalThis.window.dispatchEvent(

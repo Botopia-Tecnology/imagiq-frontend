@@ -373,15 +373,16 @@ export default function Step1({ onContinue }: { readonly onContinue: () => void 
     localStorage.removeItem("imagiq_trade_in");
 
     // FORZAR cambio a "domicilio" si el método está en "tienda" (sin importar si está autenticado o no)
-    if (globalThis.window !== undefined) {
+    if (typeof globalThis.window !== "undefined") {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
       if (currentMethod === "tienda") {
         // Forzar cambio inmediatamente
         globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
-        globalThis.dispatchEvent(
+        globalThis.window.dispatchEvent(
           new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
         );
-        globalThis.dispatchEvent(new Event("storage"));
+        globalThis.window.dispatchEvent(new Event("storage"));
+        console.log("✅ Método de entrega cambiado a 'domicilio' después de eliminar trade-in");
       }
     }
 

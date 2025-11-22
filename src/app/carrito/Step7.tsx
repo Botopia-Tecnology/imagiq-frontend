@@ -29,7 +29,7 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 import { productEndpoints } from "@/lib/api";
 
 interface Step7Props {
-  onBack?: () => void;
+  readonly onBack?: () => void;
 }
 
 interface CardData {
@@ -94,6 +94,9 @@ export default function Step7({ onBack }: Step7Props) {
   const router = useRouter();
   const authContext = useAuthContext();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Ref para rastrear peticiones fallidas a getCandidateStores (evita reintentos)
+  const failedCandidateStoresRef = React.useRef<string | null>(null);
 
   // Estados para datos de resumen
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
@@ -306,6 +309,18 @@ export default function Step7({ onBack }: Step7Props) {
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -323,8 +338,8 @@ export default function Step7({ onBack }: Step7Props) {
 
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (
-      !validation.isValid &&
-      validation.errorMessage &&
+      validation.isValid === false &&
+      validation.errorMessage !== undefined &&
       validation.errorMessage.includes("Te removimos")
     ) {
       // Limpiar localStorage inmediatamente
@@ -356,13 +371,13 @@ export default function Step7({ onBack }: Step7Props) {
       }
     };
 
-    window.addEventListener(
+    globalThis.window.addEventListener(
       "address-changed",
       handleAddressChange as EventListener
     );
 
     return () => {
-      window.removeEventListener(
+      globalThis.window.removeEventListener(
         "address-changed",
         handleAddressChange as EventListener
       );
@@ -390,7 +405,6 @@ export default function Step7({ onBack }: Step7Props) {
         const userId = user?.id || user?.user_id;
 
         if (!userId) {
-          console.log("🚛 No hay userId, usando Coordinadora");
           setShippingVerification({
             envio_imagiq: false,
             todos_productos_im_it: false,
@@ -406,10 +420,24 @@ export default function Step7({ onBack }: Step7Props) {
           quantity: p.quantity,
         }));
 
-        console.log("📦 Verificando canPickUp global...", {
-          productsToCheck,
+        // Crear hash único de la petición (productos + userId)
+        const requestHash = JSON.stringify({
+          products: productsToCheck,
           userId,
         });
+
+        // PROTECCIÓN CRÍTICA: Si esta misma petición ya falló antes, NO reintentar
+        if (failedCandidateStoresRef.current === requestHash) {
+          console.error("🚫 Esta petición a candidate-stores ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.");
+          // Usar Coordinadora por defecto
+          setShippingVerification({
+            envio_imagiq: false,
+            todos_productos_im_it: false,
+            en_zona_cobertura: true,
+          });
+          setIsLoadingShippingMethod(false);
+          return;
+        }
 
         // Llamar al endpoint con TODOS los productos agrupados
         const response = await productEndpoints.getCandidateStores({
@@ -418,6 +446,11 @@ export default function Step7({ onBack }: Step7Props) {
         });
 
         if (response.success && response.data) {
+          // Si la petición fue exitosa, limpiar el hash de fallo si existía
+          if (failedCandidateStoresRef.current === requestHash) {
+            failedCandidateStoresRef.current = null;
+          }
+
           const responseData = response.data as {
             canPickUp?: boolean;
             canPickup?: boolean;
@@ -426,11 +459,8 @@ export default function Step7({ onBack }: Step7Props) {
           const globalCanPickUp =
             responseData.canPickUp ?? responseData.canPickup ?? false;
 
-          console.log("📦 canPickUp global obtenido:", globalCanPickUp);
-
           // PASO 2: Si canPickUp global es FALSE → Directamente Coordinadora
           if (!globalCanPickUp) {
-            console.log("🚛 Envío Coordinadora (canPickUp global es false)");
             setShippingVerification({
               envio_imagiq: false,
               todos_productos_im_it: false,
@@ -441,13 +471,8 @@ export default function Step7({ onBack }: Step7Props) {
           }
 
           // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
-          console.log(
-            "✅ canPickUp global es true, verificando cobertura Imagiq..."
-          );
-
           const shippingAddress = localStorage.getItem("checkout-address");
           if (!shippingAddress) {
-            console.log("🚛 No hay dirección, usando Coordinadora");
             setShippingVerification({
               envio_imagiq: false,
               todos_productos_im_it: false,
@@ -463,14 +488,10 @@ export default function Step7({ onBack }: Step7Props) {
             skus: products.map((p) => p.sku),
           };
 
-          console.log("🚚 Verificando cobertura de envío Imagiq:", requestBody);
-
           const data = await apiPost<ShippingVerification>(
             "/api/addresses/zonas-cobertura/verificar-por-id",
             requestBody
           );
-
-          console.log("✅ Respuesta de verificación (useEffect):", data);
 
           setShippingVerification({
             envio_imagiq: data.envio_imagiq || false,
@@ -479,6 +500,10 @@ export default function Step7({ onBack }: Step7Props) {
           });
           setIsLoadingShippingMethod(false);
         } else {
+          // Si falla la petición, marcar este hash como fallido
+          failedCandidateStoresRef.current = requestHash;
+          console.error(`🚫 Petición a candidate-stores falló. Hash bloqueado: ${requestHash.substring(0, 50)}...`);
+          console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
           // Si falla la petición de candidate-stores, usar Coordinadora
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
           setShippingVerification({
@@ -489,10 +514,28 @@ export default function Step7({ onBack }: Step7Props) {
           setIsLoadingShippingMethod(false);
         }
       } catch (error) {
+        // Si hay un error en el catch, también marcar como fallido
+        const productsToCheck = products.map((p) => ({
+          sku: p.sku,
+          quantity: p.quantity,
+        }));
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+          "imagiq_user",
+          {}
+        );
+        const userId = user?.id || user?.user_id;
+        const requestHash = JSON.stringify({
+          products: productsToCheck,
+          userId,
+        });
+        
+        failedCandidateStoresRef.current = requestHash;
         console.error(
-          "❌ Error verifying shipping coverage (useEffect):",
+          "🚫 Error verifying shipping coverage - Petición bloqueada para evitar sobrecargar BD:",
           error
         );
+        console.error(`🚫 Hash bloqueado: ${requestHash.substring(0, 50)}...`);
+        console.error("🚫 Esta petición NO se reintentará automáticamente.");
         // En caso de error, usar Coordinadora por defecto
         setShippingVerification({
           envio_imagiq: false,
@@ -523,8 +566,8 @@ export default function Step7({ onBack }: Step7Props) {
 
         // Determinar valor global 'aplica' (preferir datos ya cargados en zeroInterestData)
         const globalAplica =
-          typeof zeroInterestData?.aplica !== "undefined"
-            ? zeroInterestData?.aplica
+          zeroInterestData?.aplica !== undefined
+            ? zeroInterestData.aplica
             : storedObj?.aplica ?? false;
 
         // Obtener id de tarjeta seleccionada (preferir paymentData.savedCard)
@@ -537,13 +580,11 @@ export default function Step7({ onBack }: Step7Props) {
         const installmentsFromStorage = localStorage.getItem(
           "checkout-installments"
         );
-        const installments =
-          typeof installmentsFromState !== "undefined" &&
-          installmentsFromState !== null
-            ? Number(installmentsFromState)
-            : installmentsFromStorage
-            ? Number.parseInt(installmentsFromStorage)
-            : undefined;
+        const installments = (() => {
+          if (installmentsFromState !== null && installmentsFromState !== undefined) return Number(installmentsFromState);
+          if (installmentsFromStorage) return Number.parseInt(installmentsFromStorage, 10);
+          return undefined;
+        })();
 
         let aplica_zero_interes = false;
 
@@ -554,7 +595,7 @@ export default function Step7({ onBack }: Step7Props) {
           if (
             matched &&
             matched.eligibleForZeroInterest &&
-            typeof installments !== "undefined" &&
+            installments !== undefined &&
             matched.availableInstallments.includes(installments)
           ) {
             aplica_zero_interes = true;
@@ -671,10 +712,6 @@ export default function Step7({ onBack }: Step7Props) {
         if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
         return beneficios;
       };
-      // Aquí irá la lógica para procesar el pago
-      // Por ahora solo simulamos un delay
-      console.log({ paymentData });
-
       // Determinar método de envío y código de bodega
       const deliveryMethod = (
         localStorage.getItem("checkout-delivery-method") || "domicilio"
@@ -690,13 +727,6 @@ export default function Step7({ onBack }: Step7Props) {
       ) {
         metodo_envio = 3; // Envío Imagiq
       }
-
-      console.log("📦 Método de envío a guardar:", {
-        deliveryMethod,
-        metodo_envio,
-        envio_imagiq: shippingVerification?.envio_imagiq,
-        shippingVerification,
-      });
 
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
@@ -737,7 +767,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                JSON.parse(globalThis.window.localStorage.getItem("imagiq_user") || "{}").id,
             },
             cardTokenId: paymentData.savedCard?.id || "",
             informacion_facturacion,
@@ -772,7 +802,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                JSON.parse(globalThis.window.localStorage.getItem("imagiq_user") || "{}").id,
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -805,7 +835,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                JSON.parse(globalThis.window.localStorage.getItem("imagiq_user") || "{}").id,
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -821,7 +851,6 @@ export default function Step7({ onBack }: Step7Props) {
           throw new Error("Método de pago no soportado");
       }
       // Redirigir a página de éxito
-      /* router.push("/success-checkout/123456"); */
     } catch (error) {
       console.error("Error processing payment:", error);
       setIsProcessing(false);
@@ -1503,7 +1532,7 @@ export default function Step7({ onBack }: Step7Props) {
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
                 validationError={
-                  !tradeInValidation.isValid
+                  tradeInValidation.isValid === false
                     ? getTradeInValidationMessage(tradeInValidation)
                     : undefined
                 }

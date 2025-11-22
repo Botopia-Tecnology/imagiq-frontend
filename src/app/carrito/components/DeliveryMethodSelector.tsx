@@ -47,7 +47,11 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
             id="domicilio"
             name="delivery"
             checked={deliveryMethod === "domicilio"}
-            onChange={() => !disableHomeDelivery && onMethodChange("domicilio")}
+            onChange={(e) => {
+              if (!disableHomeDelivery && e.target.checked) {
+                onMethodChange("domicilio");
+              }
+            }}
             disabled={disableHomeDelivery}
             className="accent-blue-600 w-5 h-5"
           />

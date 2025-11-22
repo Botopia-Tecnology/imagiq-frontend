@@ -15,9 +15,9 @@ type LogoReloadAnimationProps = {
   onFinish?: () => void;
 };
 
-// Logo Samsung desde Cloudinary (SVG vectorial - mejor calidad)
+// Logo Samsung desde Cloudinary (PNG - mejor compatibilidad con Safari en máscaras SVG)
 const LOGO_SRC =
-  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg";
+  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.png";
 
 /**
  * LogoReloadAnimation

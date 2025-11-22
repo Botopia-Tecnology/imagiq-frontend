@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import PaymentForm from "./components/PaymentForm";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
@@ -21,6 +22,7 @@ export default function Step4({
   onBack?: () => void;
   onContinue?: () => void;
 }) {
+  const router = useRouter();
   const authContext = useAuthContext();
   const { products } = useCart();
   const {
@@ -76,6 +78,18 @@ export default function Step4({
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -112,6 +126,33 @@ export default function Step4({
     }
   }, [products]);
 
+  // Redirigir a Step3 si la dirección cambia desde el header
+  React.useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log(
+          "🔄 Dirección cambiada desde header en Step4, redirigiendo a Step3..."
+        );
+        router.push("/carrito/step3");
+      }
+    };
+
+    window.addEventListener(
+      "address-changed",
+      handleAddressChange as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        "address-changed",
+        handleAddressChange as EventListener
+      );
+    };
+  }, [router]);
+
   const handleContinueToNextStep = async (e: React.FormEvent) => {
     // Validar Trade-In antes de continuar
     const validation = validateTradeInProducts(products);
@@ -137,7 +178,10 @@ export default function Step4({
         showCloseButton={false}
       >
         <AddCardForm
-          userId={authContext.user?.id || ""}
+          userId={
+            authContext.user?.id ||
+            JSON.parse(localStorage.getItem("imagiq_user")!).id
+          }
           onSuccess={handleAddCardSuccess}
           onCancel={handleCloseAddCardModal}
           showAsModal={true}
@@ -177,7 +221,7 @@ export default function Step4({
         </form>
 
         {/* Resumen de compra y Trade-In */}
-        <div className="space-y-4">
+        <aside className="space-y-4">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -189,9 +233,21 @@ export default function Step4({
             onBack={onBack}
             buttonText="Continuar"
             disabled={isProcessing || !tradeInValidation.isValid}
+            isSticky={false}
+            deliveryMethod={
+              typeof window !== "undefined"
+                ? (() => {
+                    const method = localStorage.getItem("checkout-delivery-method");
+                    if (method === "tienda") return "pickup";
+                    if (method === "domicilio") return "delivery";
+                    if (method === "delivery" || method === "pickup") return method;
+                    return undefined;
+                  })()
+                : undefined
+            }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen */}
+          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
           {tradeInData?.completed && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
@@ -204,7 +260,7 @@ export default function Step4({
               }
             />
           )}
-        </div>
+        </aside>
       </div>
     </div>
   );

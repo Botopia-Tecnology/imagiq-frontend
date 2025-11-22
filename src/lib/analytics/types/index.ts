@@ -12,6 +12,18 @@ export type {
   DlCheckoutProgress,
   DlCategoryClick,
   DlAny,
-} from './events';
+} from "./events";
 
-export type {} from './dataLayer';
+export type {} from "./dataLayer";
+
+export type {
+  MetaCapiUserData,
+  MetaCapiCustomData,
+  MetaCapiEvent,
+  TikTokEventsUserData,
+  TikTokEventsProperties,
+  TikTokEventsApiEvent,
+  CapiResponse,
+  TikTokApiResponse,
+  MetaApiResponse,
+} from "./capi";

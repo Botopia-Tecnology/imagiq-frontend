@@ -12,11 +12,14 @@ export interface ProductoDetalle {
 }
 
 export interface TiendaInfo {
-  nombre: string;
+  nombre?: string;
+  descripcion?: string;
   direccion: string;
   ciudad: string;
-  telefono: string;
-  horario: string;
+  telefono?: string;
+  horario?: string;
+  latitud?: string;
+  longitud?: string;
 }
 
 export interface DetalleEnvio {
@@ -73,6 +76,7 @@ export interface OrderDetails
 
   // Nuevas propiedades para vista mejorada
   productos?: ProductoDetalle[];
+  items?: ProductoDetalle[]; // Alias para productos (usado en algunos endpoints)
   tienda?: TiendaInfo;
   direccion_entrega?: string;
   ciudad_entrega?: string;

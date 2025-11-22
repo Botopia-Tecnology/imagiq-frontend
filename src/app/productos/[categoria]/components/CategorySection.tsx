@@ -83,7 +83,7 @@ export default function CategorySection({
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
-  const { products, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce, forceKey } = useCategoryProducts(
+  const { products, bundles, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce, forceKey } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -222,6 +222,7 @@ export default function CategorySection({
             key={`grid-${forceKey}`}
             ref={productsRef}
             products={products}
+            bundles={bundles}
             loading={compositeLoading}
             isLoadingMore={isLoadingMore}
             error={error}

@@ -1,8 +1,10 @@
 /**
- * 🔐 API Client - Cliente HTTP con API Key automática
+ * 🔐 API Client - Cliente HTTP con autenticación automática
  *
  * Este módulo proporciona funciones helper para hacer peticiones HTTP al backend
- * con autenticación API Key automática.
+ * con autenticación automática:
+ * - API Key (X-API-Key): Autenticación de la aplicación
+ * - Bearer Token (Authorization): Autenticación del usuario (desde localStorage)
  */
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
@@ -17,7 +19,11 @@ if (!API_KEY && process.env.NODE_ENV === 'development') {
 }
 
 /**
- * Cliente HTTP base con API Key automática
+ * Cliente HTTP base con autenticación automática
+ *
+ * Incluye automáticamente:
+ * - X-API-Key: Autenticación de la aplicación
+ * - Authorization: Bearer token del usuario (si está logueado)
  *
  * @param endpoint - Ruta relativa del API (ej: '/api/products')
  * @param options - Opciones de fetch estándar
@@ -33,10 +39,16 @@ export async function apiClient(
 ): Promise<Response> {
   const url = `${API_URL}${endpoint}`;
 
-  // Combinar headers: API Key + headers personalizados
+  // Obtener token de autenticación del usuario desde localStorage
+  const authToken = typeof window !== 'undefined'
+    ? localStorage.getItem('imagiq_token')
+    : null;
+
+  // Combinar headers: API Key + Auth Token + headers personalizados
   const headers = new Headers({
     'Content-Type': 'application/json',
     ...(API_KEY && { 'X-API-Key': API_KEY }),
+    ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
     ...options.headers,
   });
 
@@ -45,7 +57,6 @@ export async function apiClient(
       ...options,
       headers,
     });
-
     // Manejar errores específicos
     if (!response.ok) {
       if (response.status === 401) {
@@ -58,7 +69,8 @@ export async function apiClient(
         console.error('⚠️ Rate limit excedido:', error.message);
         throw error;
       }
-      throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      const data = await response?.json();
+      throw new Error(data?.message ?? `HTTP Error ${response.status}: ${response.statusText}`);
     }
 
     return response;

@@ -16,6 +16,7 @@ interface StoreSelectorProps {
   allStores?: FormattedStore[];
   onAddressAdded?: () => void;
   onRefreshStores?: () => void;
+  availableCities?: string[];
 }
 
 
@@ -30,6 +31,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   allStores = [],
   onAddressAdded,
   onRefreshStores,
+  availableCities = [],
 }) => {
   const [showAddAddressModal, setShowAddAddressModal] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
@@ -63,9 +65,26 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
           <p className="text-sm font-bold text-gray-900 mb-2">
             El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada.
           </p>
-          <p className="text-xs text-gray-700 mb-3">
+          <p className="text-xs text-gray-700 mb-2">
             Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
           </p>
+          {availableCities.length > 0 && (
+            <div className="mb-3 p-2 bg-white rounded border border-red-100">
+              <p className="text-xs font-semibold text-gray-900 mb-1">
+                El producto está disponible en las siguientes ciudades:
+              </p>
+              <div className="flex flex-wrap gap-1">
+                {availableCities.map((city, index) => (
+                  <span
+                    key={index}
+                    className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded border border-blue-200"
+                  >
+                    {city}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
           <button
             onClick={() => setShowAddAddressModal(true)}
             className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"

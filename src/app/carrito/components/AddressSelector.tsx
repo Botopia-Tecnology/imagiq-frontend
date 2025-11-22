@@ -10,6 +10,7 @@ interface AddressSelectorProps {
   onAddressChange: (address: Direccion) => void;
   onEditToggle: (edit: boolean) => void;
   onAddressAdded?: () => void;
+  addressLoading?: boolean; // Para mostrar skeleton al recargar dirección desde header
 }
 
 /**
@@ -35,6 +36,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
   onAddressChange,
   onEditToggle,
   onAddressAdded,
+  addressLoading = false,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
 
@@ -64,16 +66,25 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
             <h4 className="text-sm font-medium text-gray-900 mb-1">
               Dirección seleccionada
             </h4>
-            <p className="text-sm text-gray-600">
-              {address
-                ? `${address.linea_uno}, ${address.ciudad}`
-                : "No hay dirección seleccionada"}
-            </p>
+            {addressLoading ? (
+              /* Skeleton mientras se actualiza la dirección desde el header */
+              <div className="space-y-2 animate-pulse">
+                <div className="h-4 bg-gray-300 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">
+                {address
+                  ? `${address.linea_uno}, ${address.ciudad}`
+                  : "No hay dirección seleccionada"}
+              </p>
+            )}
           </div>
           <button
             type="button"
             className="text-blue-600 text-sm font-medium hover:text-blue-700 transition self-start sm:self-center cursor-pointer"
             onClick={() => onEditToggle(true)}
+            disabled={addressLoading}
           >
             {address ? "Cambiar dirección" : "Seleccionar dirección"}
           </button>

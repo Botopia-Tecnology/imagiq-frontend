@@ -1,5 +1,6 @@
 import React from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { DeviceCapacity, Brand, DeviceModel } from "./types";
 
 interface IMEIInputSectionProps {
@@ -206,7 +207,16 @@ export default function IMEIInputSection({
               className="text-sm text-[#222] leading-relaxed cursor-pointer"
               style={{ fontFamily: "SamsungSharpSans" }}
             >
-              He leído y acepto los Términos y Condiciones del Plan Recambio
+              He leído y acepto los{" "}
+              <Link
+                href="/soporte/tyc-entrego-estreno"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[#0099FF] underline hover:text-[#0088EE] transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                Términos y Condiciones del Plan Recambio
+              </Link>
             </label>
           </div>
           {imeiInput.length === 15 && !termsAccepted && (

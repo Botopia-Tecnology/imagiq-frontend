@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
 import { useCart } from "@/hooks/useCart";
@@ -21,6 +22,7 @@ interface InstallmentOption {
 }
 
 export default function Step5({ onBack, onContinue }: Step5Props) {
+  const router = useRouter();
   const { calculations, products } = useCart();
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
   const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
@@ -73,6 +75,18 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -87,12 +101,15 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
+
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
+
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
         description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
@@ -100,6 +117,25 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
       });
     }
   }, [products]);
+
+  // Redirigir a Step3 si la dirección cambia desde el header
+  useEffect(() => {
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      if (fromHeader) {
+        console.log('🔄 Dirección cambiada desde header en Step5, redirigiendo a Step3...');
+        router.push('/carrito/step3');
+      }
+    };
+
+    window.addEventListener('address-changed', handleAddressChange as EventListener);
+
+    return () => {
+      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+    };
+  }, [router]);
 
   // Calcular opciones de cuotas basadas en el total del carrito
   const calculateInstallments = (): InstallmentOption[] => {
@@ -281,15 +317,27 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
           </div>
 
           {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
+          <aside className="lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               disabled={selectedInstallments === null || !tradeInValidation.isValid}
+              isSticky={false}
+              deliveryMethod={
+                typeof window !== "undefined"
+                  ? (() => {
+                      const method = localStorage.getItem("checkout-delivery-method");
+                      if (method === "tienda") return "pickup";
+                      if (method === "domicilio") return "delivery";
+                      if (method === "delivery" || method === "pickup") return method;
+                      return undefined;
+                    })()
+                  : undefined
+              }
             />
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
@@ -298,7 +346,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
                 validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
-          </div>
+          </aside>
         </div>
       </div>
     </div>

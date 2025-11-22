@@ -647,11 +647,10 @@ export default function Navbar() {
           <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
             <div className="w-full flex items-center justify-end gap-4">
               {/* Dirección predeterminada del usuario con dropdown */}
-              {isAuthenticated && (
-                <div className="flex-1 min-w-0">
-                  <AddressDropdown showWhiteItems={shouldShowWhiteItems} />
-                </div>
-              )}
+              {/* Se muestra siempre: si no está logueado, muestra "Agregar dirección" y redirige a login */}
+              <div className="flex-1 min-w-0">
+                <AddressDropdown showWhiteItems={shouldShowWhiteItems} />
+              </div>
 
               <Link
                 href="/ventas-corporativas"

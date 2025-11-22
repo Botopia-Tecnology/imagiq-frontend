@@ -29,7 +29,11 @@ export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
           id="tienda"
           name="delivery"
           checked={deliveryMethod === "tienda"}
-          onChange={() => !disabled && onMethodChange("tienda")}
+          onChange={(e) => {
+            if (!disabled && e.target.checked) {
+              onMethodChange("tienda");
+            }
+          }}
           disabled={disabled}
           className="accent-blue-600 w-5 h-5"
         />

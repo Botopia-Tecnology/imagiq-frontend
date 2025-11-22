@@ -12,7 +12,8 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Image, { StaticImageData } from "next/image";
-import { Heart } from "lucide-react";
+import { Loader } from "lucide-react";
+import { useCartContext } from "@/features/cart/CartContext";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
@@ -20,6 +21,8 @@ import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { calculateSavings } from "./utils/productCardHelpers";
 import { motion } from "framer-motion";
 import type { BundleCardProps } from "@/lib/productMapper";
+import StockNotificationModal from "@/components/StockNotificationModal";
+import { useStockNotification } from "@/hooks/useStockNotification";
 
 export default function BundleCard({
   id,
@@ -35,15 +38,16 @@ export default function BundleCard({
   fecha_inicio,
   fecha_final,
   className,
+  stock,
 }: BundleCardProps & { className?: string }) {
   const router = useRouter();
   const [currentImageIndex] = useState(0);
 
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
-  const bundleImages = useMemo(
-    () => [image, image, image],
-    [image]
-  );
+  const bundleImages = useMemo(() => [image, image, image], [image]);
+
+  const [isLoading, setIsLoading] = useState(false);
+  const { addProduct } = useCartContext();
 
   // Aplicar transformación de Cloudinary a todas las imágenes del carrusel
   const transformedImages = useMemo(() => {
@@ -54,6 +58,18 @@ export default function BundleCard({
 
     return transformed;
   }, [bundleImages]);
+  const stockNotification = useStockNotification();
+
+  const handleRequestStockNotification = async (email: string) => {
+
+
+    await stockNotification.requestNotification({
+      productName: name,
+      email,
+      sku: id,
+      codigoMarket: id,
+    });
+  };
 
   const handleMoreInfo = () => {
     // TODO: Navegar a página de detalle del bundle (próximamente)
@@ -69,14 +85,75 @@ export default function BundleCard({
     });
   };
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     // TODO: Implementar lógica para agregar bundle al carrito (próximamente)
-    posthogUtils.capture("bundle_add_to_cart_click", {
+
+
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Validación estricta: debe existir un SKU válido
+      const skuToUse = id;
+      const eanToUse = id
+
+      if (!skuToUse) {
+        setIsLoading(false);
+        return;
+      }
+
+
+      posthogUtils.capture("add_to_cart_click", {
       bundle_id: id,
       bundle_name: name,
       skus_bundle,
       source: "bundle_card",
     });
+
+      // Agrega el producto al carrito usando el contexto - SIEMPRE cantidad 1
+      // shippingCity y shippingStore se obtienen automáticamente del backend
+      await addProduct({
+        id,
+        name,
+        image:
+          typeof image === "string"
+            ? image
+            : typeof image === "string"
+            ? image
+            : image.src ?? "",
+        price:
+          typeof price === "string"
+            ? Number.parseInt(price.replaceAll(/[^\d]/g, ""))
+            : price ?? 0,
+        originalPrice:
+          typeof originalPrice === "string"
+            ? Number.parseInt(
+                originalPrice.replaceAll(/[^\d]/g, "")
+              )
+            : originalPrice,
+        stock: stock,
+        quantity: 1, // SIEMPRE agregar de 1 en 1
+        sku: id, // SKU del sistema seleccionado
+        ean: eanToUse, // EAN del sistema seleccionado
+        //puntos_q,
+        color:  undefined,
+        colorName:undefined,
+        capacity: undefined,
+        ram:undefined,
+        skuPostback: id,
+        desDetallada: name,
+        modelo: "",
+      });
+    } finally {
+      // Restaurar el estado después de un delay para prevenir clics rápidos
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300); // Tiempo reducido para mejor UX
+    }
+
   };
 
   // Handler para el click en la card completa
@@ -109,6 +186,22 @@ export default function BundleCard({
   });
 
   return (
+    <>
+     <StockNotificationModal
+            isOpen={stockNotification.isModalOpen}
+            onClose={stockNotification.closeModal}
+            productName={name}
+            productImage={
+              typeof image === "string"
+                ? image
+                : typeof image === "string"
+                ? image
+                : image.src ?? ""
+            }
+            selectedColor={undefined}
+            selectedStorage={ undefined}
+            onNotificationRequest={handleRequestStockNotification}
+          />
     <motion.div
       role="button"
       onClick={handleCardClick}
@@ -172,7 +265,10 @@ export default function BundleCard({
 
           {/* Info de productos incluidos */}
           <p className="text-xs text-gray-500 mt-1">
-            {skus_bundle.length} {skus_bundle.length === 1 ? 'producto incluido' : 'productos incluidos'}
+            {skus_bundle.length}{" "}
+            {skus_bundle.length === 1
+              ? "producto incluido"
+              : "productos incluidos"}
           </p>
         </div>
 
@@ -180,7 +276,8 @@ export default function BundleCard({
         {fecha_inicio && fecha_final && (
           <div className="px-3">
             <p className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">
-              Oferta válida hasta: {new Date(fecha_final).toLocaleDateString('es-CO')}
+              Oferta válida hasta:{" "}
+              {new Date(fecha_final).toLocaleDateString("es-CO")}
             </p>
           </div>
         )}
@@ -198,9 +295,7 @@ export default function BundleCard({
                 if (!hasSavings) {
                   // Sin descuento: solo precio
                   return (
-                    <div className="text-xl font-bold text-black">
-                      {price}
-                    </div>
+                    <div className="text-xl font-bold text-black">{price}</div>
                   );
                 }
 
@@ -231,46 +326,46 @@ export default function BundleCard({
 
           {/* Botones de acción - Horizontal */}
           <div className="flex items-center gap-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || isOutOfStock) {
-                  //   stockNotification.openModal();
-                  // } else {
-                    handleAddToCart();
-                  //}
-                }}
-                //disabled={isLoading}
-                className={cn(
-                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
-                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                 // isLoading && "animate-pulse"
-                )}
-              >
-                Añadir al carrito
-                {/* {isLoading ? (
-                  <Loader className="w-4 h-4 mx-auto" />
-                ) : process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ? (
-                  "Notifícame"
-                ) : isOutOfStock ? (
-                  "Notifícame"
-                ) : (
-                  "Añadir al carrito"
-                )} */}
-              </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || stock == 0) {
+                  stockNotification.openModal();
+                } else {
+                handleAddToCart();
+                }
+              }}
+              disabled={isLoading}
+              className={cn(
+                "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
+                "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                 isLoading && "animate-pulse"
+              )}
+            >
+              {isLoading ? (
+                <Loader className="w-4 h-4 mx-auto" />
+              ) : process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ? (
+                "Notifícame"
+              ) : stock == 0 ? (
+                "Notifícame"
+              ) : (
+                "Añadir al carrito"
+              )}
+            </button>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMoreInfo();
-                }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
-              >
-                Más información
-              </button>
-            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMoreInfo();
+              }}
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+            >
+              Más información
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>
+    </>
   );
 }

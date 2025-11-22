@@ -29,6 +29,7 @@ export interface BundleCardProps {
   fecha_inicio: string;
   fecha_final: string;
   isBundle: true; // Indicador para distinguir de productos normales
+  stock?: number; // Opcional: stock disponible del bundle
 }
 
 

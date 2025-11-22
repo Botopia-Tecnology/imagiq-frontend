@@ -12,18 +12,18 @@ interface ShippingVerification {
 }
 
 interface Step4OrderSummaryProps {
-  isProcessing?: boolean;
-  onFinishPayment: () => void;
-  buttonText?: string;
-  onBack?: () => void;
-  disabled?: boolean;
-  shippingVerification?: ShippingVerification | null;
-  deliveryMethod?: "delivery" | "pickup";
-  isSticky?: boolean;
-  isStep1?: boolean; // Indica si estamos en Step1 para calcular canPickUp global
-  onCanPickUpReady?: (isReady: boolean, isLoading: boolean) => void; // Callback para notificar cuando canPickUp está listo
-  error?: string | string[] | null;
-  shouldCalculateCanPickUp?: boolean; // Indica si debe calcular canPickUp (por defecto true en Steps 1-6, false en Step7)
+  readonly isProcessing?: boolean;
+  readonly onFinishPayment: () => void;
+  readonly buttonText?: string;
+  readonly onBack?: () => void;
+  readonly disabled?: boolean;
+  readonly shippingVerification?: ShippingVerification | null;
+  readonly deliveryMethod?: "delivery" | "pickup";
+  readonly isSticky?: boolean;
+  readonly isStep1?: boolean; // Indica si estamos en Step1 para calcular canPickUp global
+  readonly onCanPickUpReady?: (isReady: boolean, isLoading: boolean) => void; // Callback para notificar cuando canPickUp está listo
+  readonly error?: string | string[] | null;
+  readonly shouldCalculateCanPickUp?: boolean; // Indica si debe calcular canPickUp (por defecto true en Steps 1-6, false en Step7)
 }
 
 export default function Step4OrderSummary({
@@ -50,9 +50,9 @@ export default function Step4OrderSummary({
 
   // Obtener método de entrega desde localStorage - forzar lectura correcta
   const getDeliveryMethodFromStorage = React.useCallback(() => {
-    if (typeof window === "undefined") return "domicilio";
+    if (globalThis.window === undefined) return "domicilio";
     try {
-      const method = localStorage.getItem("checkout-delivery-method");
+      const method = globalThis.window.localStorage.getItem("checkout-delivery-method");
       // Validar que el método sea válido
       if (method === "tienda" || method === "domicilio") {
         return method;
@@ -70,7 +70,7 @@ export default function Step4OrderSummary({
 
   // Actualizar el método de entrega cuando cambie
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (globalThis.window === undefined) return;
 
     const updateDeliveryMethod = () => {
       const method = getDeliveryMethodFromStorage();
@@ -90,13 +90,13 @@ export default function Step4OrderSummary({
     const handleStorageChange = () => {
       updateDeliveryMethod();
     };
-    window.addEventListener("storage", handleStorageChange);
+    globalThis.window.addEventListener("storage", handleStorageChange);
 
     // Escuchar evento personalizado cuando cambia el método de entrega
     const handleDeliveryMethodChanged = () => {
       updateDeliveryMethod();
     };
-    window.addEventListener(
+    globalThis.window.addEventListener(
       "delivery-method-changed",
       handleDeliveryMethodChanged
     );
@@ -108,15 +108,15 @@ export default function Step4OrderSummary({
     const handleFocus = () => {
       updateDeliveryMethod();
     };
-    window.addEventListener("focus", handleFocus);
+    globalThis.window.addEventListener("focus", handleFocus);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener(
+      globalThis.window.removeEventListener("storage", handleStorageChange);
+      globalThis.window.removeEventListener(
         "delivery-method-changed",
         handleDeliveryMethodChanged
       );
-      window.removeEventListener("focus", handleFocus);
+      globalThis.window.removeEventListener("focus", handleFocus);
       clearInterval(interval);
     };
   }, [getDeliveryMethodFromStorage]);
@@ -285,13 +285,21 @@ export default function Step4OrderSummary({
         }
       }
     } else {
+      let reason: string;
+      if (userClickedWhileLoading === false) {
+        reason = 'Usuario no hizo clic';
+      } else if (isLoadingCanPickUp === true) {
+        reason = 'Aún está cargando';
+      } else if (shouldCalculateCanPickUp === false) {
+        reason = 'No debe calcular canPickUp';
+      } else {
+        reason = 'Desconocido';
+      }
       console.log('⏸️ Condición NO cumplida para avance automático:', {
         userClickedWhileLoading,
         isLoadingCanPickUp,
         shouldCalculateCanPickUp,
-        reason: !userClickedWhileLoading ? 'Usuario no hizo clic' : 
-                isLoadingCanPickUp ? 'Aún está cargando' : 
-                !shouldCalculateCanPickUp ? 'No debe calcular canPickUp' : 'Desconocido'
+        reason
       });
     }
   }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp]);
@@ -329,21 +337,21 @@ export default function Step4OrderSummary({
     };
 
     // Escuchar evento storage (para cambios entre tabs)
-    window.addEventListener("storage", handleStorageChange);
+    globalThis.window.addEventListener("storage", handleStorageChange);
 
     // Escuchar eventos personalizados desde header
-    window.addEventListener("address-changed", handleAddressChange);
+    globalThis.window.addEventListener("address-changed", handleAddressChange);
 
     // Escuchar eventos personalizados desde checkout
-    window.addEventListener("checkout-address-changed", handleAddressChange);
+    globalThis.window.addEventListener("checkout-address-changed", handleAddressChange);
 
     // También verificar cambios periódicamente en la misma tab
-    let lastCheckoutAddress = localStorage.getItem("checkout-address");
-    let lastDefaultAddress = localStorage.getItem("imagiq_default_address");
+    let lastCheckoutAddress = globalThis.window.localStorage.getItem("checkout-address");
+    let lastDefaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
 
     const checkAddressChanges = () => {
-      const currentCheckoutAddress = localStorage.getItem("checkout-address");
-      const currentDefaultAddress = localStorage.getItem(
+      const currentCheckoutAddress = globalThis.window.localStorage.getItem("checkout-address");
+      const currentDefaultAddress = globalThis.window.localStorage.getItem(
         "imagiq_default_address"
       );
 
@@ -373,9 +381,9 @@ export default function Step4OrderSummary({
     const intervalId = setInterval(checkAddressChanges, 500);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("address-changed", handleAddressChange);
-      window.removeEventListener(
+      globalThis.window.removeEventListener("storage", handleStorageChange);
+      globalThis.window.removeEventListener("address-changed", handleAddressChange);
+      globalThis.window.removeEventListener(
         "checkout-address-changed",
         handleAddressChange
       );
@@ -388,15 +396,12 @@ export default function Step4OrderSummary({
     if (!isStep1) return;
 
     const handleStorageChange = (e: Event | StorageEvent) => {
-      const key =
-        "detail" in e &&
-        e.detail &&
-        typeof e.detail === "object" &&
-        "key" in e.detail
-          ? (e.detail as { key?: string }).key
-          : "key" in e
-          ? e.key
-          : null;
+      let key: string | null = null;
+      if ("detail" in e && e.detail && typeof e.detail === "object" && "key" in e.detail) {
+        key = (e.detail as { key?: string }).key || null;
+      } else if ("key" in e) {
+        key = e.key;
+      }
 
       if (key === "cart-items") {
         console.log(
@@ -408,13 +413,13 @@ export default function Step4OrderSummary({
     };
 
     // Escuchar cambios en cart-items (cuando se agregan productos desde sugerencias o cambia la cantidad)
-    window.addEventListener("storage", handleStorageChange);
+    globalThis.window.addEventListener("storage", handleStorageChange);
     // También escuchar evento personalizado
-    window.addEventListener("localStorageChange", handleStorageChange);
+    globalThis.window.addEventListener("localStorageChange", handleStorageChange);
 
     return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("localStorageChange", handleStorageChange);
+      globalThis.window.removeEventListener("storage", handleStorageChange);
+      globalThis.window.removeEventListener("localStorageChange", handleStorageChange);
     };
   }, [fetchGlobalCanPickUp]);
 
@@ -480,14 +485,16 @@ export default function Step4OrderSummary({
           <span>
             {(() => {
               // Prefer prop value, fallback to local state or localStorage
-              const currentMethod =
-                deliveryMethod === "pickup"
-                  ? "tienda"
-                  : deliveryMethod === "delivery"
-                  ? "domicilio"
-                  : localDeliveryMethod === "tienda"
-                  ? "tienda"
-                  : getDeliveryMethodFromStorage();
+              let currentMethod: string;
+              if (deliveryMethod === "pickup") {
+                currentMethod = "tienda";
+              } else if (deliveryMethod === "delivery") {
+                currentMethod = "domicilio";
+              } else if (localDeliveryMethod === "tienda") {
+                currentMethod = "tienda";
+              } else {
+                currentMethod = getDeliveryMethodFromStorage();
+              }
               return currentMethod === "tienda"
                 ? "Recoger en tienda"
                 : "Envío a domicilio";
@@ -605,7 +612,7 @@ export default function Step4OrderSummary({
           >
             política de privacidad
           </a>
-          .
+          {" "}.
         </p>
 
         {/* Espacio entre secciones */}
@@ -650,7 +657,7 @@ export default function Step4OrderSummary({
               >
                 T&C Davivienda
               </a>
-              .
+              {" "}.
             </p>
           </div>
 
@@ -699,17 +706,23 @@ export default function Step4OrderSummary({
             Debug: canPickUp global
           </p>
           <div className="text-xs text-yellow-700">
-            {isLoadingCanPickUp ? (
-              <p className="text-yellow-600 italic">Verificando...</p>
-            ) : globalCanPickUp === null ? (
-              <p className="text-yellow-600 italic">
-                No disponible - Verifica que estés logueado y tengas productos en el carrito
-              </p>
-            ) : (
-              <p className="font-medium">
-                canPickUp global: {globalCanPickUp ? "true" : "false"}
-              </p>
-            )}
+            {(() => {
+              if (isLoadingCanPickUp) {
+                return <p className="text-yellow-600 italic">Verificando...</p>;
+              }
+              if (globalCanPickUp === null) {
+                return (
+                  <p className="text-yellow-600 italic">
+                    No disponible - Verifica que estés logueado y tengas productos en el carrito
+                  </p>
+                );
+              }
+              return (
+                <p className="font-medium">
+                  canPickUp global: {globalCanPickUp ? "true" : "false"}
+                </p>
+              );
+            })()}
           </div>
         </div>
       )}

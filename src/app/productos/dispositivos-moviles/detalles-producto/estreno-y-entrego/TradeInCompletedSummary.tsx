@@ -9,6 +9,7 @@ interface TradeInCompletedSummaryProps {
   readonly isGuide?: boolean;
   readonly showErrorSkeleton?: boolean;
   readonly shippingCity?: string;
+  readonly showCanPickUpMessage?: boolean; // Mostrar mensaje cuando canPickUp es false
 }
 
 export default function TradeInCompletedSummary({
@@ -20,6 +21,7 @@ export default function TradeInCompletedSummary({
   isGuide = false,
   showErrorSkeleton = false,
   shippingCity,
+  showCanPickUpMessage = false,
 }: TradeInCompletedSummaryProps) {
   return (
     <section className="mb-3 md:mb-4">
@@ -140,6 +142,11 @@ export default function TradeInCompletedSummary({
                 {showStorePickupMessage && (
                   <p className="text-xs text-gray-700 leading-relaxed font-medium">
                     Para el beneficio de entrego y estreno solo aplica recogida en tienda de producto.
+                  </p>
+                )}
+                {showCanPickUpMessage && (
+                  <p className="text-xs text-orange-700 leading-relaxed font-medium mt-2">
+                    Este producto no se encuentra disponible en una tienda según tu ubicación predeterminada. El beneficio Entrego y Estreno solo aplica para recoger en tienda.
                   </p>
                 )}
               </>

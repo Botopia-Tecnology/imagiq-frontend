@@ -29,7 +29,7 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 import { productEndpoints } from "@/lib/api";
 
 interface Step7Props {
-  onBack?: () => void;
+  readonly onBack?: () => void;
 }
 
 interface CardData {
@@ -311,7 +311,7 @@ export default function Step7({ onBack }: Step7Props) {
     setTradeInData(null);
     
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
-    if (typeof globalThis.window !== "undefined") {
+    if (globalThis.window !== undefined) {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
       if (currentMethod === "tienda") {
         globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
@@ -338,8 +338,8 @@ export default function Step7({ onBack }: Step7Props) {
 
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (
-      !validation.isValid &&
-      validation.errorMessage &&
+      validation.isValid === false &&
+      validation.errorMessage !== undefined &&
       validation.errorMessage.includes("Te removimos")
     ) {
       // Limpiar localStorage inmediatamente
@@ -371,13 +371,13 @@ export default function Step7({ onBack }: Step7Props) {
       }
     };
 
-    window.addEventListener(
+    globalThis.window.addEventListener(
       "address-changed",
       handleAddressChange as EventListener
     );
 
     return () => {
-      window.removeEventListener(
+      globalThis.window.removeEventListener(
         "address-changed",
         handleAddressChange as EventListener
       );
@@ -566,8 +566,8 @@ export default function Step7({ onBack }: Step7Props) {
 
         // Determinar valor global 'aplica' (preferir datos ya cargados en zeroInterestData)
         const globalAplica =
-          typeof zeroInterestData?.aplica !== "undefined"
-            ? zeroInterestData?.aplica
+          zeroInterestData?.aplica !== undefined
+            ? zeroInterestData.aplica
             : storedObj?.aplica ?? false;
 
         // Obtener id de tarjeta seleccionada (preferir paymentData.savedCard)
@@ -580,13 +580,11 @@ export default function Step7({ onBack }: Step7Props) {
         const installmentsFromStorage = localStorage.getItem(
           "checkout-installments"
         );
-        const installments =
-          typeof installmentsFromState !== "undefined" &&
-          installmentsFromState !== null
-            ? Number(installmentsFromState)
-            : installmentsFromStorage
-            ? Number.parseInt(installmentsFromStorage)
-            : undefined;
+        const installments = (() => {
+          if (installmentsFromState !== null && installmentsFromState !== undefined) return Number(installmentsFromState);
+          if (installmentsFromStorage) return Number.parseInt(installmentsFromStorage, 10);
+          return undefined;
+        })();
 
         let aplica_zero_interes = false;
 
@@ -597,7 +595,7 @@ export default function Step7({ onBack }: Step7Props) {
           if (
             matched &&
             matched.eligibleForZeroInterest &&
-            typeof installments !== "undefined" &&
+            installments !== undefined &&
             matched.availableInstallments.includes(installments)
           ) {
             aplica_zero_interes = true;
@@ -769,7 +767,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                JSON.parse(globalThis.window.localStorage.getItem("imagiq_user") || "{}").id,
             },
             cardTokenId: paymentData.savedCard?.id || "",
             informacion_facturacion,
@@ -804,7 +802,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                JSON.parse(globalThis.window.localStorage.getItem("imagiq_user") || "{}").id,
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -837,7 +835,7 @@ export default function Step7({ onBack }: Step7Props) {
               direccionId: billingData.direccion?.id || "",
               userId:
                 authContext.user?.id ||
-                JSON.parse(localStorage.getItem("imagiq_user")!).id,
+                JSON.parse(globalThis.window.localStorage.getItem("imagiq_user") || "{}").id,
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -853,7 +851,6 @@ export default function Step7({ onBack }: Step7Props) {
           throw new Error("Método de pago no soportado");
       }
       // Redirigir a página de éxito
-      /* router.push("/success-checkout/123456"); */
     } catch (error) {
       console.error("Error processing payment:", error);
       setIsProcessing(false);
@@ -1535,7 +1532,7 @@ export default function Step7({ onBack }: Step7Props) {
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
                 validationError={
-                  !tradeInValidation.isValid
+                  tradeInValidation.isValid === false
                     ? getTradeInValidationMessage(tradeInValidation)
                     : undefined
                 }

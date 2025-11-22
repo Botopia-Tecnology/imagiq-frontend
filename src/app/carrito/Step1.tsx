@@ -27,7 +27,7 @@ import { toast } from "sonner";
  * Paso 1 del carrito de compras
  * Recibe onContinue para avanzar al paso 2
  */
-export default function Step1({ onContinue }: { onContinue: () => void }) {
+export default function Step1({ onContinue }: { readonly onContinue: () => void }) {
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const { trackBeginCheckout } = useAnalyticsWithUser();
@@ -207,8 +207,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
       const customEvent = new CustomEvent("localStorageChange", {
         detail: { key: "cart-items" },
       });
-      window.dispatchEvent(customEvent);
-      window.dispatchEvent(new Event("storage"));
+      globalThis.dispatchEvent(customEvent);
+      globalThis.dispatchEvent(new Event("storage"));
 
       // Limpiar todos los loading después de actualizar
       setLoadingIndRetoma(new Set());
@@ -277,8 +277,8 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
 
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (
-      !validation.isValid &&
-      validation.errorMessage &&
+      validation.isValid === false &&
+      validation.errorMessage !== undefined &&
       validation.errorMessage.includes("Te removimos")
     ) {
       // Limpiar localStorage inmediatamente
@@ -373,15 +373,15 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
     localStorage.removeItem("imagiq_trade_in");
 
     // FORZAR cambio a "domicilio" si el método está en "tienda" (sin importar si está autenticado o no)
-    if (typeof globalThis.window !== "undefined") {
+    if (globalThis.window !== undefined) {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
       if (currentMethod === "tienda") {
         // Forzar cambio inmediatamente
         globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
-        globalThis.window.dispatchEvent(
+        globalThis.dispatchEvent(
           new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
         );
-        globalThis.window.dispatchEvent(new Event("storage"));
+        globalThis.dispatchEvent(new Event("storage"));
       }
     }
 
@@ -477,7 +477,7 @@ export default function Step1({ onContinue }: { onContinue: () => void }) {
         onEdit: tradeInData!.completed
           ? handleRemoveTradeIn
           : handleOpenTradeInModal,
-        validationError: !tradeInValidation.isValid
+        validationError: tradeInValidation.isValid === false
           ? getTradeInValidationMessage(tradeInValidation)
           : undefined,
         isGuide: !tradeInData!.completed,

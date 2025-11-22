@@ -23,10 +23,10 @@ export default function Step3({
   onBack,
   onContinue,
 }: {
-  onBack?: () => void;
-  onContinue?: () => void;
+  readonly onBack?: () => void;
+  readonly onContinue?: () => void;
 }) {
-  const { products, appliedDiscount, calculations } = useCart();
+  const { products, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
   const {
@@ -306,8 +306,8 @@ export default function Step3({
           const customEvent = new CustomEvent("localStorageChange", {
             detail: { key: "cart-items" },
           });
-          window.dispatchEvent(customEvent);
-          window.dispatchEvent(new Event("storage"));
+          globalThis.dispatchEvent(customEvent);
+          globalThis.dispatchEvent(new Event("storage"));
         } catch (error) {
           // Si hay un error en el catch, también marcar como fallido
           failedSkusRef.current.add(sku);
@@ -342,11 +342,11 @@ export default function Step3({
       }
 
       // IMPORTANTE: Verificar y guardar el método de entrega en localStorage antes de continuar
-      if (typeof window !== "undefined") {
-        const currentMethod = localStorage.getItem("checkout-delivery-method");
+      if (globalThis.window !== undefined) {
+        const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
         if (!currentMethod || currentMethod !== deliveryMethod) {
-          localStorage.setItem("checkout-delivery-method", deliveryMethod);
-          window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method: deliveryMethod } }));
+          globalThis.window.localStorage.setItem("checkout-delivery-method", deliveryMethod);
+          globalThis.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method: deliveryMethod } }));
         }
       }
 
@@ -382,7 +382,7 @@ export default function Step3({
     setTradeInValidation(validation);
     
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
-    if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
+    if (validation.isValid === false && validation.errorMessage !== undefined && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
       
@@ -429,13 +429,13 @@ export default function Step3({
     }
 
     // IMPORTANTE: Verificar y guardar el método de entrega en localStorage antes de continuar
-    if (typeof window !== "undefined") {
-      const currentMethod = localStorage.getItem("checkout-delivery-method");
+    if (globalThis.window !== undefined) {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
       // Si no existe o es diferente al método actual, guardarlo
       if (!currentMethod || currentMethod !== deliveryMethod) {
-        localStorage.setItem("checkout-delivery-method", deliveryMethod);
+        globalThis.window.localStorage.setItem("checkout-delivery-method", deliveryMethod);
         // Disparar evento para notificar el cambio
-        window.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method: deliveryMethod } }));
+        globalThis.dispatchEvent(new CustomEvent("delivery-method-changed", { detail: { method: deliveryMethod } }));
       }
     }
 
@@ -569,15 +569,12 @@ export default function Step3({
               disabled={!canContinue || !tradeInValidation.isValid}
               isProcessing={isWaitingForCanPickUp}
               isSticky={false}
-              deliveryMethod={
-                deliveryMethod === "tienda"
-                  ? "pickup"
-                  : deliveryMethod === "domicilio"
-                  ? "delivery"
-                  : deliveryMethod === "delivery" || deliveryMethod === "pickup"
-                  ? deliveryMethod
-                  : undefined
-              }
+              deliveryMethod={(() => {
+                if (deliveryMethod === "tienda") return "pickup";
+                if (deliveryMethod === "domicilio") return "delivery";
+                if (deliveryMethod === "delivery" || deliveryMethod === "pickup") return deliveryMethod;
+                return undefined;
+              })()}
             />
 
             {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
@@ -586,7 +583,7 @@ export default function Step3({
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
-                validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
+                validationError={tradeInValidation.isValid === false ? getTradeInValidationMessage(tradeInValidation) : undefined}
                 showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
               />
             )}

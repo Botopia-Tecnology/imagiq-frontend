@@ -41,8 +41,8 @@ export default function Step2({
   onBack,
   onContinue,
 }: {
-  onBack?: () => void;
-  onContinue?: () => void;
+  readonly onBack?: () => void;
+  readonly onContinue?: () => void;
 }) {
   // Usar el hook centralizado useCart
   const { products: cartProducts } = useCart();
@@ -88,11 +88,11 @@ export default function Step2({
   // --- Validación simplificada y centralizada ---
   // Filtros de seguridad por campo
   const filters = {
-    cedula: (v: string) => v.replace(/[^0-9]/g, ""),
-    celular: (v: string) => v.replace(/[^0-9]/g, ""),
-    nombre: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-    apellido: (v: string) => v.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
-    email: (v: string) => v.replace(/\s/g, ""),
+    cedula: (v: string) => v.replaceAll(/\D/g, ""),
+    celular: (v: string) => v.replaceAll(/\D/g, ""),
+    nombre: (v: string) => v.replaceAll(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+    apellido: (v: string) => v.replaceAll(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, ""),
+    email: (v: string) => v.replaceAll(/\s/g, ""),
     tipo_documento: (v: string) => v, // No filter needed for select
   };
 
@@ -118,7 +118,7 @@ export default function Step2({
       if (!v) return "Por favor escribe tu número de cédula.";
       if (v.length < 6 || v.length > 10)
         return "La cédula debe tener entre 6 y 10 números.";
-      if (!/^([1-9][0-9]{5,9})$/.test(v))
+      if (!/^([1-9]\d{5,9})$/.test(v))
         return "La cédula debe empezar con un número diferente de cero.";
       return "";
     },
@@ -126,7 +126,7 @@ export default function Step2({
       if (!v) return "Por favor escribe tu número de celular.";
       if (v.length !== 10)
         return "El celular debe tener exactamente 10 números.";
-      if (!/^3[0-9]{9}$/.test(v))
+      if (!/^3\d{9}$/.test(v))
         return "El celular colombiano debe empezar con '3' y tener 10 dígitos.";
       return "";
     },
@@ -148,10 +148,10 @@ export default function Step2({
       celular: "",
       tipo_documento: "",
     };
-    Object.keys(errors).forEach((key) => {
+    for (const key of Object.keys(errors)) {
       // @ts-expect-error Type mismatch due to dynamic key access; all keys are validated and safe here
       errors[key] = validators[key](form[key].trim());
-    });
+    }
     return errors;
   }
 
@@ -172,7 +172,7 @@ export default function Step2({
 
   // Validar formulario invitado
   const isGuestFormValid = Object.values(validateFields(guestForm)).every(
-    (err) => !err
+    Boolean
   );
 
   /**
@@ -194,8 +194,8 @@ export default function Step2({
     }
 
     // Guardar dirección y cédula en localStorage para autocompletar en Step3 y Step4
-    if (typeof window !== "undefined") {
-      localStorage.setItem("checkout-document", guestForm.cedula);
+    if (globalThis.window !== undefined) {
+      globalThis.window.localStorage.setItem("checkout-document", guestForm.cedula);
     }
 
     // Guardar en localStorage bajo la clave 'guest-payment-info'
@@ -283,8 +283,8 @@ export default function Step2({
 
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (
-      !validation.isValid &&
-      validation.errorMessage &&
+      validation.isValid === false &&
+      validation.errorMessage !== undefined &&
       validation.errorMessage.includes("Te removimos")
     ) {
       // Limpiar localStorage inmediatamente
@@ -483,8 +483,8 @@ export default function Step2({
           const customEvent = new CustomEvent("localStorageChange", {
             detail: { key: "cart-items" },
           });
-          window.dispatchEvent(customEvent);
-          window.dispatchEvent(new Event("storage"));
+          globalThis.dispatchEvent(customEvent);
+          globalThis.dispatchEvent(new Event("storage"));
         } catch (error) {
           // Si hay un error en el catch, también marcar como fallido
           failedSkusRef.current.add(sku);
@@ -755,9 +755,9 @@ export default function Step2({
             isProcessing={loading}
             isSticky={false}
             deliveryMethod={
-              typeof window !== "undefined"
+              globalThis.window !== undefined
                 ? (() => {
-                    const method = localStorage.getItem("checkout-delivery-method");
+                    const method = globalThis.window.localStorage.getItem("checkout-delivery-method");
                     if (method === "tienda") return "pickup";
                     if (method === "domicilio") return "delivery";
                     if (method === "delivery" || method === "pickup") return method;
@@ -774,7 +774,7 @@ export default function Step2({
               tradeInValue={tradeInData.value}
               onEdit={handleRemoveTradeIn}
               validationError={
-                !tradeInValidation.isValid
+                tradeInValidation.isValid === false
                   ? getTradeInValidationMessage(tradeInValidation)
                   : undefined
               }

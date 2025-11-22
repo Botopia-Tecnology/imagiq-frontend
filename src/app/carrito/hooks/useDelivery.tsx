@@ -9,7 +9,6 @@ import type { FormattedStore } from "@/types/store";
 import {
   productEndpoints,
   type CandidateStore,
-  type CandidateStoresResponse,
 } from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
 
@@ -37,7 +36,7 @@ const normalizeText = (text: string): string => {
   return text
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, ""); // Remueve diacríticos (acentos)
+    .replaceAll(/[\u0300-\u036f]/g, ""); // Remueve diacríticos (acentos)
 };
 
 /**
@@ -69,14 +68,19 @@ const candidateStoreToFormattedStore = async (
 
     // Si no se encuentra, crear un FormattedStore básico con los datos disponibles
     // Esto es un fallback en caso de que la tienda no esté en el listado completo
-    const codDane = candidateStore.codDane
-      ? typeof candidateStore.codDane === "string"
-        ? parseInt(candidateStore.codDane)
-        : candidateStore.codDane
-      : 0;
+    let codDane: number;
+    if (candidateStore.codDane) {
+      if (typeof candidateStore.codDane === "string") {
+        codDane = Number.parseInt(candidateStore.codDane, 10);
+      } else {
+        codDane = candidateStore.codDane;
+      }
+    } else {
+      codDane = 0;
+    }
 
     return {
-      codigo: parseInt(candidateStore.codBodega) || 0,
+      codigo: Number.parseInt(candidateStore.codBodega, 10) || 0,
       descripcion: candidateStore.nombre_tienda,
       departamento: city, // Usar la ciudad como departamento si no está disponible
       ciudad: candidateStore.ciudad || city,
@@ -118,11 +122,13 @@ export const useDelivery = () => {
   const lastFetchTimeRef = useRef(0);
   const lastAddressIdRef = useRef<string | null>(null); // Para rastrear última dirección procesada
   const isRemovingTradeInRef = useRef(false); // Para prevenir llamadas durante eliminación de trade-in
+  const failedRequestHashRef = useRef<string | null>(null); // Hash de la última petición que falló
+  const lastSuccessfulHashRef = useRef<string | null>(null); // Hash de la última petición exitosa
 
   // Cargar método de entrega desde localStorage al inicio
   const [deliveryMethod, setDeliveryMethodState] = useState<string>(() => {
-    if (typeof window === "undefined") return "domicilio";
-    return localStorage.getItem("checkout-delivery-method") || "domicilio";
+    if (globalThis.window === undefined) return "domicilio";
+    return globalThis.window.localStorage.getItem("checkout-delivery-method") || "domicilio";
   });
 
   // Wrapper para setDeliveryMethod que también guarda en localStorage
@@ -136,7 +142,7 @@ export const useDelivery = () => {
     setDeliveryMethodState(method);
     
     // Guardar en localStorage inmediatamente (importante para usuarios invitados)
-    if (typeof globalThis.window !== "undefined") {
+    if (globalThis.window !== undefined) {
       try {
         globalThis.window.localStorage.setItem("checkout-delivery-method", method);
         // Disparar evento personalizado para notificar cambios
@@ -283,9 +289,10 @@ export const useDelivery = () => {
           // Limpiar el hash de fallo si existía
           if (failedRequestHashRef.current === requestHash) {
             failedRequestHashRef.current = null;
+            // No hacer nada más, solo limpiar
           }
 
-          const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
+          const responseData = response.data;
           
           // Obtener canPickUp global de la respuesta
           const globalCanPickUp = responseData.canPickUp ?? responseData.canPickup ?? false;
@@ -311,15 +318,15 @@ export const useDelivery = () => {
             const allCandidateStores = new Map<string, { store: CandidateStore; city: string }>();
 
             // Agregar todas las tiendas de todas las ciudades de la respuesta global
-            Object.entries(responseData.stores).forEach(([city, cityStores]) => {
-              cityStores.forEach((store) => {
+            for (const [city, cityStores] of Object.entries(responseData.stores)) {
+              for (const store of cityStores) {
                 const storeCity = store.ciudad || city;
                 const key = `${store.codBodega}-${storeCity}`;
                 if (!allCandidateStores.has(key)) {
                   allCandidateStores.set(key, { store, city: storeCity });
                 }
-              });
-            });
+              }
+            }
 
             // Procesar tiendas candidatas
             let physicalStores: FormattedStore[] = [];
@@ -355,6 +362,7 @@ export const useDelivery = () => {
             // Si canPickUp global es false, no mostrar tiendas
             setStores([]);
             setFilteredStores([]);
+            // No hacer nada más
           }
         } else {
           // Si falla la petición, marcar este hash como fallido
@@ -412,7 +420,7 @@ export const useDelivery = () => {
       productsHashRef.current = productsHash;
       
       // Verificar que NO estemos eliminando trade-in
-      if (!isRemovingTradeInRef.current) {
+      if (isRemovingTradeInRef.current === false) {
         fetchCandidateStores();
       }
     }
@@ -440,7 +448,7 @@ export const useDelivery = () => {
       }
 
       // Verificar si realmente cambió la dirección
-      const currentAddress = localStorage.getItem('checkout-address');
+      const currentAddress = globalThis.window.localStorage.getItem('checkout-address');
       if (currentAddress) {
         try {
           const parsed = JSON.parse(currentAddress) as Direccion;
@@ -448,8 +456,8 @@ export const useDelivery = () => {
             return;
           }
           lastAddressIdRef.current = parsed.id || null;
-        } catch (error) {
-          // Si no se puede parsear, continuar
+        } catch {
+          // Si no se puede parsear, continuar sin hacer nada
         }
       }
 
@@ -467,10 +475,10 @@ export const useDelivery = () => {
         // Leer la nueva dirección de localStorage
         try {
           const saved = JSON.parse(
-            localStorage.getItem("checkout-address") || "{}"
+            globalThis.window.localStorage.getItem("checkout-address") || "{}"
           ) as Direccion;
 
-          if (saved && saved.id) {
+          if (saved?.id) {
             setAddress(saved);
             lastAddressIdRef.current = saved.id;
           }
@@ -503,16 +511,16 @@ export const useDelivery = () => {
       const customEvent = event as CustomEvent;
       isRemovingTradeInRef.current = customEvent.detail?.removing || false;
     };
-    window.addEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
+    globalThis.window.addEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
 
     // Escuchar evento storage (para cambios entre tabs)
-    window.addEventListener('storage', handleStorageChange);
+    globalThis.window.addEventListener('storage', handleStorageChange);
 
     // Escuchar eventos personalizados desde header
-    window.addEventListener('address-changed', handleAddressChange as EventListener);
+    globalThis.window.addEventListener('address-changed', handleAddressChange as EventListener);
 
     // Escuchar eventos personalizados desde checkout
-    window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
+    globalThis.window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
     
     // Escuchar delivery-method-changed pero solo si NO viene con skipFetch
     const handleDeliveryMethodChanged = (event: Event) => {
@@ -524,12 +532,12 @@ export const useDelivery = () => {
       // Si no viene skipFetch, puede ser un cambio legítimo, pero no llamar fetchCandidateStores
       // porque no es un cambio de dirección
     };
-    window.addEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
+    globalThis.window.addEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
 
     // También verificar cambios periódicamente en la misma tab (porque storage solo funciona entre tabs)
     // PERO DESHABILITAR durante eliminación de trade-in
-    let lastCheckoutAddress = localStorage.getItem('checkout-address');
-    let lastDefaultAddress = localStorage.getItem('imagiq_default_address');
+    let lastCheckoutAddress = globalThis.window.localStorage.getItem('checkout-address');
+    let lastDefaultAddress = globalThis.window.localStorage.getItem('imagiq_default_address');
 
     const checkAddressChanges = () => {
       // PROTECCIÓN CRÍTICA: NO hacer nada si estamos eliminando trade-in
@@ -537,8 +545,8 @@ export const useDelivery = () => {
         return;
       }
       
-      const currentCheckoutAddress = localStorage.getItem('checkout-address');
-      const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
+      const currentCheckoutAddress = globalThis.window.localStorage.getItem('checkout-address');
+      const currentDefaultAddress = globalThis.window.localStorage.getItem('imagiq_default_address');
 
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
         handleAddressChange(new Event('checkout-address-changed'));
@@ -555,11 +563,11 @@ export const useDelivery = () => {
     const intervalId = setInterval(checkAddressChanges, 2000);
 
     return () => {
-      window.removeEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('address-changed', handleAddressChange as EventListener);
-      window.removeEventListener('checkout-address-changed', handleAddressChange as EventListener);
-      window.removeEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
+      globalThis.window.removeEventListener('removing-trade-in', handleRemovingTradeIn as EventListener);
+      globalThis.window.removeEventListener('storage', handleStorageChange);
+      globalThis.window.removeEventListener('address-changed', handleAddressChange as EventListener);
+      globalThis.window.removeEventListener('checkout-address-changed', handleAddressChange as EventListener);
+      globalThis.window.removeEventListener('delivery-method-changed', handleDeliveryMethodChanged as EventListener);
       clearInterval(intervalId);
     };
   }, [fetchCandidateStores]);
@@ -607,8 +615,8 @@ export const useDelivery = () => {
 
   // Autocompletar dirección si está guardada
   useEffect(() => {
-    if (deliveryMethod === "domicilio" && typeof window !== "undefined") {
-      const savedAddress = localStorage.getItem("checkout-address");
+    if (deliveryMethod === "domicilio" && globalThis.window !== undefined) {
+      const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
       if (savedAddress && savedAddress !== "undefined") {
         try {
           const saved = JSON.parse(savedAddress) as Direccion;
@@ -624,8 +632,8 @@ export const useDelivery = () => {
 
   // Cargar tienda seleccionada desde localStorage
   useEffect(() => {
-    if (typeof window !== "undefined" && stores.length > 0) {
-      const savedStore = localStorage.getItem("checkout-store");
+    if (globalThis.window !== undefined && stores.length > 0) {
+      const savedStore = globalThis.window.localStorage.getItem("checkout-store");
       if (savedStore) {
         try {
           const parsed = JSON.parse(savedStore) as FormattedStore;

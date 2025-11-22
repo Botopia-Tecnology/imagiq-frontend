@@ -16,8 +16,9 @@ type LogoReloadAnimationProps = {
 };
 
 // Logo Samsung desde Cloudinary (PNG - mejor compatibilidad con Safari en máscaras SVG)
+// Usando transformación explícita f_png para forzar conversión a PNG
 const LOGO_SRC =
-  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.png";
+  "https://res.cloudinary.com/dqsdl9bwv/image/upload/v1762668978/Dise%C3%B1o_sin_t%C3%ADtulo_-_2025-11-09T011610.447_qvj6ct.png";
 
 /**
  * LogoReloadAnimation

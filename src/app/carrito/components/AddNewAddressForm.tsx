@@ -58,6 +58,7 @@ export default function AddNewAddressForm({
   });
   const { cities } = useCities();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [isCityAutoCompleted, setIsCityAutoCompleted] = useState(false);
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
@@ -70,8 +71,13 @@ export default function AddNewAddressForm({
       newErrors.nombreDireccion = "El nombre de la dirección es requerido";
     }
 
-    if (!formData.ciudad.trim()) {
+    // Solo validar ciudad si no está auto-completada o si está vacía
+    if (!isCityAutoCompleted && !formData.ciudad.trim()) {
       newErrors.ciudad = "La ciudad es requerida";
+    } else if (isCityAutoCompleted && !formData.ciudad.trim()) {
+      // Si está marcada como auto-completada pero no tiene valor, hay un error
+      newErrors.ciudad = "Error al auto-completar la ciudad. Por favor, selecciónala manualmente.";
+      setIsCityAutoCompleted(false); // Permitir selección manual
     }
 
     // Validar dirección de facturación si no usa la misma
@@ -86,7 +92,8 @@ export default function AddNewAddressForm({
           "El nombre de la dirección de facturación es requerido";
       }
 
-      if (!formData.ciudad.trim()) {
+      // Solo validar ciudad si no está auto-completada
+      if (!isCityAutoCompleted && !formData.ciudad.trim()) {
         newErrors.ciudad = "La ciudad es requerida para facturación";
       }
     }
@@ -292,6 +299,7 @@ export default function AddNewAddressForm({
       });
       setSelectedAddress(null);
       setSelectedBillingAddress(null);
+      setIsCityAutoCompleted(false);
     } catch (error) {
       console.error("Error al agregar dirección:", error);
       const errorMessage =
@@ -303,6 +311,10 @@ export default function AddNewAddressForm({
   };
 
   const handleInputChange = (field: string, value: string) => {
+    // Si intentan modificar la ciudad y fue auto-completada, no permitirlo
+    if (field === "ciudad" && isCityAutoCompleted) {
+      return;
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -310,9 +322,84 @@ export default function AddNewAddressForm({
     }
   };
 
+  // Helper para extraer la ciudad de PlaceDetails
+  const extractCityFromPlace = (place: PlaceDetails): string => {
+    // Primero intentar usar el campo city directo
+    if (place.city) {
+      return place.city;
+    }
+
+    // Si no, buscar en addressComponents
+    const getAddressComponent = (componentTypes: string[]) => {
+      const component = place.addressComponents?.find((comp) =>
+        componentTypes.some((type) => comp.types.includes(type))
+      );
+      return component?.longName || component?.shortName || "";
+    };
+
+    return (
+      getAddressComponent([
+        "locality",
+        "administrative_area_level_2",
+        "sublocality",
+      ]) || ""
+    );
+  };
+
+  // Helper para encontrar el código de ciudad por nombre
+  const findCityCodeByName = (cityName: string): string => {
+    if (!cityName) return "";
+
+    // Normalizar el nombre de la ciudad para comparación
+    const normalizedName = cityName
+      .toLowerCase()
+      .normalize("NFD")
+      .replaceAll(/[\u0300-\u036f]/g, ""); // Remover acentos
+
+    // Buscar coincidencia exacta o parcial
+    const city = cities.find((c) => {
+      const normalizedCityName = c.nombre
+        .toLowerCase()
+        .normalize("NFD")
+        .replaceAll(/[\u0300-\u036f]/g, "");
+      return (
+        normalizedCityName === normalizedName ||
+        normalizedCityName.includes(normalizedName) ||
+        normalizedName.includes(normalizedCityName)
+      );
+    });
+
+    return city?.codigo || "";
+  };
+
   const handleAddressSelect = (place: PlaceDetails) => {
     console.log("✅ Dirección de envío seleccionada en checkout:", place);
     setSelectedAddress(place as ExtendedPlaceDetails);
+    
+    // Auto-completar la ciudad si está disponible en PlaceDetails
+    const extractedCity = extractCityFromPlace(place);
+    if (extractedCity) {
+      const cityCode = findCityCodeByName(extractedCity);
+      if (cityCode) {
+        setFormData((prev) => ({ ...prev, ciudad: cityCode }));
+        setIsCityAutoCompleted(true); // Marcar como auto-completada
+        // Limpiar error de ciudad si existe
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.ciudad;
+          return newErrors;
+        });
+      } else {
+        // Si no se encuentra la ciudad, permitir selección manual
+        setIsCityAutoCompleted(false);
+        setFormData((prev) => ({ ...prev, ciudad: "" }));
+      }
+    } else {
+      // Si no hay ciudad en la dirección, permitir selección manual
+      setIsCityAutoCompleted(false);
+      setFormData((prev) => ({ ...prev, ciudad: "" }));
+    }
+    
     // Clear address error when address is selected
     if (errors.address) {
       setErrors((prev) => ({ ...prev, address: "" }));
@@ -322,6 +409,24 @@ export default function AddNewAddressForm({
   const handleBillingAddressSelect = (place: PlaceDetails) => {
     console.log("✅ Dirección de facturación seleccionada en checkout:", place);
     setSelectedBillingAddress(place as ExtendedPlaceDetails);
+    
+    // Auto-completar la ciudad si está disponible en PlaceDetails
+    // (usar la misma ciudad para facturación si no se ha especificado otra)
+    if (!formData.ciudad) {
+      const extractedCity = extractCityFromPlace(place);
+      if (extractedCity) {
+        const cityCode = findCityCodeByName(extractedCity);
+        if (cityCode) {
+          setFormData((prev) => ({ ...prev, ciudad: cityCode }));
+          setIsCityAutoCompleted(true); // Marcar como auto-completada
+          // Limpiar error de ciudad si existe
+          if (errors.ciudad) {
+            setErrors((prev) => ({ ...prev, ciudad: "" }));
+          }
+        }
+      }
+    }
+    
     // Clear billing address error when address is selected
     if (errors.billingAddress) {
       setErrors((prev) => ({ ...prev, billingAddress: "" }));
@@ -426,33 +531,35 @@ export default function AddNewAddressForm({
           )}
         </div>
 
-        {/* Ciudad */}
-        <div>
-          <label
-            htmlFor="ciudad"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Ciudad *
-          </label>
-          <select
-            id="ciudad"
-            value={formData.ciudad}
-            onChange={(e) => handleInputChange("ciudad", e.target.value)}
-            className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-              errors.ciudad ? "border-red-500" : "border-gray-300"
-            }`}
-          >
-            <option value="">-- Selecciona una ciudad --</option>
-            {cities.map((city) => (
-              <option key={city.codigo} value={city.codigo}>
-                {city.nombre}
-              </option>
-            ))}
-          </select>
-          {errors.ciudad && (
-            <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>
-          )}
-        </div>
+        {/* Ciudad - Solo se muestra si NO fue auto-completada desde Google Maps */}
+        {!isCityAutoCompleted && (
+          <div>
+            <label
+              htmlFor="ciudad"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Ciudad *
+            </label>
+            <select
+              id="ciudad"
+              value={formData.ciudad}
+              onChange={(e) => handleInputChange("ciudad", e.target.value)}
+              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                errors.ciudad ? "border-red-500" : "border-gray-300"
+              }`}
+            >
+              <option value="">-- Selecciona una ciudad --</option>
+              {cities.map((city) => (
+                <option key={city.codigo} value={city.codigo}>
+                  {city.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.ciudad && (
+              <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Campos adicionales para dirección de envío */}

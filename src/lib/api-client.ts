@@ -7,14 +7,14 @@
  * - Bearer Token (Authorization): Autenticación del usuario (desde localStorage)
  */
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
 // Advertencia en desarrollo si no está configurada la API Key
-if (!API_KEY && process.env.NODE_ENV === 'development') {
+if (!API_KEY && process.env.NODE_ENV === "development") {
   console.warn(
-    '⚠️ NEXT_PUBLIC_API_KEY no está configurada. Las peticiones al API fallarán.\n' +
-    'Agrega NEXT_PUBLIC_API_KEY a tu archivo .env.local'
+    "⚠️ NEXT_PUBLIC_API_KEY no está configurada. Las peticiones al API fallarán.\n" +
+      "Agrega NEXT_PUBLIC_API_KEY a tu archivo .env.local"
   );
 }
 
@@ -40,43 +40,56 @@ export async function apiClient(
   const url = `${API_URL}${endpoint}`;
 
   // Obtener token de autenticación del usuario desde localStorage
-  const authToken = typeof window !== 'undefined'
-    ? localStorage.getItem('imagiq_token')
-    : null;
+  const authToken =
+    typeof window !== "undefined" ? localStorage.getItem("imagiq_token") : null;
 
   // Combinar headers: API Key + Auth Token + headers personalizados
   const headers = new Headers({
-    'Content-Type': 'application/json',
-    ...(API_KEY && { 'X-API-Key': API_KEY }),
-    ...(authToken && { 'Authorization': `Bearer ${authToken}` }),
+    "Content-Type": "application/json",
+    ...(API_KEY && { "X-API-Key": API_KEY }),
+    ...(authToken && { Authorization: `Bearer ${authToken}` }),
     ...options.headers,
   });
 
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: "include",
       headers,
     });
     // Manejar errores específicos
     if (!response.ok) {
       if (response.status === 401) {
-        const error = new Error('API Key inválida o faltante');
-        console.error('🔐 Error de autenticación:', error.message);
+        const error = new Error("API Key inválida o faltante");
+        console.error("🔐 Error de autenticación:", error.message);
         throw error;
       }
       if (response.status === 429) {
-        const error = new Error('Demasiadas peticiones. Por favor intenta más tarde.');
-        console.error('⚠️ Rate limit excedido:', error.message);
+        const error = new Error(
+          "Demasiadas peticiones. Por favor intenta más tarde."
+        );
+        console.error("⚠️ Rate limit excedido:", error.message);
         throw error;
       }
       const data = await response?.json();
-      throw new Error(data?.message ?? `HTTP Error ${response.status}: ${response.statusText}`);
+      throw new Error(
+        data?.message ?? `HTTP Error ${response.status}: ${response.statusText}`
+      );
+    }
+    const refreshToken = response.headers.get("x-refresh-token");
+    const guestToken = response.headers.get("x-guest-token");
+
+    // Actualizar token en localStorage si viene en la respuesta
+    if (guestToken) {
+      localStorage.setItem("imagiq_token", guestToken);
+    } else if (refreshToken) {
+      localStorage.setItem("imagiq_token", refreshToken);
     }
 
     return response;
   } catch (error) {
     if (error instanceof Error) {
-      console.error('❌ API Client Error:', error.message, { endpoint, url });
+      console.error("❌ API Client Error:", error.message, { endpoint, url });
     }
     throw error;
   }
@@ -92,7 +105,7 @@ export async function apiClient(
  * const products = await apiGet<Product[]>('/api/products?limit=10');
  */
 export async function apiGet<T = unknown>(endpoint: string): Promise<T> {
-  const response = await apiClient(endpoint, { method: 'GET' });
+  const response = await apiClient(endpoint, { method: "GET" });
 
   // Manejar respuestas vacías (204 No Content o respuestas sin body)
   if (response.status === 204) {
@@ -100,11 +113,11 @@ export async function apiGet<T = unknown>(endpoint: string): Promise<T> {
   }
 
   // Verificar si la respuesta tiene contenido
-  const contentLength = response.headers.get('content-length');
-  const contentType = response.headers.get('content-type');
+  const contentLength = response.headers.get("content-length");
+  const contentType = response.headers.get("content-type");
 
   // Si no hay contenido o no es JSON, retornar undefined
-  if (contentLength === '0' || !contentType?.includes('application/json')) {
+  if (contentLength === "0" || !contentType?.includes("application/json")) {
     console.warn(`[API] Empty or non-JSON response from ${endpoint}`);
     return undefined as T;
   }
@@ -127,7 +140,7 @@ export async function apiPost<T = unknown>(
   data: unknown
 ): Promise<T> {
   const response = await apiClient(endpoint, {
-    method: 'POST',
+    method: "POST",
     body: JSON.stringify(data),
   });
   return response.json();
@@ -148,7 +161,7 @@ export async function apiPut<T = unknown>(
   data: unknown
 ): Promise<T> {
   const response = await apiClient(endpoint, {
-    method: 'PUT',
+    method: "PUT",
     body: JSON.stringify(data),
   });
   return response.json();
@@ -169,7 +182,7 @@ export async function apiPatch<T = unknown>(
   data: unknown
 ): Promise<T> {
   const response = await apiClient(endpoint, {
-    method: 'PATCH',
+    method: "PATCH",
     body: JSON.stringify(data),
   });
   return response.json();
@@ -185,7 +198,7 @@ export async function apiPatch<T = unknown>(
  * await apiDelete('/api/products/123');
  */
 export async function apiDelete<T = unknown>(endpoint: string): Promise<T> {
-  const response = await apiClient(endpoint, { method: 'DELETE' });
+  const response = await apiClient(endpoint, { method: "DELETE" });
 
   // Algunas APIs de DELETE retornan 204 No Content
   if (response.status === 204) {

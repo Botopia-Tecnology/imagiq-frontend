@@ -51,7 +51,7 @@ function CheckoutErrorOverlay({
             href={part}
             target="_blank"
             rel="noopener noreferrer"
-            className="underline text-blue-300 hover:text-blue-100"
+            className="underline text-black hover:text-gray-800"
           >
             {part}
           </a>

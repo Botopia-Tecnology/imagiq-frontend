@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { productEndpoints, type CandidateStoresResponse, type CandidateStore } from "@/lib/api";
+import { apiDelete } from "@/lib/api-client";
 
 export interface CartProduct {
   id: string;
@@ -585,6 +586,7 @@ export function useCart(): UseCartReturn {
           if (newProducts.length === 0) {
             localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
           } else {
+            apiDelete(`/api/cart/items/${productId}`);
             localStorage.setItem(
               STORAGE_KEYS.CART_ITEMS,
               JSON.stringify(newProducts)
@@ -693,6 +695,7 @@ export function useCart(): UseCartReturn {
 
       // Guardar en localStorage sin disparar eventos storage
       setTimeout(() => {
+        apiDelete(`/api/cart/items/clear`);
         localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
 
         // Disparar evento de storage para sincronizar entre pestañas

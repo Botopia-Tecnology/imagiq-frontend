@@ -37,7 +37,8 @@ interface CategoryProductsGridProps {
   showLazySkeletons?: boolean;
   lazySkeletonCount?: number;
   hasLoadedOnce?: boolean;
-  banner?: Banner | null; // Banner a mostrar en el grid
+  banner?: Banner | null; // Banner a mostrar en el grid (legacy)
+  banners?: Banner[]; // Array de banners para carrusel
 }
 
 
@@ -58,6 +59,7 @@ export const CategoryProductsGrid = forwardRef<
       lazySkeletonCount = 3,
       hasLoadedOnce = false,
       banner = null,
+      banners = [],
     },
     ref
   ) => {
@@ -101,11 +103,14 @@ export const CategoryProductsGrid = forwardRef<
 
       // insertBannersInGrid trata los items como ProductCardProps, pero nosotros hemos añadido __isBundle
       // Esto es seguro porque insertBannersInGrid solo lee propiedades comunes (id, etc.) y no modifica el tipo
-      const items = insertBannersInGrid(itemsForBannerInsertion as unknown as ProductCardProps[], banner, 15);
+      // Priorizar banners array sobre banner individual
+      const bannersToInsert = banners && banners.length > 0 ? banners : banner;
+      const items = insertBannersInGrid(itemsForBannerInsertion as unknown as ProductCardProps[], bannersToInsert, 15);
+      console.log('[ProductsGrid] Banners para insertar:', bannersToInsert);
       console.log('[ProductsGrid] Total items en grid (con banners):', items.length);
       console.log('[ProductsGrid] Items:', items.map(i => ({ type: i.type, key: i.key })));
       return items;
-    }, [mixedItems, banner, products.length, bundles.length]);
+    }, [mixedItems, banner, products.length, bundles.length, banners]);
 
     const handleAddToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");
@@ -200,7 +205,7 @@ export const CategoryProductsGrid = forwardRef<
                           ease: [0.25, 0.1, 0.25, 1],
                         }}
                       >
-                        <ProductBannerCard config={item.data as Banner} />
+                        <ProductBannerCard config={item.data as Banner | Banner[]} />
                       </motion.div>
                     );
                   }

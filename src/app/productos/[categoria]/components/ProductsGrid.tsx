@@ -212,7 +212,7 @@ export const CategoryProductsGrid = forwardRef<
 
                   if (isBundle) {
                     // Renderizar BundleCard
-                    const { __isBundle, ...bundleProps } = itemData;
+                    const { __isBundle: _, ...bundleProps } = itemData;
                     return (
                       <div
                         key={item.key}
@@ -226,7 +226,7 @@ export const CategoryProductsGrid = forwardRef<
                     );
                   } else {
                     // Renderizar ProductCard
-                    const { __isBundle, ...productProps } = itemData;
+                    const { __isBundle: __, ...productProps } = itemData;
                     const product = productProps as ProductCardProps;
                     return (
                       <div

@@ -367,32 +367,34 @@ export default function Step4OrderSummary({
           </div>
         )}
 
-        {/* Envío */}
-        <div className="flex justify-between text-sm">
-          <span>
-            {(() => {
-              // Prefer prop value, fallback to local state or localStorage
-              let currentMethod: string;
-              if (deliveryMethod === "pickup") {
-                currentMethod = "tienda";
-              } else if (deliveryMethod === "delivery") {
-                currentMethod = "domicilio";
-              } else if (localDeliveryMethod === "tienda") {
-                currentMethod = "tienda";
-              } else {
-                currentMethod = getDeliveryMethodFromStorage();
-              }
-              return currentMethod === "tienda"
-                ? "Recoger en tienda"
-                : "Envío a domicilio";
-            })()}
-          </span>
-          {calculations.shipping > 0 && (
-            <span className="font-semibold">
-              {cartFormatPrice(calculations.shipping)}
+        {/* Envío - Ocultar en Step1 */}
+        {!isStep1 && (
+          <div className="flex justify-between text-sm">
+            <span>
+              {(() => {
+                // Prefer prop value, fallback to local state or localStorage
+                let currentMethod: string;
+                if (deliveryMethod === "pickup") {
+                  currentMethod = "tienda";
+                } else if (deliveryMethod === "delivery") {
+                  currentMethod = "domicilio";
+                } else if (localDeliveryMethod === "tienda") {
+                  currentMethod = "tienda";
+                } else {
+                  currentMethod = getDeliveryMethodFromStorage();
+                }
+                return currentMethod === "tienda"
+                  ? "Recoger en tienda"
+                  : "Envío a domicilio";
+              })()}
             </span>
-          )}
-        </div>
+            {calculations.shipping > 0 && (
+              <span className="font-semibold">
+                {cartFormatPrice(calculations.shipping)}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Total: siempre string */}
         <div className="flex justify-between text-base font-bold mt-2">

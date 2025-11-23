@@ -10,26 +10,195 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import Image, { StaticImageData } from "next/image";
-import { Heart } from "lucide-react";
+import Image from "next/image";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
-import { useCloudinaryImage } from "@/hooks/useCloudinaryImage";
 import { calculateSavings } from "./utils/productCardHelpers";
-import { motion } from "framer-motion";
 import type { BundleCardProps } from "@/lib/productMapper";
+
+/**
+ * Componente para mostrar las imágenes del bundle con superposición diagonal
+ * - 2 imágenes: esquina superior-izquierda + esquina inferior-derecha, superpuestas ligeramente
+ * - 3+ imágenes: distribución en esquinas con superposición
+ */
+function BundlePreviewImages({
+  images,
+  bundleName
+}: {
+  images: string[];
+  bundleName: string;
+}) {
+  // Filtrar imágenes válidas y tomar máximo 4
+  const validImages = images
+    .filter(url => url && typeof url === 'string' && url.trim() !== '')
+    .slice(0, 4);
+
+  const imageCount = validImages.length;
+
+  // Aplicar transformaciones de Cloudinary
+  const transformedImages = useMemo(() => {
+    return validImages.map(img => getCloudinaryUrl(img, "catalog"));
+  }, [validImages]);
+
+  if (imageCount === 0) {
+    return null;
+  }
+
+  // Single image - mostrar grande y centrada
+  if (imageCount === 1) {
+    return (
+      <div className="relative w-full h-full">
+        <Image
+          src={transformedImages[0]}
+          alt={`${bundleName} - producto`}
+          fill
+          className="object-contain p-2"
+          sizes="(max-width: 768px) 50vw, 33vw"
+        />
+      </div>
+    );
+  }
+
+  // 2 imágenes: diagonal con mayor superposición y overflow - imagen 1 arriba-izquierda, imagen 2 abajo-derecha
+  if (imageCount === 2) {
+    return (
+      <div className="relative w-full h-full overflow-visible">
+        {/* Imagen 1: esquina superior-izquierda, se sale del contenedor */}
+        <div className="absolute -top-6 -left-6 w-[65%] h-[65%] z-10">
+          <Image
+            src={transformedImages[0]}
+            alt={`${bundleName} - producto 1`}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 40vw, 25vw"
+          />
+        </div>
+        {/* Imagen 2: esquina inferior-derecha, se sale del contenedor */}
+        <div className="absolute -bottom-6 right-0 w-[60%] h-[60%] z-20">
+          <Image
+            src={transformedImages[1]}
+            alt={`${bundleName} - producto 2`}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 40vw, 25vw"
+          />
+        </div>
+        {/* Símbolo + centrado */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+          <div className="bg-white rounded-full p-1 shadow-md">
+            <Plus className="w-4 h-4 text-black" strokeWidth={2.5} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3 imágenes: 2 arriba (izq y der) + 1 abajo centrada, sin superposición
+  if (imageCount === 3) {
+    return (
+      <div className="relative w-full h-full">
+        {/* Imagen 1: cuadrante superior-izquierdo */}
+        <div className="absolute top-0 left-0 w-[50%] h-[50%]">
+          <Image
+            src={transformedImages[0]}
+            alt={`${bundleName} - producto 1`}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 30vw, 20vw"
+          />
+        </div>
+        {/* Imagen 2: cuadrante superior-derecho */}
+        <div className="absolute top-0 right-0 w-[50%] h-[50%]">
+          <Image
+            src={transformedImages[1]}
+            alt={`${bundleName} - producto 2`}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 30vw, 20vw"
+          />
+        </div>
+        {/* Imagen 3: abajo centrada */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[50%] h-[50%]">
+          <Image
+            src={transformedImages[2]}
+            alt={`${bundleName} - producto 3`}
+            fill
+            className="object-contain"
+            sizes="(max-width: 768px) 30vw, 20vw"
+          />
+        </div>
+        {/* Símbolo + centrado */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+          <div className="bg-white rounded-full p-1 shadow-md">
+            <Plus className="w-4 h-4 text-black" strokeWidth={2.5} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4 imágenes: grid 2x2, sin superposición
+  return (
+    <div className="relative w-full h-full">
+      {/* Imagen 1: cuadrante superior-izquierdo */}
+      <div className="absolute top-0 left-0 w-[50%] h-[50%]">
+        <Image
+          src={transformedImages[0]}
+          alt={`${bundleName} - producto 1`}
+          fill
+          className="object-contain"
+          sizes="(max-width: 768px) 25vw, 16vw"
+        />
+      </div>
+      {/* Imagen 2: cuadrante superior-derecho */}
+      <div className="absolute top-0 right-0 w-[50%] h-[50%]">
+        <Image
+          src={transformedImages[1]}
+          alt={`${bundleName} - producto 2`}
+          fill
+          className="object-contain"
+          sizes="(max-width: 768px) 25vw, 16vw"
+        />
+      </div>
+      {/* Imagen 3: cuadrante inferior-izquierdo */}
+      <div className="absolute bottom-0 left-0 w-[50%] h-[50%]">
+        <Image
+          src={transformedImages[2]}
+          alt={`${bundleName} - producto 3`}
+          fill
+          className="object-contain"
+          sizes="(max-width: 768px) 25vw, 16vw"
+        />
+      </div>
+      {/* Imagen 4: cuadrante inferior-derecho */}
+      <div className="absolute bottom-0 right-0 w-[50%] h-[50%]">
+        <Image
+          src={transformedImages[3]}
+          alt={`${bundleName} - producto 4`}
+          fill
+          className="object-contain"
+          sizes="(max-width: 768px) 25vw, 16vw"
+        />
+      </div>
+      {/* Símbolo + centrado */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
+        <div className="bg-white rounded-full p-1 shadow-md">
+          <Plus className="w-4 h-4 text-black" strokeWidth={2.5} />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function BundleCard({
   id,
   baseCodigoMarket,
   codCampana,
   name,
-  image,
-  price,
-  originalPrice,
-  discount,
+  // image - ya no se usa, las imágenes vienen de previewImages en opciones
+  // price, originalPrice, discount - no se usan, se toman de opciones
   opciones,
   categoria,
   menu,
@@ -38,71 +207,17 @@ export default function BundleCard({
   fecha_final,
   className,
 }: BundleCardProps & { className?: string }) {
-  const router = useRouter();
-  const [currentImageIndex] = useState(0);
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
 
   // Opción actualmente seleccionada
   const selectedOption = opciones?.[selectedOptionIndex] || opciones?.[0];
   const skus_bundle = selectedOption?.skus_bundle || [];
 
-  // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
-  const bundleImages = useMemo(
-    () => [image, image, image],
-    [image]
-  );
+  // Obtener las imágenes de preview de la opción seleccionada
+  const previewImages = selectedOption?.imagePreviewUrl || [];
 
-  // Aplicar transformación de Cloudinary a todas las imágenes del carrusel
-  const transformedImages = useMemo(() => {
-    const transformed = bundleImages.map((img) => {
-      const imgSrc = typeof img === "string" ? img : img?.src;
-      return getCloudinaryUrl(imgSrc, "catalog");
-    });
-
-    return transformed;
-  }, [bundleImages]);
-
-  // Extraer un nombre corto/label para cada opción basado en las diferencias del modelo
-  const getOptionLabel = (modelo: string, index: number, allModelos: string[]) => {
-    if (!modelo) return `${index + 1}`;
-
-    // 1. Intentar extraer capacidad (256GB, 512GB, 1TB, etc.)
-    const capacityMatch = modelo.match(/(\d+\s*(?:GB|TB))/i);
-    if (capacityMatch) {
-      const capacity = capacityMatch[1].toUpperCase().replace(/\s+/g, '');
-      // Si hay color también, combinarlo
-      const colorMatch = modelo.match(/(?:color|-)?\s*(negro|blanco|azul|gris|rosa|verde|morado|coral|titanio|silver|gold|black|white|blue|gray|pink|green|purple)/i);
-      if (colorMatch) {
-        return `${capacity} - ${colorMatch[1]}`;
-      }
-      return capacity;
-    }
-
-    // 2. Si todos los modelos son iguales o solo hay uno, usar índice simple
-    const uniqueModelos = new Set(allModelos.filter(Boolean));
-    if (uniqueModelos.size <= 1) {
-      return `${index + 1}`;
-    }
-
-    // 3. Intentar extraer la parte diferenciadora del modelo
-    // Comparar con el primer modelo para encontrar la diferencia
-    const baseModelo = allModelos[0];
-    if (baseModelo && modelo !== baseModelo) {
-      // Buscar palabras que están en este modelo pero no en el base
-      const baseWords = new Set(baseModelo.toLowerCase().split(/\s+/));
-      const thisWords = modelo.toLowerCase().split(/\s+/);
-      const diffWords = thisWords.filter(w => !baseWords.has(w) && w.length > 2);
-      if (diffWords.length > 0) {
-        return diffWords.slice(0, 2).join(' ').substring(0, 15);
-      }
-    }
-
-    // 4. Fallback: usar índice
-    return `${index + 1}`;
-  };
-
-  // Obtener todos los modelos para comparación
-  const allModelos = useMemo(() => opciones?.map(op => op.modelo) || [], [opciones]);
+  // Las opciones se muestran como números simples (1, 2, 3...)
+  // El nombre completo del bundle cambia dinámicamente al seleccionar cada opción
 
   const handleMoreInfo = () => {
     // TODO: Navegar a página de detalle del bundle (próximamente)
@@ -133,85 +248,26 @@ export default function BundleCard({
     });
   };
 
-  // Handler para el click en la card completa
-  const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-
-    // Verificar si el click fue en un botón o dentro de un botón
-    const isButton = target.closest("button") !== null;
-    const isCheckbox = target.closest('input[type="checkbox"]') !== null;
-
-    // Si NO es un botón ni checkbox, navegar a más info
-    if (!isButton && !isCheckbox) {
-      handleMoreInfo();
-    }
-  };
-
-  // Handler para navegación con teclado
-  const handleCardKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleCardClick(e);
-    }
-  };
-
-  // Obtener imagen optimizada de Cloudinary para catálogo
-  const cloudinaryImage = useCloudinaryImage({
-    src: typeof image === "string" ? image : image.src,
-    transformType: "catalog",
-    responsive: true,
-  });
+  // Nombre dinámico: usar el modelo de la opción seleccionada o el nombre del bundle
+  const displayName = selectedOption?.modelo || name;
 
   return (
-    <motion.div
-      role="button"
-      onClick={handleCardClick}
-      onKeyDown={handleCardKeyDown}
-      tabIndex={0}
-      aria-label={`Ver detalles de ${name}`}
-      whileHover={{
-        scale: 1.02,
-        transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
-      }}
+    <div
       className={cn(
-        "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full h-full flex flex-col mx-auto",
+        "rounded-lg w-full h-full flex flex-col mx-auto",
         className
       )}
     >
-      {/* Sección de imagen con carrusel */}
-      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
-        {/* Carrusel de imágenes */}
-        <div className="relative w-full h-full">
-          {transformedImages.map((transformedSrc, index) => {
-            return (
-              <div
-                key={index}
-                className={cn(
-                  "absolute inset-0 flex items-center justify-center p-4",
-                  index === currentImageIndex ? "opacity-100" : "opacity-0"
-                )}
-              >
-                <div className="relative w-full h-full">
-                  <Image
-                    key={`${id}-${transformedSrc}-${index}`}
-                    src={transformedSrc}
-                    alt={`${name} - imagen ${index + 1}`}
-                    fill
-                    className="object-cover"
-                    sizes={cloudinaryImage.imageProps.sizes}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" */}
+      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-visible">
+        <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>
 
       {/* Contenido del bundle */}
       <div className="py-2 space-y-2 flex-1 flex flex-col">
-        {/* Título del bundle */}
+        {/* Título del bundle - muestra el modelo de la opción seleccionada */}
         <div className="px-3 min-h-[48px]">
-          <h3 className="text-base font-bold line-clamp-2 text-black">
+          <h3 className="text-xs font-bold line-clamp-2 text-black">
             <button
               type="button"
               onClick={(event) => {
@@ -220,9 +276,38 @@ export default function BundleCard({
               }}
               className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
             >
-              {name}
+              {displayName}
             </button>
           </h3>
+          {/* Códigos del bundle - Solo si la variable de entorno lo permite */}
+          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" &&
+            process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
+              <div className="mt-1 space-y-0.5">
+                {baseCodigoMarket && (
+                  <p className="text-xs text-gray-500 font-medium">
+                    Código Market: {baseCodigoMarket}
+                  </p>
+                )}
+                {codCampana && (
+                  <p className="text-xs text-gray-500 font-medium">
+                    Código Campaña: {codCampana}
+                  </p>
+                )}
+                {selectedOption?.product_sku && (
+                  <p className="text-xs text-gray-500 font-medium">
+                    SKU Opción: {selectedOption.product_sku}
+                  </p>
+                )}
+                {skus_bundle && skus_bundle.length > 0 && (
+                  <div className="text-xs text-gray-500 font-medium">
+                    <span>SKUs Bundle: </span>
+                    <span className="text-gray-400">
+                      {skus_bundle.join(", ")}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
         </div>
 
         {/* Selector de variantes del bundle */}
@@ -245,7 +330,7 @@ export default function BundleCard({
                   )}
                   title={opcion.modelo}
                 >
-                  {getOptionLabel(opcion.modelo, index, allModelos)}
+                  {index + 1}
                 </button>
               ))}
             </div>
@@ -351,6 +436,6 @@ export default function BundleCard({
             </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

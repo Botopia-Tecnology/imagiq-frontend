@@ -225,13 +225,13 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="hidden md:flex bg-white p-6 gap-6 items-start border-b border-gray-200">
         {/* Imagen + Eliminar */}
         <div className="flex flex-col items-center gap-2">
-          <div className="w-40 h-40 relative flex-shrink-0 bg-gray-100 rounded-xl p-3">
+          <div className="w-28 h-28 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
             <Image
               src={imagen}
               alt={nombre}
               fill
-              className="object-contain p-3"
-              sizes="160px"
+              className="object-contain p-2"
+              sizes="112px"
             />
           </div>
           <button
@@ -343,20 +343,20 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   ${precio.toLocaleString()}
                 </span>
                 {descuento && (
-                  <>
-                    <span className="text-sm text-gray-400 line-through">
-                      ${precioOriginal?.toLocaleString()}
-                    </span>
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded whitespace-nowrap">
-                      {descuento}%
-                    </span>
-                  </>
+                  <span className="text-sm text-gray-400 line-through">
+                    ${precioOriginal?.toLocaleString()}
+                  </span>
                 )}
               </div>
               {descuento && precioOriginal && (
-                <span className="text-sm text-green-600 font-medium">
-                  Ahorras ${(precioOriginal - precio).toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded">
+                    {descuento}%
+                  </span>
+                  <span className="text-sm text-green-600 font-medium">
+                    Ahorras ${(precioOriginal - precio).toLocaleString()}
+                  </span>
+                </div>
               )}
             </div>
           </div>

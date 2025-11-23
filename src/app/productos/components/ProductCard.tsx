@@ -34,7 +34,6 @@ import {
 } from "./utils/categoryColorConfig";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
-import { motion } from "framer-motion";
 
 /**
  * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
@@ -133,7 +132,7 @@ export default function ProductCard({
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageIndex] = useState(0);
-  const { trackViewItem } = useAnalytics();
+  useAnalytics();
 
   // Hook para notificaciones de stock
   const stockNotification = useStockNotification();
@@ -448,42 +447,6 @@ export default function ProductCard({
     });
   };
 
-  // Handler para el click en la card completa
-  // Navega a multimedia EXCEPTO si se hace click en botones interactivos
-  const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
-
-    // Verificar si el click fue en un botón o dentro de un botón
-    const isButton = target.closest("button") !== null;
-    const isCheckbox = target.closest('input[type="checkbox"]') !== null;
-
-    // Si NO es un botón ni checkbox, navegar a multimedia
-    if (!isButton && !isCheckbox) {
-      // 🔥 Track View Item Event para GA4
-      trackViewItem({
-        item_id: currentSku || id,
-        item_name: name,
-        item_brand: "Samsung",
-        item_category: apiProduct?.categoria || "Sin categoría",
-        price:
-          typeof finalCurrentPrice === "string"
-            ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
-            : finalCurrentPrice ?? 0,
-        currency: "COP",
-      });
-
-      handleMoreInfo();
-    }
-  };
-
-  // Handler para navegación con teclado
-  const handleCardKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleCardClick(e);
-    }
-  };
-
   // Obtener imagen optimizada de Cloudinary para catálogo
   const cloudinaryImage = useCloudinaryImage({
     src: typeof currentImage === "string" ? currentImage : currentImage.src,
@@ -543,19 +506,9 @@ export default function ProductCard({
         onNotificationRequest={handleRequestStockNotification}
       />
 
-      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
-      <motion.div
-        role="button"
-        onClick={handleCardClick}
-        onKeyDown={handleCardKeyDown}
-        tabIndex={0}
-        aria-label={`Ver detalles de ${currentProductName}`}
-        whileHover={{
-          scale: 1.02,
-          transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
-        }}
+      <div
         className={cn(
-          "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full h-full flex flex-col mx-auto",
+          "rounded-lg w-full h-full flex flex-col mx-auto",
           className
         )}
       >
@@ -709,7 +662,7 @@ export default function ProductCard({
                   }
                   selectedColor={displayedSelectedColor}
                   onColorSelect={handleColorSelect}
-                  onShowMore={handleCardClick}
+                  onShowMore={handleMoreInfo}
                 />
               </div>
             )}
@@ -852,7 +805,7 @@ export default function ProductCard({
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </>
   );
 }

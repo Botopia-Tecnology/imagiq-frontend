@@ -534,6 +534,7 @@ export interface BundleOption {
   bundle_discount: number; // Precio con descuento del bundle
   ind_entre_estre: number;
   skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
+  imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
 }
 
 // Bundle agrupado con múltiples opciones/variantes

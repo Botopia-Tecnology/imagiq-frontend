@@ -23,6 +23,7 @@ export interface BundleOptionProps {
   discount?: string;
   skus_bundle: string[];
   ind_entre_estre: number;
+  imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
 }
 
 /**
@@ -494,6 +495,7 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     discount: calculateDiscount(opcion.bundle_price, opcion.bundle_discount),
     skus_bundle: opcion.skus_bundle,
     ind_entre_estre: opcion.ind_entre_estre,
+    imagePreviewUrl: opcion.imagePreviewUrl,
   }));
 
   // Usar la primera opción para mostrar datos principales

@@ -541,7 +541,7 @@ export interface BundleApiData {
   hora_inicio: string;
   hora_final: string;
   skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
-  imagePreviewUrl?: string; // Imagen preview del bundle (próximamente)
+  imagePreviewUrl?: string | string[]; // Imagen preview del bundle (puede venir como string o array)
 }
 
 export interface ProductApiData {

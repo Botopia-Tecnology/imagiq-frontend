@@ -470,8 +470,21 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     discount = `-${discountPercent}%`;
   }
 
-  // Obtener imagen (por ahora usar imagen por defecto, próximamente vendrá del API)
-  const image = apiBundle.imagePreviewUrl || emptyImg;
+  // Obtener imagen: manejar tanto string como array
+  // Los bundles no tienen selección de color/capacidad, así que muestran directamente la imagen preview
+  let image: string | StaticImageData = emptyImg;
+  if (apiBundle.imagePreviewUrl) {
+    if (Array.isArray(apiBundle.imagePreviewUrl)) {
+      // Si es array, tomar el primer elemento válido
+      const firstPreviewUrl = apiBundle.imagePreviewUrl.find(url => url && typeof url === 'string' && url.trim() !== '');
+      if (firstPreviewUrl) {
+        image = firstPreviewUrl;
+      }
+    } else if (typeof apiBundle.imagePreviewUrl === 'string' && apiBundle.imagePreviewUrl.trim() !== '') {
+      // Si es string, usarlo directamente
+      image = apiBundle.imagePreviewUrl;
+    }
+  }
 
   return {
     id: apiBundle.product_sku,

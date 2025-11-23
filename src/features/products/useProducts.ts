@@ -21,6 +21,7 @@ import {
   groupProductsByCategory,
   mapApiProductsAndBundles,
   BundleCardProps,
+  MixedProductItem,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
@@ -42,6 +43,7 @@ type UserInfo = {
 interface UseProductsReturn {
   products: ProductCardProps[];
   bundles: BundleCardProps[]; // Nuevo: lista de bundles
+  orderedItems: MixedProductItem[]; // Nuevo: items en orden original del API
   groupedProducts: Record<string, ProductCardProps[]>;
   loading: boolean;
   isLoadingMore: boolean; // Estado de carga para lazy loading (append)
@@ -110,6 +112,7 @@ export const useProducts = (
 ): UseProductsReturn => {
   const [products, setProducts] = useState<ProductCardProps[]>([]);
   const [bundles, setBundles] = useState<BundleCardProps[]>([]); // Nuevo: estado para bundles
+  const [orderedItems, setOrderedItems] = useState<MixedProductItem[]>([]); // Nuevo: items en orden original del API
   const [groupedProducts, setGroupedProducts] = useState<
     Record<string, ProductCardProps[]>
   >({});
@@ -317,9 +320,10 @@ export const useProducts = (
           const menuSubmenuChanged = menuUuidChangedForCache || submenuUuidChangedForCache;
 
           if (isPageChange || filtersChanged || menuSubmenuChanged) {
-            // Cambio de página o filtros: limpiar productos, bundles y mostrar skeletons inmediatamente
+            // Cambio de página o filtros: limpiar productos, bundles, orderedItems y mostrar skeletons inmediatamente
             setProducts([]);
             setBundles([]); // Limpiar bundles también
+            setOrderedItems([]); // Limpiar orderedItems también
             productsRef.current = [];
             setLoading(true);
             setError(null);
@@ -334,16 +338,17 @@ export const useProducts = (
               hasCachedData = true;
               // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
               const apiData = cachedResponse.data;
-              const { products: mappedProducts, bundles: mappedBundles } = mapApiProductsAndBundles(apiData.products);
+              const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
 
               // IMPORTANTE: Establecer todos los estados de forma síncrona
               // React batch automáticamente los setState en el mismo render,
               // pero establecer loading en false primero asegura que no se muestren skeletons
               setError(null);
 
-              // Establecer productos, bundles y metadatos de forma síncrona
+              // Establecer productos, bundles, orderedItems y metadatos de forma síncrona
               setProducts(mappedProducts);
               setBundles(mappedBundles); // Nuevo: establecer bundles
+              setOrderedItems(mappedOrderedItems); // Nuevo: establecer orderedItems (orden original del API)
               productsRef.current = mappedProducts; // Actualizar ref
               setGroupedProducts(groupProductsByCategory(mappedProducts));
               setTotalItems(apiData.totalItems);
@@ -367,11 +372,12 @@ export const useProducts = (
               // Pero NO limpiar productos ni mostrar loading
             } else {
               // No hay caché, mostrar loading normalmente
-              // Limpiar productos y bundles para mostrar skeletons
+              // Limpiar productos, bundles y orderedItems para mostrar skeletons
               setLoading(true);
               setError(null);
               setProducts([]);
               setBundles([]); // Limpiar bundles también
+              setOrderedItems([]); // Limpiar orderedItems también
               productsRef.current = []; // Actualizar ref
               // Actualizar referencia de filtros
               previousFiltersRef.current = filterKey;
@@ -409,7 +415,7 @@ export const useProducts = (
             }
             
             const apiData = response.data;
-            const { products: mappedProducts, bundles: mappedBundles } = mapApiProductsAndBundles(apiData.products);
+            const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
 
             if (append) {
               // Append para lazy loading
@@ -441,12 +447,20 @@ export const useProducts = (
                 const newBundles = mappedBundles.filter(b => !existingIds.has(b.id));
                 return [...prev, ...newBundles];
               });
+
+              // Append orderedItems también (preserva el orden del API)
+              setOrderedItems((prev) => {
+                const existingIds = new Set(prev.map(item => item.id));
+                const newItems = mappedOrderedItems.filter(item => !existingIds.has(item.id));
+                return [...prev, ...newItems];
+              });
             } else {
               // Solo actualizar productos si no había datos del caché o si los datos son diferentes
               // Esto evita "parpadeo" cuando los datos del caché ya están mostrados
               if (!wasCached) {
                 setProducts(mappedProducts);
                 setBundles(mappedBundles); // Actualizar bundles también
+                setOrderedItems(mappedOrderedItems); // Actualizar orderedItems (orden original del API)
                 productsRef.current = mappedProducts; // Actualizar ref
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
                 // Resetear offset y estado cuando no es append
@@ -483,6 +497,18 @@ export const useProducts = (
                     !Array.from(newIds).every(id => prevIds.has(id));
 
                   return areDifferent ? mappedBundles : prev;
+                });
+
+                // Actualizar orderedItems también si son diferentes
+                setOrderedItems((prev) => {
+                  const prevIds = new Set(prev.map(item => item.id));
+                  const newIds = new Set(mappedOrderedItems.map(item => item.id));
+                  const areDifferent =
+                    prev.length !== mappedOrderedItems.length ||
+                    !Array.from(prevIds).every(id => newIds.has(id)) ||
+                    !Array.from(newIds).every(id => prevIds.has(id));
+
+                  return areDifferent ? mappedOrderedItems : prev;
                 });
 
                 // Siempre actualizar metadatos (totalItems, paginación, etc.)
@@ -786,7 +812,8 @@ export const useProducts = (
 
   return {
     products,
-    bundles, // Nuevo: retornar bundles
+    bundles, // Retornar bundles separados
+    orderedItems, // Retornar items en orden original del API
     groupedProducts,
     loading,
     isLoadingMore,

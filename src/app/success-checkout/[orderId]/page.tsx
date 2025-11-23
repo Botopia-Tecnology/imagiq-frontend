@@ -32,6 +32,7 @@ interface OrderItem {
   desdetallada?: string;
   unit_price?: string | number;
   precio?: string | number;
+  imagen?: string;
   image_preview_url?: string;
   picture_url?: string;
 }
@@ -42,6 +43,7 @@ interface TiendaData {
   nombre?: string;
   direccion?: string;
   ciudad?: string;
+  telefono?: string;
   latitud?: string;
   longitud?: string;
 }
@@ -55,16 +57,18 @@ interface DireccionDestino {
 
 interface OrderData {
   id?: string;
-  orden_id: string;
+  orden_id?: string;
   fecha_creacion: string;
-  usuario_id: string;
+  usuario_id?: string;
   metodo_envio?: number; // 1=Coordinadora, 2=Pickup, 3=Imagiq
   total_amount?: number;
+  serial_id?: string;
   envios?: Array<{
     numero_guia: string;
     tiempo_entrega_estimado: string;
   }>;
   order_items?: OrderItem[];
+  productos?: OrderItem[]; // Para Coordinadora
   // Para Imagiq
   envio?: {
     numero_guia: string;
@@ -72,12 +76,16 @@ interface OrderData {
     direccion_destino?: DireccionDestino;
     tienda_origen?: TiendaData;
   };
-  items?: OrderItem[];
+  items?: OrderItem[]; // Para Imagiq y Pickup
   // Para Pickup
   tienda?: TiendaData;
   tienda_origen?: TiendaData;
   token?: string;
+  recogida_tienda?: {
+    hora_recogida_autorizada?: string;
+  };
   direccion_entrega?: string;
+  ciudad_entrega?: string;
   shippingAddress?: string;
 }
 
@@ -178,6 +186,8 @@ export default function SuccessCheckoutPage({
         }
 
         // Obtener datos de la orden según el método de envío
+        // Coordinadora (1): usar /api/orders/shipping-info/${orderId} para obtener items
+        // Imagiq (3): usar /api/orders/${orderId}/imagiq
         let orderEndpoint = `/api/orders/shipping-info/${pathParams.orderId}`;
         if (metodoEnvio === 3) {
           orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
@@ -223,7 +233,8 @@ export default function SuccessCheckoutPage({
 
         if (metodoEnvio === 3) {
           // Imagiq: datos vienen en orderData.envio
-          numeroGuia = orderData.envio?.numero_guia || orderData.orden_id.substring(0, 8);
+          numeroGuia = orderData.envio?.numero_guia || 
+            (orderData.orden_id ? orderData.orden_id.substring(0, 8) : pathParams.orderId.substring(0, 8));
           tiempoEntregaEstimado = orderData.envio?.tiempo_entrega_estimado;
         } else {
           // Coordinadora: datos vienen en orderData.envios array
@@ -231,7 +242,8 @@ export default function SuccessCheckoutPage({
             orderData.envios && orderData.envios.length > 0
               ? orderData.envios[0]
               : null;
-          numeroGuia = envioData?.numero_guia || orderData.orden_id.substring(0, 8);
+          numeroGuia = envioData?.numero_guia || 
+            (orderData.orden_id ? orderData.orden_id.substring(0, 8) : pathParams.orderId.substring(0, 8));
           tiempoEntregaEstimado = envioData?.tiempo_entrega_estimado;
         }
 
@@ -358,8 +370,8 @@ export default function SuccessCheckoutPage({
 
         // Preparar payload para el endpoint /api/messaging/pedido-confirmado
         // El backend maneja el template_id internamente, no necesitamos enviarlo
-        // Usar el id de la orden (puede venir como "id" en Imagiq o "orden_id" en Coordinadora)
-        const ordenId = orderData.id || orderData.orden_id || pathParams.orderId;
+        // Usar el id (UUID) de la orden como orderId
+        const ordenId = orderData.id || pathParams.orderId;
         
         const payload = {
           to: telefono,
@@ -435,10 +447,12 @@ export default function SuccessCheckoutPage({
         }
 
         // Obtener datos de la orden según el método de envío
-        let orderEndpoint = `/api/orders/shipping-info/${pathParams.orderId}`;
-        if (metodoEnvio === 3) {
-          orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
-        } else if (metodoEnvio === 2) {
+        // Para EMAIL:
+        // Coordinadora (1): usar /api/orders/${orderId}/imagiq (mismo que Imagiq para obtener items)
+        // Imagiq (3): usar /api/orders/${orderId}/imagiq
+        // Pickup (2): usar /api/orders/${orderId}/tiendas
+        let orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
+        if (metodoEnvio === 2) {
           orderEndpoint = `/api/orders/${pathParams.orderId}/tiendas`;
         }
 
@@ -473,24 +487,48 @@ export default function SuccessCheckoutPage({
 
         if (isRecogidaEnTienda) {
           // Recogida en tienda: usar endpoint store-pickup
-          const ordenId = orderData.id || orderData.orden_id || pathParams.orderId;
+          // Mapear igual que en tracking service
+          // Usar el id (UUID) de la orden como orderId
+          const ordenId = orderData.id || pathParams.orderId;
           
-          // Obtener datos de la tienda desde orderData (para pickup)
-          const tiendaData = orderData.tienda || orderData.tienda_origen;
-          if (!tiendaData) {
+          // Obtener datos de la tienda desde orderData (para pickup) - igual que tracking service
+          const tiendaDataRaw = orderData.tienda;
+          if (!tiendaDataRaw || (!tiendaDataRaw.direccion && !tiendaDataRaw.ciudad && !tiendaDataRaw.descripcion)) {
             console.error("❌ [Email] No hay datos de tienda para recogida");
             return;
           }
 
-          // Obtener productos
-          const productos = orderData.items || orderData.order_items || [];
+          // Mapear tienda igual que en tracking service
+          const direccionTienda = (tiendaDataRaw.direccion != null && tiendaDataRaw.direccion !== "")
+            ? String(tiendaDataRaw.direccion).trim()
+            : "";
+          const ciudadTienda = (tiendaDataRaw.ciudad != null && tiendaDataRaw.ciudad !== "")
+            ? String(tiendaDataRaw.ciudad).trim()
+            : "";
+
+          const tiendaData: TiendaData = {
+            nombre: (tiendaDataRaw.nombre != null && tiendaDataRaw.nombre !== "") 
+              ? String(tiendaDataRaw.nombre).trim() 
+              : undefined,
+            descripcion: (tiendaDataRaw.descripcion != null && tiendaDataRaw.descripcion !== "") 
+              ? String(tiendaDataRaw.descripcion).trim() 
+              : undefined,
+            direccion: direccionTienda || "Tienda IMAGIQ",
+            ciudad: ciudadTienda || "Bogotá",
+            telefono: (tiendaDataRaw.telefono != null && tiendaDataRaw.telefono !== "") 
+              ? String(tiendaDataRaw.telefono).trim() 
+              : undefined,
+          };
+
+          // Obtener productos - igual que tracking service (data.items)
+          const productos = orderData.items || [];
           const productosMapeados = productos.map((p: OrderItem) => ({
             name: p.desdetallada || p.nombre || p.product_name || p.sku || "Producto",
             quantity: p.cantidad || p.quantity || 1,
             image: p.image_preview_url || p.picture_url || undefined
           }));
 
-          // Obtener token de recogida
+          // Obtener token de recogida - igual que tracking service
           const token = orderData.token || "";
 
           // Construir dirección de la tienda
@@ -545,59 +583,42 @@ export default function SuccessCheckoutPage({
           }
         } else {
           // Envío a domicilio (Coordinadora o Imagiq): usar endpoint order-confirmation
-          const ordenId = orderData.id || orderData.orden_id || pathParams.orderId;
+          // Mapear igual que en tracking service
+          // Usar el id (UUID) de la orden como orderId
+          const ordenId = orderData.id || pathParams.orderId;
 
-          // Obtener productos según el método
-          let productos: OrderItem[] = [];
-          if (metodoEnvio === 3) {
-            // Imagiq
-            productos = orderData.items || [];
-          } else {
-            // Coordinadora - intentar desde orderData o localStorage
-            productos = orderData.order_items || [];
-            if (productos.length === 0) {
-              const cartItems = localStorage.getItem("cart-items");
-              if (cartItems) {
-                try {
-                  const parsedItems = JSON.parse(cartItems);
-                  if (Array.isArray(parsedItems)) {
-                    productos = parsedItems as OrderItem[];
-                  }
-                } catch {
-                  // Error al parsear, continuar con array vacío
-                }
-              }
-            }
-          }
+          // Obtener productos - para email, Coordinadora (1) e Imagiq (3) usan el mismo endpoint /imagiq
+          // Ambos devuelven data.items con desdetallada, nombre, cantidad, unit_price, image_preview_url
+          const productos: OrderItem[] = orderData.items || [];
 
+          // Mapear productos - estructura igual para Coordinadora e Imagiq cuando se usa /imagiq
           const productosMapeados = productos.map((p: OrderItem) => ({
             name: p.desdetallada || p.nombre || p.product_name || p.sku || "Producto",
             quantity: p.cantidad || p.quantity || 1,
-            price: Number.parseFloat(String(p.unit_price || p.precio || 0)),
-            image: p.image_preview_url || p.picture_url || undefined
+            price: p.unit_price ? Number.parseFloat(String(p.unit_price)) : (p.precio ? Number(p.precio) : 0),
+            image: p.image_preview_url || p.picture_url || p.imagen || undefined
           }));
 
-          // Obtener dirección de envío
+          // Obtener dirección de envío - para email, Coordinadora (1) e Imagiq (3) usan el mismo endpoint /imagiq
+          // Ambos devuelven la dirección en orderData.envio.direccion_destino
           let shippingAddress = "";
-          if (metodoEnvio === 3) {
-            // Imagiq
-            const direccionDestino = orderData.envio?.direccion_destino;
-            if (direccionDestino) {
-              shippingAddress = direccionDestino.direccion_formateada || 
-                `${direccionDestino.linea_uno || ""}, ${direccionDestino.ciudad || ""}`.trim();
-            }
+          const direccionDestino = orderData.envio?.direccion_destino;
+          if (direccionDestino) {
+            shippingAddress = direccionDestino.direccion_formateada || 
+              `${direccionDestino.linea_uno || ""}, ${direccionDestino.ciudad || ""}`.trim();
           } else {
-            // Coordinadora - puede venir en diferentes lugares
-            shippingAddress = orderData.direccion_entrega || 
-              orderData.shippingAddress || "";
+            // Fallback si no viene en envio.direccion_destino
+            shippingAddress = orderData.direccion_entrega || "";
           }
 
-          // Calcular fecha de entrega estimada
+          // Calcular fecha de entrega estimada - para email, Coordinadora (1) e Imagiq (3) usan el mismo endpoint /imagiq
+          // Ambos devuelven tiempo_entrega_estimado en orderData.envio
           let estimatedDelivery = "1-3 días hábiles";
-          if (metodoEnvio === 3 && orderData.envio?.tiempo_entrega_estimado) {
+          if (orderData.envio?.tiempo_entrega_estimado) {
             const dias = Number.parseInt(orderData.envio.tiempo_entrega_estimado);
             estimatedDelivery = `${dias} día${dias > 1 ? 's' : ''} hábil${dias > 1 ? 'es' : ''}`;
           } else if (orderData.envios && orderData.envios.length > 0) {
+            // Fallback si no viene en envio.tiempo_entrega_estimado
             const dias = Number.parseInt(orderData.envios[0].tiempo_entrega_estimado);
             estimatedDelivery = `${dias} día${dias > 1 ? 's' : ''} hábil${dias > 1 ? 'es' : ''}`;
           }

@@ -2,7 +2,7 @@
 
 /* Animaciones de página */
 @keyframes fadeIn {
-  from {
+  from { 
     opacity: 0;
   }
   to {

@@ -187,8 +187,8 @@ export default function PickupMap({
       {/* Store Info - Instructions */}
       <div className="px-6 py-4 bg-white border-t border-gray-200">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 aspect-square">
-            <span className="text-white text-sm font-bold">S</span>
+          <div className="w-8 h-8 bg-white border-2 border-black rounded-full flex items-center justify-center flex-shrink-0 aspect-square">
+            <span className="text-black text-base font-bold leading-none">S</span>
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-gray-900 mb-1">

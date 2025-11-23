@@ -318,7 +318,7 @@ export function PickupShippingView({
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <a
             href={`tel:${phoneForCall}`}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#17407A] text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
           >
             <svg
               className="w-4 h-4"

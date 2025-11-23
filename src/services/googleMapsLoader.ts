@@ -5,6 +5,7 @@
  */
 
 import { apiGet } from '@/lib/api-client';
+import { decryptGoogleMapsScript } from '@/utils/mapsDecryption';
 
 // Declaraciones de tipos para Google Maps
 type GoogleMapsNamespace = {
@@ -40,25 +41,31 @@ class GoogleMapsLoaderService {
   }> = [];
 
   /**
-   * Obtiene la API key desde el backend o usa fallback del .env
+   * Obtiene el script de Google Maps desde el backend
+   * IMPORTANTE: La clave SIEMPRE debe venir encriptada desde el backend
+   * La clave de Directions API está en el backend y no se expone al frontend
    */
-  private async getApiKey(): Promise<string> {
-    // Primero verificar si hay una clave en el .env (tiene prioridad)
-    const envApiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (envApiKey) {
-      console.log('✅ Usando Google Maps API key desde .env');
-      return envApiKey;
-    }
-
+  private async getGoogleMapsScript(): Promise<{ data: string; key: string }> {
     try {
-      // Intentar obtener desde el backend
-      const data = await apiGet<{ apiKey: string }>('/api/places/maps-config');
-      return data.apiKey;
-    } catch (error) {
-      console.warn('Backend no disponible:', error);
-    }
+      // Obtener script del backend (OBLIGATORIO)
+      const scriptData = await apiGet<{ data: string; key: string }>('/api/addresses/maps/script');
+      
+      if (!scriptData.data || !scriptData.key) {
+        throw new Error('El backend no retornó los datos requeridos');
+      }
 
-    throw new Error('No se pudo obtener la API key de Google Maps. Verifica que NEXT_PUBLIC_GOOGLE_PLACES_API_KEY o NEXT_PUBLIC_GOOGLE_MAPS_API_KEY esté configurado en .env');
+      return {
+        data: scriptData.data,
+        key: scriptData.key,
+      };
+    } catch (error) {
+      console.error('❌ Error obteniendo script del backend:', error);
+      throw new Error(
+        `No se pudo obtener el script de Google Maps desde el backend. ` +
+        `Verifica que el endpoint /api/addresses/maps/script esté disponible. ` +
+        `Error: ${error instanceof Error ? error.message : 'Error desconocido'}`
+      );
+    }
   }
 
   /**
@@ -117,23 +124,40 @@ class GoogleMapsLoaderService {
           return;
         }
 
-        // Obtener la API key desde el backend
-        const apiKey = await this.getApiKey();
-        console.log('✅ API key obtenida, cargando Google Maps...');
+        // Obtener script del backend (OBLIGATORIO)
+        const { data, key } = await this.getGoogleMapsScript();
+        
+        let script: HTMLScriptElement;
 
-        // Crear nuevo script
-        const script = document.createElement('script');
-        const scriptUrl = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places,geometry&v=3.55`;
-        script.src = scriptUrl;
-        script.async = true;
-        script.defer = true;
+        try {
+          // Desencriptar el script
+          const decryptedScript = decryptGoogleMapsScript(data, key);
 
-        console.log('📍 URL del script:', scriptUrl.replace(apiKey, '***'));
+          // Parsear el HTML y extraer el script tag
+          const tempDiv = document.createElement('div');
+          tempDiv.innerHTML = decryptedScript;
+          const scriptElement = tempDiv.querySelector('script');
+
+          if (!scriptElement || !scriptElement.src) {
+            throw new Error('No se encontró un script tag válido en el HTML desencriptado');
+          }
+
+          script = document.createElement('script');
+          script.src = scriptElement.src;
+          script.async = scriptElement.async !== undefined ? scriptElement.async : true;
+          script.defer = scriptElement.defer !== undefined ? scriptElement.defer : true;
+        } catch (decryptError) {
+          const error = `Error desencriptando script: ${(decryptError as Error).message}`;
+          console.error('❌', error);
+          this.state.error = error;
+          this.state.isLoading = false;
+          this.notifyListeners('error', error);
+          reject(new Error(error));
+          return;
+        }
 
         script.onload = () => {
-          console.log('✅ Script de Google Maps cargado');
           if (window.google && window.google.maps) {
-            console.log('✅ Google Maps API disponible');
             this.state.isLoaded = true;
             this.state.isLoading = false;
             this.notifyListeners('load');
@@ -162,7 +186,6 @@ class GoogleMapsLoaderService {
 
         // Agregar script al DOM
         document.head.appendChild(script);
-        console.log('📝 Script agregado al DOM');
 
       } catch (error) {
         const errorMessage = `Error obteniendo configuración de Google Maps: ${error}`;

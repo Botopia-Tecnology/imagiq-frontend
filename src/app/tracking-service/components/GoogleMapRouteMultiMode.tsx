@@ -2,8 +2,55 @@
 
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { googleMapsLoader } from "@/services/googleMapsLoader";
+import { type TransportMode } from "@/services/mapsDirectionsService";
 
-type TransportMode = "driving" | "bicycling" | "walking";
+// Funciones para crear iconos personalizados
+function createHomeIcon(maps: typeof google.maps): google.maps.Icon {
+  // SVG de casa
+  const svg = `
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="#000000" stroke-width="2"/>
+    </svg>
+  `;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new maps.Size(32, 32),
+    anchor: new maps.Point(16, 16),
+  };
+}
+
+function createStoreIcon(maps: typeof google.maps): google.maps.Icon {
+  // SVG de camión (representa la tienda) - mismo tamaño que la casa, sin círculo
+  const svg = `
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" fill="white" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 18H9" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" fill="white" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="17" cy="18" r="2" fill="white" stroke="#000000" stroke-width="2"/>
+      <circle cx="7" cy="18" r="2" fill="white" stroke="#000000" stroke-width="2"/>
+    </svg>
+  `;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new maps.Size(32, 32),
+    anchor: new maps.Point(16, 16),
+  };
+}
+
+function createStoreIconWithS(maps: typeof google.maps): google.maps.Icon {
+  // SVG con "S" en círculo blanco con borde negro para recogida en tienda
+  const svg = `
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="10" fill="white" stroke="#000000" stroke-width="2"/>
+      <text x="12" y="16" font-family="Arial, sans-serif" font-size="14" font-weight="bold" fill="#000000" text-anchor="middle">S</text>
+    </svg>
+  `;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new maps.Size(32, 32),
+    anchor: new maps.Point(16, 16),
+  };
+}
 
 interface RouteInfo {
   distance: string;
@@ -233,25 +280,18 @@ export function GoogleMapRouteMultiMode({
             bounds.extend(destPoint);
             map.fitBounds(bounds, 80);
             
-            // Agregar marcador de origen (A)
+            // Agregar marcador de origen
+            // Si es pickup: icono de casa (usuario va a la tienda)
+            // Si es envío Imagiq: icono de tienda (desde tienda)
+            const originIcon = isPickup 
+              ? createHomeIcon(maps) // Casa para pickup (usuario)
+              : createStoreIcon(maps); // Tienda para envío Imagiq
+            
             const originMarker = new maps.Marker({
               position: originPoint,
               map: map,
-              label: {
-                text: "A",
-                color: "white",
-                fontWeight: "bold",
-                fontSize: "14px",
-              },
-              icon: {
-                path: maps.SymbolPath.CIRCLE,
-                scale: 12,
-                fillColor: "#10B981",
-                fillOpacity: 1,
-                strokeColor: "white",
-                strokeWeight: 3,
-              },
-              title: direccionOrigen || "Origen",
+              icon: originIcon,
+              title: isPickup ? "Tu ubicación" : "Tienda IMAGIQ",
               zIndex: 1000,
             });
             customMarkers.push(originMarker);
@@ -261,25 +301,18 @@ export function GoogleMapRouteMultiMode({
             map.setZoom(15);
           }
           
-          // Agregar marcador de destino (S para tienda en pickup, B para envío)
+          // Agregar marcador de destino
+          // Si es pickup: icono con "S" (usuario va a la tienda)
+          // Si es envío Imagiq: icono de casa (entrega al cliente)
+          const destIcon = isPickup 
+            ? createStoreIconWithS(maps) // "S" para pickup
+            : createHomeIcon(maps); // Casa para envío Imagiq
+          
           const destMarker = new maps.Marker({
             position: destPoint,
             map: map,
-            label: {
-              text: isPickup ? "S" : "B",
-              color: "white",
-              fontWeight: "bold",
-              fontSize: "14px",
-            },
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: isPickup ? "#3B82F6" : "#EF4444", // Azul para pickup (tienda), rojo para envío
-              fillOpacity: 1,
-              strokeColor: "white",
-              strokeWeight: 3,
-            },
-            title: direccionDestino || (isPickup ? "Tienda" : "Destino"),
+            icon: destIcon,
+            title: isPickup ? "Tienda IMAGIQ" : "Tu dirección",
             zIndex: 1000,
           });
           customMarkers.push(destMarker);
@@ -389,7 +422,7 @@ export function GoogleMapRouteMultiMode({
           onClick={() => setMapType("roadmap")}
           className={`px-4 py-2 text-sm font-medium transition-all ${
             mapType === "roadmap"
-              ? "bg-[#17407A] text-white"
+              ? "bg-black text-white"
               : "bg-white text-gray-700 hover:bg-gray-50"
           }`}
         >
@@ -399,7 +432,7 @@ export function GoogleMapRouteMultiMode({
           onClick={() => setMapType("satellite")}
           className={`px-4 py-2 text-sm font-medium transition-all ${
             mapType === "satellite"
-              ? "bg-[#17407A] text-white"
+              ? "bg-black text-white"
               : "bg-white text-gray-700 hover:bg-gray-50"
           }`}
         >
@@ -420,8 +453,8 @@ export function GoogleMapRouteMultiMode({
               onClick={() => setSelectedMode(mode)}
               className={`flex items-center justify-center gap-1 px-1.5 py-1 rounded transition-all ${
                 isSelected
-                  ? "bg-[#17407A] border-[#17407A] text-white shadow-sm"
-                  : "bg-white border-gray-300 text-gray-700 hover:border-[#17407A] hover:bg-gray-50"
+                  ? "bg-black border-black text-white shadow-sm"
+                  : "bg-white border-gray-300 text-gray-700 hover:border-black hover:bg-gray-50"
               }`}
               title={config.label}
             >
@@ -449,7 +482,7 @@ export function GoogleMapRouteMultiMode({
             {/* Indicador de carga centrado */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center bg-white/90 rounded-lg p-4 shadow-lg">
-                <div className="w-10 h-10 border-4 border-gray-200 border-t-[#17407A] rounded-full animate-spin mx-auto mb-2" />
+                <div className="w-10 h-10 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-2" />
                 <p className="text-sm text-gray-600 font-medium">Cargando mapa...</p>
               </div>
             </div>
@@ -489,7 +522,7 @@ export function GoogleMapRouteMultiMode({
           <div className="flex items-center gap-3 text-xs">
             <div className="flex items-center gap-1.5">
               <svg
-                className="w-3.5 h-3.5 text-[#17407A]"
+                className="w-3.5 h-3.5 text-black"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -508,7 +541,7 @@ export function GoogleMapRouteMultiMode({
             <span className="text-gray-300">•</span>
             <div className="flex items-center gap-1.5">
               <svg
-                className="w-3.5 h-3.5 text-[#17407A]"
+                className="w-3.5 h-3.5 text-black"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

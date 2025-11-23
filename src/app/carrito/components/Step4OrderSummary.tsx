@@ -335,7 +335,6 @@ export default function Step4OrderSummary({
 
   return (
     <aside className={containerClasses}>
-      <h2 className="font-bold text-lg">Resumen de compra</h2>
       <div className="flex flex-col gap-2">
         {/* Productos: mostrar precio ANTES del descuento para que el usuario vea el impacto */}
         <div className="flex justify-between text-sm">
@@ -413,9 +412,9 @@ export default function Step4OrderSummary({
         </div>
       )}
 
-      <div className="flex gap-3">
-        {/* Botón de volver (opcional) */}
-        {onBack && (
+      {/* Botón de volver (opcional) */}
+      {onBack && (
+        <div className="flex gap-3">
           <button
             type="button"
             className="flex-1 bg-gray-200 text-gray-800 font-semibold py-2 rounded-lg hover:bg-gray-300 focus-visible:ring-2 focus-visible:ring-blue-600 transition cursor-pointer"
@@ -423,10 +422,34 @@ export default function Step4OrderSummary({
           >
             Volver
           </button>
-        )}
+        </div>
+      )}
+
+      {/* Términos y Botón en la misma fila - Botón a la derecha */}
+      <div className="flex items-center gap-4">
+        {/* Términos y Condiciones - A la izquierda */}
+        <p className="text-[10px] text-gray-600 leading-tight flex-1">
+          Al continuar con tu compra, aceptas los{" "}
+          <a
+            href="/soporte/politicas-generales"
+            target="_blank"
+            className="text-blue-600 underline hover:text-blue-700"
+          >
+            Términos y Condiciones
+          </a>{" "}
+          y utilizaremos tus datos personales de acuerdo a nuestra{" "}
+          <a
+            href="/soporte/tratamiento-datos-personales"
+            target="_blank"
+            className="text-blue-600 underline hover:text-blue-700"
+          >
+            política de privacidad
+          </a>.
+        </p>
+
         <button
           type="button"
-          className={`flex-1 bg-black text-white font-bold py-3 rounded-lg text-base hover:bg-gray-800 transition flex items-center justify-center ${
+          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${
             isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
               ? "opacity-70 cursor-not-allowed"
               : "cursor-pointer"
@@ -479,40 +502,17 @@ export default function Step4OrderSummary({
         </button>
       </div>
 
-      {/* Información de compra - Términos, financiamiento y envío */}
-      <div className="flex flex-col gap-3 text-xs leading-relaxed">
-        {/* Términos y Condiciones - Centrado y pegado al botón */}
-        <p className="text-gray-700 text-center mt-3">
-          Al continuar con tu compra, aceptas los{" "}
-          <a
-            href="/soporte/politicas-generales"
-            target="_blank"
-            className="text-blue-600 underline hover:text-blue-700 font-semibold"
-          >
-            Términos y Condiciones
-          </a>{" "}
-          y utilizaremos tus datos personales de acuerdo a nuestra{" "}
-          <a
-            href="/soporte/tratamiento-datos-personales"
-            target="_blank"
-            className="text-blue-600 underline hover:text-blue-700 font-semibold"
-          >
-            política de privacidad
-          </a>
-          {" "}.
-        </p>
-
-        {/* Espacio entre secciones */}
-        <div className="mt-3"></div>
+      {/* Información de compra - financiamiento y envío */}
+      <div className="flex flex-col gap-2 text-[10px] leading-relaxed mt-3">
 
         {/* Contenedor con padding lateral para información de financiamiento y envío */}
-        <div className="flex flex-col gap-3 px-2.5">
+        <div className="flex flex-col gap-2 px-1">
           {/* Información de Financiamiento */}
-          <div className="flex gap-3 items-start">
+          <div className="flex gap-2 items-start">
             <div className="shrink-0">
               <svg
-                width="40"
-                height="40"
+                width="28"
+                height="28"
                 viewBox="0 0 40 40"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -526,13 +526,13 @@ export default function Step4OrderSummary({
                 <rect x="13" y="23" width="7" height="2.5" rx="1.25" fill="#222" />
               </svg>
             </div>
-            <p className="font-semibold text-black">
+            <p className="text-black">
               Compra sin interés a 3, 6, 12 o 24 cuotas pagando con tarjetas de
               nuestros bancos aliados: Bancolombia y Davivienda. Aplican{" "}
               <a
                 href="/soporte/tyc-bancolombia"
                 target="_blank"
-                className="text-blue-600 underline hover:text-blue-700 font-semibold"
+                className="text-blue-600 underline hover:text-blue-700"
               >
                 T&C Bancolombia
               </a>{" "}
@@ -540,20 +540,20 @@ export default function Step4OrderSummary({
               <a
                 href="/soporte/tyc-davivienda"
                 target="_blank"
-                className="text-blue-600 underline hover:text-blue-700 font-semibold"
+                className="text-blue-600 underline hover:text-blue-700"
               >
                 T&C Davivienda
               </a>
-              {" "}.
+              .
             </p>
           </div>
 
           {/* Información de Envío */}
-          <div className="flex gap-3 items-start">
+          <div className="flex gap-2 items-start">
             <div className="shrink-0">
               <svg
-                width="40"
-                height="40"
+                width="28"
+                height="28"
                 viewBox="0 0 40 40"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -577,7 +577,7 @@ export default function Step4OrderSummary({
                 <path d="M9 19H23" stroke="#222" strokeWidth="1.5" />
               </svg>
             </div>
-            <p className="font-semibold text-black">
+            <p className="text-black">
               Envío gratis a toda Colombia. Si compras en Bogotá antes de las
               11:00 am productos de la categoría Smartphones y Accesorios,
               recibirás tu pedido el mismo día

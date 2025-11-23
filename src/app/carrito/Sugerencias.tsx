@@ -345,10 +345,10 @@ export default function Sugerencias({
               </button>
             </div>
             <div className="text-center mt-2">
-              <div className="font-semibold text-gray-900 text-base mb-1 line-clamp-2">
+              <div className="font-semibold text-gray-900 text-sm mb-1 line-clamp-2">
                 {producto.desDetallada[0] || producto.nombreMarket?.[0] || ''}
               </div>
-              <div className="text-lg font-bold text-gray-900">
+              <div className="text-base font-bold text-gray-900">
                 $ {(producto.precioeccommerce[0] || producto.precioNormal[0]).toLocaleString()}
               </div>
             </div>
@@ -383,8 +383,8 @@ export default function Sugerencias({
     : "Agrega a tu compra";
 
   return (
-    <section className="rounded-2xl p-8 mt-8">
-      <h2 className="font-bold text-xl mb-6">{titulo}</h2>
+    <section className="rounded-2xl p-6 mt-2">
+      <h2 className="font-bold text-lg mb-4">{titulo}</h2>
 
       {/* Fila 1: Accesorios compatibles con el modelo */}
       {hasCompatibles && renderProductRow(sugerenciasCompatibles)}

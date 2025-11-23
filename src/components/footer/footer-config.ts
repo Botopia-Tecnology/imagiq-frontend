@@ -144,7 +144,7 @@ export const getFooterSections = (
       ],
     },
     {
-      title: "Account",
+      title: "Cuenta",
       links: [
         { name: "Iniciar sesión", href: "/login" },
         { name: "Pedidos", href: "/carrito/step1" },

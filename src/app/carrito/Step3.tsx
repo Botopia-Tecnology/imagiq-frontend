@@ -626,10 +626,16 @@ export default function Step3({
       return; // Con trade-in, siempre debe ser tienda
     }
 
+    // IMPORTANTE: Si canPickUp es true, NO cambiar automáticamente a domicilio
+    // aunque las tiendas aún no se hayan cargado (pueden estar cargando)
+    if (effectiveCanPickUp === true) {
+      return; // canPickUp es true, permitir seleccionar tienda
+    }
+
     // Si canPickUp es false O si terminó de cargar y no hay tiendas disponibles
-    // Verificar: canPickUp es false, o terminó de cargar sin tiendas
+    // Verificar: canPickUp es false, o terminó de cargar sin tiendas (solo si canPickUp NO es true)
     const canPickUpIsFalse = effectiveCanPickUp === false;
-    const finishedLoadingNoStores = !storesLoading && stores.length === 0 && effectiveCanPickUp !== true;
+    const finishedLoadingNoStores = !storesLoading && stores.length === 0 && effectiveCanPickUp === false;
     const noStoresAvailable = canPickUpIsFalse || finishedLoadingNoStores;
 
     // Si no hay tiendas disponibles y el método actual es "tienda", cambiar a "domicilio"
@@ -870,13 +876,15 @@ export default function Step3({
                   1. Está cargando canPickUp (isLoadingCanPickUp es true)
                   2. O está cargando tiendas (storesLoading es true)
                   3. O cuando estamos recalculando el pickup después de cambiar la dirección
-                  4. O cuando canPickUp es true pero aún no tenemos el valor (hasCanPickUpValue es false) */}
+                  4. O cuando canPickUp es true pero aún no tenemos el valor (hasCanPickUpValue es false)
+                  5. O cuando canPickUp es true pero las tiendas aún no se han cargado (stores.length === 0) */}
               {/* PRIORIDAD: El skeleton se muestra mientras carga canPickUp, tiendas, o mientras recalcula después de cambio de dirección */}
               {/* IMPORTANTE: El skeleton se mantiene hasta que canPickUp esté calculado Y las tiendas terminen de cargar */}
               {(isLoadingCanPickUp || 
                 storesLoading || 
                 isRecalculatingPickup ||
-                (effectiveCanPickUp === true && !hasCanPickUpValue)) && (
+                (effectiveCanPickUp === true && !hasCanPickUpValue) ||
+                (effectiveCanPickUp === true && hasCanPickUpValue && stores.length === 0 && deliveryMethod === "tienda")) && (
                 <div className="mt-6">
                   <div className="p-4 bg-white border-2 border-gray-200 rounded-lg shadow-sm animate-pulse">
                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>

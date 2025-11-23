@@ -171,7 +171,7 @@ export default function Step2({
   // (Eliminado: handleDiscountApply no se usa)
 
   // Validar formulario invitado
-  const isGuestFormValid = Object.values(validateFields(guestForm)).every(
+  const isGuestFormValid = !Object.values(validateFields(guestForm)).some(
     Boolean
   );
 

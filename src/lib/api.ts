@@ -535,6 +535,12 @@ export interface BundleOption {
   ind_entre_estre: number;
   skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
   imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+  // Campos de variante del producto padre
+  colorProductSku?: string; // Color hex del producto (ej: "#3C5B8A")
+  nombreColorProductSku?: string; // Nombre del color (ej: "Azul Marino")
+  capacidadProductSku?: string; // Capacidad (ej: "256GB")
+  memoriaRamProductSku?: string; // RAM (ej: "12GB")
+  stockTotal?: number; // Stock disponible para esta variante
 }
 
 // Bundle agrupado con múltiples opciones/variantes

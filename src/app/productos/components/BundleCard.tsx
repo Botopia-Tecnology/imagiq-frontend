@@ -23,12 +23,14 @@ import type { BundleCardProps } from "@/lib/productMapper";
 
 export default function BundleCard({
   id,
+  baseCodigoMarket,
+  codCampana,
   name,
   image,
   price,
   originalPrice,
   discount,
-  skus_bundle,
+  opciones,
   categoria,
   menu,
   submenu,
@@ -38,6 +40,11 @@ export default function BundleCard({
 }: BundleCardProps & { className?: string }) {
   const router = useRouter();
   const [currentImageIndex] = useState(0);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
+
+  // Opción actualmente seleccionada
+  const selectedOption = opciones?.[selectedOptionIndex] || opciones?.[0];
+  const skus_bundle = selectedOption?.skus_bundle || [];
 
   // Simular múltiples imágenes para el carrusel (en una implementación real, vendrían del backend)
   const bundleImages = useMemo(
@@ -55,6 +62,48 @@ export default function BundleCard({
     return transformed;
   }, [bundleImages]);
 
+  // Extraer un nombre corto/label para cada opción basado en las diferencias del modelo
+  const getOptionLabel = (modelo: string, index: number, allModelos: string[]) => {
+    if (!modelo) return `${index + 1}`;
+
+    // 1. Intentar extraer capacidad (256GB, 512GB, 1TB, etc.)
+    const capacityMatch = modelo.match(/(\d+\s*(?:GB|TB))/i);
+    if (capacityMatch) {
+      const capacity = capacityMatch[1].toUpperCase().replace(/\s+/g, '');
+      // Si hay color también, combinarlo
+      const colorMatch = modelo.match(/(?:color|-)?\s*(negro|blanco|azul|gris|rosa|verde|morado|coral|titanio|silver|gold|black|white|blue|gray|pink|green|purple)/i);
+      if (colorMatch) {
+        return `${capacity} - ${colorMatch[1]}`;
+      }
+      return capacity;
+    }
+
+    // 2. Si todos los modelos son iguales o solo hay uno, usar índice simple
+    const uniqueModelos = new Set(allModelos.filter(Boolean));
+    if (uniqueModelos.size <= 1) {
+      return `${index + 1}`;
+    }
+
+    // 3. Intentar extraer la parte diferenciadora del modelo
+    // Comparar con el primer modelo para encontrar la diferencia
+    const baseModelo = allModelos[0];
+    if (baseModelo && modelo !== baseModelo) {
+      // Buscar palabras que están en este modelo pero no en el base
+      const baseWords = new Set(baseModelo.toLowerCase().split(/\s+/));
+      const thisWords = modelo.toLowerCase().split(/\s+/);
+      const diffWords = thisWords.filter(w => !baseWords.has(w) && w.length > 2);
+      if (diffWords.length > 0) {
+        return diffWords.slice(0, 2).join(' ').substring(0, 15);
+      }
+    }
+
+    // 4. Fallback: usar índice
+    return `${index + 1}`;
+  };
+
+  // Obtener todos los modelos para comparación
+  const allModelos = useMemo(() => opciones?.map(op => op.modelo) || [], [opciones]);
+
   const handleMoreInfo = () => {
     // TODO: Navegar a página de detalle del bundle (próximamente)
     // Por ahora, solo registrar el evento
@@ -62,7 +111,9 @@ export default function BundleCard({
       bundle_id: id,
       bundle_name: name,
       source: "bundle_card",
-      skus_bundle,
+      baseCodigoMarket,
+      codCampana,
+      opciones_count: opciones?.length || 0,
       categoria,
       menu,
       submenu,
@@ -74,7 +125,10 @@ export default function BundleCard({
     posthogUtils.capture("bundle_add_to_cart_click", {
       bundle_id: id,
       bundle_name: name,
+      product_sku: selectedOption?.product_sku,
       skus_bundle,
+      selected_option_index: selectedOptionIndex,
+      selected_modelo: selectedOption?.modelo,
       source: "bundle_card",
     });
   };
@@ -169,12 +223,34 @@ export default function BundleCard({
               {name}
             </button>
           </h3>
-
-          {/* Info de productos incluidos */}
-          <p className="text-xs text-gray-500 mt-1">
-            {skus_bundle.length} {skus_bundle.length === 1 ? 'producto incluido' : 'productos incluidos'}
-          </p>
         </div>
+
+        {/* Selector de variantes del bundle */}
+        {opciones && opciones.length > 1 && (
+          <div className="px-3">
+            <div className="flex flex-wrap gap-1.5">
+              {opciones.map((opcion, index) => (
+                <button
+                  key={opcion.product_sku}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedOptionIndex(index);
+                  }}
+                  className={cn(
+                    "px-2 py-1 text-xs rounded-md border transition-all",
+                    selectedOptionIndex === index
+                      ? "border-black bg-black text-white"
+                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+                  )}
+                  title={opcion.modelo}
+                >
+                  {getOptionLabel(opcion.modelo, index, allModelos)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Vigencia del bundle */}
         {fecha_inicio && fecha_final && (
@@ -185,21 +261,25 @@ export default function BundleCard({
           </div>
         )}
 
-        {/* Precio */}
+        {/* Precio - usa la opción seleccionada */}
         <div className="px-3 space-y-3 mt-auto">
-          {price && (
+          {selectedOption && (
             <div className="space-y-1 min-h-[32px]">
               {(() => {
+                // Usar precio de la opción seleccionada
+                const currentPrice = selectedOption.price;
+                const currentOriginalPrice = selectedOption.originalPrice;
+
                 const { hasSavings, savings } = calculateSavings(
-                  price,
-                  originalPrice
+                  currentPrice,
+                  currentOriginalPrice
                 );
 
                 if (!hasSavings) {
                   // Sin descuento: solo precio
                   return (
                     <div className="text-xl font-bold text-black">
-                      {price}
+                      {currentPrice}
                     </div>
                   );
                 }
@@ -209,14 +289,14 @@ export default function BundleCard({
                   <div className="flex items-end gap-3">
                     {/* Precio final */}
                     <div className="text-xl font-bold text-black leading-tight">
-                      {price}
+                      {currentPrice}
                     </div>
 
                     {/* Info de descuento a la derecha */}
                     <div className="flex flex-col items-start justify-end">
                       {/* Precio anterior tachado */}
                       <span className="text-xs line-through text-gray-500 leading-tight">
-                        {originalPrice}
+                        {currentOriginalPrice}
                       </span>
                       {/* Ahorro */}
                       <span className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">

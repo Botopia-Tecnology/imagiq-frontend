@@ -18,6 +18,21 @@ export default function VerifyPurchase(
     });
   }, [params]);
 
+  const getMessageText = (msg: string | object, fallback = "Error desconocido en la verificación") => {
+    if (typeof msg === "string" && msg.trim().length > 0) return msg;
+    if (msg && typeof msg === "object") {
+      // Si es un objeto vacío {}, usamos el fallback
+      if (Object.keys(msg).length === 0) return fallback;
+      // Si es un objeto con contenido, stringificamos para mostrar algo útil
+      try {
+        return JSON.stringify(msg);
+      } catch {
+        return fallback;
+      }
+    }
+    return fallback;
+  };
+
   const verifyOrder = useCallback(async () => {
     if (!orderId) return;
 
@@ -26,7 +41,7 @@ export default function VerifyPurchase(
 
     try {
       setIsLoading(true);
-      const data = await apiGet<{ message: string; status: number }>(
+      const data = await apiGet<{ message: string | object; status: number }>(
         `/api/orders/verify/${orderId}`
       );
 
@@ -37,28 +52,22 @@ export default function VerifyPurchase(
       // Esperar el tiempo restante para completar la animación mínima
       await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
-      // Verificar el status del body de la respuesta
+      // Normalizar mensaje
+      const messageText = getMessageText(data.message);
+
       if (data.status === 200) {
-        // Mantener la animación visible durante la redirección
         router.push(`/success-checkout/${orderId}`);
       } else {
-        console.error(
-          "Verification failed with status:",
-          data.status,
-          data.message
-        );
+        console.error("Verification failed with status:", data.status, messageText);
         router.push(
-          `/error-checkout?error=${encodeURIComponent(
-            data.message || "Error desconocido en la verificación"
-          )}`
+          `/error-checkout?error=${encodeURIComponent(messageText)}`
         );
       }
     } catch (error) {
       console.error("Error verifying order:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Error desconocido en la verificación";
+      let errorMessage = "Error desconocido en la verificación";
+      if (error instanceof Error) errorMessage = error.message;
+      else errorMessage = getMessageText(String(error), errorMessage);
 
       // Calcular cuánto tiempo ha pasado en caso de error
       const elapsedTime = Date.now() - startTime;

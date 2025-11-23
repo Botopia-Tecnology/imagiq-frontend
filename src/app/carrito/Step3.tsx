@@ -861,6 +861,8 @@ export default function Step3({
                   onMethodChange={handleDeliveryMethodChange}
                   disabled={!effectiveCanPickUp && !hasActiveTradeIn}
                   isLoading={storesLoading || addressLoading}
+                  availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+                  hasActiveTradeIn={hasActiveTradeIn}
                 />
               </div>
 

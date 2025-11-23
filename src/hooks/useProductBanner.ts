@@ -8,7 +8,8 @@ import { bannersService } from "@/services/banners.service";
 import type { Banner } from "@/types/banner";
 
 interface UseProductBannerResult {
-  config: Banner | null;
+  config: Banner | null; // Legacy: primer banner
+  configs: Banner[]; // Nuevo: todos los banners para carrusel
   loading: boolean;
   error: Error | null;
 }
@@ -34,6 +35,7 @@ export function useProductBanner(
   submenu?: string | null
 ): UseProductBannerResult {
   const [config, setConfig] = useState<Banner | null>(null);
+  const [configs, setConfigs] = useState<Banner[]>([]); // Nuevo: array de banners
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
@@ -64,17 +66,20 @@ export function useProductBanner(
         console.log('[useProductBanner] Buscando banner con placement:', placement);
         console.log('[useProductBanner] Categoría:', categoria, 'Submenu:', submenu);
 
-        const banner = await bannersService.getFirstBannerByPlacement(placement);
+        // Obtener TODOS los banners del placement
+        const banners = await bannersService.getBannersByPlacement(placement);
 
-        console.log('[useProductBanner] Banner encontrado:', banner);
+        console.log('[useProductBanner] Banners encontrados:', banners);
 
         if (!isCancelled) {
-          setConfig(banner);
+          setConfigs(banners);
+          setConfig(banners[0] || null); // Legacy: primer banner
         }
       } catch (err) {
         if (!isCancelled) {
           setError(err instanceof Error ? err : new Error("Error desconocido"));
           setConfig(null);
+          setConfigs([]); // Limpiar array también
         }
       } finally {
         if (!isCancelled) {
@@ -90,5 +95,5 @@ export function useProductBanner(
     };
   }, [categoria, submenu]);
 
-  return { config, loading, error };
+  return { config, configs, loading, error };
 }

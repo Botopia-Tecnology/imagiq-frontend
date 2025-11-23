@@ -32,7 +32,12 @@ export function useClarityIdentity() {
         await waitForClarity(10, 1000); // Esperar hasta 10 segundos
         identifyUserInClarity(user);
       } catch (error) {
-        console.error("[useClarityIdentity] Failed to identify user:", error);
+        // Solo mostrar error en producción, en desarrollo es normal que falle si el backend no está corriendo
+        if (process.env.NODE_ENV === 'production') {
+          console.error("[useClarityIdentity] Failed to identify user:", error);
+        } else {
+          console.log("[useClarityIdentity] Clarity not available (development mode - backend may not be running)");
+        }
       }
     };
 

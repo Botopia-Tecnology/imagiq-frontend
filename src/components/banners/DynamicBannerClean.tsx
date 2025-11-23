@@ -45,6 +45,7 @@ interface BannerContentProps {
   textStyles?: BannerTextStyles | null;
   videoEnded: boolean;
   linkUrl: string | null;
+  isWrappedInLink?: boolean; // Nueva prop para evitar Links anidados
 }
 
 /**
@@ -97,6 +98,7 @@ function BannerContent({
   textStyles,
   videoEnded,
   linkUrl,
+  isWrappedInLink,
 }: Readonly<BannerContentProps>) {
   const final: CSS = {
     color,
@@ -133,20 +135,48 @@ function BannerContent({
           {description}
         </p>
       )}
-      {cta && linkUrl && (
-        <Link
-          href={linkUrl}
-          className="inline-block px-6 py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 hover:scale-105"
-          style={{
-            borderWidth: "2px",
-            borderColor: color,
-            backgroundColor: "transparent",
-            ...(textStyles?.cta || {}),
-          }}
-        >
-          {cta}
-        </Link>
-      )}
+      {cta &&
+        (isWrappedInLink ? (
+          // Si el banner completo es un Link, renderizar el CTA como span para evitar anidamiento
+          <span
+            className="inline-block px-6 py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300"
+            style={{
+              borderWidth: "2px",
+              borderColor: color,
+              backgroundColor: "transparent",
+              ...(textStyles?.cta || {}),
+            }}
+          >
+            {cta}
+          </span>
+        ) : linkUrl ? (
+          // Si el banner NO es clickeable pero el CTA tiene URL, renderizar como Link
+          <Link
+            href={linkUrl}
+            className="inline-block px-6 py-2.5 rounded-full font-semibold text-sm md:text-base transition-all duration-300 hover:scale-105"
+            style={{
+              borderWidth: "2px",
+              borderColor: color,
+              backgroundColor: "transparent",
+              ...(textStyles?.cta || {}),
+            }}
+          >
+            {cta}
+          </Link>
+        ) : (
+          // Si no hay URL, renderizar como span
+          <span
+            className="inline-block px-6 py-2.5 rounded-full font-semibold text-sm md:text-base"
+            style={{
+              borderWidth: "2px",
+              borderColor: color,
+              backgroundColor: "transparent",
+              ...(textStyles?.cta || {}),
+            }}
+          >
+            {cta}
+          </span>
+        ))}
     </div>
   );
 
@@ -412,6 +442,7 @@ export default function DynamicBannerClean({
                   textStyles={bannerTextStyles}
                   videoEnded={true}
                   linkUrl={banner.link_url}
+                  isWrappedInLink={Boolean(banner.link_url)}
                 />
                 <BannerContent
                   title={banner.title}
@@ -427,6 +458,7 @@ export default function DynamicBannerClean({
                   textStyles={bannerTextStyles}
                   videoEnded={true}
                   linkUrl={banner.link_url}
+                  isWrappedInLink={Boolean(banner.link_url)}
                 />
               </div>
             </div>

@@ -12,6 +12,7 @@ import {
 } from "../components";
 import { ImagiqShippingView } from "@/app/imagiq-tracking/components/ImagiqShippingView";
 import { PickupShippingView } from "@/app/pickup-tracking/components/PickupShippingView";
+import { addBusinessDays, getNextBusinessDay } from "@/lib/dateUtils";
 
 export default function TrackingService({
   params,
@@ -54,6 +55,7 @@ export default function TrackingService({
       return dateString;
     }
   };
+
 
   // Determinar el tipo de envío basado en medio_pago o fallback a metodo_envio
   const getShippingType = (): "pickup" | "imagiq" | "coordinadora" => {
@@ -117,29 +119,59 @@ export default function TrackingService({
           // IMAGIQ - estructura diferente con data.envio
           const envioData = data.envio || {};
           productosData = data.items || [];
-          tiendaData = envioData.tienda_origen || null;
+          
+          // Procesar datos de la tienda y limpiar coordenadas
+          if (envioData.tienda_origen) {
+            tiendaData = {
+              nombre: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
+              descripcion: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
+              direccion: envioData.tienda_origen.direccion || "Tienda IMAGIQ",
+              ciudad: envioData.tienda_origen.ciudad || "Bogotá",
+              telefono: (envioData.tienda_origen.telefono != null && envioData.tienda_origen.telefono !== "") 
+                ? String(envioData.tienda_origen.telefono).trim() 
+                : undefined,
+              horario: (envioData.tienda_origen.horario != null && envioData.tienda_origen.horario !== "") 
+                ? String(envioData.tienda_origen.horario).trim() 
+                : undefined,
+              latitud: envioData.tienda_origen.latitud 
+                ? String(envioData.tienda_origen.latitud).trim() 
+                : undefined,
+              longitud: envioData.tienda_origen.longitud 
+                ? String(envioData.tienda_origen.longitud).trim() 
+                : undefined,
+            };
+          } else {
+            tiendaData = null;
+          }
+          
           direccionEntrega = envioData.direccion_destino?.linea_uno || envioData.direccion_destino?.direccion_formateada || "";
           ciudadEntrega = "";
 
-          // Guardar coordenadas de destino para IMAGIQ
+          // Guardar coordenadas de destino para IMAGIQ (eliminar espacios)
           if (envioData.direccion_destino?.latitud && envioData.direccion_destino?.longitud) {
-            setLatitudDestino(parseFloat(String(envioData.direccion_destino.latitud)));
-            setLongitudDestino(parseFloat(String(envioData.direccion_destino.longitud)));
+            const lat = parseFloat(String(envioData.direccion_destino.latitud).trim());
+            const lng = parseFloat(String(envioData.direccion_destino.longitud).trim());
+            if (!isNaN(lat) && !isNaN(lng)) {
+              setLatitudDestino(lat);
+              setLongitudDestino(lng);
+            }
           }
 
           // Set order number from envio
           numeroGuia = envioData.numero_guia || data.serial_id || data.id || "...";
 
-          // Handle estimated delivery date
+          // Handle estimated delivery date - calcular solo días hábiles
           if (envioData.tiempo_entrega_estimado && data.fecha_creacion) {
             const fechaCreacion = new Date(data.fecha_creacion);
             const dias = Number.parseInt(String(envioData.tiempo_entrega_estimado));
 
-            fechaCreacion.setDate(fechaCreacion.getDate() + dias);
-            setEstimatedInitDate(formatDate(fechaCreacion.toISOString()));
+            // Calcular fecha inicial sumando días hábiles
+            const fechaInicial = addBusinessDays(fechaCreacion, dias);
+            setEstimatedInitDate(formatDate(fechaInicial.toISOString()));
 
-            fechaCreacion.setDate(fechaCreacion.getDate() + 1);
-            setEstimatedFinalDate(formatDate(fechaCreacion.toISOString()));
+            // Fecha final: un día hábil después de la inicial
+            const fechaFinal = getNextBusinessDay(fechaInicial);
+            setEstimatedFinalDate(formatDate(fechaFinal.toISOString()));
           }
 
           // IMAGIQ no tiene eventos de tracking como Coordinadora
@@ -228,6 +260,7 @@ export default function TrackingService({
         const mappedProductos: ProductoDetalle[] = productosData.map((producto: any) => ({
           id: String(producto.id || ''),
           nombre: String(producto.nombre || ''),
+          desdetallada: producto.desdetallada ? String(producto.desdetallada) : undefined,
           imagen: String(producto.imagen || producto.image_preview_url || ''),
           cantidad: Number(producto.cantidad || 0),
           precio: producto.precio ? Number(producto.precio) : (producto.unit_price ? parseFloat(String(producto.unit_price)) : undefined),
@@ -315,6 +348,7 @@ export default function TrackingService({
               ciudadTienda={tiendaInfo?.ciudad}
               nombreTienda={tiendaInfo?.nombre}
               descripcionTienda={tiendaInfo?.descripcion}
+              telefonoTienda={tiendaInfo?.telefono}
               latitudTienda={tiendaInfo?.latitud}
               longitudTienda={tiendaInfo?.longitud}
               products={productos}

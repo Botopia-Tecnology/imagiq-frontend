@@ -32,6 +32,7 @@ export default function Step4OrderSummary({
   buttonText = "Continuar",
   onBack,
   disabled = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   shippingVerification,
   deliveryMethod,
   isSticky = true,
@@ -174,13 +175,10 @@ export default function Step4OrderSummary({
       const userId = user?.id || user?.user_id;
 
       if (!userId) {
-        console.warn("⚠️ No se encontró userId en localStorage. Usuario no logueado?");
         setIsLoadingCanPickUp(false);
         setGlobalCanPickUp(null);
         return;
       }
-
-      console.log("✅ userId encontrado:", userId);
 
       // Preparar TODOS los productos del carrito para una sola petición
       const productsToCheck = products.map((p) => ({
@@ -212,7 +210,6 @@ export default function Step4OrderSummary({
       console.error("❌ Error al verificar canPickUp global:", error);
       setGlobalCanPickUp(false);
     } finally {
-      console.log('🔄 Finalizando carga de canPickUp, isLoadingCanPickUp será false');
       setIsLoadingCanPickUp(false);
       // NO resetear userClickedWhileLoading aquí - se resetea en el useEffect después de ejecutar onFinishPayment
     }
@@ -240,33 +237,24 @@ export default function Step4OrderSummary({
   }, [isLoadingCanPickUp, userClickedWhileLoading]);
 
   // Notificar cuando canPickUp está listo (no está cargando)
+  // IMPORTANTE: Notificar en todos los pasos, no solo en Step1, para que Step3 pueda usar el valor
   React.useEffect(() => {
-    if (isStep1 && onCanPickUpReady) {
-      onCanPickUpReady(!isLoadingCanPickUp, isLoadingCanPickUp);
+    if (onCanPickUpReady) {
+      // Pasar el valor real de globalCanPickUp (o false si es null)
+      // IMPORTANTE: Notificar tanto cuando está cargando como cuando terminó
+      const canPickUpValue = globalCanPickUp ?? false;
+      onCanPickUpReady(canPickUpValue, isLoadingCanPickUp);
     }
-  }, [isStep1, isLoadingCanPickUp, onCanPickUpReady]);
+  }, [globalCanPickUp, isLoadingCanPickUp, onCanPickUpReady]);
 
   // Ejecutar onFinishPayment automáticamente cuando termine de cargar canPickUp
   // y el usuario había hecho clic mientras estaba cargando (pasos 1-6)
   React.useEffect(() => {
-    console.log('🔍 useEffect avance automático:', {
-      userClickedWhileLoading,
-      isLoadingCanPickUp,
-      shouldCalculateCanPickUp,
-      timestamp: new Date().toISOString()
-    });
-    
     // Solo avanzar si:
     // 1. El usuario hizo clic mientras estaba cargando
     // 2. Ya terminó de cargar (isLoadingCanPickUp es false)
     // 3. shouldCalculateCanPickUp es true (pasos 1-6, no Step7)
     if (userClickedWhileLoading && !isLoadingCanPickUp && shouldCalculateCanPickUp) {
-      console.log('✅ CONDICIÓN CUMPLIDA: canPickUp terminó de cargar, avanzando automáticamente...', {
-        userClickedWhileLoading,
-        isLoadingCanPickUp,
-        shouldCalculateCanPickUp
-      });
-      
       // Guardar el estado antes de resetearlo
       const shouldExecute = userClickedWhileLoading;
       
@@ -276,31 +264,12 @@ export default function Step4OrderSummary({
       // Ejecutar la función usando la ref para evitar problemas de dependencias
       if (shouldExecute) {
         // Ejecutar inmediatamente sin delay para forzar el avance
-        console.log('🚀 EJECUTANDO onFinishPayment automáticamente AHORA...');
         try {
           onFinishPaymentRef.current();
-          console.log('✅ onFinishPayment ejecutado correctamente');
         } catch (error) {
           console.error('❌ Error al ejecutar onFinishPayment:', error);
         }
       }
-    } else {
-      let reason: string;
-      if (userClickedWhileLoading === false) {
-        reason = 'Usuario no hizo clic';
-      } else if (isLoadingCanPickUp === true) {
-        reason = 'Aún está cargando';
-      } else if (shouldCalculateCanPickUp === false) {
-        reason = 'No debe calcular canPickUp';
-      } else {
-        reason = 'Desconocido';
-      }
-      console.log('⏸️ Condición NO cumplida para avance automático:', {
-        userClickedWhileLoading,
-        isLoadingCanPickUp,
-        shouldCalculateCanPickUp,
-        reason
-      });
     }
   }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp]);
 
@@ -309,87 +278,8 @@ export default function Step4OrderSummary({
     fetchGlobalCanPickUp();
   }, [fetchGlobalCanPickUp]);
 
-  // Escuchar cambios de dirección (desde header O desde checkout) cuando la variable de debug está activa o en Step1
-  React.useEffect(() => {
-    const shouldListen =
-      isStep1 || process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true";
-    if (!shouldListen) return;
-
-    const handleAddressChange = (event: Event) => {
-      console.log(
-        "🔄 Evento de cambio de dirección recibido en Step4OrderSummary:",
-        event.type
-      );
-      console.log("🔄 Dirección cambió, recalculando canPickUp global...");
-      // Recalcular canPickUp global cuando cambia la dirección
-      fetchGlobalCanPickUp();
-    };
-
-    const handleStorageChange = (e: StorageEvent) => {
-      // Escuchar cambios en checkout-address o imagiq_default_address
-      if (e.key === "checkout-address" || e.key === "imagiq_default_address") {
-        console.log(
-          "🔄 Cambio detectado en localStorage (Step4OrderSummary):",
-          e.key
-        );
-        handleAddressChange(e);
-      }
-    };
-
-    // Escuchar evento storage (para cambios entre tabs)
-    globalThis.window.addEventListener("storage", handleStorageChange);
-
-    // Escuchar eventos personalizados desde header
-    globalThis.window.addEventListener("address-changed", handleAddressChange);
-
-    // Escuchar eventos personalizados desde checkout
-    globalThis.window.addEventListener("checkout-address-changed", handleAddressChange);
-
-    // También verificar cambios periódicamente en la misma tab
-    let lastCheckoutAddress = globalThis.window.localStorage.getItem("checkout-address");
-    let lastDefaultAddress = globalThis.window.localStorage.getItem("imagiq_default_address");
-
-    const checkAddressChanges = () => {
-      const currentCheckoutAddress = globalThis.window.localStorage.getItem("checkout-address");
-      const currentDefaultAddress = globalThis.window.localStorage.getItem(
-        "imagiq_default_address"
-      );
-
-      if (
-        currentCheckoutAddress !== lastCheckoutAddress &&
-        lastCheckoutAddress !== null
-      ) {
-        console.log(
-          "🔄 Cambio detectado en checkout-address (polling - Step4OrderSummary)"
-        );
-        handleAddressChange(new Event("checkout-address-changed"));
-        lastCheckoutAddress = currentCheckoutAddress;
-      }
-
-      if (
-        currentDefaultAddress !== lastDefaultAddress &&
-        lastDefaultAddress !== null
-      ) {
-        console.log(
-          "🔄 Cambio detectado en imagiq_default_address (polling - Step4OrderSummary)"
-        );
-        handleAddressChange(new Event("address-changed"));
-        lastDefaultAddress = currentDefaultAddress;
-      }
-    };
-
-    const intervalId = setInterval(checkAddressChanges, 500);
-
-    return () => {
-      globalThis.window.removeEventListener("storage", handleStorageChange);
-      globalThis.window.removeEventListener("address-changed", handleAddressChange);
-      globalThis.window.removeEventListener(
-        "checkout-address-changed",
-        handleAddressChange
-      );
-      clearInterval(intervalId);
-    };
-  }, [fetchGlobalCanPickUp, isStep1]);
+  // IMPORTANTE: NO recalcular canPickUp cuando cambia la dirección desde Step4OrderSummary
+  // useDelivery se encarga de eso. Solo calcular cuando cambian los productos o al montar.
 
   // Escuchar cuando se agregan productos al carrito o cambia la cantidad (solo en Step1)
   React.useEffect(() => {
@@ -404,9 +294,6 @@ export default function Step4OrderSummary({
       }
 
       if (key === "cart-items") {
-        console.log(
-          "🔄 Productos del carrito cambiaron (cantidad o nuevo producto), recalculando canPickUp global..."
-        );
         // Recalcular canPickUp global cuando cambian los productos
         fetchGlobalCanPickUp();
       }
@@ -421,7 +308,7 @@ export default function Step4OrderSummary({
       globalThis.window.removeEventListener("storage", handleStorageChange);
       globalThis.window.removeEventListener("localStorageChange", handleStorageChange);
     };
-  }, [fetchGlobalCanPickUp]);
+  }, [fetchGlobalCanPickUp, isStep1]);
 
   const baseContainerClasses =
     "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";
@@ -549,12 +436,10 @@ export default function Step4OrderSummary({
             // Si está cargando canPickUp cuando el usuario hace clic, marcar que hizo clic y esperar
             // Solo para pasos 1-6 donde shouldCalculateCanPickUp es true
             if (isLoadingCanPickUp && shouldCalculateCanPickUp) {
-              console.log('👆 Usuario hizo clic mientras canPickUp está cargando, esperando...');
               setUserClickedWhileLoading(true);
               return; // No ejecutar onFinishPayment todavía, el useEffect se encargará
             }
             // Si no está cargando o estamos en Step7 (no calcula canPickUp), ejecutar inmediatamente
-            console.log('👆 Usuario hizo clic, ejecutando onFinishPayment inmediatamente');
             // Resetear userClickedWhileLoading por si acaso quedó en true
             setUserClickedWhileLoading(false);
             onFinishPayment();

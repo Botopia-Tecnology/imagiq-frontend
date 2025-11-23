@@ -584,8 +584,10 @@ export default function SuccessCheckoutPage({
         } else {
           // Envío a domicilio (Coordinadora o Imagiq): usar endpoint order-confirmation
           // Mapear igual que en tracking service
-          // Usar el id (UUID) de la orden como orderId
-          const ordenId = orderData.id || pathParams.orderId;
+          // Usar el número de guía si está disponible, sino el id (UUID) de la orden
+          const numeroGuia = orderData.envio?.numero_guia || 
+            (orderData.envios && orderData.envios.length > 0 ? orderData.envios[0].numero_guia : null);
+          const ordenId = numeroGuia || orderData.id || pathParams.orderId;
 
           // Obtener productos - para email, Coordinadora (1) e Imagiq (3) usan el mismo endpoint /imagiq
           // Ambos devuelven data.items con desdetallada, nombre, cantidad, unit_price, image_preview_url
@@ -623,8 +625,9 @@ export default function SuccessCheckoutPage({
             estimatedDelivery = `${dias} día${dias > 1 ? 's' : ''} hábil${dias > 1 ? 'es' : ''}`;
           }
 
-          // Construir URL de tracking
-          const trackingUrl = `https://staging.imagiq.com/tracking-service/${ordenId}`;
+          // Construir URL de tracking - usar el id (UUID) para la URL, no el número de guía
+          const trackingUrlId = orderData.id || pathParams.orderId;
+          const trackingUrl = `https://staging.imagiq.com/tracking-service/${trackingUrlId}`;
 
           const payload = {
             to: userInfo.email,

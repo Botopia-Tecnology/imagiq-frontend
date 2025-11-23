@@ -28,6 +28,7 @@ const DeliveryMap = dynamic(() => import("./DeliveryMap").then((mod) => ({ defau
 interface Product {
   id: string;
   nombre: string;
+  desdetallada?: string;
   imagen?: string;
   cantidad: number;
   precio?: number;
@@ -36,6 +37,7 @@ interface Product {
 interface TiendaOrigen {
   direccion?: string;
   descripcion?: string;
+  telefono?: string;
   latitud?: string;
   longitud?: string;
 }
@@ -66,6 +68,15 @@ export function ImagiqShippingView({
   longitudDestino,
 }: Readonly<ImagiqShippingViewProps>) {
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
+
+  // Formatear teléfono para llamadas (usar el de la tienda si está disponible)
+  const phoneForCall = tiendaOrigen?.telefono ? tiendaOrigen.telefono.replaceAll(/[\s()-]/g, "") : "+573001234567";
+  
+  // WhatsApp siempre usa el número fijo
+  const whatsappPhoneNumber = "573228639389";
+  
+  // Mensaje predeterminado para WhatsApp
+  const whatsappMessage = encodeURIComponent("Hola tienda imagiq, me gustaría realizar una consulta acerca...");
 
   useEffect(() => {
     setCurrentProductIndex(0);
@@ -108,8 +119,8 @@ export function ImagiqShippingView({
             descripcionOrigen={tiendaOrigen?.descripcion}
             direccionDestino={direccionEntrega}
             ciudadDestino={ciudadEntrega}
-            latitudOrigen={tiendaOrigen?.latitud ? Number.parseFloat(tiendaOrigen.latitud) : undefined}
-            longitudOrigen={tiendaOrigen?.longitud ? Number.parseFloat(tiendaOrigen.longitud) : undefined}
+            latitudOrigen={tiendaOrigen?.latitud ? Number.parseFloat(String(tiendaOrigen.latitud).trim()) : undefined}
+            longitudOrigen={tiendaOrigen?.longitud ? Number.parseFloat(String(tiendaOrigen.longitud).trim()) : undefined}
             latitudDestino={latitudDestino}
             longitudDestino={longitudDestino}
           />
@@ -143,7 +154,7 @@ export function ImagiqShippingView({
                           </svg>
                         </div>
                         <div>
-                          <h2 className="font-semibold text-black text-base">
+                          <h2 className="font-semibold text-black text-sm">
                             Productos en tu pedido
                           </h2>
                           <p className="text-sm text-gray-500">
@@ -155,11 +166,11 @@ export function ImagiqShippingView({
 
                       {/* Derecha: Nombre del producto y Precio */}
                       <div className="text-right">
-                        <h3 className="font-semibold text-gray-900 text-lg mb-1">
-                          {currentProduct?.nombre || "Producto sin nombre"}
+                        <h3 className="font-semibold text-gray-900 text-sm mb-1">
+                          {currentProduct?.desdetallada || currentProduct?.nombre || "Producto sin nombre"}
                         </h3>
                         {currentProduct?.precio && (
-                          <span className="text-2xl font-bold text-[#17407A]">
+                          <span className="text-lg font-bold text-[#17407A]">
                             $
                             {currentProduct.precio.toLocaleString("es-CO")}
                           </span>
@@ -169,7 +180,7 @@ export function ImagiqShippingView({
                   </div>
 
                   {/* Imagen centrada sin fondo */}
-                  <div className="relative w-full h-[420px] flex items-center justify-center">
+                  <div className="relative w-full h-[405px] flex items-center justify-center">
                     {currentProduct?.imagen ? (
                       <div className="relative w-full h-full">
                         <Image
@@ -297,11 +308,11 @@ export function ImagiqShippingView({
           ¿Necesitas ayuda?
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          Nuestro equipo está disponible para ayudarte.
+          Nuestro equipo está disponible para ayudarte en días hábiles y horas laborales.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <a
-            href="tel:+573001234567"
+            href={`tel:${phoneForCall}`}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#17407A] text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
           >
             <svg
@@ -320,7 +331,7 @@ export function ImagiqShippingView({
             Llamar ahora
           </a>
           <a
-            href="https://wa.me/573001234567"
+            href={`https://wa.me/${whatsappPhoneNumber}?text=${whatsappMessage}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"

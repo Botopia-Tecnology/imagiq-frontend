@@ -101,19 +101,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="md:hidden bg-white border-b border-gray-200 p-4">
         <div className="flex gap-3">
           {/* Imagen */}
-          <div className="flex flex-col items-center gap-2">
-          <div className="w-40 h-40 relative flex-shrink-0 bg-gray-100 rounded-xl p-3">
+          <div className="flex flex-col items-center gap-1">
+          <div className="w-24 h-24 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
             <Image
               src={imagen}
               alt={nombre}
               fill
-              className="object-contain p-3"
-              sizes="160px"
+              className="object-contain p-2"
+              sizes="96px"
             />
           </div>
           <button
             onClick={onRemove}
-            className="text-sm text-sky-600 hover:text-sky-700 font-medium transition"
+            className="text-xs text-sky-600 hover:text-sky-700 font-medium transition"
             aria-label="Eliminar producto"
           >
             Eliminar
@@ -222,21 +222,19 @@ const ProductCard: React.FC<ProductCardProps> = ({
       </div>
 
       {/* Desktop: Layout horizontal */}
-      <div className="hidden md:flex bg-white p-6 gap-6 items-start border-b border-gray-200">
-        {/* Imagen + Eliminar */}
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-40 h-40 relative flex-shrink-0 bg-gray-100 rounded-xl p-3">
-            <Image
-              src={imagen}
-              alt={nombre}
-              fill
-              className="object-contain p-3"
-              sizes="160px"
-            />
-          </div>
+      <div className="hidden md:flex bg-white py-4 px-6 gap-5 items-start border-b border-gray-200">
+        {/* Imagen con botón Eliminar dentro */}
+        <div className="w-28 h-28 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
+          <Image
+            src={imagen}
+            alt={nombre}
+            fill
+            className="object-contain p-2"
+            sizes="112px"
+          />
           <button
             onClick={onRemove}
-            className="text-sm text-sky-600 hover:text-sky-700 font-medium transition cursor-pointer"
+            className="absolute bottom-1 left-1/2 -translate-x-1/2 text-xs text-sky-600 hover:text-sky-700 font-medium transition cursor-pointer"
             aria-label="Eliminar producto"
           >
             Eliminar
@@ -339,24 +337,24 @@ const ProductCard: React.FC<ProductCardProps> = ({
             {/* Precios */}
             <div className="flex flex-col gap-1">
               <div className="flex items-baseline gap-2 flex-wrap">
-                <span className="text-2xl font-bold text-gray-900">
+                <span className="text-lg font-bold text-gray-900">
                   ${precio.toLocaleString()}
                 </span>
                 {descuento && (
-                  <>
-                    <span className="text-sm text-gray-400 line-through">
-                      ${precioOriginal?.toLocaleString()}
-                    </span>
-                    <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-bold rounded whitespace-nowrap">
-                      {descuento}%
-                    </span>
-                  </>
+                  <span className="text-xs text-gray-400 line-through">
+                    ${precioOriginal?.toLocaleString()}
+                  </span>
                 )}
               </div>
               {descuento && precioOriginal && (
-                <span className="text-sm text-green-600 font-medium">
-                  Ahorras ${(precioOriginal - precio).toLocaleString()}
-                </span>
+                <div className="flex items-center gap-2 whitespace-nowrap">
+                  <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">
+                    {descuento}%
+                  </span>
+                  <span className="text-xs text-green-600 font-medium">
+                    Ahorras ${(precioOriginal - precio).toLocaleString()}
+                  </span>
+                </div>
               )}
             </div>
           </div>

@@ -43,22 +43,22 @@ class GoogleMapsLoaderService {
    * Obtiene la API key desde el backend o usa fallback del .env
    */
   private async getApiKey(): Promise<string> {
-    try {
-      // Intentar obtener desde el backend
-      const data = await apiGet<{ apiKey: string }>('/api/places/maps-config');
-      return data.apiKey;
-    } catch (error) {
-      console.warn('Backend no disponible, usando API key del .env:', error);
-    }
-
-    // Fallback: usar API key del .env si el backend no responde
-    const envApiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    // Primero verificar si hay una clave en el .env (tiene prioridad)
+    const envApiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     if (envApiKey) {
       console.log('✅ Usando Google Maps API key desde .env');
       return envApiKey;
     }
 
-    throw new Error('No se pudo obtener la API key de Google Maps. Verifica que el backend esté corriendo o que NEXT_PUBLIC_GOOGLE_MAPS_API_KEY esté configurado en .env');
+    try {
+      // Intentar obtener desde el backend
+      const data = await apiGet<{ apiKey: string }>('/api/places/maps-config');
+      return data.apiKey;
+    } catch (error) {
+      console.warn('Backend no disponible:', error);
+    }
+
+    throw new Error('No se pudo obtener la API key de Google Maps. Verifica que NEXT_PUBLIC_GOOGLE_PLACES_API_KEY o NEXT_PUBLIC_GOOGLE_MAPS_API_KEY esté configurado en .env');
   }
 
   /**

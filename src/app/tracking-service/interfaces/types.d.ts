@@ -6,6 +6,7 @@ export interface EnvioEvento {
 export interface ProductoDetalle {
   id: string;
   nombre: string;
+  desdetallada?: string;
   imagen?: string;
   cantidad: number;
   precio?: number;

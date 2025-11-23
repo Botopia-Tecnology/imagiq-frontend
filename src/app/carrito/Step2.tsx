@@ -45,7 +45,7 @@ export default function Step2({
   readonly onContinue?: () => void;
 }) {
   // Usar el hook centralizado useCart
-  const { products: cartProducts } = useCart();
+  const { products: cartProducts, calculations } = useCart();
   const router = useRouter();
   // Recibe onContinue para avanzar al siguiente paso
   // onBack ya existe
@@ -503,7 +503,7 @@ export default function Step2({
   }, [cartProducts]);
 
   return (
-    <div className="w-full bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-32 md:pb-16 relative">
+    <div className="w-full bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-40 md:pb-16 relative">
       {/* Fondo blanco sólido para cubrir cualquier animación de fondo */}
       <div className="fixed inset-0 bg-white -z-10 pointer-events-none" />
       <div className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -740,8 +740,8 @@ export default function Step2({
             </form>
           </div>
         </div>
-        {/* Resumen de compra con Step4OrderSummary */}
-        <aside className="flex flex-col gap-4">
+        {/* Resumen de compra con Step4OrderSummary - Hidden en mobile */}
+        <aside className="hidden md:flex flex-col gap-4">
           <Step4OrderSummary
             onFinishPayment={handleContinue}
             onBack={onBack}
@@ -788,6 +788,37 @@ export default function Step2({
             </div>
           )}
         </aside>
+      </div>
+
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4">
+          {/* Resumen compacto */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-gray-500">
+                Total ({cartProducts.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                productos)
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                $ {Number(calculations.total).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Botón continuar */}
+          <button
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
+              loading || success || !isGuestFormValid || !tradeInValidation.isValid
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+            }`}
+            onClick={handleContinue}
+            disabled={loading || success || !isGuestFormValid || !tradeInValidation.isValid}
+          >
+            {loading ? "Procesando..." : "Continuar pago"}
+          </button>
+        </div>
       </div>
 
       {/* Modal de Trade-In para cambiar producto */}

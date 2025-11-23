@@ -132,8 +132,19 @@ export function waitForClarity(
 
       if (attempts >= maxAttempts) {
         const error = `Clarity not ready after ${maxAttempts} attempts`;
-        console.error("[Clarity Debug] ❌", error);
-        reject(new Error(error));
+        // Solo mostrar error en producción, warning en desarrollo
+        if (process.env.NODE_ENV === "production") {
+          console.error("[Clarity Debug] ❌", error);
+          reject(new Error(error));
+        } else {
+          console.warn(
+            "[Clarity Debug] ⚠️",
+            error,
+            "(backend may not be running)"
+          );
+          // En desarrollo, resolver en lugar de rechazar para no romper la app
+          resolve();
+        }
         return;
       }
 

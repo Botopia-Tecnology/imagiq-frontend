@@ -15,9 +15,13 @@ type LogoReloadAnimationProps = {
   onFinish?: () => void;
 };
 
-// Logo Samsung desde Cloudinary (PNG - mejor compatibilidad con Safari en máscaras SVG)
-const LOGO_SRC =
-  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.png";
+// Logo Samsung desde Cloudinary - Usando el patrón estándar de la app
+const CLOUDINARY_CLOUD_NAME = "dqsdl9bwv";
+const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+const LOGO_PUBLIC_ID = "Diseño_sin_título_-_2025-11-21T234250.302_ikybzx";
+
+// URL optimizada con f_auto para formato automático (mejor compatibilidad Safari)
+const LOGO_SRC = `${CLOUDINARY_BASE_URL}/f_auto,q_auto:best/${LOGO_PUBLIC_ID}`;
 
 /**
  * LogoReloadAnimation
@@ -106,7 +110,6 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
                 y="0"
                 width="1000"
                 height="420"
-                crossOrigin="anonymous"
               />
             </mask>
             <linearGradient
@@ -173,7 +176,6 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             y="0"
             width="1000"
             height="420"
-            crossOrigin="anonymous"
             style={{
               filter:
                 "brightness(0) invert(1) drop-shadow(0 2px 8px #2020201a) drop-shadow(0 0px 80px #fff8)",

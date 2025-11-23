@@ -21,11 +21,21 @@ export default function VerifyPurchase(
   const verifyOrder = useCallback(async () => {
     if (!orderId) return;
 
+    const startTime = Date.now();
+    const MIN_ANIMATION_DURATION = 14000; // 14 segundos mínimo para ver la animación
+
     try {
       setIsLoading(true);
       const data = await apiGet<{ message: string; status: number }>(
         `/api/orders/verify/${orderId}`
       );
+
+      // Calcular cuánto tiempo ha pasado
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_ANIMATION_DURATION - elapsedTime);
+
+      // Esperar el tiempo restante para completar la animación mínima
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
 
       // Verificar el status del body de la respuesta
       if (data.status === 200) {
@@ -49,9 +59,15 @@ export default function VerifyPurchase(
         error instanceof Error
           ? error.message
           : "Error desconocido en la verificación";
+
+      // Calcular cuánto tiempo ha pasado en caso de error
+      const elapsedTime = Date.now() - startTime;
+      const remainingTime = Math.max(0, MIN_ANIMATION_DURATION - elapsedTime);
+
+      // Esperar el tiempo restante para completar la animación mínima
+      await new Promise((resolve) => setTimeout(resolve, remainingTime));
+
       router.push(`/error-checkout?error=${encodeURIComponent(errorMessage)}`);
-    } finally {
-      setIsLoading(false);
     }
     // NO hacer setIsLoading(false) para mantener la animación visible
     // hasta que la nueva página cargue completamente
@@ -64,11 +80,8 @@ export default function VerifyPurchase(
   }, [orderId, verifyOrder]);
 
   return (
-    <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#ffffff] via-[#969696] to-[#000000]">
-      <LogoReloadAnimation
-        open={isLoading}
-        onFinish={orderId ? verifyOrder : undefined}
-      />
+    <div className="fixed inset-0 z-9999 bg-linear-to-br from-[#ffffff] via-[#969696] to-[#000000]">
+      <LogoReloadAnimation open={isLoading} />
     </div>
   );
 }

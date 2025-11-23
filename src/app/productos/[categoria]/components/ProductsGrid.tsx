@@ -17,8 +17,7 @@ import GuestDataModal from "../../components/GuestDataModal";
 import { ProductBannerCard } from "../../components/ProductBannerCard";
 import { insertBannersInGrid } from "../../utils/insertBanners";
 import type { Banner } from "@/types/banner";
-import { combineProductsAndBundles } from "@/lib/productMapper";
-import type { BundleCardProps } from "@/lib/productMapper";
+import type { BundleCardProps, MixedProductItem } from "@/lib/productMapper";
 
 // Tipos para items con flag interno de bundle
 type ProductWithFlag = ProductCardProps & { __isBundle: false };
@@ -28,6 +27,7 @@ type ItemWithFlag = ProductWithFlag | BundleWithFlag;
 interface CategoryProductsGridProps {
   products: ProductCardProps[];
   bundles: BundleCardProps[];
+  orderedItems: MixedProductItem[]; // Items en orden original del API (intercalados)
   loading: boolean;
   isLoadingMore?: boolean;
   error: string | null;
@@ -50,6 +50,7 @@ export const CategoryProductsGrid = forwardRef<
     {
       products,
       bundles,
+      orderedItems,
       loading,
       isLoadingMore = false,
       error,
@@ -68,22 +69,17 @@ export const CategoryProductsGrid = forwardRef<
 
     const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
 
-    // Combinar productos y bundles primero (bundles van primero)
-    const mixedItems = useMemo(() =>
-      combineProductsAndBundles(products, bundles, true),
-      [products, bundles]
-    );
-
-    // Mezclar productos+bundles con banners
+    // Usar orderedItems directamente (ya viene del API en el orden correcto - intercalado)
+    // Mezclar con banners
     const gridItems = useMemo(() => {
       console.log('[ProductsGrid] Banner recibido:', banner);
       console.log('[ProductsGrid] Total productos:', products.length);
       console.log('[ProductsGrid] Total bundles:', bundles.length);
-      console.log('[ProductsGrid] Total items mezclados:', mixedItems.length);
+      console.log('[ProductsGrid] Total orderedItems (orden API):', orderedItems.length);
 
-      // Convertir mixedItems al formato que espera insertBannersInGrid
+      // Convertir orderedItems al formato que espera insertBannersInGrid
       // insertBannersInGrid espera ProductCardProps[], así que necesitamos adaptar
-      const itemsForBannerInsertion = mixedItems.map((item): ItemWithFlag => {
+      const itemsForBannerInsertion = orderedItems.map((item): ItemWithFlag => {
         if (item.itemType === 'bundle') {
           // Para bundles, crear un objeto compatible con ProductCardProps
           // pero mantener una referencia al bundle original
@@ -110,7 +106,7 @@ export const CategoryProductsGrid = forwardRef<
       console.log('[ProductsGrid] Total items en grid (con banners):', items.length);
       console.log('[ProductsGrid] Items:', items.map(i => ({ type: i.type, key: i.key })));
       return items;
-    }, [mixedItems, banner, products.length, bundles.length, banners]);
+    }, [orderedItems, banner, products.length, bundles.length, banners]);
 
     const handleAddToFavorites = (productId: string) => {
       const rawUser = localStorage.getItem("imagiq_user");

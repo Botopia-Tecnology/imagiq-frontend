@@ -22,6 +22,7 @@ export default function VerifyPurchase(
     if (!orderId) return;
 
     try {
+      setIsLoading(true);
       const data = await apiGet<{ message: string; status: number }>(
         `/api/orders/verify/${orderId}`
       );
@@ -49,10 +50,18 @@ export default function VerifyPurchase(
           ? error.message
           : "Error desconocido en la verificación";
       router.push(`/error-checkout?error=${encodeURIComponent(errorMessage)}`);
+    } finally {
+      setIsLoading(false);
     }
     // NO hacer setIsLoading(false) para mantener la animación visible
     // hasta que la nueva página cargue completamente
   }, [orderId, router]);
+
+  useEffect(() => {
+    if (orderId) {
+      verifyOrder();
+    }
+  }, [orderId, verifyOrder]);
 
   return (
     <div className="fixed inset-0 z-[9999] bg-gradient-to-br from-[#ffffff] via-[#969696] to-[#000000]">

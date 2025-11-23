@@ -84,10 +84,13 @@ export default function ChatbotButton({
     setHasMoved(false); // Resetear el estado de movimiento
     dragStartY.current = e.touches[0].clientY;
     initialPosition.current = position;
+    e.preventDefault(); // Prevenir scroll mientras se arrastra
   };
 
   const handleTouchMove = (e: TouchEvent) => {
     if (!isDragging) return;
+
+    e.preventDefault(); // Prevenir scroll mientras se arrastra
 
     const deltaY = e.touches[0].clientY - dragStartY.current;
 
@@ -122,7 +125,7 @@ export default function ChatbotButton({
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove);
+      document.addEventListener("touchmove", handleTouchMove, { passive: false });
       document.addEventListener("touchend", handleTouchEnd);
 
       return () => {
@@ -141,6 +144,7 @@ export default function ChatbotButton({
       style={{
         bottom: `calc(max(1.5rem, env(safe-area-inset-bottom, 1.5rem)) + 170px - ${position}px)`,
         cursor: isDragging ? "grabbing" : "grab",
+        touchAction: "none", // Prevenir scroll en móviles al tocar el botón
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}

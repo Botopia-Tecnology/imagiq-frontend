@@ -1,10 +1,11 @@
 // filepath: src/app/chatbot/ChatbotPanel.tsx
 import React, { useState } from "react";
+import Image from "next/image";
 import Step1 from "./step1";
 import Step2 from "./step2";
 import Step3 from "./step3";
 import Step4 from "./step4";
-import { Bot, X } from "lucide-react";
+import { X } from "lucide-react";
 
 // Importa el servicio del agente conversacional
 import { sendMessageToAgent } from "@/services/chatbot.service";
@@ -88,19 +89,29 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
 
   return (
     <div
-      className="fixed top-0 right-0 flex flex-col h-full chatbot-panel shadow-2xl"
+      className="fixed top-0 right-0 flex flex-col chatbot-panel shadow-2xl"
+      style={{
+        height: '100dvh', // Dynamic viewport height para móviles
+        maxHeight: '100vh',
+      }}
     >
       {/* Header mejorado */}
-      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-gray-900 to-black border-b border-gray-800">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 bg-white bg-opacity-20 rounded-full backdrop-blur-sm">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="relative flex items-center justify-center w-9 h-9 rounded-full overflow-hidden">
+            <Image
+              src="/images/support-agent.png"
+              alt="Agente de soporte"
+              width={36}
+              height={36}
+              className="rounded-full object-cover"
+            />
           </div>
           <div>
             <span className="font-bold text-lg text-white block">
               Samsung Asistente
             </span>
-            <span className="text-xs text-blue-100 flex items-center gap-1">
+            <span className="text-xs text-gray-300 flex items-center gap-1">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               {' '}En línea
             </span>
@@ -127,19 +138,19 @@ style={{
                 key={`${msg.from}-${idx}`}
                 className={`rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] shadow-sm ${
                   msg.from === "bot"
-                    ? "bg-gradient-to-br from-blue-50 to-blue-100 text-gray-800 border border-blue-200"
-                    : "bg-gradient-to-br from-gray-700 to-gray-800 text-white self-end ml-auto"
+                    ? "bg-gray-100 text-gray-800 border border-gray-200"
+                    : "bg-white text-gray-900 border border-black self-end ml-auto"
                 }`}
               >
                 <FormattedMessage text={msg.text} />
               </div>
             ))}
             {loading && (
-              <div className="rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] bg-blue-50 text-gray-500 flex items-center gap-2 border border-blue-200">
+              <div className="rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] bg-gray-100 text-gray-500 flex items-center gap-2 border border-gray-200">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
-                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
-                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
                 </div>
                 <span>Samsung IA está escribiendo...</span>
               </div>
@@ -200,7 +211,7 @@ style={{
           />
           <button
             type="submit"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full px-6 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-gray-900 to-black text-white rounded-full px-6 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:from-black hover:to-gray-900 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading || !input.trim()}
           >
             Enviar
@@ -211,7 +222,7 @@ style={{
       {step > 0 && (
         <div className="p-4 border-t border-gray-100 bg-transparent flex justify-end">
           <button
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-gray-900 hover:underline"
             type="button"
             onClick={handleReset}
           >

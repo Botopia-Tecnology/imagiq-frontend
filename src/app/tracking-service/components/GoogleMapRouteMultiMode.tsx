@@ -2,8 +2,40 @@
 
 import { useEffect, useRef, useState, type ReactElement } from "react";
 import { googleMapsLoader } from "@/services/googleMapsLoader";
+import { type TransportMode } from "@/services/mapsDirectionsService";
 
-type TransportMode = "driving" | "bicycling" | "walking";
+// Funciones para crear iconos personalizados
+function createHomeIcon(maps: typeof google.maps): google.maps.Icon {
+  // SVG de casa
+  const svg = `
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="#EF4444" stroke="white" stroke-width="2"/>
+    </svg>
+  `;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new maps.Size(32, 32),
+    anchor: new maps.Point(16, 16),
+  };
+}
+
+function createStoreIcon(maps: typeof google.maps): google.maps.Icon {
+  // SVG de camión (representa la tienda) - mismo tamaño que la casa, sin círculo
+  const svg = `
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" fill="#3B82F6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M15 18H9" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" fill="#3B82F6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="17" cy="18" r="2" fill="white" stroke="#3B82F6" stroke-width="2"/>
+      <circle cx="7" cy="18" r="2" fill="white" stroke="#3B82F6" stroke-width="2"/>
+    </svg>
+  `;
+  return {
+    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg),
+    scaledSize: new maps.Size(32, 32),
+    anchor: new maps.Point(16, 16),
+  };
+}
 
 interface RouteInfo {
   distance: string;
@@ -233,25 +265,18 @@ export function GoogleMapRouteMultiMode({
             bounds.extend(destPoint);
             map.fitBounds(bounds, 80);
             
-            // Agregar marcador de origen (A)
+            // Agregar marcador de origen
+            // Si es pickup: icono de casa (usuario va a la tienda)
+            // Si es envío Imagiq: icono de tienda (desde tienda)
+            const originIcon = isPickup 
+              ? createHomeIcon(maps) // Casa para pickup (usuario)
+              : createStoreIcon(maps); // Tienda para envío Imagiq
+            
             const originMarker = new maps.Marker({
               position: originPoint,
               map: map,
-              label: {
-                text: "A",
-                color: "white",
-                fontWeight: "bold",
-                fontSize: "14px",
-              },
-              icon: {
-                path: maps.SymbolPath.CIRCLE,
-                scale: 12,
-                fillColor: "#10B981",
-                fillOpacity: 1,
-                strokeColor: "white",
-                strokeWeight: 3,
-              },
-              title: direccionOrigen || "Origen",
+              icon: originIcon,
+              title: isPickup ? "Tu ubicación" : "Tienda IMAGIQ",
               zIndex: 1000,
             });
             customMarkers.push(originMarker);
@@ -261,25 +286,18 @@ export function GoogleMapRouteMultiMode({
             map.setZoom(15);
           }
           
-          // Agregar marcador de destino (S para tienda en pickup, B para envío)
+          // Agregar marcador de destino
+          // Si es pickup: icono de tienda (usuario va a la tienda)
+          // Si es envío Imagiq: icono de casa (entrega al cliente)
+          const destIcon = isPickup 
+            ? createStoreIcon(maps) // Tienda para pickup
+            : createHomeIcon(maps); // Casa para envío Imagiq
+          
           const destMarker = new maps.Marker({
             position: destPoint,
             map: map,
-            label: {
-              text: isPickup ? "S" : "B",
-              color: "white",
-              fontWeight: "bold",
-              fontSize: "14px",
-            },
-            icon: {
-              path: maps.SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: isPickup ? "#3B82F6" : "#EF4444", // Azul para pickup (tienda), rojo para envío
-              fillOpacity: 1,
-              strokeColor: "white",
-              strokeWeight: 3,
-            },
-            title: direccionDestino || (isPickup ? "Tienda" : "Destino"),
+            icon: destIcon,
+            title: isPickup ? "Tienda IMAGIQ" : "Tu dirección",
             zIndex: 1000,
           });
           customMarkers.push(destMarker);

@@ -526,22 +526,31 @@ export interface ProductApiResponse {
   hasPreviousPage: boolean;
 }
 
-export interface BundleApiData {
-  isBundle: true;
-  product_sku: string; // SKU del bundle
-  modelo: string; // Nombre del bundle
-  categoria: string;
-  menu: string;
-  submenu: string;
+// Opción individual dentro de un bundle (variante)
+export interface BundleOption {
+  product_sku: string; // SKU de esta variante del bundle
+  modelo: string; // Nombre del bundle con productos concatenados
   bundle_price: number; // Precio normal del bundle
   bundle_discount: number; // Precio con descuento del bundle
   ind_entre_estre: number;
+  skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
+  imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+}
+
+// Bundle agrupado con múltiples opciones/variantes
+export interface BundleApiData {
+  isBundle: true;
+  baseCodigoMarket: string; // Código base del producto principal
+  codCampana: string; // Código de la campaña (ej: "BF001")
+  categoria: string;
+  menu: string;
+  submenu: string;
   fecha_inicio: string;
   fecha_final: string;
   hora_inicio: string;
   hora_final: string;
-  skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
-  imagePreviewUrl?: string; // Imagen preview del bundle (próximamente)
+  opciones: BundleOption[]; // Array de variantes del bundle
+  imagePreviewUrl?: string | string[]; // Imagen preview del bundle (puede venir como string o array)
 }
 
 export interface ProductApiData {

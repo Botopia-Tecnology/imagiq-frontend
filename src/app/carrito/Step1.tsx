@@ -520,9 +520,6 @@ export default function Step1({
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
         {/* Productos */}
         <section id="carrito-productos" className="p-0">
-          <h2 className="font-bold text-lg mb-3 md:mb-6 px-2 md:px-0">
-            Productos
-          </h2>
 
           {cartProducts.length === 0 ? (
             <div className="text-gray-500 text-center py-16 text-lg">
@@ -560,29 +557,16 @@ export default function Step1({
                 ))}
               </div>
 
-              {/* Barra de envío gratis */}
-              <div className="mt-6 bg-white rounded-lg p-4 border border-gray-200">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-2 flex-1 bg-green-500 rounded-full"></div>
-                  <span className="text-xs font-semibold text-green-600 whitespace-nowrap">
-                    Envío GRATIS
-                  </span>
-                </div>
-                <p className="text-xs text-gray-600">
-                  Tu compra califica para envío gratuito
-                </p>
-              </div>
-
-              {/* Banner de Trade-In - Solo mobile */}
+              {/* Banner de Trade-In - Debajo de los productos */}
               {tradeInSummaryProps && (
-                <div className="md:hidden mt-4">
+                <div className="mt-3">
                   <TradeInCompletedSummary {...tradeInSummaryProps} />
                 </div>
               )}
             </>
           )}
         </section>
-        {/* Resumen de compra y Trade-In - Solo Desktop */}
+        {/* Resumen de compra - Solo Desktop */}
         <aside className="hidden md:block space-y-4">
           <Step4OrderSummary
             onFinishPayment={() => {
@@ -614,15 +598,10 @@ export default function Step1({
             onCanPickUpReady={handleCanPickUpReady}
             shouldCalculateCanPickUp={true}
           />
-
-          {/* Banner de Trade-In - Debajo del resumen */}
-          {tradeInSummaryProps && (
-            <TradeInCompletedSummary {...tradeInSummaryProps} />
-          )}
         </aside>
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
-      <div className="max-w-6xl mx-auto mt-8 mb-4 md:mb-0">
+      <div className="max-w-6xl mx-auto mt-4 mb-4 md:mb-0">
         <Sugerencias onAdd={handleAddSugerencia} cartProducts={cartProducts} />
       </div>
 

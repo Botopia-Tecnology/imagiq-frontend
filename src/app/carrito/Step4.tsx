@@ -175,7 +175,7 @@ export default function Step4({
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
+    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-40 md:pb-8">
       {/* Modal para agregar nueva tarjeta */}
       <Modal
         isOpen={isAddCardModalOpen}
@@ -223,8 +223,8 @@ export default function Step4({
           />
         </form>
 
-        {/* Resumen de compra y Trade-In */}
-        <aside className="space-y-4">
+        {/* Resumen de compra y Trade-In - Hidden en mobile */}
+        <aside className="hidden md:block space-y-4">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -264,6 +264,40 @@ export default function Step4({
             />
           )}
         </aside>
+      </div>
+
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4">
+          {/* Resumen compacto */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-gray-500">
+                Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                productos)
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                $ {Number(products.reduce((acc, p) => acc + p.price * p.quantity, 0)).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Botón continuar */}
+          <button
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
+              isProcessing || !tradeInValidation.isValid
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+            }`}
+            onClick={() => {
+              const form = document.getElementById("checkout-form") as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }}
+            disabled={isProcessing || !tradeInValidation.isValid}
+          >
+            {isProcessing ? "Procesando..." : "Continuar"}
+          </button>
+        </div>
       </div>
     </div>
   );

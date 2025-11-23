@@ -21,6 +21,7 @@ import { useCart } from "@/hooks/useCart";
 import { apiClient } from "@/lib/api";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { apiPost } from "@/lib/api-client";
+import { addBusinessDays, getNextBusinessDay } from "@/lib/dateUtils";
 
 interface OrderData {
   orden_id: string;
@@ -154,24 +155,24 @@ export default function SuccessCheckoutPage({
         const numeroGuia =
           envioData?.numero_guia || orderData.orden_id.substring(0, 8);
 
-        // Calcular fechas de entrega estimada (formato corto para WhatsApp)
+        // Calcular fechas de entrega estimada (formato corto para WhatsApp) - solo días hábiles
         let fechaEntrega = "Próximamente";
 
         if (envioData?.tiempo_entrega_estimado) {
           const fechaCreacion = new Date(orderData.fecha_creacion);
           const dias = Number.parseInt(envioData.tiempo_entrega_estimado);
 
-          // Fecha inicial
-          fechaCreacion.setDate(fechaCreacion.getDate() + dias);
-          const diaInicio = fechaCreacion.getDate();
-          const mesInicio = fechaCreacion.toLocaleDateString("es-ES", {
+          // Calcular fecha inicial sumando días hábiles
+          const fechaInicial = addBusinessDays(fechaCreacion, dias);
+          const diaInicio = fechaInicial.getDate();
+          const mesInicio = fechaInicial.toLocaleDateString("es-ES", {
             month: "short",
           });
 
-          // Fecha final (2 días después)
-          fechaCreacion.setDate(fechaCreacion.getDate() + 2);
-          const diaFin = fechaCreacion.getDate();
-          const mesFin = fechaCreacion.toLocaleDateString("es-ES", {
+          // Fecha final: un día hábil después de la inicial
+          const fechaFinal = getNextBusinessDay(fechaInicial);
+          const diaFin = fechaFinal.getDate();
+          const mesFin = fechaFinal.toLocaleDateString("es-ES", {
             month: "short",
           });
 

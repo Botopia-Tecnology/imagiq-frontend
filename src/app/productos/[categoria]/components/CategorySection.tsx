@@ -83,7 +83,7 @@ export default function CategorySection({
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
-  const { products, bundles, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce, forceKey } = useCategoryProducts(
+  const { products, bundles, orderedItems, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce, forceKey } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -99,7 +99,7 @@ export default function CategorySection({
   // Obtener banner de producto para el grid
   // Solo pasar submenuName si existe seccion, sino null para obtener banner de categoría
   const submenuName = seccion ? (currentMenu?.nombreVisible || currentMenu?.nombre) : null;
-  const { config: bannerConfig } = useProductBanner(categoryVisibleName, submenuName);
+  const { config: bannerConfig, configs: bannerConfigs } = useProductBanner(categoryVisibleName, submenuName);
 
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
   const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
@@ -223,6 +223,7 @@ export default function CategorySection({
             ref={productsRef}
             products={products}
             bundles={bundles}
+            orderedItems={orderedItems}
             loading={compositeLoading}
             isLoadingMore={isLoadingMore}
             error={error}
@@ -233,6 +234,7 @@ export default function CategorySection({
             lazySkeletonCount={3}
             hasLoadedOnce={hasLoadedOnce}
             banner={bannerConfig}
+            banners={bannerConfigs}
           />
 
           {/* Elemento invisible para detectar scroll */}

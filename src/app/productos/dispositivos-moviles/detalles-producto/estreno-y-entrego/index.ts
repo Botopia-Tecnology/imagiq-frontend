@@ -22,6 +22,7 @@ export type {
 export { useTradeInForm } from './hooks/useTradeInForm';
 export { useTradeInFlow } from './hooks/useTradeInFlow';
 export { useTradeInData, extractCodMarca, extractCodModelo } from './hooks/useTradeInData';
+export { useTradeInPrefetch, useTradeInDataFromCache, clearTradeInCache } from '@/hooks/useTradeInPrefetch';
 
 // Export constants
 export {

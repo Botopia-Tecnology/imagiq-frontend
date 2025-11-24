@@ -17,6 +17,7 @@ import {
 } from "./utils/validateTradeIn";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { CartBundleGroup } from "./components/CartBundleGroup";
+import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 
 /**
  * Paso 1 del carrito de compras
@@ -88,6 +89,9 @@ export default function Step1({
   const [loadingIndRetoma, setLoadingIndRetoma] = useState<Set<string>>(
     new Set()
   );
+
+  // 🚀 Prefetch automático de datos de Trade-In
+  useTradeInPrefetch();
 
   // Cargar datos de Trade-In desde localStorage
   // Si el producto aplica (indRetoma === 1) pero no hay trade-in activo, mostrar banner para guiar al usuario

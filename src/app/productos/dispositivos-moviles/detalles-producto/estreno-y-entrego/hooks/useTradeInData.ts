@@ -1,38 +1,54 @@
 import { useState, useEffect } from 'react';
 import { tradeInEndpoints, type TradeInCategory } from '@/lib/api';
 import type { TradeInData, DeviceCategory, Brand, DeviceModel, DeviceCapacity } from '../types';
+import { useTradeInDataFromCache } from '@/hooks/useTradeInPrefetch';
 
 /**
  * Hook para cargar y transformar datos del endpoint /api/trade-in/hierarchy
  * Convierte la estructura jerárquica del backend al formato usado en el frontend
+ * Ahora prioriza el cache global para mejorar el rendimiento
  */
 export function useTradeInData() {
   const [tradeInData, setTradeInData] = useState<TradeInData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Intentar obtener datos desde el cache primero
+  const { tradeInData: cachedData, loading: cacheLoading } = useTradeInDataFromCache();
+
   useEffect(() => {
-    const fetchTradeInData = async () => {
-      try {
-        setLoading(true);
-        const response = await tradeInEndpoints.getHierarchy();
+    // Si hay datos en cache, usarlos inmediatamente
+    if (cachedData && !cacheLoading) {
+      setTradeInData(cachedData);
+      setLoading(false);
+      setError(null);
+      return;
+    }
 
-        if (response.success && response.data) {
-          const transformedData = transformHierarchyToTradeInData(response.data);
-          setTradeInData(transformedData);
-          setError(null);
-        } else {
-          setError(response.message || 'Error al cargar datos de trade-in');
+    // Si no hay cache y tampoco está cargando, hacer petición manual
+    if (!cachedData && !cacheLoading) {
+      const fetchTradeInData = async () => {
+        try {
+          setLoading(true);
+          const response = await tradeInEndpoints.getHierarchy();
+
+          if (response.success && response.data) {
+            const transformedData = transformHierarchyToTradeInData(response.data);
+            setTradeInData(transformedData);
+            setError(null);
+          } else {
+            setError(response.message || 'Error al cargar datos de trade-in');
+          }
+        } catch {
+          setError('Error de conexión al cargar datos');
+        } finally {
+          setLoading(false);
         }
-      } catch {
-        setError('Error de conexión al cargar datos');
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchTradeInData();
-  }, []);
+      fetchTradeInData();
+    }
+  }, [cachedData, cacheLoading]);
 
   return { tradeInData, loading, error };
 }

@@ -60,11 +60,22 @@ export async function apiClient(
 
     // Manejar errores específicos
     if (!response.ok) {
+      // Leer el mensaje del backend una sola vez
+      let data;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // Si no se puede parsear el JSON, usar mensaje genérico
+        throw new Error(`HTTP Error ${response.status}: ${response.statusText}`);
+      }
+
+      // Para errores 401, usar el mensaje específico del backend
       if (response.status === 401) {
-        const error = new Error("API Key inválida o faltante");
+        const error = new Error(data?.message || "Credenciales inválidas");
         console.error("🔐 Error de autenticación:", error.message, { endpoint, url, status: response.status });
         throw error;
       }
+      
       if (response.status === 429) {
         const error = new Error(
           "Demasiadas peticiones. Por favor intenta más tarde."
@@ -72,7 +83,7 @@ export async function apiClient(
         console.error("⚠️ Rate limit excedido:", error.message);
         throw error;
       }
-      const data = await response?.json();
+      
       throw new Error(
         data?.message ?? `HTTP Error ${response.status}: ${response.statusText}`
       );

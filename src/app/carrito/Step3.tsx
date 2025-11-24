@@ -212,6 +212,9 @@ export default function Step3({
   // Estado para forzar mostrar skeleton cuando cambia la dirección
   const [isRecalculatingPickup, setIsRecalculatingPickup] = React.useState(false);
   
+  // Estado para mostrar skeleton en la primera carga con trade-in
+  const [isInitialTradeInLoading, setIsInitialTradeInLoading] = React.useState(false);
+  
   // Refs para leer valores actuales sin incluirlos en dependencias
   const storesLengthRef = React.useRef(0);
   const availableStoresWhenCanPickUpFalseLengthRef = React.useRef(0);
@@ -266,8 +269,20 @@ export default function Step3({
       if (savedMethod === "domicilio") {
         setDeliveryMethod("tienda");
       }
+      
+      // IMPORTANTE: Cargar tiendas inmediatamente cuando hay trade-in y método es tienda
+      // Esto asegura que las tiendas estén disponibles cuando el usuario llegue al paso
+      if ((deliveryMethod === "tienda" || savedMethod === "tienda") && 
+          stores.length === 0 && 
+          availableStoresWhenCanPickUpFalse.length === 0 &&
+          !storesLoading &&
+          !isInitialTradeInLoading) {
+        // Activar skeleton mientras cargan las tiendas
+        setIsInitialTradeInLoading(true);
+        forceRefreshStores();
+      }
     }
-  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod]);
+  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores, isInitialTradeInLoading]);
   
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = React.useRef<Set<string>>(new Set());
@@ -596,6 +611,36 @@ export default function Step3({
     }
   }, [isRecalculatingPickup, isLoadingCanPickUp, storesLoading, hasCanPickUpValue, effectiveCanPickUp, stores.length]);
 
+  // IMPORTANTE: Ocultar skeleton de carga inicial de trade-in cuando terminen de cargar las tiendas
+  React.useEffect(() => {
+    // Si estábamos cargando por trade-in y ya no está cargando, ocultar skeleton
+    if (isInitialTradeInLoading && !storesLoading) {
+      // Verificar que haya al menos algún resultado (tiendas o estado final)
+      const hasResults = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+      const hasFinishedLoading = !isLoadingCanPickUp;
+      
+      if (hasResults || hasFinishedLoading) {
+        // Pequeño delay para que las tiendas se rendericen
+        const timer = setTimeout(() => {
+          setIsInitialTradeInLoading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [isInitialTradeInLoading, storesLoading, stores.length, availableStoresWhenCanPickUpFalse.length, isLoadingCanPickUp]);
+
+  // PROTECCIÓN: Timeout de seguridad para evitar skeleton infinito
+  React.useEffect(() => {
+    if (isInitialTradeInLoading) {
+      // Timeout de seguridad de 10 segundos
+      const safetyTimer = setTimeout(() => {
+        setIsInitialTradeInLoading(false);
+      }, 10000);
+      
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [isInitialTradeInLoading]);
+
   // También forzar recarga cuando el usuario selecciona "Recoger en tienda" y (canPickUp es true O hay Trade In activo)
   React.useEffect(() => {
     // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
@@ -814,8 +859,20 @@ export default function Step3({
     if (hasActiveTradeIn && method === "domicilio") {
       return; // No hacer nada, mantener en tienda
     }
+    
     // setDeliveryMethod ya guarda automáticamente en localStorage
     setDeliveryMethod(method);
+    
+    // IMPORTANTE: Si se selecciona "tienda" y no hay tiendas cargadas, cargarlas inmediatamente
+    if (method === "tienda" && 
+        stores.length === 0 && 
+        availableStoresWhenCanPickUpFalse.length === 0 &&
+        !storesLoading &&
+        !isInitialTradeInLoading) {
+      // Activar skeleton mientras cargan las tiendas
+      setIsInitialTradeInLoading(true);
+      forceRefreshStores();
+    }
   };
 
   const selectedStoreChanged = (store: typeof selectedStore) => {
@@ -832,7 +889,8 @@ export default function Step3({
   // NO mostrar skeleton indefinidamente si canPickUp es true pero no hay tiendas (puede ser que no existan tiendas)
   const shouldShowSkeleton = isLoadingCanPickUp || 
                 storesLoading || 
-                isRecalculatingPickup;
+                isRecalculatingPickup ||
+                isInitialTradeInLoading;
 
   // Callback estable para recibir el estado de canPickUp desde Step4OrderSummary
   const handleCanPickUpReady = React.useCallback((canPickUpValue: boolean, isLoading: boolean) => {

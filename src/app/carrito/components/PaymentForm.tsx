@@ -195,7 +195,7 @@ export default function PaymentForm({
   if (shouldShowFullSkeleton) {
     return (
       <div>
-        <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+        <h2 className="text-[22px] font-bold mb-4">Elije como pagar</h2>
 
         <div className="animate-pulse space-y-6">
           {/* Skeleton de Recomendados */}
@@ -229,7 +229,7 @@ export default function PaymentForm({
 
   return (
     <div>
-      <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+      <h2 className="text-[22px] font-bold mb-4">Elije como pagar</h2>
 
       {/* Sección de Recomendados */}
       <div className="mb-6">

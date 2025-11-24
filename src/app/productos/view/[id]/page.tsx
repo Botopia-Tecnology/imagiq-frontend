@@ -20,6 +20,7 @@ import AddToCartButton from "../../viewpremium/components/AddToCartButton";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
+import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 
 // Type for the product selection data passed from DetailsProductSection
 // This is a subset of UseProductSelectionReturn with only the properties passed by the callback
@@ -149,6 +150,9 @@ export default function ProductViewPage({ params }) {
     React.useState<ProductSelectionData | null>(null);
   const stockNotification = useStockNotification();
   const { trackViewItem } = useAnalytics();
+  
+  // 🚀 Prefetch automático de datos de Trade-In
+  useTradeInPrefetch();
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {

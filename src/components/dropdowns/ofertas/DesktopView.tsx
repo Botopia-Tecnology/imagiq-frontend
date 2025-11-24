@@ -4,14 +4,16 @@ import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { SIZES } from "./constants";
-import { useOfertasDestacadas } from "@/hooks/useOfertasDestacadas";
+import { useTopDiscountedProducts } from "@/hooks/useTopDiscountedProducts";
 
 type Props = Readonly<{
   onItemClick: (label: string, href: string) => void;
 }>;
 
 export function DesktopView({ onItemClick }: Props) {
-  const { productos, loading } = useOfertasDestacadas();
+  const { products, loading } = useTopDiscountedProducts({
+    limit: 12,
+  });
 
   const handleCloseDropdown = () => {
     globalThis.dispatchEvent(new CustomEvent("close-dropdown"));
@@ -76,14 +78,14 @@ export function DesktopView({ onItemClick }: Props) {
         <div className="flex-1 pl-8">
           {/* Primera fila: 7 productos */}
           <div className="grid grid-cols-7 gap-6 mb-4">
-            {productos.slice(0, 7).map((producto) => {
-              const href = producto.link_url || `/productos/view/${producto.producto_id}`;
+            {products.slice(0, 7).map((product) => {
+              if (typeof product.image !== 'string' || !product.image) return null;
 
               return (
                 <Link
-                  key={producto.uuid}
-                  href={href}
-                  onClick={() => onItemClick(producto.producto_nombre, href)}
+                  key={product.id}
+                  href={`/productos/view/${product.id}`}
+                  onClick={() => onItemClick(product.name, `/productos/view/${product.id}`)}
                   className="flex flex-col items-center text-center group"
                   style={{ width: `${SIZES.product.container}px` }}
                 >
@@ -91,21 +93,15 @@ export function DesktopView({ onItemClick }: Props) {
                     className="relative mb-2 transition-transform group-hover:scale-105"
                     style={{ width: `${SIZES.product.image}px`, height: `${SIZES.product.image}px` }}
                   >
-                    {producto.producto_imagen ? (
-                      <Image
-                        src={producto.producto_imagen}
-                        alt={producto.producto_nombre}
-                        fill
-                        className="object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">Sin imagen</span>
-                      </div>
-                    )}
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-contain"
+                    />
                   </div>
                   <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                    {producto.producto_nombre}
+                    {product.name}
                   </span>
                 </Link>
               );
@@ -114,14 +110,14 @@ export function DesktopView({ onItemClick }: Props) {
 
           {/* Segunda fila: 5 productos */}
           <div className="grid grid-cols-7 gap-6">
-            {productos.slice(7, 12).map((producto) => {
-              const href = producto.link_url || `/productos/view/${producto.producto_id}`;
+            {products.slice(7, 12).map((product) => {
+              if (typeof product.image !== 'string' || !product.image) return null;
 
               return (
                 <Link
-                  key={producto.uuid}
-                  href={href}
-                  onClick={() => onItemClick(producto.producto_nombre, href)}
+                  key={product.id}
+                  href={`/productos/view/${product.id}`}
+                  onClick={() => onItemClick(product.name, `/productos/view/${product.id}`)}
                   className="flex flex-col items-center text-center group"
                   style={{ width: `${SIZES.product.container}px` }}
                 >
@@ -129,21 +125,15 @@ export function DesktopView({ onItemClick }: Props) {
                     className="relative mb-2 transition-transform group-hover:scale-105"
                     style={{ width: `${SIZES.product.image}px`, height: `${SIZES.product.image}px` }}
                   >
-                    {producto.producto_imagen ? (
-                      <Image
-                        src={producto.producto_imagen}
-                        alt={producto.producto_nombre}
-                        fill
-                        className="object-contain"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                        <span className="text-gray-400 text-xs">Sin imagen</span>
-                      </div>
-                    )}
+                    <Image
+                      src={product.image}
+                      alt={product.name}
+                      fill
+                      className="object-contain"
+                    />
                   </div>
                   <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                    {producto.producto_nombre}
+                    {product.name}
                   </span>
                 </Link>
               );

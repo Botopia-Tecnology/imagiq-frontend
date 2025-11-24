@@ -10,6 +10,8 @@ import pseLogo from "@/img/iconos/logo-pse.png";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import { fetchBanks } from "../utils";
 import { useCardsCache } from "../hooks/useCardsCache";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 interface PaymentFormProps {
   paymentMethod: string;
@@ -59,11 +61,16 @@ export default function PaymentForm({
   const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
     []
   );
+  // Hook para obtener usuario del localStorage (para usuarios sin sesión activa pero con cuenta creada en Step2)
+  const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
 
   // Helper para obtener el userId (autenticado o invitado)
   const getUserId = (): string | null => {
     if (authContext.user?.id) {
       return authContext.user.id;
+    }
+    if (loggedUser?.id) {
+      return loggedUser.id;
     }
 
     try {
@@ -96,14 +103,14 @@ export default function PaymentForm({
     });
   }, []);
 
-  // Cargar tarjetas guardadas al montar
+  // Cargar tarjetas guardadas al montar o cuando cambia el usuario
   useEffect(() => {
     const userId = getUserId();
-    
+
     if (userId) {
       loadSavedCards();
     }
-  }, [authContext.user?.id, loadSavedCards]);
+  }, [authContext.user?.id, loggedUser?.id, loadSavedCards]);
 
   // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
   useEffect(() => {
@@ -111,7 +118,7 @@ export default function PaymentForm({
     if (userId && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
       loadSavedCards(true); // true = forzar recarga
     }
-  }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
+  }, [authContext.user?.id, loggedUser?.id, savedCardsReloadCounter, loadSavedCards]);
 
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas o después de agregar una nueva
   useEffect(() => {

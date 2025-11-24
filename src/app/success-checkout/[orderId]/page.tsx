@@ -237,9 +237,8 @@ export default function SuccessCheckoutPage({
 
         // CASO 1: PICKUP EN TIENDA (metodo_envio === 2)
         if (metodoEnvio === 2) {
-          // Para pickup, necesitamos: serial (número de orden), nombre de tienda, nombre usuario, order id
+          // Para pickup, necesitamos: nombre de tienda, nombre usuario, order id, token
           const ordenId = orderData.id || pathParams.orderId;
-          const serialNumero = orderData.serial_id || ordenId.substring(0, 8);
           
           // Obtener datos de la tienda
           const tiendaData = orderData.tienda || orderData.tienda_origen;
@@ -247,28 +246,65 @@ export default function SuccessCheckoutPage({
           
           // Validar y truncar nombre de tienda si excede 30 caracteres
           if (nombreTienda.length > 30) {
-            // Quitar "Ses " del inicio si existe
-            if (nombreTienda.startsWith("Ses ")) {
-              nombreTienda = nombreTienda.substring(4); // Quitar "Ses "
-            }
-            // Si aún excede 30 caracteres, tomar solo la última palabra
-            if (nombreTienda.length > 30) {
+            // Para Bogotá: quitar "Ses " del inicio si existe
+            if (nombreTienda.toLowerCase().includes('bogotá') || nombreTienda.toLowerCase().includes('bogota')) {
+              if (nombreTienda.startsWith("Ses ")) {
+                nombreTienda = nombreTienda.substring(4); // Quitar "Ses "
+              }
+            } else {
+              // Para otras ciudades: tomar últimas 3, 2 o 1 palabra según sea necesario
               const palabras = nombreTienda.trim().split(/\s+/); // Dividir por espacios
-              nombreTienda = palabras[palabras.length - 1]; // Tomar la última palabra
+              
+              // Intentar con las últimas 3 palabras
+              if (palabras.length >= 3) {
+                const ultimas3 = palabras.slice(-3).join(' ');
+                if (ultimas3.length <= 30) {
+                  nombreTienda = ultimas3;
+                } else {
+                  // Si aún excede, intentar con las últimas 2 palabras
+                  if (palabras.length >= 2) {
+                    const ultimas2 = palabras.slice(-2).join(' ');
+                    if (ultimas2.length <= 30) {
+                      nombreTienda = ultimas2;
+                    } else {
+                      // Si aún excede, tomar solo la última palabra
+                      nombreTienda = palabras[palabras.length - 1];
+                    }
+                  } else {
+                    nombreTienda = palabras[palabras.length - 1];
+                  }
+                }
+              } else {
+                // Si hay menos de 3 palabras, tomar la última
+                nombreTienda = palabras[palabras.length - 1];
+              }
             }
           }
           
-          // Obtener token de recogida
-          const tokenRecogida = orderData.token || "";
+          // Obtener token de recogida - puede venir como objeto o string
+          const tokenData = orderData.token as unknown;
+          let tokenRecogida = "";
+          if (typeof tokenData === 'string') {
+            tokenRecogida = tokenData;
+          } else if (tokenData && typeof tokenData === 'object' && 'token' in tokenData) {
+            tokenRecogida = String((tokenData as { token: string }).token);
+          }
+          
+          // Obtener número de pedido (serial_id o primeros 8 del UUID)
+          const numeroPedido = orderData.serial_id || ordenId.substring(0, 8);
 
           const payloadPickup = {
             to: telefono,
             nombre: nombreCapitalizado,
-            ordenId: ordenId,
-            serial: serialNumero,
+            numeroPedido: numeroPedido,
             nombreTienda: nombreTienda,
-            token: tokenRecogida
+            producto: "Token", // Fijo
+            horarioRecogida: tokenRecogida, // Este es el token
+            resumen: "Token", // Fijo
+            ordenId: ordenId
           };
+
+          console.log("📱 [WhatsApp Pickup] Payload que se enviará:", JSON.stringify(payloadPickup, null, 2));
 
           // Enviar mensaje de WhatsApp de pickup al backend
           try {
@@ -564,6 +600,15 @@ export default function SuccessCheckoutPage({
           // Usar el id (UUID) de la orden como orderId
           const ordenId = orderData.id || pathParams.orderId;
           
+          console.log("📦 [Email Pickup] Datos recibidos del endpoint /tiendas:", {
+            ordenId,
+            tienda: orderData.tienda,
+            items: orderData.items,
+            token: orderData.token,
+            total_amount: orderData.total_amount,
+            fecha_creacion: orderData.fecha_creacion
+          });
+          
           // Obtener datos de la tienda desde orderData (para pickup) - igual que tracking service
           const tiendaDataRaw = orderData.tienda;
           if (!tiendaDataRaw || (!tiendaDataRaw.direccion && !tiendaDataRaw.ciudad && !tiendaDataRaw.descripcion)) {
@@ -601,8 +646,14 @@ export default function SuccessCheckoutPage({
             image: p.image_preview_url || p.picture_url || undefined
           }));
 
-          // Obtener token de recogida - igual que tracking service
-          const token = orderData.token || "";
+          // Obtener token de recogida - puede venir como objeto o string
+          const emailTokenData = orderData.token as unknown;
+          let emailToken = "";
+          if (typeof emailTokenData === 'string') {
+            emailToken = emailTokenData;
+          } else if (emailTokenData && typeof emailTokenData === 'object' && 'token' in emailTokenData) {
+            emailToken = String((emailTokenData as { token: string }).token);
+          }
 
           // Construir dirección de la tienda
           const storeAddress = tiendaData.direccion 
@@ -617,7 +668,8 @@ export default function SuccessCheckoutPage({
             storeName: tiendaData.descripcion || tiendaData.nombre || "Tienda IMAGIQ",
             storeAddress: storeAddress,
             storeMapsUrl: `https://maps.google.com/?q=${encodeURIComponent(storeAddress)}`,
-            pickupToken: token,
+            pickupToken: emailToken,
+            qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(emailToken)}`,
             orderDate: new Date(orderData.fecha_creacion).toLocaleDateString('es-ES', {
               day: 'numeric',
               month: 'long',
@@ -625,6 +677,8 @@ export default function SuccessCheckoutPage({
             }),
             totalValue: orderData.total_amount || 0
           };
+
+          console.log("📧 [Email Pickup] Payload que se enviará:", JSON.stringify(payload, null, 2));
 
           try {
             const emailData = await apiPost<{

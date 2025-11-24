@@ -175,21 +175,24 @@ export default function SuccessCheckoutPage({
           return;
         }
 
-        // Solo enviar WhatsApp si es Coordinadora (1) o Imagiq (3)
-        if (metodoEnvio !== 1 && metodoEnvio !== 3) {
+        // Validar método de envío soportado (1=Coordinadora, 2=Pickup, 3=Imagiq)
+        if (metodoEnvio !== 1 && metodoEnvio !== 2 && metodoEnvio !== 3) {
           console.log("ℹ️ [WhatsApp] WhatsApp no se envía para este método de envío:", {
             metodo_envio: metodoEnvio,
             ordenId: pathParams.orderId,
-            razon: metodoEnvio === 2 ? "Pickup en tienda" : "Método desconocido"
+            razon: "Método desconocido"
           });
           return;
         }
 
         // Obtener datos de la orden según el método de envío
         // Coordinadora (1): usar /api/orders/shipping-info/${orderId} para obtener items
+        // Pickup (2): usar /api/orders/${orderId}/tiendas para obtener datos de tienda
         // Imagiq (3): usar /api/orders/${orderId}/imagiq
         let orderEndpoint = `/api/orders/shipping-info/${pathParams.orderId}`;
-        if (metodoEnvio === 3) {
+        if (metodoEnvio === 2) {
+          orderEndpoint = `/api/orders/${pathParams.orderId}/tiendas`;
+        } else if (metodoEnvio === 3) {
           orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
         }
 
@@ -227,6 +230,81 @@ export default function SuccessCheckoutPage({
           telefono = "57" + telefono;
         }
 
+        // Capitalizar la primera letra del nombre
+        const nombreCapitalizado =
+          userInfo.nombre.charAt(0).toUpperCase() +
+          userInfo.nombre.slice(1).toLowerCase();
+
+        // CASO 1: PICKUP EN TIENDA (metodo_envio === 2)
+        if (metodoEnvio === 2) {
+          // Para pickup, necesitamos: serial (número de orden), nombre de tienda, nombre usuario, order id
+          const ordenId = orderData.id || pathParams.orderId;
+          const serialNumero = orderData.serial_id || ordenId.substring(0, 8);
+          
+          // Obtener datos de la tienda
+          const tiendaData = orderData.tienda || orderData.tienda_origen;
+          let nombreTienda = tiendaData?.descripcion || tiendaData?.nombre || "Tienda IMAGIQ";
+          
+          // Validar y truncar nombre de tienda si excede 30 caracteres
+          if (nombreTienda.length > 30) {
+            // Quitar "Ses " del inicio si existe
+            if (nombreTienda.startsWith("Ses ")) {
+              nombreTienda = nombreTienda.substring(4); // Quitar "Ses "
+            }
+            // Si aún excede 30 caracteres, tomar solo la última palabra
+            if (nombreTienda.length > 30) {
+              const palabras = nombreTienda.trim().split(/\s+/); // Dividir por espacios
+              nombreTienda = palabras[palabras.length - 1]; // Tomar la última palabra
+            }
+          }
+          
+          // Obtener token de recogida
+          const tokenRecogida = orderData.token || "";
+
+          const payloadPickup = {
+            to: telefono,
+            nombre: nombreCapitalizado,
+            ordenId: ordenId,
+            serial: serialNumero,
+            nombreTienda: nombreTienda,
+            token: tokenRecogida
+          };
+
+          // Enviar mensaje de WhatsApp de pickup al backend
+          try {
+            const whatsappData = await apiPost<{
+              success: boolean;
+              messageId?: string;
+              message?: string;
+              error?: string;
+              details?: string;
+            }>('/api/messaging/pickup', payloadPickup);
+
+            if (!whatsappData.success) {
+              console.error("❌ [WhatsApp] Error en respuesta de WhatsApp pickup:", {
+                success: whatsappData.success,
+                error: whatsappData.error,
+                details: whatsappData.details
+              });
+              whatsappSentRef.current = false;
+            } else {
+              console.log("✅ [WhatsApp] Mensaje de pickup enviado exitosamente:", {
+                messageId: whatsappData.messageId,
+                message: whatsappData.message,
+                ordenId: pathParams.orderId,
+                telefono: telefono
+              });
+            }
+          } catch (whatsappError) {
+            console.error("❌ [WhatsApp] Error al enviar mensaje de WhatsApp pickup:", whatsappError);
+            whatsappSentRef.current = false;
+            return;
+          }
+          
+          return; // Terminar aquí para pickup
+        }
+
+        // CASO 2 y 3: ENVÍO A DOMICILIO (Coordinadora o Imagiq)
         // Obtener datos del envío según el método
         let numeroGuia: string;
         let tiempoEntregaEstimado: string | undefined;
@@ -350,11 +428,6 @@ export default function SuccessCheckoutPage({
             }
           }
         }
-
-        // Capitalizar la primera letra del nombre
-        const nombreCapitalizado =
-          userInfo.nombre.charAt(0).toUpperCase() +
-          userInfo.nombre.slice(1).toLowerCase();
 
         // Validar y truncar productos si excede 30 caracteres
         let productosFinal = productosDesc;

@@ -21,7 +21,6 @@ export default function TikTokPixelScript() {
     const loadTikTokPixel = () => {
       // Verificar consentimiento
       if (!hasMarketingConsent()) {
-        console.log("[TikTok Pixel] ❌ No marketing consent, skipping");
         return;
       }
 
@@ -30,11 +29,8 @@ export default function TikTokPixelScript() {
 
       // Verificar si ya existe
       if (document.querySelector(`script[src="${tiktokPixelUrl}"]`)) {
-        console.log("[TikTok Pixel] ✅ Already loaded");
         return;
       }
-
-      console.log("[TikTok Pixel] 📦 Loading script...");
 
       // Crear script
       const script = document.createElement("script");
@@ -42,8 +38,9 @@ export default function TikTokPixelScript() {
       script.async = true;
       script.id = "tiktok-pixel-bootstrap";
 
-      script.onload = () =>
-        console.log("[TikTok Pixel] ✅ Loaded successfully");
+      script.onload = () => {
+        // TikTok Pixel loaded successfully
+      };
 
       script.onerror = () => {
         // Solo mostrar error si no estamos en desarrollo sin backend
@@ -78,7 +75,6 @@ export default function TikTokPixelScript() {
 
     // Escuchar cambios de consentimiento
     const handleConsentChange = () => {
-      console.log("[TikTok Pixel] 🔄 Consent changed");
       loadTikTokPixel();
     };
 

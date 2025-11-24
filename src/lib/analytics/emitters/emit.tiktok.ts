@@ -55,12 +55,6 @@ export function sendTiktok(
 
     // Enviar evento
     globalThis.window.ttq.track(event.name, event.data, options);
-
-    console.debug(`[TikTok Pixel] Event sent: ${event.name}`, {
-      data: event.data,
-      event_id: eventId,
-      hasUserData: Boolean(userData),
-    });
   } catch (error) {
     console.error('[TikTok Pixel] Failed to send event:', event.name, error);
   }
@@ -132,14 +126,6 @@ export async function identifyTiktokUser(userData: TikTokUserData): Promise<void
     // Enviar identificación a TikTok
     if (Object.keys(identifyData).length > 0) {
       globalThis.window.ttq.identify(identifyData);
-
-      console.debug('[TikTok Pixel] User identified', {
-        hasEmail: Boolean(identifyData.email),
-        hasPhone: Boolean(identifyData.phone_number),
-        hasExternalId: Boolean(identifyData.external_id),
-      });
-    } else {
-      console.warn('[TikTok Pixel] No valid user data to identify');
     }
   } catch (error) {
     console.error('[TikTok Pixel] Failed to identify user:', error);

@@ -57,11 +57,12 @@ export async function apiClient(
       credentials: "include",
       headers,
     });
+
     // Manejar errores específicos
     if (!response.ok) {
       if (response.status === 401) {
         const error = new Error("API Key inválida o faltante");
-        console.error("🔐 Error de autenticación:", error.message);
+        console.error("🔐 Error de autenticación:", error.message, { endpoint, url, status: response.status });
         throw error;
       }
       if (response.status === 429) {

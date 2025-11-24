@@ -21,7 +21,6 @@ export default function GTMScript() {
     const loadGTM = () => {
       // Verificar consentimiento
       if (!hasMarketingConsent()) {
-        console.log("[GTM] ❌ No marketing consent, skipping");
         return;
       }
 
@@ -30,11 +29,8 @@ export default function GTMScript() {
 
       // Verificar si ya existe
       if (document.querySelector(`script[src="${gtmUrl}"]`)) {
-        console.log("[GTM] ✅ Already loaded");
         return;
       }
-
-      console.log("[GTM] 📦 Loading script...");
 
       // Crear script
       const script = document.createElement("script");
@@ -42,7 +38,9 @@ export default function GTMScript() {
       script.async = true;
       script.id = "gtm-bootstrap";
 
-      script.onload = () => console.log("[GTM] ✅ Loaded successfully");
+      script.onload = () => {
+        // GTM loaded successfully
+      };
 
       script.onerror = () => {
         // Solo mostrar error si no estamos en desarrollo sin backend
@@ -72,7 +70,6 @@ export default function GTMScript() {
 
     // Escuchar cambios de consentimiento
     const handleConsentChange = () => {
-      console.log("[GTM] 🔄 Consent changed");
       loadGTM();
     };
 

@@ -488,15 +488,6 @@ export function useCart(): UseCartReturn {
             STORAGE_KEYS.CART_ITEMS,
             JSON.stringify(newProducts)
           );
-          // 🔍 DEBUG: Verificar que skuPostback se guarda correctamente
-          const productWithSkuPostback = newProducts.find(p => p.skuPostback);
-          if (productWithSkuPostback) {
-            console.log('✅ skuPostback guardado en localStorage:', {
-              sku: productWithSkuPostback.sku,
-              skuPostback: productWithSkuPostback.skuPostback,
-              fullProduct: productWithSkuPostback
-            });
-          }
         } catch (error) {
           console.error("Error saving products to localStorage:", error);
         }
@@ -534,18 +525,7 @@ export function useCart(): UseCartReturn {
             });
 
             if (response.success && response.data) {
-              // 🔍 DEBUG: Mostrar respuesta completa del endpoint en consola
               const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              console.log(`📦 Respuesta completa de candidate-stores para SKU ${product.sku} (useCart):`, {
-                fullResponse: responseData,
-                stores: responseData.stores,
-                canPickUp: responseData.canPickUp,
-                canPickup: responseData.canPickup,
-                default_direction: responseData.default_direction,
-                storesKeys: Object.keys(responseData.stores || {}),
-                storesCount: Object.values(responseData.stores || {}).reduce((acc: number, arr: CandidateStore[]) => acc + arr.length, 0),
-              });
-              
               const { stores } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
               const canPickUp = responseData.canPickUp ?? 

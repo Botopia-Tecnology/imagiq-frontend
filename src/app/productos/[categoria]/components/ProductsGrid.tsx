@@ -72,11 +72,6 @@ export const CategoryProductsGrid = forwardRef<
     // Usar orderedItems directamente (ya viene del API en el orden correcto - intercalado)
     // Mezclar con banners
     const gridItems = useMemo(() => {
-      console.log('[ProductsGrid] Banner recibido:', banner);
-      console.log('[ProductsGrid] Total productos:', products.length);
-      console.log('[ProductsGrid] Total bundles:', bundles.length);
-      console.log('[ProductsGrid] Total orderedItems (orden API):', orderedItems.length);
-
       // Convertir orderedItems al formato que espera insertBannersInGrid
       // insertBannersInGrid espera ProductCardProps[], así que necesitamos adaptar
       const itemsForBannerInsertion = orderedItems.map((item): ItemWithFlag => {
@@ -102,9 +97,6 @@ export const CategoryProductsGrid = forwardRef<
       // Priorizar banners array sobre banner individual
       const bannersToInsert = banners && banners.length > 0 ? banners : banner;
       const items = insertBannersInGrid(itemsForBannerInsertion as unknown as ProductCardProps[], bannersToInsert, 15);
-      console.log('[ProductsGrid] Banners para insertar:', bannersToInsert);
-      console.log('[ProductsGrid] Total items en grid (con banners):', items.length);
-      console.log('[ProductsGrid] Items:', items.map(i => ({ type: i.type, key: i.key })));
       return items;
     }, [orderedItems, banner, products.length, bundles.length, banners]);
 

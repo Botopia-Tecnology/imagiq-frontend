@@ -113,25 +113,11 @@ export function useProductBanner(
         // Construir array de placements con herencia
         const placements = buildProductPlacements(
           categoriaNonNull,
-          menuNonNull,
-          submenuNonNull
+          submenu ?? undefined
         );
 
-        // Obtener todos los banners activos (usa caché interno del servicio)
-        const allBanners = await bannersService.getActiveBanners();
-
-        // Filtrar banners que coincidan con alguno de los placements válidos
-        const matchedBanners = allBanners.filter((banner) =>
-          placements.includes(banner.placement)
-        );
-
-        // Ordenar por especificidad (los más específicos primero)
-        // Esto asegura que si hay varios banners, se prioricen los más específicos
-        const sortedBanners = matchedBanners.sort((a, b) => {
-          const aIndex = placements.indexOf(a.placement);
-          const bIndex = placements.indexOf(b.placement);
-          return aIndex - bIndex;
-        });
+        // Obtener TODOS los banners del placement
+        const banners = await bannersService.getBannersByPlacement(placement);
 
         if (!isCancelled) {
           setConfigs(sortedBanners);

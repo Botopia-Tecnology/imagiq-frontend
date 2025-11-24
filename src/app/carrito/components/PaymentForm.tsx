@@ -186,11 +186,11 @@ export default function PaymentForm({
   // Mostrar skeleton completo cuando:
   // 1. Se están cargando las tarjetas inicialmente
   // 2. Se están cargando los bancos para PSE
-  // 3. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
+  // 3. Se está cargando zero interest (sin importar si hay tarjetas o no)
   const shouldShowFullSkeleton =
     isLoadingCards ||
     isLoadingBanks ||
-    (isLoadingZeroInterest && savedCards.length === 0);
+    isLoadingZeroInterest;
 
   if (shouldShowFullSkeleton) {
     return (

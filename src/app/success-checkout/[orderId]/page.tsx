@@ -175,21 +175,24 @@ export default function SuccessCheckoutPage({
           return;
         }
 
-        // Solo enviar WhatsApp si es Coordinadora (1) o Imagiq (3)
-        if (metodoEnvio !== 1 && metodoEnvio !== 3) {
+        // Validar método de envío soportado (1=Coordinadora, 2=Pickup, 3=Imagiq)
+        if (metodoEnvio !== 1 && metodoEnvio !== 2 && metodoEnvio !== 3) {
           console.log("ℹ️ [WhatsApp] WhatsApp no se envía para este método de envío:", {
             metodo_envio: metodoEnvio,
             ordenId: pathParams.orderId,
-            razon: metodoEnvio === 2 ? "Pickup en tienda" : "Método desconocido"
+            razon: "Método desconocido"
           });
           return;
         }
 
         // Obtener datos de la orden según el método de envío
         // Coordinadora (1): usar /api/orders/shipping-info/${orderId} para obtener items
+        // Pickup (2): usar /api/orders/${orderId}/tiendas para obtener datos de tienda
         // Imagiq (3): usar /api/orders/${orderId}/imagiq
         let orderEndpoint = `/api/orders/shipping-info/${pathParams.orderId}`;
-        if (metodoEnvio === 3) {
+        if (metodoEnvio === 2) {
+          orderEndpoint = `/api/orders/${pathParams.orderId}/tiendas`;
+        } else if (metodoEnvio === 3) {
           orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
         }
 
@@ -227,6 +230,117 @@ export default function SuccessCheckoutPage({
           telefono = "57" + telefono;
         }
 
+        // Capitalizar la primera letra del nombre
+        const nombreCapitalizado =
+          userInfo.nombre.charAt(0).toUpperCase() +
+          userInfo.nombre.slice(1).toLowerCase();
+
+        // CASO 1: PICKUP EN TIENDA (metodo_envio === 2)
+        if (metodoEnvio === 2) {
+          // Para pickup, necesitamos: nombre de tienda, nombre usuario, order id, token
+          const ordenId = orderData.id || pathParams.orderId;
+          
+          // Obtener datos de la tienda
+          const tiendaData = orderData.tienda || orderData.tienda_origen;
+          let nombreTienda = tiendaData?.descripcion || tiendaData?.nombre || "Tienda IMAGIQ";
+          
+          // Validar y truncar nombre de tienda si excede 30 caracteres
+          if (nombreTienda.length > 30) {
+            // Para Bogotá: quitar "Ses " del inicio si existe
+            if (nombreTienda.toLowerCase().includes('bogotá') || nombreTienda.toLowerCase().includes('bogota')) {
+              if (nombreTienda.startsWith("Ses ")) {
+                nombreTienda = nombreTienda.substring(4); // Quitar "Ses "
+              }
+            } else {
+              // Para otras ciudades: tomar últimas 3, 2 o 1 palabra según sea necesario
+              const palabras = nombreTienda.trim().split(/\s+/); // Dividir por espacios
+              
+              // Intentar con las últimas 3 palabras
+              if (palabras.length >= 3) {
+                const ultimas3 = palabras.slice(-3).join(' ');
+                if (ultimas3.length <= 30) {
+                  nombreTienda = ultimas3;
+                } else {
+                  // Si aún excede, intentar con las últimas 2 palabras
+                  if (palabras.length >= 2) {
+                    const ultimas2 = palabras.slice(-2).join(' ');
+                    if (ultimas2.length <= 30) {
+                      nombreTienda = ultimas2;
+                    } else {
+                      // Si aún excede, tomar solo la última palabra
+                      nombreTienda = palabras[palabras.length - 1];
+                    }
+                  } else {
+                    nombreTienda = palabras[palabras.length - 1];
+                  }
+                }
+              } else {
+                // Si hay menos de 3 palabras, tomar la última
+                nombreTienda = palabras[palabras.length - 1];
+              }
+            }
+          }
+          
+          // Obtener token de recogida - puede venir como objeto o string
+          const tokenData = orderData.token as unknown;
+          let tokenRecogida = "";
+          if (typeof tokenData === 'string') {
+            tokenRecogida = tokenData;
+          } else if (tokenData && typeof tokenData === 'object' && 'token' in tokenData) {
+            tokenRecogida = String((tokenData as { token: string }).token);
+          }
+          
+          // Obtener número de pedido (serial_id o primeros 8 del UUID)
+          const numeroPedido = orderData.serial_id || ordenId.substring(0, 8);
+
+          const payloadPickup = {
+            to: telefono,
+            nombre: nombreCapitalizado,
+            numeroPedido: numeroPedido,
+            nombreTienda: nombreTienda,
+            producto: "Token", // Fijo
+            horarioRecogida: tokenRecogida, // Este es el token
+            resumen: "Token", // Fijo
+            ordenId: ordenId
+          };
+
+          console.log("📱 [WhatsApp Pickup] Payload que se enviará:", JSON.stringify(payloadPickup, null, 2));
+
+          // Enviar mensaje de WhatsApp de pickup al backend
+          try {
+            const whatsappData = await apiPost<{
+              success: boolean;
+              messageId?: string;
+              message?: string;
+              error?: string;
+              details?: string;
+            }>('/api/messaging/pickup', payloadPickup);
+
+            if (!whatsappData.success) {
+              console.error("❌ [WhatsApp] Error en respuesta de WhatsApp pickup:", {
+                success: whatsappData.success,
+                error: whatsappData.error,
+                details: whatsappData.details
+              });
+              whatsappSentRef.current = false;
+            } else {
+              console.log("✅ [WhatsApp] Mensaje de pickup enviado exitosamente:", {
+                messageId: whatsappData.messageId,
+                message: whatsappData.message,
+                ordenId: pathParams.orderId,
+                telefono: telefono
+              });
+            }
+          } catch (whatsappError) {
+            console.error("❌ [WhatsApp] Error al enviar mensaje de WhatsApp pickup:", whatsappError);
+            whatsappSentRef.current = false;
+            return;
+          }
+          
+          return; // Terminar aquí para pickup
+        }
+
+        // CASO 2 y 3: ENVÍO A DOMICILIO (Coordinadora o Imagiq)
         // Obtener datos del envío según el método
         let numeroGuia: string;
         let tiempoEntregaEstimado: string | undefined;
@@ -350,11 +464,6 @@ export default function SuccessCheckoutPage({
             }
           }
         }
-
-        // Capitalizar la primera letra del nombre
-        const nombreCapitalizado =
-          userInfo.nombre.charAt(0).toUpperCase() +
-          userInfo.nombre.slice(1).toLowerCase();
 
         // Validar y truncar productos si excede 30 caracteres
         let productosFinal = productosDesc;
@@ -491,6 +600,15 @@ export default function SuccessCheckoutPage({
           // Usar el id (UUID) de la orden como orderId
           const ordenId = orderData.id || pathParams.orderId;
           
+          console.log("📦 [Email Pickup] Datos recibidos del endpoint /tiendas:", {
+            ordenId,
+            tienda: orderData.tienda,
+            items: orderData.items,
+            token: orderData.token,
+            total_amount: orderData.total_amount,
+            fecha_creacion: orderData.fecha_creacion
+          });
+          
           // Obtener datos de la tienda desde orderData (para pickup) - igual que tracking service
           const tiendaDataRaw = orderData.tienda;
           if (!tiendaDataRaw || (!tiendaDataRaw.direccion && !tiendaDataRaw.ciudad && !tiendaDataRaw.descripcion)) {
@@ -528,8 +646,14 @@ export default function SuccessCheckoutPage({
             image: p.image_preview_url || p.picture_url || undefined
           }));
 
-          // Obtener token de recogida - igual que tracking service
-          const token = orderData.token || "";
+          // Obtener token de recogida - puede venir como objeto o string
+          const emailTokenData = orderData.token as unknown;
+          let emailToken = "";
+          if (typeof emailTokenData === 'string') {
+            emailToken = emailTokenData;
+          } else if (emailTokenData && typeof emailTokenData === 'object' && 'token' in emailTokenData) {
+            emailToken = String((emailTokenData as { token: string }).token);
+          }
 
           // Construir dirección de la tienda
           const storeAddress = tiendaData.direccion 
@@ -544,7 +668,8 @@ export default function SuccessCheckoutPage({
             storeName: tiendaData.descripcion || tiendaData.nombre || "Tienda IMAGIQ",
             storeAddress: storeAddress,
             storeMapsUrl: `https://maps.google.com/?q=${encodeURIComponent(storeAddress)}`,
-            pickupToken: token,
+            pickupToken: emailToken,
+            qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(emailToken)}`,
             orderDate: new Date(orderData.fecha_creacion).toLocaleDateString('es-ES', {
               day: 'numeric',
               month: 'long',
@@ -552,6 +677,8 @@ export default function SuccessCheckoutPage({
             }),
             totalValue: orderData.total_amount || 0
           };
+
+          console.log("📧 [Email Pickup] Payload que se enviará:", JSON.stringify(payload, null, 2));
 
           try {
             const emailData = await apiPost<{

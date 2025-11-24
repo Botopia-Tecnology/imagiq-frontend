@@ -138,12 +138,12 @@ export default function Step7({ onBack }: Step7Props) {
         let savedCard: DBCard | undefined;
 
         // Si usó una tarjeta guardada, cargar sus datos completos
-        if (savedCardId && authContext.user?.id) {
+        // Usar authContext o loggedUser (para usuarios sin sesión activa pero con cuenta creada en Step2)
+        const userId = authContext.user?.id || loggedUser?.id;
+        if (savedCardId && userId) {
           try {
             const encryptedCards =
-              await profileService.getUserPaymentMethodsEncrypted(
-                authContext.user.id
-              );
+              await profileService.getUserPaymentMethodsEncrypted(userId);
 
             const decryptedCards: DBCard[] = encryptedCards
               .map((encCard) => {
@@ -322,7 +322,7 @@ export default function Step7({ onBack }: Step7Props) {
         en_zona_cobertura: true,
       });
     }
-  }, []);
+  }, [authContext.user?.id, loggedUser?.id]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {

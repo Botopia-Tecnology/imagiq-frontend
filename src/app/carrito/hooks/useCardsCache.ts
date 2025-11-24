@@ -6,6 +6,8 @@ import { DBCard, DecryptedCardData } from "@/features/profile/types";
 import { encryptionService } from "@/lib/encryption";
 import { checkZeroInterest } from "../utils";
 import { CheckZeroInterestResponse } from "../types";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 // Caché en memoria para las tarjetas
 let cardsCache: {
@@ -40,11 +42,17 @@ export function useCardsCache() {
   const [isLoadingCards, setIsLoadingCards] = useState(false);
   const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
   const [isLoadingZeroInterest, setIsLoadingZeroInterest] = useState(false);
+  // Hook para obtener usuario del localStorage (para usuarios sin sesión activa pero con cuenta creada en Step2)
+  const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
 
   // Helper para obtener el userId (autenticado o invitado)
   const getUserId = useCallback((): string | null => {
     if (authContext.user?.id) {
       return authContext.user.id;
+    }
+
+    if (loggedUser?.id) {
+      return loggedUser.id;
     }
 
     try {
@@ -54,11 +62,11 @@ export function useCardsCache() {
         return parsedUser.id || null;
       }
     } catch (error) {
-      
+
     }
 
     return null;
-  }, [authContext.user?.id]);
+  }, [authContext.user?.id, loggedUser?.id]);
 
   // Verificar si el caché es válido
   const isCacheValid = useCallback(() => {

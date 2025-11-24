@@ -22,6 +22,8 @@ import { apiClient } from "@/lib/api";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { apiPost } from "@/lib/api-client";
 import { addBusinessDays, getNextBusinessDay } from "@/lib/dateUtils";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 interface OrderItem {
   sku: string;
@@ -109,6 +111,8 @@ export default function SuccessCheckoutPage({
   const whatsappSentRef = useRef(false);
   const analyticsSentRef = useRef(false);
   const emailSentRef = useRef(false);
+  // Hook para obtener usuario del localStorage encriptado (para usuarios sin sesión activa pero con cuenta creada en Step2)
+  const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
 
   // Enviar evento de purchase a analytics
   useEffect(() => {
@@ -205,20 +209,18 @@ export default function SuccessCheckoutPage({
 
         const orderData = orderResponse.data;
 
-        // Obtener datos del usuario desde localStorage (misma clave que en checkout)
-        const userData = localStorage.getItem("imagiq_user");
-        let userInfo: UserData | null = null;
-
-        if (userData) {
-          try {
-            userInfo = JSON.parse(userData);
-          } catch (e) {
-            console.error("❌ [WhatsApp] Error al parsear datos del usuario:", e);
-          }
-        }
+        // Obtener datos del usuario desde SecureStorage (datos encriptados)
+        // Usamos loggedUser que viene del hook useSecureStorage
+        const userInfo: UserData | null = loggedUser ? {
+          id: loggedUser.id,
+          nombre: loggedUser.nombre || "",
+          apellido: loggedUser.apellido || "",
+          telefono: loggedUser.telefono || "",
+          email: loggedUser.email,
+        } : null;
 
         if (!userInfo || !userInfo.telefono) {
-          console.error("❌ [WhatsApp] No hay información de usuario o teléfono disponible");
+          console.error("❌ [WhatsApp] No hay información de usuario o teléfono disponible", { loggedUser });
           return;
         }
 
@@ -530,7 +532,8 @@ export default function SuccessCheckoutPage({
     };
 
     sendWhatsAppMessage();
-  }, [pathParams.orderId]); // Solo depende del orderId, useRef previene duplicados
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathParams.orderId, loggedUser?.id]); // Depende del orderId y loggedUser.id, useRef previene duplicados
 
   // Enviar email de confirmación cuando se carga la página
   useEffect(() => {
@@ -574,20 +577,18 @@ export default function SuccessCheckoutPage({
 
         const orderData = orderResponse.data;
 
-        // Obtener datos del usuario desde localStorage
-        const userData = localStorage.getItem("imagiq_user");
-        let userInfo: UserData | null = null;
-
-        if (userData) {
-          try {
-            userInfo = JSON.parse(userData);
-          } catch (e) {
-            console.error("❌ [Email] Error al parsear datos del usuario:", e);
-          }
-        }
+        // Obtener datos del usuario desde SecureStorage (datos encriptados)
+        // Usamos loggedUser que viene del hook useSecureStorage
+        const userInfo: UserData | null = loggedUser ? {
+          id: loggedUser.id,
+          nombre: loggedUser.nombre || "",
+          apellido: loggedUser.apellido || "",
+          telefono: loggedUser.telefono || "",
+          email: loggedUser.email,
+        } : null;
 
         if (!userInfo || !userInfo.email) {
-          console.error("❌ [Email] No hay información de usuario o email disponible");
+          console.error("❌ [Email] No hay información de usuario o email disponible", { loggedUser });
           return;
         }
 
@@ -809,7 +810,8 @@ export default function SuccessCheckoutPage({
     };
 
     sendEmailConfirmation();
-  }, [pathParams.orderId]); // Solo depende del orderId, useRef previene duplicados
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathParams.orderId, loggedUser?.id]); // Depende del orderId y loggedUser.id, useRef previene duplicados
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {

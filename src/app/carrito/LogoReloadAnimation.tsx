@@ -1,6 +1,5 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import logoSamsung from "@/img/logo_Samsung.png";
 
 /**
  * Animación tipo ola con el logo de Samsung creciendo sobre pantalla azul.
@@ -16,8 +15,13 @@ type LogoReloadAnimationProps = {
   onFinish?: () => void;
 };
 
-// Importa el logo desde el inicio para optimización y visibilidad
-const LOGO_SRC = logoSamsung;
+// Logo Samsung desde Cloudinary - Usando el patrón estándar de la app
+const CLOUDINARY_CLOUD_NAME = "dqsdl9bwv";
+const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+const LOGO_PUBLIC_ID = "Diseño_sin_título_-_2025-11-21T234250.302_ikybzx";
+
+// URL optimizada con f_auto para formato automático (mejor compatibilidad Safari)
+const LOGO_SRC = `${CLOUDINARY_BASE_URL}/f_auto,q_auto:best/${LOGO_PUBLIC_ID}`;
 
 /**
  * LogoReloadAnimation
@@ -63,12 +67,11 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     }
   }, [open]);
 
-  if (!open) return null;
-
   /**
    * Subcomponente: Logo Samsung con máscara de ola SVG animada
    * Inspirado en el efecto CodePen, la ola sube y "llena" el logo.
    * Usando useMemo para evitar recrear el SVG cuando cambia el texto
+   * IMPORTANTE: Este hook debe estar antes del early return para cumplir con Rules of Hooks
    */
   const AnimatedLogoWithWaveMask = React.useMemo(() => (
     <div
@@ -91,7 +94,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
           {/* Máscara SVG: la ola azul sube solo dentro del logo PNG */}
           <mask id="wave-logo-mask">
             <image
-              href={typeof LOGO_SRC === "string" ? LOGO_SRC : LOGO_SRC.src}
+              href={LOGO_SRC}
               x="0"
               y="0"
               width="1000"
@@ -164,7 +167,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
         </g>
         {/* Logo Samsung PNG visible encima de la ola, con opacidad animada */}
         <image
-          href={typeof LOGO_SRC === "string" ? LOGO_SRC : LOGO_SRC.src}
+          href={LOGO_SRC}
           x="0"
           y="0"
           width="1000"
@@ -199,13 +202,8 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     </div>
   ), [showSecondText]); // Solo recrea cuando cambia el texto
 
-  /**
-   * Subcomponente: Logo Samsung animado
-   * - Crece con efecto de entrada y sombra.
-   */
-  /**
-   * Subcomponente: Logo Samsung animado con ola subiendo
-   */
+  // Early return después de todos los hooks para cumplir con Rules of Hooks
+  if (!open) return null;
 
   // Render principal
   return (

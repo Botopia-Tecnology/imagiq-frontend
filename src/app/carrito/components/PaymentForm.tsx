@@ -61,6 +61,7 @@ export default function PaymentForm({
   const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
     []
   );
+  const [isLoadingBanks, setIsLoadingBanks] = useState(true);
   // Hook para obtener usuario del localStorage (para usuarios sin sesión activa pero con cuenta creada en Step2)
   const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
 
@@ -98,9 +99,14 @@ export default function PaymentForm({
 
   // Cargar bancos para PSE
   useEffect(() => {
-    fetchBanks().then((res) => {
-      setBanks(res);
-    });
+    setIsLoadingBanks(true);
+    fetchBanks()
+      .then((res) => {
+        setBanks(res);
+      })
+      .finally(() => {
+        setIsLoadingBanks(false);
+      });
   }, []);
 
   // Cargar tarjetas guardadas al montar o cuando cambia el usuario
@@ -179,9 +185,11 @@ export default function PaymentForm({
 
   // Mostrar skeleton completo cuando:
   // 1. Se están cargando las tarjetas inicialmente
-  // 2. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
+  // 2. Se están cargando los bancos para PSE
+  // 3. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
   const shouldShowFullSkeleton =
     isLoadingCards ||
+    isLoadingBanks ||
     (isLoadingZeroInterest && savedCards.length === 0);
 
   if (shouldShowFullSkeleton) {

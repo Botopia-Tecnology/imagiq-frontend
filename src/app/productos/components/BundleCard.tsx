@@ -563,6 +563,12 @@ export default function BundleCard({
   // Nombre dinámico: usar el modelo de la opción seleccionada o el nombre del bundle
   const displayName = selectedOption?.modelo || name;
 
+  // Obtener el stock de la opción seleccionada
+  const selectedOptionStock = useMemo(() => {
+    if (selectedOption?.stockTotal === undefined || selectedOption?.stockTotal === null || selectedOption.stockTotal < 0) return null;
+    return selectedOption.stockTotal;
+  }, [selectedOption]);
+
   return (
     <div
       className={cn(
@@ -615,6 +621,18 @@ export default function BundleCard({
                     <span>SKUs Bundle: </span>
                     <span className="text-gray-400">
                       {skus_bundle.join(", ")}
+                    </span>
+                  </div>
+                )}
+                {selectedOptionStock !== null && (
+                  <div className="text-xs text-gray-500 font-medium">
+                    <span>Stock: </span>
+                    <span className={cn(
+                      "font-semibold",
+                      selectedOptionStock > 5 ? "text-green-600" : 
+                      selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
+                    )}>
+                      {selectedOptionStock} unidades
                     </span>
                   </div>
                 )}

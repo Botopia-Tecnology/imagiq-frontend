@@ -352,6 +352,7 @@ export default function TrackingService({
               latitudTienda={tiendaInfo?.latitud}
               longitudTienda={tiendaInfo?.longitud}
               products={productos}
+              orderData={{ id: pathParams.orderId }}
             />
           )}
 

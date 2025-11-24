@@ -54,12 +54,6 @@ export function sendMeta(
 
     // Enviar evento
     window.fbq('track', event.name, event.data, options);
-
-    console.debug(`[Meta Pixel] Event sent: ${event.name}`, {
-      data: event.data,
-      eventID: eventId,
-      hasUserData: Boolean(userData),
-    });
   } catch (error) {
     console.error('[Meta Pixel] Failed to send event:', event.name, error);
   }
@@ -89,7 +83,6 @@ export function sendMetaCustom(
 
   try {
     window.fbq('trackCustom', eventName, data, { eventID: eventId });
-    console.debug(`[Meta Pixel] Custom event sent: ${eventName}`, data);
   } catch (error) {
     console.error('[Meta Pixel] Failed to send custom event:', eventName, error);
   }

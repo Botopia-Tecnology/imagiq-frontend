@@ -626,10 +626,16 @@ export default function Step3({
       return; // Con trade-in, siempre debe ser tienda
     }
 
+    // IMPORTANTE: Si canPickUp es true, NO cambiar automáticamente a domicilio
+    // aunque las tiendas aún no se hayan cargado (pueden estar cargando)
+    if (effectiveCanPickUp === true) {
+      return; // canPickUp es true, permitir seleccionar tienda
+    }
+
     // Si canPickUp es false O si terminó de cargar y no hay tiendas disponibles
-    // Verificar: canPickUp es false, o terminó de cargar sin tiendas
+    // Verificar: canPickUp es false, o terminó de cargar sin tiendas (solo si canPickUp NO es true)
     const canPickUpIsFalse = effectiveCanPickUp === false;
-    const finishedLoadingNoStores = !storesLoading && stores.length === 0 && effectiveCanPickUp !== true;
+    const finishedLoadingNoStores = !storesLoading && stores.length === 0 && effectiveCanPickUp === false;
     const noStoresAvailable = canPickUpIsFalse || finishedLoadingNoStores;
 
     // Si no hay tiendas disponibles y el método actual es "tienda", cambiar a "domicilio"
@@ -821,6 +827,21 @@ export default function Step3({
     }
   };
 
+  // Define loading state for the whole section
+  // IMPORTANTE: Solo mostrar skeleton cuando REALMENTE está cargando
+  // NO mostrar skeleton indefinidamente si canPickUp es true pero no hay tiendas (puede ser que no existan tiendas)
+  const shouldShowSkeleton = isLoadingCanPickUp || 
+                storesLoading || 
+                isRecalculatingPickup;
+
+  // Callback estable para recibir el estado de canPickUp desde Step4OrderSummary
+  const handleCanPickUpReady = React.useCallback((canPickUpValue: boolean, isLoading: boolean) => {
+    setIsLoadingCanPickUp(isLoading);
+    if (typeof canPickUpValue === 'boolean') {
+      setGlobalCanPickUpFromSummary(canPickUpValue);
+    }
+  }, []);
+
   return (
     <div className="min-h-screen w-full pb-40 md:pb-0">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
@@ -828,138 +849,182 @@ export default function Step3({
           {/* Forma de entrega */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6">
-              <DeliveryMethodSelector
-                deliveryMethod={deliveryMethod}
-                onMethodChange={handleDeliveryMethodChange}
-                canContinue={canContinue}
-                disableHomeDelivery={hasActiveTradeIn}
-                disableReason={hasActiveTradeIn ? "Para aplicar el beneficio Estreno y Entrego solo puedes recoger en tienda" : undefined}
-                disableStorePickup={!effectiveCanPickUp && !hasActiveTradeIn}
-                disableStorePickupReason={!effectiveCanPickUp && !hasActiveTradeIn ? "Este producto no está disponible para recoger en tienda" : undefined}
-              />
-
-              {deliveryMethod === "domicilio" && !hasActiveTradeIn && (
-                <div className="mt-6">
-                  <AddressSelector
-                    address={address}
-                    addresses={addresses}
-                    addressEdit={addressEdit}
-                    onAddressChange={handleAddressChange}
-                    onEditToggle={setAddressEdit}
-                    onAddressAdded={addAddress}
-                    addressLoading={addressLoading}
-                  />
-                </div>
-              )}
-
-              {/* Mostrar opción de recoger en tienda siempre, pero deshabilitada si canPickUp es false y no hay trade-in */}
-              {/* IMPORTANTE: Habilitar recoger en tienda si canPickUp global es true O si hay trade-in activo */}
-              {/* Mostrar estado de carga cuando se está verificando disponibilidad (cambio de dirección o carga inicial) */}
-              <div className="mt-6">
-                <StorePickupSelector
-                  deliveryMethod={deliveryMethod}
-                  onMethodChange={handleDeliveryMethodChange}
-                  disabled={!effectiveCanPickUp && !hasActiveTradeIn}
-                  isLoading={storesLoading || addressLoading}
-                  availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
-                  hasActiveTradeIn={hasActiveTradeIn}
-                />
-              </div>
-
-              {/* Mostrar skeleton cuando:
-                  1. Está cargando canPickUp (isLoadingCanPickUp es true)
-                  2. O está cargando tiendas (storesLoading es true)
-                  3. O cuando estamos recalculando el pickup después de cambiar la dirección
-                  4. O cuando canPickUp es true pero aún no tenemos el valor (hasCanPickUpValue es false) */}
-              {/* PRIORIDAD: El skeleton se muestra mientras carga canPickUp, tiendas, o mientras recalcula después de cambio de dirección */}
-              {/* IMPORTANTE: El skeleton se mantiene hasta que canPickUp esté calculado Y las tiendas terminen de cargar */}
-              {(isLoadingCanPickUp || 
-                storesLoading || 
-                isRecalculatingPickup ||
-                (effectiveCanPickUp === true && !hasCanPickUpValue)) && (
-                <div className="mt-6">
-                  <div className="p-4 bg-white border-2 border-gray-200 rounded-lg shadow-sm animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
-                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-5/6 mb-4"></div>
-                    <div className="space-y-2 mb-4">
-                      <div className="h-16 bg-gray-200 rounded"></div>
-                      <div className="h-16 bg-gray-200 rounded"></div>
-                      <div className="h-16 bg-gray-200 rounded"></div>
+              {shouldShowSkeleton ? (
+                <div className="animate-pulse space-y-6">
+                  {/* Título */}
+                  <div className="h-7 bg-gray-200 rounded w-48 mb-6"></div>
+                  
+                  {/* Opciones de entrega */}
+                  <div className="space-y-4">
+                    {/* Opción 1: Domicilio */}
+                    <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-4">
+                        <div className="w-5 h-5 rounded-full bg-gray-200"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-5 bg-gray-200 rounded w-40"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="h-10 bg-gray-200 rounded"></div>
+                    
+                    {/* Opción 2: Tienda */}
+                    <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                      <div className="flex items-center gap-4">
+                        <div className="w-5 h-5 rounded-full bg-gray-200"></div>
+                        <div className="flex-1 space-y-2">
+                          <div className="h-5 bg-gray-200 rounded w-40"></div>
+                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Sección adicional (dirección o tiendas) */}
+                  <div className="mt-6 p-4 border-2 border-gray-100 rounded-lg">
+                    <div className="space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-10 bg-gray-200 rounded w-full"></div>
+                      <div className="h-24 bg-gray-200 rounded w-full"></div>
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {/* Mostrar selector de tiendas si:
-                  - El método es "tienda" 
-                  - Y (canPickUp global es true O hay trade-in activo O hay tiendas disponibles cuando canPickUp es false)
-                  - Solo se muestra cuando NO está cargando y NO está recalculando
-                  - IMPORTANTE: Siempre mostrar si hay tiendas disponibles, independientemente de canPickUp */}
-              {deliveryMethod === "tienda" && 
-               !storesLoading && 
-               !isRecalculatingPickup && 
-               (effectiveCanPickUp || hasActiveTradeIn || availableStoresWhenCanPickUpFalse.length > 0) && (
-                <div className="mt-6">
-                  <StoreSelector
-                    storeQuery={storeQuery}
-                    filteredStores={effectiveCanPickUp ? filteredStores : availableStoresWhenCanPickUpFalse}
-                    selectedStore={selectedStore}
-                    onQueryChange={setStoreQuery}
-                    onStoreSelect={selectedStoreChanged}
-                    storesLoading={storesLoading}
-                    canPickUp={effectiveCanPickUp}
-                    allStores={effectiveCanPickUp ? stores : availableStoresWhenCanPickUpFalse}
-                    onAddressAdded={addAddress}
-                    onRefreshStores={forceRefreshStores}
-                    availableCities={availableCities}
-                    hasActiveTradeIn={hasActiveTradeIn}
-                    availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+              ) : (
+                <>
+                  <DeliveryMethodSelector
+                    deliveryMethod={deliveryMethod}
+                    onMethodChange={handleDeliveryMethodChange}
+                    canContinue={canContinue}
+                    disableHomeDelivery={hasActiveTradeIn}
+                    disableReason={hasActiveTradeIn ? "Para aplicar el beneficio Estreno y Entrego solo puedes recoger en tienda" : undefined}
+                    disableStorePickup={!effectiveCanPickUp && !hasActiveTradeIn}
+                    disableStorePickupReason={!effectiveCanPickUp && !hasActiveTradeIn ? "Este producto no está disponible para recoger en tienda" : undefined}
                   />
-                </div>
+
+                  {deliveryMethod === "domicilio" && !hasActiveTradeIn && (
+                    <div className="mt-6">
+                      <AddressSelector
+                        address={address}
+                        addresses={addresses}
+                        addressEdit={addressEdit}
+                        onAddressChange={handleAddressChange}
+                        onEditToggle={setAddressEdit}
+                        onAddressAdded={addAddress}
+                        addressLoading={addressLoading}
+                      />
+                    </div>
+                  )}
+
+                  {/* Mostrar opción de recoger en tienda siempre, pero deshabilitada si canPickUp es false y no hay trade-in */}
+                  {/* IMPORTANTE: Habilitar recoger en tienda si canPickUp global es true O si hay trade-in activo */}
+                  {/* Mostrar estado de carga cuando se está verificando disponibilidad (cambio de dirección o carga inicial) */}
+                  <div className="mt-6">
+                    <StorePickupSelector
+                      deliveryMethod={deliveryMethod}
+                      onMethodChange={handleDeliveryMethodChange}
+                      disabled={!effectiveCanPickUp && !hasActiveTradeIn}
+                      isLoading={storesLoading || addressLoading}
+                      availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+                      hasActiveTradeIn={hasActiveTradeIn}
+                    />
+                  </div>
+
+                  {/* Mostrar selector de tiendas si:
+                      - El método es "tienda" 
+                      - Y (canPickUp global es true O hay trade-in activo O hay tiendas disponibles cuando canPickUp es false)
+                      - Solo se muestra cuando NO está cargando y NO está recalculando
+                      - IMPORTANTE: Siempre mostrar si hay tiendas disponibles, independientemente de canPickUp */}
+                  {deliveryMethod === "tienda" && 
+                   !storesLoading && 
+                   !isRecalculatingPickup && 
+                   (effectiveCanPickUp || hasActiveTradeIn || availableStoresWhenCanPickUpFalse.length > 0) && (
+                    <div className="mt-6">
+                      <StoreSelector
+                        storeQuery={storeQuery}
+                        filteredStores={effectiveCanPickUp ? filteredStores : availableStoresWhenCanPickUpFalse}
+                        selectedStore={selectedStore}
+                        onQueryChange={setStoreQuery}
+                        onStoreSelect={selectedStoreChanged}
+                        storesLoading={storesLoading}
+                        canPickUp={effectiveCanPickUp}
+                        allStores={effectiveCanPickUp ? stores : availableStoresWhenCanPickUpFalse}
+                        onAddressAdded={addAddress}
+                        onRefreshStores={forceRefreshStores}
+                        availableCities={availableCities}
+                        hasActiveTradeIn={hasActiveTradeIn}
+                        availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+                      />
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
           <aside className="hidden md:block lg:col-span-1 space-y-4">
-            <Step4OrderSummary
-              onFinishPayment={handleContinue}
-              buttonText="Continuar"
-              onBack={onBack}
-              disabled={!canContinue || !tradeInValidation.isValid}
-              isProcessing={isWaitingForCanPickUp}
-              isSticky={false}
-              deliveryMethod={(() => {
-                if (deliveryMethod === "tienda") return "pickup";
-                if (deliveryMethod === "domicilio") return "delivery";
-                if (deliveryMethod === "delivery" || deliveryMethod === "pickup") return deliveryMethod;
-                return undefined;
-              })()}
-              onCanPickUpReady={(canPickUpValue, isLoading) => {
-                // Recibir el estado de canPickUp desde Step4OrderSummary
-                // canPickUpValue es el valor real de canPickUp global
-                // isLoading indica si todavía está cargando
-                // Actualizar siempre que tengamos un valor válido (boolean)
-                // Esto asegura que Step3 use el canPickUp global correcto
-                setIsLoadingCanPickUp(isLoading);
-                if (typeof canPickUpValue === 'boolean') {
-                  setGlobalCanPickUpFromSummary(canPickUpValue);
-                }
-              }}
-            />
+            {shouldShowSkeleton && (
+              <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
+                <div className="space-y-4">
+                  {/* Líneas de precios */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-28 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
 
-            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
-            {tradeInData?.completed && (
-              <TradeInCompletedSummary
-                deviceName={tradeInData.deviceName}
-                tradeInValue={tradeInData.value}
-                onEdit={handleRemoveTradeIn}
-                validationError={tradeInValidation.isValid === false ? getTradeInValidationMessage(tradeInValidation) : undefined}
-                showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
-              />
+                  {/* Total */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex justify-between mb-4">
+                      <div className="h-5 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-5 w-28 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Botón */}
+                  <div className="h-12 w-full bg-gray-300 rounded-lg"></div>
+
+                  {/* Términos */}
+                  <div className="space-y-2 mt-4">
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
             )}
+
+            <div className={shouldShowSkeleton ? "hidden" : ""}>
+              <Step4OrderSummary
+                onFinishPayment={handleContinue}
+                buttonText="Continuar"
+                onBack={onBack}
+                disabled={!canContinue || !tradeInValidation.isValid}
+                isProcessing={isWaitingForCanPickUp}
+                isSticky={false}
+                deliveryMethod={(() => {
+                  if (deliveryMethod === "tienda") return "pickup";
+                  if (deliveryMethod === "domicilio") return "delivery";
+                  if (deliveryMethod === "delivery" || deliveryMethod === "pickup") return deliveryMethod;
+                  return undefined;
+                })()}
+                onCanPickUpReady={handleCanPickUpReady}
+              />
+
+              {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
+              {tradeInData?.completed && (
+                <TradeInCompletedSummary
+                  deviceName={tradeInData.deviceName}
+                  tradeInValue={tradeInData.value}
+                  onEdit={handleRemoveTradeIn}
+                  validationError={tradeInValidation.isValid === false ? getTradeInValidationMessage(tradeInValidation) : undefined}
+                  showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
+                />
+              )}
+            </div>
           </aside>
         </div>
       </div>

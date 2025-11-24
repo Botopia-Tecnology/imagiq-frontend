@@ -80,20 +80,6 @@ export function useCategoryPagination(
 
     const locationChanged = categoriaChanged || menuUuidChanged || submenuUuidChanged;
 
-    console.log('🔍 Detectando cambios:', {
-      isInitialized: isInitializedRef.current,
-      locationChanged,
-      prev: {
-        categoria: previousCategoriaRef.current,
-        menuUuid: prevMenuUuidNorm,
-        submenuUuid: prevSubmenuUuidNorm
-      },
-      current: {
-        categoria,
-        menuUuid: currentMenuUuidNorm,
-        submenuUuid: currentSubmenuUuidNorm
-      }
-    });
 
     if (!isInitializedRef.current) {
       // Primera inicialización: intentar restaurar página guardada

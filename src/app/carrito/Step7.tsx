@@ -138,12 +138,12 @@ export default function Step7({ onBack }: Step7Props) {
         let savedCard: DBCard | undefined;
 
         // Si usó una tarjeta guardada, cargar sus datos completos
-        if (savedCardId && authContext.user?.id) {
+        // Usar authContext o loggedUser (para usuarios sin sesión activa pero con cuenta creada en Step2)
+        const userId = authContext.user?.id || loggedUser?.id;
+        if (savedCardId && userId) {
           try {
             const encryptedCards =
-              await profileService.getUserPaymentMethodsEncrypted(
-                authContext.user.id
-              );
+              await profileService.getUserPaymentMethodsEncrypted(userId);
 
             const decryptedCards: DBCard[] = encryptedCards
               .map((encCard) => {
@@ -309,7 +309,20 @@ export default function Step7({ onBack }: Step7Props) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
-  }, []);
+
+    // Cargar shippingVerification desde localStorage como respaldo
+    // Esto asegura que el método de envío esté disponible al crear la orden
+    const storedEnvioImagiq = localStorage.getItem("checkout-envio-imagiq");
+    if (storedEnvioImagiq === "true" && !shippingVerification) {
+      // Si hay un valor guardado y shippingVerification aún no está establecido,
+      // establecerlo como respaldo temporal hasta que se verifique
+      setShippingVerification({
+        envio_imagiq: true,
+        todos_productos_im_it: false,
+        en_zona_cobertura: true,
+      });
+    }
+  }, [authContext.user?.id, loggedUser?.id]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
@@ -411,11 +424,14 @@ export default function Step7({ onBack }: Step7Props) {
         const userId = user?.id || user?.user_id;
 
         if (!userId) {
-          setShippingVerification({
+          const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
             en_zona_cobertura: true,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo
+          localStorage.setItem("checkout-envio-imagiq", "false");
           setIsLoadingShippingMethod(false);
           return;
         }
@@ -467,11 +483,14 @@ export default function Step7({ onBack }: Step7Props) {
 
           // PASO 2: Si canPickUp global es FALSE → Directamente Coordinadora
           if (!globalCanPickUp) {
-            setShippingVerification({
+            const verification = {
               envio_imagiq: false,
               todos_productos_im_it: false,
               en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
-            });
+            };
+            setShippingVerification(verification);
+            // Guardar en localStorage como respaldo
+            localStorage.setItem("checkout-envio-imagiq", "false");
             setIsLoadingShippingMethod(false);
             return;
           }
@@ -479,11 +498,14 @@ export default function Step7({ onBack }: Step7Props) {
           // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
           const shippingAddress = localStorage.getItem("checkout-address");
           if (!shippingAddress) {
-            setShippingVerification({
+            const verification = {
               envio_imagiq: false,
               todos_productos_im_it: false,
               en_zona_cobertura: true,
-            });
+            };
+            setShippingVerification(verification);
+            // Guardar en localStorage como respaldo
+            localStorage.setItem("checkout-envio-imagiq", "false");
             setIsLoadingShippingMethod(false);
             return;
           }
@@ -499,11 +521,14 @@ export default function Step7({ onBack }: Step7Props) {
             requestBody
           );
 
-          setShippingVerification({
+          const verification = {
             envio_imagiq: data.envio_imagiq || false,
             todos_productos_im_it: data.todos_productos_im_it || false,
             en_zona_cobertura: data.en_zona_cobertura || false,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo para asegurar que esté disponible al crear la orden
+          localStorage.setItem("checkout-envio-imagiq", String(verification.envio_imagiq));
           setIsLoadingShippingMethod(false);
         } else {
           // Si falla la petición, marcar este hash como fallido
@@ -512,11 +537,14 @@ export default function Step7({ onBack }: Step7Props) {
           console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
           // Si falla la petición de candidate-stores, usar Coordinadora
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
-          setShippingVerification({
+          const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
             en_zona_cobertura: true,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo
+          localStorage.setItem("checkout-envio-imagiq", "false");
           setIsLoadingShippingMethod(false);
         }
       } catch (error) {
@@ -543,11 +571,14 @@ export default function Step7({ onBack }: Step7Props) {
         console.error(`🚫 Hash bloqueado: ${requestHash.substring(0, 50)}...`);
         console.error("🚫 Esta petición NO se reintentará automáticamente.");
         // En caso de error, usar Coordinadora por defecto
-        setShippingVerification({
+        const verification = {
           envio_imagiq: false,
           todos_productos_im_it: false,
           en_zona_cobertura: true,
-        });
+        };
+        setShippingVerification(verification);
+        // Guardar en localStorage como respaldo
+        localStorage.setItem("checkout-envio-imagiq", "false");
         setIsLoadingShippingMethod(false);
       }
     };
@@ -725,14 +756,29 @@ export default function Step7({ onBack }: Step7Props) {
 
       // Determinar metodo_envio: 1=Coordinadora, 2=Pickup, 3=Imagiq
       let metodo_envio = 1; // Por defecto Coordinadora
+      
       if (deliveryMethod === "tienda") {
         metodo_envio = 2; // Pickup en tienda
-      } else if (
-        deliveryMethod === "domicilio" &&
-        shippingVerification?.envio_imagiq === true
-      ) {
-        metodo_envio = 3; // Envío Imagiq
+      } else if (deliveryMethod === "domicilio") {
+        // Verificar si es envío Imagiq desde shippingVerification o localStorage
+        const envioImagiq = 
+          shippingVerification?.envio_imagiq === true ||
+          localStorage.getItem("checkout-envio-imagiq") === "true";
+        
+        if (envioImagiq) {
+          metodo_envio = 3; // Envío Imagiq
+        } else {
+          metodo_envio = 1; // Coordinadora
+        }
       }
+
+      // Log para debug - asegurar que el método de envío se está pasando correctamente
+      console.log("📦 [Step7] Método de envío determinado:", {
+        deliveryMethod,
+        metodo_envio,
+        envio_imagiq: shippingVerification?.envio_imagiq,
+        shippingVerification: shippingVerification
+      });
 
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
@@ -758,12 +804,19 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback:
-                String(p.skuPostback) === ""
-                  ? String(p.sku)
-                  : String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             totalAmount: String(calculations.total),
             metodo_envio,
@@ -796,9 +849,19 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             bank: paymentData.bank || "",
             description: "Pago de pedido en Imagiq",
@@ -831,9 +894,19 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             metodo_envio,
             codigo_bodega,

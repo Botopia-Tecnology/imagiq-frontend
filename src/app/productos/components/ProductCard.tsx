@@ -170,11 +170,6 @@ export default function ProductCard({
     }
   );
 
-  // Verificar si la VARIANTE SELECCIONADA está sin stock
-  // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
-  const isOutOfStock =
-    (productSelection.selectedVariant?.stockDisponible ?? 0) <= 0;
-
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
   const showColorSelector = shouldShowColorSelector(
     apiProduct?.categoria,
@@ -197,7 +192,7 @@ export default function ProductCard({
   }
 
   // Integración con el contexto del carrito
-  const { addProduct } = useCartContext();
+  const { addProduct, getQuantityBySku } = useCartContext();
 
   // Sistema de selección: usar el nuevo hook si está disponible, sino usar el sistema legacy
   const [selectedColorLocal, setSelectedColorLocal] =
@@ -218,6 +213,14 @@ export default function ProductCard({
   const currentPrice = productSelection.selectedPrice || null;
   const currentOriginalPrice = productSelection.selectedOriginalPrice || null;
   const currentskuPostback = productSelection.selectedSkuPostback || null;
+
+  // Calcular stock real descontando lo que está en el carrito
+  const quantityInCart = currentSku ? getQuantityBySku(currentSku) : 0;
+  const realStock = Math.max(0, (productSelection.selectedVariant?.stockDisponible ?? 0) - quantityInCart);
+  
+  // Verificar si la VARIANTE SELECCIONADA está sin stock
+  // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
+  const isOutOfStock = realStock <= 0;
 
   // Obtener el nombre del modelo basado en la variante seleccionada
   // Si hay una variante seleccionada, usar el modelo del índice correspondiente
@@ -611,13 +614,18 @@ export default function ProductCard({
                       <span
                         className={cn(
                           "ml-1 font-semibold",
-                          productSelection.selectedVariant.stockDisponible > 0
+                          realStock > 0
                             ? "text-green-600"
                             : "text-red-600"
                         )}
                       >
-                        {productSelection.selectedVariant.stockDisponible}
+                        {realStock}
                       </span>
+                      {quantityInCart > 0 && (
+                        <span className="text-xs text-blue-600 ml-1">
+                          ({quantityInCart} en carrito)
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500 ml-1">
                         (Total: {productSelection.selectedVariant.stockTotal} en{" "}
                         {productSelection.selectedVariant.cantidadTiendas}{" "}

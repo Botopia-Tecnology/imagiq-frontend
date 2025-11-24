@@ -87,7 +87,7 @@ export default function Step4OrderSummary({
     // Actualizar inmediatamente al montar
     updateDeliveryMethod();
 
-    // Escuchar cambios en localStorage (entre pestañas)
+    // Escuchar cambios en localStorage (entre pestaanas)
     const handleStorageChange = () => {
       updateDeliveryMethod();
     };
@@ -186,7 +186,7 @@ export default function Step4OrderSummary({
         quantity: p.quantity,
       }));
 
-      // Llamar al endpoint con TODOS los productos agrupados
+      // Llamar al endpoint con TODOS los productos agrupados y el user_id
       const response = await productEndpoints.getCandidateStores({
         products: productsToCheck,
         user_id: userId,
@@ -273,42 +273,29 @@ export default function Step4OrderSummary({
     }
   }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp]);
 
-  // Ejecutar cuando cambian los productos
+  // Escuchar cambios en la dirección para recalcular canPickUp
   React.useEffect(() => {
-    fetchGlobalCanPickUp();
-  }, [fetchGlobalCanPickUp]);
+    const handleAddressChange = () => {
+      fetchGlobalCanPickUp();
+    };
 
-  // IMPORTANTE: NO recalcular canPickUp cuando cambia la dirección desde Step4OrderSummary
-  // useDelivery se encarga de eso. Solo calcular cuando cambian los productos o al montar.
-
-  // Escuchar cuando se agregan productos al carrito o cambia la cantidad (solo en Step1)
-  React.useEffect(() => {
-    if (!isStep1) return;
-
-    const handleStorageChange = (e: Event | StorageEvent) => {
-      let key: string | null = null;
-      if ("detail" in e && e.detail && typeof e.detail === "object" && "key" in e.detail) {
-        key = (e.detail as { key?: string }).key || null;
-      } else if ("key" in e) {
-        key = e.key;
-      }
-
-      if (key === "cart-items") {
-        // Recalcular canPickUp global cuando cambian los productos
+    globalThis.window.addEventListener("address-changed", handleAddressChange);
+    globalThis.window.addEventListener("checkout-address-changed", handleAddressChange);
+    
+    // También escuchar cambios en localStorage
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "checkout-address") {
         fetchGlobalCanPickUp();
       }
     };
-
-    // Escuchar cambios en cart-items (cuando se agregan productos desde sugerencias o cambia la cantidad)
     globalThis.window.addEventListener("storage", handleStorageChange);
-    // También escuchar evento personalizado
-    globalThis.window.addEventListener("localStorageChange", handleStorageChange);
 
     return () => {
+      globalThis.window.removeEventListener("address-changed", handleAddressChange);
+      globalThis.window.removeEventListener("checkout-address-changed", handleAddressChange);
       globalThis.window.removeEventListener("storage", handleStorageChange);
-      globalThis.window.removeEventListener("localStorageChange", handleStorageChange);
     };
-  }, [fetchGlobalCanPickUp, isStep1]);
+  }, [fetchGlobalCanPickUp]);
 
   const baseContainerClasses =
     "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";

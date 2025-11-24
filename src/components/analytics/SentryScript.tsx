@@ -22,11 +22,8 @@ export default function SentryScript() {
     const loadSentry = () => {
       // Verificar consentimiento
       if (!hasAnalyticsConsent()) {
-        console.log('[Sentry] ❌ No analytics consent, skipping');
         return;
       }
-
-      console.log('[Sentry] 📦 Initializing...');
 
       // Ejecutar inicialización asíncrona
       void initSentry();
@@ -37,7 +34,6 @@ export default function SentryScript() {
 
     // Escuchar cambios de consentimiento
     const handleConsentChange = () => {
-      console.log('[Sentry] 🔄 Consent changed');
       loadSentry();
     };
 

@@ -27,11 +27,8 @@ const POSTHOG_HOST =
 // Configuración avanzada del cliente PostHog
 export const posthogConfig = {
   api_host: POSTHOG_HOST, // URL del servidor PostHog
-  loaded: (posthog: unknown) => {
+  loaded: (_posthog: unknown) => {
     // Callback cuando PostHog se carga correctamente
-    if (process.env.NODE_ENV === "development") {
-      console.log("PostHog loaded successfully", posthog);
-    }
   },
   capture_pageview: true, // Captura vistas de página automáticamente
   capture_pageleave: true, // Captura cuando el usuario abandona la página
@@ -81,11 +78,8 @@ export const posthogUtils = {
    * @param userId - ID único del usuario
    * @param userProperties - Propiedades adicionales del usuario
    */
-  identify: (userId: string, userProperties?: Record<string, unknown>) => {
-    console.group("[PostHog] Identificar usuario");
-    console.log("userId:", userId);
-    if (userProperties) console.log("userProperties:", userProperties);
-    console.groupEnd();
+  identify: (_userId: string, _userProperties?: Record<string, unknown>) => {
+    // PostHog user identification - implementation goes here
   },
 
   /**
@@ -93,15 +87,11 @@ export const posthogUtils = {
    * @param eventName - Nombre del evento
    * @param properties - Propiedades adicionales del evento
    */
-  capture: (eventName: string, properties?: Record<string, unknown>) => {
-    const eventProps = {
+  capture: (_eventName: string, properties?: Record<string, unknown>) => {
+    const _eventProps = {
       ...(properties || {}),
       ...(currentUserId ? { userId: currentUserId } : {}),
     };
-    console.group("[PostHog] Captura de evento");
-    console.log("eventName:", eventName);
-    console.log("eventProps:", eventProps);
-    console.groupEnd();
     // Aquí iría la llamada real al SDK de PostHog
     // posthog.capture(eventName, eventProps);
   },
@@ -110,10 +100,8 @@ export const posthogUtils = {
    * Captura una vista de página
    * @param pageName - Nombre de la página (opcional)
    */
-  capturePageView: (pageName?: string) => {
-    console.group("[PostHog] Vista de página");
-    console.log("pageName:", pageName);
-    console.groupEnd();
+  capturePageView: (_pageName?: string) => {
+    // PostHog page view capture - implementation goes here
   },
 
   /**
@@ -121,8 +109,7 @@ export const posthogUtils = {
    * @param flagKey - Clave del feature flag
    * @returns boolean
    */
-  isFeatureEnabled: (flagKey: string): boolean => {
-    console.log("PostHog feature flag:", flagKey);
+  isFeatureEnabled: (_flagKey: string): boolean => {
     return false;
   },
 
@@ -130,21 +117,21 @@ export const posthogUtils = {
    * Inicia la grabación de sesión (session replay)
    */
   startSessionRecording: () => {
-    console.log("PostHog start session recording");
+    // PostHog start session recording - implementation goes here
   },
 
   /**
    * Detiene la grabación de sesión
    */
   stopSessionRecording: () => {
-    console.log("PostHog stop session recording");
+    // PostHog stop session recording - implementation goes here
   },
 
   /**
    * Resetea el usuario (logout)
    */
   reset: () => {
-    console.log("PostHog reset user");
+    // PostHog reset user - implementation goes here
   },
 };
 
@@ -201,12 +188,9 @@ export function captureEcommerceEvent(
     };
   }
 ) {
-  console.group(`[PostHog] Evento Ecommerce: ${eventName}`);
-  Object.entries(eventData).forEach(([key, value]) => {
-    console.log(key + ":", value);
-  });
-  console.groupEnd();
   // Aquí iría la llamada real al SDK de PostHog
+  void eventName;
+  void eventData;
   // posthog.capture(eventName, eventData);
 }
 

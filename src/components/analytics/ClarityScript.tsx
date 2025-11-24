@@ -21,13 +21,11 @@ export default function ClarityScript() {
     const loadClarity = () => {
       // Verificar consentimiento
       if (!hasAnalyticsConsent()) {
-        console.log("[Clarity] ❌ No analytics consent, skipping");
         return;
       }
 
       // Prevenir múltiples cargas
       if ("clarity" in window && window.clarity) {
-        console.log("[Clarity] ✅ Already initialized");
         return;
       }
 
@@ -36,11 +34,8 @@ export default function ClarityScript() {
 
       // Verificar si ya existe el script
       if (document.querySelector(`script[src="${clarityUrl}"]`)) {
-        console.log("[Clarity] ✅ Already loaded");
         return;
       }
-
-      console.log("[Clarity] 📦 Loading script...");
 
       // Crear script
       const script = document.createElement("script");
@@ -49,10 +44,7 @@ export default function ClarityScript() {
       script.id = "clarity-bootstrap";
 
       script.onload = () => {
-        console.log("[Clarity] ✅ Loaded successfully");
-        if ("clarity" in window && window.clarity) {
-          console.log("[Clarity] ✅ window.clarity available");
-        }
+        // Clarity loaded successfully
       };
 
       script.onerror = () => {
@@ -72,7 +64,6 @@ export default function ClarityScript() {
 
     // Escuchar cambios de consentimiento
     const handleConsentChange = () => {
-      console.log("[Clarity] 🔄 Consent changed");
       loadClarity();
     };
 

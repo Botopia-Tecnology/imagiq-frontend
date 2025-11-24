@@ -1,85 +1,146 @@
 /**
- * Hook para obtener banners de productos por categoría y submenu
- * Placement pattern: "banner-{categoria}-{submenu}"
+ * Hook para obtener banners de productos por categoría, menú y submenú
+ *
+ * Sistema de herencia de 3 niveles:
+ * - Nivel 3 (más específico): banner-{categoria}-{menu}-{submenu}
+ * - Nivel 2 (fallback): banner-{categoria}-{menu}
+ * - Nivel 1 (fallback general): banner-{categoria}
+ *
+ * @example
+ * // En página /productos/dispositivos-moviles?seccion=smartphones&submenu=galaxy-z
+ * useProductBanner("Dispositivos móviles", "Smartphones", "Galaxy Z")
+ * // Busca: ["banner-Dispositivos móviles-Smartphones-Galaxy Z",
+ * //         "banner-Dispositivos móviles-Smartphones",
+ * //         "banner-Dispositivos móviles"]
  */
 
 import { useState, useEffect } from "react";
 import { bannersService } from "@/services/banners.service";
 import type { Banner } from "@/types/banner";
+import { buildNormalizedPlacement } from "@/utils/normalizeText";
 
 interface UseProductBannerResult {
-  config: Banner | null; // Legacy: primer banner
-  configs: Banner[]; // Nuevo: todos los banners para carrusel
+  config: Banner | null; // Primer banner encontrado (legacy compatibility)
+  configs: Banner[]; // Todos los banners encontrados
   loading: boolean;
   error: Error | null;
 }
 
 /**
- * Construye el placement string para el banner de producto
- * @param categoria - Nombre de la categoría (ej: "Dispositivos móviles")
- * @param submenu - Nombre del submenu (ej: "Galaxy Tab")
- * @returns Placement string (ej: "banner-Dispositivos móviles-Galaxy Tab")
+ * Construye array de placements válidos ordenados por especificidad
+ * Implementa sistema de herencia para mostrar banners de niveles superiores
+ *
+ * ✨ ACTUALIZACIÓN: Ahora usa normalización de texto para evitar problemas
+ * con espacios múltiples, espacios al inicio/final, etc.
+ *
+ * @param categoria - Nombre visible de categoría (ej: "Dispositivos móviles")
+ * @param menu - Nombre visible de menú/subcategoría (ej: "Smartphones")
+ * @param submenu - Nombre visible de submenú/serie (ej: "Galaxy Z")
+ * @returns Array de placements del más específico al más general (NORMALIZADOS)
+ *
+ * @example
+ * buildProductPlacements("Dispositivos  móviles", "Smartphones", "Galaxy   Z")
+ * // Returns: [
+ * //   "banner-Dispositivos móviles-Smartphones-Galaxy Z",  // ← Normalizado
+ * //   "banner-Dispositivos móviles-Smartphones",
+ * //   "banner-Dispositivos móviles"
+ * // ]
  */
-function buildProductPlacement(categoria: string, submenu?: string): string {
-  if (!submenu) {
-    return `banner-${categoria}`;
+function buildProductPlacements(
+  categoria: string,
+  menu?: string,
+  submenu?: string
+): string[] {
+  const placements: string[] = [];
+
+  // Nivel 3: Banner específico de submenú/serie (más específico)
+  if (menu && submenu) {
+    placements.push(buildNormalizedPlacement(categoria, menu, submenu));
   }
-  return `banner-${categoria}-${submenu}`;
+
+  // Nivel 2: Banner de menú/subcategoría (fallback medio)
+  if (menu) {
+    placements.push(buildNormalizedPlacement(categoria, menu));
+  }
+
+  // Nivel 1: Banner de categoría (fallback general)
+  placements.push(buildNormalizedPlacement(categoria));
+
+  return placements;
 }
 
 /**
- * Hook para obtener banner de producto
+ * Hook para obtener banners de producto con soporte completo de 3 niveles
+ * Implementa sistema de caché y herencia de banners
+ *
+ * @param categoria - Nombre visible de categoría (null si no hay categoría)
+ * @param menu - Nombre visible de menú/sección (null/undefined si no hay sección)
+ * @param submenu - Nombre visible de submenú/serie (null/undefined si no hay serie)
+ * @returns Banners encontrados, estado de carga y errores
  */
 export function useProductBanner(
   categoria: string | null,
+  menu?: string | null,
   submenu?: string | null
 ): UseProductBannerResult {
   const [config, setConfig] = useState<Banner | null>(null);
-  const [configs, setConfigs] = useState<Banner[]>([]); // Nuevo: array de banners
+  const [configs, setConfigs] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
+    // Si no hay categoría, no hay nada que buscar
     if (!categoria) {
       setConfig(null);
+      setConfigs([]);
       setLoading(false);
       return;
     }
 
     let isCancelled = false;
 
-    async function fetchBanner() {
+    async function fetchBanners() {
       try {
         setLoading(true);
         setError(null);
 
-        // `categoria` was already checked above (early return), capture a
-        // local const to make its non-null type explicit for the async
-        // function (prevents TypeScript from complaining about string | null).
-        const categoriaNonNull: string = categoria as string;
+        // Normalizar parámetros (convertir null a undefined)
+        const menuNonNull = menu || undefined;
+        const submenuNonNull = submenu || undefined;
 
-        const placement = buildProductPlacement(
-          categoriaNonNull,
-          submenu ?? undefined
+        // Construir array de placements con herencia
+        // categoria ya está validado arriba (early return si es null)
+        const placements = buildProductPlacements(
+          categoria as string,
+          menuNonNull,
+          submenuNonNull
         );
 
-        console.log('[useProductBanner] Buscando banner con placement:', placement);
-        console.log('[useProductBanner] Categoría:', categoria, 'Submenu:', submenu);
+        // Obtener todos los banners activos (usa caché interno del servicio)
+        const allBanners = await bannersService.getActiveBanners();
 
-        // Obtener TODOS los banners del placement
-        const banners = await bannersService.getBannersByPlacement(placement);
+        // Filtrar banners que coincidan con alguno de los placements válidos
+        const matchedBanners = allBanners.filter((banner) =>
+          placements.includes(banner.placement)
+        );
 
-        console.log('[useProductBanner] Banners encontrados:', banners);
+        // Ordenar por especificidad (más específico primero)
+        const sortedBanners = matchedBanners.sort((a, b) => {
+          const aIndex = placements.indexOf(a.placement);
+          const bIndex = placements.indexOf(b.placement);
+          return aIndex - bIndex;
+        });
 
         if (!isCancelled) {
-          setConfigs(banners);
-          setConfig(banners[0] || null); // Legacy: primer banner
+          setConfigs(sortedBanners);
+          setConfig(sortedBanners[0] || null); // Legacy: primer banner
         }
       } catch (err) {
+        console.error("[useProductBanner] Error fetching banners:", err);
         if (!isCancelled) {
           setError(err instanceof Error ? err : new Error("Error desconocido"));
           setConfig(null);
-          setConfigs([]); // Limpiar array también
+          setConfigs([]);
         }
       } finally {
         if (!isCancelled) {
@@ -88,12 +149,12 @@ export function useProductBanner(
       }
     }
 
-    fetchBanner();
+    fetchBanners();
 
     return () => {
       isCancelled = true;
     };
-  }, [categoria, submenu]);
+  }, [categoria, menu, submenu]); // Dependencias: re-fetch cuando cambie cualquier nivel
 
   return { config, configs, loading, error };
 }

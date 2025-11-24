@@ -56,9 +56,6 @@ export const useCart = () => {
     toastActiveRef.current[productId] = true;
     const productName = productToRemove.name;
     
-    // Lógica de eliminación (simulada)
-    console.log("Removing item:", productId);
-    
     // Mostrar notificación única
     toast.info(`Producto eliminado`, {
       description: `${productName} se quitó del carrito`,
@@ -75,15 +72,15 @@ export const useCart = () => {
     items,
     total: 0,
     itemCount: 0,
-    addItem: (product: Product) => {
-      console.log("Adding item:", product);
+    addItem: (_product: Product) => {
+      // Add item implementation
     },
     removeItem,
-    updateQuantity: (productId: string, quantity: number) => {
-      console.log("Updating quantity:", productId, quantity);
+    updateQuantity: (_productId: string, _quantity: number) => {
+      // Update quantity implementation
     },
     clearCart: () => {
-      console.log("Clearing cart");
+      // Clear cart implementation
     },
     loading: false,
   };

@@ -3,12 +3,13 @@
 import React, { useState, useRef, useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { MapPin, Check, Plus, X, ChevronDown, Trash2 } from "lucide-react";
+import { MapPin, Check, Plus, X, ChevronDown /*, Trash2 */ } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthContext } from "@/features/auth/context";
 import type { Address } from "@/types/address";
 import AddNewAddressForm from "../../app/carrito/components/AddNewAddressForm";
-import { invalidateShippingOriginCache } from "@/hooks/useShippingOrigin";
+// COMENTADO: Ya no se usa para eliminar direcciones
+// import { invalidateShippingOriginCache } from "@/hooks/useShippingOrigin";
 import { useDefaultAddress } from "@/hooks/useDefaultAddress";
 import { addressesService } from "@/services/addresses.service";
 import { syncAddress, syncNewAddress, direccionToAddress } from "@/lib/addressSync";
@@ -35,8 +36,9 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [loading, setLoading] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+  // COMENTADO: Estados para eliminar dirección (ya no se usa)
+  // const [deletingId, setDeletingId] = useState<string | null>(null);
+  // const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const isFetchingRef = useRef(false);
   const [guestAddress, setGuestAddress] = useState<Address | null>(null);
@@ -229,6 +231,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     }
   };
 
+  // COMENTADO: Funciones para eliminar dirección (ya no se usa el botón de basurita)
+  /*
   const handleDeleteClick = (addressId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que se active el onClick del botón padre
     setConfirmingDeleteId(addressId);
@@ -280,6 +284,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
       setDeletingId(null);
     }
   };
+  */
 
   // Cerrar al hacer click fuera
   useEffect(() => {
@@ -457,6 +462,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   // Determinar qué dirección mostrar: predeterminada o primera disponible
   const displayAddress = currentAddress || (addresses.length > 0 ? addresses[0] : null);
 
+  // COMENTADO: Función getShortAddress ya no se usa
+  /*
   // Función para obtener una versión corta de la dirección para mobile
   // NO mostrar nombreDireccion (ej: "Casa"), solo la dirección real
   const getShortAddress = (address: Address | null): string => {
@@ -485,6 +492,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     
     return 'Dirección';
   };
+  */
 
   // Si no hay dirección predeterminada ni direcciones disponibles, mostrar botón para agregar dirección
   // También mostrar skeleton si está cargando direcciones
@@ -674,18 +682,21 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                 addresses.map((address) => {
                   const currentAddressId = currentAddress?.id || (addresses.length > 0 ? addresses[0]?.id : null);
                   const isSelected = address.id === currentAddressId;
-                  const isDeleting = deletingId === address.id;
-                  const isConfirming = confirmingDeleteId === address.id;
+                  // COMENTADO: Variables para eliminar dirección (ya no se usa)
+                  // const isDeleting = deletingId === address.id;
+                  // const isConfirming = confirmingDeleteId === address.id;
                   return (
                     <div
                       key={address.id}
                       className={cn(
                         "w-full px-4 py-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 group",
-                        isSelected && "bg-blue-50 hover:bg-blue-100",
-                        isConfirming && "bg-red-50"
+                        isSelected && "bg-blue-50 hover:bg-blue-100"
+                        // COMENTADO: Ya no se usa la confirmación de eliminar
+                        // isConfirming && "bg-red-50"
                       )}
                     >
-                      {isConfirming ? (
+                      {/* COMENTADO: Vista de confirmación de eliminar dirección */}
+                      {/* {isConfirming ? (
                         // Vista de confirmación
                         <div className="flex flex-col gap-3">
                           <p className="text-sm font-medium text-gray-900">
@@ -720,14 +731,15 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                             </button>
                           </div>
                         </div>
-                      ) : (
-                        // Vista normal
+                      ) : ( */}
+                        {/* Vista normal */}
                         <div className="flex items-start justify-between gap-3">
                           <button
                             className="flex-1 min-w-0 text-left"
                             onClick={() => handleSelectAddress(address)}
                             type="button"
-                            disabled={isDeleting}
+                            // COMENTADO: Ya no se usa isDeleting
+                            // disabled={isDeleting}
                           >
                             <div className="flex items-center gap-2">
                               <span className="font-semibold text-gray-900 text-sm">
@@ -747,7 +759,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                               </p>
                             )}
                           </button>
-                          <button
+                          {/* COMENTADO: Botón para eliminar dirección (basurita) */}
+                          {/* <button
                             onClick={(e) => handleDeleteClick(address.id, e)}
                             disabled={isDeleting}
                             className={cn(
@@ -762,9 +775,10 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                             ) : (
                               <Trash2 className="w-4 h-4" />
                             )}
-                          </button>
+                          </button> */}
                         </div>
-                      )}
+                      {/* COMENTADO: Cierre del condicional isConfirming */}
+                      {/* )} */}
                     </div>
                 );
                 })

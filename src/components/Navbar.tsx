@@ -1,6 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
+import {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  type CSSProperties,
+} from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { User, Menu, Heart, MapPin, ChevronDown } from "lucide-react";
@@ -45,7 +51,8 @@ const getShortAddressLabel = (address: AddressLike | null): string => {
   ];
 
   const rawValue = candidates.find(
-    (value): value is string => typeof value === "string" && value.trim().length > 0
+    (value): value is string =>
+      typeof value === "string" && value.trim().length > 0
   );
 
   if (!rawValue) return "";
@@ -67,19 +74,24 @@ export default function Navbar() {
   const { getMenus, isLoading, prioritizeCategory } = usePreloadCategoryMenus();
 
   // Hook para prefetch de productos cuando el usuario hace hover sobre categorías
-  const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } = usePrefetchProducts();
+  const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } =
+    usePrefetchProducts();
 
   // Ref para rastrear timers de prefetch de menús por categoría
-  const menuPrefetchTimersRef = useRef<Map<string, Array<ReturnType<typeof setTimeout>>>>(new Map());
-  
+  const menuPrefetchTimersRef = useRef<
+    Map<string, Array<ReturnType<typeof setTimeout>>>
+  >(new Map());
+
   // Ref para rastrear qué categorías ya se están precargando automáticamente
   const autoPrefetchingRef = useRef<Set<string>>(new Set());
-  
+
   // Ref para rastrear qué categorías ya fueron precargadas automáticamente
   const autoPrefetchedRef = useRef<Set<string>>(new Set());
-  
+
   // Ref para el timer de inicio de precarga automática
-  const autoPrefetchStartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoPrefetchStartTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
 
   // Función para obtener el componente dropdown apropiado
   const getDropdownComponent = (name: DropdownName, item?: NavItem) => {
@@ -124,10 +136,11 @@ export default function Navbar() {
     autoPrefetchStartTimerRef.current = setTimeout(() => {
       const startAutoPrefetch = () => {
         const menuRoutes = getNavbarRoutes();
-        
+
         // Obtener todas las categorías dinámicas
         const dynamicCategories = menuRoutes.filter(
-          (item) => item.categoryCode && item.uuid && !isStaticCategoryUuid(item.uuid)
+          (item) =>
+            item.categoryCode && item.uuid && !isStaticCategoryUuid(item.uuid)
         );
 
         // Precargar productos de categoría + menús para cada categoría
@@ -138,7 +151,10 @@ export default function Navbar() {
           // Delay escalonado por categoría: 0ms, 2000ms, 4000ms, etc. (aumentado para evitar 429)
           setTimeout(() => {
             // Verificar si ya se precargó o se está precargando (por hover o automático)
-            if (autoPrefetchedRef.current.has(item.uuid!) || autoPrefetchingRef.current.has(item.uuid!)) {
+            if (
+              autoPrefetchedRef.current.has(item.uuid!) ||
+              autoPrefetchingRef.current.has(item.uuid!)
+            ) {
               return;
             }
 
@@ -147,7 +163,7 @@ export default function Navbar() {
             // Esperar un poco para que los menús se carguen si aún no están disponibles
             setTimeout(() => {
               const menus = getMenus(item.uuid!) || [];
-              
+
               // Si no hay menús aún, marcar como en proceso pero no hacer nada
               // Se reintentará cuando se haga hover o en la siguiente iteración
               if (menus.length === 0) {
@@ -231,24 +247,32 @@ export default function Navbar() {
   // Si hay un dropdown activo, forzar todo a negro
   const shouldShowWhiteLogo = navbar.activeDropdown
     ? false
+    : navbar.isOfertas && !navbar.isScrolled
+    ? true
     : useHeroTheme
     ? theme === "light"
     : navbar.showWhiteLogo;
 
   const shouldShowWhiteItems = navbar.activeDropdown
     ? false
+    : navbar.isOfertas && !navbar.isScrolled
+    ? true
     : useHeroTheme
     ? theme === "light"
     : navbar.showWhiteItems;
 
-  const shouldShowWhiteItemsMobile = useHeroTheme
-    ? theme === "light"
-    : navbar.showWhiteItemsMobile;
+  const shouldShowWhiteItemsMobile =
+    navbar.isOfertas && !navbar.isScrolled
+      ? true
+      : useHeroTheme
+      ? theme === "light"
+      : navbar.showWhiteItemsMobile;
 
   const mobileAddressData = useMemo<AddressLike | null>(
     () =>
       (defaultMobileAddress as AddressLike | null) ??
-      ((user?.defaultAddress as AddressLike | null) ?? null),
+      (user?.defaultAddress as AddressLike | null) ??
+      null,
     [defaultMobileAddress, user?.defaultAddress]
   );
 
@@ -267,6 +291,11 @@ export default function Navbar() {
       return "text-black";
     }
 
+    // Si estamos en ofertas sin scroll, siempre blanco
+    if (navbar.isOfertas && !navbar.isScrolled) {
+      return "text-white";
+    }
+
     // Siempre negro en páginas de productos
     if (
       navbar.isElectrodomesticos ||
@@ -276,7 +305,7 @@ export default function Navbar() {
       return "text-black";
     }
 
-    // Si estamos en home u ofertas sin scroll, usar tema del Hero
+    // Si estamos en home sin scroll, usar tema del Hero
     if (useHeroTheme) {
       return theme === "light" ? "text-white" : "text-black";
     }
@@ -379,7 +408,9 @@ export default function Navbar() {
                       title={mobileAddressLabel}
                     >
                       <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate text-left flex-1">{mobileAddressLabel}</span>
+                      <span className="truncate text-left flex-1">
+                        {mobileAddressLabel}
+                      </span>
                       <ChevronDown className="w-4 h-4 flex-shrink-0" />
                     </button>
                   )}
@@ -390,7 +421,9 @@ export default function Navbar() {
                 href="/"
                 onClick={(e) => {
                   e.preventDefault();
-                  posthogUtils.capture("logo_click", { source: "navbar_samsung" });
+                  posthogUtils.capture("logo_click", {
+                    source: "navbar_samsung",
+                  });
                   navbar.router.push("/");
                 }}
                 aria-label="Inicio Samsung"
@@ -504,7 +537,7 @@ export default function Navbar() {
                               // Marcar que esta categoría se está precargando por hover (priorizada)
                               // Esto evita que el sistema automático la procese si ya se está precargando
                               autoPrefetchingRef.current.add(item.uuid);
-                              
+
                               // Prefetch de la categoría base (priorizado - sin delay adicional)
                               prefetchProducts({
                                 categoryCode: item.categoryCode,
@@ -512,24 +545,37 @@ export default function Navbar() {
 
                               // Prefetch de todos los menús de esta categoría (priorizado)
                               // Esperar un poco para que los menús se carguen si aún no están disponibles
-                              const categoryKey = item.uuid || item.categoryCode;
-                              const timers: Array<ReturnType<typeof setTimeout>> = [];
-                              
+                              const categoryKey =
+                                item.uuid || item.categoryCode;
+                              const timers: Array<
+                                ReturnType<typeof setTimeout>
+                              > = [];
+
                               // Limpiar timers anteriores si existen
-                              const existingTimers = menuPrefetchTimersRef.current.get(categoryKey);
+                              const existingTimers =
+                                menuPrefetchTimersRef.current.get(categoryKey);
                               if (existingTimers) {
-                                existingTimers.forEach(timer => clearTimeout(timer));
+                                existingTimers.forEach((timer) =>
+                                  clearTimeout(timer)
+                                );
                               }
 
                               const initialTimer = setTimeout(() => {
-                                if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
+                                if (
+                                  item.uuid &&
+                                  !isStaticCategoryUuid(item.uuid)
+                                ) {
                                   const menus = getMenus(item.uuid) || [];
-                                  
+
                                   // Hacer prefetch de cada menú activo con un delay escalonado
                                   // para evitar demasiadas peticiones simultáneas
                                   // Pero más rápido que el sistema automático (priorizado)
                                   menus.forEach((menu, index) => {
-                                    if (menu.activo && menu.uuid && item.categoryCode) {
+                                    if (
+                                      menu.activo &&
+                                      menu.uuid &&
+                                      item.categoryCode
+                                    ) {
                                       // Delay escalonado para hover: 200ms, 400ms, 600ms, etc. (aumentado para evitar 429)
                                       const menuTimer = setTimeout(() => {
                                         prefetchProducts({
@@ -538,22 +584,28 @@ export default function Navbar() {
                                         }).catch(() => {
                                           // Silenciar errores
                                         });
-                                      }, 200 + (index * 200)); // Escalonar cada 200ms (más rápido que automático pero seguro)
-                                      
+                                      }, 200 + index * 200); // Escalonar cada 200ms (más rápido que automático pero seguro)
+
                                       timers.push(menuTimer);
                                     }
                                   });
-                                  
+
                                   // Guardar timers para poder cancelarlos
-                                  menuPrefetchTimersRef.current.set(categoryKey, timers);
-                                  
+                                  menuPrefetchTimersRef.current.set(
+                                    categoryKey,
+                                    timers
+                                  );
+
                                   // Marcar como precargado por hover
                                   autoPrefetchedRef.current.add(item.uuid);
                                 }
                               }, 50); // Esperar solo 50ms (más rápido que automático)
-                              
+
                               timers.push(initialTimer);
-                              menuPrefetchTimersRef.current.set(categoryKey, timers);
+                              menuPrefetchTimersRef.current.set(
+                                categoryKey,
+                                timers
+                              );
                             }
                           }}
                           onMouseLeave={() => {
@@ -561,25 +613,36 @@ export default function Navbar() {
 
                             // Cancelar prefetch cuando el usuario deja de hacer hover
                             if (item.categoryCode) {
-                              const categoryKey = item.uuid || item.categoryCode;
-                              
+                              const categoryKey =
+                                item.uuid || item.categoryCode;
+
                               // Cancelar prefetch de la categoría base
                               cancelPrefetch({
                                 categoryCode: item.categoryCode,
                               });
 
                               // Cancelar todos los timers de prefetch de menús
-                              const timers = menuPrefetchTimersRef.current.get(categoryKey);
+                              const timers =
+                                menuPrefetchTimersRef.current.get(categoryKey);
                               if (timers) {
-                                timers.forEach(timer => clearTimeout(timer));
-                                menuPrefetchTimersRef.current.delete(categoryKey);
+                                timers.forEach((timer) => clearTimeout(timer));
+                                menuPrefetchTimersRef.current.delete(
+                                  categoryKey
+                                );
                               }
 
                               // Cancelar prefetches de todos los menús de esta categoría
-                              if (item.uuid && !isStaticCategoryUuid(item.uuid)) {
+                              if (
+                                item.uuid &&
+                                !isStaticCategoryUuid(item.uuid)
+                              ) {
                                 const menus = getMenus(item.uuid) || [];
                                 menus.forEach((menu) => {
-                                  if (menu.activo && menu.uuid && item.categoryCode) {
+                                  if (
+                                    menu.activo &&
+                                    menu.uuid &&
+                                    item.categoryCode
+                                  ) {
                                     cancelPrefetch({
                                       categoryCode: item.categoryCode,
                                       menuUuid: menu.uuid,
@@ -721,4 +784,3 @@ export default function Navbar() {
     </>
   );
 }
-

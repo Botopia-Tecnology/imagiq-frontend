@@ -171,7 +171,7 @@ export default function Step2({
   // (Eliminado: handleDiscountApply no se usa)
 
   // Validar formulario invitado
-  const isGuestFormValid = Object.values(validateFields(guestForm)).every(
+  const isGuestFormValid = !Object.values(validateFields(guestForm)).some(
     Boolean
   );
 
@@ -195,7 +195,10 @@ export default function Step2({
 
     // Guardar dirección y cédula en localStorage para autocompletar en Step3 y Step4
     if (globalThis.window !== undefined) {
-      globalThis.window.localStorage.setItem("checkout-document", guestForm.cedula);
+      globalThis.window.localStorage.setItem(
+        "checkout-document",
+        guestForm.cedula
+      );
     }
 
     // Guardar en localStorage bajo la clave 'guest-payment-info'
@@ -219,8 +222,12 @@ export default function Step2({
         errorMessage = error.message;
       } else if (typeof error === "object" && error !== null) {
         // Intentar obtener el mensaje del objeto de error
-        const errorObj = error as { message?: string; data?: { message?: string } };
-        errorMessage = errorObj.message || errorObj.data?.message || String(error);
+        const errorObj = error as {
+          message?: string;
+          data?: { message?: string };
+        };
+        errorMessage =
+          errorObj.message || errorObj.data?.message || String(error);
       } else {
         errorMessage = String(error);
       }
@@ -232,7 +239,9 @@ export default function Step2({
         lowerErrorMessage.includes("ya existe") ||
         lowerErrorMessage.includes("ya está registrado") ||
         lowerErrorMessage.includes("already exists") ||
-        (lowerErrorMessage.includes("email") && (lowerErrorMessage.includes("registered") || lowerErrorMessage.includes("existe"))) ||
+        (lowerErrorMessage.includes("email") &&
+          (lowerErrorMessage.includes("registered") ||
+            lowerErrorMessage.includes("existe"))) ||
         lowerErrorMessage.includes("usuario ya existe") ||
         lowerErrorMessage.includes("correo ya existe") ||
         lowerErrorMessage.includes("duplicate") ||
@@ -243,16 +252,23 @@ export default function Step2({
         );
         setFieldErrors((prev) => ({
           ...prev,
-          email: "Este correo ya está registrado. Inicia sesión para continuar.",
+          email:
+            "Este correo ya está registrado. Inicia sesión para continuar.",
         }));
         return;
       }
-      
+
       // Para otros errores, mostrar el mensaje del backend o un mensaje genérico más útil
-      if (errorMessage && errorMessage !== "Request failed" && !errorMessage.toLowerCase().includes("internal server error")) {
+      if (
+        errorMessage &&
+        errorMessage !== "Request failed" &&
+        !errorMessage.toLowerCase().includes("internal server error")
+      ) {
         setError(errorMessage);
       } else {
-        setError("Ocurrió un error al procesar tu información. Por favor, verifica los datos e intenta de nuevo.");
+        setError(
+          "Ocurrió un error al procesar tu información. Por favor, verifica los datos e intenta de nuevo."
+        );
       }
       return;
     }
@@ -359,7 +375,11 @@ export default function Step2({
     try {
       const raw = localStorage.getItem("imagiq_trade_in");
       if (raw) {
-        const stored = JSON.parse(raw) as { deviceName?: string; value?: number; completed?: boolean };
+        const stored = JSON.parse(raw) as {
+          deviceName?: string;
+          value?: number;
+          completed?: boolean;
+        };
         const newTradeInData = {
           deviceName: stored.deviceName || deviceName,
           value: stored.value || value,
@@ -374,9 +394,15 @@ export default function Step2({
           completed: true,
         };
         try {
-          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInDataToSave));
+          localStorage.setItem(
+            "imagiq_trade_in",
+            JSON.stringify(tradeInDataToSave)
+          );
         } catch (error) {
-          console.error("❌ Error al guardar trade-in en localStorage (respaldo):", error);
+          console.error(
+            "❌ Error al guardar trade-in en localStorage (respaldo):",
+            error
+          );
         }
         setTradeInData(tradeInDataToSave);
       }
@@ -391,7 +417,10 @@ export default function Step2({
       try {
         localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
       } catch (storageError) {
-        console.error("❌ Error al guardar trade-in en localStorage (fallback):", storageError);
+        console.error(
+          "❌ Error al guardar trade-in en localStorage (fallback):",
+          storageError
+        );
       }
       setTradeInData(newTradeInData);
     }
@@ -440,7 +469,9 @@ export default function Step2({
 
         // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
         if (failedSkusRef.current.has(sku)) {
-          console.error(`🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`);
+          console.error(
+            `🚫 SKU ${sku} ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.`
+          );
           verifiedSkusRef.current.add(sku); // Marcar como verificado para no intentar de nuevo
           continue; // Saltar este SKU
         }
@@ -455,7 +486,9 @@ export default function Step2({
           if (!response.success || !response.data) {
             // Si falla la petición, marcar como fallido
             failedSkusRef.current.add(sku);
-            console.error(`🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`);
+            console.error(
+              `🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`
+            );
             verifiedSkusRef.current.add(sku);
             continue;
           }
@@ -757,10 +790,13 @@ export default function Step2({
             deliveryMethod={
               globalThis.window !== undefined
                 ? (() => {
-                    const method = globalThis.window.localStorage.getItem("checkout-delivery-method");
+                    const method = globalThis.window.localStorage.getItem(
+                      "checkout-delivery-method"
+                    );
                     if (method === "tienda") return "pickup";
                     if (method === "domicilio") return "delivery";
-                    if (method === "delivery" || method === "pickup") return method;
+                    if (method === "delivery" || method === "pickup")
+                      return method;
                     return undefined;
                   })()
                 : undefined
@@ -809,12 +845,20 @@ export default function Step2({
           {/* Botón continuar */}
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              loading || success || !isGuestFormValid || !tradeInValidation.isValid
+              loading ||
+              success ||
+              !isGuestFormValid ||
+              !tradeInValidation.isValid
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
             }`}
             onClick={handleContinue}
-            disabled={loading || success || !isGuestFormValid || !tradeInValidation.isValid}
+            disabled={
+              loading ||
+              success ||
+              !isGuestFormValid ||
+              !tradeInValidation.isValid
+            }
           >
             {loading ? "Procesando..." : "Continuar pago"}
           </button>

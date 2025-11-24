@@ -21,9 +21,6 @@ export default function AnalyticsInit() {
 
     // Esperar 2 segundos para que los scripts se carguen
     const timer = setTimeout(() => {
-      if (process.env.NODE_ENV === "development") {
-        console.debug("[AnalyticsInit] Initializing analytics system");
-      }
       initAnalytics();
     }, 2000);
 

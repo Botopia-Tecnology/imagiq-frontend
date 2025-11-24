@@ -42,11 +42,9 @@ const CategoryProductsGrid = forwardRef<HTMLDivElement, CategoryProductsGridProp
 
 
    const handleAddToFavorites = (productId: string) => {
-    console.log('entreee')
     const rawUser = localStorage.getItem("imagiq_user");
-  
+
     const parsed = rawUser ? JSON.parse(rawUser) : null;
-    console.log(parsed,'sfsdfd')
     setUserInfo(parsed);
 
     if (parsed?.id) {

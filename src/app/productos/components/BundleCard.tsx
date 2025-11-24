@@ -11,12 +11,217 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
-import { Plus } from "lucide-react";
+import { Plus, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { calculateSavings } from "./utils/productCardHelpers";
-import type { BundleCardProps } from "@/lib/productMapper";
+import type { BundleCardProps, BundleOptionProps } from "@/lib/productMapper";
+import { useCartContext } from "@/features/cart/CartContext";
+import { apiGet } from "@/lib/api-client";
+import type { BundleInfo, CartProduct } from "@/hooks/useCart";
+import { toast } from "sonner";
+
+/**
+ * Selector de variantes del bundle con colores y capacidades
+ * - Muestra círculos de color cuando hay colores disponibles
+ * - Muestra botones de capacidad cuando hay capacidades disponibles
+ * - Fallback a números secuenciales si no hay datos de variantes
+ */
+function BundleVariantSelector({
+  opciones,
+  selectedOptionIndex,
+  onSelectOption,
+}: {
+  opciones: BundleOptionProps[];
+  selectedOptionIndex: number;
+  onSelectOption: (index: number) => void;
+}) {
+  // Extraer colores únicos con sus índices
+  const uniqueColors = useMemo(() => {
+    const colorMap = new Map<string, { hex: string; name: string; indices: number[] }>();
+    opciones.forEach((opcion, index) => {
+      if (opcion.colorProductSku) {
+        const existing = colorMap.get(opcion.colorProductSku);
+        if (existing) {
+          existing.indices.push(index);
+        } else {
+          colorMap.set(opcion.colorProductSku, {
+            hex: opcion.colorProductSku,
+            name: opcion.nombreColorProductSku || 'Color',
+            indices: [index],
+          });
+        }
+      }
+    });
+    return Array.from(colorMap.values());
+  }, [opciones]);
+
+  // Extraer capacidades únicas con sus índices
+  const uniqueCapacities = useMemo(() => {
+    const capacityMap = new Map<string, { value: string; indices: number[] }>();
+    opciones.forEach((opcion, index) => {
+      if (opcion.capacidadProductSku) {
+        const existing = capacityMap.get(opcion.capacidadProductSku);
+        if (existing) {
+          existing.indices.push(index);
+        } else {
+          capacityMap.set(opcion.capacidadProductSku, {
+            value: opcion.capacidadProductSku,
+            indices: [index],
+          });
+        }
+      }
+    });
+    return Array.from(capacityMap.values());
+  }, [opciones]);
+
+  // Determinar el color y capacidad actuales
+  const selectedOption = opciones[selectedOptionIndex];
+  const selectedColor = selectedOption?.colorProductSku;
+  const selectedCapacity = selectedOption?.capacidadProductSku;
+
+  // Verificar si hay datos de variantes
+  const hasVariantData = uniqueColors.length > 0 || uniqueCapacities.length > 0;
+
+  // Handler para seleccionar color - busca la primera opción con ese color y la capacidad actual (si aplica)
+  const handleColorSelect = (colorHex: string) => {
+    const colorData = uniqueColors.find(c => c.hex === colorHex);
+    if (!colorData) return;
+
+    // Si hay capacidad seleccionada, buscar opción con ese color Y esa capacidad
+    if (selectedCapacity) {
+      const matchIndex = colorData.indices.find(idx =>
+        opciones[idx].capacidadProductSku === selectedCapacity
+      );
+      if (matchIndex !== undefined) {
+        onSelectOption(matchIndex);
+        return;
+      }
+    }
+    // Si no, seleccionar la primera opción con ese color
+    onSelectOption(colorData.indices[0]);
+  };
+
+  // Handler para seleccionar capacidad - busca la primera opción con esa capacidad y el color actual (si aplica)
+  const handleCapacitySelect = (capacity: string) => {
+    const capacityData = uniqueCapacities.find(c => c.value === capacity);
+    if (!capacityData) return;
+
+    // Si hay color seleccionado, buscar opción con esa capacidad Y ese color
+    if (selectedColor) {
+      const matchIndex = capacityData.indices.find(idx =>
+        opciones[idx].colorProductSku === selectedColor
+      );
+      if (matchIndex !== undefined) {
+        onSelectOption(matchIndex);
+        return;
+      }
+    }
+    // Si no, seleccionar la primera opción con esa capacidad
+    onSelectOption(capacityData.indices[0]);
+  };
+
+  // Fallback: selector numérico si no hay datos de variantes
+  if (!hasVariantData) {
+    return (
+      <div className="px-3">
+        <div className="flex flex-wrap gap-1.5">
+          {opciones.map((opcion, index) => (
+            <button
+              key={opcion.product_sku}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectOption(index);
+              }}
+              className={cn(
+                "px-2 py-1 text-xs rounded-md border transition-all",
+                selectedOptionIndex === index
+                  ? "border-black bg-black text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+              )}
+              title={opcion.modelo}
+            >
+              {index + 1}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Obtener el nombre del color seleccionado
+  const selectedColorName = selectedOption?.nombreColorProductSku;
+
+  return (
+    <div className="px-3 space-y-1.5">
+      {/* Label del color seleccionado - igual que ProductCard */}
+      {selectedColorName && uniqueColors.length > 0 && (
+        <p className="text-xs text-gray-600 font-medium">
+          {`Color: ${selectedColorName}`}
+        </p>
+      )}
+
+      {/* Selector de colores - mismo estilo que ProductCard */}
+      {uniqueColors.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {uniqueColors.map((color) => (
+            <button
+              key={color.hex}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleColorSelect(color.hex);
+              }}
+              className={cn(
+                "w-6.5 h-6.5 rounded-full border transition-all duration-200 relative cursor-pointer",
+                selectedColor === color.hex
+                  ? "border-black p-0.5"
+                  : "border-gray-300 hover:border-gray-400"
+              )}
+              title={color.name}
+              aria-label={`Color: ${color.name}`}
+            >
+              <div
+                className="w-full h-full rounded-full"
+                style={{ backgroundColor: color.hex }}
+              />
+              {selectedColor === color.hex && (
+                <div className="absolute inset-0 rounded-full border-2 border-white" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Selector de capacidades - mismo estilo que ProductCard */}
+      {uniqueCapacities.length > 1 && (
+        <div className="flex gap-2 flex-wrap">
+          {uniqueCapacities.map((capacity) => (
+            <button
+              key={capacity.value}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCapacitySelect(capacity.value);
+              }}
+              className={cn(
+                "px-2.5 py-1.5 text-xs font-medium rounded-md border transition-all duration-200 cursor-pointer",
+                selectedCapacity === capacity.value
+                  ? "border-black bg-black text-white"
+                  : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
+              )}
+              title={capacity.value}
+            >
+              {capacity.value}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 /**
  * Componente para mostrar las imágenes del bundle con superposición diagonal
@@ -208,6 +413,10 @@ export default function BundleCard({
   className,
 }: BundleCardProps & { className?: string }) {
   const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Hook del carrito
+  const { addBundleToCart } = useCartContext();
 
   // Opción actualmente seleccionada
   const selectedOption = opciones?.[selectedOptionIndex] || opciones?.[0];
@@ -235,17 +444,120 @@ export default function BundleCard({
     });
   };
 
-  const handleAddToCart = () => {
-    // TODO: Implementar lógica para agregar bundle al carrito (próximamente)
-    posthogUtils.capture("bundle_add_to_cart_click", {
-      bundle_id: id,
-      bundle_name: name,
-      product_sku: selectedOption?.product_sku,
-      skus_bundle,
-      selected_option_index: selectedOptionIndex,
-      selected_modelo: selectedOption?.modelo,
-      source: "bundle_card",
-    });
+  const handleAddToCart = async () => {
+    if (!selectedOption || skus_bundle.length === 0) {
+      toast.error("No se pudo agregar el bundle", {
+        description: "No hay productos disponibles en este bundle",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Obtener detalles del bundle desde el backend
+      const bundleDetailsUrl = `/api/products/v2/bundles/${baseCodigoMarket}/${codCampana}/${selectedOption.product_sku}`;
+      const bundleDetails = await apiGet<{
+        productos: Array<{
+          sku: string;
+          modelo: string;
+          imagePreviewUrl?: string;
+          product_original_price: number;
+          product_discount_price: number;
+          ean?: string;
+          color?: string;
+          nombreColor?: string;
+          capacidad?: string;
+          memoriaram?: string;
+          stockTotal?: number;
+          bundle_price: number;
+          bundle_discount: number;
+        }>;
+      }>(bundleDetailsUrl);
+
+      if (!bundleDetails || !bundleDetails.productos || bundleDetails.productos.length === 0) {
+        // Fallback: usar datos disponibles de la opción seleccionada
+        toast.warning("Usando datos básicos del bundle", {
+          description: "No se pudieron obtener los detalles completos",
+        });
+
+        // Construir productos básicos desde los SKUs disponibles
+        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
+          id: sku,
+          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+          image: previewImages[index] || "/img/logo_imagiq.png",
+          price: 0, // Se calculará proporcionalmente
+          sku,
+          ean: sku,
+        }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
+          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+          fechaFinal: new Date(fecha_final),
+        };
+
+        await addBundleToCart(basicProducts, bundleInfo);
+      } else {
+        // Usar datos completos del backend
+        // bundle_price y bundle_discount están en cada producto, tomamos del primero
+        const firstProduct = bundleDetails.productos[0];
+
+        const products: Omit<CartProduct, "quantity">[] = bundleDetails.productos.map((product, index) => ({
+          id: product.sku,
+          name: product.modelo,
+          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
+          price: product.product_discount_price,
+          originalPrice: product.product_original_price,
+          sku: product.sku,
+          ean: product.ean || product.sku,
+          color: product.color,
+          colorName: product.nombreColor,
+          capacity: product.capacidad,
+          ram: product.memoriaram,
+          stock: product.stockTotal,
+          modelo: product.modelo,
+        }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: firstProduct.bundle_price,
+          bundleDiscount: firstProduct.bundle_discount,
+          fechaFinal: new Date(fecha_final),
+        };
+
+        await addBundleToCart(products, bundleInfo);
+      }
+
+      // Track del evento
+      posthogUtils.capture("bundle_add_to_cart_success", {
+        bundle_id: id,
+        bundle_name: name,
+        product_sku: selectedOption.product_sku,
+        skus_bundle,
+        selected_option_index: selectedOptionIndex,
+        selected_modelo: selectedOption.modelo,
+        source: "bundle_card",
+      });
+    } catch (error) {
+      console.error("Error adding bundle to cart:", error);
+      toast.error("Error al agregar el bundle", {
+        description: "Por favor, intenta de nuevo más tarde",
+      });
+
+      posthogUtils.capture("bundle_add_to_cart_error", {
+        bundle_id: id,
+        bundle_name: name,
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Nombre dinámico: usar el modelo de la opción seleccionada o el nombre del bundle
@@ -310,40 +622,22 @@ export default function BundleCard({
             )}
         </div>
 
-        {/* Selector de variantes del bundle */}
-        {opciones && opciones.length > 1 && (
-          <div className="px-3">
-            <div className="flex flex-wrap gap-1.5">
-              {opciones.map((opcion, index) => (
-                <button
-                  key={opcion.product_sku}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedOptionIndex(index);
-                  }}
-                  className={cn(
-                    "px-2 py-1 text-xs rounded-md border transition-all",
-                    selectedOptionIndex === index
-                      ? "border-black bg-black text-white"
-                      : "border-gray-300 bg-white text-gray-700 hover:border-gray-400"
-                  )}
-                  title={opcion.modelo}
-                >
-                  {index + 1}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Vigencia del bundle */}
+        {/* Vigencia del bundle - Arriba del selector */}
         {fecha_inicio && fecha_final && (
           <div className="px-3">
             <p className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">
               Oferta válida hasta: {new Date(fecha_final).toLocaleDateString('es-CO')}
             </p>
           </div>
+        )}
+
+        {/* Selector de variantes del bundle - Color y Capacidad */}
+        {opciones && opciones.length > 1 && (
+          <BundleVariantSelector
+            opciones={opciones}
+            selectedOptionIndex={selectedOptionIndex}
+            onSelectOption={setSelectedOptionIndex}
+          />
         )}
 
         {/* Precio - usa la opción seleccionada */}
@@ -399,29 +693,20 @@ export default function BundleCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  // if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || isOutOfStock) {
-                  //   stockNotification.openModal();
-                  // } else {
-                    handleAddToCart();
-                  //}
+                  handleAddToCart();
                 }}
-                //disabled={isLoading}
+                disabled={isLoading}
                 className={cn(
                   "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
-                 // isLoading && "animate-pulse"
+                  isLoading && "animate-pulse"
                 )}
               >
-                Añadir al carrito
-                {/* {isLoading ? (
-                  <Loader className="w-4 h-4 mx-auto" />
-                ) : process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ? (
-                  "Notifícame"
-                ) : isOutOfStock ? (
-                  "Notifícame"
+                {isLoading ? (
+                  <Loader className="w-4 h-4 mx-auto animate-spin" />
                 ) : (
                   "Añadir al carrito"
-                )} */}
+                )}
               </button>
 
               <button

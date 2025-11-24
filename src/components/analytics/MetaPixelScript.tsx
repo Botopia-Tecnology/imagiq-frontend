@@ -21,7 +21,6 @@ export default function MetaPixelScript() {
     const loadMetaPixel = () => {
       // Verificar consentimiento
       if (!hasMarketingConsent()) {
-        console.log("[Meta Pixel] ❌ No marketing consent, skipping");
         return;
       }
 
@@ -30,11 +29,8 @@ export default function MetaPixelScript() {
 
       // Verificar si ya existe
       if (document.querySelector(`script[src="${metaPixelUrl}"]`)) {
-        console.log("[Meta Pixel] ✅ Already loaded");
         return;
       }
-
-      console.log("[Meta Pixel] 📦 Loading script...");
 
       // Crear script
       const script = document.createElement("script");
@@ -42,7 +38,9 @@ export default function MetaPixelScript() {
       script.async = true;
       script.id = "meta-pixel-bootstrap";
 
-      script.onload = () => console.log("[Meta Pixel] ✅ Loaded successfully");
+      script.onload = () => {
+        // Meta Pixel loaded successfully
+      };
 
       script.onerror = () => {
         // Solo mostrar error si no estamos en desarrollo sin backend
@@ -74,7 +72,6 @@ export default function MetaPixelScript() {
 
     // Escuchar cambios de consentimiento
     const handleConsentChange = () => {
-      console.log("[Meta Pixel] 🔄 Consent changed");
       loadMetaPixel();
     };
 

@@ -73,8 +73,6 @@ export async function processAnalyticsEvent(
   event: DlAny,
   user?: AnalyticsUserData
 ): Promise<void> {
-  console.debug('[Analytics] Processing event:', event.event, event);
-
   try {
     // 1. Generar event_id deduplicable
     const eventId = await generateEventIdForEvent(event);
@@ -103,8 +101,6 @@ export async function processAnalyticsEvent(
 
     // 6. Registrar intenciones de abandono
     handleAbandonTracking(event);
-
-    console.debug('[Analytics] Event processed successfully:', event.event);
   } catch (error) {
     console.error('[Analytics] Failed to process event:', event.event, error);
   }
@@ -164,15 +160,11 @@ async function sendServerSideEvents(
 export function initAnalytics(): void {
   if (globalThis.window === undefined) return;
 
-  console.debug('[Analytics] Initializing analytics system');
-
   // Verificar abandono al cargar la página
   setTimeout(() => {
     resolveCartAbandon();
     resolveCheckoutAbandon();
   }, 5000); // Esperar 5s después del page load
-
-  console.debug('[Analytics] Analytics system initialized');
 }
 
 /**
@@ -197,5 +189,4 @@ export function pushToDataLayer(event: DlAny): void {
   globalThis.window.dataLayer ??= [];
 
   globalThis.window.dataLayer.push(event);
-  console.debug('[Analytics] Event pushed to dataLayer:', event.event);
 }

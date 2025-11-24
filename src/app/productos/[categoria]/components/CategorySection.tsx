@@ -30,6 +30,7 @@ import { useCategoryMenus } from "@/hooks/useCategoryMenus";
 import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { useProductBanner } from "@/hooks/useProductBanner";
+import { useSubmenus } from "@/hooks/useSubmenus";
 import {
   useCategoryFilters,
   useCategoryPagination,
@@ -40,8 +41,8 @@ import {
 } from "../hooks/useCategorySection";
 
 interface CategorySectionProps {
-  readonly categoria: CategoriaParams;  // Slug de la URL para mapear filtros
-  readonly categoriaApiCode: string;  // Código de API (AV, DA, IM, etc.)
+  readonly categoria: CategoriaParams; // Slug de la URL para mapear filtros
+  readonly categoriaApiCode: string; // Código de API (AV, DA, IM, etc.)
   readonly seccion: Seccion;
   readonly sectionTitle: string;
 }
@@ -53,14 +54,24 @@ export default function CategorySection({
   sectionTitle,
 }: CategorySectionProps) {
   const { filters, setFilters } = useCategoryFilters(categoria, seccion);
-  const { categoryCode, categoryUuid, menuUuid, submenuUuid } = useSelectedHierarchy(categoriaApiCode, seccion);
-  const { currentPage, itemsPerPage, setCurrentPage, handlePageChange, handleItemsPerPageChange } = useCategoryPagination(categoria, seccion, menuUuid, submenuUuid, categoriaApiCode);
-  const { sortBy, setSortBy } = useCategorySorting();
-  const { expandedFilters, handleFilterChange, handleToggleFilter } = useFilterManagement(
+  const { categoryCode, categoryUuid, menuUuid, submenuUuid } =
+    useSelectedHierarchy(categoriaApiCode, seccion);
+  const {
+    currentPage,
+    itemsPerPage,
+    setCurrentPage,
+    handlePageChange,
+    handleItemsPerPageChange,
+  } = useCategoryPagination(
     categoria,
     seccion,
-    setFilters
+    menuUuid,
+    submenuUuid,
+    categoriaApiCode
   );
+  const { sortBy, setSortBy } = useCategorySorting();
+  const { expandedFilters, handleFilterChange, handleToggleFilter } =
+    useFilterManagement(categoria, seccion, setFilters);
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -70,20 +81,41 @@ export default function CategorySection({
   const device = useDeviceType();
 
   const filterConfig = getCategoryFilterConfig(categoria, seccion);
-  const { currentMenu, loading: menuLoading } = useCurrentMenu(categoriaApiCode, seccion);
-  const { menus: categoryMenus, loading: categoryMenusLoading } = useCategoryMenus(categoriaApiCode);
+  const { currentMenu, loading: menuLoading } = useCurrentMenu(
+    categoriaApiCode,
+    seccion
+  );
+  const { menus: categoryMenus, loading: categoryMenusLoading } =
+    useCategoryMenus(categoriaApiCode);
   const { visibleCategories, mapCategoryToNavbarName } = useVisibleCategories();
 
   // Determinar nombre visible de la categoría para título cuando no hay sección
   const categoryVisibleName = (() => {
-    const cat = visibleCategories.find(c => c.nombre === categoriaApiCode);
+    const cat = visibleCategories.find((c) => c.nombre === categoriaApiCode);
     if (cat?.nombreVisible) return cat.nombreVisible;
-    return mapCategoryToNavbarName ? mapCategoryToNavbarName(categoriaApiCode) : sectionTitle;
+    return mapCategoryToNavbarName
+      ? mapCategoryToNavbarName(categoriaApiCode)
+      : sectionTitle;
   })();
 
   const effectiveTitle = seccion ? sectionTitle : categoryVisibleName;
 
-  const { products, bundles, orderedItems, loading, isLoadingMore, error, totalItems, totalPages, refreshProducts, loadMore, hasMore, hasMorePages, hasLoadedOnce, forceKey } = useCategoryProducts(
+  const {
+    products,
+    bundles,
+    orderedItems,
+    loading,
+    isLoadingMore,
+    error,
+    totalItems,
+    totalPages,
+    refreshProducts,
+    loadMore,
+    hasMore,
+    hasMorePages,
+    hasLoadedOnce,
+    forceKey,
+  } = useCategoryProducts(
     categoria,
     seccion,
     filters,
@@ -96,13 +128,34 @@ export default function CategorySection({
     categoryCode
   );
 
-  // Obtener banner de producto para el grid
-  // Solo pasar submenuName si existe seccion, sino null para obtener banner de categoría
-  const submenuName = seccion ? (currentMenu?.nombreVisible || currentMenu?.nombre) : null;
-  const { config: bannerConfig, configs: bannerConfigs } = useProductBanner(categoryVisibleName, submenuName);
+  // ✅ NUEVO: Obtener submenús del menú actual
+  // Solo cargar submenús si hay un menú seleccionado (seccion existe)
+  const { submenus } = useSubmenus(currentMenu?.uuid || null);
+
+  // ✅ NUEVO: Encontrar el submenú seleccionado basado en submenuUuid
+  const selectedSubmenu = submenuUuid
+    ? submenus.find((sm) => sm.uuid === submenuUuid)
+    : null;
+
+  // Obtener banner de producto para el grid con soporte de 3 niveles
+  // Construir nombres para cada nivel de la jerarquía
+  const menuName = seccion
+    ? currentMenu?.nombreVisible || currentMenu?.nombre || null
+    : null;
+
+  const submenuName = selectedSubmenu
+    ? selectedSubmenu.nombreVisible || selectedSubmenu.nombre || null
+    : null;
+
+  const { config: bannerConfig, configs: bannerConfigs } = useProductBanner(
+    categoryVisibleName,
+    menuName,
+    submenuName // ← NUEVO: Ahora pasa el submenú seleccionado
+  );
 
   // Mientras el menú/series o los productos estén cargando, debemos mostrar skeletons en el grid
-  const compositeLoading = loading || menuLoading || (!seccion && categoryMenusLoading);
+  const compositeLoading =
+    loading || menuLoading || (!seccion && categoryMenusLoading);
 
   // Configurar scroll infinito
   // Usar isLoadingMore en lugar de loading para evitar bloquear mientras se cargan productos adicionales
@@ -123,7 +176,9 @@ export default function CategorySection({
   if (error) {
     return (
       <div className="text-center">
-        <h2 className="text-xl font-semibold text-red-600 mb-2">Error al cargar productos</h2>
+        <h2 className="text-xl font-semibold text-red-600 mb-2">
+          Error al cargar productos
+        </h2>
         <p className="text-gray-600 mb-4">{error}</p>
         <button
           onClick={refreshProducts}
@@ -179,16 +234,21 @@ export default function CategorySection({
         clearAllFiltersText={`Ver todos los ${effectiveTitle.toLowerCase()}`}
       />
 
-      <div className={cn("flex gap-6 items-start", device === "mobile" || device === "tablet" ? "flex-col" : "flex-row")}>
+      <div
+        className={cn(
+          "flex gap-6 items-start",
+          device === "mobile" || device === "tablet" ? "flex-col" : "flex-row"
+        )}
+      >
         {(device === "desktop" || device === "large") && (
           <aside
             ref={sidebarRef}
             className="shrink-0 w-80 sticky self-start"
             style={{
-              top: '100px',
-              maxHeight: 'calc(100vh - 120px)',
-              overflowY: 'auto',
-              position: 'sticky',
+              top: "100px",
+              maxHeight: "calc(100vh - 120px)",
+              overflowY: "auto",
+              position: "sticky",
             }}
           >
             <FilterSidebar
@@ -215,7 +275,10 @@ export default function CategorySection({
 
         <div
           ref={productsRef}
-          className={cn("flex-1 min-w-0", device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0")}
+          className={cn(
+            "flex-1 min-w-0",
+            device === "mobile" ? "px-2" : device === "tablet" ? "px-4" : "px-0"
+          )}
         >
           {/* Mostrar grid de productos (incluye skeleton, mensaje de vacío o productos) */}
           <CategoryProductsGrid

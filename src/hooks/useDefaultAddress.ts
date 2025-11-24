@@ -33,14 +33,12 @@ export function useDefaultAddress(tipo: TipoUsoDireccion = 'ENVIO'): UseDefaultA
 
   const fetchAddress = useCallback(async () => {
     try {
-      console.log(`[useDefaultAddress] 🔍 Iniciando fetch para tipo: ${tipo}`);
       setIsLoading(true);
       setError(null);
 
       // Verificar cache
       const cached = cache.get(cacheKey);
       if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        console.log(`[useDefaultAddress] ✅ Cache hit para ${cacheKey}`, cached.data);
         if (isMountedRef.current) {
           setAddress(cached.data);
           setIsLoading(false);
@@ -48,22 +46,16 @@ export function useDefaultAddress(tipo: TipoUsoDireccion = 'ENVIO'): UseDefaultA
         return;
       }
 
-      console.log(`[useDefaultAddress] 📡 Cache miss, llamando al servicio...`);
-
       // Verificar si ya hay una petición en curso
       let requestPromise = ongoingRequests.get(cacheKey);
 
       if (!requestPromise) {
         // Crear nueva petición
-        console.log(`[useDefaultAddress] 🆕 Creando nueva petición`);
         requestPromise = addressesService.getDefaultAddress(tipo);
         ongoingRequests.set(cacheKey, requestPromise);
-      } else {
-        console.log(`[useDefaultAddress] 🔄 Reutilizando petición en curso`);
       }
 
       const data = await requestPromise;
-      console.log(`[useDefaultAddress] ✅ Datos recibidos:`, data);
 
       // Limpiar petición en curso
       ongoingRequests.delete(cacheKey);
@@ -74,7 +66,6 @@ export function useDefaultAddress(tipo: TipoUsoDireccion = 'ENVIO'): UseDefaultA
       if (isMountedRef.current) {
         setAddress(data);
         setIsLoading(false);
-        console.log(`[useDefaultAddress] ✅ Estado actualizado, isLoading: false`);
       }
     } catch (err) {
       // Limpiar petición en curso en caso de error

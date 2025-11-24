@@ -5,9 +5,13 @@
  * Implementa caché en memoria con TTL de 5 minutos para optimizar requests.
  */
 
-import { apiClient } from '@/lib/api';
-import type { Banner, BannerApiResponse, HeroBannerConfig } from '@/types/banner';
-import { parsePosition, parseTextStyles } from '@/utils/bannerCoordinates';
+import { apiClient } from "@/lib/api";
+import type {
+  Banner,
+  BannerApiResponse,
+  HeroBannerConfig,
+} from "@/types/banner";
+import { parsePosition, parseTextStyles } from "@/utils/bannerCoordinates";
 
 /**
  * Servicio singleton para gestionar banners del API
@@ -35,7 +39,7 @@ class BannersService {
 
       // Fetch desde API
       const response = await apiClient.get<BannerApiResponse>(
-        '/api/multimedia/banners?status=active'
+        "/api/multimedia/banners?status=active"
       );
 
       if (response.success && response.data?.data) {
@@ -44,10 +48,13 @@ class BannersService {
         return this.cache;
       }
 
-      console.error('[BannersService] Failed to fetch banners:', response.message);
+      console.error(
+        "[BannersService] Failed to fetch banners:",
+        response.message
+      );
       return [];
     } catch (error) {
-      console.error('[BannersService] Error fetching banners:', error);
+      console.error("[BannersService] Error fetching banners:", error);
       return [];
     }
   }
@@ -60,11 +67,7 @@ class BannersService {
    */
   async getBannersByPlacement(placement: string): Promise<Banner[]> {
     const banners = await this.getActiveBanners();
-    console.log('[BannersService] Buscando placement:', placement);
-    console.log('[BannersService] Total banners:', banners.length);
-    console.log('[BannersService] Placements disponibles:', banners.map(b => b.placement));
     const filtered = banners.filter((banner) => banner.placement === placement);
-    console.log('[BannersService] Banners encontrados:', filtered.length);
     return filtered;
   }
 
@@ -87,12 +90,12 @@ class BannersService {
    */
   mapBannerToHeroConfig(banner: Banner): HeroBannerConfig {
     // URLs de video (solo si existen)
-    const desktopVideo = banner.desktop_video_url || '';
-    const mobileVideo = banner.mobile_video_url || '';
+    const desktopVideo = banner.desktop_video_url || "";
+    const mobileVideo = banner.mobile_video_url || "";
 
     // URLs de imagen (siempre disponibles)
-    const desktopImage = banner.desktop_image_url || '';
-    const mobileImage = banner.mobile_image_url || '';
+    const desktopImage = banner.desktop_image_url || "";
+    const mobileImage = banner.mobile_image_url || "";
 
     // Parsear posiciones del nuevo sistema
     const positionDesktop = parsePosition(banner.position_desktop);
@@ -109,11 +112,11 @@ class BannersService {
       // Mantener por compatibilidad
       poster: desktopImage,
       mobilePoster: mobileImage,
-      heading: banner.title || '',
-      subheading: banner.description || '',
-      ctaText: banner.cta || 'Ver más',
-      ctaLink: banner.link_url || '#',
-      textColor: banner.color_font || '#000000',
+      heading: banner.title || "",
+      subheading: banner.description || "",
+      ctaText: banner.cta || "Ver más",
+      ctaLink: banner.link_url || "#",
+      textColor: banner.color_font || "#000000",
       // Posiciones parseadas
       positionDesktop: positionDesktop || undefined,
       positionMobile: positionMobile || undefined,

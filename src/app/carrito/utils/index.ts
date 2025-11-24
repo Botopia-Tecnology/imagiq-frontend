@@ -95,11 +95,40 @@ export async function fetchBanks(): Promise<{ bankCode: string; bankName: string
 export async function checkZeroInterest(
   request: CheckZeroInterestRequest
 ): Promise<CheckZeroInterestResponse | null> {
+  const DEBUG = process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true';
+
   try {
+    if (DEBUG) {
+      console.log('🔍 [Zero Interest] Request payload:', {
+        userId: request.userId,
+        cardIds: request.cardIds,
+        productSkus: request.productSkus,
+        totalAmount: request.totalAmount
+      });
+    }
+
     const data = await apiPost<CheckZeroInterestResponse>('/api/payments/check-zero-interest', request);
+
+    if (DEBUG) {
+      console.log('✅ [Zero Interest] Response:', {
+        aplica: data?.aplica,
+        cardsCount: data?.cards?.length || 0,
+        cards: data?.cards?.map(c => ({
+          id: c.id,
+          eligible: c.eligibleForZeroInterest,
+          installments: c.availableInstallments
+        }))
+      });
+    }
+
     return data;
   } catch (error) {
-    console.error("Error checking zero interest:", error);
+    if (DEBUG) {
+      console.error("❌ [Zero Interest] Error:", error);
+      console.error("Stack trace:", (error as Error).stack);
+    } else {
+      console.error("Error checking zero interest:", error);
+    }
     // Fail silently - don't block the checkout flow
     return null;
   }

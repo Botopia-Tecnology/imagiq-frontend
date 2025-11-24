@@ -105,26 +105,38 @@ export function useProductBanner(
         setError(null);
 
         // Normalizar parámetros (convertir null a undefined)
-        // categoria ya fue validado arriba (early return si es null)
-        const categoriaNonNull = categoria as string;
         const menuNonNull = menu || undefined;
         const submenuNonNull = submenu || undefined;
 
         // Construir array de placements con herencia
+        // categoria ya está validado arriba (early return si es null)
         const placements = buildProductPlacements(
-          categoriaNonNull,
-          submenu ?? undefined
+          categoria as string,
+          menuNonNull,
+          submenuNonNull
         );
 
-        // Obtener TODOS los banners del placement
-        const banners = await bannersService.getBannersByPlacement(placement);
+        // Obtener todos los banners activos (usa caché interno del servicio)
+        const allBanners = await bannersService.getActiveBanners();
+
+        // Filtrar banners que coincidan con alguno de los placements válidos
+        const matchedBanners = allBanners.filter((banner) =>
+          placements.includes(banner.placement)
+        );
+
+        // Ordenar por especificidad (más específico primero)
+        const sortedBanners = matchedBanners.sort((a, b) => {
+          const aIndex = placements.indexOf(a.placement);
+          const bIndex = placements.indexOf(b.placement);
+          return aIndex - bIndex;
+        });
 
         if (!isCancelled) {
           setConfigs(sortedBanners);
           setConfig(sortedBanners[0] || null); // Legacy: primer banner
         }
       } catch (err) {
-        console.error("[useProductBanner] ❌ Error fetching banners:", err);
+        console.error("[useProductBanner] Error fetching banners:", err);
         if (!isCancelled) {
           setError(err instanceof Error ? err : new Error("Error desconocido"));
           setConfig(null);

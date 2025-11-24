@@ -34,6 +34,8 @@ type CartContextType = {
   clearCart: () => void;
   /** Devuelve todos los productos */
   getProducts: () => CartProduct[];
+  /** Obtiene la cantidad en carrito de un SKU específico */
+  getQuantityBySku: (sku: string) => number;
   /** Cantidad total de productos (para el badge del navbar) */
   itemCount: number;
   /** Si el carrito está vacío */
@@ -185,6 +187,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     [removeBundleProductHook]
   );
 
+  const getQuantityBySku = useCallback(
+    (sku: string): number => {
+      const product = products.find((p) => p.sku === sku);
+      return product ? product.quantity : 0;
+    },
+    [products]
+  );
+
   // Memoizar el value para evitar renders innecesarios y cumplir con las reglas de React Context
   const value = React.useMemo(
     () => ({
@@ -194,6 +204,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updateQuantity,
       clearCart,
       getProducts,
+      getQuantityBySku,
       itemCount: calculations.productCount,
       isEmpty,
       formatPrice,
@@ -210,6 +221,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updateQuantity,
       clearCart,
       getProducts,
+      getQuantityBySku,
       calculations.productCount,
       isEmpty,
       formatPrice,

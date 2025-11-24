@@ -21,6 +21,8 @@ import { useCartContext } from "@/features/cart/CartContext";
 import { apiGet } from "@/lib/api-client";
 import type { BundleInfo, CartProduct } from "@/hooks/useCart";
 import { toast } from "sonner";
+import { useStockNotification } from "@/hooks/useStockNotification";
+import StockNotificationModal from "@/components/StockNotificationModal";
 
 /**
  * Selector de variantes del bundle con colores y capacidades
@@ -418,6 +420,9 @@ export default function BundleCard({
   // Hook del carrito
   const { addBundleToCart } = useCartContext();
 
+  // Hook para notificar stock
+  const stockNotification = useStockNotification();
+
   // Opción actualmente seleccionada
   const selectedOption = opciones?.[selectedOptionIndex] || opciones?.[0];
   const skus_bundle = selectedOption?.skus_bundle || [];
@@ -448,6 +453,14 @@ export default function BundleCard({
     if (!selectedOption || skus_bundle.length === 0) {
       toast.error("No se pudo agregar el bundle", {
         description: "No hay productos disponibles en este bundle",
+      });
+      return;
+    }
+
+    // Verificar stock antes de agregar al carrito
+    if (isOutOfStock) {
+      toast.error("Producto agotado", {
+        description: "Este bundle no tiene stock disponible",
       });
       return;
     }
@@ -534,6 +547,8 @@ export default function BundleCard({
         await addBundleToCart(products, bundleInfo);
       }
 
+
+
       // Track del evento
       posthogUtils.capture("bundle_add_to_cart_success", {
         bundle_id: id,
@@ -542,6 +557,7 @@ export default function BundleCard({
         skus_bundle,
         selected_option_index: selectedOptionIndex,
         selected_modelo: selectedOption.modelo,
+        stock_available: selectedOptionStock,
         source: "bundle_card",
       });
     } catch (error) {
@@ -562,6 +578,27 @@ export default function BundleCard({
 
   // Nombre dinámico: usar el modelo de la opción seleccionada o el nombre del bundle
   const displayName = selectedOption?.modelo || name;
+
+  // Obtener el stock de la opción seleccionada
+  const selectedOptionStock = useMemo(() => {
+    if (selectedOption?.stockTotal === undefined || selectedOption?.stockTotal === null || selectedOption.stockTotal < 0) return null;
+    return selectedOption.stockTotal;
+  }, [selectedOption]);
+
+  // Verificar si está agotado
+  const isOutOfStock = selectedOptionStock === 0;
+
+  // Handler para solicitar notificación de stock
+  const handleRequestStockNotification = async (email: string) => {
+    if (!selectedOption) return;
+
+    await stockNotification.requestNotification({
+      productName: displayName,
+      sku: selectedOption.product_sku,
+      email,
+      codigoMarket: baseCodigoMarket,
+    });
+  };
 
   return (
     <div
@@ -615,6 +652,18 @@ export default function BundleCard({
                     <span>SKUs Bundle: </span>
                     <span className="text-gray-400">
                       {skus_bundle.join(", ")}
+                    </span>
+                  </div>
+                )}
+                {selectedOptionStock !== null && (
+                  <div className="text-xs text-gray-500 font-medium">
+                    <span>Stock: </span>
+                    <span className={cn(
+                      "font-semibold",
+                      selectedOptionStock > 5 ? "text-green-600" : 
+                      selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
+                    )}>
+                      {selectedOptionStock} unidades
                     </span>
                   </div>
                 )}
@@ -693,17 +742,24 @@ export default function BundleCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleAddToCart();
+                  if (isOutOfStock) {
+                    stockNotification.openModal();
+                  } else {
+                    handleAddToCart();
+                  }
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
-                  "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
+                  "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
+                  "bg-black text-white hover:bg-gray-800",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
                   isLoading && "animate-pulse"
                 )}
               >
                 {isLoading ? (
                   <Loader className="w-4 h-4 mx-auto animate-spin" />
+                ) : isOutOfStock ? (
+                  "Notifícame"
                 ) : (
                   "Añadir al carrito"
                 )}
@@ -721,6 +777,17 @@ export default function BundleCard({
             </div>
         </div>
       </div>
+
+      {/* Modal de notificación de stock */}
+      <StockNotificationModal
+        isOpen={stockNotification.isModalOpen}
+        onClose={stockNotification.closeModal}
+        productName={displayName}
+        productImage={previewImages && previewImages.length > 0 ? getCloudinaryUrl(previewImages[0], "catalog") : undefined}
+        selectedColor={selectedOption?.nombreColorProductSku}
+        selectedStorage={selectedOption?.capacidadProductSku}
+        onNotificationRequest={handleRequestStockNotification}
+      />
     </div>
   );
 }

@@ -275,13 +275,14 @@ export default function Step3({
       if ((deliveryMethod === "tienda" || savedMethod === "tienda") && 
           stores.length === 0 && 
           availableStoresWhenCanPickUpFalse.length === 0 &&
-          !storesLoading) {
+          !storesLoading &&
+          !isInitialTradeInLoading) {
         // Activar skeleton mientras cargan las tiendas
         setIsInitialTradeInLoading(true);
         forceRefreshStores();
       }
     }
-  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores]);
+  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores, isInitialTradeInLoading]);
   
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = React.useRef<Set<string>>(new Set());
@@ -614,13 +615,31 @@ export default function Step3({
   React.useEffect(() => {
     // Si estábamos cargando por trade-in y ya no está cargando, ocultar skeleton
     if (isInitialTradeInLoading && !storesLoading) {
-      // Pequeño delay para que las tiendas se rendericen
-      const timer = setTimeout(() => {
-        setIsInitialTradeInLoading(false);
-      }, 300);
-      return () => clearTimeout(timer);
+      // Verificar que haya al menos algún resultado (tiendas o estado final)
+      const hasResults = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+      const hasFinishedLoading = !isLoadingCanPickUp;
+      
+      if (hasResults || hasFinishedLoading) {
+        // Pequeño delay para que las tiendas se rendericen
+        const timer = setTimeout(() => {
+          setIsInitialTradeInLoading(false);
+        }, 300);
+        return () => clearTimeout(timer);
+      }
     }
-  }, [isInitialTradeInLoading, storesLoading]);
+  }, [isInitialTradeInLoading, storesLoading, stores.length, availableStoresWhenCanPickUpFalse.length, isLoadingCanPickUp]);
+
+  // PROTECCIÓN: Timeout de seguridad para evitar skeleton infinito
+  React.useEffect(() => {
+    if (isInitialTradeInLoading) {
+      // Timeout de seguridad de 10 segundos
+      const safetyTimer = setTimeout(() => {
+        setIsInitialTradeInLoading(false);
+      }, 10000);
+      
+      return () => clearTimeout(safetyTimer);
+    }
+  }, [isInitialTradeInLoading]);
 
   // También forzar recarga cuando el usuario selecciona "Recoger en tienda" y (canPickUp es true O hay Trade In activo)
   React.useEffect(() => {
@@ -848,7 +867,8 @@ export default function Step3({
     if (method === "tienda" && 
         stores.length === 0 && 
         availableStoresWhenCanPickUpFalse.length === 0 &&
-        !storesLoading) {
+        !storesLoading &&
+        !isInitialTradeInLoading) {
       // Activar skeleton mientras cargan las tiendas
       setIsInitialTradeInLoading(true);
       forceRefreshStores();

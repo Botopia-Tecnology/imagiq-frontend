@@ -2,16 +2,14 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useTopDiscountedProducts } from "@/hooks/useTopDiscountedProducts";
+import { useOfertasDestacadas } from "@/hooks/useOfertasDestacadas";
 
 type Props = Readonly<{
   onItemClick: (label: string, href: string) => void;
 }>;
 
 export function MobileView({ onItemClick }: Props) {
-  const { products, loading } = useTopDiscountedProducts({
-    limit: 12,
-  });
+  const { productos, loading } = useOfertasDestacadas();
 
   if (loading) {
     return (
@@ -31,26 +29,32 @@ export function MobileView({ onItemClick }: Props) {
   return (
     <div className="p-4">
       <div className="grid grid-cols-3 gap-4">
-        {products.map((product) => {
-          if (typeof product.image !== 'string' || !product.image) return null;
+        {productos.map((producto) => {
+          const href = producto.link_url || `/productos/view/${producto.producto_id}`;
 
           return (
             <Link
-              key={product.id}
-              href={`/productos/view/${product.id}`}
-              onClick={() => onItemClick(product.name, `/productos/view/${product.id}`)}
+              key={producto.uuid}
+              href={href}
+              onClick={() => onItemClick(producto.producto_nombre, href)}
               className="flex flex-col items-center text-center"
             >
               <div className="relative w-16 h-16 mb-2">
-                <Image
-                  src={product.image}
-                  alt={product.name}
-                  fill
-                  className="object-contain"
-                />
+                {producto.producto_imagen ? (
+                  <Image
+                    src={producto.producto_imagen}
+                    alt={producto.producto_nombre}
+                    fill
+                    className="object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
+                    <span className="text-gray-400 text-[8px]">Sin imagen</span>
+                  </div>
+                )}
               </div>
               <span className="text-xs font-semibold text-gray-900 line-clamp-2">
-                {product.name}
+                {producto.producto_nombre}
               </span>
             </Link>
           );

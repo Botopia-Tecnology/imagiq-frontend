@@ -3,6 +3,7 @@
  */
 
 import type { Metadata } from "next";
+import Script from "next/script";
 
 import { samsungSharpSans } from "./fonts";
 // Nota: eliminamos la importación de Inter desde next/font/google para evitar
@@ -151,55 +152,59 @@ export default function RootLayout({
 
           <DevToolsGuard>
             <ResponsiveProvider>
-          <HeroProvider>
-            <ProductProvider>
-              <NavbarVisibilityProvider>
-                <PostHogProvider>
-                  <AnalyticsProvider>
-                    <AuthProvider>
-                      <UserPreferencesProvider>
-                        <CartProvider>
-                          <SelectedColorProvider>
-                            <PointsProvider>
-                              <SelectedStoreProvider>
-                                {/* Mostrar pantalla de mantenimiento si está activada */}
-                                {isMaintenanceMode ? (
-                                  <MaintenanceScreen />
-                                ) : (
-                                  <ClientLayout>{safeChildren}</ClientLayout>
-                                )}
-                              </SelectedStoreProvider>
-                              {/* Widget del chatbot - solo si NO está en mantenimiento */}
-                              {!isMaintenanceMode && <ChatbotWidget />}
-                              {/* Toast notifications */}
-                              <Toaster
-                                position="top-center"
-                                expand={true}
-                                richColors
-                                closeButton
-                                toastOptions={{
-                                  duration: 4000,
-                                  style: {
-                                    background: "white",
-                                    border: "1px solid #e2e8f0",
-                                    color: "#1e293b",
-                                    fontFamily: "var(--font-inter)",
-                                  },
-                                }}
-                              />
-                            </PointsProvider>
-                          </SelectedColorProvider>
-                        </CartProvider>
-                      </UserPreferencesProvider>
-                    </AuthProvider>
-                  </AnalyticsProvider>
-                </PostHogProvider>
-              </NavbarVisibilityProvider>
-            </ProductProvider>
-          </HeroProvider>
-        </ResponsiveProvider>
+              <HeroProvider>
+                <ProductProvider>
+                  <NavbarVisibilityProvider>
+                    <PostHogProvider>
+                      <AnalyticsProvider>
+                        <AuthProvider>
+                          <UserPreferencesProvider>
+                            <CartProvider>
+                              <SelectedColorProvider>
+                                <PointsProvider>
+                                  <SelectedStoreProvider>
+                                    {/* Mostrar pantalla de mantenimiento si está activada */}
+                                    {isMaintenanceMode ? (
+                                      <MaintenanceScreen />
+                                    ) : (
+                                      <ClientLayout>{safeChildren}</ClientLayout>
+                                    )}
+                                  </SelectedStoreProvider>
+                                  {/* Widget del chatbot - solo si NO está en mantenimiento */}
+                                  {!isMaintenanceMode && <ChatbotWidget />}
+                                  {/* Toast notifications */}
+                                  <Toaster
+                                    position="top-center"
+                                    expand={true}
+                                    richColors
+                                    closeButton
+                                    toastOptions={{
+                                      duration: 4000,
+                                      style: {
+                                        background: "white",
+                                        border: "1px solid #e2e8f0",
+                                        color: "#1e293b",
+                                        fontFamily: "var(--font-inter)",
+                                      },
+                                    }}
+                                  />
+                                </PointsProvider>
+                              </SelectedColorProvider>
+                            </CartProvider>
+                          </UserPreferencesProvider>
+                        </AuthProvider>
+                      </AnalyticsProvider>
+                    </PostHogProvider>
+                  </NavbarVisibilityProvider>
+                </ProductProvider>
+              </HeroProvider>
+            </ResponsiveProvider>
           </DevToolsGuard>
         </SecurityInitializer>
+        <Script
+          src="https://multimedia.epayco.co/general/3DS/validateThreeds.min.js"
+          strategy="lazyOnload"
+        />
       </body>
     </html>
   );

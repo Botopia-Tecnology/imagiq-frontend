@@ -538,6 +538,16 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     }
   }
 
+  // Normalizar categoria, menu y submenu (pueden venir como string o array)
+  const normalizeStringOrArray = (value: string | string[] | undefined): string => {
+    if (!value) return '';
+    if (Array.isArray(value)) {
+      // Si es array, tomar el primer elemento o unir con coma
+      return value.length > 0 ? value[0] : '';
+    }
+    return value;
+  };
+
   return {
     id: `${apiBundle.baseCodigoMarket}-${apiBundle.codCampana}`,
     baseCodigoMarket: apiBundle.baseCodigoMarket,
@@ -548,9 +558,9 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     originalPrice,
     discount,
     opciones,
-    categoria: apiBundle.categoria,
-    menu: apiBundle.menu,
-    submenu: apiBundle.submenu,
+    categoria: normalizeStringOrArray(apiBundle.categoria),
+    menu: normalizeStringOrArray(apiBundle.menu),
+    submenu: normalizeStringOrArray(apiBundle.submenu),
     fecha_inicio: apiBundle.fecha_inicio,
     fecha_final: apiBundle.fecha_final,
     isBundle: true,

@@ -107,30 +107,8 @@ export async function sendMetaCapi(
       event
     );
 
-    // Logging detallado de la respuesta para tracking
-    console.log('[Meta CAPI] Response received:', {
-      success: response.success,
-      hasError: 'error' in response,
-      errorValue: response.error,
-      errorType: typeof response.error,
-      hasPlatformResponse: 'platform_response' in response,
-      platformResponse: response.platform_response,
-      fullResponse: response,
-    });
-
-    if (response.success) {
-      console.debug(
-        `[Meta CAPI] Event sent successfully: ${eventName} (${hasConsent ? 'FULL' : 'ANONYMOUS'})`
-      );
-    } else {
-      console.error('[Meta CAPI] Event failed:', {
-        error: response.error || 'No error message provided by backend',
-        hasErrorField: 'error' in response,
-        platform_response: response.platform_response,
-        eventName,
-        eventId,
-        mode: hasConsent ? 'FULL' : 'ANONYMOUS',
-      });
+    if (!response.success) {
+      console.error('[Meta CAPI] Event failed:', eventName, response.error);
     }
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';

@@ -2,7 +2,23 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { productEndpoints, type CandidateStoresResponse, type CandidateStore } from "@/lib/api";
-import { apiDelete } from "@/lib/api-client";
+import { apiDelete, apiPost, apiPut } from "@/lib/api-client";
+
+// Interfaz para información del bundle
+export interface BundleInfo {
+  /** Código de la campaña del bundle */
+  codCampana: string;
+  /** SKU del producto principal del bundle */
+  productSku: string;
+  /** Array con todos los SKUs que componen el bundle */
+  skusBundle: string[];
+  /** Precio original del bundle (sin descuento) */
+  bundlePrice: number;
+  /** Precio con descuento del bundle */
+  bundleDiscount: number;
+  /** Fecha de expiración del bundle */
+  fechaFinal: Date;
+}
 
 export interface CartProduct {
   id: string;
@@ -43,6 +59,8 @@ export interface CartProduct {
   canPickUp?: boolean;
   /** Indica si el producto aplica para retoma (indRetoma: 1 = aplica, 0 = no aplica) */
   indRetoma?: number;
+  /** Información del bundle al que pertenece este producto (si aplica) */
+  bundleInfo?: BundleInfo;
 }
 
 interface CartCalculations {
@@ -74,6 +92,22 @@ interface UseCartReturn {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   applyDiscount: (discount: number) => void;
+
+  // Acciones de Bundle
+  addBundleToCart: (
+    items: Omit<CartProduct, "quantity">[],
+    bundleInfo: BundleInfo,
+    userId?: string
+  ) => Promise<void>;
+  updateBundleQuantity: (
+    codCampana: string,
+    productSku: string,
+    quantity: number
+  ) => Promise<void>;
+  removeBundleProduct: (
+    sku: string,
+    keepOtherProducts: boolean
+  ) => Promise<void>;
 
   // Utilidades
   isEmpty: boolean;
@@ -149,6 +183,22 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     const canPickUp = typeof p.canPickUp === "boolean" ? p.canPickUp : undefined;
     const indRetoma = typeof p.indRetoma === "number" ? p.indRetoma : undefined;
 
+    // Parsear bundleInfo si existe
+    let bundleInfo: BundleInfo | undefined = undefined;
+    if (p.bundleInfo && typeof p.bundleInfo === "object") {
+      const bi = p.bundleInfo as Record<string, unknown>;
+      if (bi.codCampana && bi.productSku && Array.isArray(bi.skusBundle)) {
+        bundleInfo = {
+          codCampana: String(bi.codCampana),
+          productSku: String(bi.productSku),
+          skusBundle: bi.skusBundle.map((s: unknown) => String(s)),
+          bundlePrice: Number(bi.bundlePrice) || 0,
+          bundleDiscount: Number(bi.bundleDiscount) || 0,
+          fechaFinal: new Date(bi.fechaFinal as string | number | Date),
+        };
+      }
+    }
+
     return {
       id,
       name,
@@ -172,6 +222,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       modelo,
       canPickUp,
       indRetoma,
+      bundleInfo,
     };
   };
 
@@ -407,8 +458,9 @@ export function useCart(): UseCartReturn {
 
       // Agregar producto inmediatamente sin bloquear
       setProducts((currentProducts) => {
+        // Solo buscar productos individuales (sin bundleInfo) para evitar mezclar con bundles
         const existingIndex = currentProducts.findIndex(
-          (p) => p.sku === product.sku
+          (p) => p.sku === product.sku && !p.bundleInfo
         );
         let newProducts: CartProduct[];
         let wasUpdated = false;
@@ -436,15 +488,6 @@ export function useCart(): UseCartReturn {
             STORAGE_KEYS.CART_ITEMS,
             JSON.stringify(newProducts)
           );
-          // 🔍 DEBUG: Verificar que skuPostback se guarda correctamente
-          const productWithSkuPostback = newProducts.find(p => p.skuPostback);
-          if (productWithSkuPostback) {
-            console.log('✅ skuPostback guardado en localStorage:', {
-              sku: productWithSkuPostback.sku,
-              skuPostback: productWithSkuPostback.skuPostback,
-              fullProduct: productWithSkuPostback
-            });
-          }
         } catch (error) {
           console.error("Error saving products to localStorage:", error);
         }
@@ -482,18 +525,7 @@ export function useCart(): UseCartReturn {
             });
 
             if (response.success && response.data) {
-              // 🔍 DEBUG: Mostrar respuesta completa del endpoint en consola
               const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              console.log(`📦 Respuesta completa de candidate-stores para SKU ${product.sku} (useCart):`, {
-                fullResponse: responseData,
-                stores: responseData.stores,
-                canPickUp: responseData.canPickUp,
-                canPickup: responseData.canPickup,
-                default_direction: responseData.default_direction,
-                storesKeys: Object.keys(responseData.stores || {}),
-                storesCount: Object.values(responseData.stores || {}).reduce((acc: number, arr: CandidateStore[]) => acc + arr.length, 0),
-              });
-              
               const { stores } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
               const canPickUp = responseData.canPickUp ?? 
@@ -740,6 +772,258 @@ export function useCart(): UseCartReturn {
     [saveDiscount]
   );
 
+  // ==================== MÉTODOS DE BUNDLE ====================
+
+  /**
+   * Añade todos los productos de un bundle al carrito.
+   * Cada producto se marca con bundleInfo para identificar que pertenece al bundle.
+   */
+  const addBundleToCart = useCallback(
+    async (
+      items: Omit<CartProduct, "quantity">[],
+      bundleInfo: BundleInfo,
+      userId?: string
+    ) => {
+      const effectiveUserId = userId || getUserId();
+
+      // Preparar items con bundleInfo y quantity = 1
+      const itemsWithBundle: CartProduct[] = items.map((item) => ({
+        ...item,
+        quantity: 1,
+        bundleInfo,
+      }));
+
+      // Actualizar estado local
+      setProducts((currentProducts) => {
+        const newProducts = [...currentProducts];
+
+        for (const item of itemsWithBundle) {
+          // Solo buscar productos que pertenezcan al MISMO bundle (mismo codCampana y productSku)
+          // Esto evita mezclar productos individuales con productos de bundle
+          const existingIndex = newProducts.findIndex(
+            (p) =>
+              p.sku === item.sku &&
+              p.bundleInfo?.codCampana === bundleInfo.codCampana &&
+              p.bundleInfo?.productSku === bundleInfo.productSku
+          );
+
+          if (existingIndex >= 0) {
+            // Si el producto ya existe en el mismo bundle, actualizar cantidad
+            newProducts[existingIndex] = {
+              ...newProducts[existingIndex],
+              quantity: newProducts[existingIndex].quantity + 1,
+            };
+          } else {
+            // Si no existe o es un producto individual/de otro bundle, agregar como nuevo
+            newProducts.push(item);
+          }
+        }
+
+        // Guardar en localStorage
+        try {
+          localStorage.setItem(
+            STORAGE_KEYS.CART_ITEMS,
+            JSON.stringify(newProducts)
+          );
+        } catch (error) {
+          console.error("Error saving bundle to localStorage:", error);
+        }
+
+        return newProducts;
+      });
+
+      // Mostrar toast
+      toast.success("Bundle añadido al carrito", {
+        description: `${items.length} productos del bundle añadidos`,
+        duration: 3000,
+      });
+
+      // Llamar al backend
+      try {
+        await apiPost("/api/cart/bundle/add", {
+          items: itemsWithBundle,
+          bundleInfo,
+        });
+      } catch (error) {
+        console.error("Error adding bundle to cart:", error);
+      }
+
+      // Disparar evento de storage
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
+    },
+    [getUserId]
+  );
+
+  /**
+   * Actualiza la cantidad de todos los productos de un bundle.
+   */
+  const updateBundleQuantity = useCallback(
+    async (codCampana: string, productSku: string, quantity: number) => {
+      if (quantity <= 0) {
+        // Eliminar todo el bundle
+        setProducts((currentProducts) => {
+          const newProducts = currentProducts.filter(
+            (p) =>
+              !(
+                p.bundleInfo?.codCampana === codCampana &&
+                p.bundleInfo?.productSku === productSku
+              )
+          );
+
+          try {
+            if (newProducts.length === 0) {
+              localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+            } else {
+              localStorage.setItem(
+                STORAGE_KEYS.CART_ITEMS,
+                JSON.stringify(newProducts)
+              );
+            }
+          } catch (error) {
+            console.error("Error removing bundle from localStorage:", error);
+          }
+
+          return newProducts;
+        });
+
+        toast.info("Bundle eliminado del carrito", {
+          duration: 2500,
+        });
+      } else {
+        // Actualizar cantidad de todos los productos del bundle
+        setProducts((currentProducts) => {
+          const newProducts = currentProducts.map((p) => {
+            if (
+              p.bundleInfo?.codCampana === codCampana &&
+              p.bundleInfo?.productSku === productSku
+            ) {
+              return { ...p, quantity };
+            }
+            return p;
+          });
+
+          try {
+            localStorage.setItem(
+              STORAGE_KEYS.CART_ITEMS,
+              JSON.stringify(newProducts)
+            );
+          } catch (error) {
+            console.error("Error updating bundle quantity:", error);
+          }
+
+          return newProducts;
+        });
+      }
+
+      // Llamar al backend
+      try {
+        await apiPut("/api/cart/bundle/quantity", {
+          codCampana,
+          productSku,
+          quantity,
+        });
+      } catch (error) {
+        console.error("Error updating bundle quantity:", error);
+      }
+
+      // Disparar evento de storage
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
+    },
+    []
+  );
+
+  /**
+   * Elimina un producto de un bundle.
+   * Si keepOtherProducts es true, los demás productos pierden el bundleInfo y vuelven a precio original.
+   * Si keepOtherProducts es false, se eliminan todos los productos del bundle.
+   */
+  const removeBundleProduct = useCallback(
+    async (sku: string, keepOtherProducts: boolean) => {
+      setProducts((currentProducts) => {
+        const productToRemove = currentProducts.find((p) => p.sku === sku);
+
+        if (!productToRemove?.bundleInfo) {
+          // No tiene bundleInfo, eliminar normalmente
+          return currentProducts.filter((p) => p.sku !== sku);
+        }
+
+        const { codCampana, productSku } = productToRemove.bundleInfo;
+
+        let newProducts: CartProduct[];
+
+        if (keepOtherProducts) {
+          // Eliminar el producto y quitar bundleInfo de los demás
+          newProducts = currentProducts
+            .filter((p) => p.sku !== sku)
+            .map((p) => {
+              if (
+                p.bundleInfo?.codCampana === codCampana &&
+                p.bundleInfo?.productSku === productSku
+              ) {
+                // Volver al precio original y quitar bundleInfo
+                return {
+                  ...p,
+                  price: p.originalPrice ?? p.price,
+                  bundleInfo: undefined,
+                };
+              }
+              return p;
+            });
+
+          toast.warning("Descuento de bundle perdido", {
+            description:
+              "Al eliminar un producto del bundle, los demás productos vuelven a su precio original.",
+            duration: 4000,
+          });
+        } else {
+          // Eliminar todos los productos del bundle
+          newProducts = currentProducts.filter(
+            (p) =>
+              !(
+                p.bundleInfo?.codCampana === codCampana &&
+                p.bundleInfo?.productSku === productSku
+              )
+          );
+
+          toast.info("Bundle eliminado del carrito", {
+            duration: 2500,
+          });
+        }
+
+        try {
+          if (newProducts.length === 0) {
+            localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+          } else {
+            localStorage.setItem(
+              STORAGE_KEYS.CART_ITEMS,
+              JSON.stringify(newProducts)
+            );
+          }
+        } catch (error) {
+          console.error("Error removing bundle product:", error);
+        }
+
+        return newProducts;
+      });
+
+      // Llamar al backend
+      try {
+        await apiDelete(`/api/cart/bundle/product?sku=${encodeURIComponent(sku)}&keepOtherProducts=${keepOtherProducts}`);
+      } catch (error) {
+        console.error("Error removing bundle product:", error);
+      }
+
+      // Disparar evento de storage
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
+    },
+    []
+  );
 
   // Cálculos derivados
   const calculations: CartCalculations = {
@@ -782,6 +1066,11 @@ export function useCart(): UseCartReturn {
     updateQuantity,
     clearCart,
     applyDiscount,
+
+    // Acciones de Bundle
+    addBundleToCart,
+    updateBundleQuantity,
+    removeBundleProduct,
 
     // Utilidades
     isEmpty,

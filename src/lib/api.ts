@@ -466,11 +466,11 @@ export const menusEndpoints = {
 
 // Trade-in (Entrego y Estreno) API endpoints
 export const tradeInEndpoints = {
-  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/trade-in/hierarchy'),
+  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/benefits/trade-in/hierarchy'),
   calculateValue: (data: TradeInValueRequest) =>
-    apiClient.post<TradeInValueResponse>('/api/trade-in/value', data),
+    apiClient.post<TradeInValueResponse>('/api/benefits/trade-in/value', data),
   checkSkuForTradeIn: (data: { sku: string }) =>
-    apiClient.post<TradeInCheckResult>('/api/trade-in/check-sku', data)
+    apiClient.post<TradeInCheckResult>('/api/benefits/trade-in/check-sku', data)
 };
 
 // Stores API endpoints
@@ -535,6 +535,12 @@ export interface BundleOption {
   ind_entre_estre: number;
   skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
   imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+  // Campos de variante del producto padre
+  colorProductSku?: string; // Color hex del producto (ej: "#3C5B8A")
+  nombreColorProductSku?: string; // Nombre del color (ej: "Azul Marino")
+  capacidadProductSku?: string; // Capacidad (ej: "256GB")
+  memoriaRamProductSku?: string; // RAM (ej: "12GB")
+  stockTotal?: number; // Stock disponible para esta variante
 }
 
 // Bundle agrupado con múltiples opciones/variantes

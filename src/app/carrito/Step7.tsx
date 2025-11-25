@@ -30,6 +30,12 @@ import { productEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
 
+declare global {
+  interface Window {
+    validate3ds: (data: unknown) => void;
+  }
+}
+
 interface Step7Props {
   readonly onBack?: () => void;
 }
@@ -96,7 +102,7 @@ export default function Step7({ onBack }: Step7Props) {
   const router = useRouter();
   const authContext = useAuthContext();
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Ref para rastrear peticiones fallidas a getCandidateStores (evita reintentos)
   const failedCandidateStoresRef = React.useRef<string | null>(null);
 
@@ -111,10 +117,20 @@ export default function Step7({ onBack }: Step7Props) {
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
-  const [loggedUser, _] = useSecureStorage<User | null>(
+  const [loggedUser] = useSecureStorage<User | null>(
     "imagiq_user",
     null
   );
+
+  // 3DS Modal state - Not used anymore, kept for backward compatibility
+  // const [show3DSModal, setShow3DSModal] = useState(false);
+  // const [challengeData, setChallengeData] = useState<{
+  //   acsURL: string;
+  //   encodedCReq: string;
+  //   threeDSServerTransID?: string;
+  //   acsTransID?: string;
+  // } | null>(null);
+  // const [currentOrderId, setCurrentOrderId] = useState<string>("");
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -138,12 +154,12 @@ export default function Step7({ onBack }: Step7Props) {
         let savedCard: DBCard | undefined;
 
         // Si usó una tarjeta guardada, cargar sus datos completos
-        if (savedCardId && authContext.user?.id) {
+        // Usar authContext o loggedUser (para usuarios sin sesión activa pero con cuenta creada en Step2)
+        const userId = authContext.user?.id || loggedUser?.id;
+        if (savedCardId && userId) {
           try {
             const encryptedCards =
-              await profileService.getUserPaymentMethodsEncrypted(
-                authContext.user.id
-              );
+              await profileService.getUserPaymentMethodsEncrypted(userId);
 
             const decryptedCards: DBCard[] = encryptedCards
               .map((encCard) => {
@@ -309,13 +325,26 @@ export default function Step7({ onBack }: Step7Props) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
-  }, []);
+
+    // Cargar shippingVerification desde localStorage como respaldo
+    // Esto asegura que el método de envío esté disponible al crear la orden
+    const storedEnvioImagiq = localStorage.getItem("checkout-envio-imagiq");
+    if (storedEnvioImagiq === "true" && !shippingVerification) {
+      // Si hay un valor guardado y shippingVerification aún no está establecido,
+      // establecerlo como respaldo temporal hasta que se verifique
+      setShippingVerification({
+        envio_imagiq: true,
+        todos_productos_im_it: false,
+        en_zona_cobertura: true,
+      });
+    }
+  }, [authContext.user?.id, loggedUser?.id]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
-    
+
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
       const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
@@ -411,11 +440,14 @@ export default function Step7({ onBack }: Step7Props) {
         const userId = user?.id || user?.user_id;
 
         if (!userId) {
-          setShippingVerification({
+          const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
             en_zona_cobertura: true,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo
+          localStorage.setItem("checkout-envio-imagiq", "false");
           setIsLoadingShippingMethod(false);
           return;
         }
@@ -467,11 +499,14 @@ export default function Step7({ onBack }: Step7Props) {
 
           // PASO 2: Si canPickUp global es FALSE → Directamente Coordinadora
           if (!globalCanPickUp) {
-            setShippingVerification({
+            const verification = {
               envio_imagiq: false,
               todos_productos_im_it: false,
               en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
-            });
+            };
+            setShippingVerification(verification);
+            // Guardar en localStorage como respaldo
+            localStorage.setItem("checkout-envio-imagiq", "false");
             setIsLoadingShippingMethod(false);
             return;
           }
@@ -479,11 +514,14 @@ export default function Step7({ onBack }: Step7Props) {
           // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
           const shippingAddress = localStorage.getItem("checkout-address");
           if (!shippingAddress) {
-            setShippingVerification({
+            const verification = {
               envio_imagiq: false,
               todos_productos_im_it: false,
               en_zona_cobertura: true,
-            });
+            };
+            setShippingVerification(verification);
+            // Guardar en localStorage como respaldo
+            localStorage.setItem("checkout-envio-imagiq", "false");
             setIsLoadingShippingMethod(false);
             return;
           }
@@ -499,11 +537,14 @@ export default function Step7({ onBack }: Step7Props) {
             requestBody
           );
 
-          setShippingVerification({
+          const verification = {
             envio_imagiq: data.envio_imagiq || false,
             todos_productos_im_it: data.todos_productos_im_it || false,
             en_zona_cobertura: data.en_zona_cobertura || false,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo para asegurar que esté disponible al crear la orden
+          localStorage.setItem("checkout-envio-imagiq", String(verification.envio_imagiq));
           setIsLoadingShippingMethod(false);
         } else {
           // Si falla la petición, marcar este hash como fallido
@@ -512,11 +553,14 @@ export default function Step7({ onBack }: Step7Props) {
           console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
           // Si falla la petición de candidate-stores, usar Coordinadora
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
-          setShippingVerification({
+          const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
             en_zona_cobertura: true,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo
+          localStorage.setItem("checkout-envio-imagiq", "false");
           setIsLoadingShippingMethod(false);
         }
       } catch (error) {
@@ -534,7 +578,7 @@ export default function Step7({ onBack }: Step7Props) {
           products: productsToCheck,
           userId,
         });
-        
+
         failedCandidateStoresRef.current = requestHash;
         console.error(
           "🚫 Error verifying shipping coverage - Petición bloqueada para evitar sobrecargar BD:",
@@ -543,11 +587,14 @@ export default function Step7({ onBack }: Step7Props) {
         console.error(`🚫 Hash bloqueado: ${requestHash.substring(0, 50)}...`);
         console.error("🚫 Esta petición NO se reintentará automáticamente.");
         // En caso de error, usar Coordinadora por defecto
-        setShippingVerification({
+        const verification = {
           envio_imagiq: false,
           todos_productos_im_it: false,
           en_zona_cobertura: true,
-        });
+        };
+        setShippingVerification(verification);
+        // Guardar en localStorage como respaldo
+        localStorage.setItem("checkout-envio-imagiq", "false");
         setIsLoadingShippingMethod(false);
       }
     };
@@ -632,6 +679,39 @@ export default function Step7({ onBack }: Step7Props) {
       console.error("Error computing aplica_zero_interes:", err);
     }
   }, [paymentData, zeroInterestData]);
+
+  // Escuchar eventos de validación 3DS
+  useEffect(() => {
+    const handle3DSMessage = (event: MessageEvent) => {
+      // Verificar que el evento tenga los datos esperados
+      if (event.data && (event.data.success || event.data.message)) {
+        console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
+
+        // Obtener orderId guardado
+        const orderId = localStorage.getItem('pending_order_id');
+
+        if (event.data.success && orderId) {
+          console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
+          toast.success("Autenticación 3DS exitosa. Verificando pago...");
+          // Redirigir a página de verificación
+          router.push(`/verify-purchase/${orderId}`);
+        } else if (!orderId) {
+          console.error("❌ [Step7] No se encontró orderId en localStorage");
+          toast.error("Error: No se pudo verificar el pago");
+          setIsProcessing(false);
+        } else {
+          console.error("❌ [Step7] 3DS falló o fue cancelado");
+          toast.error("La autenticación 3DS falló o fue cancelada.");
+          setIsProcessing(false);
+        }
+      }
+    };
+
+    window.addEventListener("message", handle3DSMessage);
+    return () => {
+      window.removeEventListener("message", handle3DSMessage);
+    };
+  }, [router]);
 
   const handleConfirmOrder = async () => {
     // Validar Trade-In antes de confirmar
@@ -725,14 +805,29 @@ export default function Step7({ onBack }: Step7Props) {
 
       // Determinar metodo_envio: 1=Coordinadora, 2=Pickup, 3=Imagiq
       let metodo_envio = 1; // Por defecto Coordinadora
+
       if (deliveryMethod === "tienda") {
         metodo_envio = 2; // Pickup en tienda
-      } else if (
-        deliveryMethod === "domicilio" &&
-        shippingVerification?.envio_imagiq === true
-      ) {
-        metodo_envio = 3; // Envío Imagiq
+      } else if (deliveryMethod === "domicilio") {
+        // Verificar si es envío Imagiq desde shippingVerification o localStorage
+        const envioImagiq =
+          shippingVerification?.envio_imagiq === true ||
+          localStorage.getItem("checkout-envio-imagiq") === "true";
+
+        if (envioImagiq) {
+          metodo_envio = 3; // Envío Imagiq
+        } else {
+          metodo_envio = 1; // Coordinadora
+        }
       }
+
+      // Log para debug - asegurar que el método de envío se está pasando correctamente
+      console.log("📦 [Step7] Método de envío determinado:", {
+        deliveryMethod,
+        metodo_envio,
+        envio_imagiq: shippingVerification?.envio_imagiq,
+        shippingVerification: shippingVerification
+      });
 
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
@@ -758,12 +853,19 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback:
-                String(p.skuPostback) === ""
-                  ? String(p.sku)
-                  : String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             totalAmount: String(calculations.total),
             metodo_envio,
@@ -779,10 +881,40 @@ export default function Step7({ onBack }: Step7Props) {
             informacion_facturacion,
             beneficios: buildBeneficios(),
           });
+
           if ("error" in res) {
             setError(res.message);
             throw new Error(res.message);
           }
+
+          // Verificar si requiere 3DS
+          if (res.requires3DS && res.data3DS) {
+            console.log("🔐 [Step7] Requiere validación 3DS", res.data3DS);
+            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number };
+            console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
+
+            // Guardar orderId para verificación posterior
+            const orderId = res.orderId || "";
+            if (orderId) {
+              localStorage.setItem('pending_order_id', orderId);
+              console.log("🔐 [Step7] OrderId guardado:", orderId);
+            }
+
+            // Ejecutar validación 3DS con el script de ePayco
+            // Esto maneja tanto IdentifyShopper como ChallengeShopper automáticamente
+            if (typeof window !== 'undefined' && window.validate3ds) {
+              console.log("🔐 [Step7] Ejecutando validate3ds con data3DS completo");
+              window.validate3ds(res.data3DS);
+              // No redirigir, el script de ePayco manejará el flujo
+              return;
+            } else {
+              console.error("❌ [Step7] Script de ePayco no cargado");
+              setError("Error: Script de validación 3DS no disponible. Por favor recarga la página.");
+              setIsProcessing(false);
+              return;
+            }
+          }
+
           router.push(res.redirectionUrl);
           break;
         }
@@ -796,9 +928,19 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             bank: paymentData.bank || "",
             description: "Pago de pedido en Imagiq",
@@ -831,9 +973,19 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             metodo_envio,
             codigo_bodega,
@@ -984,358 +1136,358 @@ export default function Step7({ onBack }: Step7Props) {
               <>
                 {/* Método de pago */}
                 {paymentData && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-gray-600" />
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900">
+                            Método de pago
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            {getPaymentMethodLabel(paymentData.method)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/carrito/step4")}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
                     </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Método de pago
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {getPaymentMethodLabel(paymentData.method)}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/carrito/step4")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
-                </div>
 
-                <div className="space-y-3">
-                  {paymentData.method === "tarjeta" && (
-                    <>
-                      {/* Mostrar detalles de tarjeta guardada */}
-                      {paymentData.savedCard && (
+                    <div className="space-y-3">
+                      {paymentData.method === "tarjeta" && (
                         <>
-                          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <CardBrandLogo
-                              brand={paymentData.savedCard.marca}
-                              size="md"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900 tracking-wider">
-                                  •••• {paymentData.savedCard.ultimos_dijitos}
-                                </span>
-                                {paymentData.savedCard.tipo_tarjeta && (
-                                  <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.savedCard.tipo_tarjeta
-                                      .toUpperCase()
-                                      .includes("CREDIT")
-                                      ? "Crédito"
-                                      : "Débito"}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
-                                {paymentData.savedCard.nombre_titular && (
-                                  <span className="uppercase">
-                                    {paymentData.savedCard.nombre_titular}
-                                  </span>
-                                )}
-                                {paymentData.savedCard.banco && (
-                                  <span>{paymentData.savedCard.banco}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          {paymentData.installments && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Cuotas:</span>
-                              <span className="font-medium text-gray-900">
-                                {paymentData.installments}x
-                                {paymentData.savedCard &&
-                                  isInstallmentEligibleForZeroInterest(
-                                    paymentData.installments,
-                                    String(paymentData.savedCard.id)
-                                  ) && (
-                                    <span className="ml-2 text-green-600 font-semibold">
-                                      (sin interés)
+                          {/* Mostrar detalles de tarjeta guardada */}
+                          {paymentData.savedCard && (
+                            <>
+                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                <CardBrandLogo
+                                  brand={paymentData.savedCard.marca}
+                                  size="md"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900 tracking-wider">
+                                      •••• {paymentData.savedCard.ultimos_dijitos}
                                     </span>
-                                  )}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {/* Mostrar detalles de tarjeta nueva */}
-                      {paymentData.cardData && (
-                        <>
-                          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            {paymentData.cardData.brand && (
-                              <CardBrandLogo
-                                brand={paymentData.cardData.brand}
-                                size="md"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900 tracking-wider">
-                                  ••••{" "}
-                                  {paymentData.cardData.cardNumber.slice(-4)}
-                                </span>
-                                {paymentData.cardData.cardType && (
-                                  <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.cardData.cardType
-                                      .toUpperCase()
-                                      .includes("CREDIT")
-                                      ? "Crédito"
-                                      : "Débito"}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
-                                {paymentData.cardData.cardHolder && (
-                                  <span className="uppercase">
-                                    {paymentData.cardData.cardHolder}
-                                  </span>
-                                )}
-                                {paymentData.cardData.bank && (
-                                  <span>{paymentData.cardData.bank}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          {paymentData.installments && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Cuotas:</span>
-                              <span className="font-medium text-gray-900">
-                                {paymentData.installments}x
-                                {(() => {
-                                  // Para tarjetas nuevas, intentar obtener el ID de localStorage
-                                  const savedCardId = localStorage.getItem(
-                                    "checkout-saved-card-id"
-                                  );
-                                  return (
-                                    savedCardId &&
-                                    isInstallmentEligibleForZeroInterest(
-                                      paymentData.installments,
-                                      savedCardId
-                                    ) && (
-                                      <span className="ml-2 text-green-600 font-semibold">
-                                        (sin interés)
+                                    {paymentData.savedCard.tipo_tarjeta && (
+                                      <span className="text-xs text-gray-500 uppercase">
+                                        {paymentData.savedCard.tipo_tarjeta
+                                          .toUpperCase()
+                                          .includes("CREDIT")
+                                          ? "Crédito"
+                                          : "Débito"}
                                       </span>
-                                    )
-                                  );
-                                })()}
-                              </span>
-                            </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
+                                    {paymentData.savedCard.nombre_titular && (
+                                      <span className="uppercase">
+                                        {paymentData.savedCard.nombre_titular}
+                                      </span>
+                                    )}
+                                    {paymentData.savedCard.banco && (
+                                      <span>{paymentData.savedCard.banco}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {paymentData.installments && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Cuotas:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {paymentData.installments}x
+                                    {paymentData.savedCard &&
+                                      isInstallmentEligibleForZeroInterest(
+                                        paymentData.installments,
+                                        String(paymentData.savedCard.id)
+                                      ) && (
+                                        <span className="ml-2 text-green-600 font-semibold">
+                                          (sin interés)
+                                        </span>
+                                      )}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {/* Mostrar detalles de tarjeta nueva */}
+                          {paymentData.cardData && (
+                            <>
+                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                {paymentData.cardData.brand && (
+                                  <CardBrandLogo
+                                    brand={paymentData.cardData.brand}
+                                    size="md"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900 tracking-wider">
+                                      ••••{" "}
+                                      {paymentData.cardData.cardNumber.slice(-4)}
+                                    </span>
+                                    {paymentData.cardData.cardType && (
+                                      <span className="text-xs text-gray-500 uppercase">
+                                        {paymentData.cardData.cardType
+                                          .toUpperCase()
+                                          .includes("CREDIT")
+                                          ? "Crédito"
+                                          : "Débito"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
+                                    {paymentData.cardData.cardHolder && (
+                                      <span className="uppercase">
+                                        {paymentData.cardData.cardHolder}
+                                      </span>
+                                    )}
+                                    {paymentData.cardData.bank && (
+                                      <span>{paymentData.cardData.bank}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {paymentData.installments && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Cuotas:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {paymentData.installments}x
+                                    {(() => {
+                                      // Para tarjetas nuevas, intentar obtener el ID de localStorage
+                                      const savedCardId = localStorage.getItem(
+                                        "checkout-saved-card-id"
+                                      );
+                                      return (
+                                        savedCardId &&
+                                        isInstallmentEligibleForZeroInterest(
+                                          paymentData.installments,
+                                          savedCardId
+                                        ) && (
+                                          <span className="ml-2 text-green-600 font-semibold">
+                                            (sin interés)
+                                          </span>
+                                        )
+                                      );
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                            </>
                           )}
                         </>
                       )}
-                    </>
-                  )}
-                  {paymentData.method === "pse" && paymentData.bank && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Banco:</span>
-                      <span className="font-medium text-gray-900">
-                        {paymentData.bankName || paymentData.bank}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Método de entrega */}
-            {shippingData && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      {shippingData.type === "delivery" ? (
-                        <Truck className="w-5 h-5 text-gray-600" />
-                      ) : (
-                        <Store className="w-5 h-5 text-gray-600" />
-                      )}
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Método de entrega
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {shippingData.type === "delivery"
-                          ? "Envío a domicilio"
-                          : "Recogida en tienda"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/carrito/step3")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
-                </div>
-
-                {shippingData.type === "delivery" && (
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {shippingData.address}
-                      </p>
-                      {shippingData.city && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          {shippingData.city}
-                        </p>
+                      {paymentData.method === "pse" && paymentData.bank && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Banco:</span>
+                          <span className="font-medium text-gray-900">
+                            {paymentData.bankName || paymentData.bank}
+                          </span>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {shippingData.type === "pickup" && (
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {shippingData.store?.name || "Recoger en tienda"}
-                        </p>
-                        {shippingData.store?.address && (
-                          <p className="text-xs text-gray-600 mt-1">
-                            {shippingData.store.address}
+                {/* Método de entrega */}
+                {shippingData && (
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          {shippingData.type === "delivery" ? (
+                            <Truck className="w-5 h-5 text-gray-600" />
+                          ) : (
+                            <Store className="w-5 h-5 text-gray-600" />
+                          )}
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900">
+                            Método de entrega
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            {shippingData.type === "delivery"
+                              ? "Envío a domicilio"
+                              : "Recogida en tienda"}
                           </p>
-                        )}
-                        {shippingData.store?.city && (
-                          <p className="text-xs text-gray-500">
-                            {shippingData.store.city}
-                          </p>
-                        )}
-                        {shippingData.store?.schedule && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Horario: {shippingData.store.schedule}
-                          </p>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Datos de facturación */}
-            {billingData && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Datos de facturación
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {billingData.type === "natural"
-                          ? "Persona Natural"
-                          : "Persona Jurídica"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/carrito/step6")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Razón Social (solo para jurídica) - ocupa todo el ancho */}
-                  {billingData.type === "juridica" &&
-                    billingData.razonSocial && (
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">
-                          Razón Social
-                        </p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {billingData.razonSocial}
-                        </p>
-                      </div>
-                    )}
-
-                  {/* Grid de 2 columnas para los demás campos */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* NIT (solo para jurídica) */}
-                    {billingData.type === "juridica" && billingData.nit && (
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">NIT</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {billingData.nit}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Nombre */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Nombre</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.nombre}
-                      </p>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/carrito/step3")}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
                     </div>
 
-                    {/* Documento */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Documento</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.documento}
-                      </p>
-                    </div>
-
-                    {/* Email */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Email</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.email}
-                      </p>
-                    </div>
-
-                    {/* Teléfono */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Teléfono</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.telefono}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Dirección de facturación - ocupa todo el ancho */}
-                  {billingData.direccion && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">
-                        Dirección de facturación
-                      </p>
-                      <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
-                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                    {shippingData.type === "delivery" && (
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                        <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {billingData.direccion.linea_uno}
+                            {shippingData.address}
                           </p>
-                          {billingData.direccion.ciudad && (
+                          {shippingData.city && (
                             <p className="text-xs text-gray-600 mt-1">
-                              {billingData.direccion.ciudad}
+                              {shippingData.city}
                             </p>
                           )}
                         </div>
                       </div>
+                    )}
+
+                    {shippingData.type === "pickup" && (
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {shippingData.store?.name || "Recoger en tienda"}
+                            </p>
+                            {shippingData.store?.address && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                {shippingData.store.address}
+                              </p>
+                            )}
+                            {shippingData.store?.city && (
+                              <p className="text-xs text-gray-500">
+                                {shippingData.store.city}
+                              </p>
+                            )}
+                            {shippingData.store?.schedule && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Horario: {shippingData.store.schedule}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Datos de facturación */}
+                {billingData && (
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900">
+                            Datos de facturación
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            {billingData.type === "natural"
+                              ? "Persona Natural"
+                              : "Persona Jurídica"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/carrito/step6")}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
-            )}
+
+                    <div className="space-y-4">
+                      {/* Razón Social (solo para jurídica) - ocupa todo el ancho */}
+                      {billingData.type === "juridica" &&
+                        billingData.razonSocial && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Razón Social
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {billingData.razonSocial}
+                            </p>
+                          </div>
+                        )}
+
+                      {/* Grid de 2 columnas para los demás campos */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* NIT (solo para jurídica) */}
+                        {billingData.type === "juridica" && billingData.nit && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">NIT</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {billingData.nit}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Nombre */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.nombre}
+                          </p>
+                        </div>
+
+                        {/* Documento */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Documento</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.documento}
+                          </p>
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Email</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.email}
+                          </p>
+                        </div>
+
+                        {/* Teléfono */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Teléfono</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.telefono}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Dirección de facturación - ocupa todo el ancho */}
+                      {billingData.direccion && (
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Dirección de facturación
+                          </p>
+                          <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {billingData.direccion.linea_uno}
+                              </p>
+                              {billingData.direccion.ciudad && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {billingData.direccion.ciudad}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1568,11 +1720,10 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Botón confirmar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
-            }`}
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod
+              ? "bg-gray-400 cursor-not-allowed opacity-70"
+              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              }`}
             onClick={handleConfirmOrder}
             disabled={isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod}
           >
@@ -1580,6 +1731,7 @@ export default function Step7({ onBack }: Step7Props) {
           </button>
         </div>
       </div>
+
     </div>
   );
 }

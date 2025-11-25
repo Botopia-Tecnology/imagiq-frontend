@@ -11,7 +11,7 @@
  */
 
 import { useAuthContext } from "@/features/auth/context";
-import { CartProduct, useCart } from "@/hooks/useCart";
+import { CartProduct, BundleInfo, useCart } from "@/hooks/useCart";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { apiClient } from "@/lib/api";
 import { apiPost } from "@/lib/api-client";
@@ -34,6 +34,8 @@ type CartContextType = {
   clearCart: () => void;
   /** Devuelve todos los productos */
   getProducts: () => CartProduct[];
+  /** Obtiene la cantidad en carrito de un SKU específico */
+  getQuantityBySku: (sku: string) => number;
   /** Cantidad total de productos (para el badge del navbar) */
   itemCount: number;
   /** Si el carrito está vacío */
@@ -42,6 +44,21 @@ type CartContextType = {
   formatPrice: (price: number) => string;
   /** Puntos Q acumulados en el carrito (valor global reactivo) */
   pointsQ: number;
+
+  // Métodos de Bundle
+  /** Añade todos los productos de un bundle al carrito */
+  addBundleToCart: (
+    items: Omit<CartProduct, "quantity">[],
+    bundleInfo: BundleInfo
+  ) => Promise<void>;
+  /** Actualiza la cantidad de todos los productos de un bundle */
+  updateBundleQuantity: (
+    codCampana: string,
+    productSku: string,
+    quantity: number
+  ) => Promise<void>;
+  /** Elimina un producto de un bundle */
+  removeBundleProduct: (sku: string, keepOtherProducts: boolean) => Promise<void>;
 };
 
 /**
@@ -84,6 +101,10 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     clearCart,
     isEmpty,
     formatPrice,
+    // Métodos de Bundle
+    addBundleToCart: addBundleToCartHook,
+    updateBundleQuantity: updateBundleQuantityHook,
+    removeBundleProduct: removeBundleProductHook,
   } = useCart();
 
   // Calcular puntos Q globales (reactivo)
@@ -131,6 +152,49 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const getProducts = useCallback(() => products, [products]);
 
+  // ==================== MÉTODOS DE BUNDLE ====================
+
+  const addBundleToCart = useCallback(
+    async (items: Omit<CartProduct, "quantity">[], bundleInfo: BundleInfo) => {
+      await addBundleToCartHook(items, bundleInfo, user?.id);
+
+      // Track del evento para analytics (bundle completo)
+      for (const item of items) {
+        trackAddToCart({
+          item_id: item.sku || item.id,
+          item_name: item.name,
+          item_brand: "Samsung",
+          price: Number(item.price),
+          quantity: 1,
+          currency: "COP",
+        });
+      }
+    },
+    [addBundleToCartHook, user?.id, trackAddToCart]
+  );
+
+  const updateBundleQuantity = useCallback(
+    async (codCampana: string, productSku: string, quantity: number) => {
+      await updateBundleQuantityHook(codCampana, productSku, quantity);
+    },
+    [updateBundleQuantityHook]
+  );
+
+  const removeBundleProduct = useCallback(
+    async (sku: string, keepOtherProducts: boolean) => {
+      await removeBundleProductHook(sku, keepOtherProducts);
+    },
+    [removeBundleProductHook]
+  );
+
+  const getQuantityBySku = useCallback(
+    (sku: string): number => {
+      const product = products.find((p) => p.sku === sku);
+      return product ? product.quantity : 0;
+    },
+    [products]
+  );
+
   // Memoizar el value para evitar renders innecesarios y cumplir con las reglas de React Context
   const value = React.useMemo(
     () => ({
@@ -140,10 +204,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updateQuantity,
       clearCart,
       getProducts,
+      getQuantityBySku,
       itemCount: calculations.productCount,
       isEmpty,
       formatPrice,
       pointsQ,
+      // Métodos de Bundle
+      addBundleToCart,
+      updateBundleQuantity,
+      removeBundleProduct,
     }),
     [
       products,
@@ -152,10 +221,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       updateQuantity,
       clearCart,
       getProducts,
+      getQuantityBySku,
       calculations.productCount,
       isEmpty,
       formatPrice,
       pointsQ,
+      addBundleToCart,
+      updateBundleQuantity,
+      removeBundleProduct,
     ]
   );
 

@@ -124,7 +124,7 @@ export function PDFViewer({
         </div>
         <div className="w-full h-[380px] sm:h-[480px] md:h-[600px] bg-gray-50 flex items-center justify-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-[#17407A] animate-spin" />
+            <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-black animate-spin" />
             <p className="text-sm text-gray-600">Cargando documento...</p>
           </div>
         </div>
@@ -163,7 +163,7 @@ export function PDFViewer({
             </p>
             <button
               onClick={onDownload}
-              className="px-5 py-2 rounded-full bg-[#17407A] text-white hover:brightness-110 transition shadow-md"
+              className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md"
             >
               Descargar PDF
             </button>
@@ -246,7 +246,7 @@ export function PDFViewer({
         {/* Download Button */}
         <button
           onClick={onDownload}
-          className="px-5 py-2 rounded-full bg-[#17407A] text-white hover:brightness-110 transition shadow-md"
+          className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md"
           aria-label="Descargar guía"
         >
           Descargar PDF

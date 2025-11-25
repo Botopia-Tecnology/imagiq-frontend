@@ -5,7 +5,7 @@
  * El Navbar debe ser transparente y los items en blanco
  */
 import Image from "next/image";
-import React from "react";
+import React, { useState, useEffect } from "react";
 import audifonosIcon from "@/img/ofertas/audifonos_icon.png";
 import tvIcon from "@/img/ofertas/tv_icon.png";
 import phoneIcon from "@/img/ofertas/phone_icon.png";
@@ -17,36 +17,46 @@ import Link from "next/link";
 // Configuración de las categorías y rutas de productos con ofertas
 const ofertas = [
   {
-    title: "Accesorios",
-    icon: audifonosIcon,
+    title: "Smartphones y Tablets",
+    icon: phoneIcon,
     info: "Más información",
-    bg: "bg-[#1A407A]",
-    href: "/productos/ofertas?seccion=accesorios",
+    bg: "bg-[#000000]",
+    href: "/productos/ofertas?seccion=smartphones-tablets",
   },
   {
     title: "TV, Monitores y Audio",
     icon: tvIcon,
     info: "Más información",
-    bg: "bg-[#285CA8]",
+    bg: "bg-[#1a1a1a]",
     href: "/productos/ofertas?seccion=tv-monitores-audio",
   },
   {
-    title: "Smartphones y Tablets",
-    icon: phoneIcon,
+    title: "Accesorios",
+    icon: audifonosIcon,
     info: "Más información",
-    bg: "bg-[#4A7DC3]",
-    href: "/productos/ofertas?seccion=smartphones-tablets",
+    bg: "bg-[#333333]",
+    href: "/productos/ofertas?seccion=accesorios",
   },
   {
     title: "Electrodomésticos",
     icon: lavadoraIcon,
     info: "Más información",
-    bg: "bg-[#7CA6D6]",
+    bg: "bg-[#4d4d4d]",
     whiteIcon: true,
     href: "/productos/ofertas?seccion=electrodomesticos",
   },
 ];
 export default function OfertasPage() {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Iniciar la animación después de un pequeño delay
+    const timer = setTimeout(() => {
+      setIsLoaded(true);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Oculta el scroll y el fondo blanco extra solo en esta página
   // Usar useEffect para manipular el DOM solo cuando el componente está montado
   React.useEffect(() => {
@@ -80,14 +90,14 @@ export default function OfertasPage() {
       className="w-full h-screen flex flex-col bg-transparent overflow-hidden"
       style={{ height: "100vh", minHeight: "100vh", margin: 0, padding: 0 }}
     >
-      {/* Fondo especial solo en móvil: gradiente radial azul con centro blanco muy suave y difuso, igual a la imagen */}
+      {/* Fondo especial solo en móvil: gradiente radial gris con centro más claro, igual a la imagen */}
       <div
         className="fixed top-0 left-0 w-full h-full md:hidden z-0"
         style={{
           height: "100vh",
           minHeight: "100vh",
           background:
-            "radial-gradient(ellipse 80% 60% at 50% 40%, #759dd1 0%, #2b62ac 100%)",
+            "radial-gradient(ellipse 80% 60% at 50% 40%, #b3b3b3 0%, #404040 100%)",
           overflow: "hidden",
         }}
       />
@@ -118,7 +128,7 @@ export default function OfertasPage() {
                 </h2>
                 <Link
                   href={item.href}
-                  className="mt-1 px-3 py-0.5 border border-white/80 rounded-full text-white text-xl font-medium text-center hover:bg-white hover:text-[#1A407A] transition-colors duration-200 group-hover:bg-white group-hover:text-[#1A407A]"
+                  className="mt-1 px-3 py-0.5 border border-white/80 rounded-full text-white text-xl font-medium text-center hover:bg-white hover:text-[#1a1a1a] transition-colors duration-200 group-hover:bg-white group-hover:text-[#1a1a1a]"
                   aria-label={item.info + " " + item.title}
                   scroll={false}
                 >
@@ -130,11 +140,20 @@ export default function OfertasPage() {
         </div>
 
         {/* Layout desktop/tablet: mantiene el diseño original en fila */}
-        {ofertas.map((item) => (
+        {ofertas.map((item, index) => (
           <div
             key={item.title}
             className={`hidden md:flex flex-1 flex-col items-center justify-center ${item.bg} group transition-all duration-300 cursor-pointer h-full pt-20`}
-            style={{ height: "100vh", minHeight: "100vh", overflow: "hidden" }}
+            style={{
+              height: "100vh",
+              minHeight: "100vh",
+              overflow: "hidden",
+              transform: isLoaded ? "translateX(0)" : "translateX(-100%)",
+              opacity: isLoaded ? 1 : 0,
+              transition: `transform 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${
+                index * 0.15
+              }s, opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1) ${index * 0.15}s`,
+            }}
           >
             <Image
               src={item.icon}
@@ -152,7 +171,7 @@ export default function OfertasPage() {
             {/* Botón de más información: navega a la categoría de productos con oferta */}
             <Link
               href={item.href}
-              className="mt-2 px-6 py-2 border-2 border-white rounded-full text-white text-lg font-medium hover:bg-white hover:text-[#1A407A] transition-colors duration-200 group-hover:bg-white group-hover:text-[#1A407A]"
+              className="mt-2 px-6 py-2 border-2 border-white rounded-full text-white text-lg font-medium hover:bg-white hover:text-[#1a1a1a] transition-colors duration-200 group-hover:bg-white group-hover:text-[#1a1a1a]"
               aria-label={item.info + " " + item.title}
               scroll={false}
             >

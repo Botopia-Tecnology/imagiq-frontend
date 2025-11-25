@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Package } from "lucide-react";
 
 /**
  * Overlay de error de compra con animaciones premium, accesibilidad y microinteracciones.

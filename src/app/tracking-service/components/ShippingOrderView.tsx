@@ -83,7 +83,7 @@ export function ShippingOrderView({
                   <div className="px-5 pt-3 pb-4 flex justify-center">
                     <button
                       onClick={handleDownload}
-                      className="px-5 py-2 rounded-full bg-[#17407A] text-white hover:brightness-110 transition shadow-md"
+                      className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md"
                       aria-label="Descargar guía"
                     >
                       Descargar PDF
@@ -102,7 +102,7 @@ export function ShippingOrderView({
             <div className="w-full rounded-xl border shadow bg-white p-5">
               <h3 className="text-base font-semibold text-gray-900 mb-3">Guía de envío</h3>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-[#17407A] animate-spin" />
+                <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-black animate-spin" />
                 <p className="text-sm text-gray-600">Generando guía…</p>
               </div>
             </div>
@@ -114,7 +114,7 @@ export function ShippingOrderView({
       <div className="w-full px-4 sm:px-8 mb-8">
         <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <svg
-            className="w-5 h-5 text-[#17407A]"
+            className="w-5 h-5 text-black"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -134,7 +134,7 @@ export function ShippingOrderView({
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <a
             href="tel:6017441176"
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#17407A] text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
           >
             <svg
               className="w-4 h-4"

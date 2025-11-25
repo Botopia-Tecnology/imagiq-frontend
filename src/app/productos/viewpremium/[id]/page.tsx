@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
+import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 
 // Componentes
 import ProductCarousel from "../components/ProductCarousel";
@@ -103,6 +104,9 @@ export default function ProductViewPage({ params }) {
 
   // Hook para notificación de stock
   const stockNotification = useStockNotification();
+  
+  // 🚀 Prefetch automático de datos de Trade-In
+  useTradeInPrefetch();
 
   // Handler para añadir al carrito con los datos correctos del productSelection
   const handleAddToCart = async () => {

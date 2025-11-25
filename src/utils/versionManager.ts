@@ -42,8 +42,7 @@ export function checkAndUpdateVersion(): boolean {
     }
 
     return false;
-  } catch (error) {
- 
+  } catch {
     return false;
   }
 }

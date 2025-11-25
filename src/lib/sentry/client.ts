@@ -41,28 +41,23 @@ let configLoading = false;
 export async function initSentry(): Promise<void> {
   // Validaciones previas
   if (!sentryConfig.enabled) {
-    console.log('[Sentry] Disabled via config');
     return;
   }
 
   if (sentryInitialized) {
-    console.log('[Sentry] Already initialized');
     return;
   }
 
   if (configLoading) {
-    console.log('[Sentry] Already loading configuration');
     return;
   }
 
   if (globalThis.window === undefined) {
-    console.log('[Sentry] Running in server, skipping');
     return;
   }
 
   try {
     configLoading = true;
-    console.log('[Sentry] Fetching configuration from backend...');
 
     // Obtener la configuración desde el backend con autenticación API Key
     const config = await apiGet<{
@@ -78,8 +73,6 @@ export async function initSentry(): Promise<void> {
       configLoading = false;
       return;
     }
-
-    console.log('[Sentry] Configuration received, initializing SDK...');
 
     // Inicializar Sentry con la configuración obtenida del backend
     Sentry.init({
@@ -104,7 +97,6 @@ export async function initSentry(): Promise<void> {
 
     sentryInitialized = true;
     configLoading = false;
-    console.log('[Sentry] Initialization complete');
   } catch (error) {
     console.error('[Sentry] Error during initialization:', error);
     configLoading = false;
@@ -134,7 +126,6 @@ export async function initSentry(): Promise<void> {
  */
 export function captureError(error: Error, context?: Record<string, unknown>): void {
   if (!sentryInitialized) {
-    console.log('[Sentry] Not initialized, skipping error capture');
     return;
   }
 
@@ -142,7 +133,6 @@ export function captureError(error: Error, context?: Record<string, unknown>): v
     Sentry.captureException(error, {
       contexts: context ? { custom: context } : undefined,
     });
-    console.log('[Sentry] Error captured:', error.message);
   } catch (err) {
     console.error('[Sentry] Failed to capture error:', err);
   }
@@ -168,13 +158,11 @@ export function captureMessage(
   level: 'info' | 'warning' | 'error' = 'info'
 ): void {
   if (!sentryInitialized) {
-    console.log('[Sentry] Not initialized, skipping message capture');
     return;
   }
 
   try {
     Sentry.captureMessage(message, level);
-    console.log('[Sentry] Message captured:', message, `(${level})`);
   } catch (err) {
     console.error('[Sentry] Failed to capture message:', err);
   }
@@ -205,13 +193,11 @@ export function setUser(user: {
   username?: string;
 }): void {
   if (!sentryInitialized) {
-    console.debug('[Sentry] Not initialized, skipping setUser');
     return;
   }
 
   try {
     Sentry.setUser(user);
-    console.debug('[Sentry] User set:', user.id || user.email || 'anonymous');
   } catch (err) {
     console.error('[Sentry] Failed to set user:', err);
   }
@@ -232,13 +218,11 @@ export function setUser(user: {
  */
 export function clearUser(): void {
   if (!sentryInitialized) {
-    console.debug('[Sentry] Not initialized, skipping clearUser');
     return;
   }
 
   try {
     Sentry.setUser(null);
-    console.debug('[Sentry] User cleared');
   } catch (err) {
     console.error('[Sentry] Failed to clear user:', err);
   }

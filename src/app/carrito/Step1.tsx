@@ -1,12 +1,12 @@
 "use client";
 import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
-import { useCart } from "@/hooks/useCart";
+import { useCart, type CartProduct, type BundleInfo } from "@/hooks/useCart";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints, type ProductApiData } from "@/lib/api";
 import { apiDelete, apiPut } from "@/lib/api-client";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { toast } from "sonner";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import ProductCard from "./ProductCard";
@@ -16,6 +16,8 @@ import {
   validateTradeInProducts,
 } from "./utils/validateTradeIn";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import { CartBundleGroup } from "./components/CartBundleGroup";
+import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 
 /**
  * Paso 1 del carrito de compras
@@ -54,12 +56,42 @@ export default function Step1({
     addProduct,
     calculations,
     loadingShippingInfo,
+    formatPrice,
+    // Métodos de Bundle
+    updateBundleQuantity,
+    removeBundleProduct,
   } = useCart();
+
+  // Agrupar productos por bundle
+  const { bundleGroups, nonBundleProducts } = useMemo(() => {
+    const groups = new Map<string, { bundleInfo: BundleInfo; items: CartProduct[] }>();
+    const standalone: CartProduct[] = [];
+
+    for (const product of cartProducts) {
+      if (product.bundleInfo) {
+        const key = `${product.bundleInfo.codCampana}-${product.bundleInfo.productSku}`;
+        if (!groups.has(key)) {
+          groups.set(key, { bundleInfo: product.bundleInfo, items: [] });
+        }
+        groups.get(key)!.items.push(product);
+      } else {
+        standalone.push(product);
+      }
+    }
+
+    return {
+      bundleGroups: Array.from(groups.values()),
+      nonBundleProducts: standalone,
+    };
+  }, [cartProducts]);
 
   // Estado para rastrear qué productos están cargando indRetoma
   const [loadingIndRetoma, setLoadingIndRetoma] = useState<Set<string>>(
     new Set()
   );
+
+  // 🚀 Prefetch automático de datos de Trade-In
+  useTradeInPrefetch();
 
   // Cargar datos de Trade-In desde localStorage
   // Si el producto aplica (indRetoma === 1) pero no hay trade-in activo, mostrar banner para guiar al usuario
@@ -498,20 +530,20 @@ export default function Step1({
 
   const tradeInSummaryProps = shouldShowTradeInBanner
     ? {
-        deviceName: tradeInData!.deviceName,
-        tradeInValue: tradeInData!.value,
-        onEdit: tradeInData!.completed
-          ? handleRemoveTradeIn
-          : handleOpenTradeInModal,
-        validationError:
-          tradeInValidation.isValid === false
-            ? getTradeInValidationMessage(tradeInValidation)
-            : undefined,
-        isGuide: !tradeInData!.completed,
-        showErrorSkeleton,
-        shippingCity: cartProducts.find((p) => p.indRetoma === 1)?.shippingCity,
-        showCanPickUpMessage: showCanPickUpMessage,
-      }
+      deviceName: tradeInData!.deviceName,
+      tradeInValue: tradeInData!.value,
+      onEdit: tradeInData!.completed
+        ? handleRemoveTradeIn
+        : handleOpenTradeInModal,
+      validationError:
+        tradeInValidation.isValid === false
+          ? getTradeInValidationMessage(tradeInValidation)
+          : undefined,
+      isGuide: !tradeInData!.completed,
+      showErrorSkeleton,
+      shippingCity: cartProducts.find((p) => p.indRetoma === 1)?.shippingCity,
+      showCanPickUpMessage: showCanPickUpMessage,
+    }
     : null;
 
   return (
@@ -526,36 +558,54 @@ export default function Step1({
               No hay productos en el carrito.
             </div>
           ) : (
-            <>
-              <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
-                {cartProducts.map((product, idx) => (
-                  <ProductCard
-                    key={product.sku}
-                    nombre={product.name}
-                    imagen={product.image}
-                    precio={product.price}
-                    precioOriginal={product.originalPrice}
-                    cantidad={product.quantity}
-                    stock={product.stock}
-                    shippingCity={product.shippingCity}
-                    shippingStore={product.shippingStore}
-                    color={product.color}
-                    colorName={product.colorName}
-                    capacity={product.capacity}
-                    ram={product.ram}
-                    desDetallada={product.desDetallada}
-                    isLoadingShippingInfo={
-                      loadingShippingInfo[product.sku] || false
-                    }
-                    isLoadingIndRetoma={loadingIndRetoma.has(product.sku)}
-                    indRetoma={product.indRetoma}
-                    onQuantityChange={(cantidad) =>
-                      handleQuantityChange(idx, cantidad)
-                    }
-                    onRemove={() => handleRemove(idx)}
-                  />
-                ))}
-              </div>
+            <div className="space-y-4">
+              {/* Bundles agrupados */}
+              {bundleGroups.map((group) => (
+                <CartBundleGroup
+                  key={`${group.bundleInfo.codCampana}-${group.bundleInfo.productSku}`}
+                  bundleInfo={group.bundleInfo}
+                  items={group.items}
+                  onUpdateQuantity={updateBundleQuantity}
+                  onRemoveProduct={removeBundleProduct}
+                  formatPrice={formatPrice}
+                />
+              ))}
+
+              {/* Productos individuales (sin bundle) */}
+              {nonBundleProducts.length > 0 && (
+                <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
+                  {nonBundleProducts.map((product) => {
+                    const idx = cartProducts.findIndex((p) => p.sku === product.sku);
+                    return (
+                      <ProductCard
+                        key={product.sku}
+                        nombre={product.name}
+                        imagen={product.image}
+                        precio={product.price}
+                        precioOriginal={product.originalPrice}
+                        cantidad={product.quantity}
+                        stock={product.stock}
+                        shippingCity={product.shippingCity}
+                        shippingStore={product.shippingStore}
+                        color={product.color}
+                        colorName={product.colorName}
+                        capacity={product.capacity}
+                        ram={product.ram}
+                        desDetallada={product.desDetallada}
+                        isLoadingShippingInfo={
+                          loadingShippingInfo[product.sku] || false
+                        }
+                        isLoadingIndRetoma={loadingIndRetoma.has(product.sku)}
+                        indRetoma={product.indRetoma}
+                        onQuantityChange={(cantidad) =>
+                          handleQuantityChange(idx, cantidad)
+                        }
+                        onRemove={() => handleRemove(idx)}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
               {/* Banner de Trade-In - Debajo de los productos */}
               {tradeInSummaryProps && (
@@ -563,7 +613,7 @@ export default function Step1({
                   <TradeInCompletedSummary {...tradeInSummaryProps} />
                 </div>
               )}
-            </>
+            </div>
           )}
         </section>
         {/* Resumen de compra - Solo Desktop */}
@@ -597,6 +647,8 @@ export default function Step1({
             isStep1={true}
             onCanPickUpReady={handleCanPickUpReady}
             shouldCalculateCanPickUp={true}
+            products={cartProducts}
+            calculations={calculations}
           />
         </aside>
       </div>
@@ -630,11 +682,10 @@ export default function Step1({
 
             {/* Botón continuar */}
             <button
-              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-                !tradeInValidation.isValid || isLoadingCanPickUpGlobal
+              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!tradeInValidation.isValid || isLoadingCanPickUpGlobal
                   ? "bg-gray-400 cursor-not-allowed opacity-70"
                   : "bg-[#222] hover:bg-[#333] cursor-pointer"
-              }`}
+                }`}
               onClick={handleContinue}
               disabled={!tradeInValidation.isValid || isLoadingCanPickUpGlobal}
             >

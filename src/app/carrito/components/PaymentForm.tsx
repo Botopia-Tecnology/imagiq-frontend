@@ -10,6 +10,8 @@ import pseLogo from "@/img/iconos/logo-pse.png";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import { fetchBanks } from "../utils";
 import { useCardsCache } from "../hooks/useCardsCache";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 interface PaymentFormProps {
   paymentMethod: string;
@@ -59,11 +61,17 @@ export default function PaymentForm({
   const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
     []
   );
+  const [isLoadingBanks, setIsLoadingBanks] = useState(true);
+  // Hook para obtener usuario del localStorage (para usuarios sin sesión activa pero con cuenta creada en Step2)
+  const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
 
   // Helper para obtener el userId (autenticado o invitado)
   const getUserId = (): string | null => {
     if (authContext.user?.id) {
       return authContext.user.id;
+    }
+    if (loggedUser?.id) {
+      return loggedUser.id;
     }
 
     try {
@@ -91,19 +99,24 @@ export default function PaymentForm({
 
   // Cargar bancos para PSE
   useEffect(() => {
-    fetchBanks().then((res) => {
-      setBanks(res);
-    });
+    setIsLoadingBanks(true);
+    fetchBanks()
+      .then((res) => {
+        setBanks(res);
+      })
+      .finally(() => {
+        setIsLoadingBanks(false);
+      });
   }, []);
 
-  // Cargar tarjetas guardadas al montar
+  // Cargar tarjetas guardadas al montar o cuando cambia el usuario
   useEffect(() => {
     const userId = getUserId();
-    
+
     if (userId) {
       loadSavedCards();
     }
-  }, [authContext.user?.id, loadSavedCards]);
+  }, [authContext.user?.id, loggedUser?.id, loadSavedCards]);
 
   // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
   useEffect(() => {
@@ -111,7 +124,7 @@ export default function PaymentForm({
     if (userId && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
       loadSavedCards(true); // true = forzar recarga
     }
-  }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
+  }, [authContext.user?.id, loggedUser?.id, savedCardsReloadCounter, loadSavedCards]);
 
   // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas o después de agregar una nueva
   useEffect(() => {
@@ -172,15 +185,17 @@ export default function PaymentForm({
 
   // Mostrar skeleton completo cuando:
   // 1. Se están cargando las tarjetas inicialmente
-  // 2. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
+  // 2. Se están cargando los bancos para PSE
+  // 3. Se está cargando zero interest (sin importar si hay tarjetas o no)
   const shouldShowFullSkeleton =
     isLoadingCards ||
-    (isLoadingZeroInterest && savedCards.length === 0);
+    isLoadingBanks ||
+    isLoadingZeroInterest;
 
   if (shouldShowFullSkeleton) {
     return (
       <div>
-        <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+        <h2 className="text-[22px] font-bold mb-4">Elije como pagar</h2>
 
         <div className="animate-pulse space-y-6">
           {/* Skeleton de Recomendados */}
@@ -214,7 +229,7 @@ export default function PaymentForm({
 
   return (
     <div>
-      <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+      <h2 className="text-[22px] font-bold mb-4">Elije como pagar</h2>
 
       {/* Sección de Recomendados */}
       <div className="mb-6">

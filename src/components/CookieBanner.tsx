@@ -129,8 +129,6 @@ function saveConsentToAllSources(
   // 3. Guardar en cookie (backup permanente, expira en 365 días)
   setCookie(COOKIE_NAME, encodeURIComponent(serialized), 365);
 
-  console.log("🍪 [CookieBanner] ✅ Consent saved to ALL sources:", consent);
-
   // Disparar evento para que los scripts reaccionen
   window.dispatchEvent(new CustomEvent("consentChange", { detail: consent }));
 }
@@ -163,7 +161,6 @@ export default function CookieBanner() {
   // Montar componente
   useEffect(() => {
     setMounted(true);
-    console.log("🍪 [CookieBanner] Component mounted");
   }, []);
 
   // Verificar si debe mostrarse CON PROTECCIÓN ANTI-REAPARICIÓN
@@ -171,42 +168,26 @@ export default function CookieBanner() {
     if (!mounted) return;
     if (typeof window === "undefined") return;
 
-    console.log("🍪 [CookieBanner] Checking consent from ALL sources...");
-
     const consent = getConsentFromAllSources();
 
     if (!consent) {
-      console.log("🍪 [CookieBanner] ✅ No consent found - WILL SHOW BANNER");
       setShow(true);
       return;
     }
 
     // Verificar que la decisión sea explícita (no pending)
     if (consent.decision === "accepted") {
-      console.log(
-        "🍪 [CookieBanner] ❌ User ACCEPTED on",
-        new Date(consent.timestamp).toLocaleString(),
-        "- NOT showing banner"
-      );
       setShow(false);
     } else if (consent.decision === "rejected") {
-      console.log(
-        "🍪 [CookieBanner] ⚠️ User REJECTED on",
-        new Date(consent.timestamp).toLocaleString(),
-        "- WILL SHOW BANNER again"
-      );
       // Si rechazó, mostrar nuevamente para darle oportunidad de cambiar de opinión
       setShow(true);
     } else {
       // Decisión inválida o pending, mostrar banner
-      console.log("🍪 [CookieBanner] ⚠️ Invalid decision state - WILL SHOW BANNER");
       setShow(true);
     }
   }, [mounted]);
 
   const handleAccept = async () => {
-    console.log("🍪 [CookieBanner] User ACCEPTED");
-
     // 1. Guardar consentimiento de cookies en TODAS las fuentes
     saveConsentToAllSources(true, true, "accepted");
 
@@ -225,15 +206,13 @@ export default function CookieBanner() {
               timestamp: Date.now(),
             };
             localStorage.setItem("imagiq_user_location", JSON.stringify(locationData));
-            console.log("📍 [Location] Obtained and saved:", locationData);
           },
-          (error) => {
-            console.log("📍 [Location] User denied or error:", error.message);
-            // No importa si falla, ya guardamos el consentimiento
+          (_error) => {
+            // User denied location or error occurred - consent already saved
           }
         );
       } catch {
-        console.log("📍 [Location] Geolocation not available");
+        // Geolocation not available
       }
     }
 
@@ -242,14 +221,11 @@ export default function CookieBanner() {
 
     // 5. Forzar reload para que los scripts se carguen con el nuevo consentimiento
     setTimeout(() => {
-      console.log("🍪 [CookieBanner] Reloading page to apply consent...");
       window.location.reload();
     }, 500);
   };
 
   const handleReject = () => {
-    console.log("🍪 [CookieBanner] User REJECTED");
-
     // Guardar rechazo explícito (NO guardar en ubicación para volver a preguntar)
     saveConsentToAllSources(false, false, "rejected");
 
@@ -258,13 +234,11 @@ export default function CookieBanner() {
 
     // Reload para aplicar el rechazo
     setTimeout(() => {
-      console.log("🍪 [CookieBanner] Reloading page to apply rejection...");
       window.location.reload();
     }, 500);
   };
 
   const handleClose = () => {
-    console.log("🍪 [CookieBanner] User CLOSED (will show again later)");
     // Solo ocultar visualmente, NO guardar nada
     // El banner volverá a aparecer en la próxima navegación/recarga
     setShow(false);
@@ -274,8 +248,6 @@ export default function CookieBanner() {
   if (!mounted || !show) {
     return null;
   }
-
-  console.log("🍪 [CookieBanner] RENDERING BANNER");
 
   return (
     <div

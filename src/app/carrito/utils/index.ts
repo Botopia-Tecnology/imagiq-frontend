@@ -99,7 +99,6 @@ export async function checkZeroInterest(
     const data = await apiPost<CheckZeroInterestResponse>('/api/payments/check-zero-interest', request);
     return data;
   } catch (error) {
-    console.error("Error checking zero interest:", error);
     // Fail silently - don't block the checkout flow
     return null;
   }

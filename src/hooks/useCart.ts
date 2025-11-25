@@ -787,6 +787,7 @@ export function useCart(): UseCartReturn {
       const effectiveUserId = userId || getUserId();
 
       // Preparar items con bundleInfo y quantity = 1
+      console.log("Adding bundle to cart:", items, bundleInfo);
       const itemsWithBundle: CartProduct[] = items.map((item) => ({
         ...item,
         quantity: 1,
@@ -808,6 +809,7 @@ export function useCart(): UseCartReturn {
           );
 
           if (existingIndex >= 0) {
+            console.log("Product already in bundle, updating quantity:", item.sku);
             // Si el producto ya existe en el mismo bundle, actualizar cantidad
             newProducts[existingIndex] = {
               ...newProducts[existingIndex],

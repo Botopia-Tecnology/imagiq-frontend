@@ -351,7 +351,7 @@ export default function Step7({ onBack }: Step7Props) {
         en_zona_cobertura: true,
       });
     }
-  }, [authContext.user?.id, loggedUser?.id]);
+  }, [authContext.user?.id, loggedUser?.id, shippingVerification]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {

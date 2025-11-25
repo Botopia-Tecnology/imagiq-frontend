@@ -468,84 +468,35 @@ export default function BundleCard({
     setIsLoading(true);
 
     try {
-      // Obtener detalles del bundle desde el backend
-      const bundleDetailsUrl = `/api/products/v2/bundles/${baseCodigoMarket}/${codCampana}/${selectedOption.product_sku}`;
-      const bundleDetails = await apiGet<{
-        productos: Array<{
-          sku: string;
-          modelo: string;
-          imagePreviewUrl?: string;
-          product_original_price: number;
-          product_discount_price: number;
-          ean?: string;
-          color?: string;
-          nombreColor?: string;
-          capacidad?: string;
-          memoriaram?: string;
-          stockTotal?: number;
-          bundle_price: number;
-          bundle_discount: number;
-        }>;
-      }>(bundleDetailsUrl);
 
-      if (!bundleDetails || !bundleDetails.productos || bundleDetails.productos.length === 0) {
-        // Fallback: usar datos disponibles de la opción seleccionada
-        toast.warning("Usando datos básicos del bundle", {
-          description: "No se pudieron obtener los detalles completos",
-        });
 
-        // Construir productos básicos desde los SKUs disponibles
-        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
-          id: sku,
-          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
-          image: previewImages[index] || "/img/logo_imagiq.png",
-          price: 0, // Se calculará proporcionalmente
-          sku,
-          ean: sku,
-        }));
+      // Construir productos básicos desde los SKUs disponibles
+      const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
+        id: sku,
+        name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+        image: previewImages[index] || "/img/logo_imagiq.png",
+        price: 0, // Se calculará proporcionalmente
+        sku,
+        ean: sku,
+        capacity: selectedOption.capacidadProductSku,
+        color: selectedOption.colorProductSku,
+        modelo: selectedOption.modelo,
+        colorName: selectedOption.nombreColorProductSku,
+        stock: selectedOption.stockTotal,
+        ram: selectedOption.memoriaRamProductSku
+      }));
 
-        const bundleInfo: BundleInfo = {
-          codCampana,
-          productSku: selectedOption.product_sku,
-          skusBundle: skus_bundle,
-          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
-          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
-          fechaFinal: new Date(fecha_final),
-        };
+      const bundleInfo: BundleInfo = {
+        codCampana,
+        productSku: selectedOption.product_sku,
+        skusBundle: skus_bundle,
+        bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
+        bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+        fechaFinal: new Date(fecha_final),
+      };
 
-        await addBundleToCart(basicProducts, bundleInfo);
-      } else {
-        // Usar datos completos del backend
-        // bundle_price y bundle_discount están en cada producto, tomamos del primero
-        const firstProduct = bundleDetails.productos[0];
+      await addBundleToCart(basicProducts, bundleInfo);
 
-        const products: Omit<CartProduct, "quantity">[] = bundleDetails.productos.map((product, index) => ({
-          id: product.sku,
-          name: product.modelo,
-          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
-          price: product.product_discount_price,
-          originalPrice: product.product_original_price,
-          sku: product.sku,
-          ean: product.ean || product.sku,
-          color: product.color,
-          colorName: product.nombreColor,
-          capacity: product.capacidad,
-          ram: product.memoriaram,
-          stock: product.stockTotal,
-          modelo: product.modelo,
-        }));
-
-        const bundleInfo: BundleInfo = {
-          codCampana,
-          productSku: selectedOption.product_sku,
-          skusBundle: skus_bundle,
-          bundlePrice: firstProduct.bundle_price,
-          bundleDiscount: firstProduct.bundle_discount,
-          fechaFinal: new Date(fecha_final),
-        };
-
-        await addBundleToCart(products, bundleInfo);
-      }
 
 
 
@@ -660,8 +611,8 @@ export default function BundleCard({
                     <span>Stock: </span>
                     <span className={cn(
                       "font-semibold",
-                      selectedOptionStock > 5 ? "text-green-600" : 
-                      selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
+                      selectedOptionStock > 5 ? "text-green-600" :
+                        selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
                     )}>
                       {selectedOptionStock} unidades
                     </span>
@@ -739,42 +690,42 @@ export default function BundleCard({
 
           {/* Botones de acción - Horizontal */}
           <div className="flex items-center gap-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOutOfStock) {
-                    stockNotification.openModal();
-                  } else {
-                    handleAddToCart();
-                  }
-                }}
-                disabled={isLoading}
-                className={cn(
-                  "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
-                  "bg-black text-white hover:bg-gray-800",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  isLoading && "animate-pulse"
-                )}
-              >
-                {isLoading ? (
-                  <Loader className="w-4 h-4 mx-auto animate-spin" />
-                ) : isOutOfStock ? (
-                  "Notifícame"
-                ) : (
-                  "Añadir al carrito"
-                )}
-              </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isOutOfStock) {
+                  stockNotification.openModal();
+                } else {
+                  handleAddToCart();
+                }
+              }}
+              disabled={isLoading}
+              className={cn(
+                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
+                "bg-black text-white hover:bg-gray-800",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                isLoading && "animate-pulse"
+              )}
+            >
+              {isLoading ? (
+                <Loader className="w-4 h-4 mx-auto animate-spin" />
+              ) : isOutOfStock ? (
+                "Notifícame"
+              ) : (
+                "Añadir al carrito"
+              )}
+            </button>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMoreInfo();
-                }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
-              >
-                Más información
-              </button>
-            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMoreInfo();
+              }}
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+            >
+              Más información
+            </button>
+          </div>
         </div>
       </div>
 

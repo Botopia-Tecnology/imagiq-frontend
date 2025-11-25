@@ -453,8 +453,8 @@ export default function Step4OrderSummary({
         <button
           type="button"
           className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
-              ? "opacity-70 cursor-not-allowed"
-              : "cursor-pointer"
+            ? "opacity-70 cursor-not-allowed"
+            : "cursor-pointer"
             }`}
           disabled={isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)}
           data-testid="checkout-finish-btn"
@@ -588,8 +588,8 @@ export default function Step4OrderSummary({
         </div>
       </div>
 
-      {/* Debug: canPickUp global (solo cuando la variable de entorno está activa) */}
-      {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+      {/* Debug: canPickUp global - DESHABILITADO - Solo se muestra en consola */}
+      {/* {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs font-semibold text-yellow-800 mb-2">
             Debug: canPickUp global
@@ -614,7 +614,7 @@ export default function Step4OrderSummary({
             })()}
           </div>
         </div>
-      )}
+      )} */}
     </aside>
   );
 }

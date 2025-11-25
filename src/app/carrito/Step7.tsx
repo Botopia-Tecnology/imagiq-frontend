@@ -29,11 +29,10 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 import { productEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
-import { ThreeDSecureModal } from "./components/ThreeDSecureModal";
 
 declare global {
   interface Window {
-    validate3ds: (data: any) => void;
+    validate3ds: (data: unknown) => void;
   }
 }
 
@@ -118,20 +117,20 @@ export default function Step7({ onBack }: Step7Props) {
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
-  const [loggedUser, _] = useSecureStorage<User | null>(
+  const [loggedUser] = useSecureStorage<User | null>(
     "imagiq_user",
     null
   );
 
-  // 3DS Modal state
-  const [show3DSModal, setShow3DSModal] = useState(false);
-  const [challengeData, setChallengeData] = useState<{
-    acsURL: string;
-    encodedCReq: string;
-    threeDSServerTransID?: string;
-    acsTransID?: string;
-  } | null>(null);
-  const [currentOrderId, setCurrentOrderId] = useState<string>("");
+  // 3DS Modal state - Not used anymore, kept for backward compatibility
+  // const [show3DSModal, setShow3DSModal] = useState(false);
+  // const [challengeData, setChallengeData] = useState<{
+  //   acsURL: string;
+  //   encodedCReq: string;
+  //   threeDSServerTransID?: string;
+  //   acsTransID?: string;
+  // } | null>(null);
+  // const [currentOrderId, setCurrentOrderId] = useState<string>("");
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -686,49 +685,31 @@ export default function Step7({ onBack }: Step7Props) {
     const handle3DSMessage = (event: MessageEvent) => {
       // Verificar que el evento tenga los datos esperados
       if (event.data && (event.data.success || event.data.message)) {
-        console.log("Proceso 3DS finalizado. Ref Payco:", event.data.ref_payco);
+        console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
 
-        if (event.data.success) {
-          // Si es exitoso, redirigir a la página de éxito
-          // La URL de redirección debería venir del backend o construirse aquí
-          // Asumimos que si es exitoso, podemos ir a la página de agradecimiento
-          // Sin embargo, lo ideal es verificar el estado de la transacción
-          // Por ahora, redirigimos a la home o a una página de verificación si existe
-          // El usuario mencionó: window.location.href = `/verify-purchase/${orderId}`;
-          // Como no tenemos orderId aquí (se crea en el backend), tal vez debamos usar una ruta genérica o esperar
-          // Pero el backend debería haber devuelto una redirectionUrl en el flujo normal.
-          // En el flujo 3DS, el script maneja la redirección o nosotros lo hacemos.
+        // Obtener orderId guardado
+        const orderId = localStorage.getItem('pending_order_id');
 
-          // Si el backend devolvió una redirectionUrl en la respuesta inicial (aunque requiriera 3DS),
-          // podríamos usarla, pero aquí estamos en un evento asíncrono.
-
-          // Vamos a asumir que si es exitoso, redirigimos a /carrito/step7/success o similar,
-          // o recargamos para ver el estado.
-          // Pero el ejemplo del usuario dice: window.location.href = `/verify-purchase/${orderId}`;
-
-          // Dado que no tenemos el orderId fácilmente accesible aquí (está en la respuesta del backend que inició el 3DS),
-          // necesitamos guardarlo en un estado cuando iniciamos el 3DS.
-
-          // Pero espera, el ejemplo del usuario dice:
-          // window.location.href = `/verify-purchase/${orderId}`;
-
-          // Voy a asumir que debemos redirigir a una página de éxito genérica o usar una referencia guardada.
-          // Por ahora, mostraré un toast de éxito y redirigiré al home o a donde indique la lógica.
-
-          toast.success("Autenticación 3DS exitosa. Procesando pago...");
-          // Redirigir a una página de verificación o éxito
-          // Como no tengo el ID de la orden aquí, voy a redirigir a /perfil/pedidos que es seguro
-          router.push("/perfil/pedidos");
+        if (event.data.success && orderId) {
+          console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
+          toast.success("Autenticación 3DS exitosa. Verificando pago...");
+          // Redirigir a página de verificación
+          router.push(`/verify-purchase/${orderId}`);
+        } else if (!orderId) {
+          console.error("❌ [Step7] No se encontró orderId en localStorage");
+          toast.error("Error: No se pudo verificar el pago");
+          setIsProcessing(false);
         } else {
+          console.error("❌ [Step7] 3DS falló o fue cancelado");
           toast.error("La autenticación 3DS falló o fue cancelada.");
           setIsProcessing(false);
         }
       }
     };
 
-    window.addEventListener('message', handle3DSMessage);
+    window.addEventListener("message", handle3DSMessage);
     return () => {
-      window.removeEventListener('message', handle3DSMessage);
+      window.removeEventListener("message", handle3DSMessage);
     };
   }, [router]);
 
@@ -909,27 +890,26 @@ export default function Step7({ onBack }: Step7Props) {
           // Verificar si requiere 3DS
           if (res.requires3DS && res.data3DS) {
             console.log("🔐 [Step7] Requiere validación 3DS", res.data3DS);
+            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number };
+            console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
 
-            const challenge = res.data3DS['3DS']?.data?.action?.challenge;
+            // Guardar orderId para verificación posterior
+            const orderId = res.orderId || "";
+            if (orderId) {
+              localStorage.setItem('pending_order_id', orderId);
+              console.log("🔐 [Step7] OrderId guardado:", orderId);
+            }
 
-            if (challenge && challenge.acsURL && challenge.encodedCReq) {
-              console.log("🔐 [Step7] Opening 3DS modal with challenge data");
-              // Guardar el orderId para el modal (asumiendo que viene en la respuesta o lo generamos)
-              // Si el backend no devuelve orderId, necesitarás ajustar esto
-              const orderId = res.orderId || res.data3DS.ref_payco?.toString() || "";
-              setCurrentOrderId(orderId);
-              setChallengeData({
-                acsURL: challenge.acsURL,
-                encodedCReq: challenge.encodedCReq,
-                threeDSServerTransID: challenge.threeDSServerTransID,
-                acsTransID: challenge.acsTransID,
-              });
-              setShow3DSModal(true);
-              setIsProcessing(false); // Permitir que el usuario interactúe con el modal
+            // Ejecutar validación 3DS con el script de ePayco
+            // Esto maneja tanto IdentifyShopper como ChallengeShopper automáticamente
+            if (typeof window !== 'undefined' && window.validate3ds) {
+              console.log("🔐 [Step7] Ejecutando validate3ds con data3DS completo");
+              window.validate3ds(res.data3DS);
+              // No redirigir, el script de ePayco manejará el flujo
               return;
             } else {
-              console.error("❌ [Step7] 3DS data incomplete:", res.data3DS);
-              setError("Error: datos de autenticación incompletos");
+              console.error("❌ [Step7] Script de ePayco no cargado");
+              setError("Error: Script de validación 3DS no disponible. Por favor recarga la página.");
               setIsProcessing(false);
               return;
             }
@@ -1752,28 +1732,6 @@ export default function Step7({ onBack }: Step7Props) {
         </div>
       </div>
 
-      {/* 3DS Modal */}
-      <ThreeDSecureModal
-        isOpen={show3DSModal}
-        challengeData={challengeData}
-        orderId={currentOrderId}
-        onSuccess={() => {
-          console.log("✅ [Step7] 3DS Success, redirecting to verify-purchase");
-          setShow3DSModal(false);
-          router.push(`/verify-purchase/${currentOrderId}`);
-        }}
-        onError={(error) => {
-          console.error("❌ [Step7] 3DS Error:", error);
-          setShow3DSModal(false);
-          setError(error);
-          setIsProcessing(false);
-        }}
-        onClose={() => {
-          console.log("🔐 [Step7] 3DS Modal closed by user");
-          setShow3DSModal(false);
-          setIsProcessing(false);
-        }}
-      />
     </div>
   );
 }

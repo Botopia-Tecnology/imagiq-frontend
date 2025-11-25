@@ -338,7 +338,10 @@ export default function Step7({ onBack }: Step7Props) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
+  }, [authContext.user?.id, loggedUser?.id]);
 
+  // Separate useEffect for shippingVerification fallback to avoid infinite loop with shippingData
+  useEffect(() => {
     // Cargar shippingVerification desde localStorage como respaldo
     // Esto asegura que el método de envío esté disponible al crear la orden
     const storedEnvioImagiq = localStorage.getItem("checkout-envio-imagiq");
@@ -351,7 +354,7 @@ export default function Step7({ onBack }: Step7Props) {
         en_zona_cobertura: true,
       });
     }
-  }, [authContext.user?.id, loggedUser?.id, shippingVerification]);
+  }, [shippingVerification]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {

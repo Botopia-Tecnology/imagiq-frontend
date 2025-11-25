@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 
 export interface OfertaDestacada {
   uuid: string;
-  producto_id: number;
+  producto_id: string;
   orden: number;
   activo: boolean;
   // Estos campos se rellenan desde el backend cuando se consultan los productos
@@ -56,20 +56,26 @@ export function useOfertasDestacadas(): UseOfertasDestacadasReturn {
 
         const ofertasData = await ofertasResponse.json();
 
-        if (!ofertasData.success || !ofertasData.data) {
+        // El endpoint devuelve un array directo, no envuelto en {success, data}
+        const ofertas = Array.isArray(ofertasData)
+          ? ofertasData as OfertaDestacada[]
+          : [];
+
+        console.log('[Ofertas] Ofertas recibidas:', ofertas);
+
+        if (ofertas.length === 0) {
           setProductos([]);
           setLoading(false);
           return;
         }
 
-        const ofertas = ofertasData.data as OfertaDestacada[];
-
         // Enriquecer con datos de productos
         const productosEnriquecidos = await Promise.all(
           ofertas.map(async (oferta) => {
             try {
+              console.log(`[Ofertas] Enriqueciendo oferta con producto_id: ${oferta.producto_id}`);
               const productResponse = await fetch(
-                `${API_BASE_URL}/api/products/${oferta.producto_id}`,
+                `${API_BASE_URL}/api/products/filtered?codigoMarket=${oferta.producto_id}`,
                 {
                   headers: {
                     "Content-Type": "application/json",
@@ -80,15 +86,30 @@ export function useOfertasDestacadas(): UseOfertasDestacadasReturn {
 
               if (productResponse.ok) {
                 const productData = await productResponse.json();
-                if (productData.success && productData.data?.products?.[0]) {
-                  const product = productData.data.products[0];
-                  return {
+                console.log(`[Ofertas] Producto ${oferta.producto_id} data:`, productData);
+
+                if (productData.products && productData.products.length > 0) {
+                  const product = productData.products[0];
+
+                  // Obtener imagen: priorizar imagePreviewUrl, luego urlImagenes
+                  const imagen = product.imagePreviewUrl?.[0] || product.urlImagenes?.[0] || null;
+
+                  // Obtener nombre: priorizar modelo, luego nombre, luego titulo
+                  const nombre = product.modelo || product.nombre || product.titulo || 'Producto';
+
+                  const enriquecido = {
                     ...oferta,
-                    producto_nombre: product.nombreMarket,
-                    producto_imagen: product.imagenPrevisualizacion,
-                    link_url: `/productos/view/${oferta.producto_id}`,
+                    producto_nombre: nombre,
+                    producto_imagen: imagen,
+                    link_url: `/productos/${oferta.producto_id}`,
                   };
+                  console.log(`[Ofertas] Producto ${oferta.producto_id} enriquecido:`, enriquecido);
+                  return enriquecido;
+                } else {
+                  console.warn(`[Ofertas] Producto ${oferta.producto_id} no tiene products en la respuesta`);
                 }
+              } else {
+                console.error(`[Ofertas] Error HTTP ${productResponse.status} para producto ${oferta.producto_id}`);
               }
             } catch (err) {
               console.error(

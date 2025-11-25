@@ -58,7 +58,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     if (open) {
       const timer = setTimeout(() => {
         setShowSecondText(true);
-      }, 7000); // Cambia el texto a los 7 segundos
+      }, 4000); // Cambia el texto a los 7 segundos
 
       return () => {
         clearTimeout(timer);
@@ -121,7 +121,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               <animate
                 ref={animationRef}
                 attributeName="d"
-                dur="14s"
+                dur="8s"
                 repeatCount="1"
                 fill="freeze"
                 values="
@@ -155,7 +155,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
                 attributeName="opacity"
                 values="0.18;0.18;0.18;0.18;0.12;0.06;0"
                 keyTimes="0;0.7;0.8;0.85;0.9;0.95;1"
-                dur="14s"
+                dur="8s"
                 fill="freeze"
               />
             </rect>
@@ -179,7 +179,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               attributeName="opacity"
               values="0;0;0.1;0.5;0.85;0.99"
               keyTimes="0;0.18;0.32;0.55;0.75;1"
-              dur="24s"
+              dur="8s"
               fill="freeze"
             />
           </image>

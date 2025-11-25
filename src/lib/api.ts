@@ -524,6 +524,9 @@ export interface ProductApiResponse {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+  hasMoreInPage?: boolean; // Indica si hay más productos en la página actual (para lazy loading)
+  lazyOffset?: number; // Offset actual usado en la petición
+  lazyLimit?: number; // Límite de productos por carga lazy
 }
 
 // Opción individual dentro de un bundle (variante)

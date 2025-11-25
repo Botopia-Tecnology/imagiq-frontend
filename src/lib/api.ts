@@ -466,11 +466,11 @@ export const menusEndpoints = {
 
 // Trade-in (Entrego y Estreno) API endpoints
 export const tradeInEndpoints = {
-  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/trade-in/hierarchy'),
+  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/benefits/trade-in/hierarchy'),
   calculateValue: (data: TradeInValueRequest) =>
-    apiClient.post<TradeInValueResponse>('/api/trade-in/value', data),
+    apiClient.post<TradeInValueResponse>('/api/benefits/trade-in/value', data),
   checkSkuForTradeIn: (data: { sku: string }) =>
-    apiClient.post<TradeInCheckResult>('/api/trade-in/check-sku', data)
+    apiClient.post<TradeInCheckResult>('/api/benefits/trade-in/check-sku', data)
 };
 
 // Stores API endpoints

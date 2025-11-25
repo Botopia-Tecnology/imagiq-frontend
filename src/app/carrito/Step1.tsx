@@ -530,20 +530,20 @@ export default function Step1({
 
   const tradeInSummaryProps = shouldShowTradeInBanner
     ? {
-        deviceName: tradeInData!.deviceName,
-        tradeInValue: tradeInData!.value,
-        onEdit: tradeInData!.completed
-          ? handleRemoveTradeIn
-          : handleOpenTradeInModal,
-        validationError:
-          tradeInValidation.isValid === false
-            ? getTradeInValidationMessage(tradeInValidation)
-            : undefined,
-        isGuide: !tradeInData!.completed,
-        showErrorSkeleton,
-        shippingCity: cartProducts.find((p) => p.indRetoma === 1)?.shippingCity,
-        showCanPickUpMessage: showCanPickUpMessage,
-      }
+      deviceName: tradeInData!.deviceName,
+      tradeInValue: tradeInData!.value,
+      onEdit: tradeInData!.completed
+        ? handleRemoveTradeIn
+        : handleOpenTradeInModal,
+      validationError:
+        tradeInValidation.isValid === false
+          ? getTradeInValidationMessage(tradeInValidation)
+          : undefined,
+      isGuide: !tradeInData!.completed,
+      showErrorSkeleton,
+      shippingCity: cartProducts.find((p) => p.indRetoma === 1)?.shippingCity,
+      showCanPickUpMessage: showCanPickUpMessage,
+    }
     : null;
 
   return (
@@ -647,6 +647,8 @@ export default function Step1({
             isStep1={true}
             onCanPickUpReady={handleCanPickUpReady}
             shouldCalculateCanPickUp={true}
+            products={cartProducts}
+            calculations={calculations}
           />
         </aside>
       </div>
@@ -680,11 +682,10 @@ export default function Step1({
 
             {/* Botón continuar */}
             <button
-              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-                !tradeInValidation.isValid || isLoadingCanPickUpGlobal
+              className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!tradeInValidation.isValid || isLoadingCanPickUpGlobal
                   ? "bg-gray-400 cursor-not-allowed opacity-70"
                   : "bg-[#222] hover:bg-[#333] cursor-pointer"
-              }`}
+                }`}
               onClick={handleContinue}
               disabled={!tradeInValidation.isValid || isLoadingCanPickUpGlobal}
             >

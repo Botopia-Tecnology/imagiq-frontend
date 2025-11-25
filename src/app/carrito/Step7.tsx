@@ -40,6 +40,15 @@ interface Step7Props {
   readonly onBack?: () => void;
 }
 
+interface StoreValidationResponse {
+  codBodega?: string;
+  nearest?: {
+    codBodega?: string;
+  };
+}
+
+type StoreValidationData = StoreValidationResponse | StoreValidationResponse[];
+
 interface CardData {
   cardNumber: string;
   cardHolder: string;
@@ -492,7 +501,7 @@ export default function Step7({ onBack }: Step7Props) {
         const response = await productEndpoints.getCandidateStores(requestBody);
 
         // NUEVO: Llamar también a stores-for-products para obtener codBodega
-        let storesData: any = null;
+        let storesData: StoreValidationData | null = null;
         try {
           console.log("📤 [Step7] Llamando stores-for-produtcs con el mismo body");
           const storesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
@@ -536,9 +545,9 @@ export default function Step7({ onBack }: Step7Props) {
             const firstItem = storesData[0];
             warehouseCode = firstItem?.nearest?.codBodega || firstItem?.codBodega;
             console.log("🔍 [Step7] Tomado del primer elemento del array:", warehouseCode);
-          } else {
+          } else if (storesData && !Array.isArray(storesData)) {
             // Si es un objeto (fallback)
-            warehouseCode = storesData?.codBodega || storesData?.nearest?.codBodega;
+            warehouseCode = storesData.codBodega || storesData.nearest?.codBodega;
           }
 
           console.log("🏭 [Step7] codBodega (de stores-for-products):", warehouseCode);

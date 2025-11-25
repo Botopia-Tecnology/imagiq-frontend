@@ -13,6 +13,7 @@ import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
 import { useClarityIdentity } from "@/hooks/useClarityIdentity";
 import VersionManager from "@/components/VersionManager";
+import { subscribeToChannel } from "@/services/realtime";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -67,6 +68,29 @@ export default function ClientLayout({
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+  const allowedRoutes = ["*"];
+  const isAllowed =
+    allowedRoutes.includes("*") || allowedRoutes.includes(pathname);
+
+  // subscribeToChannel devuelve un EventSource
+  const es = subscribeToChannel("inweb", (msg) => {
+   console.log(msg); 
+    if (!isAllowed) {
+      console.log("Evento inweb ignorado en la ruta:", pathname);
+      return;
+    }
+    import("sonner").then(({ toast }) => {
+    toast.info(msg.title ?? "Nuevo mensaje inweb");
+  });
+  });
+
+  // limpiar correctamente
+  return () => {
+    es.close(); // ✅ correcto
+  };
+}, [pathname]);
 
   return (
     <>

@@ -12,6 +12,8 @@ import { StaticImageData } from 'next/image';
 // Importar imágenes mock para usar temporalmente
 import emptyImg from '@/img/empty.jpeg';
 
+import type { BundleProduct } from './api';
+
 /**
  * Opción de bundle mapeada para el frontend
  */
@@ -24,6 +26,7 @@ export interface BundleOptionProps {
   skus_bundle: string[];
   ind_entre_estre: number;
   imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+  productos?: BundleProduct[]; // Array de productos del bundle con detalles completos
   // Campos de variante del producto padre
   colorProductSku?: string; // Color hex del producto (ej: "#3C5B8A")
   nombreColorProductSku?: string; // Nombre del color (ej: "Azul Marino")
@@ -502,6 +505,7 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     skus_bundle: opcion.skus_bundle,
     ind_entre_estre: opcion.ind_entre_estre,
     imagePreviewUrl: opcion.imagePreviewUrl,
+    productos: opcion.productos, // Propagar el array de productos del backend
     // Nuevos campos de variante del producto padre
     colorProductSku: opcion.colorProductSku,
     nombreColorProductSku: opcion.nombreColorProductSku,

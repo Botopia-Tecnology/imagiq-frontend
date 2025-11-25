@@ -18,7 +18,6 @@ import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { calculateSavings } from "./utils/productCardHelpers";
 import type { BundleCardProps, BundleOptionProps } from "@/lib/productMapper";
 import { useCartContext } from "@/features/cart/CartContext";
-import { apiGet } from "@/lib/api-client";
 import type { BundleInfo, CartProduct } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { useStockNotification } from "@/hooks/useStockNotification";
@@ -468,58 +467,13 @@ export default function BundleCard({
     setIsLoading(true);
 
     try {
-      // Obtener detalles del bundle desde el backend
-      const bundleDetailsUrl = `/api/products/v2/bundles/${baseCodigoMarket}/${codCampana}/${selectedOption.product_sku}`;
-      const bundleDetails = await apiGet<{
-        productos: Array<{
-          sku: string;
-          modelo: string;
-          imagePreviewUrl?: string;
-          product_original_price: number;
-          product_discount_price: number;
-          ean?: string;
-          color?: string;
-          nombreColor?: string;
-          capacidad?: string;
-          memoriaram?: string;
-          stockTotal?: number;
-          bundle_price: number;
-          bundle_discount: number;
-        }>;
-      }>(bundleDetailsUrl);
+      // Verificar si tenemos el array de productos desde el backend
+      console.log("Selected option products:", selectedOption.productos);
+      if (selectedOption.productos && selectedOption.productos.length > 0) {
+        // Usar datos completos del backend que ya vienen en la opción
+        const firstProduct = selectedOption.productos[0];
 
-      if (!bundleDetails || !bundleDetails.productos || bundleDetails.productos.length === 0) {
-        // Fallback: usar datos disponibles de la opción seleccionada
-        toast.warning("Usando datos básicos del bundle", {
-          description: "No se pudieron obtener los detalles completos",
-        });
-
-        // Construir productos básicos desde los SKUs disponibles
-        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
-          id: sku,
-          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
-          image: previewImages[index] || "/img/logo_imagiq.png",
-          price: 0, // Se calculará proporcionalmente
-          sku,
-          ean: sku,
-        }));
-
-        const bundleInfo: BundleInfo = {
-          codCampana,
-          productSku: selectedOption.product_sku,
-          skusBundle: skus_bundle,
-          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
-          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
-          fechaFinal: new Date(fecha_final),
-        };
-
-        await addBundleToCart(basicProducts, bundleInfo);
-      } else {
-        // Usar datos completos del backend
-        // bundle_price y bundle_discount están en cada producto, tomamos del primero
-        const firstProduct = bundleDetails.productos[0];
-
-        const products: Omit<CartProduct, "quantity">[] = bundleDetails.productos.map((product, index) => ({
+        const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product, index) => ({
           id: product.sku,
           name: product.modelo,
           image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
@@ -545,9 +499,33 @@ export default function BundleCard({
         };
 
         await addBundleToCart(products, bundleInfo);
+      } else {
+        // Fallback: usar datos básicos de la opción seleccionada
+        toast.warning("Usando datos básicos del bundle", {
+          description: "No se pudieron obtener los detalles completos",
+        });
+
+        // Construir productos básicos desde los SKUs disponibles
+        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
+          id: sku,
+          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+          image: previewImages[index] || "/img/logo_imagiq.png",
+          price: 0, // Se calculará proporcionalmente
+          sku,
+          ean: sku,
+        }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
+          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+          fechaFinal: new Date(fecha_final),
+        };
+
+        await addBundleToCart(basicProducts, bundleInfo);
       }
-
-
 
       // Track del evento
       posthogUtils.capture("bundle_add_to_cart_success", {

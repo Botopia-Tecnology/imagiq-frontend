@@ -5,12 +5,14 @@
 "use client";
 import React, { useMemo, useState, useCallback } from "react";
 import ProductCard from "../../components/ProductCard";
+import BundleCard from "../../components/BundleCard";
 import { useProducts } from "@/features/products/useProducts";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import ItemsPerPageSelector from "../../electrodomesticos/components/ItemsPerPageSelector";
 import Pagination from "../../electrodomesticos/components/Pagination";
 import Banner from "@/components/Banner";
 import { OFERTAS_BANNERS_MAP } from "@/config/banners";
+import type { MixedProductItem } from "@/lib/productMapper";
 
 // Mapeo de secciones a filtros de API
 const ofertasFiltersMap: Record<string, { category?: string; subcategory?: string }> = {
@@ -59,6 +61,8 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
   // Usar el hook de productos con filtro de ofertas
   const { 
     products, 
+    bundles,
+    orderedItems,
     loading, 
     error, 
     totalItems,
@@ -120,19 +124,37 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
       {bannerConfig && <Banner config={bannerConfig} className="mb-10 max-w-7xl mx-auto" />}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8">
-        {products.length === 0 ? (
+        {orderedItems.length === 0 ? (
           <div className="col-span-3 text-center text-gray-500 text-lg py-4">
             Vuelve pronto y encuentra las mejores ofertas
           </div>
         ) : (
-          products.map((producto) => (
-            <ProductCard key={producto.id} {...producto} />
-          ))
+          orderedItems.map((item: MixedProductItem) => {
+            if (item.itemType === 'bundle') {
+              // Renderizar BundleCard para bundles
+              const { itemType, ...bundleProps } = item;
+              return (
+                <BundleCard 
+                  key={bundleProps.id} 
+                  {...bundleProps}
+                />
+              );
+            } else {
+              // Renderizar ProductCard para productos
+              const { itemType, ...productProps } = item;
+              return (
+                <ProductCard 
+                  key={productProps.id} 
+                  {...productProps}
+                />
+              );
+            }
+          })
         )}
       </div>
 
       {/* Paginación */}
-      {!error && products.length > 0 && (
+      {!error && orderedItems.length > 0 && (
         <div className="mt-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
             <ItemsPerPageSelector

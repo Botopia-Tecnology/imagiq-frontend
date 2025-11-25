@@ -73,7 +73,7 @@ interface ShippingData {
 
 interface ShippingVerification {
   envio_imagiq: boolean;
-  todos_productos_im_it: boolean;
+  todos_productos_im_av: boolean;
   en_zona_cobertura: boolean;
 }
 
@@ -121,6 +121,10 @@ export default function Step7({ onBack }: Step7Props) {
     "imagiq_user",
     null
   );
+
+  // Store/Warehouse validation state
+  const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
+  const [isLoadingStoreValidation, setIsLoadingStoreValidation] = useState(false);
 
   // 3DS Modal state - Not used anymore, kept for backward compatibility
   // const [show3DSModal, setShow3DSModal] = useState(false);
@@ -334,7 +338,7 @@ export default function Step7({ onBack }: Step7Props) {
       // establecerlo como respaldo temporal hasta que se verifique
       setShippingVerification({
         envio_imagiq: true,
-        todos_productos_im_it: false,
+        todos_productos_im_av: false,
         en_zona_cobertura: true,
       });
     }
@@ -422,14 +426,15 @@ export default function Step7({ onBack }: Step7Props) {
   // Verificar cobertura cuando los productos estén cargados
   useEffect(() => {
     const verifyWhenProductsReady = async () => {
-      // Solo ejecutar si hay productos y es envío a domicilio
-      if (products.length === 0 || shippingData?.type !== "delivery") {
+      // Solo ejecutar si hay productos
+      if (products.length === 0) {
         setIsLoadingShippingMethod(false);
         return;
       }
 
       // Iniciar loading
       setIsLoadingShippingMethod(true);
+      setIsLoadingStoreValidation(true);
 
       // PASO 1: Obtener canPickUp global del endpoint candidate-stores
       try {
@@ -442,7 +447,7 @@ export default function Step7({ onBack }: Step7Props) {
         if (!userId) {
           const verification = {
             envio_imagiq: false,
-            todos_productos_im_it: false,
+            todos_productos_im_av: false,
             en_zona_cobertura: true,
           };
           setShippingVerification(verification);
@@ -470,7 +475,7 @@ export default function Step7({ onBack }: Step7Props) {
           // Usar Coordinadora por defecto
           setShippingVerification({
             envio_imagiq: false,
-            todos_productos_im_it: false,
+            todos_productos_im_av: false,
             en_zona_cobertura: true,
           });
           setIsLoadingShippingMethod(false);
@@ -478,10 +483,31 @@ export default function Step7({ onBack }: Step7Props) {
         }
 
         // Llamar al endpoint con TODOS los productos agrupados
-        const response = await productEndpoints.getCandidateStores({
+        const requestBody = {
           products: productsToCheck,
           user_id: userId,
-        });
+        };
+        console.log("📤 [Step7] Llamando getCandidateStores con body:", JSON.stringify(requestBody, null, 2));
+
+        const response = await productEndpoints.getCandidateStores(requestBody);
+
+        // NUEVO: Llamar también a stores-for-products para obtener codBodega
+        let storesData: any = null;
+        try {
+          console.log("📤 [Step7] Llamando stores-for-produtcs con el mismo body");
+          const storesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
+            },
+            body: JSON.stringify(requestBody),
+          });
+          storesData = await storesResponse.json();
+          console.log("📥 [Step7] Respuesta de stores-for-produtcs:", JSON.stringify(storesData, null, 2));
+        } catch (error) {
+          console.error("❌ [Step7] Error llamando stores-for-produtcs:", error);
+        }
 
         if (response.success && response.data) {
           // Si la petición fue exitosa, limpiar el hash de fallo si existía
@@ -492,23 +518,62 @@ export default function Step7({ onBack }: Step7Props) {
           const responseData = response.data as {
             canPickUp?: boolean;
             canPickup?: boolean;
+            codeBodega?: string;
+            nearest?: {
+              codBodega?: string;
+            };
           };
+
+          console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(responseData, null, 2));
+
+          // Obtener codBodega de stores-for-products (no de getCandidateStores)
+          console.log("🔍 [Step7] storesData completo:", storesData);
+
+          let warehouseCode: string | undefined;
+
+          if (Array.isArray(storesData) && storesData.length > 0) {
+            // Si es un array, tomar el primer elemento
+            const firstItem = storesData[0];
+            warehouseCode = firstItem?.nearest?.codBodega || firstItem?.codBodega;
+            console.log("🔍 [Step7] Tomado del primer elemento del array:", warehouseCode);
+          } else {
+            // Si es un objeto (fallback)
+            warehouseCode = storesData?.codBodega || storesData?.nearest?.codBodega;
+          }
+
+          console.log("🏭 [Step7] codBodega (de stores-for-products):", warehouseCode);
+
           // Obtener canPickUp global de la respuesta
           const globalCanPickUp =
             responseData.canPickUp ?? responseData.canPickup ?? false;
 
-          // PASO 2: Si canPickUp global es FALSE → Directamente Coordinadora
+          // PASO 2: Si canPickUp global es FALSE → Verificar si es Centro de Distribución
           if (!globalCanPickUp) {
-            const verification = {
-              envio_imagiq: false,
-              todos_productos_im_it: false,
-              en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
-            };
-            setShippingVerification(verification);
-            // Guardar en localStorage como respaldo
-            localStorage.setItem("checkout-envio-imagiq", "false");
-            setIsLoadingShippingMethod(false);
-            return;
+            const esCentroDistribucion = warehouseCode === "001";
+            setIsCentroDistribucion(esCentroDistribucion);
+            setIsLoadingStoreValidation(false);
+
+            if (esCentroDistribucion) {
+              console.log("🏭 [Step7] Es Centro de Distribución (001) - Ejecutando validación de cobertura");
+              // Continuar con la validación de cobertura (PASO 3)
+              // No hacer return aquí, dejar que continúe al PASO 3
+            } else {
+              console.log("🏪 [Step7] NO es Centro de Distribución - Usar Coordinadora directamente");
+              const verification = {
+                envio_imagiq: false,
+                todos_productos_im_av: false,
+                en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
+              };
+              setShippingVerification(verification);
+              // Guardar en localStorage como respaldo
+              localStorage.setItem("checkout-envio-imagiq", "false");
+              setIsLoadingShippingMethod(false);
+              return;
+            }
+          } else {
+            // Si canPickUp es true, no es Centro de Distribución
+            setIsCentroDistribucion(false);
+            setIsLoadingStoreValidation(false);
           }
 
           // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
@@ -516,7 +581,7 @@ export default function Step7({ onBack }: Step7Props) {
           if (!shippingAddress) {
             const verification = {
               envio_imagiq: false,
-              todos_productos_im_it: false,
+              todos_productos_im_av: false,
               en_zona_cobertura: true,
             };
             setShippingVerification(verification);
@@ -539,7 +604,7 @@ export default function Step7({ onBack }: Step7Props) {
 
           const verification = {
             envio_imagiq: data.envio_imagiq || false,
-            todos_productos_im_it: data.todos_productos_im_it || false,
+            todos_productos_im_av: data.todos_productos_im_av || false,
             en_zona_cobertura: data.en_zona_cobertura || false,
           };
           setShippingVerification(verification);
@@ -555,7 +620,7 @@ export default function Step7({ onBack }: Step7Props) {
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
           const verification = {
             envio_imagiq: false,
-            todos_productos_im_it: false,
+            todos_productos_im_av: false,
             en_zona_cobertura: true,
           };
           setShippingVerification(verification);
@@ -589,12 +654,13 @@ export default function Step7({ onBack }: Step7Props) {
         // En caso de error, usar Coordinadora por defecto
         const verification = {
           envio_imagiq: false,
-          todos_productos_im_it: false,
+          todos_productos_im_av: false,
           en_zona_cobertura: true,
         };
         setShippingVerification(verification);
         // Guardar en localStorage como respaldo
         localStorage.setItem("checkout-envio-imagiq", "false");
+        setIsLoadingStoreValidation(false);
         setIsLoadingShippingMethod(false);
       }
     };
@@ -1652,8 +1718,8 @@ export default function Step7({ onBack }: Step7Props) {
                                 )}
                               </p>
                               <p>
-                                • todos_productos_im_it:{" "}
-                                {shippingVerification?.todos_productos_im_it ? (
+                                • todos_productos_im_av:{" "}
+                                {shippingVerification?.todos_productos_im_av ? (
                                   <span className="text-green-600 font-bold">
                                     true
                                   </span>
@@ -1666,6 +1732,26 @@ export default function Step7({ onBack }: Step7Props) {
                               <p>
                                 • en_zona_cobertura:{" "}
                                 {shippingVerification?.en_zona_cobertura ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • es_centro_distribucion:{" "}
+                                {isLoadingStoreValidation ? (
+                                  <span className="text-yellow-600 italic">
+                                    verificando...
+                                  </span>
+                                ) : isCentroDistribucion === null ? (
+                                  <span className="text-gray-600 italic">
+                                    no verificado
+                                  </span>
+                                ) : isCentroDistribucion ? (
                                   <span className="text-green-600 font-bold">
                                     true
                                   </span>

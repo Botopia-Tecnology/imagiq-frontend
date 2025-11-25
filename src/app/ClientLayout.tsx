@@ -14,6 +14,7 @@ import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
 import { useClarityIdentity } from "@/hooks/useClarityIdentity";
 import VersionManager from "@/components/VersionManager";
 import { subscribeToChannel } from "@/services/realtime";
+import { connectSocket } from "@/lib/socket";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -70,27 +71,54 @@ export default function ClientLayout({
   }, []);
 
   useEffect(() => {
-  const allowedRoutes = ["*"];
+  const allowedRoutes = ["*"]; // hoy todas
+
   const isAllowed =
     allowedRoutes.includes("*") || allowedRoutes.includes(pathname);
 
-  // subscribeToChannel devuelve un EventSource
-  const es = subscribeToChannel("inweb", (msg) => {
-   console.log(msg); 
+  const socket = connectSocket("inweb");
+
+  socket.on("campaign_start", (msg) => {
+    console.log("📨 Evento inweb recibido:", msg);
+
     if (!isAllowed) {
-      console.log("Evento inweb ignorado en la ruta:", pathname);
+      console.log("Evento ignorado en ruta:", pathname);
       return;
     }
+
     import("sonner").then(({ toast }) => {
-    toast.info(msg.title ?? "Nuevo mensaje inweb");
-  });
+      toast.info(msg?.title ?? "Nueva campaña inweb");
+    });
   });
 
-  // limpiar correctamente
   return () => {
-    es.close(); // ✅ correcto
+    socket.off("campaign_start");
   };
 }, [pathname]);
+
+
+//   useEffect(() => {
+//   const allowedRoutes = ["*"];
+//   const isAllowed =
+//     allowedRoutes.includes("*") || allowedRoutes.includes(pathname);
+
+//   // subscribeToChannel devuelve un EventSource
+//   const es = subscribeToChannel("inweb", (msg) => {
+//    console.log(msg); 
+//     if (!isAllowed) {
+//       console.log("Evento inweb ignorado en la ruta:", pathname);
+//       return;
+//     }
+//     import("sonner").then(({ toast }) => {
+//     toast.info(msg.title ?? "Nuevo mensaje inweb");
+//   });
+//   });
+
+//   // limpiar correctamente
+//   return () => {
+//     es.close(); // ✅ correcto
+//   };
+// }, [pathname]);
 
   return (
     <>

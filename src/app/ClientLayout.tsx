@@ -76,13 +76,17 @@ export default function ClientLayout({
   const isAllowed =
     allowedRoutes.includes("*") || allowedRoutes.includes(pathname);
 
+  console.log("🔌 Conectando socket en ClientLayout...");
   const socket = connectSocket("inweb");
 
+  console.log("👂 Escuchando evento 'campaign_start'");
+
+  // Listener para el evento específico
   socket.on("campaign_start", (msg) => {
-    console.log("📨 Evento inweb recibido:", msg);
+    console.log("📨 Evento 'campaign_start' recibido:", msg);
 
     if (!isAllowed) {
-      console.log("Evento ignorado en ruta:", pathname);
+      console.log("⛔ Evento ignorado en ruta:", pathname);
       return;
     }
 
@@ -91,8 +95,15 @@ export default function ClientLayout({
     });
   });
 
+  // Listener para CUALQUIER evento (debug)
+  socket.onAny((eventName, ...args) => {
+    console.log("📡 Evento recibido:", eventName, args);
+  });
+
   return () => {
+    console.log("🧹 Limpiando listeners de socket");
     socket.off("campaign_start");
+    socket.offAny();
   };
 }, [pathname]);
 

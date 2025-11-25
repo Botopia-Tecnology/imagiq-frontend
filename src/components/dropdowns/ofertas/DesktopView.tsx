@@ -4,16 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { SIZES } from "./constants";
-import { useTopDiscountedProducts } from "@/hooks/useTopDiscountedProducts";
+import { useOfertasDestacadas } from "@/hooks/useOfertasDestacadas";
 
 type Props = Readonly<{
   onItemClick: (label: string, href: string) => void;
 }>;
 
 export function DesktopView({ onItemClick }: Props) {
-  const { products, loading } = useTopDiscountedProducts({
-    limit: 12,
-  });
+  const { productos, loading } = useOfertasDestacadas();
 
   const handleCloseDropdown = () => {
     globalThis.dispatchEvent(new CustomEvent("close-dropdown"));
@@ -36,10 +34,17 @@ export function DesktopView({ onItemClick }: Props) {
             {/* Primera fila: 7 skeleton items */}
             <div className="grid grid-cols-7 gap-6 mb-4">
               {Array.from({ length: 7 }).map((_, i) => (
-                <div key={`skeleton-top-${i}`} className="flex flex-col items-center" style={{ width: `${SIZES.product.container}px` }}>
+                <div
+                  key={`skeleton-top-${i}`}
+                  className="flex flex-col items-center"
+                  style={{ width: `${SIZES.product.container}px` }}
+                >
                   <div
                     className="bg-gray-200 animate-pulse rounded mb-2"
-                    style={{ width: `${SIZES.product.image}px`, height: `${SIZES.product.image}px` }}
+                    style={{
+                      width: `${SIZES.product.image}px`,
+                      height: `${SIZES.product.image}px`,
+                    }}
                   />
                   <div className="h-8 bg-gray-200 animate-pulse rounded w-full" />
                 </div>
@@ -49,10 +54,17 @@ export function DesktopView({ onItemClick }: Props) {
             {/* Segunda fila: 5 skeleton items */}
             <div className="grid grid-cols-7 gap-6">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={`skeleton-bottom-${i}`} className="flex flex-col items-center" style={{ width: `${SIZES.product.container}px` }}>
+                <div
+                  key={`skeleton-bottom-${i}`}
+                  className="flex flex-col items-center"
+                  style={{ width: `${SIZES.product.container}px` }}
+                >
                   <div
                     className="bg-gray-200 animate-pulse rounded mb-2"
-                    style={{ width: `${SIZES.product.image}px`, height: `${SIZES.product.image}px` }}
+                    style={{
+                      width: `${SIZES.product.image}px`,
+                      height: `${SIZES.product.image}px`,
+                    }}
                   />
                   <div className="h-8 bg-gray-200 animate-pulse rounded w-full" />
                 </div>
@@ -74,73 +86,117 @@ export function DesktopView({ onItemClick }: Props) {
         <X className="w-5 h-5 text-gray-600" />
       </button>
 
-      <div className="flex gap-x-8">
-        <div className="flex-1 pl-8">
-          {/* Primera fila: 7 productos */}
-          <div className="grid grid-cols-7 gap-6 mb-4">
-            {products.slice(0, 7).map((product) => {
-              if (typeof product.image !== 'string' || !product.image) return null;
+      {productos.length === 0 && !loading ? (
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <p className="text-2xl font-bold text-gray-900 mb-2">Próximamente</p>
+          <p className="text-sm text-gray-600">
+            Estamos preparando increíbles ofertas para ti
+          </p>
+        </div>
+      ) : (
+        <div className="flex gap-x-8">
+          <div className="flex-1 pl-8">
+            {/* Primera fila: hasta 7 productos */}
+            <div className="grid grid-cols-7 gap-6 mb-4">
+              {productos.slice(0, 7).map((producto) => {
+                const href =
+                  producto.link_url ||
+                  `/productos/view/${producto.producto_id}`;
 
-              return (
-                <Link
-                  key={product.id}
-                  href={`/productos/view/${product.id}`}
-                  onClick={() => onItemClick(product.name, `/productos/view/${product.id}`)}
-                  className="flex flex-col items-center text-center group"
-                  style={{ width: `${SIZES.product.container}px` }}
-                >
-                  <div
-                    className="relative mb-2 transition-transform group-hover:scale-105"
-                    style={{ width: `${SIZES.product.image}px`, height: `${SIZES.product.image}px` }}
+                return (
+                  <Link
+                    key={producto.uuid}
+                    href={href}
+                    onClick={() =>
+                      onItemClick(producto.producto_nombre || "Producto", href)
+                    }
+                    className="flex flex-col items-center text-center group"
+                    style={{ width: `${SIZES.product.container}px` }}
                   >
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                    {product.name}
-                  </span>
-                </Link>
-              );
-            })}
-          </div>
+                    <div
+                      className="relative mb-2 transition-transform group-hover:scale-105"
+                      style={{
+                        width: `${SIZES.product.image}px`,
+                        height: `${SIZES.product.image}px`,
+                      }}
+                    >
+                      {producto.producto_imagen ? (
+                        <Image
+                          src={producto.producto_imagen}
+                          alt={producto.producto_nombre || "Producto"}
+                          fill
+                          className="object-contain"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
+                          <span className="text-gray-400 text-xs">
+                            Sin imagen
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
+                      {producto.producto_nombre || "Producto"}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
 
-          {/* Segunda fila: 5 productos */}
-          <div className="grid grid-cols-7 gap-6">
-            {products.slice(7, 12).map((product) => {
-              if (typeof product.image !== 'string' || !product.image) return null;
+            {/* Segunda fila: hasta 3 productos más (total máximo 10) */}
+            {productos.length > 7 && (
+              <div className="grid grid-cols-7 gap-6">
+                {productos.slice(7, 10).map((producto) => {
+                  const href =
+                    producto.link_url ||
+                    `/productos/view/${producto.producto_id}`;
 
-              return (
-                <Link
-                  key={product.id}
-                  href={`/productos/view/${product.id}`}
-                  onClick={() => onItemClick(product.name, `/productos/view/${product.id}`)}
-                  className="flex flex-col items-center text-center group"
-                  style={{ width: `${SIZES.product.container}px` }}
-                >
-                  <div
-                    className="relative mb-2 transition-transform group-hover:scale-105"
-                    style={{ width: `${SIZES.product.image}px`, height: `${SIZES.product.image}px` }}
-                  >
-                    <Image
-                      src={product.image}
-                      alt={product.name}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                    {product.name}
-                  </span>
-                </Link>
-              );
-            })}
+                  return (
+                    <Link
+                      key={producto.uuid}
+                      href={href}
+                      onClick={() =>
+                        onItemClick(
+                          producto.producto_nombre || "Producto",
+                          href
+                        )
+                      }
+                      className="flex flex-col items-center text-center group"
+                      style={{ width: `${SIZES.product.container}px` }}
+                    >
+                      <div
+                        className="relative mb-2 transition-transform group-hover:scale-105"
+                        style={{
+                          width: `${SIZES.product.image}px`,
+                          height: `${SIZES.product.image}px`,
+                        }}
+                      >
+                        {producto.producto_imagen ? (
+                          <Image
+                            src={producto.producto_imagen}
+                            alt={producto.producto_nombre || "Producto"}
+                            fill
+                            className="object-contain"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
+                            <span className="text-gray-400 text-xs">
+                              Sin imagen
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
+                        {producto.producto_nombre || "Producto"}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

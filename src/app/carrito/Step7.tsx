@@ -82,7 +82,7 @@ interface ShippingData {
 
 interface ShippingVerification {
   envio_imagiq: boolean;
-  todos_productos_im_av: boolean;
+  todos_productos_im_it: boolean;
   en_zona_cobertura: boolean;
 }
 
@@ -340,22 +340,6 @@ export default function Step7({ onBack }: Step7Props) {
     }
   }, [authContext.user?.id, loggedUser?.id]);
 
-  // Separate useEffect for shippingVerification fallback to avoid infinite loop with shippingData
-  useEffect(() => {
-    // Cargar shippingVerification desde localStorage como respaldo
-    // Esto asegura que el método de envío esté disponible al crear la orden
-    const storedEnvioImagiq = localStorage.getItem("checkout-envio-imagiq");
-    if (storedEnvioImagiq === "true" && !shippingVerification) {
-      // Si hay un valor guardado y shippingVerification aún no está establecido,
-      // establecerlo como respaldo temporal hasta que se verifique
-      setShippingVerification({
-        envio_imagiq: true,
-        todos_productos_im_av: false,
-        en_zona_cobertura: true,
-      });
-    }
-  }, [shippingVerification]);
-
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
@@ -459,7 +443,7 @@ export default function Step7({ onBack }: Step7Props) {
         if (!userId) {
           const verification = {
             envio_imagiq: false,
-            todos_productos_im_av: false,
+            todos_productos_im_it: false,
             en_zona_cobertura: true,
           };
           setShippingVerification(verification);
@@ -487,7 +471,7 @@ export default function Step7({ onBack }: Step7Props) {
           // Usar Coordinadora por defecto
           setShippingVerification({
             envio_imagiq: false,
-            todos_productos_im_av: false,
+            todos_productos_im_it: false,
             en_zona_cobertura: true,
           });
           setIsLoadingShippingMethod(false);
@@ -573,7 +557,7 @@ export default function Step7({ onBack }: Step7Props) {
               console.log("🏪 [Step7] NO es Centro de Distribución - Usar Coordinadora directamente");
               const verification = {
                 envio_imagiq: false,
-                todos_productos_im_av: false,
+                todos_productos_im_it: false,
                 en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
               };
               setShippingVerification(verification);
@@ -593,7 +577,7 @@ export default function Step7({ onBack }: Step7Props) {
           if (!shippingAddress) {
             const verification = {
               envio_imagiq: false,
-              todos_productos_im_av: false,
+              todos_productos_im_it: false,
               en_zona_cobertura: true,
             };
             setShippingVerification(verification);
@@ -616,7 +600,7 @@ export default function Step7({ onBack }: Step7Props) {
 
           const verification = {
             envio_imagiq: data.envio_imagiq || false,
-            todos_productos_im_av: data.todos_productos_im_av || false,
+            todos_productos_im_it: data.todos_productos_im_it || false,
             en_zona_cobertura: data.en_zona_cobertura || false,
           };
           setShippingVerification(verification);
@@ -632,7 +616,7 @@ export default function Step7({ onBack }: Step7Props) {
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
           const verification = {
             envio_imagiq: false,
-            todos_productos_im_av: false,
+            todos_productos_im_it: false,
             en_zona_cobertura: true,
           };
           setShippingVerification(verification);
@@ -666,7 +650,7 @@ export default function Step7({ onBack }: Step7Props) {
         // En caso de error, usar Coordinadora por defecto
         const verification = {
           envio_imagiq: false,
-          todos_productos_im_av: false,
+          todos_productos_im_it: false,
           en_zona_cobertura: true,
         };
         setShippingVerification(verification);
@@ -1730,8 +1714,8 @@ export default function Step7({ onBack }: Step7Props) {
                                 )}
                               </p>
                               <p>
-                                • todos_productos_im_av:{" "}
-                                {shippingVerification?.todos_productos_im_av ? (
+                                • todos_productos_im_it:{" "}
+                                {shippingVerification?.todos_productos_im_it ? (
                                   <span className="text-green-600 font-bold">
                                     true
                                   </span>

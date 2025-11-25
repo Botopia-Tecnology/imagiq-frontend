@@ -7,7 +7,7 @@ import { safeGetLocalStorage } from "@/lib/localStorage";
 
 interface ShippingVerification {
   envio_imagiq: boolean;
-  todos_productos_im_av: boolean;
+  todos_productos_im_it: boolean;
   en_zona_cobertura: boolean;
 }
 

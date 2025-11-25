@@ -548,9 +548,9 @@ export interface BundleApiData {
   isBundle: true;
   baseCodigoMarket: string; // Código base del producto principal
   codCampana: string; // Código de la campaña (ej: "BF001")
-  categoria: string;
-  menu: string;
-  submenu: string;
+  categoria: string | string[]; // Puede venir como string o array
+  menu: string | string[]; // Puede venir como string o array
+  submenu: string | string[]; // Puede venir como string o array
   fecha_inicio: string;
   fecha_final: string;
   hora_inicio: string;

@@ -32,8 +32,8 @@ export function useInWebCampaign(
     socket.on("campaign_start", (msg: CampaignData) => {
       console.log("📨 Evento 'campaign_start' recibido:", msg);
 
-      // Validar si la campaña debe mostrarse en la ruta actual
-      const campaignUrl = msg.url;
+      // Validar ruta de la campaña
+      const campaignUrl =msg.url 
       const shouldShow =
         !campaignUrl || // Si no tiene url, mostrar en todas
         campaignUrl === "*" || // Si es "*", mostrar en todas

@@ -18,7 +18,6 @@ function CampaignContent({
   onClick: () => void;
 }) {
   const hasLink = !!campaign.content_url;
-//campaign.html_content
   return (
     <div
       className={hasLink ? "cursor-pointer" : ""}
@@ -133,7 +132,7 @@ export function InWebCampaignDisplay({
         const timer = setTimeout(() => {
           setIsVisible(false);
           setTimeout(onClose, 300);
-        }, campaign.ttl * 1000);
+        }, campaign.ttl * 1000); //tiempo que se va mostrar el model/slider
         return () => clearTimeout(timer);
       }
     }
@@ -148,7 +147,7 @@ export function InWebCampaignDisplay({
   if (!hasContent) return null;
 
   const isModal = campaign.display_style === "modal";
-
+  //pop-up o slider 
   return isModal ? (
     <ModalDisplay
       campaign={campaign}

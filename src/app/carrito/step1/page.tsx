@@ -12,6 +12,8 @@ export default function Step1Page() {
     null
   );
 
+  console.log("🚀 [STEP1 PAGE] Usuario logueado:", loggedUser);
+
   const handleNext = () => {
     if (loggedUser?.email) {
       router.push("/carrito/step3");

@@ -130,6 +130,16 @@ export default function Step7({ onBack }: Step7Props) {
     "imagiq_user",
     null
   );
+  const [checkoutAddress, _] = useSecureStorage<{
+  "id": string,
+  "usuario_id": string,
+  "email": string,
+  "linea_uno": string,
+  "codigo_dane": string,
+  "ciudad": string,
+  "pais": string,
+  "esPredeterminada": boolean
+} | null>('checkout-address', null);
 
   // Store/Warehouse validation state
   const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
@@ -934,7 +944,7 @@ export default function Step7({ onBack }: Step7Props) {
             codigo_bodega,
             shippingAmount: String(calculations.shipping),
             userInfo: {
-              direccionId: billingData.direccion?.id || "",
+              direccionId: checkoutAddress?.id || "",
               userId:
                 authContext.user?.id ||
                 String(loggedUser?.id),
@@ -1009,7 +1019,7 @@ export default function Step7({ onBack }: Step7Props) {
             metodo_envio,
             codigo_bodega,
             userInfo: {
-              direccionId: billingData.direccion?.id || "",
+              direccionId: checkoutAddress?.id || "",
               userId:
                 authContext.user?.id ||
                 String(loggedUser?.id),
@@ -1052,7 +1062,7 @@ export default function Step7({ onBack }: Step7Props) {
             metodo_envio,
             codigo_bodega,
             userInfo: {
-              direccionId: billingData.direccion?.id || "",
+              direccionId: checkoutAddress?.id || "",
               userId:
                 authContext.user?.id ||
                 String(loggedUser?.id),

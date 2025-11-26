@@ -182,7 +182,12 @@ export const MobileMenu: FC<Props> = ({
           <div className="sticky top-0 bg-white z-10">
             <MobileMenuPromo onClose={onClose} />
 
-            <div className="bg-gray-200 px-4 pb-4 pt-3 border-b border-gray-300">
+            <div
+              className="px-4 pb-4 pt-3"
+              style={{
+                background: "linear-gradient(to bottom, #f3f4f6 0%, #ffffff 100%)"
+              }}
+            >
               <SearchBar
                 value={searchQuery}
                 onChange={onSearchChange}

@@ -4,6 +4,7 @@
 
 'use client';
 
+import MultimediaBannerCarousel from './MultimediaBannerCarousel';
 import type { MultimediaPageData } from '@/services/multimedia-pages.service';
 
 interface MultimediaPageClientProps {
@@ -11,28 +12,22 @@ interface MultimediaPageClientProps {
 }
 
 export default function MultimediaPageClient({ pageData }: MultimediaPageClientProps) {
-  const { page, banners, faqs } = pageData;
+  const { banners, faqs } = pageData;
 
   return (
-    <div className="min-h-screen bg-white p-8">
-      <h1 className="text-4xl font-bold mb-4">{page.title}</h1>
-      <p className="text-gray-600 mb-8">{page.meta_description}</p>
-      
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">Banners ({banners.length})</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
-            {JSON.stringify(banners, null, 2)}
-          </pre>
-        </div>
+    <div className="min-h-screen bg-white">
+      {/* Carrusel de Banners */}
+      <MultimediaBannerCarousel banners={banners} />
 
-        <div>
-          <h2 className="text-2xl font-semibold mb-2">FAQs ({faqs.length})</h2>
-          <pre className="bg-gray-100 p-4 rounded overflow-auto">
+      {/* FAQs - Temporal para testing */}
+      {faqs.length > 0 && (
+        <div className="max-w-7xl mx-auto px-4 py-16">
+          <h2 className="text-3xl font-bold mb-8">Preguntas Frecuentes</h2>
+          <pre className="bg-gray-100 p-4 rounded overflow-auto text-sm">
             {JSON.stringify(faqs, null, 2)}
           </pre>
         </div>
-      </div>
+      )}
     </div>
   );
 }

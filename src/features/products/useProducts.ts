@@ -566,6 +566,10 @@ export const useProducts = (
         // @ts-expect-error 'name' puede existir si es AbortError
         if (err?.name === 'AbortError' || (err instanceof Error && err.message.includes('aborted'))) {
           // Silenciar errores de abort - son esperados cuando el usuario cambia de filtros rápidamente
+          // Resetear isLoadingMore si estaba en true para evitar que los skeletons queden cargando
+          if (append) {
+            setIsLoadingMore(false);
+          }
           return;
         }
         console.error("Error fetching products:", err);
@@ -690,6 +694,7 @@ export const useProducts = (
         } else {
           // Ya no hay más productos en la página actual
           setHasMoreInCurrentPage(false);
+          setIsLoadingMore(false); // Resetear el estado de carga para ocultar skeletons
         }
       }
     }
@@ -707,6 +712,7 @@ export const useProducts = (
           setLazyOffset(0);
           setHasMoreInCurrentPage(true);
           setHasMoreInPageFromApi(undefined); // Resetear el estado del API
+          setIsLoadingMore(false); // Resetear el estado de carga al cambiar de página
           const filtersWithPage = { ...currentFilters, page };
           setCurrentFilters(filtersWithPage);
           await fetchProducts(filtersWithPage, false, 0);
@@ -726,6 +732,7 @@ export const useProducts = (
       setLazyOffset(0);
       setHasMoreInCurrentPage(true);
       setHasMoreInPageFromApi(undefined); // Resetear el estado del API
+      setIsLoadingMore(false); // Resetear el estado de carga al refrescar
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
       

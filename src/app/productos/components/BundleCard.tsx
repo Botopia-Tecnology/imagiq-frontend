@@ -596,8 +596,14 @@ export default function BundleCard({
         className
       )}
     >
-      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" */}
-      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-visible">
+      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" - Clickable */}
+      <div
+        className="relative aspect-square bg-gray-100 rounded-lg overflow-visible cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleMoreInfo();
+        }}
+      >
         <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>
 
@@ -612,7 +618,7 @@ export default function BundleCard({
                 event.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+              className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
             >
               {displayName}
             </button>

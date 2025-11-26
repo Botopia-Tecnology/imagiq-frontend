@@ -531,8 +531,14 @@ export default function ProductCard({
           >
             <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
           </button>
-          {/* Carrusel de imágenes */}
-          <div className="relative w-full h-full">
+          {/* Carrusel de imágenes - Clickable */}
+          <div
+            className="relative w-full h-full cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoreInfo();
+            }}
+          >
             {transformedImages.map((transformedSrc, index) => {
               return (
                 <div
@@ -580,7 +586,7 @@ export default function ProductCard({
                   event.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+                className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
               >
                 {currentProductName}
               </button>

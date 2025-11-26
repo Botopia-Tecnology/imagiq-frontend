@@ -596,8 +596,14 @@ export default function BundleCard({
         className
       )}
     >
-      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" */}
-      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-visible">
+      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" - Clickable */}
+      <div
+        className="relative aspect-square bg-gray-100 rounded-lg overflow-visible cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleMoreInfo();
+        }}
+      >
         <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>
 
@@ -612,7 +618,7 @@ export default function BundleCard({
                 event.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+              className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
             >
               {displayName}
             </button>
@@ -739,7 +745,7 @@ export default function BundleCard({
               }}
               disabled={isLoading}
               className={cn(
-                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
+                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors cursor-pointer",
                 "bg-black text-white hover:bg-gray-800",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 isLoading && "animate-pulse"
@@ -759,7 +765,7 @@ export default function BundleCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
             >
               Más información
             </button>

@@ -531,8 +531,14 @@ export default function ProductCard({
           >
             <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
           </button>
-          {/* Carrusel de imágenes */}
-          <div className="relative w-full h-full">
+          {/* Carrusel de imágenes - Clickable */}
+          <div
+            className="relative w-full h-full cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoreInfo();
+            }}
+          >
             {transformedImages.map((transformedSrc, index) => {
               return (
                 <div
@@ -580,7 +586,7 @@ export default function ProductCard({
                   event.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+                className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
               >
                 {currentProductName}
               </button>
@@ -786,7 +792,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
+                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold cursor-pointer",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -807,7 +813,7 @@ export default function ProductCard({
                   e.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
               >
                 Más información
               </button>

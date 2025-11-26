@@ -38,10 +38,10 @@ const ProductCardSkeleton = () => {
 };
 
 // Mapeo de secciones a filtros de API
-const ofertasFiltersMap: Record<string, { category?: string; subcategory?: string }> = {
-  accesorios: { subcategory: "Accesorios" },
+const ofertasFiltersMap: Record<string, { category?: string; subcategory?: string; menuUuid?: string }> = {
+  accesorios: { category: "IM", menuUuid:'87c54352-5181-45b7-831d-8e9470d2288c' },
   "tv-monitores-audio": { category: "AV,IT" },
-  "smartphones-tablets": { subcategory: "Celulares,Tablets" },
+  "smartphones-tablets": {category: "IM" ,menuUuid:'ff59c937-78ac-4f83-8c5e-2c3048b4ebb7,7609faf8-4c39-4227-915e-0d439d717e84' },
   electrodomesticos: { category: "DA" },
 };
 

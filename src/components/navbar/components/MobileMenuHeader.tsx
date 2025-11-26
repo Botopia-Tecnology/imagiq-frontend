@@ -22,7 +22,7 @@ export const MobileMenuHeader: FC<Props> = ({
   onSearchSubmit,
 }) => (
   <div
-    className="sticky top-0 bg-white p-4 z-20"
+    className="sticky top-0 bg-gray-200 p-4 z-20"
     style={{
       borderBottom: activeSubmenu ? "none" : "1px solid rgb(229, 231, 235)",
     }}

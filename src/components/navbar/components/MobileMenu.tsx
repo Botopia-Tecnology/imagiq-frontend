@@ -7,6 +7,7 @@ import { MobileMenuHeader } from "./MobileMenuHeader";
 import { MobileMenuPromo } from "./MobileMenuPromo";
 import { MobileMenuContent } from "./MobileMenuContent";
 import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
+import { SearchBar } from "./SearchBar";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import type { Menu } from "@/lib/api";

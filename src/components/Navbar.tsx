@@ -369,7 +369,7 @@ export default function Navbar() {
             mobileMenuOpen && "hidden"
           )}
         >
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <Link
               href="/"
               onClick={(e) => {
@@ -402,17 +402,15 @@ export default function Navbar() {
                       type="button"
                       onClick={onClick}
                       className={cn(
-                        "w-full flex items-center gap-0.5 hover:opacity-80 transition-opacity",
+                        "flex items-center gap-0.5 hover:opacity-80 transition-opacity",
                         shouldShowWhiteItemsMobile ? "text-white" : "text-black"
                       )}
                       title={mobileAddressLabel}
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] leading-tight text-left">
-                          <span className="font-medium opacity-80">Enviar a </span>
-                          <span className="font-bold">{mobileAddressLabel}</span>
-                        </p>
-                      </div>
+                      <p className="text-[11px] leading-tight text-left">
+                        <span className="font-medium opacity-80">Enviar a </span>
+                        <span className="font-bold">{mobileAddressLabel}</span>
+                      </p>
                       <ChevronDown className="w-3 h-3 flex-shrink-0" />
                     </button>
                   )}
@@ -446,7 +444,7 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => setMobileMenuOpen(true)}
               className="p-2"

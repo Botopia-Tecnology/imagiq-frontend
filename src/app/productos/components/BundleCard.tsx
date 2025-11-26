@@ -18,10 +18,12 @@ import { getCloudinaryUrl } from "@/lib/cloudinary";
 import { calculateSavings } from "./utils/productCardHelpers";
 import type { BundleCardProps, BundleOptionProps } from "@/lib/productMapper";
 import { useCartContext } from "@/features/cart/CartContext";
+import { apiGet } from "@/lib/api-client";
 import type { BundleInfo, CartProduct } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import StockNotificationModal from "@/components/StockNotificationModal";
+import { shouldRenderValue } from "./utils/shouldRenderValue";
 
 /**
  * Selector de variantes del bundle con colores y capacidades
@@ -158,7 +160,7 @@ function BundleVariantSelector({
   return (
     <div className="px-3 space-y-1.5">
       {/* Label del color seleccionado - igual que ProductCard */}
-      {selectedColorName && uniqueColors.length > 0 && (
+      {selectedColorName && shouldRenderValue(selectedColorName) && uniqueColors.length > 0 && (
         <p className="text-xs text-gray-600 font-medium">
           {`Color: ${selectedColorName}`}
         </p>
@@ -467,65 +469,37 @@ export default function BundleCard({
     setIsLoading(true);
 
     try {
-      // Verificar si tenemos el array de productos desde el backend
-      console.log("Selected option products:", selectedOption.productos);
-      if (selectedOption.productos && selectedOption.productos.length > 0) {
-        // Usar datos completos del backend que ya vienen en la opción
-        const firstProduct = selectedOption.productos[0];
 
-        const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product, index) => ({
-          id: product.sku,
-          name: product.modelo,
-          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
-          price: product.product_discount_price,
-          originalPrice: product.product_original_price,
-          sku: product.sku,
-          ean: product.ean || product.sku,
-          color: product.color,
-          colorName: product.nombreColor,
-          capacity: product.capacidad,
-          ram: product.memoriaram,
-          stock: product.stockTotal,
-          modelo: product.modelo,
-        }));
 
-        const bundleInfo: BundleInfo = {
-          codCampana,
-          productSku: selectedOption.product_sku,
-          skusBundle: skus_bundle,
-          bundlePrice: firstProduct.bundle_price,
-          bundleDiscount: firstProduct.bundle_discount,
-          fechaFinal: new Date(fecha_final),
-        };
+      // Construir productos básicos desde los SKUs disponibles
+      const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
+        id: sku,
+        name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+        image: previewImages[index] || "/img/logo_imagiq.png",
+        price: 0, // Se calculará proporcionalmente
+        sku,
+        ean: sku,
+        capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
+        color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
+        modelo: selectedOption.modelo,
+        colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
+        stock: selectedOption.stockTotal,
+        ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
+      }));
 
-        await addBundleToCart(products, bundleInfo);
-      } else {
-        // Fallback: usar datos básicos de la opción seleccionada
-        toast.warning("Usando datos básicos del bundle", {
-          description: "No se pudieron obtener los detalles completos",
-        });
+      const bundleInfo: BundleInfo = {
+        codCampana,
+        productSku: selectedOption.product_sku,
+        skusBundle: skus_bundle,
+        bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
+        bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+        fechaFinal: new Date(fecha_final),
+      };
 
-        // Construir productos básicos desde los SKUs disponibles
-        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
-          id: sku,
-          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
-          image: previewImages[index] || "/img/logo_imagiq.png",
-          price: 0, // Se calculará proporcionalmente
-          sku,
-          ean: sku,
-        }));
+      await addBundleToCart(basicProducts, bundleInfo);
 
-        const bundleInfo: BundleInfo = {
-          codCampana,
-          productSku: selectedOption.product_sku,
-          skusBundle: skus_bundle,
-          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
-          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
-          fechaFinal: new Date(fecha_final),
-        };
 
-        await addBundleToCart(basicProducts, bundleInfo);
-      }
+
 
       // Track del evento
       posthogUtils.capture("bundle_add_to_cart_success", {
@@ -638,8 +612,8 @@ export default function BundleCard({
                     <span>Stock: </span>
                     <span className={cn(
                       "font-semibold",
-                      selectedOptionStock > 5 ? "text-green-600" : 
-                      selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
+                      selectedOptionStock > 5 ? "text-green-600" :
+                        selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
                     )}>
                       {selectedOptionStock} unidades
                     </span>
@@ -717,42 +691,42 @@ export default function BundleCard({
 
           {/* Botones de acción - Horizontal */}
           <div className="flex items-center gap-3">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (isOutOfStock) {
-                    stockNotification.openModal();
-                  } else {
-                    handleAddToCart();
-                  }
-                }}
-                disabled={isLoading}
-                className={cn(
-                  "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
-                  "bg-black text-white hover:bg-gray-800",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  isLoading && "animate-pulse"
-                )}
-              >
-                {isLoading ? (
-                  <Loader className="w-4 h-4 mx-auto animate-spin" />
-                ) : isOutOfStock ? (
-                  "Notifícame"
-                ) : (
-                  "Añadir al carrito"
-                )}
-              </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (isOutOfStock) {
+                  stockNotification.openModal();
+                } else {
+                  handleAddToCart();
+                }
+              }}
+              disabled={isLoading}
+              className={cn(
+                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
+                "bg-black text-white hover:bg-gray-800",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                isLoading && "animate-pulse"
+              )}
+            >
+              {isLoading ? (
+                <Loader className="w-4 h-4 mx-auto animate-spin" />
+              ) : isOutOfStock ? (
+                "Notifícame"
+              ) : (
+                "Añadir al carrito"
+              )}
+            </button>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleMoreInfo();
-                }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
-              >
-                Más información
-              </button>
-            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleMoreInfo();
+              }}
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+            >
+              Más información
+            </button>
+          </div>
         </div>
       </div>
 
@@ -762,8 +736,8 @@ export default function BundleCard({
         onClose={stockNotification.closeModal}
         productName={displayName}
         productImage={previewImages && previewImages.length > 0 ? getCloudinaryUrl(previewImages[0], "catalog") : undefined}
-        selectedColor={selectedOption?.nombreColorProductSku}
-        selectedStorage={selectedOption?.capacidadProductSku}
+        selectedColor={shouldRenderValue(selectedOption?.nombreColorProductSku) ? selectedOption?.nombreColorProductSku : undefined}
+        selectedStorage={shouldRenderValue(selectedOption?.capacidadProductSku) ? selectedOption?.capacidadProductSku : undefined}
         onNotificationRequest={handleRequestStockNotification}
       />
     </div>

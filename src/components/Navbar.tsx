@@ -402,21 +402,18 @@ export default function Navbar() {
                       type="button"
                       onClick={onClick}
                       className={cn(
-                        "w-full flex items-start gap-1.5 hover:opacity-80 transition-opacity py-0.5",
+                        "w-full flex items-center gap-0.5 hover:opacity-80 transition-opacity",
                         shouldShowWhiteItemsMobile ? "text-white" : "text-black"
                       )}
                       title={mobileAddressLabel}
                     >
-                      <MapPin className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1 min-w-0 flex flex-col items-start -space-y-0.5">
-                        <span className="text-[9px] font-medium opacity-80">
-                          Enviar a
-                        </span>
-                        <span className="text-[10px] font-bold truncate w-full text-left line-clamp-1">
-                          {mobileAddressLabel}
-                        </span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] leading-tight text-left">
+                          <span className="font-medium opacity-80">Enviar a </span>
+                          <span className="font-bold">{mobileAddressLabel}</span>
+                        </p>
                       </div>
-                      <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                      <ChevronDown className="w-3 h-3 flex-shrink-0" />
                     </button>
                   )}
                 />

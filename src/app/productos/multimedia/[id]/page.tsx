@@ -15,7 +15,7 @@
 
 "use client";
 
-import React, { use } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
@@ -90,6 +90,37 @@ export default function MultimediaPage({
   const { id } = resolvedParams;
 
   const { product, loading, error } = useProduct(id);
+
+  // Estado para almacenar la selección del usuario desde localStorage
+  const [selectedProductData, setSelectedProductData] = useState<{
+    productName?: string;
+    price?: number;
+    originalPrice?: number;
+    color?: string;
+    colorHex?: string;
+    capacity?: string;
+    ram?: string;
+    sku?: string;
+    ean?: string;
+    image?: string;
+    indcerointeres?: number;
+    allPrices?: number[];
+  } | null>(null);
+
+  // Cargar la selección del usuario desde localStorage
+  useEffect(() => {
+    const savedSelection = localStorage.getItem(`product_selection_${id}`);
+    if (savedSelection) {
+      try {
+        const parsedData = JSON.parse(savedSelection);
+        setSelectedProductData(parsedData);
+        // Limpiar después de leer para no ocupar espacio innecesario
+        // localStorage.removeItem(`product_selection_${id}`);
+      } catch (e) {
+        console.error("Error parsing saved product selection:", e);
+      }
+    }
+  }, [id]);
 
   // Precargar los datos del producto para la vista de detalle (view/viewpremium)
   // mientras el usuario ve el multimedia. Esto hace que la navegación sea instantánea
@@ -166,13 +197,17 @@ export default function MultimediaPage({
     return parseInt(price.replace(/[^\d]/g, "")) || 0;
   };
 
-  const numericPrice = parsePrice(product.price);
-  const numericOriginalPrice = product.originalPrice
-    ? parsePrice(product.originalPrice)
-    : undefined;
+  // Usar datos de localStorage si existen, sino usar los del producto general
+  const numericPrice = selectedProductData?.price ?? parsePrice(product.price);
+  const numericOriginalPrice = selectedProductData?.originalPrice ??
+    (product.originalPrice ? parsePrice(product.originalPrice) : undefined);
 
   // Obtener indcerointeres del producto (puede venir como array del API)
   const getIndcerointeres = (): number => {
+    // Si hay datos de localStorage, usar esos
+    if (selectedProductData?.indcerointeres !== undefined) {
+      return selectedProductData.indcerointeres;
+    }
     // Si el producto tiene apiProduct (datos del API)
     if (product.apiProduct?.indcerointeres) {
       const indcerointeresArray = product.apiProduct.indcerointeres;
@@ -184,6 +219,12 @@ export default function MultimediaPage({
   };
 
   const indcerointeres = getIndcerointeres();
+
+  // Obtener allPrices: usar de localStorage si existe, sino del producto
+  const allPrices = selectedProductData?.allPrices ?? product.apiProduct?.precioeccommerce ?? [];
+
+  // Obtener nombre del producto: usar de localStorage si existe, sino del producto
+  const displayProductName = selectedProductData?.productName ?? product.name;
 
   // Función helper para verificar si el producto es premium
   const isPremiumProduct = (segmento?: string | string[]): boolean => {
@@ -202,11 +243,11 @@ export default function MultimediaPage({
     <div className="min-h-screen bg-white flex flex-col">
       {/* Top Bar con info del producto y CTA - Fixed debajo del Navbar */}
       <MultimediaBottomBar
-        productName={product.name}
+        productName={displayProductName}
         price={numericPrice}
         originalPrice={numericOriginalPrice}
         indcerointeres={indcerointeres}
-        allPrices={product.apiProduct?.precioeccommerce || []}
+        allPrices={allPrices}
         onViewDetailsClick={() => router.push(viewRoute)}
         isVisible={true}
       />

@@ -149,7 +149,7 @@ export function InWebCampaignDisplay({
 
   const isModal = campaign.display_style === "modal";
 
-  return !isModal ? (
+  return isModal ? (
     <ModalDisplay
       campaign={campaign}
       onClose={handleClose}

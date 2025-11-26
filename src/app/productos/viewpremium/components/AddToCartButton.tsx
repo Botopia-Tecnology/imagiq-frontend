@@ -66,12 +66,21 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
         ean: productSelection.selectedVariant?.ean || "",
         puntos_q: product.puntos_q ?? 4,
         color: (productSelection.getSelectedColorOption()?.hex && shouldRenderValue(productSelection.getSelectedColorOption()?.hex)) ? productSelection.getSelectedColorOption()?.hex : undefined,
-        colorName:
-          (productSelection.getSelectedColorOption()?.nombreColorDisplay && shouldRenderValue(productSelection.getSelectedColorOption()?.nombreColorDisplay)) ? productSelection.getSelectedColorOption()?.nombreColorDisplay :
-          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor || undefined :
-          undefined,
-        capacity: (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity || undefined : undefined,
-        ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram || undefined : undefined,
+        colorName: (() => {
+          const colorDisplay = productSelection.getSelectedColorOption()?.nombreColorDisplay;
+          if (colorDisplay && shouldRenderValue(colorDisplay)) return colorDisplay;
+          const selectedColor = productSelection.selection.selectedColor;
+          if (selectedColor && shouldRenderValue(selectedColor)) return selectedColor;
+          return undefined;
+        })(),
+        capacity: (() => {
+          const cap = productSelection.selection.selectedCapacity;
+          return cap && shouldRenderValue(cap) ? cap : undefined;
+        })(),
+        ram: (() => {
+          const ramValue = productSelection.selection.selectedMemoriaram;
+          return ramValue && shouldRenderValue(ramValue) ? ramValue : undefined;
+        })(),
         skuPostback: productSelection.selectedSkuPostback || '',
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: product.apiProduct?.modelo?.[0] || "",

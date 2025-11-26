@@ -68,10 +68,10 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
         color: (productSelection.getSelectedColorOption()?.hex && shouldRenderValue(productSelection.getSelectedColorOption()?.hex)) ? productSelection.getSelectedColorOption()?.hex : undefined,
         colorName:
           (productSelection.getSelectedColorOption()?.nombreColorDisplay && shouldRenderValue(productSelection.getSelectedColorOption()?.nombreColorDisplay)) ? productSelection.getSelectedColorOption()?.nombreColorDisplay :
-          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
+          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor || undefined :
           undefined,
-        capacity: (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity : undefined,
-        ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram : undefined,
+        capacity: (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity || undefined : undefined,
+        ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram || undefined : undefined,
         skuPostback: productSelection.selectedSkuPostback || '',
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: product.apiProduct?.modelo?.[0] || "",

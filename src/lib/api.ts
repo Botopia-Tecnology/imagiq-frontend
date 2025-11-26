@@ -524,6 +524,26 @@ export interface ProductApiResponse {
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+  hasMoreInPage?: boolean; // Indica si hay más productos en la página actual (para lazy loading)
+  lazyOffset?: number; // Offset actual usado en la petición
+  lazyLimit?: number; // Límite de productos por carga lazy
+}
+
+// Producto individual dentro de un bundle
+export interface BundleProduct {
+  sku: string;
+  modelo: string;
+  imagePreviewUrl?: string;
+  product_original_price: number;
+  product_discount_price: number;
+  ean?: string;
+  color?: string;
+  nombreColor?: string;
+  capacidad?: string;
+  memoriaram?: string;
+  stockTotal?: number;
+  bundle_price: number;
+  bundle_discount: number;
 }
 
 // Opción individual dentro de un bundle (variante)
@@ -535,6 +555,7 @@ export interface BundleOption {
   ind_entre_estre: number;
   skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
   imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+  productos?: BundleProduct[]; // Array de productos del bundle con detalles completos
   // Campos de variante del producto padre
   colorProductSku?: string; // Color hex del producto (ej: "#3C5B8A")
   nombreColorProductSku?: string; // Nombre del color (ej: "Azul Marino")
@@ -548,9 +569,9 @@ export interface BundleApiData {
   isBundle: true;
   baseCodigoMarket: string; // Código base del producto principal
   codCampana: string; // Código de la campaña (ej: "BF001")
-  categoria: string;
-  menu: string;
-  submenu: string;
+  categoria: string | string[]; // Puede venir como string o array
+  menu: string | string[]; // Puede venir como string o array
+  submenu: string | string[]; // Puede venir como string o array
   fecha_inicio: string;
   fecha_final: string;
   hora_inicio: string;

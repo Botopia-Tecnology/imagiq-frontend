@@ -7,6 +7,7 @@ import { productEndpoints, type ProductApiData } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import type { CartProduct } from "@/hooks/useCart";
 import { isBundle } from "@/lib/productMapper";
+import SugerenciasSkeleton from "./components/SugerenciasSkeleton";
 
 // Cache keys para sessionStorage
 const CACHE_KEY = "sugerencias_accesorios_cache";
@@ -226,12 +227,8 @@ export default function Sugerencias({
   // SKUs de productos ya en el carrito (para no sugerirlos)
   const cartSkus = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
 
-  // Limpiar caché cuando cambian los productos del carrito
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      sessionStorage.removeItem(CACHE_KEY);
-    }
-  }, [cartProducts.length]);
+  // El cache se valida automáticamente en fetchAccessoriosRelacionados usando los modelos
+  // No es necesario limpiarlo explícitamente al cambiar la longitud del carrito
 
   const fetchAccessoriosRelacionados = useCallback(async () => {
     // Intentar usar caché primero
@@ -359,14 +356,7 @@ export default function Sugerencias({
   );
 
   if (loading) {
-    return (
-      <section className="rounded-2xl p-8 mt-8">
-        <h2 className="font-bold text-xl mb-6">Agrega a tu compra</h2>
-        <div className="flex justify-center items-center h-40">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      </section>
-    );
+    return <SugerenciasSkeleton />;
   }
 
   // No mostrar la sección si no hay sugerencias

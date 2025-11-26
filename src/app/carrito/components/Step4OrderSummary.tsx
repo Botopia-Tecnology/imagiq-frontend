@@ -24,6 +24,15 @@ interface Step4OrderSummaryProps {
   readonly onCanPickUpReady?: (isReady: boolean, isLoading: boolean) => void; // Callback para notificar cuando canPickUp está listo
   readonly error?: string | string[] | null;
   readonly shouldCalculateCanPickUp?: boolean; // Indica si debe calcular canPickUp (por defecto true en Steps 1-6, false en Step7)
+  readonly products?: import("@/hooks/useCart").CartProduct[]; // Productos opcionales para reactividad inmediata
+  readonly calculations?: {
+    productCount: number;
+    subtotal: number;
+    shipping: number;
+    taxes: number;
+    discount: number;
+    total: number;
+  }; // Cálculos opcionales para reactividad inmediata
 }
 
 export default function Step4OrderSummary({
@@ -40,14 +49,21 @@ export default function Step4OrderSummary({
   onCanPickUpReady,
   error,
   shouldCalculateCanPickUp = true, // Por defecto true (Steps 1-6)
+  products: propProducts,
+  calculations: propCalculations,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
-    calculations,
+    calculations: hookCalculations,
     formatPrice: cartFormatPrice,
-    isEmpty,
-    products,
+    isEmpty: hookIsEmpty,
+    products: hookProducts,
   } = useCart();
+
+  // Usar props si existen, sino usar hook (para reactividad inmediata en Step1)
+  const products = propProducts || hookProducts;
+  const calculations = propCalculations || hookCalculations;
+  const isEmpty = propProducts ? propProducts.length === 0 : hookIsEmpty;
 
   // Obtener método de entrega desde localStorage - forzar lectura correcta
   const getDeliveryMethodFromStorage = React.useCallback(() => {
@@ -143,7 +159,7 @@ export default function Step4OrderSummary({
   const [userClickedWhileLoading, setUserClickedWhileLoading] = React.useState(false);
   // Ref para guardar la función onFinishPayment y evitar ejecuciones múltiples
   const onFinishPaymentRef = React.useRef(onFinishPayment);
-  
+
   // Actualizar la ref cuando cambie la función
   React.useEffect(() => {
     onFinishPaymentRef.current = onFinishPayment;
@@ -221,7 +237,7 @@ export default function Step4OrderSummary({
     // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
     fetchGlobalCanPickUp();
   }, [fetchGlobalCanPickUp]);
-  
+
   // Resetear userClickedWhileLoading cuando cambian los productos, shouldCalculateCanPickUp, o cuando canPickUp termina de cargar
   React.useEffect(() => {
     setUserClickedWhileLoading(false);
@@ -257,10 +273,10 @@ export default function Step4OrderSummary({
     if (userClickedWhileLoading && !isLoadingCanPickUp && shouldCalculateCanPickUp) {
       // Guardar el estado antes de resetearlo
       const shouldExecute = userClickedWhileLoading;
-      
+
       // Resetear el estado inmediatamente para evitar ejecuciones múltiples
       setUserClickedWhileLoading(false);
-      
+
       // Ejecutar la función usando la ref para evitar problemas de dependencias
       if (shouldExecute) {
         // Ejecutar inmediatamente sin delay para forzar el avance
@@ -281,7 +297,7 @@ export default function Step4OrderSummary({
 
     globalThis.window.addEventListener("address-changed", handleAddressChange);
     globalThis.window.addEventListener("checkout-address-changed", handleAddressChange);
-    
+
     // También escuchar cambios en localStorage
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "checkout-address") {
@@ -436,11 +452,10 @@ export default function Step4OrderSummary({
 
         <button
           type="button"
-          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${
-            isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
-              ? "opacity-70 cursor-not-allowed"
-              : "cursor-pointer"
-          }`}
+          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
+            ? "opacity-70 cursor-not-allowed"
+            : "cursor-pointer"
+            }`}
           disabled={isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)}
           data-testid="checkout-finish-btn"
           aria-busy={isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)}
@@ -573,7 +588,7 @@ export default function Step4OrderSummary({
         </div>
       </div>
 
-      {/* Debug: canPickUp global (solo cuando la variable de entorno está activa) */}
+      {/* Debug: canPickUp global (solo cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES=true) */}
       {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
           <p className="text-xs font-semibold text-yellow-800 mb-2">

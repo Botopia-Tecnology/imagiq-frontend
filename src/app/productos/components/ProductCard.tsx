@@ -34,6 +34,7 @@ import {
 } from "./utils/categoryColorConfig";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
+import { shouldRenderValue } from "./utils/shouldRenderValue";
 
 /**
  * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
@@ -386,17 +387,17 @@ export default function ProductCard({
         sku: currentSku || "", // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
-        color: displayedSelectedColor?.hex || undefined,
+        color: displayedSelectedColor?.hex && shouldRenderValue(displayedSelectedColor.hex) ? displayedSelectedColor.hex : undefined,
         colorName:
-          displayedSelectedColor?.nombreColorDisplay ||
-          productSelection.selection.selectedColor ||
-          selectedColor?.label ||
+          (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
+          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
+          (selectedColor?.label && shouldRenderValue(selectedColor.label)) ? selectedColor.label :
           undefined,
         capacity:
-          productSelection.selection.selectedCapacity ||
-          selectedCapacity?.label ||
+          (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity :
+          (selectedCapacity?.label && shouldRenderValue(selectedCapacity.label)) ? selectedCapacity.label :
           undefined,
-        ram: productSelection.selection.selectedMemoriaram || undefined,
+        ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram : undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: apiProduct?.modelo?.[0] || "",
@@ -499,12 +500,12 @@ export default function ProductCard({
             : image.src ?? ""
         }
         selectedColor={
-          displayedSelectedColor?.nombreColorDisplay ||
-          productSelection.selection.selectedColor ||
+          (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
+          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
           undefined
         }
         selectedStorage={
-          productSelection.selection.selectedCapacity || undefined
+          (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity : undefined
         }
         onNotificationRequest={handleRequestStockNotification}
       />
@@ -530,8 +531,14 @@ export default function ProductCard({
           >
             <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
           </button>
-          {/* Carrusel de imágenes */}
-          <div className="relative w-full h-full">
+          {/* Carrusel de imágenes - Clickable */}
+          <div
+            className="relative w-full h-full cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoreInfo();
+            }}
+          >
             {transformedImages.map((transformedSrc, index) => {
               return (
                 <div
@@ -579,7 +586,7 @@ export default function ProductCard({
                   event.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+                className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
               >
                 {currentProductName}
               </button>
@@ -640,8 +647,8 @@ export default function ProductCard({
               )}
           </div>
 
-          {/* Nombre de color del API (antes del selector) - Mostrar siempre que haya nombreColorDisplay disponible */}
-          {displayedSelectedColor?.nombreColorDisplay && (
+          {/* Nombre de color del API (antes del selector) - Mostrar solo si es válido */}
+          {displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay) && (
             <div className="px-3 mb-1">
               <p className="text-xs text-gray-600 font-medium">
                 {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
@@ -785,7 +792,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
+                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold cursor-pointer",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -806,7 +813,7 @@ export default function ProductCard({
                   e.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
               >
                 Más información
               </button>

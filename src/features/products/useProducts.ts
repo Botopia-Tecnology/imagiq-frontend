@@ -133,6 +133,7 @@ export const useProducts = (
   const [requestId, setRequestId] = useState(0);
   const [lazyOffset, setLazyOffset] = useState(0);
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
+  const [hasMoreInPageFromApi, setHasMoreInPageFromApi] = useState<boolean | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
   const previousMenuUuidRef = useRef<string | undefined>(undefined);
@@ -253,6 +254,7 @@ export const useProducts = (
       if (!append && customOffset === undefined) {
         setLazyOffset(0);
         setHasMoreInCurrentPage(true);
+        setHasMoreInPageFromApi(undefined); // Resetear el estado del API
       }
 
       const apiParams = convertFiltersToApiParams(filters, customOffset);
@@ -356,6 +358,10 @@ export const useProducts = (
               setCurrentPage(apiData.currentPage);
               setHasNextPage(apiData.hasNextPage);
               setHasPreviousPage(apiData.hasPreviousPage);
+              // Guardar hasMoreInPage del API si está disponible
+              if (apiData.hasMoreInPage !== undefined) {
+                setHasMoreInPageFromApi(apiData.hasMoreInPage);
+              }
               
               // Resetear estados
               if (!filters.lazyOffset && customOffset === undefined) {
@@ -429,12 +435,23 @@ export const useProducts = (
 
                 // Verificar si todavía hay más productos que cargar
                 const lazyLimit = filters.lazyLimit || 6;
-                const limit = filters.limit || 20;
+                const limit = filters.limit || 50; // Usar el limit real de los filtros (no fallback a 20)
                 const currentOffset = customOffset !== undefined ? customOffset : (filters.lazyOffset || 0);
                 const nextOffset = currentOffset + lazyLimit;
+                
+                // Calcular el total de productos cargados hasta ahora (incluyendo los nuevos)
+                const totalLoaded = updatedProducts.length;
 
-                // Si no hay productos nuevos o se alcanzó el límite, no hay más
-                if (newProducts.length === 0 || nextOffset >= limit || (apiData.totalItems > 0 && nextOffset >= apiData.totalItems)) {
+                // Usar hasMoreInPage del API como fuente principal de verdad
+                // Si está disponible, usarlo directamente; si no, usar la lógica de fallback
+                const shouldStop = apiData.hasMoreInPage !== undefined
+                  ? !apiData.hasMoreInPage // Si el API dice que no hay más, detener
+                  : (newProducts.length === 0 || 
+                     totalLoaded >= limit || 
+                     nextOffset >= limit || 
+                     (apiData.totalItems > 0 && nextOffset >= apiData.totalItems));
+
+                if (shouldStop) {
                   setHasMoreInCurrentPage(false);
                 }
 
@@ -525,6 +542,10 @@ export const useProducts = (
             setCurrentPage(apiData.currentPage);
             setHasNextPage(apiData.hasNextPage);
             setHasPreviousPage(apiData.hasPreviousPage);
+            // Guardar hasMoreInPage del API si está disponible
+            if (apiData.hasMoreInPage !== undefined) {
+              setHasMoreInPageFromApi(apiData.hasMoreInPage);
+            }
           } else {
             setError(response.message || "Error al cargar productos");
           }
@@ -545,6 +566,10 @@ export const useProducts = (
         // @ts-expect-error 'name' puede existir si es AbortError
         if (err?.name === 'AbortError' || (err instanceof Error && err.message.includes('aborted'))) {
           // Silenciar errores de abort - son esperados cuando el usuario cambia de filtros rápidamente
+          // Resetear isLoadingMore si estaba en true para evitar que los skeletons queden cargando
+          if (append) {
+            setIsLoadingMore(false);
+          }
           return;
         }
         console.error("Error fetching products:", err);
@@ -620,6 +645,7 @@ export const useProducts = (
       // Resetear offset y estado cuando se cambian filtros
       setLazyOffset(0);
       setHasMoreInCurrentPage(true);
+      setHasMoreInPageFromApi(undefined); // Resetear el estado del API
       await fetchProducts(filters, false, 0);
     },
     [fetchProducts]
@@ -637,25 +663,42 @@ export const useProducts = (
       } else {
         // Si usamos lazy loading dentro de la página actual
         const lazyLimit = currentFilters.lazyLimit || 6;
-        const limit = currentFilters.limit || 20;
+        const limit = currentFilters.limit; // Usar el limit real de los filtros (sin fallback a 20)
+
+        // Si no hay limit definido, no podemos hacer lazy loading
+        if (!limit) {
+          return;
+        }
 
         // Calcular el nuevo offset
         const newOffset = lazyOffset + lazyLimit;
+        
+        // Calcular cuántos productos ya están cargados
+        const currentProductsCount = productsRef.current.length;
 
-        // Verificar tanto el límite de la página como el total de items disponibles
-        // Si el nuevo offset alcanza el límite de la página actual O supera totalItems, DETENER
-        // El usuario debe usar los botones de paginación para ir a la siguiente página
-        if (newOffset < limit && (totalItems === 0 || newOffset < totalItems)) {
+        // Verificar si podemos cargar más productos:
+        // 1. El nuevo offset debe ser menor (estricto) al límite de la página
+        // 2. No debemos haber cargado ya todos los productos de la página (currentProductsCount < limit, estricto)
+        // 3. Si hay totalItems, el nuevo offset debe ser menor que totalItems
+        // 4. Si el API dice que hay más productos (hasMoreInPageFromApi), respetarlo
+        const canLoadMore = 
+          newOffset < limit && 
+          currentProductsCount < limit &&
+          (totalItems === 0 || newOffset < totalItems) &&
+          (hasMoreInPageFromApi === undefined || hasMoreInPageFromApi === true);
+
+        if (canLoadMore) {
           // Continuar en la misma página con nuevo offset
           setLazyOffset(newOffset);
           await fetchProducts(currentFilters, true, newOffset);
         } else {
           // Ya no hay más productos en la página actual
           setHasMoreInCurrentPage(false);
+          setIsLoadingMore(false); // Resetear el estado de carga para ocultar skeletons
         }
       }
     }
-  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, hasMoreInPageFromApi, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -668,6 +711,8 @@ export const useProducts = (
           // Resetear offset y estado al cambiar de página manualmente
           setLazyOffset(0);
           setHasMoreInCurrentPage(true);
+          setHasMoreInPageFromApi(undefined); // Resetear el estado del API
+          setIsLoadingMore(false); // Resetear el estado de carga al cambiar de página
           const filtersWithPage = { ...currentFilters, page };
           setCurrentFilters(filtersWithPage);
           await fetchProducts(filtersWithPage, false, 0);
@@ -686,6 +731,8 @@ export const useProducts = (
       // Resetear offset y estado al refrescar
       setLazyOffset(0);
       setHasMoreInCurrentPage(true);
+      setHasMoreInPageFromApi(undefined); // Resetear el estado del API
+      setIsLoadingMore(false); // Resetear el estado de carga al refrescar
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
       

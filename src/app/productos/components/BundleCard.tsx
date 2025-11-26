@@ -469,34 +469,71 @@ export default function BundleCard({
     setIsLoading(true);
 
     try {
+      // Verificar si tenemos el array de productos desde el backend
+      console.log("Selected option products:", selectedOption.productos);
+      if (selectedOption.productos && selectedOption.productos.length > 0) {
+        // Usar datos completos del backend que ya vienen en la opción
+        const firstProduct = selectedOption.productos[0];
 
+        const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product, index) => ({
+          id: product.sku,
+          name: product.modelo,
+          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
+          price: product.product_discount_price,
+          originalPrice: product.product_original_price,
+          sku: product.sku,
+          ean: product.ean || product.sku,
+          color: product.color,
+          colorName: product.nombreColor,
+          capacity: product.capacidad,
+          ram: product.memoriaram,
+          stock: product.stockTotal,
+          modelo: product.modelo,
+        }));
 
-      // Construir productos básicos desde los SKUs disponibles
-      const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
-        id: sku,
-        name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
-        image: previewImages[index] || "/img/logo_imagiq.png",
-        price: 0, // Se calculará proporcionalmente
-        sku,
-        ean: sku,
-        capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
-        color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
-        modelo: selectedOption.modelo,
-        colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
-        stock: selectedOption.stockTotal,
-        ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
-      }));
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: firstProduct.bundle_price,
+          bundleDiscount: firstProduct.bundle_discount,
+          fechaFinal: new Date(fecha_final),
+        };
 
-      const bundleInfo: BundleInfo = {
-        codCampana,
-        productSku: selectedOption.product_sku,
-        skusBundle: skus_bundle,
-        bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
-        bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
-        fechaFinal: new Date(fecha_final),
-      };
+        await addBundleToCart(products, bundleInfo);
+      } else {
+        // Fallback: usar datos básicos de la opción seleccionada
+        toast.warning("Usando datos básicos del bundle", {
+          description: "No se pudieron obtener los detalles completos",
+        });
 
-      await addBundleToCart(basicProducts, bundleInfo);
+        // Construir productos básicos desde los SKUs disponibles
+        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
+          id: sku,
+          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+          image: previewImages[index] || "/img/logo_imagiq.png",
+          price: 0, // Se calculará proporcionalmente
+          sku,
+          ean: sku,
+          capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
+          color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
+          modelo: selectedOption.modelo,
+          colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
+          stock: selectedOption.stockTotal,
+          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
+        }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
+          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+          fechaFinal: new Date(fecha_final),
+        };
+
+        await addBundleToCart(basicProducts, bundleInfo);
+      }
 
 
 

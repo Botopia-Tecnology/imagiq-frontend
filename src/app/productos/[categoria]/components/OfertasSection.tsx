@@ -44,7 +44,10 @@ export default function OfertasSection({ seccion }: OfertasSectionProps) {
     const baseFilters = { 
       withDiscount: true,
       page: currentPage,
-      limit: itemsPerPage
+      limit: itemsPerPage,
+      sortBy: 'precio',
+      sortOrder:'desc',
+      precioMin: 1,
     };
     
     if (seccion && ofertasFiltersMap[seccion]) {

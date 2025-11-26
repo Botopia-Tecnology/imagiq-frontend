@@ -17,7 +17,7 @@ export const MobileMenuPromo: FC<Props> = ({ onClose }) => {
   }
 
   return (
-    <div className="sticky top-[73px] bg-black text-white p-4 text-center z-10">
+    <div className="bg-black text-white p-4 text-center">
       {banner.title && (
         <h2 className="text-base font-bold mb-1">{banner.title}</h2>
       )}

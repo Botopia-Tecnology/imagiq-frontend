@@ -9,7 +9,7 @@ import {
 } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { User, Menu, Heart, MapPin, ChevronDown } from "lucide-react";
+import { User, Menu, Heart, MapPin, ChevronDown, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
@@ -369,7 +369,7 @@ export default function Navbar() {
             mobileMenuOpen && "hidden"
           )}
         >
-          <div className="flex items-center gap-2 min-w-0 flex-1">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <Link
               href="/"
               onClick={(e) => {
@@ -402,16 +402,16 @@ export default function Navbar() {
                       type="button"
                       onClick={onClick}
                       className={cn(
-                        "w-full flex items-center gap-1.5 text-[12px] font-semibold truncate hover:opacity-80 transition-opacity",
+                        "flex items-center gap-0.5 hover:opacity-80 transition-opacity",
                         shouldShowWhiteItemsMobile ? "text-white" : "text-black"
                       )}
                       title={mobileAddressLabel}
                     >
-                      <MapPin className="w-4 h-4 flex-shrink-0" />
-                      <span className="truncate text-left flex-1">
-                        {mobileAddressLabel}
-                      </span>
-                      <ChevronDown className="w-4 h-4 flex-shrink-0" />
+                      <p className="text-[11px] leading-tight text-left">
+                        <span className="font-medium opacity-80">Enviar a </span>
+                        <span className="font-bold">{mobileAddressLabel}</span>
+                      </p>
+                      <ChevronDown className="w-3 h-3 flex-shrink-0" />
                     </button>
                   )}
                 />
@@ -444,7 +444,19 @@ export default function Navbar() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setMobileMenuOpen(true)}
+              className="p-2"
+              aria-label="Buscar"
+            >
+              <Search
+                className={cn(
+                  "w-5 h-5 transition-colors duration-300",
+                  shouldShowWhiteItemsMobile ? "text-white" : "text-black"
+                )}
+              />
+            </button>
             <CartIcon
               count={navbar.itemCount}
               showBump={false}

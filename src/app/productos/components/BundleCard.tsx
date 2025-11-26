@@ -23,6 +23,7 @@ import type { BundleInfo, CartProduct } from "@/hooks/useCart";
 import { toast } from "sonner";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import StockNotificationModal from "@/components/StockNotificationModal";
+import { shouldRenderValue } from "./utils/shouldRenderValue";
 
 /**
  * Selector de variantes del bundle con colores y capacidades
@@ -159,7 +160,7 @@ function BundleVariantSelector({
   return (
     <div className="px-3 space-y-1.5">
       {/* Label del color seleccionado - igual que ProductCard */}
-      {selectedColorName && uniqueColors.length > 0 && (
+      {selectedColorName && shouldRenderValue(selectedColorName) && uniqueColors.length > 0 && (
         <p className="text-xs text-gray-600 font-medium">
           {`Color: ${selectedColorName}`}
         </p>
@@ -478,12 +479,12 @@ export default function BundleCard({
         price: 0, // Se calculará proporcionalmente
         sku,
         ean: sku,
-        capacity: selectedOption.capacidadProductSku,
-        color: selectedOption.colorProductSku,
+        capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
+        color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
         modelo: selectedOption.modelo,
-        colorName: selectedOption.nombreColorProductSku,
+        colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
         stock: selectedOption.stockTotal,
-        ram: selectedOption.memoriaRamProductSku
+        ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
       }));
 
       const bundleInfo: BundleInfo = {
@@ -735,8 +736,8 @@ export default function BundleCard({
         onClose={stockNotification.closeModal}
         productName={displayName}
         productImage={previewImages && previewImages.length > 0 ? getCloudinaryUrl(previewImages[0], "catalog") : undefined}
-        selectedColor={selectedOption?.nombreColorProductSku}
-        selectedStorage={selectedOption?.capacidadProductSku}
+        selectedColor={shouldRenderValue(selectedOption?.nombreColorProductSku) ? selectedOption?.nombreColorProductSku : undefined}
+        selectedStorage={shouldRenderValue(selectedOption?.capacidadProductSku) ? selectedOption?.capacidadProductSku : undefined}
         onNotificationRequest={handleRequestStockNotification}
       />
     </div>

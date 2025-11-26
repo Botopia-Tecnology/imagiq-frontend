@@ -22,13 +22,10 @@ export const MobileMenuHeader: FC<Props> = ({
   onSearchSubmit,
 }) => (
   <div
-    className="sticky top-0 bg-white p-4 z-20"
-    style={{
-      borderBottom: activeSubmenu ? "none" : "1px solid rgb(229, 231, 235)",
-    }}
+    className="sticky top-0 bg-white z-20"
   >
     {activeSubmenu ? (
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between p-4">
         <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Volver">
           <ChevronLeft className="w-6 h-6" />
         </button>
@@ -38,10 +35,7 @@ export const MobileMenuHeader: FC<Props> = ({
         </button>
       </div>
     ) : (
-      <div className="flex items-center gap-3">
-        <div className="flex-1">
-          <SearchBar value={searchQuery} onChange={onSearchChange} onSubmit={onSearchSubmit} />
-        </div>
+      <div className="flex items-center justify-end p-4 pb-0">
         <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full" aria-label="Cerrar menú">
           <X className="w-6 h-6" />
         </button>

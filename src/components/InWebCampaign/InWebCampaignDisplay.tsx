@@ -90,7 +90,7 @@ function SliderDisplay({
   onClick: () => void;
 }) {
   return (
-    <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[9999] max-w-sm w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500">
+    <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[999999] max-w-sm w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500">
       <div className="relative z-10 max-w-md w-full">
         <button
           onClick={onClose}

@@ -4,14 +4,14 @@ import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { SIZES } from "./constants";
-import { useOfertasDestacadas } from "@/hooks/useOfertasDestacadas";
+import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
 
 type Props = Readonly<{
   onItemClick: (label: string, href: string) => void;
 }>;
 
 export function DesktopView({ onItemClick }: Props) {
-  const { productos, loading } = useOfertasDestacadas();
+  const { ofertas, loading } = useOfertasDirectas();
 
   const handleCloseDropdown = () => {
     globalThis.dispatchEvent(new CustomEvent("close-dropdown"));
@@ -57,7 +57,7 @@ export function DesktopView({ onItemClick }: Props) {
   }
 
   return (
-    <div className="bg-white py-8 px-6 relative">
+    <div className="bg-white py-6 px-6 relative">
       <button
         onClick={handleCloseDropdown}
         className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -66,7 +66,7 @@ export function DesktopView({ onItemClick }: Props) {
         <X className="w-5 h-5 text-gray-600" />
       </button>
 
-      {productos.length === 0 && !loading ? (
+      {ofertas.length === 0 && !loading ? (
         <div className="flex flex-col items-center justify-center py-12 text-center">
           <p className="text-2xl font-bold text-gray-900 mb-2">Próximamente</p>
           <p className="text-sm text-gray-600">
@@ -76,34 +76,32 @@ export function DesktopView({ onItemClick }: Props) {
       ) : (
         <div className="flex gap-x-8">
           <div className="flex-1 pl-8">
-            {/* Una sola fila: hasta 5 productos */}
-            <div className="grid grid-cols-5 gap-6">
-              {productos.slice(0, 5).map((producto) => {
-                const href =
-                  producto.link_url ||
-                  `/productos/${producto.producto_id}`;
+            {/* Dos filas: hasta 10 productos (5 por fila) */}
+            <div className="grid grid-cols-5 gap-x-5 gap-y-4">
+              {ofertas.slice(0, 10).map((oferta) => {
+                const href = `/productos/viewpremium/${oferta.codigo_market}`;
 
                 return (
                   <Link
-                    key={producto.uuid}
+                    key={oferta.uuid}
                     href={href}
                     onClick={() =>
-                      onItemClick(producto.producto_nombre || "Producto", href)
+                      onItemClick(oferta.producto.nombreMarket || oferta.nombre, href)
                     }
                     className="flex flex-col items-center text-center group"
                     style={{ width: `${SIZES.product.container}px` }}
                   >
                     <div
-                      className="relative mb-3 transition-transform group-hover:scale-105"
+                      className="relative mb-2 transition-transform group-hover:scale-105"
                       style={{
                         width: `${SIZES.product.image}px`,
                         height: `${SIZES.product.image}px`,
                       }}
                     >
-                      {producto.producto_imagen ? (
+                      {oferta.producto.imagen ? (
                         <Image
-                          src={producto.producto_imagen}
-                          alt={producto.producto_nombre || "Producto"}
+                          src={oferta.producto.imagen}
+                          alt={oferta.producto.nombreMarket || oferta.nombre}
                           fill
                           className="object-contain"
                         />
@@ -115,8 +113,8 @@ export function DesktopView({ onItemClick }: Props) {
                         </div>
                       )}
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2">
-                      {producto.producto_nombre || "Producto"}
+                    <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
+                      {oferta.producto.nombreMarket || oferta.nombre}
                     </span>
                   </Link>
                 );

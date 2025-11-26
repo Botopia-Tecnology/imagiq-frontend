@@ -16,6 +16,7 @@ import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
+import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
 import { useHeroContext } from "@/contexts/HeroContext";
 import OfertasDropdown from "./dropdowns/ofertas";
 import DynamicDropdown from "./dropdowns/dynamic";
@@ -76,6 +77,10 @@ export default function Navbar() {
   // Hook para prefetch de productos cuando el usuario hace hover sobre categorías
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } =
     usePrefetchProducts();
+
+  // Precargar ofertas destacadas al montar el navbar
+  // Esto asegura que los datos estén en caché cuando el usuario abra el dropdown
+  const { ofertas: ofertasPreload } = useOfertasDirectas();
 
   // Ref para rastrear timers de prefetch de menús por categoría
   const menuPrefetchTimersRef = useRef<
@@ -248,25 +253,25 @@ export default function Navbar() {
   const shouldShowWhiteLogo = navbar.activeDropdown
     ? false
     : navbar.isOfertas && !navbar.isScrolled
-    ? true
-    : useHeroTheme
-    ? theme === "light"
-    : navbar.showWhiteLogo;
+      ? true
+      : useHeroTheme
+        ? theme === "light"
+        : navbar.showWhiteLogo;
 
   const shouldShowWhiteItems = navbar.activeDropdown
     ? false
     : navbar.isOfertas && !navbar.isScrolled
-    ? true
-    : useHeroTheme
-    ? theme === "light"
-    : navbar.showWhiteItems;
+      ? true
+      : useHeroTheme
+        ? theme === "light"
+        : navbar.showWhiteItems;
 
   const shouldShowWhiteItemsMobile =
     navbar.isOfertas && !navbar.isScrolled
       ? true
       : useHeroTheme
-      ? theme === "light"
-      : navbar.showWhiteItemsMobile;
+        ? theme === "light"
+        : navbar.showWhiteItemsMobile;
 
   const mobileAddressData = useMemo<AddressLike | null>(
     () =>
@@ -686,7 +691,7 @@ export default function Navbar() {
                                   : "text-white hover:opacity-90"
                                 : "text-black hover:text-blue-600",
                               !shouldShowWhiteItems &&
-                                "after:absolute after:left-0 after:right-0 after:bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
+                              "after:absolute after:left-0 after:right-0 after:bottom-0 after:h-1 after:bg-blue-500 after:rounded-full after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:duration-200 after:origin-left"
                             )}
                           >
                             {item.name}
@@ -697,9 +702,8 @@ export default function Navbar() {
                               <div
                                 className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
                                 style={{
-                                  top: `${
-                                    getDropdownPosition(dropdownKey).top
-                                  }px`,
+                                  top: `${getDropdownPosition(dropdownKey).top
+                                    }px`,
                                 }}
                               >
                                 <div className="mx-auto max-w-screen-2xl">

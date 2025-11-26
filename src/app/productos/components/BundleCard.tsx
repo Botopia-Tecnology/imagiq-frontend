@@ -745,7 +745,7 @@ export default function BundleCard({
               }}
               disabled={isLoading}
               className={cn(
-                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
+                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors cursor-pointer",
                 "bg-black text-white hover:bg-gray-800",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 isLoading && "animate-pulse"
@@ -765,7 +765,7 @@ export default function BundleCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
             >
               Más información
             </button>

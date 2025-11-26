@@ -792,7 +792,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
+                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold cursor-pointer",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -813,7 +813,7 @@ export default function ProductCard({
                   e.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
               >
                 Más información
               </button>

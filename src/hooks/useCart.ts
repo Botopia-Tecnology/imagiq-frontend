@@ -55,6 +55,8 @@ export interface CartProduct {
   desDetallada?:string;
   /** Modelo del producto (ej: "Galaxy S24", "Galaxy Watch") - usado para sugerencias relacionadas */
   modelo?: string;
+  /** Categoría del producto (ej: "IT", "AV", "HA") */
+  categoria?: string;
   /** Indica si el producto puede ser recogido en tienda (canPickUp) */
   canPickUp?: boolean;
   /** Indica si el producto aplica para retoma (indRetoma: 1 = aplica, 0 = no aplica) */

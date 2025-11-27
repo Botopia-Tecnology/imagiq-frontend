@@ -544,6 +544,7 @@ export interface BundleProduct {
   stockTotal?: number;
   bundle_price: number;
   bundle_discount: number;
+  categoria?: string;
 }
 
 // Opción individual dentro de un bundle (variante)

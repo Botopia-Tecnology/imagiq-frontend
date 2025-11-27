@@ -12,7 +12,9 @@ import CookieBanner from "@/components/CookieBanner";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
 import { useClarityIdentity } from "@/hooks/useClarityIdentity";
+import { useInWebCampaign } from "@/hooks/useInWebCampaign";
 import VersionManager from "@/components/VersionManager";
+import { InWebCampaignDisplay } from "@/components/InWebCampaign/InWebCampaignDisplay";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -38,6 +40,11 @@ export default function ClientLayout({
   const hideNavbar = shouldHideNavbar(pathname || '');
   const { hideNavbar: hideNavbarDynamic } = useNavbarVisibility();
   const [isClient, setIsClient] = useState(false);
+
+  // Hook para gestionar campañas InWeb
+  const { activeCampaign, closeCampaign } = useInWebCampaign({
+    channelName: "inweb"
+  });
 
   // Precargar productos de todas las combinaciones posibles en background
   usePreloadAllProducts();
@@ -68,10 +75,15 @@ export default function ClientLayout({
     setIsClient(true);
   }, []);
 
+
   return (
     <>
       <VersionManager />
       <CookieBanner />
+      <InWebCampaignDisplay
+        campaign={activeCampaign}
+        onClose={closeCampaign}
+      />
       <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
         {/* Solo monta el Navbar si no debe ocultarse por ruta ni por scroll dinámico */}
         {!hideNavbar && !hideNavbarDynamic && isClient && <Navbar />}

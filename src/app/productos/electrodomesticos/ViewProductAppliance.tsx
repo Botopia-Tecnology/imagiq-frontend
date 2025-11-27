@@ -146,6 +146,7 @@ export default function ViewProductAppliance({
       sku: safeProduct.id, // Add required sku property
       ean: safeProduct.id,
       modelo: safeProduct.model || "", // Modelo para sugerencias relacionadas
+      categoria: "HA", // Categoría de electrodomésticos
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);

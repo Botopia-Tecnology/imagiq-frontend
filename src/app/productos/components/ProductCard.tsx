@@ -677,85 +677,108 @@ export default function ProductCard({
             </div>
           )}
 
-          {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
-          {showColorSelector &&
-            (apiProduct
-              ? productSelection.availableColors.length > 0
-              : colors && colors.length > 0) && (
-              <div className="min-h-[48px] px-3">
-                <ColorSelector
-                  colors={
-                    apiProduct
-                      ? productSelection.getColorOptions().map((colorOption) => ({
-                          name: colorOption.color,
-                          hex: colorOption.hex,
-                          label: colorOption.nombreColorDisplay || colorOption.color,
-                          nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
-                          sku: colorOption.variants[0]?.sku || "",
-                          ean: colorOption.variants[0]?.ean || "",
-                        }))
-                      : colors
-                  }
-                  selectedColor={displayedSelectedColor}
-                  onColorSelect={handleColorSelect}
-                  onShowMore={handleMoreInfo}
-                />
-              </div>
-            )}
+          {/* Contenedor para selectores y botón de entrego y estreno */}
+          <div className="px-3 flex gap-2 items-start">
+            {/* Columna izquierda: Selectores */}
+            <div className="flex-1 space-y-2">
+              {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
+              {showColorSelector &&
+                (apiProduct
+                  ? productSelection.availableColors.length > 0
+                  : colors && colors.length > 0) && (
+                  <div className="min-h-[48px]">
+                    <ColorSelector
+                      colors={
+                        apiProduct
+                          ? productSelection.getColorOptions().map((colorOption) => ({
+                              name: colorOption.color,
+                              hex: colorOption.hex,
+                              label: colorOption.nombreColorDisplay || colorOption.color,
+                              nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+                              sku: colorOption.variants[0]?.sku || "",
+                              ean: colorOption.variants[0]?.ean || "",
+                            }))
+                          : colors
+                      }
+                      selectedColor={displayedSelectedColor}
+                      onColorSelect={handleColorSelect}
+                      onShowMore={handleMoreInfo}
+                    />
+                  </div>
+                )}
 
-          {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
-          {showCapacitySelector &&
-            (apiProduct
-              ? productSelection.availableCapacities.length > 0
-              : capacities && capacities.length > 0) && (
-              <div className="min-h-[48px] px-3">
-                <CapacitySelector
-                  capacities={
-                    apiProduct
-                      ? productSelection.availableCapacities.map(
-                          (capacityName) => {
-                            // Crear un ProductCapacity basado en el nombre de la capacidad
-                            const formattedLabel = formatCapacityLabel(capacityName);
-                            const capacityInfo = capacities?.find(
-                              (c) => c.label === capacityName
-                            ) || {
-                              value: capacityName
-                                .toLowerCase()
-                                .replaceAll(/\s+/g, ""),
-                              label: formattedLabel,
-                              sku: "",
-                              ean: "",
-                            };
-                            return capacityInfo;
-                          }
-                        )
-                      : capacities || []
-                  }
-                  selectedCapacity={
-                    apiProduct
-                      ? productSelection.availableCapacities
-                          .map((capacityName) => {
-                            const formattedLabel = formatCapacityLabel(capacityName);
-                            const capacityInfo = capacities?.find(
-                              (c) => c.label === capacityName
-                            ) || {
-                              value: capacityName
-                                .toLowerCase()
-                                .replaceAll(/\s+/g, ""),
-                              label: formattedLabel,
-                            };
-                            return capacityInfo;
-                          })
-                          .find(
-                            (c) =>
-                              c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
-                          ) || null
-                      : selectedCapacity
-                  }
-                  onCapacitySelect={handleCapacitySelect}
-                />
+              {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
+              {showCapacitySelector &&
+                (apiProduct
+                  ? productSelection.availableCapacities.length > 0
+                  : capacities && capacities.length > 0) && (
+                  <div className="min-h-[48px]">
+                    <CapacitySelector
+                      capacities={
+                        apiProduct
+                          ? productSelection.availableCapacities.map(
+                              (capacityName) => {
+                                // Crear un ProductCapacity basado en el nombre de la capacidad
+                                const formattedLabel = formatCapacityLabel(capacityName);
+                                const capacityInfo = capacities?.find(
+                                  (c) => c.label === capacityName
+                                ) || {
+                                  value: capacityName
+                                    .toLowerCase()
+                                    .replaceAll(/\s+/g, ""),
+                                  label: formattedLabel,
+                                  sku: "",
+                                  ean: "",
+                                };
+                                return capacityInfo;
+                              }
+                            )
+                          : capacities || []
+                      }
+                      selectedCapacity={
+                        apiProduct
+                          ? productSelection.availableCapacities
+                              .map((capacityName) => {
+                                const formattedLabel = formatCapacityLabel(capacityName);
+                                const capacityInfo = capacities?.find(
+                                  (c) => c.label === capacityName
+                                ) || {
+                                  value: capacityName
+                                    .toLowerCase()
+                                    .replaceAll(/\s+/g, ""),
+                                  label: formattedLabel,
+                                };
+                                return capacityInfo;
+                              })
+                              .find(
+                                (c) =>
+                                  c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
+                              ) || null
+                          : selectedCapacity
+                      }
+                      onCapacitySelect={handleCapacitySelect}
+                    />
+                  </div>
+                )}
+            </div>
+
+            {/* Columna derecha: Botón de Entrego y Estreno - Mostrar solo si indRetoma === 1 */}
+            {productSelection.selectedVariant?.indRetoma === 1 && (
+              <div className="flex-shrink-0 w-[120px] self-start -mt-4">
+                <div className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center">
+                  <svg className="w-4 h-4 md:w-5 md:h-5 text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                  <p className="text-[10px] font-bold mb-0">
+                    Entrego y Estreno
+                  </p>
+                  <p className="text-[9px] opacity-90">
+                    aplica ahora
+                  </p>
+                </div>
               </div>
             )}
+          </div>
 
           {/* Precio */}
           <div className="px-3 space-y-3 mt-auto">

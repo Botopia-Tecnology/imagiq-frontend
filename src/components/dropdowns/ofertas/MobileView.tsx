@@ -51,7 +51,7 @@ export function MobileView({ onItemClick }: Props) {
               key={oferta.uuid}
               href={href}
               onClick={() =>
-                onItemClick(oferta.producto.nombreMarket || oferta.nombre, href)
+                onItemClick(oferta.nombre, href)
               }
               className="flex flex-col items-center text-center"
             >
@@ -59,7 +59,7 @@ export function MobileView({ onItemClick }: Props) {
                 {oferta.producto.imagen ? (
                   <Image
                     src={oferta.producto.imagen}
-                    alt={oferta.producto.nombreMarket || oferta.nombre}
+                    alt={oferta.nombre}
                     fill
                     className="object-contain"
                   />
@@ -70,7 +70,7 @@ export function MobileView({ onItemClick }: Props) {
                 )}
               </div>
               <span className="text-xs font-semibold text-gray-900 line-clamp-2">
-                {oferta.producto.nombreMarket || oferta.nombre}
+                {oferta.nombre}
               </span>
             </Link>
           );

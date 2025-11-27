@@ -17,6 +17,7 @@ import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
+import { usePrefetchOfertas } from "@/hooks/usePrefetchOfertas";
 import { useHeroContext } from "@/contexts/HeroContext";
 import OfertasDropdown from "./dropdowns/ofertas";
 import DynamicDropdown from "./dropdowns/dynamic";
@@ -77,6 +78,9 @@ export default function Navbar() {
   // Hook para prefetch de productos cuando el usuario hace hover sobre categorías
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } =
     usePrefetchProducts();
+
+  // Hook para prefetch de las 4 secciones de ofertas
+  const { prefetchAllOfertas } = usePrefetchOfertas();
 
   // Precargar ofertas destacadas al montar el navbar
   // Esto asegura que los datos estén en caché cuando el usuario abra el dropdown
@@ -533,6 +537,13 @@ export default function Navbar() {
                           data-item-name={dropdownKey}
                           ref={navbar.setNavItemRef}
                           onMouseEnter={() => {
+                            // Prefetch de ofertas cuando se hace hover en el link "Ofertas"
+                            if (item.name === "Ofertas" && item.href === "/ofertas") {
+                              prefetchAllOfertas().catch(() => {
+                                // Silenciar errores
+                              });
+                            }
+
                             if (hasDropdownMenu(dropdownKey, item)) {
                               navbar.handleDropdownEnter(
                                 dropdownKey as DropdownName
@@ -674,6 +685,13 @@ export default function Navbar() {
                           <Link
                             href={item.href}
                             onClick={(e) => {
+                              // Prefetch de ofertas cuando se hace click en el link "Ofertas"
+                              if (item.name === "Ofertas" && item.href === "/ofertas") {
+                                prefetchAllOfertas().catch(() => {
+                                  // Silenciar errores
+                                });
+                              }
+
                               // Prevenir navegación por defecto del Link
                               e.preventDefault();
                               // 🔥 Disparar analytics antes de navegar

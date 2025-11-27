@@ -390,6 +390,7 @@ export default function Step1({
         desDetallada:
           producto.desDetallada[0] || producto.nombreMarket?.[0] || "",
         modelo: producto.modelo?.[0] || "",
+        categoria: producto.categoria || "",
       };
 
       // Agregar al carrito

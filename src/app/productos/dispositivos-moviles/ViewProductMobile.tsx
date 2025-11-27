@@ -200,6 +200,7 @@ export default function ViewProduct({
       sku: productCard.selectedColor.sku, // SKU estricto del color seleccionado
       ean: productCard.selectedColor.ean,
       modelo: safeProduct.model || "", // Modelo para sugerencias relacionadas
+      categoria: safeProduct.category || "", // Categoría del producto
     });
     setCartFeedback("Producto añadido al carrito");
     setTimeout(() => setCartFeedback(null), 1200);

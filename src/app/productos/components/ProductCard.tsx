@@ -401,6 +401,7 @@ export default function ProductCard({
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -440,6 +441,26 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
+    // Guardar la selección actual del usuario en localStorage
+    const selectedProductData = {
+      productId: id,
+      productName: currentProductName,
+      price: currentPrice || (typeof finalCurrentPrice === "string" ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, "")) : finalCurrentPrice),
+      originalPrice: currentOriginalPrice || (typeof finalCurrentOriginalPrice === "string" ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")) : finalCurrentOriginalPrice),
+      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || selectedColor?.label,
+      colorHex: displayedSelectedColor?.hex || selectedColor?.hex,
+      capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label,
+      ram: productSelection.selection.selectedMemoriaram,
+      sku: currentSku,
+      ean: productSelection.selectedVariant?.ean || selectedColor?.ean,
+      image: typeof currentImage === "string" ? currentImage : typeof image === "string" ? image : image.src,
+      indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
+      allPrices: apiProduct?.precioeccommerce || [],
+    };
+
+    // Guardar en localStorage con una clave única por producto
+    localStorage.setItem(`product_selection_${id}`, JSON.stringify(selectedProductData));
+
     // Navega a la página de multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
@@ -817,6 +838,39 @@ export default function ProductCard({
               >
                 Más información
               </button>
+            </div>
+
+            {/* Mensaje de cuotas sin interés */}
+            <div className="mt-3 flex flex-col items-center gap-1">
+              <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-blue-600 font-bold whitespace-nowrap">
+                Compra en 3 cuotas con 0% de interés{" "}
+                <span className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500">
+                  Aplican T&C
+                </span>
+              </p>
+              <div className="flex items-center gap-6 justify-center">
+                <Image 
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                  alt="Cuotas"
+                  width={20}
+                  height={20}
+                  className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+                />
+                <Image 
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                  alt="Pago"
+                  width={20}
+                  height={20}
+                  className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+                />
+                <Image 
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                  alt="Seguridad"
+                  width={20}
+                  height={20}
+                  className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+                />
+              </div>
             </div>
           </div>
         </div>

@@ -776,7 +776,7 @@ export default function BundleCard({
           {/* Mensaje de cuotas sin interés */}
           <div className="mt-3 flex flex-col items-center gap-1">
             <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-blue-600 font-bold whitespace-nowrap">
-              Compra en 3 cuotas con 0% de interés{" "}
+              Compra con 0% de interés con bancos aliados{" "}
               <span className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500">
                 Aplican T&C
               </span>

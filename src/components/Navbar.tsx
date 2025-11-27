@@ -17,6 +17,7 @@ import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
+import { usePrefetchOfertas } from "@/hooks/usePrefetchOfertas";
 import { useHeroContext } from "@/contexts/HeroContext";
 import OfertasDropdown from "./dropdowns/ofertas";
 import DynamicDropdown from "./dropdowns/dynamic";
@@ -77,6 +78,9 @@ export default function Navbar() {
   // Hook para prefetch de productos cuando el usuario hace hover sobre categorías
   const { prefetchWithDebounce, cancelPrefetch, prefetchProducts } =
     usePrefetchProducts();
+
+  // Hook para prefetch de las 4 secciones de ofertas
+  const { prefetchAllOfertas } = usePrefetchOfertas();
 
   // Precargar ofertas destacadas al montar el navbar
   // Esto asegura que los datos estén en caché cuando el usuario abra el dropdown
@@ -200,12 +204,12 @@ export default function Navbar() {
                 autoPrefetchingRef.current.delete(item.uuid!);
               });
             }, 500); // Esperar 500ms para que los menús se carguen
-          }, categoryIndex * 2000); // Escalonar cada categoría cada 2000ms (2 segundos)
+          }, categoryIndex * 1000); // Escalonar cada categoría cada 1000ms (1 segundo)
         });
       };
 
       startAutoPrefetch();
-    }, 3000); // Iniciar después de 3 segundos
+    }, 1500); // Iniciar después de 1.5 segundos
 
     return () => {
       if (autoPrefetchStartTimerRef.current) {
@@ -533,6 +537,13 @@ export default function Navbar() {
                           data-item-name={dropdownKey}
                           ref={navbar.setNavItemRef}
                           onMouseEnter={() => {
+                            // Prefetch de ofertas cuando se hace hover en el link "Ofertas"
+                            if (item.name === "Ofertas" && item.href === "/ofertas") {
+                              prefetchAllOfertas().catch(() => {
+                                // Silenciar errores
+                              });
+                            }
+
                             if (hasDropdownMenu(dropdownKey, item)) {
                               navbar.handleDropdownEnter(
                                 dropdownKey as DropdownName
@@ -593,7 +604,7 @@ export default function Navbar() {
                                       menu.uuid &&
                                       item.categoryCode
                                     ) {
-                                      // Delay escalonado para hover: 200ms, 400ms, 600ms, etc. (aumentado para evitar 429)
+                                      // Delay escalonado para hover: 100ms, 200ms, 300ms, etc. (optimizado para mejor respuesta)
                                       const menuTimer = setTimeout(() => {
                                         prefetchProducts({
                                           categoryCode: item.categoryCode!,
@@ -601,7 +612,7 @@ export default function Navbar() {
                                         }).catch(() => {
                                           // Silenciar errores
                                         });
-                                      }, 200 + index * 200); // Escalonar cada 200ms (más rápido que automático pero seguro)
+                                      }, 100 + index * 100); // Escalonar cada 100ms (más rápido que automático pero seguro)
 
                                       timers.push(menuTimer);
                                     }
@@ -674,6 +685,13 @@ export default function Navbar() {
                           <Link
                             href={item.href}
                             onClick={(e) => {
+                              // Prefetch de ofertas cuando se hace click en el link "Ofertas"
+                              if (item.name === "Ofertas" && item.href === "/ofertas") {
+                                prefetchAllOfertas().catch(() => {
+                                  // Silenciar errores
+                                });
+                              }
+
                               // Prevenir navegación por defecto del Link
                               e.preventDefault();
                               // 🔥 Disparar analytics antes de navegar

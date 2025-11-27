@@ -401,6 +401,7 @@ export default function ProductCard({
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos

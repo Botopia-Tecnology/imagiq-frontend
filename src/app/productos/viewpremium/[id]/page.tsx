@@ -141,6 +141,7 @@ export default function ProductViewPage({ params }) {
         skuPostback: productSelection.selectedSkuPostback || '',
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: product.apiProduct?.modelo?.[0] || "",
+        categoria: product.apiProduct?.categoria || "",
       });
     } finally {
       setLoadingCart(false);

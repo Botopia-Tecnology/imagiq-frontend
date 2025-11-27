@@ -41,7 +41,7 @@ interface QueuedPrefetch {
 // Cola global de prefetches pendientes
 const prefetchQueue: QueuedPrefetch[] = [];
 // Número máximo de peticiones simultáneas (reducido para evitar 429)
-const MAX_CONCURRENT_PREFETCHES = 2;
+const MAX_CONCURRENT_PREFETCHES = 4;
 // Contador de peticiones activas
 let activePrefetches = 0;
 // Flag para indicar si el procesador de cola está corriendo

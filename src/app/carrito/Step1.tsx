@@ -574,7 +574,7 @@ export default function Step1({
 
               {/* Productos individuales (sin bundle) */}
               {nonBundleProducts.length > 0 && (
-                <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200">
+                <div className="flex flex-col bg-white rounded-lg overflow-hidden border border-gray-200 divide-y divide-gray-200">
                   {nonBundleProducts.map((product) => {
                     const idx = cartProducts.findIndex((p) => p.sku === product.sku);
                     return (
@@ -684,8 +684,8 @@ export default function Step1({
             {/* Botón continuar */}
             <button
               className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!tradeInValidation.isValid || isLoadingCanPickUpGlobal
-                  ? "bg-gray-400 cursor-not-allowed opacity-70"
-                  : "bg-[#222] hover:bg-[#333] cursor-pointer"
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-[#222] hover:bg-[#333] cursor-pointer"
                 }`}
               onClick={handleContinue}
               disabled={!tradeInValidation.isValid || isLoadingCanPickUpGlobal}

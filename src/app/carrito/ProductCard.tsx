@@ -167,19 +167,29 @@ const ProductCard: React.FC<ProductCardProps> = ({
 
             {/* Cantidad */}
             <div className="flex items-center gap-2 mb-2">
-              <select
-                value={cantidad}
-                onChange={(e) => onQuantityChange(Number(e.target.value))}
-                className="text-sm border border-gray-300 rounded px-2 py-1 bg-white cursor-pointer"
-              >
-                {Array.from({ length: limiteMax }, (_, i) => i + 1).map(
-                  (num) => (
-                    <option key={num} value={num}>
-                      {num} u.
-                    </option>
-                  )
-                )}
-              </select>
+              <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
+                <button
+                  onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
+                  className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={cantidad <= 1}
+                  aria-label="Disminuir cantidad"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+                <span className="w-8 text-center text-sm font-semibold">
+                  {cantidad}
+                </span>
+                <button
+                  onClick={() =>
+                    onQuantityChange(Math.min(limiteMax, cantidad + 1))
+                  }
+                  className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={cantidad >= limiteMax}
+                  aria-label="Aumentar cantidad"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              </div>
               <span className="text-xs text-gray-500">
                 Disponibles: {disponible}
               </span>
@@ -347,7 +357,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 )}
               </div>
               {descuento && precioOriginal && (
-                <div className="flex items-center gap-2 whitespace-nowrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">
                     {descuento}%
                   </span>

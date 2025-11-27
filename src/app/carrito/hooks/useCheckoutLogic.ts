@@ -19,11 +19,13 @@ import {
 import { validateCardFields } from "../utils/cardValidation";
 import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
 import { useCardsCache } from "./useCardsCache";
+import useSecureStorage from "@/hooks/useSecureStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
   const { products: cartProducts, appliedDiscount, calculations } = useCart();
+  const [checkoutAddress, _ ] = useSecureStorage<{id: string} | null>("checkout-address", null);
 
   // Hook de caché para zero interest
   const {
@@ -373,7 +375,7 @@ export function useCheckoutLogic() {
             totalAmount: String(total),
             userInfo: {
               userId: userInfo.id || "",
-              direccionId: direction.id || "",
+              direccionId: checkoutAddress?.id || "",
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -432,7 +434,7 @@ export function useCheckoutLogic() {
               currency: "COP",
               userInfo: {
                 userId: userInfo.id || "",
-                direccionId: direction.id || "",
+                direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
               beneficios: (() => {
@@ -519,7 +521,7 @@ export function useCheckoutLogic() {
               currency: "COP",
               userInfo: {
                 userId: userInfo.id || "",
-                direccionId: direction.id || "",
+                direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
               beneficios: (() => {

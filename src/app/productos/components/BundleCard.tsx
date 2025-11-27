@@ -469,34 +469,73 @@ export default function BundleCard({
     setIsLoading(true);
 
     try {
+      // Verificar si tenemos el array de productos desde el backend
+      console.log("Selected option products:", selectedOption.productos);
+      if (selectedOption.productos && selectedOption.productos.length > 0) {
+        // Usar datos completos del backend que ya vienen en la opción
+        const firstProduct = selectedOption.productos[0];
 
+        const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product, index) => ({
+          id: product.sku,
+          name: product.modelo,
+          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
+          price: product.product_discount_price,
+          originalPrice: product.product_original_price,
+          sku: product.sku,
+          ean: product.ean || product.sku,
+          color: product.color,
+          colorName: product.nombreColor,
+          capacity: product.capacidad,
+          ram: product.memoriaram,
+          stock: product.stockTotal,
+          modelo: product.modelo,
+          categoria: product.categoria || categoria || "",
+        }));
 
-      // Construir productos básicos desde los SKUs disponibles
-      const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
-        id: sku,
-        name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
-        image: previewImages[index] || "/img/logo_imagiq.png",
-        price: 0, // Se calculará proporcionalmente
-        sku,
-        ean: sku,
-        capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
-        color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
-        modelo: selectedOption.modelo,
-        colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
-        stock: selectedOption.stockTotal,
-        ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
-      }));
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: firstProduct.bundle_price,
+          bundleDiscount: firstProduct.bundle_discount,
+          fechaFinal: new Date(fecha_final),
+        };
 
-      const bundleInfo: BundleInfo = {
-        codCampana,
-        productSku: selectedOption.product_sku,
-        skusBundle: skus_bundle,
-        bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
-        bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
-        fechaFinal: new Date(fecha_final),
-      };
+        await addBundleToCart(products, bundleInfo);
+      } else {
+        // Fallback: usar datos básicos de la opción seleccionada
+        toast.warning("Usando datos básicos del bundle", {
+          description: "No se pudieron obtener los detalles completos",
+        });
 
-      await addBundleToCart(basicProducts, bundleInfo);
+        // Construir productos básicos desde los SKUs disponibles
+        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
+          id: sku,
+          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+          image: previewImages[index] || "/img/logo_imagiq.png",
+          price: 0, // Se calculará proporcionalmente
+          sku,
+          ean: sku,
+          capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
+          color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
+          modelo: selectedOption.modelo,
+          colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
+          stock: selectedOption.stockTotal,
+          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined,
+          categoria: categoria || "",
+        }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
+          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+          fechaFinal: new Date(fecha_final),
+        };
+
+        await addBundleToCart(basicProducts, bundleInfo);
+      }
 
 
 
@@ -559,8 +598,14 @@ export default function BundleCard({
         className
       )}
     >
-      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" */}
-      <div className="relative aspect-square bg-gray-100 rounded-lg overflow-visible">
+      {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" - Clickable */}
+      <div
+        className="relative aspect-square bg-gray-100 rounded-lg overflow-visible cursor-pointer"
+        onClick={(e) => {
+          e.stopPropagation();
+          handleMoreInfo();
+        }}
+      >
         <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>
 
@@ -575,7 +620,7 @@ export default function BundleCard({
                 event.stopPropagation();
                 handleMoreInfo();
               }}
-              className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+              className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
             >
               {displayName}
             </button>
@@ -702,7 +747,7 @@ export default function BundleCard({
               }}
               disabled={isLoading}
               className={cn(
-                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors",
+                "flex-1 py-2 px-2 rounded-full text-xs lg:text-md font-semibold transition-colors cursor-pointer",
                 "bg-black text-white hover:bg-gray-800",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
                 isLoading && "animate-pulse"
@@ -722,10 +767,43 @@ export default function BundleCard({
                 e.stopPropagation();
                 handleMoreInfo();
               }}
-              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+              className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
             >
               Más información
             </button>
+          </div>
+
+          {/* Mensaje de cuotas sin interés */}
+          <div className="mt-3 flex flex-col items-center gap-1">
+            <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-blue-600 font-bold whitespace-nowrap">
+              Compra en 3 cuotas con 0% de interés{" "}
+              <span className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500">
+                Aplican T&C
+              </span>
+            </p>
+            <div className="flex items-center gap-6 justify-center">
+              <Image 
+                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                alt="Cuotas"
+                width={20}
+                height={20}
+                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+              />
+              <Image 
+                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                alt="Pago"
+                width={20}
+                height={20}
+                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+              />
+              <Image 
+                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                alt="Seguridad"
+                width={20}
+                height={20}
+                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+              />
+            </div>
           </div>
         </div>
       </div>

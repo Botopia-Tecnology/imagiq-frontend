@@ -39,7 +39,7 @@ class BannersService {
 
       // Fetch desde API
       const response = await apiClient.get<BannerApiResponse>(
-        "/api/multimedia/banners?status=active"
+        "/api/multimedia/banners?status=active&limit=100"
       );
 
       if (response.success && response.data?.data) {

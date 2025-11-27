@@ -4,6 +4,7 @@
  * Layout profesional, estilo Samsung, código limpio y escalable
  */
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useCart } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
 import { safeGetLocalStorage } from "@/lib/localStorage";
@@ -557,12 +558,12 @@ export default function Step2({
                 Iniciar sesión
               </button>
               <span className="text-gray-600">No tienes cuenta aún?</span>
-              <a
+              <Link
                 href="/login/create-account"
                 className="text-[#0074E8] font-semibold underline"
               >
                 Regístrate aquí
-              </a>
+              </Link>
             </div>
           </div>
           {/* Invitado */}

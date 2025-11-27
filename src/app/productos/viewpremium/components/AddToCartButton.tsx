@@ -84,6 +84,7 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
         skuPostback: productSelection.selectedSkuPostback || '',
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: product.apiProduct?.modelo?.[0] || "",
+        categoria: product.apiProduct?.categoria || "",
       });
       recalculatePoints();
       

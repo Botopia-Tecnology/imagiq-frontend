@@ -204,12 +204,12 @@ export default function Navbar() {
                 autoPrefetchingRef.current.delete(item.uuid!);
               });
             }, 500); // Esperar 500ms para que los menús se carguen
-          }, categoryIndex * 2000); // Escalonar cada categoría cada 2000ms (2 segundos)
+          }, categoryIndex * 1000); // Escalonar cada categoría cada 1000ms (1 segundo)
         });
       };
 
       startAutoPrefetch();
-    }, 3000); // Iniciar después de 3 segundos
+    }, 1500); // Iniciar después de 1.5 segundos
 
     return () => {
       if (autoPrefetchStartTimerRef.current) {
@@ -604,7 +604,7 @@ export default function Navbar() {
                                       menu.uuid &&
                                       item.categoryCode
                                     ) {
-                                      // Delay escalonado para hover: 200ms, 400ms, 600ms, etc. (aumentado para evitar 429)
+                                      // Delay escalonado para hover: 100ms, 200ms, 300ms, etc. (optimizado para mejor respuesta)
                                       const menuTimer = setTimeout(() => {
                                         prefetchProducts({
                                           categoryCode: item.categoryCode!,
@@ -612,7 +612,7 @@ export default function Navbar() {
                                         }).catch(() => {
                                           // Silenciar errores
                                         });
-                                      }, 200 + index * 200); // Escalonar cada 200ms (más rápido que automático pero seguro)
+                                      }, 100 + index * 100); // Escalonar cada 100ms (más rápido que automático pero seguro)
 
                                       timers.push(menuTimer);
                                     }

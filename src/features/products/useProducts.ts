@@ -321,22 +321,58 @@ export const useProducts = (
           // Esto previene que se muestren productos de una sección cuando navegas a otra
           const menuSubmenuChanged = menuUuidChangedForCache || submenuUuidChangedForCache;
 
+          // OPTIMIZACIÓN: Verificar caché ANTES de limpiar productos
+          // Esto evita mostrar skeletons innecesariamente cuando hay datos en caché disponibles
+          const cachedResponse = productCache.get(apiParams);
+          const hasValidCache = cachedResponse && cachedResponse.success && cachedResponse.data;
+
           if (isPageChange || filtersChanged || menuSubmenuChanged) {
-            // Cambio de página o filtros: limpiar productos, bundles, orderedItems y mostrar skeletons inmediatamente
-            setProducts([]);
-            setBundles([]); // Limpiar bundles también
-            setOrderedItems([]); // Limpiar orderedItems también
-            productsRef.current = [];
-            setLoading(true);
-            setError(null);
-            // NO usar caché en cambio de página/filtros para mostrar skeletons
-            hasCachedData = false;
-            // Actualizar referencia de filtros
-            previousFiltersRef.current = filterKey;
+            // Cambio de página o filtros: verificar caché primero
+            if (hasValidCache) {
+              // Hay caché disponible: usar datos del caché inmediatamente sin limpiar productos
+              hasCachedData = true;
+              const apiData = cachedResponse.data;
+              const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
+
+              // Establecer todos los estados de forma síncrona
+              setError(null);
+              setProducts(mappedProducts);
+              setBundles(mappedBundles);
+              setOrderedItems(mappedOrderedItems);
+              productsRef.current = mappedProducts;
+              setGroupedProducts(groupProductsByCategory(mappedProducts));
+              setTotalItems(apiData.totalItems);
+              setTotalPages(apiData.totalPages);
+              setCurrentPage(apiData.currentPage);
+              setHasNextPage(apiData.hasNextPage);
+              setHasPreviousPage(apiData.hasPreviousPage);
+              if (apiData.hasMoreInPage !== undefined) {
+                setHasMoreInPageFromApi(apiData.hasMoreInPage);
+              }
+              
+              if (!filters.lazyOffset && customOffset === undefined) {
+                setLazyOffset(0);
+                setHasMoreInCurrentPage(true);
+              }
+              
+              setLoading(false);
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
+            } else {
+              // No hay caché: limpiar productos, bundles, orderedItems y mostrar skeletons
+              setProducts([]);
+              setBundles([]);
+              setOrderedItems([]);
+              productsRef.current = [];
+              setLoading(true);
+              setError(null);
+              hasCachedData = false;
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
+            }
           } else {
             // Primera carga: usar caché si existe
-            const cachedResponse = productCache.get(apiParams);
-            if (cachedResponse && cachedResponse.success && cachedResponse.data) {
+            if (hasValidCache) {
               hasCachedData = true;
               // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
               const apiData = cachedResponse.data;

@@ -11,6 +11,15 @@ export interface ChatbotRequest {
   session_id?: string;
 }
 
+// Interfaz simplificada para productos del agente
+// Solo necesitamos el ID (codigoMarketBase) para renderizar el ProductCard
+export interface AgentProduct {
+  id: string; // codigoMarketBase - es lo único que necesitamos
+  nombre?: string;
+  precio?: number;
+  imagen_url?: string;
+}
+
 export interface ChatbotResponse {
   success: boolean;
   message: string;
@@ -19,8 +28,8 @@ export interface ChatbotResponse {
   menu: string | null;
   submenu: string | null;
   reasoning: string | null;
-  product: unknown | null;
-  products: unknown[];
+  product: AgentProduct | null;
+  products: AgentProduct[];
   answer: string;
   route: string;
 }

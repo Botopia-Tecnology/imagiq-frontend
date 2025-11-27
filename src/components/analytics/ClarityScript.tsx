@@ -1,29 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { hasAnalyticsConsent } from "@/lib/consent";
+import {
+  initializeClarityConsent,
+  sendClarityConsentToBackend,
+} from "@/lib/analytics/clarity-consent";
 
 /**
  * Microsoft Clarity - First-Party Loading
  *
- * SOLO se carga si el usuario acepta cookies de analytics
+ * Se carga SIEMPRE para grabar todas las sesiones
+ * No requiere consentimiento de cookies
  */
 export default function ClarityScript() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
+    // Inicializar el consentimiento (habilitado por defecto)
+    initializeClarityConsent();
   }, []);
 
   useEffect(() => {
     if (!mounted || typeof window === "undefined") return;
 
     const loadClarity = () => {
-      // Verificar consentimiento
-      if (!hasAnalyticsConsent()) {
-        return;
-      }
-
       // Prevenir múltiples cargas
       if ("clarity" in window && window.clarity) {
         return;
@@ -44,7 +45,10 @@ export default function ClarityScript() {
       script.id = "clarity-bootstrap";
 
       script.onload = () => {
-        // Clarity loaded successfully
+        console.log("[Clarity] ✅ Loaded successfully - Recording enabled");
+
+        // Enviar consentimiento de grabación al backend
+        sendClarityConsentToBackend(true);
       };
 
       script.onerror = () => {
@@ -59,18 +63,10 @@ export default function ClarityScript() {
       document.head.appendChild(script);
     };
 
-    // Cargar inmediatamente
+    // Cargar inmediatamente - SIN verificar consentimiento
     loadClarity();
 
-    // Escuchar cambios de consentimiento
-    const handleConsentChange = () => {
-      loadClarity();
-    };
-
-    window.addEventListener("consentChange", handleConsentChange);
-
     return () => {
-      window.removeEventListener("consentChange", handleConsentChange);
       document.getElementById("clarity-bootstrap")?.remove();
     };
   }, [mounted]);

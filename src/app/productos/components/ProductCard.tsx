@@ -440,6 +440,26 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
+    // Guardar la selección actual del usuario en localStorage
+    const selectedProductData = {
+      productId: id,
+      productName: currentProductName,
+      price: currentPrice || (typeof finalCurrentPrice === "string" ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, "")) : finalCurrentPrice),
+      originalPrice: currentOriginalPrice || (typeof finalCurrentOriginalPrice === "string" ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")) : finalCurrentOriginalPrice),
+      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || selectedColor?.label,
+      colorHex: displayedSelectedColor?.hex || selectedColor?.hex,
+      capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label,
+      ram: productSelection.selection.selectedMemoriaram,
+      sku: currentSku,
+      ean: productSelection.selectedVariant?.ean || selectedColor?.ean,
+      image: typeof currentImage === "string" ? currentImage : typeof image === "string" ? image : image.src,
+      indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
+      allPrices: apiProduct?.precioeccommerce || [],
+    };
+
+    // Guardar en localStorage con una clave única por producto
+    localStorage.setItem(`product_selection_${id}`, JSON.stringify(selectedProductData));
+
     // Navega a la página de multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {

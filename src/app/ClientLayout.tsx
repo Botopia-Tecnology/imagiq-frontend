@@ -41,10 +41,8 @@ export default function ClientLayout({
   const { hideNavbar: hideNavbarDynamic } = useNavbarVisibility();
   const [isClient, setIsClient] = useState(false);
 
-  // Hook para gestionar campañas InWeb
-  const { activeCampaign, closeCampaign } = useInWebCampaign({
-    channelName: "inweb"
-  });
+  // Hook para campañas InWeb (ya no usa sockets)
+  const { activeCampaign, closeCampaign } = useInWebCampaign();
 
   // Precargar productos de todas las combinaciones posibles en background
   usePreloadAllProducts();

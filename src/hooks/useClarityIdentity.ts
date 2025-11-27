@@ -24,7 +24,6 @@ export function useClarityIdentity() {
   // Identificar usuario cuando se autentica
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    if (!hasAnalyticsConsent()) return;
 
     // Esperar a que Clarity esté disponible y luego identificar
     const identifyUser = async () => {
@@ -47,30 +46,9 @@ export function useClarityIdentity() {
   // Re-identificar en cada cambio de ruta para tracking de navegación
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    if (!hasAnalyticsConsent()) return;
 
     if (typeof window !== "undefined" && window.clarity) {
       reidentifyUserOnNavigation(user, pathname);
     }
   }, [pathname, user, isAuthenticated]);
-
-  // Escuchar cambios de consentimiento
-  useEffect(() => {
-    const handleConsentChange = () => {
-      if (!isAuthenticated || !user) return;
-
-      if (hasAnalyticsConsent()) {
-        // Re-identificar cuando se otorga consentimiento
-        if (typeof window !== "undefined" && window.clarity) {
-          identifyUserInClarity(user);
-        }
-      }
-    };
-
-    window.addEventListener("consentChange", handleConsentChange);
-
-    return () => {
-      window.removeEventListener("consentChange", handleConsentChange);
-    };
-  }, [user, isAuthenticated]);
 }

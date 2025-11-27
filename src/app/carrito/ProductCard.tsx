@@ -347,7 +347,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
                 )}
               </div>
               {descuento && precioOriginal && (
-                <div className="flex items-center gap-2 whitespace-nowrap">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="px-1.5 py-0.5 bg-green-100 text-green-700 text-[10px] font-bold rounded">
                     {descuento}%
                   </span>

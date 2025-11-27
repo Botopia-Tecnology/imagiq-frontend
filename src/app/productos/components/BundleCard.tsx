@@ -489,6 +489,7 @@ export default function BundleCard({
           ram: product.memoriaram,
           stock: product.stockTotal,
           modelo: product.modelo,
+          categoria: product.categoria || categoria || "",
         }));
 
         const bundleInfo: BundleInfo = {
@@ -520,7 +521,8 @@ export default function BundleCard({
           modelo: selectedOption.modelo,
           colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
           stock: selectedOption.stockTotal,
-          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
+          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined,
+          categoria: categoria || "",
         }));
 
         const bundleInfo: BundleInfo = {

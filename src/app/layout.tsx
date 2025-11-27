@@ -3,9 +3,8 @@
  */
 
 import type { Metadata } from "next";
-import Script from "next/script";
-
 import { samsungSharpSans } from "./fonts";
+import { ThreeDSScript } from "@/components/ThreeDSScript";
 // Nota: eliminamos la importación de Inter desde next/font/google para evitar
 // hacer fetch a fonts.googleapis.com durante el build en entornos sin acceso.
 // Usaremos una variable CSS --font-inter definida en globals.css como fallback.
@@ -201,10 +200,7 @@ export default function RootLayout({
             </ResponsiveProvider>
           </DevToolsGuard>
         </SecurityInitializer>
-        <Script
-          src="https://multimedia.epayco.co/general/3DS/validateThreeds.min.js"
-          strategy="lazyOnload"
-        />
+        <ThreeDSScript />
       </body>
     </html>
   );

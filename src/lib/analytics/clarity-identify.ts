@@ -12,12 +12,10 @@
  * - Se ejecuta solo si hay consentimiento de analytics
  */
 
-import { hasAnalyticsConsent } from "@/lib/consent";
 import { User } from "@/types/user";
 import {
   logIdentificationSuccess,
   logIdentificationError,
-  waitForClarity,
 } from "./clarity-debug";
 
 // El tipo de window.clarity está declarado en @/lib/clarity.ts
@@ -38,16 +36,6 @@ export function identifyUserInClarity(
   sessionId?: string,
   pageId?: string
 ): void {
-  // Verificar consentimiento
-  if (!hasAnalyticsConsent()) {
-    if (DEBUG_MODE) {
-      console.log(
-        "[Clarity Identity] ❌ No analytics consent, skipping user identification"
-      );
-    }
-    return;
-  }
-
   // Verificar que Clarity esté cargado
   if (typeof window === "undefined" || !window.clarity) {
     if (DEBUG_MODE) {
@@ -58,21 +46,19 @@ export function identifyUserInClarity(
     return;
   }
 
-  // Validar datos del usuario
-  if (!user.email || !user.nombre || !user.apellido) {
-    console.error("[Clarity Identity] ❌ Invalid user data:", {
-      hasEmail: !!user.email,
-      hasNombre: !!user.nombre,
-      hasApellido: !!user.apellido,
-    });
+  // Validar que el usuario tenga al menos un email
+  if (!user?.email) {
+    console.warn("[Clarity Identity] ⚠️ User email is required for identification");
     return;
   }
 
-  // Preparar datos
+  // Preparar datos - usar valores por defecto si faltan campos
   const customUserId = user.email; // Email como identificador único
   const customSessionId = sessionId || generateSessionId();
   const customPageId = pageId || undefined;
-  const friendlyName = `${user.nombre} ${user.apellido}`.trim();
+  const friendlyName = user.nombre && user.apellido
+    ? `${user.nombre} ${user.apellido}`.trim()
+    : user.email.split('@')[0]; // Usar parte del email si faltan nombre/apellido
 
   try {
     // Llamar al API de Clarity
@@ -89,9 +75,17 @@ export function identifyUserInClarity(
     }
 
     // También enviar metadatos adicionales
-    window.clarity("set", "userId", user.id);
+    if (user.id) {
+      window.clarity("set", "userId", user.id);
+    }
     window.clarity("set", "userEmail", customUserId);
     window.clarity("set", "userName", friendlyName);
+
+    console.log("[Clarity Identity] ✅ User identified:", {
+      email: customUserId,
+      name: friendlyName,
+      sessionId: customSessionId
+    });
   } catch (error) {
     const err = error instanceof Error ? error : new Error(String(error));
     logIdentificationError(err, {
@@ -136,8 +130,6 @@ export function identifyUserWithPageId(user: User, pathname: string): void {
  * Útil para tracking de navegación cross-page
  */
 export function reidentifyUserOnNavigation(user: User, pathname: string): void {
-  if (!hasAnalyticsConsent()) return;
-
   // Usar el mismo session ID pero actualizar el page ID
   const sessionId = getOrCreateSessionId();
   const pageId = generatePageId(pathname);

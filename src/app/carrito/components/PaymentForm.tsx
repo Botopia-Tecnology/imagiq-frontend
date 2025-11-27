@@ -359,27 +359,39 @@ export default function PaymentForm({
             )}
 
             {/* Addi */}
-            <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
-              <span className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "addi"}
-                  onChange={() => onPaymentMethodChange("addi")}
-                  className="accent-black w-5 h-5 flex-shrink-0"
-                />
-                <span className="font-medium text-black">
-                  Addi - Paga después
+            <div className="-mx-3">
+              <label className="flex items-center gap-3 justify-between cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3">
+                <span className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={paymentMethod === "addi"}
+                    onChange={() => onPaymentMethodChange("addi")}
+                    className="accent-black w-5 h-5 flex-shrink-0"
+                  />
+                  <span className="font-medium text-black">
+                    Addi - Paga después
+                  </span>
                 </span>
-              </span>
-              <Image
-                src={addiLogo}
-                alt="Addi"
-                width={35}
-                height={35}
-                className="object-contain"
-              />
-            </label>
+                <Image
+                  src="https://purrfecthire.com/carrousel-img/addi.png"
+                  alt="Addi"
+                  width={35}
+                  height={35}
+                  className="object-fit"
+                />
+              </label>
+              <div className="ml-8">
+                <a
+                  href="https://imagiq.com.co/terminos-condiciones"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[12px] text-blue-600 font-bold"
+                >
+                  3 cuotas sin interés. Aplican T&C
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -399,6 +411,39 @@ export default function PaymentForm({
               <Plus className="w-4 h-4" />
               Agregar
             </button>
+          </div>
+
+          {/* Términos y condiciones con logos de bancos */}
+          <div className="mb-4 flex justify-end">
+            <div className="text-center max-w-fit">
+              <a
+                href="https://imagiq.com.co/terminos-condiciones"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-[10px] text-gray-900 hover:underline leading-tight mb-1"
+              >
+                Hasta 24 cuotas con <span className="font-bold">0% de interés</span>.
+              </a>
+              <p className="text-[6px] text-gray-900 leading-tight mb-2">
+                Aplican T&C
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Image
+                  src="https://www.bancolombia.com/wcm/connect/b8e4c3f2-36a9-497d-a125-ac04f83b0bf8/LogoBancolombia.png?MOD=AJPERES"
+                  alt="Bancolombia"
+                  width={28}
+                  height={10}
+                  className="object-contain"
+                />
+                <Image
+                  src="https://ribgo.davivienda.com/assets/images/logo/logo-davivienda.png"
+                  alt="Davivienda"
+                  width={40}
+                  height={14}
+                  className="object-contain"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -498,6 +543,40 @@ export default function PaymentForm({
               Agregar desde perfil
             </button>
           </div>
+
+          {/* Términos y condiciones con logos de bancos */}
+          <div className="mb-4 flex justify-end">
+            <div className="text-center max-w-fit">
+              <a
+                href="https://imagiq.com.co/terminos-condiciones"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-[10px] text-gray-900 hover:underline leading-tight mb-1"
+              >
+                Hasta 24 cuotas con <span className="font-bold">0% de interés</span>.
+              </a>
+              <p className="text-[6px] text-gray-900 leading-tight mb-2">
+                Aplican T&C
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Image
+                  src="https://www.bancolombia.com/wcm/connect/b8e4c3f2-36a9-497d-a125-ac04f83b0bf8/LogoBancolombia.png?MOD=AJPERES"
+                  alt="Bancolombia"
+                  width={28}
+                  height={10}
+                  className="object-contain"
+                />
+                <Image
+                  src="https://ribgo.davivienda.com/assets/images/logo/logo-davivienda.png"
+                  alt="Davivienda"
+                  width={40}
+                  height={14}
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          </div>
+
           <p className="text-sm text-gray-600 mb-4">
             Agrega una tarjeta desde tu perfil para continuar con el pago
           </p>

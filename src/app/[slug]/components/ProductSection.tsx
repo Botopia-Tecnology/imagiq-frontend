@@ -26,10 +26,10 @@ export default function ProductSection({ sections, productCards }: ProductSectio
   // Obtener la sección activa
   const currentSection = sortedSections.find(s => s.id === activeSection) || sortedSections[0];
   
-  // Filtrar las product cards de la sección activa
-  const sectionProducts = productCards.filter(card => 
-    currentSection.product_card_ids.includes(card.id)
-  );
+  // Filtrar y ordenar las product cards según product_card_ids
+  const sectionProducts = currentSection.product_card_ids
+    .map(id => productCards.find(card => card.id === id))
+    .filter((card): card is ProductCardData => card !== undefined);
 
   // Agrupar productos en filas de 3
   const groupedProducts: ProductCardData[][] = [];

@@ -231,10 +231,11 @@ const DetailsProductSection: React.FC<{
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: product.apiProduct?.modelo?.[0] || "",
         categoria: product.apiProduct?.categoria || "",
+        indRetoma: product.apiProduct?.indRetoma?.[productSelection.selectedVariant?.index || 0] ?? (product.acceptsTradeIn ? 1 : 0),
       });
-     
+
     } catch (error) {
-      
+
     } finally {
       setLoading(false);
     }
@@ -242,7 +243,7 @@ const DetailsProductSection: React.FC<{
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    
+
   };
 
   const handleRequestStockNotification = async (email: string) => {
@@ -293,7 +294,7 @@ const DetailsProductSection: React.FC<{
     };
   }, [showStickyBar]);
 
- 
+
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
@@ -307,9 +308,9 @@ const DetailsProductSection: React.FC<{
       typeof product.originalPrice === "number"
         ? product.originalPrice
         : Number.parseInt(
-            String(product.originalPrice).replaceAll(/[^\d]/g, ""),
-            10
-          ) || 0;
+          String(product.originalPrice).replaceAll(/[^\d]/g, ""),
+          10
+        ) || 0;
     return parsedOriginalPrice;
   }, [productSelection.selectedOriginalPrice, product.originalPrice]);
 
@@ -409,7 +410,7 @@ const DetailsProductSection: React.FC<{
                   }
                   imageDetailsUrls={
                     product.apiProduct?.imageDetailsUrls?.[
-                      productSelection.selectedVariant?.index || 0
+                    productSelection.selectedVariant?.index || 0
                     ] || []
                   }
                   onImageClick={handleImageClick}
@@ -513,7 +514,7 @@ const DetailsProductSection: React.FC<{
               }
               imageDetailsUrls={
                 product.apiProduct?.imageDetailsUrls?.[
-                  productSelection.selectedVariant?.index || 0
+                productSelection.selectedVariant?.index || 0
                 ] || []
               }
               onImageClick={handleImageClick}

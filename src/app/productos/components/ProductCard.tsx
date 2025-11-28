@@ -131,6 +131,7 @@ export default function ProductCard({
   segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
   isInChat = false, // Por defecto NO está en chat
+  acceptsTradeIn, // Indica si el producto acepta retoma
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -220,7 +221,7 @@ export default function ProductCard({
   // Calcular stock real descontando lo que está en el carrito
   const quantityInCart = currentSku ? getQuantityBySku(currentSku) : 0;
   const realStock = Math.max(0, (productSelection.selectedVariant?.stockDisponible ?? 0) - quantityInCart);
-  
+
   // Verificar si la VARIANTE SELECCIONADA está sin stock
   // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
   const isOutOfStock = realStock <= 0;
@@ -372,8 +373,8 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? "",
+              ? image
+              : image.src ?? "",
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
@@ -381,8 +382,8 @@ export default function ProductCard({
         originalPrice:
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(
-                finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
-              )
+              finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+            )
             : finalCurrentOriginalPrice,
         stock: productSelection.selectedVariant?.stockDisponible ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
@@ -392,18 +393,19 @@ export default function ProductCard({
         color: displayedSelectedColor?.hex && shouldRenderValue(displayedSelectedColor.hex) ? displayedSelectedColor.hex : undefined,
         colorName:
           (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
-          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
-          (selectedColor?.label && shouldRenderValue(selectedColor.label)) ? selectedColor.label :
-          undefined,
+            (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
+              (selectedColor?.label && shouldRenderValue(selectedColor.label)) ? selectedColor.label :
+                undefined,
         capacity:
           (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity :
-          (selectedCapacity?.label && shouldRenderValue(selectedCapacity.label)) ? selectedCapacity.label :
-          undefined,
+            (selectedCapacity?.label && shouldRenderValue(selectedCapacity.label)) ? selectedCapacity.label :
+              undefined,
         ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram : undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: apiProduct?.modelo?.[0] || "",
         categoria: apiProduct?.categoria || "",
+        indRetoma: apiProduct?.indRetoma?.[productSelection.selectedVariant?.index || 0] ?? (acceptsTradeIn ? 1 : 0),
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -474,6 +476,95 @@ export default function ProductCard({
     });
   };
 
+  const handleEntregoEstreno = async () => {
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Validación estricta: debe existir un SKU válido
+      const skuToUse = currentSku || selectedColor?.sku;
+      const eanToUse =
+        productSelection.selectedVariant?.ean || selectedColor?.ean || "";
+
+      if (!skuToUse) {
+        setIsLoading(false);
+        return;
+      }
+
+      posthogUtils.capture("entrego_estreno_button_click", {
+        product_id: id,
+        product_name: name,
+        selected_color:
+          selectedColor?.name || productSelection.selection.selectedColor,
+        selected_color_sku: currentSku || "",
+        source: "product_card",
+      });
+
+      // Agregar el producto al carrito
+      await addProduct({
+        id,
+        name,
+        image:
+          typeof currentImage === "string"
+            ? currentImage
+            : typeof image === "string"
+              ? image
+              : image.src ?? "",
+        price:
+          typeof finalCurrentPrice === "string"
+            ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
+            : finalCurrentPrice ?? 0,
+        originalPrice:
+          typeof finalCurrentOriginalPrice === "string"
+            ? Number.parseInt(
+              finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+            )
+            : finalCurrentOriginalPrice,
+        stock: productSelection.selectedVariant?.stockDisponible ?? 0,
+        quantity: 1,
+        sku: currentSku || "",
+        ean: eanToUse,
+        puntos_q,
+        color: displayedSelectedColor?.hex && shouldRenderValue(displayedSelectedColor.hex) ? displayedSelectedColor.hex : undefined,
+        colorName:
+          (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
+            (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
+              (selectedColor?.label && shouldRenderValue(selectedColor.label)) ? selectedColor.label :
+                undefined,
+        capacity:
+          (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity :
+            (selectedCapacity?.label && shouldRenderValue(selectedCapacity.label)) ? selectedCapacity.label :
+              undefined,
+        ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram : undefined,
+        skuPostback: productSelection.selectedSkuPostback || "",
+        desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
+        indRetoma: apiProduct?.indRetoma?.[productSelection.selectedVariant?.index || 0] ?? (acceptsTradeIn ? 1 : 0),
+      });
+
+      // Marcar que debe abrirse el modal de Trade-In automáticamente para este SKU específico
+      // Guardar ANTES de navegar para asegurar que esté disponible
+      if (typeof window !== "undefined") {
+        // Guardar el SKU del producto para el cual se debe abrir el modal
+        window.localStorage.setItem("open_trade_in_modal_sku", currentSku || "");
+      }
+
+      // Pequeño delay para asegurar que el localStorage se guarde
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Navegar al carrito
+      router.push("/carrito/step1");
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    }
+  };
+
   // Obtener imagen optimizada de Cloudinary para catálogo
   const cloudinaryImage = useCloudinaryImage({
     src: typeof currentImage === "string" ? currentImage : currentImage.src,
@@ -498,7 +589,7 @@ export default function ProductCard({
       return (
         colorOptions.find(
           (c) => c.name === productSelection.selection.selectedColor ||
-                 c.hex === productSelection.selection.selectedColor
+            c.hex === productSelection.selection.selectedColor
         ) || null
       );
     }
@@ -511,7 +602,7 @@ export default function ProductCard({
 
   return (
     <>
-        <StockNotificationModal
+      <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
         productName={currentProductName}
@@ -519,13 +610,13 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? ""
+              ? image
+              : image.src ?? ""
         }
         selectedColor={
           (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
-          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
-          undefined
+            (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
+              undefined
         }
         selectedStorage={
           (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity : undefined
@@ -693,13 +784,13 @@ export default function ProductCard({
                       colors={
                         apiProduct
                           ? productSelection.getColorOptions().map((colorOption) => ({
-                              name: colorOption.color,
-                              hex: colorOption.hex,
-                              label: colorOption.nombreColorDisplay || colorOption.color,
-                              nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
-                              sku: colorOption.variants[0]?.sku || "",
-                              ean: colorOption.variants[0]?.ean || "",
-                            }))
+                            name: colorOption.color,
+                            hex: colorOption.hex,
+                            label: colorOption.nombreColorDisplay || colorOption.color,
+                            nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+                            sku: colorOption.variants[0]?.sku || "",
+                            ean: colorOption.variants[0]?.ean || "",
+                          }))
                           : colors
                       }
                       selectedColor={displayedSelectedColor}
@@ -719,43 +810,43 @@ export default function ProductCard({
                       capacities={
                         apiProduct
                           ? productSelection.availableCapacities.map(
-                              (capacityName) => {
-                                // Crear un ProductCapacity basado en el nombre de la capacidad
-                                const formattedLabel = formatCapacityLabel(capacityName);
-                                const capacityInfo = capacities?.find(
-                                  (c) => c.label === capacityName
-                                ) || {
-                                  value: capacityName
-                                    .toLowerCase()
-                                    .replaceAll(/\s+/g, ""),
-                                  label: formattedLabel,
-                                  sku: "",
-                                  ean: "",
-                                };
-                                return capacityInfo;
-                              }
-                            )
+                            (capacityName) => {
+                              // Crear un ProductCapacity basado en el nombre de la capacidad
+                              const formattedLabel = formatCapacityLabel(capacityName);
+                              const capacityInfo = capacities?.find(
+                                (c) => c.label === capacityName
+                              ) || {
+                                value: capacityName
+                                  .toLowerCase()
+                                  .replaceAll(/\s+/g, ""),
+                                label: formattedLabel,
+                                sku: "",
+                                ean: "",
+                              };
+                              return capacityInfo;
+                            }
+                          )
                           : capacities || []
                       }
                       selectedCapacity={
                         apiProduct
                           ? productSelection.availableCapacities
-                              .map((capacityName) => {
-                                const formattedLabel = formatCapacityLabel(capacityName);
-                                const capacityInfo = capacities?.find(
-                                  (c) => c.label === capacityName
-                                ) || {
-                                  value: capacityName
-                                    .toLowerCase()
-                                    .replaceAll(/\s+/g, ""),
-                                  label: formattedLabel,
-                                };
-                                return capacityInfo;
-                              })
-                              .find(
-                                (c) =>
-                                  c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
-                              ) || null
+                            .map((capacityName) => {
+                              const formattedLabel = formatCapacityLabel(capacityName);
+                              const capacityInfo = capacities?.find(
+                                (c) => c.label === capacityName
+                              ) || {
+                                value: capacityName
+                                  .toLowerCase()
+                                  .replaceAll(/\s+/g, ""),
+                                label: formattedLabel,
+                              };
+                              return capacityInfo;
+                            })
+                            .find(
+                              (c) =>
+                                c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
+                            ) || null
                           : selectedCapacity
                       }
                       onCapacitySelect={handleCapacitySelect}
@@ -766,18 +857,28 @@ export default function ProductCard({
 
             {/* Columna derecha: Botón de Entrego y Estreno - Mostrar solo si indRetoma === 1 */}
             {productSelection.selectedVariant?.indRetoma === 1 && (
-              <div className="flex-shrink-0 w-[120px] self-start -mt-4">
-                <div className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center">
-                  <svg className="w-4 h-4 md:w-5 md:h-5 text-white mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="flex-shrink-0 w-[120px] self-start -mt-4 relative z-10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEntregoEstreno();
+                  }}
+                  disabled={isLoading}
+                  className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center w-full hover:bg-[#0088EE] active:bg-[#0077DD] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative z-10"
+                  style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
+                >
+                  <svg className="w-4 h-4 md:w-5 md:h-5 text-white mb-1 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                   </svg>
-                  <p className="text-[10px] font-bold mb-0">
+                  <p className="text-[10px] font-bold mb-0 pointer-events-none">
                     Entrego y Estreno
                   </p>
-                  <p className="text-[9px] opacity-90">
+                  <p className="text-[9px] opacity-90 pointer-events-none">
                     aplica ahora
                   </p>
-                </div>
+                </button>
               </div>
             )}
           </div>

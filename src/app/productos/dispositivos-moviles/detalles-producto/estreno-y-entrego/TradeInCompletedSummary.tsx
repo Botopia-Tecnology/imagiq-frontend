@@ -83,7 +83,7 @@ export default function TradeInCompletedSummary({
                 type="button"
               >
                 <p className="text-[10px] md:text-xs font-bold mb-0">
-                  Bono disponible
+                  Entrego y Estreno
                 </p>
                 <p className="text-[9px] md:text-[10px] opacity-90">
                   Haz clic para aplicar

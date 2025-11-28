@@ -11,13 +11,23 @@ export function validateTradeInProducts(products: CartProduct[]): {
   hasMultipleProducts: boolean;
   errorMessage?: string;
 } {
-  // Verificar si hay un trade-in activo
+  // Verificar si hay trade-ins activos (ahora soporta múltiples)
   const hasActiveTradeIn = (() => {
     try {
       const storedTradeIn = localStorage.getItem("imagiq_trade_in");
       if (!storedTradeIn) return false;
       const parsed = JSON.parse(storedTradeIn);
-      return parsed?.completed === true;
+
+      // Soportar tanto el formato antiguo (objeto único) como el nuevo (objeto con múltiples SKUs)
+      if (parsed?.completed === true) return true; // Formato antiguo
+      if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+        // Formato nuevo: verificar si al menos uno está completado
+        return Object.values(parsed).some((tradeIn: unknown) => {
+          const trade = tradeIn as { completed?: boolean };
+          return trade?.completed === true;
+        });
+      }
+      return false;
     } catch {
       return false;
     }
@@ -28,17 +38,10 @@ export function validateTradeInProducts(products: CartProduct[]): {
     return { isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false };
   }
 
-  // Validación 1: Solo puede haber un producto en el carrito cuando hay trade-in activo
-  if (products.length > 1) {
-    return {
-      isValid: false,
-      productsWithoutRetoma: [],
-      hasMultipleProducts: true,
-      errorMessage: "Para aplicar el beneficio Estreno y Entrego solo puedes tener un producto en el carrito. Quita este beneficio para continuar o remueve los productos adicionales y deja un único producto.",
-    };
-  }
+  // CAMBIO: Ya NO validamos que solo puede haber un producto
+  // Ahora se permite múltiples productos, cada uno con su propio bono
 
-  // Validación 2: Buscar productos que tienen indRetoma === 0 (no aplican para el beneficio)
+  // Validación: Buscar productos que tienen indRetoma === 0 (no aplican para el beneficio)
   // IMPORTANTE: 
   // - indRetoma === 0 significa NO aplica
   // - indRetoma === 1 significa SÍ aplica

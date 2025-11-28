@@ -14,6 +14,7 @@
 import { useState, useMemo } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image, { StaticImageData } from "next/image";
 import { Heart, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -967,60 +968,72 @@ export default function ProductCard({
             </div>
 
             {/* Mensaje de cuotas sin interés */}
-            <div className="mt-3 flex flex-col items-center gap-1">
+            <div className="mt-2 sm:mt-3 flex flex-col items-center gap-0.5 sm:gap-1 px-1">
               <p className={cn(
-                "text-blue-600 font-bold whitespace-nowrap",
+                "text-blue-600 font-bold text-center leading-tight",
                 isInChat
-                  ? "text-[9px]" // Mucho más pequeño en chat
-                  : "text-[9px] sm:text-[10px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
+                  ? "text-[8px] sm:text-[9px]" // Mucho más pequeño en chat
+                  : "text-[8px] sm:text-[9px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
               )}>
                 Compra con 0% de interés con bancos aliados{" "}
                 <span className={cn(
-                  "text-gray-500",
+                  "text-gray-500 block sm:inline",
                   isInChat
-                    ? "text-[6px]" // Mucho más pequeño en chat
-                    : "text-[7px] sm:text-[8px] md:text-[9px]" // Tamaño normal en catálogo
+                    ? "text-[5px] sm:text-[6px]" // Mucho más pequeño en chat
+                    : "text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px]" // Tamaño normal en catálogo
                 )}>
                   Aplican T&C
                 </span>
               </p>
-              <div className="flex items-center gap-6 justify-center">
-                <Image
-                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
-                  alt="Cuotas"
-                  width={20}
-                  height={20}
-                  className={cn(
-                    "object-contain",
-                    isInChat
-                      ? "w-8 h-8" // Más pequeño en chat
-                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
-                  )}
-                />
-                <Image
-                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
-                  alt="Pago"
-                  width={20}
-                  height={20}
-                  className={cn(
-                    "object-contain",
-                    isInChat
-                      ? "w-8 h-8" // Más pequeño en chat
-                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
-                  )}
-                />
-                <Image
-                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
-                  alt="Seguridad"
-                  width={20}
-                  height={20}
-                  className={cn(
-                    "object-contain",
-                    isInChat
-                      ? "w-8 h-8" // Más pequeño en chat
-                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
-                  )}
-                />
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
+                <Link href="/soporte/tyc-bancolombia">
+                  <div className="cursor-pointer hover:opacity-80 transition-opacity" title="Ver términos y condiciones">
+                    <Image
+                      src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                      alt="Cuotas - Términos y condiciones"
+                      width={20}
+                      height={20}
+                      className={cn(
+                        "object-contain flex-shrink-0",
+                        isInChat
+                          ? "w-6 h-6 sm:w-7 sm:h-7"
+                          : "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                      )}
+                    />
+                  </div>
+                </Link>
+                <Link href="/soporte/tyc-bancolombia">
+                  <div className="cursor-pointer hover:opacity-80 transition-opacity" title="Ver términos y condiciones">
+                    <Image
+                      src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                      alt="Pago - Términos y condiciones"
+                      width={20}
+                      height={20}
+                      className={cn(
+                        "object-contain flex-shrink-0",
+                        isInChat
+                          ? "w-6 h-6 sm:w-7 sm:h-7"
+                          : "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                      )}
+                    />
+                  </div>
+                </Link>
+                <Link href="/soporte/tyc-bancolombia">
+                  <div className="cursor-pointer hover:opacity-80 transition-opacity" title="Ver términos y condiciones">
+                    <Image
+                      src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                      alt="Seguridad - Términos y condiciones"
+                      width={20}
+                      height={20}
+                      className={cn(
+                        "object-contain flex-shrink-0",
+                        isInChat
+                          ? "w-6 h-6 sm:w-7 sm:h-7"
+                          : "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                      )}
+                    />
+                  </div>
+                </Link>
               </div>
             </div>
           </div>

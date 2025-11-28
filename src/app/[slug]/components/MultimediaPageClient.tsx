@@ -17,13 +17,13 @@ export default function MultimediaPageClient({ pageData }: MultimediaPageClientP
   const { page, banners, faqs, product_cards } = pageData;
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white -mt-12">
       {/* Carrusel de Banners */}
       <MultimediaBannerCarousel banners={banners} />
 
       {/* Sección de Título y Descripción de Productos */}
       {(page.products_section_title || page.products_section_description) && (
-        <section className="w-full bg-white py-12 md:py-16">
+        <section className="w-full bg-white py-6 md:py-8">
           <div className="w-full mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1440px' }}>
             {page.products_section_title && (
               <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6">

@@ -74,7 +74,7 @@ export default function MultimediaBannerSlide({
 
   // Parsear text_styles si existe, sino usar defaults
   const textStyles: BannerTextStyles = banner.text_styles
-    ? (banner.text_styles as BannerTextStyles)
+    ? (banner.text_styles as unknown as BannerTextStyles)
     : DEFAULT_TEXT_STYLES;
 
   useEffect(() => {

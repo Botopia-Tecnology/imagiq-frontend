@@ -4,6 +4,31 @@
 
 import { apiGet } from "@/lib/api-client";
 
+export interface ProductSection {
+  id: string;
+  name: string;
+  order: number;
+  product_card_ids: string[];
+}
+
+export interface ProductCardData {
+  id: string;
+  page_id: string;
+  image_url: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  cta_text: string | null;
+  cta_url: string | null;
+  url: string | null;
+  content_position: string | null;
+  text_styles: Record<string, unknown> | null;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
+}
+
 export interface MultimediaPage {
   id: string;
   slug: string;
@@ -15,8 +40,10 @@ export interface MultimediaPage {
   valid_until: string;
   banner_ids: string[];
   faq_ids: string[];
-  sections: unknown[];
+  sections: ProductSection[];
   info_sections: unknown[];
+  products_section_title: string | null;
+  products_section_description: string | null;
   meta_title: string;
   meta_description: string;
   meta_keywords: string | null;
@@ -73,6 +100,7 @@ export interface MultimediaPageData {
   page: MultimediaPage;
   banners: MultimediaPageBanner[];
   faqs: MultimediaPageFAQ[];
+  product_cards: ProductCardData[];
 }
 
 /**
@@ -83,6 +111,20 @@ export async function getActivePageBySlug(slug: string): Promise<MultimediaPageD
     const response = await apiGet<MultimediaPageData>(
       `/api/multimedia/pages/slug/${slug}`
     );
+    
+    // Parsear posiciones si vienen como strings JSON
+    if (response?.banners) {
+      response.banners = response.banners.map(banner => ({
+        ...banner,
+        position_desktop: typeof banner.position_desktop === 'string' 
+          ? JSON.parse(banner.position_desktop) 
+          : banner.position_desktop,
+        position_mobile: typeof banner.position_mobile === 'string' 
+          ? JSON.parse(banner.position_mobile) 
+          : banner.position_mobile,
+      }));
+    }
+    
     return response;
   } catch (error) {
     console.error(`Error fetching active page with slug "${slug}":`, error);

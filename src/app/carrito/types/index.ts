@@ -54,6 +54,7 @@ export interface Item {
   skupostback: string;
   desDetallada: string;
   ean: string;
+  category: string;
 }
 
 export interface UserInfo {

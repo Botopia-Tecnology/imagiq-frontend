@@ -126,24 +126,24 @@ export default function Step7({ onBack }: Step7Props) {
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
-  const [loggedUser] = useSecureStorage<User | null>(
-    "imagiq_user",
-    null
-  );
+  const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
   const [checkoutAddress, _] = useSecureStorage<{
-  "id": string,
-  "usuario_id": string,
-  "email": string,
-  "linea_uno": string,
-  "codigo_dane": string,
-  "ciudad": string,
-  "pais": string,
-  "esPredeterminada": boolean
-} | null>('checkout-address', null);
+    id: string;
+    usuario_id: string;
+    email: string;
+    linea_uno: string;
+    codigo_dane: string;
+    ciudad: string;
+    pais: string;
+    esPredeterminada: boolean;
+  } | null>("checkout-address", null);
 
   // Store/Warehouse validation state
-  const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
-  const [isLoadingStoreValidation, setIsLoadingStoreValidation] = useState(false);
+  const [isCentroDistribucion, setIsCentroDistribucion] = useState<
+    boolean | null
+  >(null);
+  const [isLoadingStoreValidation, setIsLoadingStoreValidation] =
+    useState(false);
 
   // 3DS Modal state - Not used anymore, kept for backward compatibility
   // const [show3DSModal, setShow3DSModal] = useState(false);
@@ -357,11 +357,18 @@ export default function Step7({ onBack }: Step7Props) {
 
     // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
     if (typeof globalThis.window !== "undefined") {
-      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      const currentMethod = globalThis.window.localStorage.getItem(
+        "checkout-delivery-method"
+      );
       if (currentMethod === "tienda") {
-        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.localStorage.setItem(
+          "checkout-delivery-method",
+          "domicilio"
+        );
         globalThis.window.dispatchEvent(
-          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+          new CustomEvent("delivery-method-changed", {
+            detail: { method: "domicilio" },
+          })
         );
         globalThis.window.dispatchEvent(new Event("storage"));
       }
@@ -477,7 +484,9 @@ export default function Step7({ onBack }: Step7Props) {
 
         // PROTECCIÓN CRÍTICA: Si esta misma petición ya falló antes, NO reintentar
         if (failedCandidateStoresRef.current === requestHash) {
-          console.error("🚫 Esta petición a candidate-stores ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.");
+          console.error(
+            "🚫 Esta petición a candidate-stores ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos."
+          );
           // Usar Coordinadora por defecto
           setShippingVerification({
             envio_imagiq: false,
@@ -493,26 +502,40 @@ export default function Step7({ onBack }: Step7Props) {
           products: productsToCheck,
           user_id: userId,
         };
-        console.log("📤 [Step7] Llamando getCandidateStores con body:", JSON.stringify(requestBody, null, 2));
+        console.log(
+          "📤 [Step7] Llamando getCandidateStores con body:",
+          JSON.stringify(requestBody, null, 2)
+        );
 
         const response = await productEndpoints.getCandidateStores(requestBody);
 
         // NUEVO: Llamar también a stores-for-products para obtener codBodega
         let storesData: StoreValidationData | null = null;
         try {
-          console.log("📤 [Step7] Llamando stores-for-produtcs con el mismo body");
-          const storesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
-            },
-            body: JSON.stringify(requestBody),
-          });
+          console.log(
+            "📤 [Step7] Llamando stores-for-produtcs con el mismo body"
+          );
+          const storesResponse = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "X-API-Key": process.env.NEXT_PUBLIC_API_KEY || "",
+              },
+              body: JSON.stringify(requestBody),
+            }
+          );
           storesData = await storesResponse.json();
-          console.log("📥 [Step7] Respuesta de stores-for-produtcs:", JSON.stringify(storesData, null, 2));
+          console.log(
+            "📥 [Step7] Respuesta de stores-for-produtcs:",
+            JSON.stringify(storesData, null, 2)
+          );
         } catch (error) {
-          console.error("❌ [Step7] Error llamando stores-for-produtcs:", error);
+          console.error(
+            "❌ [Step7] Error llamando stores-for-produtcs:",
+            error
+          );
         }
 
         if (response.success && response.data) {
@@ -530,7 +553,10 @@ export default function Step7({ onBack }: Step7Props) {
             };
           };
 
-          console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(responseData, null, 2));
+          console.log(
+            "📥 [Step7] Respuesta de getCandidateStores:",
+            JSON.stringify(responseData, null, 2)
+          );
 
           // Obtener codBodega de stores-for-products (no de getCandidateStores)
           console.log("🔍 [Step7] storesData completo:", storesData);
@@ -540,14 +566,22 @@ export default function Step7({ onBack }: Step7Props) {
           if (Array.isArray(storesData) && storesData.length > 0) {
             // Si es un array, tomar el primer elemento
             const firstItem = storesData[0];
-            warehouseCode = firstItem?.nearest?.codBodega || firstItem?.codBodega;
-            console.log("🔍 [Step7] Tomado del primer elemento del array:", warehouseCode);
+            warehouseCode =
+              firstItem?.nearest?.codBodega || firstItem?.codBodega;
+            console.log(
+              "🔍 [Step7] Tomado del primer elemento del array:",
+              warehouseCode
+            );
           } else if (storesData && !Array.isArray(storesData)) {
             // Si es un objeto (fallback)
-            warehouseCode = storesData.codBodega || storesData.nearest?.codBodega;
+            warehouseCode =
+              storesData.codBodega || storesData.nearest?.codBodega;
           }
 
-          console.log("🏭 [Step7] codBodega (de stores-for-products):", warehouseCode);
+          console.log(
+            "🏭 [Step7] codBodega (de stores-for-products):",
+            warehouseCode
+          );
 
           // Obtener canPickUp global de la respuesta
           const globalCanPickUp =
@@ -560,11 +594,15 @@ export default function Step7({ onBack }: Step7Props) {
             setIsLoadingStoreValidation(false);
 
             if (esCentroDistribucion) {
-              console.log("🏭 [Step7] Es Centro de Distribución (001) - Ejecutando validación de cobertura");
+              console.log(
+                "🏭 [Step7] Es Centro de Distribución (001) - Ejecutando validación de cobertura"
+              );
               // Continuar con la validación de cobertura (PASO 3)
               // No hacer return aquí, dejar que continúe al PASO 3
             } else {
-              console.log("🏪 [Step7] NO es Centro de Distribución - Usar Coordinadora directamente");
+              console.log(
+                "🏪 [Step7] NO es Centro de Distribución - Usar Coordinadora directamente"
+              );
               const verification = {
                 envio_imagiq: false,
                 todos_productos_im_it: false,
@@ -615,13 +653,23 @@ export default function Step7({ onBack }: Step7Props) {
           };
           setShippingVerification(verification);
           // Guardar en localStorage como respaldo para asegurar que esté disponible al crear la orden
-          localStorage.setItem("checkout-envio-imagiq", String(verification.envio_imagiq));
+          localStorage.setItem(
+            "checkout-envio-imagiq",
+            String(verification.envio_imagiq)
+          );
           setIsLoadingShippingMethod(false);
         } else {
           // Si falla la petición, marcar este hash como fallido
           failedCandidateStoresRef.current = requestHash;
-          console.error(`🚫 Petición a candidate-stores falló. Hash bloqueado: ${requestHash.substring(0, 50)}...`);
-          console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
+          console.error(
+            `🚫 Petición a candidate-stores falló. Hash bloqueado: ${requestHash.substring(
+              0,
+              50
+            )}...`
+          );
+          console.error(
+            "🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos."
+          );
           // Si falla la petición de candidate-stores, usar Coordinadora
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
           const verification = {
@@ -706,8 +754,13 @@ export default function Step7({ onBack }: Step7Props) {
           "checkout-installments"
         );
         const installments = (() => {
-          if (installmentsFromState !== null && installmentsFromState !== undefined) return Number(installmentsFromState);
-          if (installmentsFromStorage) return Number.parseInt(installmentsFromStorage, 10);
+          if (
+            installmentsFromState !== null &&
+            installmentsFromState !== undefined
+          )
+            return Number(installmentsFromState);
+          if (installmentsFromStorage)
+            return Number.parseInt(installmentsFromStorage, 10);
           return undefined;
         })();
 
@@ -760,10 +813,13 @@ export default function Step7({ onBack }: Step7Props) {
         console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
 
         // Obtener orderId guardado
-        const orderId = localStorage.getItem('pending_order_id');
+        const orderId = localStorage.getItem("pending_order_id");
 
         if (event.data.success && orderId) {
-          console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
+          console.log(
+            "✅ [Step7] 3DS exitoso, redirigiendo a verificación:",
+            orderId
+          );
           toast.success("Autenticación 3DS exitosa. Verificando pago...");
           // Redirigir a página de verificación
           router.push(`/verify-purchase/${orderId}`);
@@ -898,7 +954,7 @@ export default function Step7({ onBack }: Step7Props) {
         deliveryMethod,
         metodo_envio,
         envio_imagiq: shippingVerification?.envio_imagiq,
-        shippingVerification: shippingVerification
+        shippingVerification: shippingVerification,
       });
 
       let codigo_bodega: string | undefined = undefined;
@@ -938,6 +994,7 @@ export default function Step7({ onBack }: Step7Props) {
                   fechaFinal: p.bundleInfo.fechaFinal,
                 },
               }),
+              category: String(p.categoria),
             })),
             totalAmount: String(calculations.total),
             metodo_envio,
@@ -1013,6 +1070,7 @@ export default function Step7({ onBack }: Step7Props) {
                   fechaFinal: p.bundleInfo.fechaFinal,
                 },
               }),
+              category: String(p.categoria),
             })),
             bank: paymentData.bank || "",
             description: "Pago de pedido en Imagiq",
@@ -1020,9 +1078,7 @@ export default function Step7({ onBack }: Step7Props) {
             codigo_bodega,
             userInfo: {
               direccionId: checkoutAddress?.id || "",
-              userId:
-                authContext.user?.id ||
-                String(loggedUser?.id),
+              userId: authContext.user?.id || String(loggedUser?.id),
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -1058,14 +1114,13 @@ export default function Step7({ onBack }: Step7Props) {
                   fechaFinal: p.bundleInfo.fechaFinal,
                 },
               }),
+              category: String(p.categoria),
             })),
             metodo_envio,
             codigo_bodega,
             userInfo: {
               direccionId: checkoutAddress?.id || "",
-              userId:
-                authContext.user?.id ||
-                String(loggedUser?.id),
+              userId: authContext.user?.id || String(loggedUser?.id),
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -1247,7 +1302,8 @@ export default function Step7({ onBack }: Step7Props) {
                                 <div className="flex-1">
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-gray-900 tracking-wider">
-                                      •••• {paymentData.savedCard.ultimos_dijitos}
+                                      ••••{" "}
+                                      {paymentData.savedCard.ultimos_dijitos}
                                     </span>
                                     {paymentData.savedCard.tipo_tarjeta && (
                                       <span className="text-xs text-gray-500 uppercase">
@@ -1304,7 +1360,9 @@ export default function Step7({ onBack }: Step7Props) {
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold text-gray-900 tracking-wider">
                                       ••••{" "}
-                                      {paymentData.cardData.cardNumber.slice(-4)}
+                                      {paymentData.cardData.cardNumber.slice(
+                                        -4
+                                      )}
                                     </span>
                                     {paymentData.cardData.cardType && (
                                       <span className="text-xs text-gray-500 uppercase">
@@ -1513,7 +1571,9 @@ export default function Step7({ onBack }: Step7Props) {
 
                         {/* Documento */}
                         <div>
-                          <p className="text-xs text-gray-500 mb-1">Documento</p>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Documento
+                          </p>
                           <p className="text-sm font-medium text-gray-900">
                             {billingData.documento}
                           </p>
@@ -1812,18 +1872,28 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Botón confirmar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod
-              ? "bg-gray-400 cursor-not-allowed opacity-70"
-              : "bg-[#222] hover:bg-[#333] cursor-pointer"
-              }`}
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
+              isProcessing ||
+              !tradeInValidation.isValid ||
+              isLoadingShippingMethod
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+            }`}
             onClick={handleConfirmOrder}
-            disabled={isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod}
+            disabled={
+              isProcessing ||
+              !tradeInValidation.isValid ||
+              isLoadingShippingMethod
+            }
           >
-            {isProcessing ? "Procesando..." : isLoadingShippingMethod ? "Cargando..." : "Confirmar y pagar"}
+            {isProcessing
+              ? "Procesando..."
+              : isLoadingShippingMethod
+              ? "Cargando..."
+              : "Confirmar y pagar"}
           </button>
         </div>
       </div>
-
     </div>
   );
 }

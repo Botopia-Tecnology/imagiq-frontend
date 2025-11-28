@@ -12,12 +12,30 @@ interface MultimediaPageClientProps {
 }
 
 export default function MultimediaPageClient({ pageData }: MultimediaPageClientProps) {
-  const { banners, faqs } = pageData;
+  const { page, banners, faqs } = pageData;
 
   return (
     <div className="min-h-screen bg-white">
       {/* Carrusel de Banners */}
       <MultimediaBannerCarousel banners={banners} />
+
+      {/* Sección de Título y Descripción de Productos */}
+      {(page.products_section_title || page.products_section_description) && (
+        <section className="w-full bg-white py-12 md:py-16">
+          <div className="w-full mx-auto px-4 sm:px-6 lg:px-8" style={{ maxWidth: '1440px' }}>
+            {page.products_section_title && (
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
+                {page.products_section_title}
+              </h2>
+            )}
+            {page.products_section_description && (
+              <p className="text-semibold md:text-lg lg:text-xl text-gray-600">
+                {page.products_section_description}
+              </p>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* FAQs - Temporal para testing */}
       {faqs.length > 0 && (

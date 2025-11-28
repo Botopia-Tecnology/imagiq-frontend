@@ -17,6 +17,8 @@ export interface MultimediaPage {
   faq_ids: string[];
   sections: unknown[];
   info_sections: unknown[];
+  products_section_title: string | null;
+  products_section_description: string | null;
   meta_title: string;
   meta_description: string;
   meta_keywords: string | null;

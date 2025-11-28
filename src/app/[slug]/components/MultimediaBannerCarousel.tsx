@@ -53,7 +53,7 @@ export default function MultimediaBannerCarousel({ banners }: MultimediaBannerCa
   }
 
   return (
-    <section className="relative w-full bg-gray-100">
+    <section className="relative w-full">
       {/* Container con aspect ratio */}
       <div className="relative w-full mx-auto" style={{ maxWidth: '1440px' }}>
         <div 

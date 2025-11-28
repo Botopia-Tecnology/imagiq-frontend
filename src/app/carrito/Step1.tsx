@@ -119,6 +119,26 @@ export default function Step1({
     };
   }, [cartProducts]);
 
+  // ✅ Escuchar cuando se elimina un trade-in (cuando se elimina un producto)
+  useEffect(() => {
+    const handleTradeInRemoved = (event: CustomEvent<{ sku: string }>) => {
+      const removedSku = event.detail.sku;
+      //console.log("🔄 Step1: Trade-in eliminado para SKU:", removedSku);
+      
+      // Actualizar el estado del trade-in eliminando el SKU
+      setTradeInData(prev => {
+        const newState = { ...prev };
+        delete newState[removedSku];
+        return newState;
+      });
+    };
+
+    window.addEventListener('trade-in-removed', handleTradeInRemoved as EventListener);
+    return () => {
+      window.removeEventListener('trade-in-removed', handleTradeInRemoved as EventListener);
+    };
+  }, []);
+
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
 
@@ -170,14 +190,23 @@ export default function Step1({
     const checkAndOpenModal = () => {
       const targetSku = localStorage.getItem("open_trade_in_modal_sku");
       if (targetSku && cartProducts.length > 0) {
-        // Buscar el producto con el SKU específico
-        const targetProduct = cartProducts.find(p => p.sku === targetSku);
+        // Buscar producto individual o producto perteneciente a un bundle con ese productSku
+        const targetProduct =
+          cartProducts.find((p) => p.sku === targetSku) ||
+          cartProducts.find((p) => p.bundleInfo?.productSku === targetSku);
 
-        // Verificar que el producto existe y aplica para Trade-In
-        if (targetProduct && targetProduct.indRetoma === 1) {
+        const bundleApplies =
+          targetProduct?.bundleInfo?.productSku === targetSku &&
+          targetProduct?.bundleInfo?.ind_entre_estre === 1;
+        const productApplies =
+          targetProduct?.bundleInfo === undefined &&
+          targetProduct?.indRetoma === 1;
+
+        // Verificar que el producto/bundle existe y aplica para Trade-In
+        if (targetProduct && (bundleApplies || productApplies)) {
           // Limpiar el flag
           localStorage.removeItem("open_trade_in_modal_sku");
-          // Guardar el SKU del producto para el cual se abre el modal
+          // Guardar el SKU del producto o bundle para el cual se abre el modal
           setCurrentTradeInSku(targetSku);
           // Abrir el modal para este producto específico
           setIsTradeInModalOpen(true);

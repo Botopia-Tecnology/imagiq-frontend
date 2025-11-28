@@ -4,7 +4,6 @@ import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
 import { useCartContext } from "@/features/cart/CartContext";
-import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
@@ -103,15 +102,13 @@ const DetailsProductSection: React.FC<{
     productSelection.selectedStockTotal,
     productSelection.selectedVariant,
     productSelection.selectedSkuPostback,
-    productSelection.selection.selectedColor,
-    productSelection.selection.selectedCapacity,
-    productSelection.selection.selectedMemoriaram,
+    productSelection.selection,
+    productSelection.getSelectedColorOption,
     onProductSelectionChange,
   ]);
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
-  const router = useRouter();
   const {
     addToFavorites,
     removeFromFavorites,
@@ -235,7 +232,7 @@ const DetailsProductSection: React.FC<{
       });
 
     } catch (error) {
-
+      console.error("Error al agregar producto al carrito:", error);
     } finally {
       setLoading(false);
     }
@@ -371,6 +368,7 @@ const DetailsProductSection: React.FC<{
         onClose={handleCloseTradeInModal}
         onCancelWithoutCompletion={handleCancelTradeIn}
         onCompleteTradeIn={handleCompleteTradeIn}
+        productSku={productSelection.selectedSku || undefined}
       />
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}

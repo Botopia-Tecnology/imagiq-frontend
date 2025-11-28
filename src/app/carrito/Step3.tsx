@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useCart } from "@/hooks/useCart";
+import { useCart, type CartProduct } from "@/hooks/useCart";
 import { useDelivery } from "./hooks/useDelivery";
 import {
   DeliveryMethodSelector,
@@ -129,6 +129,27 @@ export default function Step3({
     return {};
   });
 
+  // Helpers para obtener el trade-in asociado a un producto (considera bundles)
+  const getTradeInKey = React.useCallback((product: CartProduct) => {
+    return product.bundleInfo?.productSku ?? product.sku;
+  }, []);
+
+  const getTradeInEntry = React.useCallback(
+    (product: CartProduct) => {
+      if (!product) return null;
+      const key = getTradeInKey(product);
+      if (!key) return null;
+      const tradeIn = tradeInDataMap[key];
+      return tradeIn ? { key, tradeIn } : null;
+    },
+    [tradeInDataMap, getTradeInKey]
+  );
+
+  const getTradeInForProduct = React.useCallback(
+    (product: CartProduct) => getTradeInEntry(product)?.tradeIn,
+    [getTradeInEntry]
+  );
+
   // Ref para rastrear si acabamos de eliminar el trade-in (evita que useEffect revierta el cambio)
   const justRemovedTradeInRef = React.useRef(false);
 
@@ -224,11 +245,15 @@ export default function Step3({
 
   // IMPORTANTE: Detectar productos con trade-in activo
   const productsWithTradeIn = React.useMemo(() => {
-    return products.filter(p => {
-      const tradeIn = tradeInDataMap[p.sku];
-      return tradeIn?.completed === true;
+    const seenKeys = new Set<string>();
+    return products.filter((p) => {
+      const entry = getTradeInEntry(p);
+      if (!entry?.tradeIn?.completed) return false;
+      if (seenKeys.has(entry.key)) return false;
+      seenKeys.add(entry.key);
+      return true;
     });
-  }, [products, tradeInDataMap]);
+  }, [products, getTradeInEntry]);
 
   const hasActiveTradeIn = productsWithTradeIn.length > 0;
 
@@ -294,12 +319,21 @@ export default function Step3({
 
   // Si hay productos sin pickup y el método está en tienda, cambiar a domicilio
   // SOLO si NO hay trade-in activo
+  // IMPORTANTE: NO forzar cambio si effectiveCanPickUp global es true
   React.useEffect(() => {
+    // Si effectiveCanPickUp global es true, SIEMPRE permitir seleccionar tienda
+    // El canPickUp global tiene prioridad sobre el canPickUp individual de cada producto
+    if (effectiveCanPickUp === true) {
+      console.log('✅ canPickUp global es true - permitir tienda independientemente de productos individuales');
+      return;
+    }
+
     if (!hasActiveTradeIn && hasProductWithoutPickup && deliveryMethod === "tienda") {
+      console.log('⚠️ Hay productos sin pickup y método es tienda - cambiando a domicilio');
       // setDeliveryMethod ya guarda automáticamente en localStorage
       setDeliveryMethod("domicilio");
     }
-  }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
+  }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod, effectiveCanPickUp]);
 
   // Ref para rastrear si ya cargamos tiendas para el trade-in actual (evita loops)
   const tradeInStoresLoadedRef = React.useRef(false);
@@ -741,6 +775,7 @@ export default function Step3({
 
   // IMPORTANTE: Si no hay tiendas disponibles, cambiar automáticamente a "Envío a domicilio"
   // Esto solo se aplica si NO hay trade-in activo (con trade-in siempre debe ser tienda)
+  // PERO NO debe ejecutarse si el usuario está cambiando manualmente el método
   React.useEffect(() => {
     // CRÍTICO: NO cambiar mientras esté cargando - esperar a que termine de cargar
     if (storesLoading || isLoadingCanPickUp) {
@@ -755,7 +790,9 @@ export default function Step3({
 
     // IMPORTANTE: Si canPickUp es true, NO cambiar automáticamente a domicilio
     // aunque las tiendas aún no se hayan cargado (pueden estar cargando)
+    // PERMITIR que el usuario seleccione "tienda" manualmente
     if (effectiveCanPickUp === true) {
+      console.log('✅ canPickUp es true - permitir seleccionar tienda');
       return; // canPickUp es true, permitir seleccionar tienda
     }
 
@@ -1085,6 +1122,14 @@ export default function Step3({
                     </div>
                   )}
 
+                  {/* Debug: Mostrar canPickUp global SIEMPRE cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+                    <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-900">Debug: canPickup global</p>
+                      <p className="text-xs text-gray-700">canPickup global: {String(effectiveCanPickUp ?? 'undefined')}</p>
+                    </div>
+                  )}
+
                   {/* Mostrar opción de recoger en tienda siempre, pero deshabilitada si canPickUp es false y no hay trade-in */}
                   {/* IMPORTANTE: Habilitar recoger en tienda si canPickUp global es true O si hay trade-in activo */}
                   {/* Mostrar estado de carga cuando se está verificando disponibilidad (cambio de dirección o carga inicial) */}
@@ -1096,6 +1141,7 @@ export default function Step3({
                       isLoading={storesLoading || addressLoading}
                       availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
                       hasActiveTradeIn={hasActiveTradeIn}
+                      canPickUp={effectiveCanPickUp}
                     />
                   </div>
 
@@ -1201,15 +1247,15 @@ export default function Step3({
 
               {/* Banner de Trade-In - Mostrar para cada producto con trade-in */}
               {productsWithTradeIn.map((product) => {
-                const tradeIn = tradeInDataMap[product.sku];
-                if (!tradeIn?.completed) return null;
+                const entry = getTradeInEntry(product);
+                if (!entry?.tradeIn?.completed) return null;
 
                 return (
                   <TradeInCompletedSummary
                     key={product.sku}
-                    deviceName={tradeIn.deviceName}
-                    tradeInValue={tradeIn.value}
-                    onEdit={() => handleRemoveTradeIn(product.sku)}
+                    deviceName={entry.tradeIn.deviceName}
+                    tradeInValue={entry.tradeIn.value}
+                    onEdit={() => handleRemoveTradeIn(entry.key)}
                     validationError={tradeInValidation.isValid === false ? getTradeInValidationMessage(tradeInValidation) : undefined}
                     showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
                   />

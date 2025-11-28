@@ -100,6 +100,7 @@ export const useDelivery = () => {
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
   const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
   const [availableStoresWhenCanPickUpFalse, setAvailableStoresWhenCanPickUpFalse] = useState<FormattedStore[]>([]); // Tiendas disponibles cuando canPickUp es false
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [lastResponse, setLastResponse] = useState<any>(null); // DEBUG: Estado para guardar la última respuesta
 
   // Ref para prevenir llamadas infinitas a fetchCandidateStores

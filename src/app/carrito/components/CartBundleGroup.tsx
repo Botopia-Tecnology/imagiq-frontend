@@ -243,7 +243,7 @@ export function CartBundleGroup({
             <TradeInCompletedSummary
               deviceName={tradeInData?.deviceName || bundleName}
               tradeInValue={tradeInData?.value || 0}
-              onEdit={tradeInData?.completed ? (onRemoveTradeIn || undefined) : (onOpenTradeInModal || undefined)}
+              onEdit={tradeInData?.completed ? (onRemoveTradeIn || (() => {})) : (onOpenTradeInModal || (() => {}))}
               isGuide={!tradeInData?.completed}
               shippingCity={shippingCity}
               showCanPickUpMessage={showCanPickUpMessage}

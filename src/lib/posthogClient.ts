@@ -101,6 +101,7 @@ export const posthogUtils = {
    * @param pageName - Nombre de la página (opcional)
    */
   capturePageView: (_pageName?: string) => {
+    console.log("📊 PostHog - Page View captured:", _pageName || window.location.pathname);
     // PostHog page view capture - implementation goes here
   },
 

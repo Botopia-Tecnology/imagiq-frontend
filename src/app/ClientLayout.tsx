@@ -42,7 +42,7 @@ export default function ClientLayout({
   const [isClient, setIsClient] = useState(false);
 
   // Hook para gestionar campañas InWeb
-  const { activeCampaign, closeCampaign } = useInWebCampaign({
+  const { activeCampaigns, closeCampaign } = useInWebCampaign({
     channelName: "inweb"
   });
 
@@ -80,10 +80,13 @@ export default function ClientLayout({
     <>
       <VersionManager />
       <CookieBanner />
-      <InWebCampaignDisplay
-        campaign={activeCampaign}
-        onClose={closeCampaign}
-      />
+      {activeCampaigns.map((campaign) => (
+        <InWebCampaignDisplay
+          key={campaign.id}
+          campaign={campaign}
+          onClose={() => closeCampaign(campaign.id)}
+        />
+      ))}
       <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
         {/* Solo monta el Navbar si no debe ocultarse por ruta ni por scroll dinámico */}
         {!hideNavbar && !hideNavbarDynamic && isClient && <Navbar />}

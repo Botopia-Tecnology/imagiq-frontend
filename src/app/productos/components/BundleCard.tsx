@@ -12,6 +12,7 @@
 import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Plus, Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
@@ -434,6 +435,8 @@ export default function BundleCard({
   // Las opciones se muestran como números simples (1, 2, 3...)
   // El nombre completo del bundle cambia dinámicamente al seleccionar cada opción
 
+  const router = useRouter();
+
   const handleMoreInfo = () => {
     // TODO: Navegar a página de detalle del bundle (próximamente)
     // Por ahora, solo registrar el evento
@@ -448,6 +451,97 @@ export default function BundleCard({
       menu,
       submenu,
     });
+  };
+
+  const handleEntregoEstreno = async () => {
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (!selectedOption || skus_bundle.length === 0) {
+        toast.error("No se pudo agregar el bundle", {
+          description: "No hay productos disponibles en este bundle",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar stock antes de agregar al carrito
+      if (isOutOfStock) {
+        toast.error("Producto agotado", {
+          description: "Este bundle no tiene stock disponible",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Track del evento
+      posthogUtils.capture("bundle_entrego_estreno_click", {
+        bundle_id: id,
+        bundle_name: name,
+        product_sku: selectedOption.product_sku,
+        skus_bundle,
+        selected_option_index: selectedOptionIndex,
+        source: "bundle_card",
+      });
+
+      // Agregar el bundle al carrito (usar la misma lógica que handleAddToCart)
+      if (selectedOption.productos && selectedOption.productos.length > 0) {
+        const firstProduct = selectedOption.productos[0];
+
+        const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product, index) => ({
+          id: product.sku,
+          name: product.modelo,
+          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
+          price: product.product_discount_price,
+          originalPrice: product.product_original_price,
+          sku: product.sku,
+          ean: product.ean || product.sku,
+          color: product.color,
+          colorName: product.nombreColor,
+          capacity: product.capacidad,
+          ram: product.memoriaram,
+          stock: product.stockTotal,
+          modelo: product.modelo,
+          categoria: product.categoria || categoria || "",
+        }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: firstProduct.bundle_price,
+          bundleDiscount: firstProduct.bundle_discount,
+          fechaFinal: new Date(fecha_final),
+          ind_entre_estre: selectedOption.ind_entre_estre,
+        };
+
+        await addBundleToCart(products, bundleInfo);
+      }
+
+      // Marcar que debe abrirse el modal de Trade-In automáticamente para este SKU específico
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("open_trade_in_modal_sku", selectedOption.product_sku);
+      }
+
+      // Pequeño delay para asegurar que el localStorage se guarde
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Navegar al carrito
+      router.push("/carrito/step1");
+    } catch (error) {
+      console.error("Error al agregar bundle con entrego y estreno:", error);
+      toast.error("Error al agregar el bundle", {
+        description: "Por favor intenta de nuevo",
+      });
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    }
   };
 
   const handleAddToCart = async () => {
@@ -499,6 +593,7 @@ export default function BundleCard({
           bundlePrice: firstProduct.bundle_price,
           bundleDiscount: firstProduct.bundle_discount,
           fechaFinal: new Date(fecha_final),
+          ind_entre_estre: selectedOption.ind_entre_estre,
         };
 
         await addBundleToCart(products, bundleInfo);
@@ -532,6 +627,7 @@ export default function BundleCard({
           bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
           bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
           fechaFinal: new Date(fecha_final),
+          ind_entre_estre: selectedOption.ind_entre_estre,
         };
 
         await addBundleToCart(basicProducts, bundleInfo);
@@ -677,14 +773,46 @@ export default function BundleCard({
           </div>
         )}
 
-        {/* Selector de variantes del bundle - Color y Capacidad */}
-        {opciones && opciones.length > 1 && (
-          <BundleVariantSelector
-            opciones={opciones}
-            selectedOptionIndex={selectedOptionIndex}
-            onSelectOption={setSelectedOptionIndex}
-          />
-        )}
+        {/* Contenedor para selector de variantes y botón de entrego y estreno */}
+        <div className="px-3 flex gap-2 items-start">
+          {/* Columna izquierda: Selector de variantes */}
+          <div className="flex-1">
+            {opciones && opciones.length > 1 && (
+              <BundleVariantSelector
+                opciones={opciones}
+                selectedOptionIndex={selectedOptionIndex}
+                onSelectOption={setSelectedOptionIndex}
+              />
+            )}
+          </div>
+
+          {/* Columna derecha: Botón de Entrego y Estreno - Mostrar solo si ind_entre_estre === 1 */}
+          {selectedOption?.ind_entre_estre === 1 && (
+            <div className="flex-shrink-0 w-[120px] self-start -mt-4 relative z-10">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleEntregoEstreno();
+                }}
+                disabled={isLoading}
+                className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center w-full hover:bg-[#0088EE] active:bg-[#0077DD] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative z-10"
+                style={{ pointerEvents: isLoading ? 'none' : 'auto' }}
+              >
+                <svg className="w-4 h-4 md:w-5 md:h-5 text-white mb-1 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <p className="text-[10px] font-bold mb-0 pointer-events-none">
+                  Entrego y Estreno
+                </p>
+                <p className="text-[9px] opacity-90 pointer-events-none">
+                  aplica ahora
+                </p>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Precio - usa la opción seleccionada */}
         <div className="px-3 space-y-3 mt-auto">

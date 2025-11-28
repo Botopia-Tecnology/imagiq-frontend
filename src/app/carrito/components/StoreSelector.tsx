@@ -63,21 +63,33 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   };
 
   // Determinar qué tiendas mostrar cuando canPickUp es false pero hay Trade In activo
-  const storesToShowWhenCanPickUpFalse = hasActiveTradeIn && availableStoresWhenCanPickUpFalse.length > 0
+  // IMPORTANTE: Siempre usar availableStoresWhenCanPickUpFalse si hay tiendas disponibles
+  const storesToShowWhenCanPickUpFalse = hasActiveTradeIn
     ? availableStoresWhenCanPickUpFalse
     : [];
 
   // DEBUG: Log para ver qué tiendas tenemos disponibles
   React.useEffect(() => {
+    console.log('🔍 StoreSelector - Estado actual:', {
+      canPickUp,
+      storesLoading,
+      availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
+      storesToShowWhenCanPickUpFalse: storesToShowWhenCanPickUpFalse.length,
+      availableCities: availableCities.length,
+      hasActiveTradeIn,
+      storesArray: availableStoresWhenCanPickUpFalse.map(s => s.descripcion),
+    });
+
     if (canPickUp === false && !storesLoading) {
-      console.log('🔍 StoreSelector - canPickUp=false:', {
+      console.log('🔍 StoreSelector - canPickUp=false, storesLoading=false:', {
         availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
         storesToShowWhenCanPickUpFalse: storesToShowWhenCanPickUpFalse.length,
         availableCities: availableCities.length,
         hasActiveTradeIn,
+        storesArray: availableStoresWhenCanPickUpFalse.map(s => s.descripcion),
       });
     }
-  }, [canPickUp, storesLoading, availableStoresWhenCanPickUpFalse.length, storesToShowWhenCanPickUpFalse.length, availableCities.length, hasActiveTradeIn]);
+  }, [canPickUp, storesLoading, availableStoresWhenCanPickUpFalse, storesToShowWhenCanPickUpFalse, availableCities, hasActiveTradeIn]);
 
   return (
     <div className="space-y-4">
@@ -96,120 +108,128 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
         </div>
       )}
 
-      {/* Mostrar mensaje de advertencia cuando canPickUp es false Y ya terminó de cargar */}
-      {/* IMPORTANTE: Las tiendas vienen de availableStoresWhenCanPickUpFalse que se llena desde candidate-stores */}
+      {/* Mostrar mensaje de advertencia cuando canPickUp es false Y NO está cargando */}
+      {/* IMPORTANTE: Solo mostrar contenido cuando ya terminó de cargar, mientras carga mostrar skeleton */}
       {canPickUp === false && !storesLoading && (
         <div className="p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-lg shadow-sm">
-          <p className="text-sm font-bold text-gray-900 mb-2">
-            El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada.
-          </p>
-          <p className="text-xs text-gray-700 mb-3">
-            Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
-          </p>
-          
-          {/* Mostrar tiendas específicas si hay Trade In activo */}
+          {/* Verificar si realmente hay tiendas disponibles */}
           {(() => {
-            if (hasActiveTradeIn && storesToShowWhenCanPickUpFalse.length > 0) {
-              return (
-                <div className="mb-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                  <p className="text-xs font-semibold text-gray-900 mb-2">
-                    El producto está disponible en las siguientes tiendas:
-                  </p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {storesToShowWhenCanPickUpFalse.map((store) => (
-                      <div
-                        key={store.codigo}
-                        className="p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 hover:border-blue-300 transition-colors"
-                      >
-                        <div className="font-semibold text-sm text-gray-900">{store.descripcion}</div>
-                        <div className="text-xs text-gray-600 mt-0.5">
-                          {store.direccion}, {store.ciudad}
-                        </div>
-                        {store.ubicacion_cc && (
-                          <div className="text-xs text-gray-500 mt-0.5">{store.ubicacion_cc}</div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            }
-            // Si hay tiendas disponibles cuando canPickUp es false, agruparlas por ciudad y mostrar nombre de tienda
-            if (availableStoresWhenCanPickUpFalse.length > 0) {
-              // Agrupar tiendas por ciudad
-              const storesByCity = availableStoresWhenCanPickUpFalse.reduce((acc, store) => {
-                const city = store.ciudad || 'Sin ciudad';
-                if (!acc[city]) {
-                  acc[city] = [];
-                }
-                acc[city].push(store);
-                return acc;
-              }, {} as Record<string, typeof availableStoresWhenCanPickUpFalse>);
-
-              return (
-                <div className="mb-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                  <p className="text-xs font-semibold text-gray-900 mb-2">
-                    El producto está disponible en las siguientes tiendas:
-                  </p>
-                  <div className="space-y-2 max-h-48 overflow-y-auto">
-                    {Object.entries(storesByCity).map(([city, cityStores]) => (
-                      <div key={city} className="space-y-1">
-                        <div className="text-xs font-bold text-gray-700 uppercase">{city}</div>
-                        {cityStores.map((store) => (
-                          <div
-                            key={store.codigo}
-                            className="ml-3 p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
-                          >
-                            <div className="font-semibold text-sm text-gray-900">{store.descripcion}</div>
-                            <div className="text-xs text-gray-600 mt-0.5">
-                              {store.direccion}
-                            </div>
-                            {store.ubicacion_cc && (
-                              <div className="text-xs text-gray-500 mt-0.5">{store.ubicacion_cc}</div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            }
+            // IMPORTANTE: Siempre verificar availableStoresWhenCanPickUpFalse primero
+            const hasStores = availableStoresWhenCanPickUpFalse.length > 0 || storesToShowWhenCanPickUpFalse.length > 0;
+            const hasCities = availableCities.length > 0;
+            const reallyNoStores = !hasStores && !hasCities;
             
-            // Fallback: Si solo hay ciudades pero no tiendas, mostrar ciudades
-            if (availableCities.length > 0) {
+            // DEBUG: Log inmediato para ver qué está pasando
+            console.log('🎨 StoreSelector renderizando:', {
+              hasStores,
+              hasCities,
+              reallyNoStores,
+              availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+              storesToShowWhenCanPickUpFalseLength: storesToShowWhenCanPickUpFalse.length,
+            });
+
+            // Si NO hay tiendas, mostrar mensaje de "no hay tiendas"
+            if (reallyNoStores) {
               return (
-                <div className="mb-3 p-2 bg-white rounded border border-gray-200">
-                  <p className="text-xs font-semibold text-gray-900 mb-1">
-                    El producto está disponible en las siguientes ciudades:
+                <>
+                  <p className="text-sm font-bold text-gray-900 mb-2">
+                    {hasActiveTradeIn
+                      ? "No hay tiendas disponibles para recoger este producto."
+                      : "El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada."}
                   </p>
-                  <div className="flex flex-wrap gap-1">
-                    {availableCities.map((city) => (
-                      <span
-                        key={city}
-                        className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded border border-blue-200"
-                      >
-                        {city}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                  {!hasActiveTradeIn && (
+                    <p className="text-xs text-gray-700 mb-3">
+                      Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
+                    </p>
+                  )}
+                  {hasActiveTradeIn && (
+                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-gray-800">
+                        Actualmente los productos de tu carrito no se encuentran disponibles para recoger en un punto físico.
+                      </p>
+                    </div>
+                  )}
+                </>
               );
             }
-            return null;
+
+            // Si HAY tiendas, mostrar mensaje de advertencia y luego las tiendas
+            // IMPORTANTE: Usar siempre availableStoresWhenCanPickUpFalse cuando haya tiendas disponibles
+            const storesToDisplay = availableStoresWhenCanPickUpFalse;
+
+            return (
+              <>
+                {!hasActiveTradeIn && (
+                  <>
+                    <p className="text-sm font-bold text-gray-900 mb-2">
+                      El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada.
+                    </p>
+                    <p className="text-xs text-gray-700 mb-3">
+                      Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
+                    </p>
+                  </>
+                )}
+
+                {/* Mostrar tiendas disponibles cuando hay tiendas */}
+                {storesToDisplay.length > 0 && (
+                  <>
+                    <p className="text-xs font-semibold text-gray-900 mb-2">
+                      El producto está disponible en las siguientes tiendas:
+                    </p>
+                    <div className="space-y-2 mb-3">
+                      {storesToDisplay.map((store) => (
+                        <div
+                          key={store.codigo}
+                          className="p-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200"
+                        >
+                          <div className="font-semibold text-sm text-gray-900">{store.descripcion}</div>
+                          <div className="text-xs text-gray-600 mt-0.5">
+                            {store.direccion}{store.ciudad ? `, ${store.ciudad}` : ''}
+                          </div>
+                          {store.ubicacion_cc && (
+                            <div className="text-xs text-gray-500 mt-0.5">{store.ubicacion_cc}</div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Fallback: Si solo hay ciudades pero no tiendas, mostrar ciudades */}
+                {availableCities.length > 0 && storesToDisplay.length === 0 && (
+                  <div className="mb-3 p-2 bg-white rounded border border-gray-200">
+                    <p className="text-xs font-semibold text-gray-900 mb-1">
+                      El producto está disponible en las siguientes ciudades:
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {availableCities.map((city) => (
+                        <span
+                          key={city}
+                          className="inline-block px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700 rounded border border-blue-200"
+                        >
+                          {city}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Botón para agregar dirección (solo si no hay trade-in activo) */}
+                {!hasActiveTradeIn && (
+                  <button
+                    onClick={() => setShowAddAddressModal(true)}
+                    className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"
+                  >
+                    Agregar nueva dirección
+                  </button>
+                )}
+              </>
+            );
           })()}
-          
-          <button
-            onClick={() => setShowAddAddressModal(true)}
-            className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"
-          >
-            Agregar nueva dirección
-          </button>
         </div>
       )}
 
-      {/* IMPORTANTE: Mostrar selector de tiendas solo cuando canPickUp es true */}
-      {/* Cuando canPickUp es false, el mensaje de arriba ya muestra las tiendas disponibles */}
+      {/* IMPORTANTE: Mostrar selector de tiendas SOLO cuando canPickUp es true */}
       {canPickUp && (
         <>
           <div className="flex gap-2">
@@ -234,17 +254,15 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                   </div>
                 );
               }
-              
-              // IMPORTANTE: Usar las tiendas correctas según canPickUp
-              // Si canPickUp es true, usar filteredStores
-              // Si canPickUp es false pero hay tiendas en availableStoresWhenCanPickUpFalse, usarlas
-              const storesToDisplay = canPickUp ? filteredStores : availableStoresWhenCanPickUpFalse;
-              const allStoresToCheck = canPickUp ? allStores : availableStoresWhenCanPickUpFalse;
-              
+
+              // IMPORTANTE: Como este selector solo se muestra cuando canPickUp es true, usar siempre filteredStores
+              const storesToDisplay = filteredStores;
+              const allStoresToCheck = allStores;
+
               // IMPORTANTE: Verificar si realmente hay tiendas disponibles
               const hasStores = allStoresToCheck.length > 0;
               const hasFilteredResults = storesToDisplay.length > 0;
-              
+
               if (!hasFilteredResults) {
                 // Si hay una búsqueda activa y hay tiendas pero no coinciden con la búsqueda
                 if (storeQuery.trim() !== "" && hasStores) {
@@ -258,12 +276,14 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                 if (!hasStores) {
                   return (
                     <div className="p-4 text-gray-500 text-sm">
-                      No se encontraron tiendas disponibles.
+                      {hasActiveTradeIn
+                        ? "El producto seleccionado no cuenta con un punto físico disponible para recoger en tienda."
+                        : "No se encontraron tiendas disponibles."}
                     </div>
                   );
                 }
               }
-              
+
               // Si hay resultados filtrados, mostrarlos
               return storesToDisplay.map((store) => {
                 const isSelected = selectedStore?.codigo === store.codigo;
@@ -271,9 +291,8 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                   <button
                     key={store.codigo}
                     type="button"
-                    className={`w-full text-left p-3 cursor-pointer hover:bg-blue-50 ${
-                      isSelected ? "bg-blue-100" : ""
-                    }`}
+                    className={`w-full text-left p-3 cursor-pointer hover:bg-blue-50 ${isSelected ? "bg-blue-100" : ""
+                      }`}
                     onClick={() => onStoreSelect(store)}
                   >
                     <div className="font-semibold text-sm">{store.descripcion}</div>

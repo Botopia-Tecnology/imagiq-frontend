@@ -33,6 +33,12 @@ interface Step4OrderSummaryProps {
     discount: number;
     total: number;
   }; // Cálculos opcionales para reactividad inmediata
+  readonly debugStoresInfo?: {
+    availableStoresWhenCanPickUpFalse: number;
+    stores: number;
+    filteredStores: number;
+    availableCities: number;
+  }; // Información de debug sobre tiendas
 }
 
 export default function Step4OrderSummary({
@@ -51,6 +57,7 @@ export default function Step4OrderSummary({
   shouldCalculateCanPickUp = true, // Por defecto true (Steps 1-6)
   products: propProducts,
   calculations: propCalculations,
+  debugStoresInfo,
 }: Step4OrderSummaryProps) {
   const router = useRouter();
   const {
@@ -588,33 +595,7 @@ export default function Step4OrderSummary({
         </div>
       </div>
 
-      {/* Debug: canPickUp global (solo cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES=true) */}
-      {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <p className="text-xs font-semibold text-yellow-800 mb-2">
-            Debug: canPickUp global
-          </p>
-          <div className="text-xs text-yellow-700">
-            {(() => {
-              if (isLoadingCanPickUp) {
-                return <p className="text-yellow-600 italic">Verificando...</p>;
-              }
-              if (globalCanPickUp === null) {
-                return (
-                  <p className="text-yellow-600 italic">
-                    No disponible - Verifica que estés logueado y tengas productos en el carrito
-                  </p>
-                );
-              }
-              return (
-                <p className="font-medium">
-                  canPickUp global: {globalCanPickUp ? "true" : "false"}
-                </p>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+
     </aside>
   );
 }

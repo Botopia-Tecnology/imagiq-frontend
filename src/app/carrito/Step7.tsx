@@ -983,7 +983,7 @@ export default function Step7({ onBack }: Step7Props) {
             console.log("🔐 [Step7] Respuesta completa del backend:", JSON.stringify(res, null, 2));
             console.log("🔐 [Step7] data3DS recibido:", JSON.stringify(res.data3DS, null, 2));
 
-            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: any };
+            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: unknown };
             console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
             console.log("🔐 [Step7] Franquicia:", data3DS.franquicia);
             console.log("🔐 [Step7] ref_payco:", data3DS.ref_payco);

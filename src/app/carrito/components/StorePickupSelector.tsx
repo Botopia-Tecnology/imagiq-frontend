@@ -9,6 +9,7 @@ interface StorePickupSelectorProps {
   isLoading?: boolean;
   availableStoresWhenCanPickUpFalse?: FormattedStore[];
   hasActiveTradeIn?: boolean;
+  canPickUp?: boolean | null;
 }
 
 export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
@@ -18,6 +19,7 @@ export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
   isLoading = false,
   availableStoresWhenCanPickUpFalse = [],
   hasActiveTradeIn = false,
+  canPickUp = null,
 }) => {
   // Solo mostrar el mensaje si está deshabilitado, hay trade-in activo y hay tiendas disponibles
   const showStoresInfo = disabled && hasActiveTradeIn && !isLoading && availableStoresWhenCanPickUpFalse.length > 0;

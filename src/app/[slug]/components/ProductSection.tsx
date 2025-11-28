@@ -26,10 +26,16 @@ export default function ProductSection({ sections, productCards }: ProductSectio
   // Obtener la sección activa
   const currentSection = sortedSections.find(s => s.id === activeSection) || sortedSections[0];
   
-  // Filtrar las product cards de la sección activa
-  const sectionProducts = productCards.filter(card => 
-    currentSection.product_card_ids.includes(card.id)
-  );
+  // Filtrar y ordenar las product cards según product_card_ids
+  const sectionProducts = currentSection.product_card_ids
+    .map(id => productCards.find(card => card.id === id))
+    .filter((card): card is ProductCardData => card !== undefined);
+
+  // Agrupar productos en filas de 3
+  const groupedProducts: ProductCardData[][] = [];
+  for (let i = 0; i < sectionProducts.length; i += 3) {
+    groupedProducts.push(sectionProducts.slice(i, i + 3));
+  }
 
   return (
     <section className="w-full bg-white py-8 md:py-12">
@@ -58,20 +64,52 @@ export default function ProductSection({ sections, productCards }: ProductSectio
 
         {/* Grid de productos de la sección activa */}
         {sectionProducts.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {sectionProducts.map((product) => (
-              <CustomProductCard
-                key={product.id}
-                card={product}
-              />
-            ))}
-          </div>
+          <>
+            {/* Desktop: Grid normal 3 columnas */}
+            <div className="hidden lg:grid lg:grid-cols-3 gap-4 md:gap-6">
+              {sectionProducts.map((product) => (
+                <CustomProductCard
+                  key={product.id}
+                  card={product}
+                />
+              ))}
+            </div>
+
+            {/* Mobile: Filas con scroll horizontal */}
+            <div className="lg:hidden space-y-4">
+              {groupedProducts.map((row, rowIndex) => (
+                <div
+                  key={rowIndex}
+                  className="overflow-x-auto scrollbar-hide"
+                  style={{ scrollbarWidth: 'none' }}
+                >
+                  <div className="flex gap-4 pb-2">
+                    {row.map((product) => (
+                      <div
+                        key={product.id}
+                        className="flex-none w-[85vw] sm:w-[70vw]"
+                      >
+                        <CustomProductCard card={product} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="text-center py-12 text-gray-500">
             No hay productos disponibles en esta sección
           </div>
         )}
       </div>
+
+      {/* Estilos para ocultar scrollbar */}
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </section>
   );
 }

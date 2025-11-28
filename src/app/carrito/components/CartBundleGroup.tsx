@@ -5,6 +5,7 @@ import { Minus, Plus, Trash2 } from "lucide-react";
 import type { CartProduct, BundleInfo } from "@/hooks/useCart";
 import { BundleWarningPopup } from "./BundleWarningPopup";
 import Image from "next/image";
+import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
 
 interface CartBundleGroupProps {
   /** Información del bundle */
@@ -21,6 +22,20 @@ interface CartBundleGroupProps {
   onRemoveProduct: (sku: string, keepOtherProducts: boolean) => Promise<void>;
   /** Función para formatear precios */
   formatPrice: (price: number) => string;
+  /** Datos de Trade-In para el bundle */
+  tradeInData?: {
+    deviceName: string;
+    value: number;
+    completed: boolean;
+  } | null;
+  /** Callback para abrir el modal de Trade-In */
+  onOpenTradeInModal?: () => void;
+  /** Callback para remover Trade-In */
+  onRemoveTradeIn?: () => void;
+  /** Ciudad de envío */
+  shippingCity?: string;
+  /** Mostrar mensaje de canPickUp */
+  showCanPickUpMessage?: boolean;
 }
 
 /**
@@ -32,6 +47,11 @@ export function CartBundleGroup({
   onUpdateQuantity,
   onRemoveProduct,
   formatPrice,
+  tradeInData,
+  onOpenTradeInModal,
+  onRemoveTradeIn,
+  shippingCity,
+  showCanPickUpMessage = false,
 }: CartBundleGroupProps) {
   const [showQuantityPopup, setShowQuantityPopup] = useState(false);
   const [showRemovePopup, setShowRemovePopup] = useState(false);
@@ -87,6 +107,15 @@ export function CartBundleGroup({
     }
     return 0;
   };
+
+  // Verificar si debe mostrar el banner de Trade-In
+  const shouldShowTradeInBanner = bundleInfo.ind_entre_estre === 1;
+
+  // Obtener el nombre completo del bundle (concatenar todos los productos con " + ")
+  const bundleName = items
+    .map((item) => item.name)
+    .filter(Boolean)
+    .join(" + ") || "Bundle";
 
   return (
     <>
@@ -207,6 +236,20 @@ export function CartBundleGroup({
             );
           })}
         </div>
+
+        {/* Banner de Trade-In dentro del bundle (solo si ind_entre_estre === 1) */}
+        {shouldShowTradeInBanner && (
+          <div className="px-4 pb-4 pt-3 border-t border-gray-100">
+            <TradeInCompletedSummary
+              deviceName={tradeInData?.deviceName || bundleName}
+              tradeInValue={tradeInData?.value || 0}
+              onEdit={tradeInData?.completed ? (onRemoveTradeIn || (() => {})) : (onOpenTradeInModal || (() => {}))}
+              isGuide={!tradeInData?.completed}
+              shippingCity={shippingCity}
+              showCanPickUpMessage={showCanPickUpMessage}
+            />
+          </div>
+        )}
       </div>
 
       {/* Popups */}

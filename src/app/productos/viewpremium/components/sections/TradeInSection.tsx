@@ -9,10 +9,12 @@ import {
 
 interface TradeInSectionProps {
   onTradeInComplete?: (deviceName: string, value: number) => void;
+  productSku?: string;
 }
 
 const TradeInSection: React.FC<TradeInSectionProps> = ({
   onTradeInComplete,
+  productSku,
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -26,17 +28,37 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
     if (storedTradeIn) {
       try {
         const data = JSON.parse(storedTradeIn);
-        if (data.completed) {
+
+        let tradeInData = data;
+
+        // Si hay un SKU específico, buscar los datos para ese SKU
+        if (productSku && typeof data === 'object' && !data.deviceName) {
+          tradeInData = data[productSku];
+        }
+
+        if (tradeInData && tradeInData.completed) {
           setTradeInCompleted(true);
-          setTradeInValue(data.value);
-          setTradeInDeviceName(data.deviceName);
+          setTradeInValue(tradeInData.value);
+          setTradeInDeviceName(tradeInData.deviceName);
           setSelectedOption("yes");
+        } else {
+          // Si no hay datos completados para este SKU, resetear estado
+          setTradeInCompleted(false);
+          setTradeInValue(0);
+          setTradeInDeviceName("");
+          setSelectedOption(null);
         }
       } catch (error) {
         console.error("Error al cargar datos de Trade-In:", error);
       }
+    } else {
+      // Si no hay nada en localStorage, resetear estado
+      setTradeInCompleted(false);
+      setTradeInValue(0);
+      setTradeInDeviceName("");
+      setSelectedOption(null);
     }
-  }, []);
+  }, [productSku]);
 
   const handleYesClick = () => {
     setSelectedOption("yes");
@@ -48,8 +70,25 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
     setTradeInCompleted(false);
     setTradeInValue(0);
     setTradeInDeviceName("");
-    // Limpiar localStorage si el usuario dice "No, gracias"
-    localStorage.removeItem("imagiq_trade_in");
+
+    // Limpiar localStorage para este SKU
+    if (productSku) {
+      try {
+        const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+        if (storedTradeIn) {
+          const data = JSON.parse(storedTradeIn);
+          if (typeof data === 'object' && !data.deviceName) {
+            delete data[productSku];
+            localStorage.setItem("imagiq_trade_in", JSON.stringify(data));
+          }
+        }
+      } catch (e) {
+        console.error("Error cleaning trade-in for SKU:", e);
+      }
+    } else {
+      // Fallback para comportamiento antiguo
+      localStorage.removeItem("imagiq_trade_in");
+    }
   };
 
   const handleModalClose = () => {
@@ -65,28 +104,8 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
     setTradeInDeviceName(deviceName);
     setIsModalOpen(false);
 
-    // Guardar en localStorage para mostrar en el carrito
-    const tradeInData = {
-      deviceName,
-      value,
-      completed: true,
-      timestamp: new Date().toISOString(),
-    };
-    try {
-      const raw = localStorage.getItem("imagiq_trade_in");
-      let existing: Record<string, unknown> = {};
-      if (raw) {
-        try {
-          existing = JSON.parse(raw) as Record<string, unknown>;
-        } catch {
-          existing = {};
-        }
-      }
-      const merged = { ...existing, ...tradeInData };
-      localStorage.setItem("imagiq_trade_in", JSON.stringify(merged));
-    } catch {
-      localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
-    }
+    // NOTA: El guardado en localStorage ya lo maneja el TradeInModal internamente
+    // cuando se le pasa el productSku. No necesitamos duplicar esa lógica aquí.
 
     if (onTradeInComplete) {
       onTradeInComplete(deviceName, value);
@@ -131,11 +150,10 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
             {/* Option cards */}
             <div className="flex flex-col md:flex-row gap-2.5 md:gap-3 mb-2 md:mb-3">
               <div
-                className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors ${
-                  selectedOption === "yes"
+                className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors ${selectedOption === "yes"
                     ? "border-blue-500"
                     : "border-gray-300 hover:border-blue-500"
-                }`}
+                  }`}
                 onClick={handleYesClick}
               >
                 <div className="flex items-start justify-between">
@@ -159,11 +177,10 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
               </div>
 
               <div
-                className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors flex items-center ${
-                  selectedOption === "no"
+                className={`flex-1 border rounded-lg p-2.5 md:p-3 cursor-pointer transition-colors flex items-center ${selectedOption === "no"
                     ? "border-blue-500"
                     : "border-gray-300 hover:border-blue-500"
-                }`}
+                  }`}
                 onClick={handleNoClick}
               >
                 <span className="font-semibold text-sm text-gray-900">
@@ -229,6 +246,7 @@ const TradeInSection: React.FC<TradeInSectionProps> = ({
         onContinue={() => setIsModalOpen(false)}
         onCancelWithoutCompletion={handleCancelWithoutCompletion}
         onCompleteTradeIn={handleCompleteTradeIn}
+        productSku={productSku}
       />
     </div>
   );

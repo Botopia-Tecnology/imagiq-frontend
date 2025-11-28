@@ -111,6 +111,20 @@ export async function getActivePageBySlug(slug: string): Promise<MultimediaPageD
     const response = await apiGet<MultimediaPageData>(
       `/api/multimedia/pages/slug/${slug}`
     );
+    
+    // Parsear posiciones si vienen como strings JSON
+    if (response?.banners) {
+      response.banners = response.banners.map(banner => ({
+        ...banner,
+        position_desktop: typeof banner.position_desktop === 'string' 
+          ? JSON.parse(banner.position_desktop) 
+          : banner.position_desktop,
+        position_mobile: typeof banner.position_mobile === 'string' 
+          ? JSON.parse(banner.position_mobile) 
+          : banner.position_mobile,
+      }));
+    }
+    
     return response;
   } catch (error) {
     console.error(`Error fetching active page with slug "${slug}":`, error);

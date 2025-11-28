@@ -37,7 +37,7 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
       categoryCode,
       menuUuid,
       // categoria es opcional y solo se usa como metadata
-    }, 200); // Debounce de 200ms
+    }, 100); // Debounce de 100ms
     
     // Precargar submenús del menú con debounce
     // Limpiar timer anterior si existe
@@ -102,7 +102,7 @@ export const DesktopView: FC<Props> = ({ items, categoryName, categoryCode, onIt
       } finally {
         submenuPrefetchTimers.current.delete(menuUuid);
       }
-    }, 200); // Debounce de 200ms
+    }, 100); // Debounce de 100ms
     
     submenuPrefetchTimers.current.set(menuUuid, timer);
   }, [categoryCode, prefetchWithDebounce, prefetchProducts]);

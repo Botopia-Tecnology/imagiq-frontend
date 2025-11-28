@@ -110,6 +110,7 @@ export interface ProductCardProps {
   apiProduct?: ProductApiData;
   acceptsTradeIn?: boolean;
   desDetallada?: string; // Indica si el producto acepta retoma (basado en indRetoma)
+  isInChat?: boolean; // Indica si está siendo renderizado en el chat (para ajustar estilos)
 }
 
 export default function ProductCard({
@@ -129,6 +130,7 @@ export default function ProductCard({
   puntos_q = 4, // Valor fijo por defecto
   segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
+  isInChat = false, // Por defecto NO está en chat
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -401,6 +403,7 @@ export default function ProductCard({
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -837,6 +840,64 @@ export default function ProductCard({
               >
                 Más información
               </button>
+            </div>
+
+            {/* Mensaje de cuotas sin interés */}
+            <div className="mt-3 flex flex-col items-center gap-1">
+              <p className={cn(
+                "text-blue-600 font-bold whitespace-nowrap",
+                isInChat
+                  ? "text-[9px]" // Mucho más pequeño en chat
+                  : "text-[9px] sm:text-[10px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
+              )}>
+                Compra con 0% de interés con bancos aliados{" "}
+                <span className={cn(
+                  "text-gray-500",
+                  isInChat
+                    ? "text-[6px]" // Mucho más pequeño en chat
+                    : "text-[7px] sm:text-[8px] md:text-[9px]" // Tamaño normal en catálogo
+                )}>
+                  Aplican T&C
+                </span>
+              </p>
+              <div className="flex items-center gap-6 justify-center">
+                <Image
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                  alt="Cuotas"
+                  width={20}
+                  height={20}
+                  className={cn(
+                    "object-contain",
+                    isInChat
+                      ? "w-8 h-8" // Más pequeño en chat
+                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
+                  )}
+                />
+                <Image
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                  alt="Pago"
+                  width={20}
+                  height={20}
+                  className={cn(
+                    "object-contain",
+                    isInChat
+                      ? "w-8 h-8" // Más pequeño en chat
+                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
+                  )}
+                />
+                <Image
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                  alt="Seguridad"
+                  width={20}
+                  height={20}
+                  className={cn(
+                    "object-contain",
+                    isInChat
+                      ? "w-8 h-8" // Más pequeño en chat
+                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
+                  )}
+                />
+              </div>
             </div>
           </div>
         </div>

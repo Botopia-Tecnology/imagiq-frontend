@@ -544,6 +544,7 @@ export interface BundleProduct {
   stockTotal?: number;
   bundle_price: number;
   bundle_discount: number;
+  categoria?: string;
 }
 
 // Opción individual dentro de un bundle (variante)
@@ -773,4 +774,25 @@ export interface CandidateStoresResponse {
   stores: Record<string, CandidateStore[]>;
   canPickUp: boolean;
   default_direction: DefaultDirection;
+}
+
+/**
+ * Helper function: Fetch product by codigoMarket
+ * Used by ChatProductCard to load full product data
+ */
+export async function fetchProductByCodigoMarket(codigoMarketBase: string): Promise<ProductOrBundleApiData | null> {
+  try {
+    const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
+
+    if (!response.success || !response.data?.products || response.data.products.length === 0) {
+      console.warn(`[fetchProductByCodigoMarket] No product found for: ${codigoMarketBase}`);
+      return null;
+    }
+
+    // Return first product (can be ProductApiData or BundleApiData)
+    return response.data.products[0];
+  } catch (error) {
+    console.error(`[fetchProductByCodigoMarket] Error fetching product:`, error);
+    return null;
+  }
 }

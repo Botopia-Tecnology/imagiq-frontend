@@ -24,9 +24,5 @@ export default async function DynamicPage({ params }: PageProps) {
     notFound();
   }
 
-  console.log(`✅ Página cargada: ${pageData.page.title}`);
-  console.log(`📦 Banners: ${pageData.banners.length}`);
-  console.log(`❓ FAQs: ${pageData.faqs.length}`);
-
   return <MultimediaPageClient pageData={pageData} />;
 }

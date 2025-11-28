@@ -489,6 +489,7 @@ export default function BundleCard({
           ram: product.memoriaram,
           stock: product.stockTotal,
           modelo: product.modelo,
+          categoria: product.categoria || categoria || "",
         }));
 
         const bundleInfo: BundleInfo = {
@@ -520,7 +521,8 @@ export default function BundleCard({
           modelo: selectedOption.modelo,
           colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
           stock: selectedOption.stockTotal,
-          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined
+          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined,
+          categoria: categoria || "",
         }));
 
         const bundleInfo: BundleInfo = {
@@ -769,6 +771,39 @@ export default function BundleCard({
             >
               Más información
             </button>
+          </div>
+
+          {/* Mensaje de cuotas sin interés */}
+          <div className="mt-3 flex flex-col items-center gap-1">
+            <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-blue-600 font-bold whitespace-nowrap">
+              Compra con 0% de interés con bancos aliados{" "}
+              <span className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500">
+                Aplican T&C
+              </span>
+            </p>
+            <div className="flex items-center gap-6 justify-center">
+              <Image 
+                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                alt="Cuotas"
+                width={20}
+                height={20}
+                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+              />
+              <Image 
+                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                alt="Pago"
+                width={20}
+                height={20}
+                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+              />
+              <Image 
+                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                alt="Seguridad"
+                width={20}
+                height={20}
+                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
+              />
+            </div>
           </div>
         </div>
       </div>

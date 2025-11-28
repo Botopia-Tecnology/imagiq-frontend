@@ -11,6 +11,7 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Plus, Loader } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -902,35 +903,47 @@ export default function BundleCard({
           </div>
 
           {/* Mensaje de cuotas sin interés */}
-          <div className="mt-3 flex flex-col items-center gap-1">
-            <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-blue-600 font-bold whitespace-nowrap">
+          <div className="mt-2 sm:mt-3 flex flex-col items-center gap-0.5 sm:gap-1 px-1">
+            <p className="text-[8px] sm:text-[9px] md:text-xs lg:text-sm text-blue-600 font-bold text-center leading-tight">
               Compra con 0% de interés con bancos aliados{" "}
-              <span className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500">
+              <span className="text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] text-gray-500 block sm:inline">
                 Aplican T&C
               </span>
             </p>
-            <div className="flex items-center gap-6 justify-center">
-              <Image 
-                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
-                alt="Cuotas"
-                width={20}
-                height={20}
-                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
-              />
-              <Image 
-                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
-                alt="Pago"
-                width={20}
-                height={20}
-                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
-              />
-              <Image 
-                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
-                alt="Seguridad"
-                width={20}
-                height={20}
-                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
-              />
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
+              <Link href="/soporte/tyc-bancolombia">
+                <div className="cursor-pointer hover:opacity-80 transition-opacity" title="Ver términos y condiciones">
+                  <Image 
+                    src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                    alt="Cuotas - Términos y condiciones"
+                    width={20}
+                    height={20}
+                    className="object-contain flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                  />
+                </div>
+              </Link>
+              <Link href="/soporte/tyc-bancolombia">
+                <div className="cursor-pointer hover:opacity-80 transition-opacity" title="Ver términos y condiciones">
+                  <Image 
+                    src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                    alt="Pago - Términos y condiciones"
+                    width={20}
+                    height={20}
+                    className="object-contain flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                  />
+                </div>
+              </Link>
+              <Link href="/soporte/tyc-bancolombia">
+                <div className="cursor-pointer hover:opacity-80 transition-opacity" title="Ver términos y condiciones">
+                  <Image 
+                    src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                    alt="Seguridad - Términos y condiciones"
+                    width={20}
+                    height={20}
+                    className="object-contain flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                  />
+                </div>
+              </Link>
             </div>
           </div>
         </div>

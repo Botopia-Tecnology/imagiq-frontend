@@ -33,6 +33,7 @@ interface UseTradeInHandlersProps {
     damageFreeAnswer?: boolean | null;
     goodConditionAnswer?: boolean | null;
   };
+  productSku?: string | null; // SKU del producto para asociar el trade-in
 }
 
 export function useTradeInHandlers({
@@ -53,6 +54,7 @@ export function useTradeInHandlers({
   selectedCategory,
   deviceState,
   flowState,
+  productSku,
 }: UseTradeInHandlersProps) {
   const handleClose = useCallback(() => {
     resetForm();
@@ -77,13 +79,6 @@ export function useTradeInHandlers({
     // Completó el proceso exitosamente
     // Construir el nombre del dispositivo
     const deviceName = `${selectedBrand?.name || ''} ${selectedModel?.name || ''} ${selectedCapacity?.name || ''}`.trim();
-
-    // IMPORTANTE: Guardar en localStorage cuando se completa el proceso
-    // Esto funciona tanto para usuarios logueados como NO logueados
-    // Primero limpiar cualquier trade-in anterior
-    if (globalThis.window !== undefined) {
-      localStorage.removeItem("imagiq_trade_in");
-    }
 
     // Construir el objeto de detalles desde el flowState
     const detalles: Record<string, boolean> = {};
@@ -111,8 +106,32 @@ export function useTradeInHandlers({
           completed: true,
           detalles: Object.keys(detalles).length > 0 ? detalles : undefined,
         };
-        localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
-        console.log("✅ Trade-in guardado en localStorage (funciona para usuarios logueados y NO logueados):", tradeInData);
+
+        // Si hay un productSku, guardar por SKU (nuevo formato)
+        if (productSku) {
+          const raw = localStorage.getItem("imagiq_trade_in");
+          let tradeIns: Record<string, typeof tradeInData> = {};
+
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw);
+              // Si es formato nuevo (objeto con SKUs), usarlo
+              if (typeof parsed === 'object' && !parsed.deviceName) {
+                tradeIns = parsed;
+              }
+            } catch (error) {
+              console.error("Error parsing trade-ins:", error);
+            }
+          }
+
+          tradeIns[productSku] = tradeInData;
+          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeIns));
+          console.log(`✅ Trade-in guardado para SKU ${productSku}:`, tradeInData);
+        } else {
+          // Formato antiguo (sin SKU) - para compatibilidad
+          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+          console.log("✅ Trade-in guardado en localStorage (formato antiguo):", tradeInData);
+        }
       } catch (error) {
         console.error("❌ Error al guardar trade-in en localStorage:", error);
       }

@@ -86,7 +86,7 @@ export function DesktopView({ onItemClick }: Props) {
                     key={oferta.uuid}
                     href={href}
                     onClick={() =>
-                      onItemClick(oferta.producto.nombreMarket || oferta.nombre, href)
+                      onItemClick(oferta.nombre, href)
                     }
                     className="flex flex-col items-center text-center group"
                     style={{ width: `${SIZES.product.container}px` }}
@@ -101,7 +101,7 @@ export function DesktopView({ onItemClick }: Props) {
                       {oferta.producto.imagen ? (
                         <Image
                           src={oferta.producto.imagen}
-                          alt={oferta.producto.nombreMarket || oferta.nombre}
+                          alt={oferta.nombre}
                           fill
                           className="object-contain"
                         />
@@ -114,7 +114,7 @@ export function DesktopView({ onItemClick }: Props) {
                       )}
                     </div>
                     <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                      {oferta.producto.nombreMarket || oferta.nombre}
+                      {oferta.nombre}
                     </span>
                   </Link>
                 );

@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { Minus, Plus, Trash2 } from "lucide-react";
 import { useShippingOrigin } from "@/hooks/useShippingOrigin";
+import { TradeInCompletedSummary } from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego";
+import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export interface ProductCardProps {
   nombre: string;
@@ -32,6 +35,16 @@ export interface ProductCardProps {
   isLoadingIndRetoma?: boolean;
   /** Indica si el producto aplica para retoma (1 = aplica, 0 = no aplica) */
   indRetoma?: number;
+  /** Callback para abrir el modal de Trade-In */
+  onOpenTradeInModal?: () => void;
+  /** Callback para remover el Trade-In */
+  onRemoveTradeIn?: () => void;
+  /** Datos del Trade-In completado (si existe) */
+  tradeInData?: {
+    deviceName: string;
+    value: number;
+    completed: boolean;
+  } | null;
 }
 
 // Funciones puras para cálculos (SRP)
@@ -81,7 +94,40 @@ const ProductCard: React.FC<ProductCardProps> = ({
   indRetoma,
   onQuantityChange,
   onRemove,
+  onOpenTradeInModal,
+  onRemoveTradeIn,
+  tradeInData,
 }) => {
+  const [isTradeInModalOpen, setIsTradeInModalOpen] = useState(false);
+
+  // Verificar si el usuario está logueado
+  const user = safeGetLocalStorage<{
+    id?: string;
+    user_id?: string;
+    email?: string;
+  }>("imagiq_user", {});
+  const isUserLoggedIn = !!(user?.id || user?.user_id || user?.email);
+
+  // Verificar si canPickUp es false para mostrar mensaje informativo
+  const showCanPickUpMessage = isUserLoggedIn && canPickUp === false;
+
+  // Determinar si debe mostrar el banner de Trade-In para este producto
+  // Si indRetoma es 1, SIEMPRE se debe mostrar (ya sea la guía o el resumen completado)
+  const shouldShowTradeInBanner = indRetoma === 1;
+
+  const handleOpenTradeInModal = () => {
+    if (onOpenTradeInModal) {
+      onOpenTradeInModal();
+    } else {
+      setIsTradeInModalOpen(true);
+    }
+  };
+
+  const handleRemoveTradeIn = () => {
+    if (onRemoveTradeIn) {
+      onRemoveTradeIn();
+    }
+  };
   const limiteMax = calcularLimiteMaximo(stock);
   const disponible = calcularDisponible(stock, cantidad);
   const descuento = calcularDescuento(precioOriginal, precio);
@@ -98,169 +144,46 @@ const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <>
       {/* Mobile: Layout horizontal compacto estilo Mercado Libre */}
-      <div className="md:hidden bg-white border border-gray-200 rounded-lg p-4">
-        <div className="flex gap-3">
-          {/* Imagen */}
-          <div className="flex flex-col items-center gap-1">
-            <div className="w-24 h-24 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
-              <Image
-                src={imagen}
-                alt={nombre}
-                fill
-                className="object-contain p-2"
-                sizes="96px"
-              />
-            </div>
-          </div>
-
-          {/* Contenido derecha */}
-          <div className="flex-1 min-w-0 flex flex-col">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                {/* Nombre truncado */}
-                <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1">
-                  {nombre} - {colorName && <span>{colorName}</span>}
-                </h3>
+      <div className="md:hidden">
+        <div className="bg-white border border-gray-200 rounded-lg p-4">
+          <div className="flex gap-3">
+            {/* Imagen */}
+            <div className="flex flex-col items-center gap-1">
+              <div className="w-24 h-24 relative flex-shrink-0 bg-gray-100 rounded-xl p-2">
+                <Image
+                  src={imagen}
+                  alt={nombre}
+                  fill
+                  className="object-contain p-2"
+                  sizes="96px"
+                />
               </div>
-              <button
-                onClick={onRemove}
-                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors -mr-2 -mt-2"
-                title="Eliminar producto"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
             </div>
 
-            {/* Detalles de variante */}
-            {(color || capacityValida || ramValida) && (
-              <div className="text-xs text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
-                {color && (
-                  <div
-                    className="w-4 h-4 rounded-full ring-1 ring-gray-300"
-                    style={{ backgroundColor: color }}
-                    title={colorName || color}
-                  />
-                )}
-                {color && (capacityValida || ramValida) && <span>•</span>}
-                {capacityValida && <span>{capacity}</span>}
-                {capacityValida && ramValida && <span>•</span>}
-                {ramValida && <span>{ram}</span>}
-              </div>
-            )}
-            {mostrarOrigen && (
-              <div className="mt-1">
-                {isLoadingShippingInfo ? (
-                  <>
-                    <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-1"></div>
-                    <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-sm text-gray-500">
-                      En {shippingCity}
-                    </p>
-                    {shippingStore && (
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {shippingStore}
-                      </p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* Cantidad */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
-                <button
-                  onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
-                  className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                  disabled={cantidad <= 1}
-                  aria-label="Disminuir cantidad"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-                <span className="w-8 text-center text-sm font-semibold">
-                  {cantidad}
-                </span>
-                <button
-                  onClick={() =>
-                    onQuantityChange(Math.min(limiteMax, cantidad + 1))
-                  }
-                  className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                  disabled={cantidad >= limiteMax}
-                  aria-label="Aumentar cantidad"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-              <span className="text-xs text-gray-500">
-                Disponibles: {disponible}
-              </span>
-              {isLoadingCanPickUp && (
-                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
-              )}
-              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
-                <span className="text-xs text-gray-400">
-                  canPickUp: {canPickUp ? "true" : "false"}
-                </span>
-              )}
-              {isLoadingIndRetoma && (
-                <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mt-1" />
-              )}
-              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
-                <span className="text-xs text-gray-400">
-                  retoma: {indRetoma}
-                </span>
-              )}
-            </div>
-
-            {/* Precios */}
-            <div className="flex flex-col">
-              {descuento && (
-                <div className="flex items-center gap-1 mb-0.5">
-                  <span className="text-xs font-semibold text-green-600">
-                    -{descuento}%
-                  </span>
-                  <span className="text-xs text-gray-400 line-through">
-                    ${precioOriginal?.toLocaleString()}
-                  </span>
+            {/* Contenido derecha */}
+            <div className="flex-1 min-w-0 flex flex-col">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1 min-w-0">
+                  {/* Nombre truncado */}
+                  <h3 className="text-xs font-bold text-gray-900 line-clamp-2 mb-1">
+                    {nombre} - {colorName && <span>{colorName}</span>}
+                  </h3>
                 </div>
-              )}
-              <span className="text-lg font-bold text-gray-900">
-                ${precio.toLocaleString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
+                <button
+                  onClick={onRemove}
+                  className="p-1.5 text-gray-400 hover:text-red-500 transition-colors -mr-2 -mt-2"
+                  title="Eliminar producto"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
 
-      {/* Desktop: Layout horizontal */}
-      <div className="hidden md:flex bg-white p-4 gap-4 items-start">
-        {/* Imagen con botón Eliminar dentro */}
-        <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-100 rounded-xl">
-          <Image
-            src={imagen}
-            alt={nombre}
-            fill
-            className="object-contain p-2"
-            sizes="112px"
-          />
-        </div>
-
-        {/* Detalles - 80% */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="mb-2 flex-1 min-w-0">
-              <h3 className="text-sm font-bold text-gray-900 line-clamp-2 mb-1">
-                {nombre} - {colorName && <span>{colorName}</span>}
-              </h3>
               {/* Detalles de variante */}
               {(color || capacityValida || ramValida) && (
-                <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
+                <div className="text-xs text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
                   {color && (
                     <div
-                      className="w-5 h-5 rounded-full ring-1 ring-gray-300"
+                      className="w-4 h-4 rounded-full ring-1 ring-gray-300"
                       style={{ backgroundColor: color }}
                       title={colorName || color}
                     />
@@ -271,7 +194,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   {ramValida && <span>{ram}</span>}
                 </div>
               )}
-
               {mostrarOrigen && (
                 <div className="mt-1">
                   {isLoadingShippingInfo ? (
@@ -293,82 +215,248 @@ const ProductCard: React.FC<ProductCardProps> = ({
                   )}
                 </div>
               )}
-            </div>
-            <button
-              onClick={onRemove}
-              className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-              title="Eliminar producto"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
 
-          {/* Precios */}
-          <div className="flex flex-col gap-1 mt-2">
-            <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="text-sm font-semibold text-gray-900">
-                ${precio.toLocaleString()}
-              </span>
-              {descuento && (
-                <span className="text-xs text-gray-400 line-through">
-                  ${precioOriginal?.toLocaleString()}
+              {/* Cantidad */}
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex items-center gap-1 border border-gray-300 rounded-lg">
+                  <button
+                    onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
+                    className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                    disabled={cantidad <= 1}
+                    aria-label="Disminuir cantidad"
+                  >
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="w-8 text-center text-sm font-semibold">
+                    {cantidad}
+                  </span>
+                  <button
+                    onClick={() =>
+                      onQuantityChange(Math.min(limiteMax, cantidad + 1))
+                    }
+                    className="p-1.5 hover:bg-gray-100 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                    disabled={cantidad >= limiteMax}
+                    aria-label="Aumentar cantidad"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <span className="text-xs text-gray-500">
+                  Disponibles: {disponible}
                 </span>
-              )}
-              {descuento && precioOriginal && (
-                <span className="text-xs text-sky-600 font-medium">
-                  Ahorras ${(precioOriginal - precio).toLocaleString()}
+                {isLoadingCanPickUp && (
+                  <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
+                )}
+                {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
+                  <span className="text-xs text-gray-400">
+                    canPickUp: {canPickUp ? "true" : "false"}
+                  </span>
+                )}
+                {isLoadingIndRetoma && (
+                  <div className="h-3 w-16 bg-gray-200 animate-pulse rounded mt-1" />
+                )}
+                {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
+                  <span className="text-xs text-gray-400">
+                    retoma: {indRetoma}
+                  </span>
+                )}
+              </div>
+
+              {/* Precios */}
+              <div className="flex flex-col">
+                {descuento && (
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <span className="text-xs font-semibold text-green-600">
+                      -{descuento}%
+                    </span>
+                    <span className="text-xs text-gray-400 line-through">
+                      ${precioOriginal?.toLocaleString()}
+                    </span>
+                  </div>
+                )}
+                <span className="text-lg font-bold text-gray-900">
+                  ${precio.toLocaleString()}
                 </span>
-              )}
+              </div>
             </div>
-          </div>
-
-          {/* Selector de cantidad */}
-          <div className="flex items-center gap-2 mt-3">
-            <span className="text-xs text-gray-500">Cantidad:</span>
-            <div className="flex items-center border border-gray-200 rounded bg-white">
-              <button
-                onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
-                className="p-1.5 hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                disabled={cantidad <= 1}
-                aria-label="Disminuir cantidad"
-              >
-                <Minus className="w-3 h-3 text-gray-600" />
-              </button>
-              <span className="w-8 text-center text-sm font-medium text-gray-900">
-                {cantidad}
-              </span>
-              <button
-                onClick={() =>
-                  onQuantityChange(Math.min(limiteMax, cantidad + 1))
-                }
-                className="p-1.5 hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
-                disabled={cantidad >= limiteMax}
-                aria-label="Aumentar cantidad"
-              >
-                <Plus className="w-3 h-3 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Debug info */}
-            {isLoadingCanPickUp && (
-              <div className="h-3 w-20 bg-gray-200 animate-pulse rounded ml-2" />
-            )}
-            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
-              <span className="text-xs text-gray-400 ml-2">
-                canPickUp: {canPickUp ? "true" : "false"}
-              </span>
-            )}
-            {isLoadingIndRetoma && (
-              <div className="h-3 w-16 bg-gray-200 animate-pulse rounded ml-2" />
-            )}
-            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
-              <span className="text-xs text-gray-400 ml-2">
-                retoma: {indRetoma}
-              </span>
-            )}
           </div>
         </div>
+
+        {/* Banner de Trade-In debajo del producto (solo si indRetoma === 1) */}
+        {shouldShowTradeInBanner && (
+          <div className="mt-3 px-4">
+            <TradeInCompletedSummary
+              deviceName={tradeInData?.deviceName || nombre}
+              tradeInValue={tradeInData?.value || 0}
+              onEdit={tradeInData?.completed ? handleRemoveTradeIn : handleOpenTradeInModal}
+              isGuide={!tradeInData?.completed}
+              shippingCity={shippingCity}
+              showCanPickUpMessage={showCanPickUpMessage}
+            />
+          </div>
+        )}
       </div>
+
+      {/* Desktop: Layout horizontal */}
+      <div className="hidden md:block">
+        <div className="flex bg-white p-4 gap-4 items-start">
+          {/* Imagen con botón Eliminar dentro */}
+          <div className="relative w-20 h-20 md:w-24 md:h-24 flex-shrink-0 bg-gray-100 rounded-xl">
+            <Image
+              src={imagen}
+              alt={nombre}
+              fill
+              className="object-contain p-2"
+              sizes="112px"
+            />
+          </div>
+
+          {/* Detalles - 80% */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="mb-2 flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-gray-900 line-clamp-2 mb-1">
+                  {nombre} - {colorName && <span>{colorName}</span>}
+                </h3>
+                {/* Detalles de variante */}
+                {(color || capacityValida || ramValida) && (
+                  <div className="text-sm text-gray-600 mb-1 flex flex-wrap gap-1 items-center">
+                    {color && (
+                      <div
+                        className="w-5 h-5 rounded-full ring-1 ring-gray-300"
+                        style={{ backgroundColor: color }}
+                        title={colorName || color}
+                      />
+                    )}
+                    {color && (capacityValida || ramValida) && <span>•</span>}
+                    {capacityValida && <span>{capacity}</span>}
+                    {capacityValida && ramValida && <span>•</span>}
+                    {ramValida && <span>{ram}</span>}
+                  </div>
+                )}
+
+                {mostrarOrigen && (
+                  <div className="mt-1">
+                    {isLoadingShippingInfo ? (
+                      <>
+                        <div className="h-4 bg-gray-200 rounded animate-pulse w-32 mb-1"></div>
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-40"></div>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm text-gray-500">
+                          En {shippingCity}
+                        </p>
+                        {shippingStore && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {shippingStore}
+                          </p>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={onRemove}
+                className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                title="Eliminar producto"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Precios */}
+            <div className="flex flex-col gap-1 mt-2">
+              <div className="flex items-baseline gap-2 flex-wrap">
+                <span className="text-sm font-semibold text-gray-900">
+                  ${precio.toLocaleString()}
+                </span>
+                {descuento && (
+                  <span className="text-xs text-gray-400 line-through">
+                    ${precioOriginal?.toLocaleString()}
+                  </span>
+                )}
+                {descuento && precioOriginal && (
+                  <span className="text-xs text-sky-600 font-medium">
+                    Ahorras ${(precioOriginal - precio).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Selector de cantidad */}
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-xs text-gray-500">Cantidad:</span>
+              <div className="flex items-center border border-gray-200 rounded bg-white">
+                <button
+                  onClick={() => onQuantityChange(Math.max(1, cantidad - 1))}
+                  className="p-1.5 hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={cantidad <= 1}
+                  aria-label="Disminuir cantidad"
+                >
+                  <Minus className="w-3 h-3 text-gray-600" />
+                </button>
+                <span className="w-8 text-center text-sm font-medium text-gray-900">
+                  {cantidad}
+                </span>
+                <button
+                  onClick={() =>
+                    onQuantityChange(Math.min(limiteMax, cantidad + 1))
+                  }
+                  className="p-1.5 hover:bg-gray-50 transition disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed"
+                  disabled={cantidad >= limiteMax}
+                  aria-label="Aumentar cantidad"
+                >
+                  <Plus className="w-3 h-3 text-gray-600" />
+                </button>
+              </div>
+
+              {/* Debug info */}
+              {isLoadingCanPickUp && (
+                <div className="h-3 w-20 bg-gray-200 animate-pulse rounded ml-2" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && canPickUp !== undefined && !isLoadingCanPickUp && (
+                <span className="text-xs text-gray-400 ml-2">
+                  canPickUp: {canPickUp ? "true" : "false"}
+                </span>
+              )}
+              {isLoadingIndRetoma && (
+                <div className="h-3 w-16 bg-gray-200 animate-pulse rounded ml-2" />
+              )}
+              {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && indRetoma !== undefined && !isLoadingIndRetoma && (
+                <span className="text-xs text-gray-400 ml-2">
+                  retoma: {indRetoma}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Banner de Trade-In debajo del producto (solo si indRetoma === 1) */}
+        {shouldShowTradeInBanner && (
+          <div className="px-4 pb-4">
+            <TradeInCompletedSummary
+              deviceName={tradeInData?.deviceName || nombre}
+              tradeInValue={tradeInData?.value || 0}
+              onEdit={tradeInData?.completed ? handleRemoveTradeIn : handleOpenTradeInModal}
+              isGuide={!tradeInData?.completed}
+              shippingCity={shippingCity}
+              showCanPickUpMessage={showCanPickUpMessage}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Trade-In */}
+      {isTradeInModalOpen && (
+        <TradeInModal
+          isOpen={isTradeInModalOpen}
+          onClose={() => setIsTradeInModalOpen(false)}
+          onContinue={() => setIsTradeInModalOpen(false)}
+          onCancelWithoutCompletion={() => setIsTradeInModalOpen(false)}
+        />
+      )}
     </>
   );
 };

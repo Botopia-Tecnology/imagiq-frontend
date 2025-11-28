@@ -27,6 +27,7 @@ export interface ProductVariant {
   urlRender3D?: string;
   desDetallada?: string;
   indcerointeres: number;
+  indRetoma: number; // Indicador de retoma (0 o 1)
 }
 
 export interface SelectionState {
@@ -128,6 +129,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         urlRender3D: apiProduct.urlRender3D?.[i],
         desDetallada: apiProduct.desDetallada?.[i] || '',
         indcerointeres: apiProduct.indcerointeres?.[i] ?? 0,
+        indRetoma: apiProduct.indRetoma?.[i] ?? 0,
       });
     }
     

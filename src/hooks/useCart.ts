@@ -18,6 +18,8 @@ export interface BundleInfo {
   bundleDiscount: number;
   /** Fecha de expiración del bundle */
   fechaFinal: Date;
+  /** Indica si el bundle aplica para entrega y estreno (1 = aplica, 0 = no aplica) */
+  ind_entre_estre?: number;
 }
 
 export interface CartProduct {
@@ -197,6 +199,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
           bundlePrice: Number(bi.bundlePrice) || 0,
           bundleDiscount: Number(bi.bundleDiscount) || 0,
           fechaFinal: new Date(bi.fechaFinal as string | number | Date),
+          ind_entre_estre: typeof bi.ind_entre_estre === "number" ? bi.ind_entre_estre : undefined,
         };
       }
     }
@@ -608,6 +611,27 @@ export function useCart(): UseCartReturn {
 
       const productName = productToRemove.name;
 
+      // ✅ Eliminar trade-in del cache si existe para este SKU
+      try {
+        const stored = localStorage.getItem("imagiq_trade_in");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') {
+            const newStored = { ...parsed };
+            delete newStored[productId];
+            if (Object.keys(newStored).length === 0) {
+              localStorage.removeItem("imagiq_trade_in");
+            } else {
+              localStorage.setItem("imagiq_trade_in", JSON.stringify(newStored));
+            }
+            // Disparar evento para que Step1 actualice el estado
+            window.dispatchEvent(new CustomEvent("trade-in-removed", { detail: { sku: productId } }));
+          }
+        }
+      } catch (e) {
+        console.error("Error removing trade-in from storage", e);
+      }
+
       // Actualizar productos localmente
       const newProducts = products.filter((p) => p.sku !== productId);
 
@@ -978,6 +1002,34 @@ export function useCart(): UseCartReturn {
               return p;
             });
 
+          // ✅ Verificar si aún quedan productos con este productSku del bundle
+          const remainingBundleProducts = newProducts.filter(
+            (p) => p.bundleInfo?.productSku === productSku
+          );
+
+          // Si no quedan productos con este productSku, eliminar el trade-in asociado
+          if (remainingBundleProducts.length === 0) {
+            try {
+              const stored = localStorage.getItem("imagiq_trade_in");
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed && typeof parsed === 'object') {
+                  const newStored = { ...parsed };
+                  delete newStored[productSku];
+                  if (Object.keys(newStored).length === 0) {
+                    localStorage.removeItem("imagiq_trade_in");
+                  } else {
+                    localStorage.setItem("imagiq_trade_in", JSON.stringify(newStored));
+                  }
+                  // Disparar evento para que Step1 actualice el estado
+                  window.dispatchEvent(new CustomEvent("trade-in-removed", { detail: { sku: productSku } }));
+                }
+              }
+            } catch (e) {
+              console.error("Error removing trade-in from storage", e);
+            }
+          }
+
           toast.warning("Descuento de bundle perdido", {
             description:
               "Al eliminar un producto del bundle, los demás productos vuelven a su precio original.",
@@ -992,6 +1044,27 @@ export function useCart(): UseCartReturn {
                 p.bundleInfo?.productSku === productSku
               )
           );
+
+          // ✅ Eliminar el trade-in asociado al productSku del bundle
+          try {
+            const stored = localStorage.getItem("imagiq_trade_in");
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (parsed && typeof parsed === 'object') {
+                const newStored = { ...parsed };
+                delete newStored[productSku];
+                if (Object.keys(newStored).length === 0) {
+                  localStorage.removeItem("imagiq_trade_in");
+                } else {
+                  localStorage.setItem("imagiq_trade_in", JSON.stringify(newStored));
+                }
+                // Disparar evento para que Step1 actualice el estado
+                window.dispatchEvent(new CustomEvent("trade-in-removed", { detail: { sku: productSku } }));
+              }
+            }
+          } catch (e) {
+            console.error("Error removing trade-in from storage", e);
+          }
 
           toast.info("Bundle eliminado del carrito", {
             duration: 2500,

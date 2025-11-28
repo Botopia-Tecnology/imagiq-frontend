@@ -773,12 +773,12 @@ export default function Step7({ onBack }: Step7Props) {
 
         if (event.data.success && orderId) {
           console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
-          toast.success("Autenticación 3DS exitosa. Verificando pago...");
+          // toast.success("Autenticación 3DS exitosa. Verificando pago...");
           // Redirigir a página de verificación
           router.push(`/verify-purchase/${orderId}`);
         } else if (!orderId) {
           console.error("❌ [Step7] No se encontró orderId en localStorage");
-          toast.error("Error: No se pudo verificar el pago");
+          // toast.error("Error: No se pudo verificar el pago");
           setIsProcessing(false);
         } else if (event.data.success === false) {
           console.error("❌ [Step7] 3DS rechazado explícitamente");

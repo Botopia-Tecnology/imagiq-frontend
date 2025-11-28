@@ -11,7 +11,9 @@
 
 import { useState, useMemo } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Plus, Loader } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
@@ -42,7 +44,10 @@ function BundleVariantSelector({
 }) {
   // Extraer colores únicos con sus índices
   const uniqueColors = useMemo(() => {
-    const colorMap = new Map<string, { hex: string; name: string; indices: number[] }>();
+    const colorMap = new Map<
+      string,
+      { hex: string; name: string; indices: number[] }
+    >();
     opciones.forEach((opcion, index) => {
       if (opcion.colorProductSku) {
         const existing = colorMap.get(opcion.colorProductSku);
@@ -51,7 +56,7 @@ function BundleVariantSelector({
         } else {
           colorMap.set(opcion.colorProductSku, {
             hex: opcion.colorProductSku,
-            name: opcion.nombreColorProductSku || 'Color',
+            name: opcion.nombreColorProductSku || "Color",
             indices: [index],
           });
         }
@@ -89,13 +94,13 @@ function BundleVariantSelector({
 
   // Handler para seleccionar color - busca la primera opción con ese color y la capacidad actual (si aplica)
   const handleColorSelect = (colorHex: string) => {
-    const colorData = uniqueColors.find(c => c.hex === colorHex);
+    const colorData = uniqueColors.find((c) => c.hex === colorHex);
     if (!colorData) return;
 
     // Si hay capacidad seleccionada, buscar opción con ese color Y esa capacidad
     if (selectedCapacity) {
-      const matchIndex = colorData.indices.find(idx =>
-        opciones[idx].capacidadProductSku === selectedCapacity
+      const matchIndex = colorData.indices.find(
+        (idx) => opciones[idx].capacidadProductSku === selectedCapacity
       );
       if (matchIndex !== undefined) {
         onSelectOption(matchIndex);
@@ -108,13 +113,13 @@ function BundleVariantSelector({
 
   // Handler para seleccionar capacidad - busca la primera opción con esa capacidad y el color actual (si aplica)
   const handleCapacitySelect = (capacity: string) => {
-    const capacityData = uniqueCapacities.find(c => c.value === capacity);
+    const capacityData = uniqueCapacities.find((c) => c.value === capacity);
     if (!capacityData) return;
 
     // Si hay color seleccionado, buscar opción con esa capacidad Y ese color
     if (selectedColor) {
-      const matchIndex = capacityData.indices.find(idx =>
-        opciones[idx].colorProductSku === selectedColor
+      const matchIndex = capacityData.indices.find(
+        (idx) => opciones[idx].colorProductSku === selectedColor
       );
       if (matchIndex !== undefined) {
         onSelectOption(matchIndex);
@@ -160,11 +165,13 @@ function BundleVariantSelector({
   return (
     <div className="px-3 space-y-1.5">
       {/* Label del color seleccionado - igual que ProductCard */}
-      {selectedColorName && shouldRenderValue(selectedColorName) && uniqueColors.length > 0 && (
-        <p className="text-xs text-gray-600 font-medium">
-          {`Color: ${selectedColorName}`}
-        </p>
-      )}
+      {selectedColorName &&
+        shouldRenderValue(selectedColorName) &&
+        uniqueColors.length > 0 && (
+          <p className="text-xs text-gray-600 font-medium">
+            {`Color: ${selectedColorName}`}
+          </p>
+        )}
 
       {/* Selector de colores - mismo estilo que ProductCard */}
       {uniqueColors.length > 1 && (
@@ -233,21 +240,21 @@ function BundleVariantSelector({
  */
 function BundlePreviewImages({
   images,
-  bundleName
+  bundleName,
 }: {
   images: string[];
   bundleName: string;
 }) {
   // Filtrar imágenes válidas y tomar máximo 4
   const validImages = images
-    .filter(url => url && typeof url === 'string' && url.trim() !== '')
+    .filter((url) => url && typeof url === "string" && url.trim() !== "")
     .slice(0, 4);
 
   const imageCount = validImages.length;
 
   // Aplicar transformaciones de Cloudinary
   const transformedImages = useMemo(() => {
-    return validImages.map(img => getCloudinaryUrl(img, "catalog"));
+    return validImages.map((img) => getCloudinaryUrl(img, "catalog"));
   }, [validImages]);
 
   if (imageCount === 0) {
@@ -434,6 +441,8 @@ export default function BundleCard({
   // Las opciones se muestran como números simples (1, 2, 3...)
   // El nombre completo del bundle cambia dinámicamente al seleccionar cada opción
 
+  const router = useRouter();
+
   const handleMoreInfo = () => {
     // TODO: Navegar a página de detalle del bundle (próximamente)
     // Por ahora, solo registrar el evento
@@ -448,6 +457,104 @@ export default function BundleCard({
       menu,
       submenu,
     });
+  };
+
+  const handleEntregoEstreno = async () => {
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
+
+    setIsLoading(true);
+
+    try {
+      if (!selectedOption || skus_bundle.length === 0) {
+        toast.error("No se pudo agregar el bundle", {
+          description: "No hay productos disponibles en este bundle",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Verificar stock antes de agregar al carrito
+      if (isOutOfStock) {
+        toast.error("Producto agotado", {
+          description: "Este bundle no tiene stock disponible",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Track del evento
+      posthogUtils.capture("bundle_entrego_estreno_click", {
+        bundle_id: id,
+        bundle_name: name,
+        product_sku: selectedOption.product_sku,
+        skus_bundle,
+        selected_option_index: selectedOptionIndex,
+        source: "bundle_card",
+      });
+
+      // Agregar el bundle al carrito (usar la misma lógica que handleAddToCart)
+      if (selectedOption.productos && selectedOption.productos.length > 0) {
+        const firstProduct = selectedOption.productos[0];
+
+        const products: Omit<CartProduct, "quantity">[] =
+          selectedOption.productos.map((product, index) => ({
+            id: product.sku,
+            name: product.modelo,
+            image:
+              product.imagePreviewUrl ||
+              previewImages[index] ||
+              "/img/logo_imagiq.png",
+            price: product.product_discount_price,
+            originalPrice: product.product_original_price,
+            sku: product.sku,
+            ean: product.ean || product.sku,
+            color: product.color,
+            colorName: product.nombreColor,
+            capacity: product.capacidad,
+            ram: product.memoriaram,
+            stock: product.stockTotal,
+            modelo: product.modelo,
+            categoria: product.categoria || categoria || "",
+          }));
+
+        const bundleInfo: BundleInfo = {
+          codCampana,
+          productSku: selectedOption.product_sku,
+          skusBundle: skus_bundle,
+          bundlePrice: firstProduct.bundle_price,
+          bundleDiscount: firstProduct.bundle_discount,
+          fechaFinal: new Date(fecha_final),
+          ind_entre_estre: selectedOption.ind_entre_estre,
+        };
+
+        await addBundleToCart(products, bundleInfo);
+      }
+
+      // Marcar que debe abrirse el modal de Trade-In automáticamente para este SKU específico
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem(
+          "open_trade_in_modal_sku",
+          selectedOption.product_sku
+        );
+      }
+
+      // Pequeño delay para asegurar que el localStorage se guarde
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Navegar al carrito
+      router.push("/carrito/step1");
+    } catch (error) {
+      console.error("Error al agregar bundle con entrego y estreno:", error);
+      toast.error("Error al agregar el bundle", {
+        description: "Por favor intenta de nuevo",
+      });
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    }
   };
 
   const handleAddToCart = async () => {
@@ -475,22 +582,26 @@ export default function BundleCard({
         // Usar datos completos del backend que ya vienen en la opción
         const firstProduct = selectedOption.productos[0];
 
-        const products: Omit<CartProduct, "quantity">[] = selectedOption.productos.map((product, index) => ({
-          id: product.sku,
-          name: product.modelo,
-          image: product.imagePreviewUrl || previewImages[index] || "/img/logo_imagiq.png",
-          price: product.product_discount_price,
-          originalPrice: product.product_original_price,
-          sku: product.sku,
-          ean: product.ean || product.sku,
-          color: product.color,
-          colorName: product.nombreColor,
-          capacity: product.capacidad,
-          ram: product.memoriaram,
-          stock: product.stockTotal,
-          modelo: product.modelo,
-          categoria: product.categoria || categoria || "",
-        }));
+        const products: Omit<CartProduct, "quantity">[] =
+          selectedOption.productos.map((product, index) => ({
+            id: product.sku,
+            name: product.modelo,
+            image:
+              product.imagePreviewUrl ||
+              previewImages[index] ||
+              "/img/logo_imagiq.png",
+            price: product.product_discount_price,
+            originalPrice: product.product_original_price,
+            sku: product.sku,
+            ean: product.ean || product.sku,
+            color: product.color,
+            colorName: product.nombreColor,
+            capacity: product.capacidad,
+            ram: product.memoriaram,
+            stock: product.stockTotal,
+            modelo: product.modelo,
+            categoria: product.categoria || categoria || "",
+          }));
 
         const bundleInfo: BundleInfo = {
           codCampana,
@@ -499,6 +610,7 @@ export default function BundleCard({
           bundlePrice: firstProduct.bundle_price,
           bundleDiscount: firstProduct.bundle_discount,
           fechaFinal: new Date(fecha_final),
+          ind_entre_estre: selectedOption.ind_entre_estre,
         };
 
         await addBundleToCart(products, bundleInfo);
@@ -509,36 +621,48 @@ export default function BundleCard({
         });
 
         // Construir productos básicos desde los SKUs disponibles
-        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map((sku, index) => ({
-          id: sku,
-          name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
-          image: previewImages[index] || "/img/logo_imagiq.png",
-          price: 0, // Se calculará proporcionalmente
-          sku,
-          ean: sku,
-          capacity: shouldRenderValue(selectedOption.capacidadProductSku) ? selectedOption.capacidadProductSku : undefined,
-          color: shouldRenderValue(selectedOption.colorProductSku) ? selectedOption.colorProductSku : undefined,
-          modelo: selectedOption.modelo,
-          colorName: shouldRenderValue(selectedOption.nombreColorProductSku) ? selectedOption.nombreColorProductSku : undefined,
-          stock: selectedOption.stockTotal,
-          ram: shouldRenderValue(selectedOption.memoriaRamProductSku) ? selectedOption.memoriaRamProductSku : undefined,
-          categoria: categoria || "",
-        }));
+        const basicProducts: Omit<CartProduct, "quantity">[] = skus_bundle.map(
+          (sku, index) => ({
+            id: sku,
+            name: `${selectedOption.modelo || name} - Producto ${index + 1}`,
+            image: previewImages[index] || "/img/logo_imagiq.png",
+            price: 0, // Se calculará proporcionalmente
+            sku,
+            ean: sku,
+            capacity: shouldRenderValue(selectedOption.capacidadProductSku)
+              ? selectedOption.capacidadProductSku
+              : undefined,
+            color: shouldRenderValue(selectedOption.colorProductSku)
+              ? selectedOption.colorProductSku
+              : undefined,
+            modelo: selectedOption.modelo,
+            colorName: shouldRenderValue(selectedOption.nombreColorProductSku)
+              ? selectedOption.nombreColorProductSku
+              : undefined,
+            stock: selectedOption.stockTotal,
+            ram: shouldRenderValue(selectedOption.memoriaRamProductSku)
+              ? selectedOption.memoriaRamProductSku
+              : undefined,
+            categoria: categoria || "",
+          })
+        );
 
         const bundleInfo: BundleInfo = {
           codCampana,
           productSku: selectedOption.product_sku,
           skusBundle: skus_bundle,
-          bundlePrice: parseFloat(selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"),
-          bundleDiscount: parseFloat(selectedOption.price?.replace(/[^0-9]/g, "") || "0"),
+          bundlePrice: parseFloat(
+            selectedOption.originalPrice?.replace(/[^0-9]/g, "") || "0"
+          ),
+          bundleDiscount: parseFloat(
+            selectedOption.price?.replace(/[^0-9]/g, "") || "0"
+          ),
           fechaFinal: new Date(fecha_final),
+          ind_entre_estre: selectedOption.ind_entre_estre,
         };
 
         await addBundleToCart(basicProducts, bundleInfo);
       }
-
-
-
 
       // Track del evento
       posthogUtils.capture("bundle_add_to_cart_success", {
@@ -572,7 +696,12 @@ export default function BundleCard({
 
   // Obtener el stock de la opción seleccionada
   const selectedOptionStock = useMemo(() => {
-    if (selectedOption?.stockTotal === undefined || selectedOption?.stockTotal === null || selectedOption.stockTotal < 0) return null;
+    if (
+      selectedOption?.stockTotal === undefined ||
+      selectedOption?.stockTotal === null ||
+      selectedOption.stockTotal < 0
+    )
+      return null;
     return selectedOption.stockTotal;
   }, [selectedOption]);
 
@@ -655,11 +784,16 @@ export default function BundleCard({
                 {selectedOptionStock !== null && (
                   <div className="text-xs text-gray-500 font-medium">
                     <span>Stock: </span>
-                    <span className={cn(
-                      "font-semibold",
-                      selectedOptionStock > 5 ? "text-green-600" :
-                        selectedOptionStock > 0 ? "text-orange-600" : "text-red-600"
-                    )}>
+                    <span
+                      className={cn(
+                        "font-semibold",
+                        selectedOptionStock > 5
+                          ? "text-green-600"
+                          : selectedOptionStock > 0
+                          ? "text-orange-600"
+                          : "text-red-600"
+                      )}
+                    >
                       {selectedOptionStock} unidades
                     </span>
                   </div>
@@ -672,19 +806,62 @@ export default function BundleCard({
         {fecha_inicio && fecha_final && (
           <div className="px-3">
             <p className="text-xs font-semibold whitespace-nowrap text-blue-600 leading-tight">
-              Oferta válida hasta: {new Date(fecha_final).toLocaleDateString('es-CO')}
+              Oferta válida hasta:{" "}
+              {new Date(fecha_final).toLocaleDateString("es-CO")}
             </p>
           </div>
         )}
 
-        {/* Selector de variantes del bundle - Color y Capacidad */}
-        {opciones && opciones.length > 1 && (
-          <BundleVariantSelector
-            opciones={opciones}
-            selectedOptionIndex={selectedOptionIndex}
-            onSelectOption={setSelectedOptionIndex}
-          />
-        )}
+        {/* Contenedor para selector de variantes y botón de entrego y estreno */}
+        <div className="px-3 flex gap-2 items-start">
+          {/* Columna izquierda: Selector de variantes */}
+          <div className="flex-1">
+            {opciones && opciones.length > 1 && (
+              <BundleVariantSelector
+                opciones={opciones}
+                selectedOptionIndex={selectedOptionIndex}
+                onSelectOption={setSelectedOptionIndex}
+              />
+            )}
+          </div>
+
+          {/* Columna derecha: Botón de Entrego y Estreno - Mostrar solo si ind_entre_estre === 1 */}
+          {selectedOption?.ind_entre_estre === 1 && (
+            <div className="flex-shrink-0 w-[120px] self-start -mt-4 relative z-10">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleEntregoEstreno();
+                }}
+                disabled={isLoading}
+                className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center w-full hover:bg-[#0088EE] active:bg-[#0077DD] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative z-10"
+                style={{ pointerEvents: isLoading ? "none" : "auto" }}
+              >
+                <svg
+                  className="w-4 h-4 md:w-5 md:h-5 text-white mb-1 pointer-events-none"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+                <p className="text-[10px] font-bold mb-0 pointer-events-none">
+                  Entrego y Estreno
+                </p>
+                <p className="text-[9px] opacity-90 pointer-events-none">
+                  aplica ahora
+                </p>
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Precio - usa la opción seleccionada */}
         <div className="px-3 space-y-3 mt-auto">
@@ -774,35 +951,58 @@ export default function BundleCard({
           </div>
 
           {/* Mensaje de cuotas sin interés */}
-          <div className="mt-3 flex flex-col items-center gap-1">
-            <p className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm text-blue-600 font-bold whitespace-nowrap">
-              Compra con 0% de interés con bancos aliados{" "}
-              <span className="text-[7px] sm:text-[8px] md:text-[9px] text-gray-500">
-                Aplican T&C
-              </span>
-            </p>
-            <div className="flex items-center gap-6 justify-center">
-              <Image 
-                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
-                alt="Cuotas"
-                width={20}
-                height={20}
-                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
-              />
-              <Image 
-                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
-                alt="Pago"
-                width={20}
-                height={20}
-                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
-              />
-              <Image 
-                src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
-                alt="Seguridad"
-                width={20}
-                height={20}
-                className="object-contain w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]"
-              />
+          <div className="mt-2 sm:mt-3 flex flex-col items-center gap-0.5 sm:gap-1 px-1">
+            <Link href="/soporte/tyc-bancolombia">
+              <p className="text-[8px] sm:text-[9px] md:text-xs lg:text-sm text-blue-600 font-bold text-center leading-tight cursor-pointer hover:opacity-80 transition-opacity">
+                Compra con 0% de interés con bancos aliados{" "}
+                <span className="text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px] text-gray-500 block sm:inline">
+                  Aplican T&C
+                </span>
+              </p>
+            </Link>
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
+              <Link href="/soporte/tyc-bancolombia">
+                <div
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Ver términos y condiciones"
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                    alt="Cuotas - Términos y condiciones"
+                    width={20}
+                    height={20}
+                    className="object-contain flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                  />
+                </div>
+              </Link>
+              <Link href="/soporte/tyc-bancolombia">
+                <div
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Ver términos y condiciones"
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                    alt="Pago - Términos y condiciones"
+                    width={20}
+                    height={20}
+                    className="object-contain flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                  />
+                </div>
+              </Link>
+              <Link href="/soporte/tyc-bancolombia">
+                <div
+                  className="cursor-pointer hover:opacity-80 transition-opacity"
+                  title="Ver términos y condiciones"
+                >
+                  <Image
+                    src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                    alt="Seguridad - Términos y condiciones"
+                    width={20}
+                    height={20}
+                    className="object-contain flex-shrink-0 w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                  />
+                </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -813,9 +1013,21 @@ export default function BundleCard({
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
         productName={displayName}
-        productImage={previewImages && previewImages.length > 0 ? getCloudinaryUrl(previewImages[0], "catalog") : undefined}
-        selectedColor={shouldRenderValue(selectedOption?.nombreColorProductSku) ? selectedOption?.nombreColorProductSku : undefined}
-        selectedStorage={shouldRenderValue(selectedOption?.capacidadProductSku) ? selectedOption?.capacidadProductSku : undefined}
+        productImage={
+          previewImages && previewImages.length > 0
+            ? getCloudinaryUrl(previewImages[0], "catalog")
+            : undefined
+        }
+        selectedColor={
+          shouldRenderValue(selectedOption?.nombreColorProductSku)
+            ? selectedOption?.nombreColorProductSku
+            : undefined
+        }
+        selectedStorage={
+          shouldRenderValue(selectedOption?.capacidadProductSku)
+            ? selectedOption?.capacidadProductSku
+            : undefined
+        }
         onNotificationRequest={handleRequestStockNotification}
       />
     </div>

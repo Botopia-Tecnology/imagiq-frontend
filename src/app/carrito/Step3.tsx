@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useCart } from "@/hooks/useCart";
+import { useCart, type CartProduct } from "@/hooks/useCart";
 import { useDelivery } from "./hooks/useDelivery";
 import {
   DeliveryMethodSelector,
@@ -51,6 +51,7 @@ export default function Step3({
     addressLoading,
     availableCities,
     availableStoresWhenCanPickUpFalse,
+    lastResponse,
   } = useDelivery();
 
   // Hook para precarga de tarjetas y zero interest
@@ -100,87 +101,138 @@ export default function Step3({
     preloadData();
   }, [preloadCards, preloadZeroInterest, products, calculations.total]);
 
-  // Trade-In state management
-  const [tradeInData, setTradeInData] = React.useState<{
+  // Trade-In state management - ahora soporta múltiples productos
+  // Inicialización perezosa para evitar parpadeos y asegurar estado correcto desde el inicio
+  const [tradeInDataMap, setTradeInDataMap] = React.useState<Record<string, {
     completed: boolean;
     deviceName: string;
     value: number;
-  } | null>(null);
-
-  // Ref para evitar múltiples ejecuciones del useEffect (previene loop infinito)
-  const tradeInLoadedRef = React.useRef(false);
-  
-  // Ref para rastrear si acabamos de eliminar el trade-in (evita que useEffect revierta el cambio)
-  const justRemovedTradeInRef = React.useRef(false);
-
-  // Load Trade-In data from localStorage y forzar método a "tienda" si hay trade-in
-  React.useEffect(() => {
-    // Solo ejecutar una vez
-    if (tradeInLoadedRef.current) return;
+  }>>(() => {
+    if (typeof window === 'undefined') return {};
 
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
       try {
         const parsed = JSON.parse(storedTradeIn);
-        if (parsed.completed) {
-          setTradeInData(parsed);
-          // IMPORTANTE: Si hay trade-in, forzar método a "tienda" inmediatamente
-          // setDeliveryMethod ya guarda automáticamente en localStorage
-          setDeliveryMethod("tienda");
-          tradeInLoadedRef.current = true;
+        // Verificar si es formato nuevo (map) o antiguo (objeto único)
+        if (typeof parsed === 'object' && !parsed.deviceName) {
+          return parsed;
+        } else if (parsed.completed) {
+          // Formato antiguo: intentar mapear al primer producto (limitación conocida pero segura)
+          // En este punto products podría estar vacío, pero es mejor tener algo que nada
+          return { "legacy_tradein": parsed };
         }
       } catch (error) {
         console.error("Error parsing Trade-In data:", error);
       }
-    } else {
-      // Marcar como cargado incluso si no hay trade-in
-      tradeInLoadedRef.current = true;
     }
-  }, [setDeliveryMethod]);
+    return {};
+  });
 
-  // Handle Trade-In removal
-  const handleRemoveTradeIn = () => {
+  // Helpers para obtener el trade-in asociado a un producto (considera bundles)
+  const getTradeInKey = React.useCallback((product: CartProduct) => {
+    return product.bundleInfo?.productSku ?? product.sku;
+  }, []);
+
+  const getTradeInEntry = React.useCallback(
+    (product: CartProduct) => {
+      if (!product) return null;
+      const key = getTradeInKey(product);
+      if (!key) return null;
+      const tradeIn = tradeInDataMap[key];
+      return tradeIn ? { key, tradeIn } : null;
+    },
+    [tradeInDataMap, getTradeInKey]
+  );
+
+  const getTradeInForProduct = React.useCallback(
+    (product: CartProduct) => getTradeInEntry(product)?.tradeIn,
+    [getTradeInEntry]
+  );
+
+  // Ref para rastrear si acabamos de eliminar el trade-in (evita que useEffect revierta el cambio)
+  const justRemovedTradeInRef = React.useRef(false);
+
+  // Efecto para corregir el formato legacy una vez que los productos estén cargados
+  React.useEffect(() => {
+    if (products.length > 0 && tradeInDataMap["legacy_tradein"]) {
+      const legacyData = tradeInDataMap["legacy_tradein"];
+      const firstProductSku = products[0].sku;
+      const newMap = { [firstProductSku]: legacyData };
+      setTradeInDataMap(newMap);
+      // Actualizar localStorage con el formato correcto
+      localStorage.setItem("imagiq_trade_in", JSON.stringify(newMap));
+    }
+  }, [products, tradeInDataMap]);
+
+  // Ref para rastrear si ya se hizo la carga inicial (para bloquear otros useEffects)
+  const hasCompletedInitialLoadRef = React.useRef(false);
+
+  // Marcar como completado después de un breve delay para permitir que useDelivery haga su trabajo
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      hasCompletedInitialLoadRef.current = true;
+    }, 1000); // 1 segundo es suficiente para que useDelivery complete la carga inicial
+
+    return () => clearTimeout(timer);
+  }, []);
+
+
+  // Handle Trade-In removal (ahora soporta eliminar por SKU)
+  const handleRemoveTradeIn = (skuToRemove?: string) => {
     // Marcar que acabamos de eliminar el trade-in (evitar que useEffect revierta el cambio)
     justRemovedTradeInRef.current = true;
-    
+
     // Marcar en useDelivery que estamos eliminando trade-in (previene fetchCandidateStores)
-    // HACERLO INMEDIATAMENTE antes de cualquier otra cosa
     if (globalThis.window) {
-      // Usar un evento personalizado para notificar a useDelivery
       globalThis.window.dispatchEvent(
         new CustomEvent("removing-trade-in", { detail: { removing: true } })
       );
     }
-    
-    // PRIMERO: Eliminar el trade-in para que hasActiveTradeIn sea false inmediatamente
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
-    
-    // SEGUNDO: Forzar cambio a "domicilio" tras eliminar el trade-in
-    // Verificar el método actual desde localStorage y estado
-    const currentMethodFromStorage = globalThis.window?.localStorage.getItem("checkout-delivery-method");
-    const currentMethod = currentMethodFromStorage || deliveryMethod;
-    
-    // SIEMPRE cambiar a domicilio si está en tienda (sin importar autenticación)
-    if (currentMethod === "tienda" || deliveryMethod === "tienda") {
-      // 1. Forzar directamente en localStorage PRIMERO (fuente de verdad)
-      if (globalThis.window) {
-        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+
+    // PRIMERO: Eliminar el trade-in del map
+    if (skuToRemove) {
+      // Eliminar solo el SKU específico
+      const updatedMap = { ...tradeInDataMap };
+      delete updatedMap[skuToRemove];
+      setTradeInDataMap(updatedMap);
+
+      // Actualizar localStorage
+      if (Object.keys(updatedMap).length > 0) {
+        localStorage.setItem("imagiq_trade_in", JSON.stringify(updatedMap));
+      } else {
+        localStorage.removeItem("imagiq_trade_in");
       }
-      
-      // 2. Cambiar usando el hook (actualiza el estado del componente)
-      setDeliveryMethod("domicilio");
-      
-      // 3. Disparar eventos para sincronizar con otros componentes (pero NO storage para evitar loops)
-      if (globalThis.window) {
-        globalThis.window.dispatchEvent(
-          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio", skipFetch: true } })
-        );
-        // NO disparar evento storage aquí para evitar que handleAddressChange se ejecute
+    } else {
+      // Eliminar todos los trade-ins
+      localStorage.removeItem("imagiq_trade_in");
+      setTradeInDataMap({});
+    }
+
+    // SEGUNDO: Forzar cambio a "domicilio" solo si NO quedan trade-ins activos
+    const remainingTradeIns = skuToRemove
+      ? Object.keys(tradeInDataMap).filter(k => k !== skuToRemove).length
+      : 0;
+
+    if (remainingTradeIns === 0) {
+      const currentMethodFromStorage = globalThis.window?.localStorage.getItem("checkout-delivery-method");
+      const currentMethod = currentMethodFromStorage || deliveryMethod;
+
+      if (currentMethod === "tienda" || deliveryMethod === "tienda") {
+        if (globalThis.window) {
+          globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        }
+        setDeliveryMethod("domicilio");
+
+        if (globalThis.window) {
+          globalThis.window.dispatchEvent(
+            new CustomEvent("delivery-method-changed", { detail: { method: "domicilio", skipFetch: true } })
+          );
+        }
       }
     }
-    
-    // Resetear los flags con un delay de 3 segundos para permitir que todas las operaciones se completen
+
+    // Resetear los flags
     setTimeout(() => {
       justRemovedTradeInRef.current = false;
       if (globalThis.window) {
@@ -191,39 +243,63 @@ export default function Step3({
     }, 3000);
   };
 
-  // IMPORTANTE: Si hay trade-in activo, solo permitir recoger en tienda
-  const hasActiveTradeIn = tradeInData?.completed === true;
+  // IMPORTANTE: Detectar productos con trade-in activo
+  const productsWithTradeIn = React.useMemo(() => {
+    const seenKeys = new Set<string>();
+    return products.filter((p) => {
+      const entry = getTradeInEntry(p);
+      if (!entry?.tradeIn?.completed) return false;
+      if (seenKeys.has(entry.key)) return false;
+      seenKeys.add(entry.key);
+      return true;
+    });
+  }, [products, getTradeInEntry]);
+
+  const hasActiveTradeIn = productsWithTradeIn.length > 0;
+
+  // Verificar si TODOS los productos con trade-in pueden ser recogidos en tienda
+  const canAllTradeInProductsPickUp = React.useMemo(() => {
+    if (productsWithTradeIn.length === 0) return true;
+
+    return productsWithTradeIn.every(p => p.canPickUp !== false);
+  }, [productsWithTradeIn]);
 
   // Estado para recibir canPickUp global desde Step4OrderSummary (fuente de verdad)
   const [globalCanPickUpFromSummary, setGlobalCanPickUpFromSummary] = React.useState<boolean | null>(null);
-  
+
   // Estado para rastrear si canPickUp está cargando
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = React.useState(true);
-  
+
   // Ref para rastrear si ya se cargó el pickup por primera vez
   const hasLoadedPickupOnceRef = React.useRef(false);
-  
+
   // Ref para rastrear el último valor de canPickUp para el que ya se forzó la recarga
   const lastCanPickUpForcedRef = React.useRef<boolean | null>(null);
-  
+
   // Ref para rastrear la última dirección para detectar cambios
   const lastAddressIdRef = React.useRef<string | null>(null);
-  
+
   // Estado para forzar mostrar skeleton cuando cambia la dirección
   const [isRecalculatingPickup, setIsRecalculatingPickup] = React.useState(false);
-  
+
   // Estado para mostrar skeleton en la primera carga con trade-in
-  const [isInitialTradeInLoading, setIsInitialTradeInLoading] = React.useState(false);
-  
+  // Inicializar en true si hay trade-in activo para evitar flash de contenido
+  const [isInitialTradeInLoading, setIsInitialTradeInLoading] = React.useState(() => {
+    if (typeof window === 'undefined') return false;
+    // Verificar si hay trade-in en localStorage directamente
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+    return !!storedTradeIn;
+  });
+
   // Refs para leer valores actuales sin incluirlos en dependencias
   const storesLengthRef = React.useRef(0);
   const availableStoresWhenCanPickUpFalseLengthRef = React.useRef(0);
-  
+
   // Actualizar refs cuando cambian los valores
   React.useEffect(() => {
     storesLengthRef.current = stores.length;
   }, [stores.length]);
-  
+
   React.useEffect(() => {
     availableStoresWhenCanPickUpFalseLengthRef.current = availableStoresWhenCanPickUpFalse.length;
   }, [availableStoresWhenCanPickUpFalse.length]);
@@ -231,7 +307,7 @@ export default function Step3({
   // Usar canPickUp global de Step4OrderSummary si está disponible, sino usar el de useDelivery
   // El globalCanPickUpFromSummary es la fuente de verdad (es el que se muestra en el debug)
   const effectiveCanPickUp = globalCanPickUpFromSummary ?? canPickUp;
-  
+
   // Verificar si tenemos el valor de canPickUp (no es null)
   const hasCanPickUpValue = globalCanPickUpFromSummary !== null || canPickUp !== null;
 
@@ -243,22 +319,46 @@ export default function Step3({
 
   // Si hay productos sin pickup y el método está en tienda, cambiar a domicilio
   // SOLO si NO hay trade-in activo
+  // IMPORTANTE: NO forzar cambio si effectiveCanPickUp global es true
   React.useEffect(() => {
+    // Si effectiveCanPickUp global es true, SIEMPRE permitir seleccionar tienda
+    // El canPickUp global tiene prioridad sobre el canPickUp individual de cada producto
+    if (effectiveCanPickUp === true) {
+      console.log('✅ canPickUp global es true - permitir tienda independientemente de productos individuales');
+      return;
+    }
+
     if (!hasActiveTradeIn && hasProductWithoutPickup && deliveryMethod === "tienda") {
+      console.log('⚠️ Hay productos sin pickup y método es tienda - cambiando a domicilio');
       // setDeliveryMethod ya guarda automáticamente en localStorage
       setDeliveryMethod("domicilio");
     }
-  }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod]);
+  }, [hasActiveTradeIn, hasProductWithoutPickup, deliveryMethod, setDeliveryMethod, effectiveCanPickUp]);
 
-  // Forzar método de entrega a "tienda" si hay trade-in activo (ejecutar inmediatamente)
+  // Ref para rastrear si ya cargamos tiendas para el trade-in actual (evita loops)
+  const tradeInStoresLoadedRef = React.useRef(false);
+
+  // Resetear el ref cuando se elimina el trade-in
+  React.useEffect(() => {
+    if (!hasActiveTradeIn) {
+      tradeInStoresLoadedRef.current = false;
+    }
+  }, [hasActiveTradeIn]);
+
+  // Forzar método de entrega a "tienda" si hay trade-in activo
   // IMPORTANTE: NO ejecutar si acabamos de eliminar el trade-in (evitar revertir el cambio)
   React.useEffect(() => {
+    // BLOQUEAR durante carga inicial - solo el primer useEffect debe llamar al endpoint
+    if (!hasCompletedInitialLoadRef.current) {
+      return;
+    }
+
     // Si acabamos de eliminar el trade-in, NO hacer nada
     if (justRemovedTradeInRef.current) {
       return;
     }
-    
-    // Solo forzar a "tienda" si hay trade-in activo
+
+    // Si hay trade-in activo, SIEMPRE forzar "tienda" (sin importar disponibilidad)
     if (hasActiveTradeIn) {
       // Forzar cambio a tienda si está en domicilio
       if (deliveryMethod === "domicilio") {
@@ -269,21 +369,24 @@ export default function Step3({
       if (savedMethod === "domicilio") {
         setDeliveryMethod("tienda");
       }
-      
-      // IMPORTANTE: Cargar tiendas inmediatamente cuando hay trade-in y método es tienda
-      // Esto asegura que las tiendas estén disponibles cuando el usuario llegue al paso
-      if ((deliveryMethod === "tienda" || savedMethod === "tienda") && 
-          stores.length === 0 && 
-          availableStoresWhenCanPickUpFalse.length === 0 &&
-          !storesLoading &&
-          !isInitialTradeInLoading) {
-        // Activar skeleton mientras cargan las tiendas
+
+      // Cargar tiendas si es necesario (después de la carga inicial)
+      const hasStoresLoaded = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+
+      if ((deliveryMethod === "tienda" || savedMethod === "tienda") &&
+        !storesLoading &&
+        !isInitialTradeInLoading &&
+        !tradeInStoresLoadedRef.current &&
+        !hasStoresLoaded) {
+
+        console.log('🔄 Trade-in activo: recargando tiendas');
+        tradeInStoresLoadedRef.current = true;
         setIsInitialTradeInLoading(true);
         forceRefreshStores();
       }
     }
-  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores, isInitialTradeInLoading]);
-  
+  }, [hasActiveTradeIn, deliveryMethod, setDeliveryMethod, storesLoading, forceRefreshStores, isInitialTradeInLoading, stores.length, availableStoresWhenCanPickUpFalse.length]);
+
   // Ref para rastrear SKUs que ya fueron verificados (evita loops infinitos)
   const verifiedSkusRef = React.useRef<Set<string>>(new Set());
   // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
@@ -404,7 +507,7 @@ export default function Step3({
       const customEvent = event as CustomEvent;
       const addressFromEvent = customEvent.detail?.address;
       let newAddressId: string | null = null;
-      
+
       if (addressFromEvent?.id) {
         newAddressId = addressFromEvent.id;
       } else {
@@ -418,27 +521,27 @@ export default function Step3({
           return;
         }
       }
-      
+
       // PROTECCIÓN: Verificar flag global compartido
-      const globalProcessing = typeof globalThis.window !== 'undefined' 
+      const globalProcessing = typeof globalThis.window !== 'undefined'
         ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
         : null;
-      
+
       // Si ya se está procesando este cambio o es el mismo ID, ignorar
       if (globalProcessing === newAddressId || lastAddressIdRef.current === newAddressId) {
         return;
       }
-      
+
       const fromHeader = customEvent.detail?.fromHeader;
-      
+
       // IMPORTANTE: Si viene del header, activar skeleton INMEDIATAMENTE
       if (fromHeader) {
         // Activar skeleton ANTES de leer localStorage
         setIsRecalculatingPickup(true);
-        
+
         // IMPORTANTE: Resetear el ref de canPickUp para permitir recarga cuando cambie
         lastCanPickUpForcedRef.current = null;
-        
+
         // Si el evento trae la dirección, usarla directamente
         if (addressFromEvent?.id) {
           lastAddressIdRef.current = addressFromEvent.id;
@@ -461,7 +564,7 @@ export default function Step3({
           const saved = JSON.parse(
             globalThis.window.localStorage.getItem("checkout-address") || "{}"
           ) as Direccion;
-          
+
           if (saved?.id && saved.id !== lastAddressIdRef.current) {
             setIsRecalculatingPickup(true);
             lastAddressIdRef.current = saved.id;
@@ -478,7 +581,7 @@ export default function Step3({
 
     // Escuchar eventos personalizados desde header/navbar
     globalThis.window.addEventListener('address-changed', handleAddressChange as EventListener);
-    
+
     // Escuchar eventos personalizados desde checkout
     globalThis.window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
 
@@ -506,40 +609,35 @@ export default function Step3({
   // Si canPickUp es true, las tiendas vienen del mismo endpoint, así que deben mostrarse automáticamente
   // Esto se ejecuta cuando canPickUp tiene un valor (no es null) y es true
   React.useEffect(() => {
-    // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
-    const globalProcessing = typeof globalThis.window !== 'undefined' 
-      ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
-      : null;
-    
-    if (globalProcessing) {
-      // Si hay un cambio de dirección en proceso, useDelivery ya está manejando la carga
-      // No interferir con ese proceso
+    // BLOQUEAR durante carga inicial - solo el primer useEffect debe llamar al endpoint
+    if (!hasCompletedInitialLoadRef.current) {
       return;
     }
-    
+
+    // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
+    const globalProcessing = typeof globalThis.window !== 'undefined'
+      ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
+      : null;
+
+    if (globalProcessing) {
+      return;
+    }
+
     // Si canPickUp es true, SIEMPRE asegurar que las tiendas estén cargadas
-    // porque vienen del mismo endpoint
     if (hasCanPickUpValue && effectiveCanPickUp === true) {
-      // Solo cargar si:
-      // 1. No está cargando actualmente
-      // 2. No hay tiendas cargadas O estamos recalculando (cambio de dirección)
-      // 3. El valor de canPickUp cambió (nuevo cálculo)
       const canPickUpChanged = lastCanPickUpForcedRef.current !== effectiveCanPickUp;
-      const shouldLoad = !storesLoading && 
-                        canPickUpChanged &&
-                        (storesLengthRef.current === 0 || isRecalculatingPickup) &&
-                        availableStoresWhenCanPickUpFalseLengthRef.current === 0;
-      
+      const shouldLoad = !storesLoading &&
+        canPickUpChanged &&
+        (storesLengthRef.current === 0 || isRecalculatingPickup) &&
+        availableStoresWhenCanPickUpFalseLengthRef.current === 0;
+
       if (shouldLoad) {
         lastCanPickUpForcedRef.current = effectiveCanPickUp;
-        // Usar forceRefreshStores para cargar las tiendas del mismo endpoint
         forceRefreshStores();
       } else if (canPickUpChanged) {
-        // Actualizar el ref cuando canPickUp cambia
         lastCanPickUpForcedRef.current = effectiveCanPickUp;
       }
     } else if (hasCanPickUpValue && effectiveCanPickUp !== null) {
-      // Actualizar el ref cuando canPickUp cambia (incluso si es false)
       lastCanPickUpForcedRef.current = effectiveCanPickUp;
     }
   }, [hasCanPickUpValue, effectiveCanPickUp, storesLoading, isRecalculatingPickup, forceRefreshStores]);
@@ -550,24 +648,27 @@ export default function Step3({
   // IMPORTANTE: Precargar tiendas en segundo plano cuando hay Trade In activo
   // Esto asegura que las tiendas estén listas cuando el usuario seleccione "Recoger en tienda"
   React.useEffect(() => {
-    // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
-    const globalProcessing = typeof globalThis.window !== 'undefined' 
-      ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
-      : null;
-    
-    if (globalProcessing) {
-      // Si hay un cambio de dirección en proceso, useDelivery ya está manejando la carga
+    // BLOQUEAR durante carga inicial - solo el primer useEffect debe llamar al endpoint
+    if (!hasCompletedInitialLoadRef.current) {
       return;
     }
-    
+
+    // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
+    const globalProcessing = typeof globalThis.window !== 'undefined'
+      ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
+      : null;
+
+    if (globalProcessing) {
+      return;
+    }
+
     // Si hay Trade In activo y no hay tiendas cargadas, FORZAR recarga
-    const shouldLoadStores = hasActiveTradeIn && 
-                             stores.length === 0 && 
-                             availableStoresWhenCanPickUpFalse.length === 0 &&
-                             !storesLoading;
-    
+    const shouldLoadStores = hasActiveTradeIn &&
+      stores.length === 0 &&
+      availableStoresWhenCanPickUpFalse.length === 0 &&
+      !storesLoading;
+
     if (shouldLoadStores) {
-      // Usar forceRefreshStores para ignorar protecciones y forzar la carga
       forceRefreshStores();
     }
   }, [hasActiveTradeIn, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, forceRefreshStores]);
@@ -594,11 +695,11 @@ export default function Step3({
     // 2. Ya no está cargando tiendas (storesLoading es false)
     // 3. Ya tenemos el valor de canPickUp (hasCanPickUpValue es true)
     // 4. Si canPickUp es true, asegurar que las tiendas se hayan procesado (stores.length > 0 o al menos un intento de carga)
-    const shouldHideSkeleton = isRecalculatingPickup && 
-                               !isLoadingCanPickUp && 
-                               !storesLoading && 
-                               hasCanPickUpValue;
-    
+    const shouldHideSkeleton = isRecalculatingPickup &&
+      !isLoadingCanPickUp &&
+      !storesLoading &&
+      hasCanPickUpValue;
+
     if (shouldHideSkeleton) {
       // Si canPickUp es true, esperar un poco más para asegurar que las tiendas se rendericen completamente
       // Si canPickUp es false, ocultar después de un pequeño delay
@@ -615,19 +716,24 @@ export default function Step3({
   React.useEffect(() => {
     // Si estábamos cargando por trade-in y ya no está cargando, ocultar skeleton
     if (isInitialTradeInLoading && !storesLoading) {
-      // Verificar que haya al menos algún resultado (tiendas o estado final)
-      const hasResults = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
+      // IMPORTANTE: Si terminó de cargar (!storesLoading), SIEMPRE ocultar el skeleton
+      // incluso si el resultado es vacío (endpoint retornó array vacío)
+      // Esto evita el skeleton infinito cuando no hay tiendas disponibles
       const hasFinishedLoading = !isLoadingCanPickUp;
-      
-      if (hasResults || hasFinishedLoading) {
-        // Pequeño delay para que las tiendas se rendericen
+
+      // CRÍTICO: Si hay trade-in, asegurar que realmente recibimos respuesta del endpoint
+      // Si lastResponse es null, significa que el endpoint aún no ha respondido (o falló silenciosamente)
+      const hasResponse = lastResponse !== null;
+
+      if (hasFinishedLoading && hasResponse) {
+        // Pequeño delay para que la UI se actualice
         const timer = setTimeout(() => {
           setIsInitialTradeInLoading(false);
         }, 300);
         return () => clearTimeout(timer);
       }
     }
-  }, [isInitialTradeInLoading, storesLoading, stores.length, availableStoresWhenCanPickUpFalse.length, isLoadingCanPickUp]);
+  }, [isInitialTradeInLoading, storesLoading, isLoadingCanPickUp, lastResponse]);
 
   // PROTECCIÓN: Timeout de seguridad para evitar skeleton infinito
   React.useEffect(() => {
@@ -636,28 +742,32 @@ export default function Step3({
       const safetyTimer = setTimeout(() => {
         setIsInitialTradeInLoading(false);
       }, 10000);
-      
+
       return () => clearTimeout(safetyTimer);
     }
   }, [isInitialTradeInLoading]);
 
   // También forzar recarga cuando el usuario selecciona "Recoger en tienda" y (canPickUp es true O hay Trade In activo)
   React.useEffect(() => {
-    // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
-    const globalProcessing = typeof globalThis.window !== 'undefined' 
-      ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
-      : null;
-    
-    if (globalProcessing) {
-      // Si hay un cambio de dirección en proceso, useDelivery ya está manejando la carga
+    // BLOQUEAR durante carga inicial - solo el primer useEffect debe llamar al endpoint
+    if (!hasCompletedInitialLoadRef.current) {
       return;
     }
-    
-    const shouldLoadStores = deliveryMethod === "tienda" && 
-                             (effectiveCanPickUp || hasActiveTradeIn) && 
-                             stores.length === 0 && 
-                             availableStoresWhenCanPickUpFalse.length === 0;
-    
+
+    // PROTECCIÓN: No cargar si hay un cambio de dirección en proceso desde el navbar
+    const globalProcessing = typeof globalThis.window !== 'undefined'
+      ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
+      : null;
+
+    if (globalProcessing) {
+      return;
+    }
+
+    const shouldLoadStores = deliveryMethod === "tienda" &&
+      (effectiveCanPickUp || hasActiveTradeIn) &&
+      stores.length === 0 &&
+      availableStoresWhenCanPickUpFalse.length === 0;
+
     if (shouldLoadStores) {
       forceRefreshStores();
     }
@@ -665,7 +775,14 @@ export default function Step3({
 
   // IMPORTANTE: Si no hay tiendas disponibles, cambiar automáticamente a "Envío a domicilio"
   // Esto solo se aplica si NO hay trade-in activo (con trade-in siempre debe ser tienda)
+  // PERO NO debe ejecutarse si el usuario está cambiando manualmente el método
   React.useEffect(() => {
+    // CRÍTICO: NO cambiar mientras esté cargando - esperar a que termine de cargar
+    if (storesLoading || isLoadingCanPickUp) {
+      console.log('⏸️ Esperando a que termine de cargar antes de decidir método de entrega');
+      return;
+    }
+
     // Solo cambiar si NO hay trade-in activo
     if (hasActiveTradeIn) {
       return; // Con trade-in, siempre debe ser tienda
@@ -673,28 +790,37 @@ export default function Step3({
 
     // IMPORTANTE: Si canPickUp es true, NO cambiar automáticamente a domicilio
     // aunque las tiendas aún no se hayan cargado (pueden estar cargando)
+    // PERMITIR que el usuario seleccione "tienda" manualmente
     if (effectiveCanPickUp === true) {
+      console.log('✅ canPickUp es true - permitir seleccionar tienda');
       return; // canPickUp es true, permitir seleccionar tienda
     }
 
-    // Si canPickUp es false O si terminó de cargar y no hay tiendas disponibles
-    // Verificar: canPickUp es false, o terminó de cargar sin tiendas (solo si canPickUp NO es true)
+    // CRÍTICO: Si canPickUp es false PERO hay tiendas disponibles en availableStoresWhenCanPickUpFalse,
+    // NO cambiar a domicilio. El usuario debe poder ver esas tiendas.
+    if (effectiveCanPickUp === false && availableStoresWhenCanPickUpFalse.length > 0) {
+      console.log('✅ canPickUp es false pero hay tiendas disponibles - NO cambiar a domicilio');
+      return; // Hay tiendas disponibles, mantener en tienda
+    }
+
+    // Si canPickUp es false Y no hay tiendas disponibles Y ya terminó de cargar
     const canPickUpIsFalse = effectiveCanPickUp === false;
-    const finishedLoadingNoStores = !storesLoading && stores.length === 0 && effectiveCanPickUp === false;
-    const noStoresAvailable = canPickUpIsFalse || finishedLoadingNoStores;
+    const finishedLoadingNoStores = stores.length === 0 && availableStoresWhenCanPickUpFalse.length === 0;
+    const noStoresAvailable = canPickUpIsFalse && finishedLoadingNoStores;
 
     // Si no hay tiendas disponibles y el método actual es "tienda", cambiar a "domicilio"
     if (noStoresAvailable && deliveryMethod === "tienda") {
+      console.log('❌ No hay tiendas disponibles (después de cargar) - cambiando a domicilio');
       setDeliveryMethod("domicilio");
     }
-  }, [hasActiveTradeIn, effectiveCanPickUp, stores.length, storesLoading, deliveryMethod, setDeliveryMethod]);
+  }, [hasActiveTradeIn, effectiveCanPickUp, stores.length, availableStoresWhenCanPickUpFalse.length, storesLoading, isLoadingCanPickUp, deliveryMethod, setDeliveryMethod]);
 
   // Escuchar cuando storesLoading cambia para avanzar automáticamente
   React.useEffect(() => {
     // Si estábamos esperando y terminó de cargar, avanzar automáticamente
     if (isWaitingForCanPickUp && !storesLoading) {
       setIsWaitingForCanPickUp(false);
-      
+
       // Validar Trade-In antes de continuar
       const validation = validateTradeInProducts(products);
       if (!validation.isValid) {
@@ -741,15 +867,15 @@ export default function Step3({
   React.useEffect(() => {
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
-    
+
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (validation.isValid === false && validation.errorMessage?.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
-      
+
       // Quitar el banner inmediatamente
-      setTradeInData(null);
-      
+      setTradeInDataMap({});
+
       // Mostrar notificación toast
       toast.error("Cupón removido", {
         description: "El producto seleccionado ya no aplica para el beneficio Estreno y Entrego",
@@ -769,12 +895,12 @@ export default function Step3({
     // IMPORTANTE: Si está cargando canPickUp y el método es tienda, esperar
     if (storesLoading && deliveryMethod === "tienda") {
       setIsWaitingForCanPickUp(true);
-      
+
       // El useEffect se encargará de avanzar cuando termine storesLoading
       // También esperamos con timeout por seguridad
       const maxWait = 10000;
       const startTime = Date.now();
-      
+
       const checkLoading = setInterval(() => {
         if (!storesLoading || (Date.now() - startTime) >= maxWait) {
           clearInterval(checkLoading);
@@ -785,7 +911,7 @@ export default function Step3({
           // Si terminó de cargar, el useEffect se encargará de avanzar
         }
       }, 100);
-      
+
       return;
     }
 
@@ -825,7 +951,7 @@ export default function Step3({
       // IMPORTANTE: Resetear el ref de canPickUp para permitir recarga cuando cambie
       lastCanPickUpForcedRef.current = null;
     }
-    
+
     // Actualizar estado local inmediatamente para mejor UX
     setAddress(newAddress);
 
@@ -855,23 +981,37 @@ export default function Step3({
     }
   };
   const handleDeliveryMethodChange = (method: string) => {
+    console.log('🔄 handleDeliveryMethodChange llamado con método:', method);
+
     // Si hay trade-in activo, no permitir cambiar a domicilio
     if (hasActiveTradeIn && method === "domicilio") {
       return; // No hacer nada, mantener en tienda
     }
-    
+
     // setDeliveryMethod ya guarda automáticamente en localStorage
     setDeliveryMethod(method);
-    
-    // IMPORTANTE: Si se selecciona "tienda" y no hay tiendas cargadas, cargarlas inmediatamente
-    if (method === "tienda" && 
-        stores.length === 0 && 
-        availableStoresWhenCanPickUpFalse.length === 0 &&
-        !storesLoading &&
-        !isInitialTradeInLoading) {
-      // Activar skeleton mientras cargan las tiendas
-      setIsInitialTradeInLoading(true);
-      forceRefreshStores();
+
+    // IMPORTANTE: Si se selecciona "tienda", SIEMPRE intentar cargar tiendas
+    // (aunque ya haya tiendas, porque el usuario puede estar intentando refrescar)
+    if (method === "tienda") {
+      console.log('🏪 Usuario seleccionó "tienda" - forzando carga de tiendas');
+      console.log('   Estado actual:', {
+        storesLength: stores.length,
+        availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+        storesLoading,
+        isInitialTradeInLoading
+      });
+
+      // Si no hay tiendas cargadas, activar skeleton y forzar recarga
+      if (stores.length === 0 && availableStoresWhenCanPickUpFalse.length === 0 && !storesLoading && !isInitialTradeInLoading) {
+        setIsInitialTradeInLoading(true);
+        // Usar setTimeout para asegurar que las protecciones se limpien
+        setTimeout(() => {
+          console.log('✅ Llamando forceRefreshStores después de seleccionar tienda');
+          forceRefreshStores();
+        }, 100);
+      }
+      // ELIMINADO: Ya no hacer recarga silenciosa para evitar demasiadas peticiones
     }
   };
 
@@ -885,12 +1025,16 @@ export default function Step3({
   };
 
   // Define loading state for the whole section
-  // IMPORTANTE: Solo mostrar skeleton cuando REALMENTE está cargando
-  // NO mostrar skeleton indefinidamente si canPickUp es true pero no hay tiendas (puede ser que no existan tiendas)
-  const shouldShowSkeleton = isLoadingCanPickUp || 
-                storesLoading || 
-                isRecalculatingPickup ||
-                isInitialTradeInLoading;
+  // IMPORTANTE: NO quitar el skeleton hasta que:
+  // 1. storesLoading sea false (endpoint terminó completamente)
+  // 2. canPickUp tenga un valor (no null) - hasCanPickUpValue
+  // 3. Si estamos recalculando, esperar a que termine
+  // Cuando el endpoint termina, SIEMPRE procesa la información (aunque no haya tiendas), así que NO esperamos tiendas
+  const shouldShowSkeleton = isLoadingCanPickUp ||
+    storesLoading ||
+    isRecalculatingPickup ||
+    isInitialTradeInLoading ||
+    !hasCanPickUpValue;
 
   // Callback estable para recibir el estado de canPickUp desde Step4OrderSummary
   const handleCanPickUpReady = React.useCallback((canPickUpValue: boolean, isLoading: boolean) => {
@@ -911,7 +1055,7 @@ export default function Step3({
                 <div className="animate-pulse space-y-6">
                   {/* Título */}
                   <div className="h-7 bg-gray-200 rounded w-48 mb-6"></div>
-                  
+
                   {/* Opciones de entrega */}
                   <div className="space-y-4">
                     {/* Opción 1: Domicilio */}
@@ -924,7 +1068,7 @@ export default function Step3({
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Opción 2: Tienda */}
                     <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
                       <div className="flex items-center gap-4">
@@ -953,7 +1097,13 @@ export default function Step3({
                     onMethodChange={handleDeliveryMethodChange}
                     canContinue={canContinue}
                     disableHomeDelivery={hasActiveTradeIn}
-                    disableReason={hasActiveTradeIn ? "Para aplicar el beneficio Estreno y Entrego solo puedes recoger en tienda" : undefined}
+                    disableReason={
+                      hasActiveTradeIn && !canAllTradeInProductsPickUp
+                        ? "El beneficio Entrego y Estreno solo aplica para recoger en tienda."
+                        : hasActiveTradeIn
+                          ? "Para aplicar el beneficio Estreno y Entrego solo puedes recoger en tienda"
+                          : undefined
+                    }
                     disableStorePickup={!effectiveCanPickUp && !hasActiveTradeIn}
                     disableStorePickupReason={!effectiveCanPickUp && !hasActiveTradeIn ? "Este producto no está disponible para recoger en tienda" : undefined}
                   />
@@ -972,6 +1122,14 @@ export default function Step3({
                     </div>
                   )}
 
+                  {/* Debug: Mostrar canPickUp global SIEMPRE cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
+                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+                    <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-xs font-semibold text-gray-900">Debug: canPickup global</p>
+                      <p className="text-xs text-gray-700">canPickup global: {String(effectiveCanPickUp ?? 'undefined')}</p>
+                    </div>
+                  )}
+
                   {/* Mostrar opción de recoger en tienda siempre, pero deshabilitada si canPickUp es false y no hay trade-in */}
                   {/* IMPORTANTE: Habilitar recoger en tienda si canPickUp global es true O si hay trade-in activo */}
                   {/* Mostrar estado de carga cuando se está verificando disponibilidad (cambio de dirección o carga inicial) */}
@@ -983,36 +1141,45 @@ export default function Step3({
                       isLoading={storesLoading || addressLoading}
                       availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
                       hasActiveTradeIn={hasActiveTradeIn}
+                      canPickUp={effectiveCanPickUp}
                     />
                   </div>
 
-                  {/* Mostrar selector de tiendas si:
-                      - El método es "tienda" 
-                      - Y (canPickUp global es true O hay trade-in activo O hay tiendas disponibles cuando canPickUp es false)
-                      - Solo se muestra cuando NO está cargando y NO está recalculando
-                      - IMPORTANTE: Siempre mostrar si hay tiendas disponibles, independientemente de canPickUp */}
-                  {deliveryMethod === "tienda" && 
-                   !storesLoading && 
-                   !isRecalculatingPickup && 
-                   (effectiveCanPickUp || hasActiveTradeIn || availableStoresWhenCanPickUpFalse.length > 0) && (
-                    <div className="mt-6">
-                      <StoreSelector
-                        storeQuery={storeQuery}
-                        filteredStores={effectiveCanPickUp ? filteredStores : availableStoresWhenCanPickUpFalse}
-                        selectedStore={selectedStore}
-                        onQueryChange={setStoreQuery}
-                        onStoreSelect={selectedStoreChanged}
-                        storesLoading={storesLoading}
-                        canPickUp={effectiveCanPickUp}
-                        allStores={effectiveCanPickUp ? stores : availableStoresWhenCanPickUpFalse}
-                        onAddressAdded={addAddress}
-                        onRefreshStores={forceRefreshStores}
-                        availableCities={availableCities}
-                        hasActiveTradeIn={hasActiveTradeIn}
-                        availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
-                      />
-                    </div>
-                  )}
+                  {/* Mostrar selector de tiendas cuando el método es "tienda" */}
+                  {/* El StoreSelector manejará internamente si mostrar el mensaje (canPickUp=false) o el selector (canPickUp=true) */}
+                  {/* IMPORTANTE: Mostrar SIEMPRE cuando el método es tienda, el StoreSelector manejará internamente si hay datos */}
+                  {deliveryMethod === "tienda" && (() => {
+                    // DEBUG: Log para ver qué se está pasando a StoreSelector
+                    console.log('📍 Step3 - Pasando props a StoreSelector:', {
+                      effectiveCanPickUp,
+                      storesLength: stores.length,
+                      availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+                      availableCitiesLength: availableCities.length,
+                      hasActiveTradeIn,
+                      storesLoading,
+                      availableStoresWhenCanPickUpFalseData: availableStoresWhenCanPickUpFalse.map(s => ({ nombre: s.descripcion, ciudad: s.ciudad })),
+                    });
+
+                    return (
+                      <div className="mt-6">
+                        <StoreSelector
+                          storeQuery={storeQuery}
+                          filteredStores={filteredStores}
+                          selectedStore={selectedStore}
+                          onQueryChange={setStoreQuery}
+                          onStoreSelect={selectedStoreChanged}
+                          storesLoading={storesLoading}
+                          canPickUp={effectiveCanPickUp}
+                          allStores={stores}
+                          onAddressAdded={addAddress}
+                          onRefreshStores={forceRefreshStores}
+                          availableCities={availableCities}
+                          hasActiveTradeIn={hasActiveTradeIn}
+                          availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+                        />
+                      </div>
+                    );
+                  })()}
                 </>
               )}
             </div>
@@ -1070,18 +1237,30 @@ export default function Step3({
                   return undefined;
                 })()}
                 onCanPickUpReady={handleCanPickUpReady}
+                debugStoresInfo={{
+                  availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
+                  stores: stores.length,
+                  filteredStores: filteredStores.length,
+                  availableCities: availableCities.length,
+                }}
               />
 
-              {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
-              {tradeInData?.completed && (
-                <TradeInCompletedSummary
-                  deviceName={tradeInData.deviceName}
-                  tradeInValue={tradeInData.value}
-                  onEdit={handleRemoveTradeIn}
-                  validationError={tradeInValidation.isValid === false ? getTradeInValidationMessage(tradeInValidation) : undefined}
-                  showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
-                />
-              )}
+              {/* Banner de Trade-In - Mostrar para cada producto con trade-in */}
+              {productsWithTradeIn.map((product) => {
+                const entry = getTradeInEntry(product);
+                if (!entry?.tradeIn?.completed) return null;
+
+                return (
+                  <TradeInCompletedSummary
+                    key={product.sku}
+                    deviceName={entry.tradeIn.deviceName}
+                    tradeInValue={entry.tradeIn.value}
+                    onEdit={() => handleRemoveTradeIn(entry.key)}
+                    validationError={tradeInValidation.isValid === false ? getTradeInValidationMessage(tradeInValidation) : undefined}
+                    showStorePickupMessage={deliveryMethod === "tienda" || hasActiveTradeIn}
+                  />
+                );
+              })}
             </div>
           </aside>
         </div>
@@ -1105,11 +1284,10 @@ export default function Step3({
 
           {/* Botón continuar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              !canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
-                ? "bg-gray-400 cursor-not-allowed opacity-70"
-                : "bg-[#222] hover:bg-[#333] cursor-pointer"
-            }`}
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp
+              ? "bg-gray-400 cursor-not-allowed opacity-70"
+              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              }`}
             onClick={handleContinue}
             disabled={!canContinue || !tradeInValidation.isValid || isWaitingForCanPickUp}
           >

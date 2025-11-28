@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { notifyError, notifyLoginSuccess } from "./notifications";
 import { apiGet, apiPost } from "@/lib/api-client";
+import Link from "next/link";
 
 interface LoginSuccessResponse {
   access_token?: string;
@@ -247,12 +248,12 @@ export default function LoginPage() {
 
           {/* Forgot password & Submit button in same row */}
           <div className="flex items-center justify-between gap-4">
-            <a
-              href="#"
+            <Link
+              href="/login/password-recovery"
               className="text-sm text-gray-600 hover:text-gray-900 underline whitespace-nowrap"
             >
               ¿Olvidaste tu contraseña?
-            </a>
+            </Link>
             <Button
               type="submit"
               disabled={isLoading}

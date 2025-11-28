@@ -104,7 +104,7 @@ export default function ProductViewPage({ params }) {
 
   // Hook para notificación de stock
   const stockNotification = useStockNotification();
-  
+
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
 
@@ -142,6 +142,7 @@ export default function ProductViewPage({ params }) {
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: product.apiProduct?.modelo?.[0] || "",
         categoria: product.apiProduct?.categoria || "",
+        indRetoma: product.apiProduct?.indRetoma?.[productSelection.selectedVariant?.index || 0] ?? (product.acceptsTradeIn ? 1 : 0),
       });
     } finally {
       setLoadingCart(false);
@@ -150,7 +151,7 @@ export default function ProductViewPage({ params }) {
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    
+
   };
 
   const hasStock = () => {
@@ -350,6 +351,7 @@ export default function ProductViewPage({ params }) {
                 console.log('Trade-in completado:', deviceName, value);
                 // Aquí puedes agregar lógica adicional si necesitas hacer algo cuando se completa el trade-in
               }}
+              productSku={productSelection.selectedSku || undefined}
             />
           </div>
         </div>
@@ -360,8 +362,8 @@ export default function ProductViewPage({ params }) {
 
       {/* Especificaciones y Flix Media */}
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0 -mt-8">
-        <Specifications 
-          product={product} 
+        <Specifications
+          product={product}
           flix={product}
           selectedSku={productSelection.selectedSku || undefined}
           selectedEan={productSelection.selectedVariant?.ean || undefined}

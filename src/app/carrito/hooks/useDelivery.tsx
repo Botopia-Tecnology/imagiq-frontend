@@ -100,7 +100,9 @@ export const useDelivery = () => {
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
   const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
   const [availableStoresWhenCanPickUpFalse, setAvailableStoresWhenCanPickUpFalse] = useState<FormattedStore[]>([]); // Tiendas disponibles cuando canPickUp es false
-  
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [lastResponse, setLastResponse] = useState<any>(null); // DEBUG: Estado para guardar la última respuesta
+
   // Ref para prevenir llamadas infinitas a fetchCandidateStores
   const isFetchingRef = useRef(false);
   const lastFetchTimeRef = useRef(0);
@@ -114,7 +116,8 @@ export const useDelivery = () => {
   const retryCountRef = useRef<Map<string, number>>(new Map()); // Contador de reintentos por hash de petición
   const processingAddressChangeRef = useRef<string | null>(null); // Dirección que se está procesando actualmente
   const lastAddressChangeProcessedTimeRef = useRef<number>(0); // Timestamp del último cambio de dirección procesado
-  
+  const retry429CountRef = useRef(0); // Contador de reintentos por error 429
+
   // Flag global compartido para evitar procesar el mismo cambio desde múltiples listeners
   // Se usa en window para que sea compartido entre todos los componentes
   if (typeof globalThis.window !== 'undefined' && !(globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing) {
@@ -134,9 +137,9 @@ export const useDelivery = () => {
       console.error(`⚠️ Método de entrega inválido: ${method}. Usando "domicilio" por defecto.`);
       method = "domicilio";
     }
-    
+
     setDeliveryMethodState(method);
-    
+
     // Guardar en localStorage inmediatamente (importante para usuarios invitados)
     if (typeof globalThis.window !== "undefined") {
       try {
@@ -160,7 +163,7 @@ export const useDelivery = () => {
   // También escuchar cambios en localStorage para sincronizar entre componentes
   useEffect(() => {
     if (globalThis.window === undefined) return;
-    
+
     const updateFromStorage = () => {
       const savedMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
       if (
@@ -176,10 +179,10 @@ export const useDelivery = () => {
         });
       }
     };
-    
+
     // Cargar al montar
     updateFromStorage();
-    
+
     // Escuchar cambios en localStorage (solo entre pestañas, no en la misma pestaña)
     const handleStorageChange = (e: StorageEvent) => {
       // Solo actualizar si el cambio viene de otra pestaña
@@ -188,13 +191,13 @@ export const useDelivery = () => {
       }
     };
     globalThis.window.addEventListener("storage", handleStorageChange);
-    
+
     // Escuchar evento personalizado (para cambios en la misma pestaña)
     const handleDeliveryMethodChanged = () => {
       updateFromStorage();
     };
     globalThis.window.addEventListener("delivery-method-changed", handleDeliveryMethodChanged);
-    
+
     return () => {
       globalThis.window?.removeEventListener("storage", handleStorageChange);
       globalThis.window?.removeEventListener("delivery-method-changed", handleDeliveryMethodChanged);
@@ -204,23 +207,30 @@ export const useDelivery = () => {
   // Función para cargar tiendas candidatas
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
+    console.log('🚀🚀🚀 INICIO fetchCandidateStores - FUNCIÓN LLAMADA');
+
     // PROTECCIÓN CRÍTICA: NO hacer peticiones durante eliminación de trade-in
     if (isRemovingTradeInRef.current) {
+      console.log('❌ Abortando: isRemovingTradeInRef.current = true');
       return;
     }
-    
+
     // Prevenir llamadas múltiples simultáneas
     if (isFetchingRef.current) {
+      console.log('❌ Abortando: isFetchingRef.current = true (ya hay una petición en curso)');
       return;
     }
-    
-    // Prevenir llamadas muy frecuentes (debounce de 8000ms para evitar 429)
+
+    // Prevenir llamadas muy frecuentes (debounce de 3000ms para evitar 429)
     const now = Date.now();
-    if (now - lastFetchTimeRef.current < 8000) {
+    if (now - lastFetchTimeRef.current < 3000) {
       console.log('⏸️ Debounce activo: esperando antes de hacer otra petición a candidate-stores');
+      console.log(`   Tiempo desde última petición: ${now - lastFetchTimeRef.current}ms (necesita >= 3000ms)`);
       return;
     }
-    
+
+    console.log('✅ Pasó todas las verificaciones, continuando con fetchCandidateStores');
+
     try {
       isFetchingRef.current = true;
       lastFetchTimeRef.current = now;
@@ -233,192 +243,299 @@ export const useDelivery = () => {
       );
       const userId = user?.id || user?.user_id;
 
-        if (!userId || products.length === 0) {
-          setStores([]);
-          setFilteredStores([]);
-          setCanPickUp(false);
+      console.log('👤 User ID obtenido:', userId, '| Productos count:', products.length);
+
+      if (!userId || products.length === 0) {
+        console.log('❌ Sin user_id o sin productos, abortando fetchCandidateStores');
+        setStores([]);
+        setFilteredStores([]);
+        setCanPickUp(false);
+        setStoresLoading(false);
+        isFetchingRef.current = false;
+        return;
+      }
+
+      console.log('✅ User ID y productos válidos, preparando petición a candidate-stores...');
+
+      // Preparar TODOS los productos del carrito para una sola petición
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      console.log('📦 Productos a verificar:', productsToCheck);
+
+      // Obtener dirección actual desde localStorage para incluirla en el hash
+      let currentAddressId = lastAddressIdRef.current || '';
+      try {
+        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          const parsed = JSON.parse(savedAddress) as Direccion;
+          if (parsed.id) {
+            currentAddressId = parsed.id;
+            // Actualizar lastAddressIdRef si cambió
+            if (lastAddressIdRef.current !== parsed.id) {
+              lastAddressIdRef.current = parsed.id;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error al leer dirección para hash:', error);
+      }
+
+      // Crear hash único de la petición (productos + userId + dirección)
+      const requestHash = JSON.stringify({
+        products: productsToCheck,
+        userId,
+        addressId: currentAddressId,
+      });
+
+      // Si el hash es el mismo que la última petición exitosa, no hacer nada
+      // PERO solo si la dirección no cambió recientemente
+      if (lastSuccessfulHashRef.current === requestHash) {
+        // Verificar si la dirección cambió desde la última petición exitosa
+        const addressChanged = lastAddressIdRef.current !== lastAddressIdProcessedRef.current;
+        if (!addressChanged) {
           setStoresLoading(false);
           isFetchingRef.current = false;
           return;
         }
+        // Si la dirección cambió, limpiar el hash exitoso para forzar nueva petición
+        lastSuccessfulHashRef.current = null;
+      }
 
-        // Preparar TODOS los productos del carrito para una sola petición
-        const productsToCheck = products.map((p) => ({
-          sku: p.sku,
-          quantity: p.quantity,
-        }));
+      // Llamar al endpoint con TODOS los productos agrupados
+      console.log('🌐 Llamando al endpoint getCandidateStores con:', {
+        products: productsToCheck,
+        user_id: userId,
+      });
 
-        // Obtener dirección actual desde localStorage para incluirla en el hash
-        let currentAddressId = lastAddressIdRef.current || '';
-        try {
-          const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-          if (savedAddress) {
-            const parsed = JSON.parse(savedAddress) as Direccion;
-            if (parsed.id) {
-              currentAddressId = parsed.id;
-              // Actualizar lastAddressIdRef si cambió
-              if (lastAddressIdRef.current !== parsed.id) {
-                lastAddressIdRef.current = parsed.id;
+      const response = await productEndpoints.getCandidateStores({
+        products: productsToCheck,
+        user_id: userId,
+      });
+
+      setLastResponse(response); // DEBUG: Guardar respuesta cruda
+
+      console.log('🔥🔥🔥 RESPUESTA RECIBIDA DE CANDIDATE-STORES:', {
+        success: response.success,
+        hasData: !!response.data,
+        message: response.message,
+      });
+
+      // Log completo en formato legible
+      console.log('📋 RESPUESTA COMPLETA:', JSON.stringify(response, null, 2));
+
+      if (response.success && response.data) {
+        const responseData = response.data;
+
+        console.log('🔥 DATOS DE LA RESPUESTA:', {
+          canPickUp: responseData.canPickUp,
+          storesType: typeof responseData.stores,
+          storesIsArray: Array.isArray(responseData.stores),
+          storesKeys: responseData.stores ? Object.keys(responseData.stores) : 'NO STORES',
+          fullStoresData: responseData.stores,
+        });
+
+        // Obtener canPickUp global de la respuesta
+        const globalCanPickUp = responseData.canPickUp ?? false;
+
+        // Procesar tiendas INMEDIATAMENTE (sin delays) - PRESERVAR ORDEN EXACTO DEL ENDPOINT
+        let physicalStores: FormattedStore[] = [];
+        const cities: string[] = Object.keys(responseData.stores || {}).filter(city => {
+          const cityStores = responseData.stores?.[city];
+          return cityStores && cityStores.length > 0;
+        });
+
+        console.log('📦 Procesando respuesta candidate-stores:', {
+          canPickUp: globalCanPickUp,
+          cities: cities,
+          storesKeys: Object.keys(responseData.stores || {}),
+          storesData: responseData.stores,
+        });
+
+        if (responseData.stores) {
+          // IMPORTANTE: Preservar el orden exacto de las tiendas como vienen del endpoint
+          // Recorrer las ciudades en el orden que vienen del endpoint
+          const allStoresInOrder: Array<{ store: CandidateStore; city: string }> = [];
+
+          for (const [city, cityStores] of Object.entries(responseData.stores)) {
+            if (cityStores && cityStores.length > 0) {
+              console.log(`🏙️ Procesando ciudad ${city} con ${cityStores.length} tiendas`);
+              // Agregar las tiendas en el orden exacto que vienen del endpoint
+              for (const store of cityStores) {
+                const storeCity = store.ciudad || city;
+                allStoresInOrder.push({ store, city: storeCity });
+                console.log(`  ✅ Tienda encontrada: ${store.nombre_tienda} (${store.codBodega})`);
               }
             }
           }
-        } catch (error) {
-          console.error('Error al leer dirección para hash:', error);
-        }
 
-        // Crear hash único de la petición (productos + userId + dirección)
-        const requestHash = JSON.stringify({
-          products: productsToCheck,
-          userId,
-          addressId: currentAddressId,
-        });
+          console.log(`🛍️ Total de tiendas a procesar: ${allStoresInOrder.length}`);
 
-        // Si el hash es el mismo que la última petición exitosa, no hacer nada
-        // PERO solo si la dirección no cambió recientemente
-        if (lastSuccessfulHashRef.current === requestHash) {
-          // Verificar si la dirección cambió desde la última petición exitosa
-          const addressChanged = lastAddressIdRef.current !== lastAddressIdProcessedRef.current;
-          if (!addressChanged) {
-            setStoresLoading(false);
-            isFetchingRef.current = false;
-            return;
-          }
-          // Si la dirección cambió, limpiar el hash exitoso para forzar nueva petición
-          lastSuccessfulHashRef.current = null;
-        }
+          if (allStoresInOrder.length > 0) {
+            // Convertir CandidateStore a FormattedStore directamente (sin validar con otro endpoint)
+            // PRESERVAR EL ORDEN EXACTO
+            const validStores = allStoresInOrder.map(
+              ({ store, city }) => candidateStoreToFormattedStore(store, city)
+            );
 
-        // Llamar al endpoint con TODOS los productos agrupados
-        const response = await productEndpoints.getCandidateStores({
-          products: productsToCheck,
-          user_id: userId,
-        });
+            console.log(`✅ Tiendas convertidas: ${validStores.length}`);
+            console.log(`📋 Todas las tiendas ANTES del filtro:`, validStores.map(s => ({ nombre: s.descripcion, codigo: s.codigo })));
 
-        if (response.success && response.data) {
-          const responseData = response.data;
-          
-          // Obtener canPickUp global de la respuesta
-          const globalCanPickUp = responseData.canPickUp ?? false;
-          
-          // Procesar tiendas INMEDIATAMENTE (sin delays) - PRESERVAR ORDEN EXACTO DEL ENDPOINT
-          let physicalStores: FormattedStore[] = [];
-          const cities: string[] = Object.keys(responseData.stores || {}).filter(city => {
-            const cityStores = responseData.stores?.[city];
-            return cityStores && cityStores.length > 0;
-          });
+            // Filtrar centros de distribución y bodegas (pero mantener el orden)
+            physicalStores = validStores.filter((store) => {
+              const descripcion = normalizeText(store.descripcion);
+              const codigo = store.codigo?.toString().trim() || "";
 
-          console.log('📦 Procesando respuesta candidate-stores:', {
-            canPickUp: globalCanPickUp,
-            cities: cities,
-            storesKeys: Object.keys(responseData.stores || {}),
-          });
+              // Excluir centros de distribución, bodegas, y código "001"
+              const isValid = !descripcion.includes("centro de distribucion") &&
+                !descripcion.includes("centro distribucion") &&
+                !descripcion.includes("bodega") &&
+                codigo !== "001";
 
-          if (responseData.stores) {
-            // IMPORTANTE: Preservar el orden exacto de las tiendas como vienen del endpoint
-            // Recorrer las ciudades en el orden que vienen del endpoint
-            const allStoresInOrder: Array<{ store: CandidateStore; city: string }> = [];
-
-            for (const [city, cityStores] of Object.entries(responseData.stores)) {
-              if (cityStores && cityStores.length > 0) {
-                console.log(`🏙️ Procesando ciudad ${city} con ${cityStores.length} tiendas`);
-                // Agregar las tiendas en el orden exacto que vienen del endpoint
-                for (const store of cityStores) {
-                  const storeCity = store.ciudad || city;
-                  allStoresInOrder.push({ store, city: storeCity });
-                  console.log(`  ✅ Tienda: ${store.nombre_tienda.trim()} (${store.codBodega})`);
-                }
+              if (!isValid) {
+                console.log(`🚫 Tienda filtrada: ${store.descripcion} (${codigo}) - Razón: ${descripcion.includes("centro de distribucion") || descripcion.includes("centro distribucion") ? 'Centro de distribución' :
+                  descripcion.includes("bodega") ? 'Bodega' :
+                    codigo === "001" ? 'Código 001' : 'Desconocida'
+                  }`);
+              } else {
+                console.log(`✅ Tienda ACEPTADA: ${store.descripcion} (${codigo})`);
               }
-            }
 
-            console.log(`🛍️ Total de tiendas a procesar: ${allStoresInOrder.length}`);
+              return isValid;
+            });
 
-            if (allStoresInOrder.length > 0) {
-              // Convertir CandidateStore a FormattedStore directamente (sin validar con otro endpoint)
-              // PRESERVAR EL ORDEN EXACTO
-              const validStores = allStoresInOrder.map(
-                ({ store, city }) => candidateStoreToFormattedStore(store, city)
-              );
-
-              console.log(`✅ Tiendas convertidas: ${validStores.length}`);
-
-              // Filtrar centros de distribución y bodegas (pero mantener el orden)
-              physicalStores = validStores.filter((store) => {
-                const descripcion = normalizeText(store.descripcion);
-                const codigo = store.codigo?.toString().trim() || "";
-
-                // Excluir centros de distribución, bodegas, y código "001"
-                const isValid = !descripcion.includes("centro de distribucion") &&
-                       !descripcion.includes("centro distribucion") &&
-                       !descripcion.includes("bodega") &&
-                       codigo !== "001";
-                
-                if (!isValid) {
-                  console.log(`🚫 Tienda filtrada: ${store.descripcion} (${codigo})`);
-                }
-                
-                return isValid;
-              });
-
-              console.log(`🏪 Tiendas físicas finales: ${physicalStores.length}`);
-              console.log('📋 Tiendas en orden:', physicalStores.map(s => `${s.descripcion} (${s.ciudad})`));
-            }
-          }
-
-          // IMPORTANTE: Establecer canPickUp y tiendas AL MISMO TIEMPO (sin delays)
-          console.log(`🎯 Estableciendo canPickUp=${globalCanPickUp} y ${physicalStores.length} tiendas`);
-          console.log(`📋 Primeras 3 tiendas:`, physicalStores.slice(0, 3).map(s => s.descripcion));
-          
-          // Establecer canPickUp primero
-          setCanPickUp(globalCanPickUp);
-          setAvailableCities(cities);
-
-          // IMPORTANTE: SIEMPRE guardar las tiendas, independientemente de canPickUp
-          // Si canPickUp es true, mostrar tiendas normalmente
-          if (globalCanPickUp) {
-            console.log(`✅ Estableciendo ${physicalStores.length} tiendas en stores y filteredStores (canPickUp=true)`);
-            // IMPORTANTE: Establecer stores y filteredStores al mismo tiempo
-            setStores(physicalStores);
-            // Asegurar que filteredStores se actualice inmediatamente
-            setFilteredStores([...physicalStores]);
-            // También guardar en availableStoresWhenCanPickUpFalse por si acaso
-            setAvailableStoresWhenCanPickUpFalse(physicalStores);
-            console.log(`✅ Tiendas establecidas. stores.length=${physicalStores.length}, filteredStores.length=${physicalStores.length}`);
+            console.log(`🏪 Tiendas físicas finales DESPUÉS del filtro: ${physicalStores.length}`);
+            console.log('📋 Tiendas en orden:', physicalStores.map(s => `${s.descripcion} (${s.ciudad})`));
           } else {
-            // Si canPickUp global es false, guardar tiendas en availableStoresWhenCanPickUpFalse
-            // IMPORTANTE: Estas son las tiendas que vienen de candidate-stores y se mostrarán en el mensaje
-            console.log(`⚠️ Guardando ${physicalStores.length} tiendas en availableStoresWhenCanPickUpFalse (canPickUp=false)`);
-            setAvailableStoresWhenCanPickUpFalse(physicalStores);
-            // Limpiar stores normales cuando canPickUp es false
-            setStores([]);
-            setFilteredStores([]);
-            console.log(`✅ Tiendas guardadas en availableStoresWhenCanPickUpFalse para mostrar en mensaje`);
-          }
-          
-          // Si la petición fue exitosa, marcar el hash como exitoso DESPUÉS de procesar
-          lastSuccessfulHashRef.current = requestHash;
-          // Limpiar el hash de fallo si existía
-          if (failedRequestHashRef.current === requestHash) {
-            failedRequestHashRef.current = null;
-            retryCountRef.current.delete(requestHash);
+            // IMPORTANTE: Si stores existe pero está vacío o no hay tiendas, physicalStores ya está como []
+            console.log(`ℹ️ Endpoint respondió con stores vacío o sin tiendas. Total de tiendas: 0`);
           }
         } else {
-          // Si falla la petición, no hay pickup disponible
-          
-          // Si falla la petición, no hay pickup disponible
-          setCanPickUp(false);
+          // IMPORTANTE: Si responseData.stores no existe o es undefined, también procesar
+          console.log(`ℹ️ Endpoint respondió sin campo stores. Estableciendo tiendas vacías.`);
+          physicalStores = [];
+        }
+
+        // IMPORTANTE: Establecer canPickUp y tiendas AL MISMO TIEMPO (sin delays)
+        console.log(`🎯 Estableciendo canPickUp=${globalCanPickUp} y ${physicalStores.length} tiendas`);
+        console.log(`📋 Primeras 3 tiendas:`, physicalStores.slice(0, 3).map(s => s.descripcion));
+
+        // Establecer canPickUp primero
+        setCanPickUp(globalCanPickUp);
+        setAvailableCities(cities);
+
+        // IMPORTANTE: SIEMPRE guardar las tiendas, independientemente de canPickUp
+        // Si canPickUp es true, mostrar tiendas normalmente
+        if (globalCanPickUp) {
+          console.log(`✅ Estableciendo ${physicalStores.length} tiendas en stores y filteredStores (canPickUp=true)`);
+          // IMPORTANTE: Establecer stores y filteredStores al mismo tiempo
+          setStores(physicalStores);
+          // Asegurar que filteredStores se actualice inmediatamente
+          setFilteredStores([...physicalStores]);
+          // También guardar en availableStoresWhenCanPickUpFalse por si acaso
+          setAvailableStoresWhenCanPickUpFalse(physicalStores);
+          console.log(`✅ Tiendas establecidas. stores.length=${physicalStores.length}, filteredStores.length=${physicalStores.length}`);
+        } else {
+          // Si canPickUp global es false, guardar tiendas en availableStoresWhenCanPickUpFalse
+          // IMPORTANTE: Estas son las tiendas que vienen de candidate-stores y se mostrarán en el mensaje
+          console.log(`⚠️ Guardando ${physicalStores.length} tiendas en availableStoresWhenCanPickUpFalse (canPickUp=false)`);
+          console.log(`🔥 TIENDAS A GUARDAR:`, physicalStores.map(s => ({ nombre: s.descripcion, ciudad: s.ciudad, codigo: s.codigo })));
+          setAvailableStoresWhenCanPickUpFalse(physicalStores);
+          // Limpiar stores normales cuando canPickUp es false
           setStores([]);
           setFilteredStores([]);
-          setAvailableStoresWhenCanPickUpFalse([]);
+          console.log(`✅ Tiendas guardadas en availableStoresWhenCanPickUpFalse para mostrar en mensaje`);
         }
-      } catch {
-        // Si hay un error, no hay pickup disponible
+
+        console.log('🔥🔥🔥 ESTADO FINAL DESPUÉS DE PROCESAR:', {
+          globalCanPickUp,
+          physicalStoresCount: physicalStores.length,
+          citiesCount: cities.length,
+        });
+
+        // Si la petición fue exitosa, marcar el hash como exitoso DESPUÉS de procesar
+        lastSuccessfulHashRef.current = requestHash;
+        // Resetear contador de reintentos 429
+        retry429CountRef.current = 0;
+        // Limpiar el hash de fallo si existía
+        if (failedRequestHashRef.current === requestHash) {
+          failedRequestHashRef.current = null;
+          retryCountRef.current.delete(requestHash);
+        }
+
+        // IMPORTANTE: NO agregar delays - React procesará los estados de inmediato
+        // Las tiendas ya están establecidas en el estado arriba
+      } else {
+        // Si falla la petición, verificar si es 429 (Too Many Requests)
+        const is429Error = response.message?.includes('429') || response.message?.includes('Too Many Requests') || response.message?.includes('ThrottleException');
+
+        console.log('❌ RESPUESTA NO EXITOSA O SIN DATOS:', {
+          success: response.success,
+          hasData: !!response.data,
+          message: response.message,
+          is429: is429Error,
+        });
+
+        // Si es 429, reintentar después de 3 segundos (máximo 2 reintentos)
+        if (is429Error && retry429CountRef.current < 2) {
+          retry429CountRef.current += 1;
+          console.warn(`⚠️ Error 429 detectado - reintentando en 3 segundos... (intento ${retry429CountRef.current}/2)`);
+          setTimeout(() => {
+            console.log('🔄 Reintentando después de 429...');
+            // Limpiar flags para permitir el reintento
+            isFetchingRef.current = false;
+            lastFetchTimeRef.current = 0;
+            // Reintentar
+            fetchCandidateStores();
+          }, 3000);
+          return; // No establecer estados aún
+        } else if (is429Error) {
+          console.error('❌ Máximo de reintentos alcanzado para error 429');
+          retry429CountRef.current = 0; // Resetear contador
+        }
+
+        // Para otros errores, establecer estados vacíos
+        setCanPickUp(false);
         setStores([]);
         setFilteredStores([]);
         setAvailableStoresWhenCanPickUpFalse([]);
-        setCanPickUp(false);
-      } finally {
-        setStoresLoading(false);
-        isFetchingRef.current = false;
       }
+    } catch (error) {
+      // Si hay un error, no hay pickup disponible
+      console.error('❌❌❌ ERROR EN fetchCandidateStores:', error);
+      console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+
+      // Verificar si es error de red o 429
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const is429Error = errorMessage.includes('429') || errorMessage.includes('Too Many Requests') || errorMessage.includes('ThrottleException');
+
+      if (is429Error && retry429CountRef.current < 2) {
+        retry429CountRef.current += 1;
+        console.warn(`⚠️ Error 429 en catch - reintentando en 3 segundos... (intento ${retry429CountRef.current}/2)`);
+        setTimeout(() => {
+          console.log('🔄 Reintentando después de error 429...');
+          // Limpiar flags para permitir el reintento
+          isFetchingRef.current = false;
+          lastFetchTimeRef.current = 0;
+          // Reintentar
+          fetchCandidateStores();
+        }, 3000);
+        return; // No establecer estados aún
+      } else if (is429Error) {
+        console.error('❌ Máximo de reintentos alcanzado para error 429 en catch');
+        retry429CountRef.current = 0; // Resetear contador
+      }
+
+      setStores([]);
+      setFilteredStores([]);
+      setAvailableStoresWhenCanPickUpFalse([]);
+      setCanPickUp(false);
+    } finally {
+      setStoresLoading(false);
+      isFetchingRef.current = false;
+    }
   }, [products]);
 
   // Cargar tiendas desde candidate-stores (solo donde se puede recoger el producto)
@@ -428,11 +545,11 @@ export const useDelivery = () => {
   useEffect(() => {
     // Crear un hash de los productos para detectar cambios reales
     const productsHash = JSON.stringify(products.map(p => ({ sku: p.sku, quantity: p.quantity })));
-    
+
     // Solo ejecutar si realmente cambiaron los productos O es la primera vez
     if (productsHashRef.current === '' || productsHashRef.current !== productsHash) {
       productsHashRef.current = productsHash;
-      
+
       // Verificar que NO estemos eliminando trade-in
       if (!isRemovingTradeInRef.current) {
         fetchCandidateStores();
@@ -452,7 +569,7 @@ export const useDelivery = () => {
       // Verificar si el evento es realmente de cambio de dirección
       const customEvent = event as CustomEvent;
       const eventType = event.type;
-      
+
       // Ignorar eventos que no son de dirección
       if (eventType === 'delivery-method-changed' || eventType === 'storage') {
         const key = (event as StorageEvent).key;
@@ -465,7 +582,7 @@ export const useDelivery = () => {
       const currentAddress = localStorage.getItem('checkout-address');
       let addressChanged = false;
       let newAddressId: string | null = null;
-      
+
       if (currentAddress) {
         try {
           const parsed = JSON.parse(currentAddress) as Direccion;
@@ -490,13 +607,13 @@ export const useDelivery = () => {
       const now = Date.now();
       const isProcessingSameAddress = processingAddressChangeRef.current === newAddressId;
       const recentlyProcessed = now - lastAddressChangeProcessedTimeRef.current < 3000; // 3 segundos
-      
+
       // Verificar flag global compartido
-      const globalProcessing = typeof globalThis.window !== 'undefined' 
+      const globalProcessing = typeof globalThis.window !== 'undefined'
         ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
         : null;
       const isGloballyProcessing = globalProcessing === newAddressId;
-      
+
       if (isProcessingSameAddress || isGloballyProcessing || (recentlyProcessed && lastAddressIdProcessedRef.current === newAddressId)) {
         // Ya se está procesando este cambio o se procesó recientemente, ignorar
         return;
@@ -543,7 +660,7 @@ export const useDelivery = () => {
         processingAddressChangeRef.current = null;
         return;
       }
-      
+
       // IMPORTANTE: Solo actualizar lastAddressIdRef si realmente cambió
       if (addressChanged && newAddressId !== null) {
         // PROTECCIÓN CRÍTICA: Solo hacer petición si:
@@ -551,17 +668,17 @@ export const useDelivery = () => {
         // 2. O si pasaron más de 2 segundos desde la última petición para esta dirección
         const isDifferentAddress = lastAddressIdProcessedRef.current !== newAddressId;
         const enoughTimePassed = now - lastAddressFetchTimeRef.current > 2000;
-        
+
         // ACTUALIZAR INMEDIATAMENTE para evitar que otros eventos procesen la misma dirección
         if (isDifferentAddress) {
           lastAddressIdRef.current = newAddressId;
           lastAddressIdProcessedRef.current = newAddressId;
           lastAddressFetchTimeRef.current = now;
-          
+
           // IMPORTANTE: Limpiar el hash de la última petición exitosa para forzar nueva petición
           // cuando cambia la dirección
           lastSuccessfulHashRef.current = null;
-          
+
           // IMPORTANTE: Limpiar la tienda seleccionada cuando cambia la dirección
           // porque las tiendas disponibles pueden cambiar
           console.log(`🔄 Dirección cambió a ${newAddressId}, limpiando tienda seleccionada y forzando recarga de tiendas`);
@@ -573,7 +690,7 @@ export const useDelivery = () => {
           }
           // Actualizar el ref para indicar que la dirección cambió
           lastAddressForStoreSelectionRef.current = null;
-          
+
           // Recalcular canPickUp global y tiendas cuando cambia la dirección
           // El debounce de 8000ms en fetchCandidateStores evitará peticiones múltiples
           fetchCandidateStores();
@@ -589,8 +706,8 @@ export const useDelivery = () => {
         if (processingAddressChangeRef.current === newAddressId) {
           processingAddressChangeRef.current = null;
         }
-        if (typeof globalThis.window !== 'undefined' && 
-            (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing === newAddressId) {
+        if (typeof globalThis.window !== 'undefined' &&
+          (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing === newAddressId) {
           (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing = undefined;
         }
       }, 5000);
@@ -624,7 +741,7 @@ export const useDelivery = () => {
 
     // Escuchar eventos personalizados desde checkout
     globalThis.window.addEventListener('checkout-address-changed', handleAddressChange as EventListener);
-    
+
     // Escuchar delivery-method-changed pero solo si NO viene con skipFetch
     const handleDeliveryMethodChanged = (event: Event) => {
       const customEvent = event as CustomEvent;
@@ -653,7 +770,7 @@ export const useDelivery = () => {
       if (now - lastAddressChangeProcessedTimeRef.current < 3000) {
         return;
       }
-      
+
       const currentCheckoutAddress = localStorage.getItem('checkout-address');
       const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
 
@@ -661,7 +778,7 @@ export const useDelivery = () => {
       let checkoutAddressChanged = false;
       let defaultAddressChanged = false;
       let newAddressId: string | null = null;
-      
+
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
         try {
           const parsed = JSON.parse(currentCheckoutAddress || '{}') as Direccion;
@@ -790,7 +907,7 @@ export const useDelivery = () => {
       const savedStore = globalThis.window.localStorage.getItem("checkout-store");
       const savedAddressId = globalThis.window.localStorage.getItem("checkout-store-address-id");
       const currentAddressId = lastAddressIdRef.current;
-      
+
       // Solo restaurar la tienda si la dirección no cambió desde que se guardó
       if (savedStore && savedAddressId === currentAddressId && currentAddressId !== null) {
         try {
@@ -846,24 +963,28 @@ export const useDelivery = () => {
   // Útil cuando canPickUp global es true pero las tiendas no se cargaron
   // IMPORTANTE: Aún respeta el debounce para evitar 429
   const forceRefreshStores = useCallback(() => {
+    console.log('🔄 forceRefreshStores llamado');
+
     // Verificar flag global para evitar forzar recarga si ya se está procesando un cambio
-    const globalProcessing = typeof globalThis.window !== 'undefined' 
+    const globalProcessing = typeof globalThis.window !== 'undefined'
       ? (globalThis.window as unknown as { __imagiqAddressProcessing?: string }).__imagiqAddressProcessing
       : null;
-    
+
     // Si hay un cambio de dirección en proceso, NO forzar recarga (useDelivery ya lo está manejando)
     if (globalProcessing) {
       console.log('⏸️ No forzar recarga: hay un cambio de dirección en proceso');
       return;
     }
-    
-    // Verificar debounce básico (aunque sea force, no queremos hacer peticiones cada milisegundo)
+
+    // Verificar debounce de 2 segundos
     const now = Date.now();
-    if (now - lastFetchTimeRef.current < 3000) {
+    if (now - lastFetchTimeRef.current < 2000) {
       console.log('⏸️ Debounce activo en forceRefreshStores: esperando antes de forzar recarga');
+      console.log(`   Tiempo desde última petición: ${now - lastFetchTimeRef.current}ms (necesita >= 2000ms)`);
       return;
     }
-    
+
+    console.log('✅ Forzando recarga de tiendas - limpiando protecciones');
     // Limpiar refs de protección para forzar la recarga
     lastSuccessfulHashRef.current = null;
     lastFetchTimeRef.current = 0;
@@ -895,5 +1016,6 @@ export const useDelivery = () => {
     addressLoading, // Exportar estado de loading para mostrar skeleton
     availableCities,
     availableStoresWhenCanPickUpFalse, // Tiendas disponibles cuando canPickUp es false
+    lastResponse, // Exportar respuesta cruda para debugging
   };
 };

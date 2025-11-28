@@ -14,6 +14,7 @@
 import { useState, useMemo } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image, { StaticImageData } from "next/image";
 import { Heart, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,13 +47,18 @@ function formatCapacityLabel(capacity: string): string {
   if (!capacity) return capacity;
 
   // Si ya tiene GB, TB, o comillas, retornar tal cual
-  if (capacity.includes('GB') || capacity.includes('TB') || capacity.includes('"') || capacity.includes('pulgada')) {
+  if (
+    capacity.includes("GB") ||
+    capacity.includes("TB") ||
+    capacity.includes('"') ||
+    capacity.includes("pulgada")
+  ) {
     return capacity;
   }
 
   // Normalizar litros: asegurar espacio entre número y LT (859LT -> 859 LT)
-  if (capacity.toUpperCase().includes('LT')) {
-    return capacity.replace(/(\d+)(LT)/gi, '$1 $2').trim();
+  if (capacity.toUpperCase().includes("LT")) {
+    return capacity.replace(/(\d+)(LT)/gi, "$1 $2").trim();
   }
 
   // Si es solo un número (probablemente pulgadas de TV), agregar comillas
@@ -131,6 +137,7 @@ export default function ProductCard({
   segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
   isInChat = false, // Por defecto NO está en chat
+  acceptsTradeIn, // Indica si el producto acepta retoma
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -184,8 +191,11 @@ export default function ProductCard({
   );
 
   // DEBUG: Log para verificar capacidades en TV
-  if (apiProduct?.categoria === 'AV' && process.env.NODE_ENV === 'development') {
-    console.log('🔍 TV Product Debug:', {
+  if (
+    apiProduct?.categoria === "AV" &&
+    process.env.NODE_ENV === "development"
+  ) {
+    console.log("🔍 TV Product Debug:", {
       modelo: apiProduct?.modelo?.[0],
       categoria: apiProduct?.categoria,
       showCapacitySelector,
@@ -219,8 +229,11 @@ export default function ProductCard({
 
   // Calcular stock real descontando lo que está en el carrito
   const quantityInCart = currentSku ? getQuantityBySku(currentSku) : 0;
-  const realStock = Math.max(0, (productSelection.selectedVariant?.stockDisponible ?? 0) - quantityInCart);
-  
+  const realStock = Math.max(
+    0,
+    (productSelection.selectedVariant?.stockDisponible ?? 0) - quantityInCart
+  );
+
   // Verificar si la VARIANTE SELECCIONADA está sin stock
   // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
   const isOutOfStock = realStock <= 0;
@@ -231,7 +244,9 @@ export default function ProductCard({
     if (apiProduct && productSelection.selectedVariant?.index !== undefined) {
       const variantIndex = productSelection.selectedVariant.index;
       // Usar modelo del índice de la variante seleccionada, o nombreMarket como fallback
-      const modelName = apiProduct.modelo?.[variantIndex] || apiProduct.nombreMarket?.[variantIndex];
+      const modelName =
+        apiProduct.modelo?.[variantIndex] ||
+        apiProduct.nombreMarket?.[variantIndex];
       if (modelName) {
         return modelName;
       }
@@ -389,21 +404,42 @@ export default function ProductCard({
         sku: currentSku || "", // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
-        color: displayedSelectedColor?.hex && shouldRenderValue(displayedSelectedColor.hex) ? displayedSelectedColor.hex : undefined,
+        color:
+          displayedSelectedColor?.hex &&
+          shouldRenderValue(displayedSelectedColor.hex)
+            ? displayedSelectedColor.hex
+            : undefined,
         colorName:
-          (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
-          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
-          (selectedColor?.label && shouldRenderValue(selectedColor.label)) ? selectedColor.label :
-          undefined,
+          displayedSelectedColor?.nombreColorDisplay &&
+          shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            ? displayedSelectedColor.nombreColorDisplay
+            : productSelection.selection.selectedColor &&
+              shouldRenderValue(productSelection.selection.selectedColor)
+            ? productSelection.selection.selectedColor
+            : selectedColor?.label && shouldRenderValue(selectedColor.label)
+            ? selectedColor.label
+            : undefined,
         capacity:
-          (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity :
-          (selectedCapacity?.label && shouldRenderValue(selectedCapacity.label)) ? selectedCapacity.label :
-          undefined,
-        ram: (productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram)) ? productSelection.selection.selectedMemoriaram : undefined,
+          productSelection.selection.selectedCapacity &&
+          shouldRenderValue(productSelection.selection.selectedCapacity)
+            ? productSelection.selection.selectedCapacity
+            : selectedCapacity?.label &&
+              shouldRenderValue(selectedCapacity.label)
+            ? selectedCapacity.label
+            : undefined,
+        ram:
+          productSelection.selection.selectedMemoriaram &&
+          shouldRenderValue(productSelection.selection.selectedMemoriaram)
+            ? productSelection.selection.selectedMemoriaram
+            : undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
         modelo: apiProduct?.modelo?.[0] || "",
         categoria: apiProduct?.categoria || "",
+        indRetoma:
+          apiProduct?.indRetoma?.[
+            productSelection.selectedVariant?.index || 0
+          ] ?? (acceptsTradeIn ? 1 : 0),
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -447,21 +483,41 @@ export default function ProductCard({
     const selectedProductData = {
       productId: id,
       productName: currentProductName,
-      price: currentPrice || (typeof finalCurrentPrice === "string" ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, "")) : finalCurrentPrice),
-      originalPrice: currentOriginalPrice || (typeof finalCurrentOriginalPrice === "string" ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")) : finalCurrentOriginalPrice),
-      color: displayedSelectedColor?.nombreColorDisplay || productSelection.selection.selectedColor || selectedColor?.label,
+      price:
+        currentPrice ||
+        (typeof finalCurrentPrice === "string"
+          ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
+          : finalCurrentPrice),
+      originalPrice:
+        currentOriginalPrice ||
+        (typeof finalCurrentOriginalPrice === "string"
+          ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
+          : finalCurrentOriginalPrice),
+      color:
+        displayedSelectedColor?.nombreColorDisplay ||
+        productSelection.selection.selectedColor ||
+        selectedColor?.label,
       colorHex: displayedSelectedColor?.hex || selectedColor?.hex,
-      capacity: productSelection.selection.selectedCapacity || selectedCapacity?.label,
+      capacity:
+        productSelection.selection.selectedCapacity || selectedCapacity?.label,
       ram: productSelection.selection.selectedMemoriaram,
       sku: currentSku,
       ean: productSelection.selectedVariant?.ean || selectedColor?.ean,
-      image: typeof currentImage === "string" ? currentImage : typeof image === "string" ? image : image.src,
+      image:
+        typeof currentImage === "string"
+          ? currentImage
+          : typeof image === "string"
+          ? image
+          : image.src,
       indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
       allPrices: apiProduct?.precioeccommerce || [],
     };
 
     // Guardar en localStorage con una clave única por producto
-    localStorage.setItem(`product_selection_${id}`, JSON.stringify(selectedProductData));
+    localStorage.setItem(
+      `product_selection_${id}`,
+      JSON.stringify(selectedProductData)
+    );
 
     // Navega a la página de multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
@@ -472,6 +528,118 @@ export default function ProductCard({
       destination: "multimedia_page",
       segment: segmento,
     });
+  };
+
+  const handleEntregoEstreno = async () => {
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Validación estricta: debe existir un SKU válido
+      const skuToUse = currentSku || selectedColor?.sku;
+      const eanToUse =
+        productSelection.selectedVariant?.ean || selectedColor?.ean || "";
+
+      if (!skuToUse) {
+        setIsLoading(false);
+        return;
+      }
+
+      posthogUtils.capture("entrego_estreno_button_click", {
+        product_id: id,
+        product_name: name,
+        selected_color:
+          selectedColor?.name || productSelection.selection.selectedColor,
+        selected_color_sku: currentSku || "",
+        source: "product_card",
+      });
+
+      // Agregar el producto al carrito
+      await addProduct({
+        id,
+        name,
+        image:
+          typeof currentImage === "string"
+            ? currentImage
+            : typeof image === "string"
+            ? image
+            : image.src ?? "",
+        price:
+          typeof finalCurrentPrice === "string"
+            ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
+            : finalCurrentPrice ?? 0,
+        originalPrice:
+          typeof finalCurrentOriginalPrice === "string"
+            ? Number.parseInt(
+                finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+              )
+            : finalCurrentOriginalPrice,
+        stock: productSelection.selectedVariant?.stockDisponible ?? 0,
+        quantity: 1,
+        sku: currentSku || "",
+        ean: eanToUse,
+        puntos_q,
+        color:
+          displayedSelectedColor?.hex &&
+          shouldRenderValue(displayedSelectedColor.hex)
+            ? displayedSelectedColor.hex
+            : undefined,
+        colorName:
+          displayedSelectedColor?.nombreColorDisplay &&
+          shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            ? displayedSelectedColor.nombreColorDisplay
+            : productSelection.selection.selectedColor &&
+              shouldRenderValue(productSelection.selection.selectedColor)
+            ? productSelection.selection.selectedColor
+            : selectedColor?.label && shouldRenderValue(selectedColor.label)
+            ? selectedColor.label
+            : undefined,
+        capacity:
+          productSelection.selection.selectedCapacity &&
+          shouldRenderValue(productSelection.selection.selectedCapacity)
+            ? productSelection.selection.selectedCapacity
+            : selectedCapacity?.label &&
+              shouldRenderValue(selectedCapacity.label)
+            ? selectedCapacity.label
+            : undefined,
+        ram:
+          productSelection.selection.selectedMemoriaram &&
+          shouldRenderValue(productSelection.selection.selectedMemoriaram)
+            ? productSelection.selection.selectedMemoriaram
+            : undefined,
+        skuPostback: productSelection.selectedSkuPostback || "",
+        desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
+        indRetoma:
+          apiProduct?.indRetoma?.[
+            productSelection.selectedVariant?.index || 0
+          ] ?? (acceptsTradeIn ? 1 : 0),
+      });
+
+      // Marcar que debe abrirse el modal de Trade-In automáticamente para este SKU específico
+      // Guardar ANTES de navegar para asegurar que esté disponible
+      if (typeof window !== "undefined") {
+        // Guardar el SKU del producto para el cual se debe abrir el modal
+        window.localStorage.setItem(
+          "open_trade_in_modal_sku",
+          currentSku || ""
+        );
+      }
+
+      // Pequeño delay para asegurar que el localStorage se guarde
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Navegar al carrito
+      router.push("/carrito/step1");
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
+    }
   };
 
   // Obtener imagen optimizada de Cloudinary para catálogo
@@ -485,33 +653,32 @@ export default function ProductCard({
   const displayedSelectedColor = useMemo(() => {
     if (apiProduct) {
       // Obtener las opciones de color con nombreColorDisplay desde el hook
-      const colorOptions = productSelection.getColorOptions().map((colorOption) => ({
-        name: colorOption.color,
-        hex: colorOption.hex,
-        label: colorOption.nombreColorDisplay || colorOption.color,
-        nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
-        sku: colorOption.variants[0]?.sku || "",
-        ean: colorOption.variants[0]?.ean || "",
-      }));
+      const colorOptions = productSelection
+        .getColorOptions()
+        .map((colorOption) => ({
+          name: colorOption.color,
+          hex: colorOption.hex,
+          label: colorOption.nombreColorDisplay || colorOption.color,
+          nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+          sku: colorOption.variants[0]?.sku || "",
+          ean: colorOption.variants[0]?.ean || "",
+        }));
 
       // Buscar por el valor de color (hex) ya que productSelection.selection.selectedColor contiene el hex
       return (
         colorOptions.find(
-          (c) => c.name === productSelection.selection.selectedColor ||
-                 c.hex === productSelection.selection.selectedColor
+          (c) =>
+            c.name === productSelection.selection.selectedColor ||
+            c.hex === productSelection.selection.selectedColor
         ) || null
       );
     }
     return selectedColor;
-  }, [
-    apiProduct,
-    productSelection,
-    selectedColor,
-  ]);
+  }, [apiProduct, productSelection, selectedColor]);
 
   return (
     <>
-        <StockNotificationModal
+      <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
         productName={currentProductName}
@@ -523,12 +690,19 @@ export default function ProductCard({
             : image.src ?? ""
         }
         selectedColor={
-          (displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay)) ? displayedSelectedColor.nombreColorDisplay :
-          (productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor)) ? productSelection.selection.selectedColor :
-          undefined
+          displayedSelectedColor?.nombreColorDisplay &&
+          shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            ? displayedSelectedColor.nombreColorDisplay
+            : productSelection.selection.selectedColor &&
+              shouldRenderValue(productSelection.selection.selectedColor)
+            ? productSelection.selection.selectedColor
+            : undefined
         }
         selectedStorage={
-          (productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity)) ? productSelection.selection.selectedCapacity : undefined
+          productSelection.selection.selectedCapacity &&
+          shouldRenderValue(productSelection.selection.selectedCapacity)
+            ? productSelection.selection.selectedCapacity
+            : undefined
         }
         onNotificationRequest={handleRequestStockNotification}
       />
@@ -587,15 +761,16 @@ export default function ProductCard({
           </div>
 
           {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
-          {isOutOfStock && process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
-            <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
-              <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
-                <p className="text-xs text-gray-600 text-center font-medium">
-                  Sin unidades
-                </p>
+          {isOutOfStock &&
+            process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
+              <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
+                <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
+                  <p className="text-xs text-gray-600 text-center font-medium">
+                    Sin unidades
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         {/* Contenido del producto */}
@@ -644,9 +819,7 @@ export default function ProductCard({
                       <span
                         className={cn(
                           "ml-1 font-semibold",
-                          realStock > 0
-                            ? "text-green-600"
-                            : "text-red-600"
+                          realStock > 0 ? "text-green-600" : "text-red-600"
                         )}
                       >
                         {realStock}
@@ -671,93 +844,148 @@ export default function ProductCard({
           </div>
 
           {/* Nombre de color del API (antes del selector) - Mostrar solo si es válido */}
-          {displayedSelectedColor?.nombreColorDisplay && shouldRenderValue(displayedSelectedColor.nombreColorDisplay) && (
-            <div className="px-3 mb-1">
-              <p className="text-xs text-gray-600 font-medium">
-                {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
-              </p>
+          {displayedSelectedColor?.nombreColorDisplay &&
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay) && (
+              <div className="px-3 mb-1">
+                <p className="text-xs text-gray-600 font-medium">
+                  {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
+                </p>
+              </div>
+            )}
+
+          {/* Contenedor para selectores y botón de entrego y estreno */}
+          <div className="px-3 flex gap-2 items-start">
+            {/* Columna izquierda: Selectores */}
+            <div className="flex-1 space-y-2">
+              {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
+              {showColorSelector &&
+                (apiProduct
+                  ? productSelection.availableColors.length > 0
+                  : colors && colors.length > 0) && (
+                  <div className="min-h-[48px]">
+                    <ColorSelector
+                      colors={
+                        apiProduct
+                          ? productSelection
+                              .getColorOptions()
+                              .map((colorOption) => ({
+                                name: colorOption.color,
+                                hex: colorOption.hex,
+                                label:
+                                  colorOption.nombreColorDisplay ||
+                                  colorOption.color,
+                                nombreColorDisplay:
+                                  colorOption.nombreColorDisplay || undefined,
+                                sku: colorOption.variants[0]?.sku || "",
+                                ean: colorOption.variants[0]?.ean || "",
+                              }))
+                          : colors
+                      }
+                      selectedColor={displayedSelectedColor}
+                      onColorSelect={handleColorSelect}
+                      onShowMore={handleMoreInfo}
+                    />
+                  </div>
+                )}
+
+              {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
+              {showCapacitySelector &&
+                (apiProduct
+                  ? productSelection.availableCapacities.length > 0
+                  : capacities && capacities.length > 0) && (
+                  <div className="min-h-[48px]">
+                    <CapacitySelector
+                      capacities={
+                        apiProduct
+                          ? productSelection.availableCapacities.map(
+                              (capacityName) => {
+                                // Crear un ProductCapacity basado en el nombre de la capacidad
+                                const formattedLabel =
+                                  formatCapacityLabel(capacityName);
+                                const capacityInfo = capacities?.find(
+                                  (c) => c.label === capacityName
+                                ) || {
+                                  value: capacityName
+                                    .toLowerCase()
+                                    .replaceAll(/\s+/g, ""),
+                                  label: formattedLabel,
+                                  sku: "",
+                                  ean: "",
+                                };
+                                return capacityInfo;
+                              }
+                            )
+                          : capacities || []
+                      }
+                      selectedCapacity={
+                        apiProduct
+                          ? productSelection.availableCapacities
+                              .map((capacityName) => {
+                                const formattedLabel =
+                                  formatCapacityLabel(capacityName);
+                                const capacityInfo = capacities?.find(
+                                  (c) => c.label === capacityName
+                                ) || {
+                                  value: capacityName
+                                    .toLowerCase()
+                                    .replaceAll(/\s+/g, ""),
+                                  label: formattedLabel,
+                                };
+                                return capacityInfo;
+                              })
+                              .find(
+                                (c) =>
+                                  c.label ===
+                                  formatCapacityLabel(
+                                    productSelection.selection
+                                      .selectedCapacity || ""
+                                  )
+                              ) || null
+                          : selectedCapacity
+                      }
+                      onCapacitySelect={handleCapacitySelect}
+                    />
+                  </div>
+                )}
             </div>
-          )}
 
-          {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
-          {showColorSelector &&
-            (apiProduct
-              ? productSelection.availableColors.length > 0
-              : colors && colors.length > 0) && (
-              <div className="min-h-[48px] px-3">
-                <ColorSelector
-                  colors={
-                    apiProduct
-                      ? productSelection.getColorOptions().map((colorOption) => ({
-                          name: colorOption.color,
-                          hex: colorOption.hex,
-                          label: colorOption.nombreColorDisplay || colorOption.color,
-                          nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
-                          sku: colorOption.variants[0]?.sku || "",
-                          ean: colorOption.variants[0]?.ean || "",
-                        }))
-                      : colors
-                  }
-                  selectedColor={displayedSelectedColor}
-                  onColorSelect={handleColorSelect}
-                  onShowMore={handleMoreInfo}
-                />
+            {/* Columna derecha: Botón de Entrego y Estreno - Mostrar solo si indRetoma === 1 */}
+            {productSelection.selectedVariant?.indRetoma === 1 && (
+              <div className="flex-shrink-0 w-[120px] self-start -mt-4 relative z-10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEntregoEstreno();
+                  }}
+                  disabled={isLoading}
+                  className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center w-full hover:bg-[#0088EE] active:bg-[#0077DD] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative z-10"
+                  style={{ pointerEvents: isLoading ? "none" : "auto" }}
+                >
+                  <svg
+                    className="w-4 h-4 md:w-5 md:h-5 text-white mb-1 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <p className="text-[10px] font-bold mb-0 pointer-events-none">
+                    Entrego y Estreno
+                  </p>
+                  <p className="text-[9px] opacity-90 pointer-events-none">
+                    aplica ahora
+                  </p>
+                </button>
               </div>
             )}
-
-          {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
-          {showCapacitySelector &&
-            (apiProduct
-              ? productSelection.availableCapacities.length > 0
-              : capacities && capacities.length > 0) && (
-              <div className="min-h-[48px] px-3">
-                <CapacitySelector
-                  capacities={
-                    apiProduct
-                      ? productSelection.availableCapacities.map(
-                          (capacityName) => {
-                            // Crear un ProductCapacity basado en el nombre de la capacidad
-                            const formattedLabel = formatCapacityLabel(capacityName);
-                            const capacityInfo = capacities?.find(
-                              (c) => c.label === capacityName
-                            ) || {
-                              value: capacityName
-                                .toLowerCase()
-                                .replaceAll(/\s+/g, ""),
-                              label: formattedLabel,
-                              sku: "",
-                              ean: "",
-                            };
-                            return capacityInfo;
-                          }
-                        )
-                      : capacities || []
-                  }
-                  selectedCapacity={
-                    apiProduct
-                      ? productSelection.availableCapacities
-                          .map((capacityName) => {
-                            const formattedLabel = formatCapacityLabel(capacityName);
-                            const capacityInfo = capacities?.find(
-                              (c) => c.label === capacityName
-                            ) || {
-                              value: capacityName
-                                .toLowerCase()
-                                .replaceAll(/\s+/g, ""),
-                              label: formattedLabel,
-                            };
-                            return capacityInfo;
-                          })
-                          .find(
-                            (c) =>
-                              c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
-                          ) || null
-                      : selectedCapacity
-                  }
-                  onCapacitySelect={handleCapacitySelect}
-                />
-              </div>
-            )}
+          </div>
 
           {/* Precio */}
           <div className="px-3 space-y-3 mt-auto">
@@ -807,7 +1035,10 @@ export default function ProductCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || isOutOfStock) {
+                  if (
+                    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
+                    isOutOfStock
+                  ) {
                     stockNotification.openModal();
                   } else {
                     handleAddToCart();
@@ -843,60 +1074,87 @@ export default function ProductCard({
             </div>
 
             {/* Mensaje de cuotas sin interés */}
-            <div className="mt-3 flex flex-col items-center gap-1">
-              <p className={cn(
-                "text-blue-600 font-bold whitespace-nowrap",
-                isInChat
-                  ? "text-[9px]" // Mucho más pequeño en chat
-                  : "text-[9px] sm:text-[10px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
-              )}>
-                Compra con 0% de interés con bancos aliados{" "}
-                <span className={cn(
-                  "text-gray-500",
-                  isInChat
-                    ? "text-[6px]" // Mucho más pequeño en chat
-                    : "text-[7px] sm:text-[8px] md:text-[9px]" // Tamaño normal en catálogo
-                )}>
-                  Aplican T&C
-                </span>
-              </p>
-              <div className="flex items-center gap-6 justify-center">
-                <Image
-                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
-                  alt="Cuotas"
-                  width={20}
-                  height={20}
+            <div className="mt-2 sm:mt-3 flex flex-col items-center gap-0.5 sm:gap-1 px-1">
+              <Link href="/soporte/tyc-bancolombia">
+                <p
                   className={cn(
-                    "object-contain",
+                    "text-blue-600 font-bold text-center leading-tight cursor-pointer hover:opacity-80 transition-opacity",
                     isInChat
-                      ? "w-8 h-8" // Más pequeño en chat
-                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
+                      ? "text-[8px] sm:text-[9px]" // Mucho más pequeño en chat
+                      : "text-[8px] sm:text-[9px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
                   )}
-                />
-                <Image
-                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
-                  alt="Pago"
-                  width={20}
-                  height={20}
-                  className={cn(
-                    "object-contain",
-                    isInChat
-                      ? "w-8 h-8" // Más pequeño en chat
-                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
-                  )}
-                />
-                <Image
-                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
-                  alt="Seguridad"
-                  width={20}
-                  height={20}
-                  className={cn(
-                    "object-contain",
-                    isInChat
-                      ? "w-8 h-8" // Más pequeño en chat
-                      : "w-4 h-4 sm:w-5 sm:h-5 md:w-[27px] md:h-[27px]" // Tamaño normal
-                  )}
-                />
+                >
+                  Compra con 0% de interés con bancos aliados{" "}
+                  <span
+                    className={cn(
+                      "text-gray-500 block sm:inline",
+                      isInChat
+                        ? "text-[5px] sm:text-[6px]" // Mucho más pequeño en chat
+                        : "text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px]" // Tamaño normal en catálogo
+                    )}
+                  >
+                    Aplican T&C
+                  </span>
+                </p>
+              </Link>
+              <div className="flex items-center gap-2 sm:gap-3 md:gap-4 lg:gap-6 justify-center">
+                <Link href="/soporte/tyc-bancolombia">
+                  <div
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    title="Ver términos y condiciones"
+                  >
+                    <Image
+                      src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764206134/u4er5lsqxgktchsmzgun.png"
+                      alt="Cuotas - Términos y condiciones"
+                      width={20}
+                      height={20}
+                      className={cn(
+                        "object-contain flex-shrink-0",
+                        isInChat
+                          ? "w-6 h-6 sm:w-7 sm:h-7"
+                          : "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                      )}
+                    />
+                  </div>
+                </Link>
+                <Link href="/soporte/tyc-bancolombia">
+                  <div
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    title="Ver términos y condiciones"
+                  >
+                    <Image
+                      src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208738/6c915dfc-5191-4308-aeac-169cb3b6d79e.png"
+                      alt="Pago - Términos y condiciones"
+                      width={20}
+                      height={20}
+                      className={cn(
+                        "object-contain flex-shrink-0",
+                        isInChat
+                          ? "w-6 h-6 sm:w-7 sm:h-7"
+                          : "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                      )}
+                    />
+                  </div>
+                </Link>
+                <Link href="/soporte/tyc-bancolombia">
+                  <div
+                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    title="Ver términos y condiciones"
+                  >
+                    <Image
+                      src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764208643/e602aa74-3a3c-4e3c-aacf-bd47d1f423d9.png"
+                      alt="Seguridad - Términos y condiciones"
+                      width={20}
+                      height={20}
+                      className={cn(
+                        "object-contain flex-shrink-0",
+                        isInChat
+                          ? "w-6 h-6 sm:w-7 sm:h-7"
+                          : "w-3 h-3 sm:w-4 sm:h-4 md:w-5 md:h-5 lg:w-[27px] lg:h-[27px]"
+                      )}
+                    />
+                  </div>
+                </Link>
               </div>
             </div>
           </div>

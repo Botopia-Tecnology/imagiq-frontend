@@ -216,37 +216,64 @@ export default function Step1({
   // Ref para rastrear SKUs que fallaron (evita reintentos de peticiones fallidas)
   const failedSkusRef = useRef<Set<string>>(new Set());
 
-  // Verificar indRetoma para cada producto único en el carrito
+  // Verificar indRetoma para cada producto único en el carrito Y para bundles
   useEffect(() => {
     if (cartProducts.length === 0) return;
 
     const verifyTradeIn = async () => {
-      // Obtener SKUs únicos (sin duplicados)
+      // Obtener SKUs únicos de productos individuales (sin duplicados)
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
-      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
-      // PROTECCIÓN: NO verificar SKUs que ya fallaron anteriormente
+      // Obtener productSku únicos de bundles (sin duplicados)
+      const uniqueBundleSkus = Array.from(
+        new Set(
+          cartProducts
+            .filter((p) => p.bundleInfo?.productSku)
+            .map((p) => p.bundleInfo!.productSku)
+        )
+      );
+
+      // Filtrar productos individuales que necesitan verificación
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
         const needsVerification = product && product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        const notFailedBefore = !failedSkusRef.current.has(sku); // PROTECCIÓN: no reintentar fallos
+        const notFailedBefore = !failedSkusRef.current.has(sku);
         return needsVerification && notVerifiedYet && notFailedBefore;
       });
 
-      if (productsToVerify.length === 0) return;
+      // Filtrar bundles que necesitan verificación (usando productSku)
+      const bundlesToVerify = uniqueBundleSkus.filter((productSku) => {
+        // Verificar si el bundle tiene ind_entre_estre definido
+        const bundleProduct = cartProducts.find(
+          (p) => p.bundleInfo?.productSku === productSku
+        );
+        const needsVerification =
+          bundleProduct &&
+          bundleProduct.bundleInfo?.ind_entre_estre === undefined;
+        const notVerifiedYet = !verifiedSkusRef.current.has(productSku);
+        const notFailedBefore = !failedSkusRef.current.has(productSku);
+        return needsVerification && notVerifiedYet && notFailedBefore;
+      });
+
+      // Combinar todos los SKUs a verificar (productos individuales + bundles)
+      const allSkusToVerify = [...productsToVerify, ...bundlesToVerify];
+
+      if (allSkusToVerify.length === 0) return;
 
       // Marcar productos como cargando
-      setLoadingIndRetoma(new Set(productsToVerify));
+      setLoadingIndRetoma(new Set(allSkusToVerify));
 
-      // Verificar cada SKU único
+      // Verificar cada SKU único (productos individuales y bundles)
       const results: Array<{
         sku: string;
         indRetoma: number;
+        isBundle?: boolean; // Indicar si es un bundle
       } | null> = [];
 
-      for (let i = 0; i < productsToVerify.length; i++) {
-        const sku = productsToVerify[i];
+      for (let i = 0; i < allSkusToVerify.length; i++) {
+        const sku = allSkusToVerify[i];
+        const isBundle = bundlesToVerify.includes(sku);
 
         // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
         if (failedSkusRef.current.has(sku)) {
@@ -272,10 +299,33 @@ export default function Step1({
           const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
           if (response.success && response.data) {
             const result = response.data;
+            const indRetoma = result.indRetoma ?? (result.aplica ? 1 : 0);
             results.push({
               sku,
-              indRetoma: result.indRetoma ?? (result.aplica ? 1 : 0),
+              indRetoma,
+              isBundle,
             });
+
+            // Si es un bundle, actualizar el bundleInfo con ind_entre_estre
+            if (isBundle) {
+              const storedProducts = JSON.parse(
+                localStorage.getItem("cart-items") || "[]"
+              ) as Array<Record<string, unknown>>;
+              const updatedProducts = storedProducts.map((p) => {
+                if (p.bundleInfo && (p.bundleInfo as BundleInfo).productSku === sku) {
+                  return {
+                    ...p,
+                    bundleInfo: {
+                      ...(p.bundleInfo as BundleInfo),
+                      ind_entre_estre: indRetoma,
+                    },
+                  };
+                }
+                return p;
+              });
+              localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+            }
+
             // Marcar SKU como verificado cuando tiene éxito
             verifiedSkusRef.current.add(sku);
             // Limpiar de fallos si existía
@@ -311,12 +361,13 @@ export default function Step1({
         }
       }
 
-      // Actualizar localStorage con los resultados
+      // Actualizar localStorage con los resultados (solo para productos individuales, bundles ya se actualizaron arriba)
       const storedProducts = JSON.parse(
         localStorage.getItem("cart-items") || "[]"
       ) as Array<Record<string, unknown>>;
       const updatedProducts = storedProducts.map((p) => {
-        const result = results.find((r) => r && r.sku === p.sku);
+        // Actualizar productos individuales
+        const result = results.find((r) => r && r.sku === p.sku && !r.isBundle);
         if (result) {
           return {
             ...p,
@@ -656,16 +707,34 @@ export default function Step1({
           ) : (
             <div className="space-y-4">
               {/* Bundles agrupados */}
-              {bundleGroups.map((group) => (
-                <CartBundleGroup
-                  key={`${group.bundleInfo.codCampana}-${group.bundleInfo.productSku}`}
-                  bundleInfo={group.bundleInfo}
-                  items={group.items}
-                  onUpdateQuantity={updateBundleQuantity}
-                  onRemoveProduct={removeBundleProduct}
-                  formatPrice={formatPrice}
-                />
-              ))}
+              {bundleGroups.map((group) => {
+                // Obtener datos de Trade-In para el bundle usando el productSku
+                const bundleTradeInData = tradeInData[group.bundleInfo.productSku] || null;
+                // Obtener shippingCity del primer producto del bundle
+                const bundleShippingCity = group.items[0]?.shippingCity;
+                // Verificar canPickUp del primer producto
+                const bundleCanPickUp = group.items[0]?.canPickUp;
+                const showCanPickUpMessage = isUserLoggedIn && bundleCanPickUp === false;
+
+                return (
+                  <CartBundleGroup
+                    key={`${group.bundleInfo.codCampana}-${group.bundleInfo.productSku}`}
+                    bundleInfo={group.bundleInfo}
+                    items={group.items}
+                    onUpdateQuantity={updateBundleQuantity}
+                    onRemoveProduct={removeBundleProduct}
+                    formatPrice={formatPrice}
+                    tradeInData={bundleTradeInData}
+                    onOpenTradeInModal={() => {
+                      setCurrentTradeInSku(group.bundleInfo.productSku);
+                      handleOpenTradeInModal();
+                    }}
+                    onRemoveTradeIn={() => handleRemoveTradeIn(group.bundleInfo.productSku)}
+                    shippingCity={bundleShippingCity}
+                    showCanPickUpMessage={showCanPickUpMessage}
+                  />
+                );
+              })}
 
               {/* Productos individuales (sin bundle) */}
               {nonBundleProducts.length > 0 && (

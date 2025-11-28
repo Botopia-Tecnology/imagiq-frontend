@@ -18,6 +18,8 @@ export interface BundleInfo {
   bundleDiscount: number;
   /** Fecha de expiración del bundle */
   fechaFinal: Date;
+  /** Indica si el bundle aplica para entrega y estreno (1 = aplica, 0 = no aplica) */
+  ind_entre_estre?: number;
 }
 
 export interface CartProduct {
@@ -197,6 +199,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
           bundlePrice: Number(bi.bundlePrice) || 0,
           bundleDiscount: Number(bi.bundleDiscount) || 0,
           fechaFinal: new Date(bi.fechaFinal as string | number | Date),
+          ind_entre_estre: typeof bi.ind_entre_estre === "number" ? bi.ind_entre_estre : undefined,
         };
       }
     }

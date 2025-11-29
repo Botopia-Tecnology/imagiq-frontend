@@ -53,21 +53,15 @@ export default function MultimediaBannerCarousel({ banners }: MultimediaBannerCa
   }
 
   return (
-    <section className="relative w-full">
-      {/* Container con aspect ratio */}
-      <div className="relative w-full mx-auto" style={{ maxWidth: '1440px' }}>
-        <div 
-          className="relative w-full overflow-hidden"
-          style={{
-            aspectRatio: isMobile ? '27/35' : '9/5',
-            minHeight: isMobile ? '700px' : 'auto',
-          }}
-        >
+    <section className="relative w-full px-4 md:px-6 lg:px-8 pt-15 md:pt-8 lg:pt-10">
+      {/* Container que se ajusta al contenido */}
+      <div className="relative w-full mx-auto overflow-hidden rounded-3xl" style={{ maxWidth: '1440px' }}>
+        <div className="relative w-full">
           {banners.map((banner, index) => (
             <div
               key={banner.id}
-              className={`absolute inset-0 transition-opacity duration-500 ${
-                index === currentIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              className={`transition-opacity duration-500 ${
+                index === currentIndex ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
               }`}
             >
               <MultimediaBannerSlide

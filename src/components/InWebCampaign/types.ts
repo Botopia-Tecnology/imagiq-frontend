@@ -6,8 +6,8 @@ export interface CampaignData {
   display_style?: "modal" | "slider";
   html_content?: string | null;
   image_url?: string; // imagen del contenido
-  preview_url?: string;
+  preview_url?: string; // rutas donde debe mostrarse la campaña: "*" para todas, ruta exacta (ej: "/"), o wildcard (ej: "/productos/*")
   ttl?: number;
   urgency?: string;
-  url?: string; // ruta donde debe mostrarse la campaña ("*" para todas, o ruta específica)
+  url?: string; // @deprecated - usar preview_url en su lugar
 }

@@ -77,6 +77,7 @@ function ProductCard({ product }: { product: BundleProduct }) {
         {/* Botón "Saber más" */}
         <Link
           href={productUrl}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="mt-4 w-full py-2.5 px-4 bg-white text-gray-900 border-2 border-gray-900 rounded-full font-medium text-center hover:bg-gray-900 hover:text-white transition-colors duration-200"
         >
           Saber más

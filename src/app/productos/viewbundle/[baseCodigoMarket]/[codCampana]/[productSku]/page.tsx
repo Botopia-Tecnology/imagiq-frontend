@@ -54,6 +54,14 @@ export default function BundleViewPage({ params }: BundleViewPageProps) {
         navbar.style.transform = "translateY(0)";
       }
     }
+
+    // Cleanup: restaurar navbar cuando el componente se desmonta
+    return () => {
+      const navbar = document.querySelector('[data-navbar="true"]') as HTMLElement;
+      if (navbar) {
+        navbar.style.transform = "translateY(0)";
+      }
+    };
   }, [showStickyBar]);
 
   // Transición suave al cargar

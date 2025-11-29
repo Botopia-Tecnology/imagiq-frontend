@@ -20,6 +20,7 @@ import {
   mapApiProductsToFrontend,
   groupProductsByCategory,
   mapApiProductsAndBundles,
+  mapDirectBundleResponseToFrontend,
   BundleCardProps,
   MixedProductItem,
 } from "@/lib/productMapper";
@@ -1051,6 +1052,60 @@ export const useProduct = (productId: string) => {
     loading,
     error,
     relatedProducts,
+  };
+};
+
+/**
+ * Hook para obtener un bundle específico por sus 3 parámetros
+ * @param baseCodigoMarket - Código base del producto principal
+ * @param codCampana - Código de la campaña
+ * @param productSku - SKU de la opción del bundle
+ * @returns Bundle, loading state, y error state
+ */
+export const useBundle = (baseCodigoMarket: string, codCampana: string, productSku: string) => {
+  const [bundle, setBundle] = useState<BundleCardProps | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBundle = async () => {
+      // No hay cache, hacer petición normal con loading
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Buscar el bundle por sus 3 parámetros
+        const response = await productEndpoints.getBundleById(baseCodigoMarket, codCampana, productSku);
+
+        if (response.success && response.data) {
+          const apiData = response.data;
+          const mappedBundle = mapDirectBundleResponseToFrontend(apiData);
+
+          setBundle(mappedBundle);
+          setError(null);
+        } else {
+          setError("Bundle no encontrado");
+        }
+      } catch (err) {
+        console.error("Error fetching bundle:", err);
+        setError("Error al cargar el bundle");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (baseCodigoMarket && codCampana && productSku) {
+      fetchBundle();
+    } else {
+      setLoading(false);
+      setError("Parámetros de bundle no válidos");
+    }
+  }, [baseCodigoMarket, codCampana, productSku]);
+
+  return {
+    bundle,
+    loading,
+    error,
   };
 };
 

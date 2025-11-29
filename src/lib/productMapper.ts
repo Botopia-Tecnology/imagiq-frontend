@@ -5,7 +5,7 @@
  * - Usa imágenes mock mientras se implementan
  */
 
-import { ProductApiData, BundleApiData, BundleOption, ProductOrBundleApiData } from './api';
+import { ProductApiData, BundleApiData, BundleOption, ProductOrBundleApiData, BundleDirectResponse } from './api';
 import { ProductCardProps, ProductColor, ProductCapacity } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
 
@@ -563,6 +563,90 @@ export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProp
     submenu: normalizeStringOrArray(apiBundle.submenu),
     fecha_inicio: apiBundle.fecha_inicio,
     fecha_final: apiBundle.fecha_final,
+    isBundle: true,
+  };
+}
+
+/**
+ * Mapea la respuesta directa del endpoint de bundle individual a BundleCardProps
+ * Este mapper se usa para el endpoint /api/products/v2/bundles/:baseCodigoMarket/:codCampana/:product_sku
+ */
+export function mapDirectBundleResponseToFrontend(
+  bundleResponse: BundleDirectResponse
+): BundleCardProps {
+  // Formatear precios
+  const formatPrice = (price: number) => {
+    if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
+    return `$ ${Math.round(price).toLocaleString('es-CO')}`;
+  };
+
+  // Calcular descuento
+  const calculateDiscount = (bundlePrice: number, bundleDiscount: number): string | undefined => {
+    if (bundlePrice > 0 && bundleDiscount > 0 && bundleDiscount < bundlePrice) {
+      const discountPercent = Math.round(((bundlePrice - bundleDiscount) / bundlePrice) * 100);
+      return `-${discountPercent}%`;
+    }
+    return undefined;
+  };
+
+  // El endpoint directo solo devuelve UNA opción del bundle (la especificada por product_sku)
+  // Crear la opción única a partir de los productos
+  const productos = bundleResponse.productos || [];
+
+  // Calcular precios del bundle sumando los precios de los productos
+  const bundlePrice = productos.reduce((sum, p) => sum + (p.product_original_price || 0), 0);
+  const bundleDiscount = productos.reduce((sum, p) => sum + (p.product_discount_price || 0), 0);
+
+  // Crear nombre del bundle concatenando modelos
+  const modelo = productos.map(p => p.modelo).join(' + ') || 'Bundle';
+
+  // Obtener SKUs de los productos
+  const skus_bundle = productos.map(p => p.sku);
+
+  // Obtener imágenes preview de los productos
+  const imagePreviewUrl = productos
+    .map(p => p.imagePreviewUrl)
+    .filter((url): url is string => !!url);
+
+  // Extraer datos del primer producto (producto padre)
+  const mainProduct = productos[0];
+
+  const opcion: BundleOptionProps = {
+    product_sku: bundleResponse.product_sku,
+    modelo,
+    price: formatPrice(bundleDiscount),
+    originalPrice: bundlePrice > 0 ? formatPrice(bundlePrice) : undefined,
+    discount: calculateDiscount(bundlePrice, bundleDiscount),
+    skus_bundle,
+    ind_entre_estre: 0, // Este campo no viene en la respuesta directa
+    imagePreviewUrl,
+    productos,
+    // Datos de variante del producto padre (primer producto)
+    colorProductSku: mainProduct?.color,
+    nombreColorProductSku: mainProduct?.nombreColor,
+    capacidadProductSku: mainProduct?.capacidad,
+    memoriaRamProductSku: mainProduct?.memoriaram,
+    stockTotal: mainProduct?.stockTotal,
+  };
+
+  // Obtener imagen del bundle (usar imagen del primer producto o placeholder)
+  const image: string | StaticImageData = mainProduct?.imagePreviewUrl || emptyImg;
+
+  return {
+    id: `${bundleResponse.baseCodigoMarket}-${bundleResponse.codCampana}`,
+    baseCodigoMarket: bundleResponse.baseCodigoMarket,
+    codCampana: bundleResponse.codCampana,
+    name: modelo,
+    image,
+    price: formatPrice(bundleDiscount),
+    originalPrice: bundlePrice > 0 ? formatPrice(bundlePrice) : undefined,
+    discount: calculateDiscount(bundlePrice, bundleDiscount),
+    opciones: [opcion], // Solo una opción en la respuesta directa
+    categoria: mainProduct?.categoria || '',
+    menu: '',
+    submenu: '',
+    fecha_inicio: '',
+    fecha_final: '',
     isBundle: true,
   };
 }

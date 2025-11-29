@@ -237,8 +237,10 @@ function BundleVariantSelector({
  * Componente para mostrar las imágenes del bundle con superposición diagonal
  * - 2 imágenes: esquina superior-izquierda + esquina inferior-derecha, superpuestas ligeramente
  * - 3+ imágenes: distribución en esquinas con superposición
+ *
+ * EXPORTADO para reutilizar en la página de vista detallada del bundle
  */
-function BundlePreviewImages({
+export function BundlePreviewImages({
   images,
   bundleName,
 }: {
@@ -444,19 +446,22 @@ export default function BundleCard({
   const router = useRouter();
 
   const handleMoreInfo = () => {
-    // TODO: Navegar a página de detalle del bundle (próximamente)
-    // Por ahora, solo registrar el evento
+    // Navegar a página de detalle del bundle
     posthogUtils.capture("bundle_more_info_click", {
       bundle_id: id,
       bundle_name: name,
       source: "bundle_card",
       baseCodigoMarket,
       codCampana,
+      product_sku: selectedOption?.product_sku,
       opciones_count: opciones?.length || 0,
       categoria,
       menu,
       submenu,
     });
+
+    // Navegar usando los 3 parámetros requeridos por el endpoint
+    router.push(`/productos/viewbundle/${baseCodigoMarket}/${codCampana}/${selectedOption?.product_sku}`);
   };
 
   const handleEntregoEstreno = async () => {
@@ -729,11 +734,20 @@ export default function BundleCard({
     >
       {/* Sección de imágenes del bundle - overflow visible para que las imágenes se "salgan" - Clickable */}
       <div
-        className="relative aspect-square bg-gray-100 rounded-lg overflow-visible cursor-pointer"
+        className="relative aspect-square bg-gray-100 rounded-lg overflow-visible cursor-pointer hover:opacity-90 transition-opacity"
         onClick={(e) => {
           e.stopPropagation();
           handleMoreInfo();
         }}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleMoreInfo();
+          }
+        }}
+        aria-label={`Ver detalles de ${displayName}`}
       >
         <BundlePreviewImages images={previewImages} bundleName={displayName} />
       </div>

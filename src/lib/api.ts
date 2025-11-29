@@ -312,6 +312,12 @@ export const productEndpoints = {
     ),
   getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string }) =>
     apiClient.post<CandidateStoresResponse>('/api/products/candidate-stores', data),
+
+  // Bundle-specific endpoints
+  getBundleById: (baseCodigoMarket: string, codCampana: string, productSku: string) =>
+    apiClient.get<BundleDirectResponse>(
+      `/api/products/v2/bundles/${baseCodigoMarket}/${codCampana}/${productSku}`
+    ),
 };
 
 // Categories API endpoints
@@ -532,8 +538,10 @@ export interface ProductApiResponse {
 // Producto individual dentro de un bundle
 export interface BundleProduct {
   sku: string;
+  codigoMarket: string;
   modelo: string;
   imagePreviewUrl?: string;
+  imageDetailsUrls?: string[]; // Array de todas las imágenes del producto
   product_original_price: number;
   product_discount_price: number;
   ean?: string;
@@ -625,6 +633,15 @@ export interface ProductApiData {
 
 // Tipo unión para productos y bundles
 export type ProductOrBundleApiData = ProductApiData | BundleApiData;
+
+// Respuesta directa del endpoint de bundle individual
+export interface BundleDirectResponse {
+  baseCodigoMarket: string;
+  codCampana: string;
+  product_sku: string;
+  productos: BundleProduct[];
+  isBlackFriday?: boolean;
+}
 
 export interface FavoriteApiResponse {
   products: ProductApiData[];

@@ -56,8 +56,21 @@ export function DesktopView({ onItemClick }: Props) {
     );
   }
 
+  // Agrupar ofertas por categoría (nombreVisible)
+  const ofertasPorCategoria = ofertas.reduce((acc, oferta) => {
+    const categoria = oferta.categoria?.nombreVisible || "Otros";
+    if (!acc[categoria]) {
+      acc[categoria] = [];
+    }
+    acc[categoria].push(oferta);
+    return acc;
+  }, {} as Record<string, typeof ofertas>);
+
+  // Ordenar categorías alfabéticamente
+  const categoriasOrdenadas = Object.keys(ofertasPorCategoria).sort();
+
   return (
-    <div className="bg-white py-6 px-6 relative">
+    <div className="bg-white py-6 relative">
       <button
         onClick={handleCloseDropdown}
         className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -74,52 +87,74 @@ export function DesktopView({ onItemClick }: Props) {
           </p>
         </div>
       ) : (
-        <div className="flex gap-x-8">
-          <div className="flex-1 pl-8">
-            {/* Dos filas: hasta 10 productos (5 por fila) */}
-            <div className="grid grid-cols-5 gap-x-5 gap-y-4">
-              {ofertas.slice(0, 10).map((oferta) => {
-                const href = `/productos/viewpremium/${oferta.codigo_market}`;
+        <div className="w-full pl-4 pr-8">
+          {/* Grid de categorías - se adapta al número de categorías */}
+          <div
+            className="grid w-full gap-x-10 gap-y-8"
+            style={{
+              gridTemplateColumns: `repeat(${categoriasOrdenadas.length}, minmax(${SIZES.product.container}px, 1fr))`,
+            }}
+          >
+            {categoriasOrdenadas.map((categoria) => (
+              <div key={categoria}>
+                {/* Nombre de la categoría */}
+                <h3 className="text-sm font-bold text-gray-900 mb-4 text-left">
+                  {categoria}
+                </h3>
 
-                return (
-                  <Link
-                    key={oferta.uuid}
-                    href={href}
-                    onClick={() =>
-                      onItemClick(oferta.nombre, href)
-                    }
-                    className="flex flex-col items-center text-center group"
-                    style={{ width: `${SIZES.product.container}px` }}
-                  >
-                    <div
-                      className="relative mb-2 transition-transform group-hover:scale-105"
-                      style={{
-                        width: `${SIZES.product.image}px`,
-                        height: `${SIZES.product.image}px`,
-                      }}
-                    >
-                      {oferta.producto.imagen ? (
-                        <Image
-                          src={oferta.producto.imagen}
-                          alt={oferta.nombre}
-                          fill
-                          className="object-contain"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
-                          <span className="text-gray-400 text-xs">
-                            Sin imagen
-                          </span>
+                {/* Productos de esta categoría en columna */}
+                <div className="flex flex-col gap-y-4 items-start">
+                  {ofertasPorCategoria[categoria].map((oferta) => {
+                    const href = `/productos/viewpremium/${oferta.codigo_market}`;
+
+                    return (
+                      <Link
+                        key={oferta.uuid}
+                        href={href}
+                        onClick={() =>
+                          onItemClick(
+                            oferta.producto.nombreMarket || oferta.nombre,
+                            href
+                          )
+                        }
+                        className="flex flex-row items-center gap-3 group"
+                        style={{
+                          width: `${SIZES.product.container + 100}px`,
+                        }}
+                      >
+                        <div
+                          className="relative flex-shrink-0 transition-transform group-hover:scale-105"
+                          style={{
+                            width: `${SIZES.product.image}px`,
+                            height: `${SIZES.product.image}px`,
+                          }}
+                        >
+                          {oferta.producto.imagen ? (
+                            <Image
+                              src={oferta.producto.imagen}
+                              alt={
+                                oferta.producto.nombreMarket || oferta.nombre
+                              }
+                              fill
+                              className="object-contain"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
+                              <span className="text-gray-400 text-xs">
+                                Sin imagen
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <span className="text-xs font-semibold text-gray-900 leading-tight line-clamp-2">
-                      {oferta.nombre}
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+                        <span className="text-xs font-semibold text-gray-900 leading-snug line-clamp-3 flex-1">
+                          {oferta.producto.nombreMarket || oferta.nombre}
+                        </span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

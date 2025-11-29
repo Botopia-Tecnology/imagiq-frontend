@@ -17,6 +17,18 @@ export interface OfertaDirecta {
     activo: boolean;
     created_at: string;
     updated_at: string;
+    categoria_id: string;
+    categoria: {
+        uuid: string;
+        nombre: string;
+        nombreVisible: string;
+        descripcion: string;
+        imagen: string;
+        activo: boolean;
+        orden: number;
+        createdAt: string;
+        updatedAt: string;
+    };
     producto: {
         codigoMarket: string;
         nombreMarket: string;

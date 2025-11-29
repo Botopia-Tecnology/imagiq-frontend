@@ -720,11 +720,16 @@ export default function Navbar() {
                               <div
                                 className="fixed left-0 right-0 z-[9999] bg-white shadow-xl"
                                 style={{
-                                  top: `${getDropdownPosition(dropdownKey).top
-                                    }px`,
+                                  top: `${getDropdownPosition(dropdownKey).top}px`,
                                 }}
                               >
-                                <div className="mx-auto max-w-screen-2xl">
+                                <div
+                                  className={
+                                    dropdownKey === "Ofertas"
+                                      ? "w-full pl-4 pr-8"
+                                      : "mx-auto max-w-screen-2xl"
+                                  }
+                                >
                                   {getDropdownComponent(
                                     dropdownKey as DropdownName,
                                     item

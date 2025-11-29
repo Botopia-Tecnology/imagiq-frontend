@@ -5,7 +5,7 @@
 export const SIZES = {
   product: {
     container: 140,  // Tamaño cómodo para 2 filas
-    image: 110,      // Imágenes bien visibles
+    image: 96,       // Imágenes un poco más pequeñas para dar más aire
   },
   promo: { default: 48 },
 } as const;

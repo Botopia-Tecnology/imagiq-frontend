@@ -40,42 +40,70 @@ export function MobileView({ onItemClick }: Props) {
     );
   }
 
-  return (
-    <div className="p-4">
-      <div className="grid grid-cols-3 gap-4">
-        {ofertas.map((oferta) => {
-          const href = `/productos/viewpremium/${oferta.codigo_market}`;
+  // Agrupar ofertas por categoría (nombreVisible)
+  const ofertasPorCategoria = ofertas.reduce((acc, oferta) => {
+    const categoria = oferta.categoria?.nombreVisible || "Otros";
+    if (!acc[categoria]) {
+      acc[categoria] = [];
+    }
+    acc[categoria].push(oferta);
+    return acc;
+  }, {} as Record<string, typeof ofertas>);
 
-          return (
-            <Link
-              key={oferta.uuid}
-              href={href}
-              onClick={() =>
-                onItemClick(oferta.nombre, href)
-              }
-              className="flex flex-col items-center text-center"
-            >
-              <div className="relative w-16 h-16 mb-2">
-                {oferta.producto.imagen ? (
-                  <Image
-                    src={oferta.producto.imagen}
-                    alt={oferta.nombre}
-                    fill
-                    className="object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
-                    <span className="text-gray-400 text-[8px]">Sin imagen</span>
+  // Ordenar categorías alfabéticamente
+  const categoriasOrdenadas = Object.keys(ofertasPorCategoria).sort();
+
+  return (
+    <div className="p-4 space-y-6">
+      {categoriasOrdenadas.map((categoria) => (
+        <div key={categoria}>
+          {/* Nombre de la categoría */}
+          <h3 className="text-sm font-bold text-gray-900 mb-3">
+            {categoria}
+          </h3>
+
+          {/* Grid de productos de esta categoría */}
+          <div className="grid grid-cols-3 gap-4">
+            {ofertasPorCategoria[categoria].map((oferta) => {
+              const href = `/productos/viewpremium/${oferta.codigo_market}`;
+
+              return (
+                <Link
+                  key={oferta.uuid}
+                  href={href}
+                  onClick={() =>
+                    onItemClick(
+                      oferta.producto.nombreMarket || oferta.nombre,
+                      href
+                    )
+                  }
+                  className="flex flex-col items-center text-center"
+                >
+                  <div className="relative w-16 h-16 mb-2">
+                    {oferta.producto.imagen ? (
+                      <Image
+                        src={oferta.producto.imagen}
+                        alt={oferta.producto.nombreMarket || oferta.nombre}
+                        fill
+                        className="object-contain"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-200 flex items-center justify-center rounded">
+                        <span className="text-gray-400 text-[8px]">
+                          Sin imagen
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-              <span className="text-xs font-semibold text-gray-900 line-clamp-2">
-                {oferta.nombre}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+                  <span className="text-xs font-semibold text-gray-900 leading-snug line-clamp-3">
+                    {oferta.producto.nombreMarket || oferta.nombre}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

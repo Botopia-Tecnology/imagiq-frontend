@@ -112,7 +112,7 @@ export async function getActivePageBySlug(slug: string): Promise<MultimediaPageD
       `/api/multimedia/pages/slug/${slug}`
     );
     
-    // Parsear posiciones si vienen como strings JSON
+    // Parsear posiciones y text_styles si vienen como strings JSON
     if (response?.banners) {
       response.banners = response.banners.map(banner => ({
         ...banner,
@@ -122,6 +122,9 @@ export async function getActivePageBySlug(slug: string): Promise<MultimediaPageD
         position_mobile: typeof banner.position_mobile === 'string' 
           ? JSON.parse(banner.position_mobile) 
           : banner.position_mobile,
+        text_styles: typeof banner.text_styles === 'string'
+          ? JSON.parse(banner.text_styles)
+          : banner.text_styles,
       }));
     }
     

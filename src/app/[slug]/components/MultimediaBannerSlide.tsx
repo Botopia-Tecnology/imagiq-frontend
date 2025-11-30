@@ -9,6 +9,7 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import type { MultimediaPageBanner } from '@/services/multimedia-pages.service';
+import type { BannerTextStyles } from '@/types/banner';
 
 interface MultimediaBannerSlideProps {
   banner: MultimediaPageBanner;
@@ -31,6 +32,7 @@ export default function MultimediaBannerSlide({
   const imageUrl = isMobile ? banner.mobile_image_url : banner.desktop_image_url;
   const videoUrl = isMobile ? banner.mobile_video_url : banner.desktop_video_url;
   const position = isMobile ? banner.position_mobile : banner.position_desktop;
+  const textStyles = banner.text_styles as BannerTextStyles | null;
 
   useEffect(() => {
     const video = videoRef.current;
@@ -50,12 +52,13 @@ export default function MultimediaBannerSlide({
   };
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full" style={{ maxHeight: '310px', overflow: 'hidden' }}>
       {/* Fondo - Imagen o Video */}
       {videoUrl && !hasPlayedVideo ? (
         <video
           ref={videoRef}
           className="w-full h-auto"
+          style={{ maxHeight: '310px', objectFit: 'cover' }}
           muted
           playsInline
           onEnded={handleVideoEnd}
@@ -69,6 +72,7 @@ export default function MultimediaBannerSlide({
           width={1260}
           height={621}
           className="w-full h-auto"
+          style={{ maxHeight: '310px', objectFit: 'cover' }}
           priority={isActive}
         />
       ) : null}
@@ -87,7 +91,10 @@ export default function MultimediaBannerSlide({
         {banner.title && (
           <h2 
             className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4"
-            style={{ color: banner.color_font }}
+            style={{
+              color: banner.color_font,
+              ...(textStyles?.title || {}),
+            }}
           >
             {banner.title}
           </h2>
@@ -96,7 +103,10 @@ export default function MultimediaBannerSlide({
         {banner.description && (
           <p 
             className="text-base md:text-xl lg:text-2xl mb-6"
-            style={{ color: banner.color_font }}
+            style={{
+              color: banner.color_font,
+              ...(textStyles?.description || {}),
+            }}
           >
             {banner.description}
           </p>
@@ -109,6 +119,7 @@ export default function MultimediaBannerSlide({
             style={{
               backgroundColor: banner.color_font,
               color: '#000000',
+              ...(textStyles?.cta || {}),
             }}
           >
             {banner.cta}

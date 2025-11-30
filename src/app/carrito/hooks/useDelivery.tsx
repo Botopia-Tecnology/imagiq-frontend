@@ -70,7 +70,7 @@ const candidateStoreToFormattedStore = (
     codigo: codigo,
     descripcion: candidateStore.nombre_tienda.trim(),
     departamento: city, // Usar la ciudad como departamento
-    ciudad: candidateStore.ciudad || city,
+    ciudad: city, // IMPORTANTE: Usar el parámetro city (key del objeto) para consistencia en filtros
     direccion: candidateStore.direccion,
     place_ID: candidateStore.place_ID,
     ubicacion_cc: "", // No viene en el endpoint candidate-stores
@@ -83,6 +83,7 @@ const candidateStoreToFormattedStore = (
     latitud: 0, // No viene en el endpoint candidate-stores
     longitud: 0, // No viene en el endpoint candidate-stores
     position: [0, 0], // No viene en el endpoint candidate-stores
+    stock: candidateStore.stock, // Stock disponible en la tienda
   };
 };
 
@@ -364,9 +365,10 @@ export const useDelivery = () => {
               console.log(`🏙️ Procesando ciudad ${city} con ${cityStores.length} tiendas`);
               // Agregar las tiendas en el orden exacto que vienen del endpoint
               for (const store of cityStores) {
-                const storeCity = store.ciudad || city;
-                allStoresInOrder.push({ store, city: storeCity });
-                console.log(`  ✅ Tienda encontrada: ${store.nombre_tienda} (${store.codBodega})`);
+                // IMPORTANTE: Usar la ciudad de la KEY del objeto, no store.ciudad
+                // Porque store.ciudad puede tener formato diferente
+                allStoresInOrder.push({ store, city: city });
+                console.log(`  ✅ Tienda encontrada: ${store.nombre_tienda} (${store.codBodega}) en ${city}`);
               }
             }
           }
@@ -429,14 +431,25 @@ export const useDelivery = () => {
         // IMPORTANTE: SIEMPRE guardar las tiendas, independientemente de canPickUp
         // Si canPickUp es true, mostrar tiendas normalmente
         if (globalCanPickUp) {
-          console.log(`✅ Estableciendo ${physicalStores.length} tiendas en stores y filteredStores (canPickUp=true)`);
+          // IMPORTANTE: Cuando canPickUp es true, solo mostrar tiendas de la PRIMERA ciudad
+          // La primera ciudad es la ciudad del usuario (la más cercana)
+          const firstCity = cities.length > 0 ? cities[0] : null;
+          const storesToShow = firstCity
+            ? physicalStores.filter(store => store.ciudad === firstCity)
+            : physicalStores;
+
+          console.log(`✅ canPickUp=true: Filtrando tiendas de la primera ciudad (${firstCity})`);
+          console.log(`   Total tiendas disponibles: ${physicalStores.length}`);
+          console.log(`   Tiendas de ${firstCity}: ${storesToShow.length}`);
+          console.log(`   Otras ciudades disponibles:`, cities.slice(1));
+
           // IMPORTANTE: Establecer stores y filteredStores al mismo tiempo
-          setStores(physicalStores);
+          setStores(storesToShow);
           // Asegurar que filteredStores se actualice inmediatamente
-          setFilteredStores([...physicalStores]);
+          setFilteredStores([...storesToShow]);
           // También guardar en availableStoresWhenCanPickUpFalse por si acaso
-          setAvailableStoresWhenCanPickUpFalse(physicalStores);
-          console.log(`✅ Tiendas establecidas. stores.length=${physicalStores.length}, filteredStores.length=${physicalStores.length}`);
+          setAvailableStoresWhenCanPickUpFalse(storesToShow);
+          console.log(`✅ Tiendas establecidas. stores.length=${storesToShow.length}, filteredStores.length=${storesToShow.length}`);
         } else {
           // Si canPickUp global es false, guardar tiendas en availableStoresWhenCanPickUpFalse
           // IMPORTANTE: Estas son las tiendas que vienen de candidate-stores y se mostrarán en el mensaje

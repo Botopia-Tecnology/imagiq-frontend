@@ -118,7 +118,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
             const hasStores = availableStoresWhenCanPickUpFalse.length > 0 || storesToShowWhenCanPickUpFalse.length > 0;
             const hasCities = availableCities.length > 0;
             const reallyNoStores = !hasStores && !hasCities;
-            
+
             // DEBUG: Log inmediato para ver qué está pasando
             console.log('🎨 StoreSelector renderizando:', {
               hasStores,
@@ -135,11 +135,11 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                   <p className="text-sm font-bold text-gray-900 mb-2">
                     {hasActiveTradeIn
                       ? "No hay tiendas disponibles para recoger este producto."
-                      : "El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada."}
+                      : "Tu ubicación predeterminada no cuenta con tiendas disponibles para este producto."}
                   </p>
                   {!hasActiveTradeIn && (
                     <p className="text-xs text-gray-700 mb-3">
-                      Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
+                      Por favor selecciona otra dirección o agrega una nueva dirección en una zona con cobertura.
                     </p>
                   )}
                   {hasActiveTradeIn && (
@@ -159,24 +159,25 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
             return (
               <>
+                {/* Siempre mostrar mensaje de advertencia cuando canPickUp es false */}
+                <p className="text-sm font-bold text-gray-900 mb-2">
+                  Tu ubicación predeterminada no cuenta con tiendas disponibles para este producto.
+                </p>
                 {!hasActiveTradeIn && (
-                  <>
-                    <p className="text-sm font-bold text-gray-900 mb-2">
-                      El producto en tu carrito no está disponible para recoger en tienda con tu dirección predeterminada.
-                    </p>
-                    <p className="text-xs text-gray-700 mb-3">
-                      Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
-                    </p>
-                  </>
+                  <p className="text-xs text-gray-700 mb-3">
+                    Por favor selecciona otra dirección o agrega una nueva dirección. El producto está disponible en las siguientes tiendas:
+                  </p>
+                )}
+                {hasActiveTradeIn && (
+                  <p className="text-xs text-gray-700 mb-3">
+                    El producto está disponible en las siguientes tiendas:
+                  </p>
                 )}
 
                 {/* Mostrar tiendas disponibles cuando hay tiendas */}
                 {storesToDisplay.length > 0 && (
                   <>
-                    <p className="text-xs font-semibold text-gray-900 mb-2">
-                      El producto está disponible en las siguientes tiendas:
-                    </p>
-                    <div className="space-y-2 mb-3">
+                    <div className="space-y-2 mb-3 max-h-[420px] overflow-y-auto">
                       {storesToDisplay.map((store) => (
                         <div
                           key={store.codigo}
@@ -245,7 +246,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
             />
           </div>
 
-          <div className="max-h-48 overflow-y-auto border rounded-lg bg-white shadow">
+          <div className="max-h-[420px] overflow-y-auto border rounded-lg bg-white shadow">
             {(() => {
               if (storesLoading) {
                 return (

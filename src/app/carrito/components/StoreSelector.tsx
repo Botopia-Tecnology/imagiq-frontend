@@ -118,7 +118,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
             const hasStores = availableStoresWhenCanPickUpFalse.length > 0 || storesToShowWhenCanPickUpFalse.length > 0;
             const hasCities = availableCities.length > 0;
             const reallyNoStores = !hasStores && !hasCities;
-            
+
             // DEBUG: Log inmediato para ver qué está pasando
             console.log('🎨 StoreSelector renderizando:', {
               hasStores,
@@ -176,7 +176,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                     <p className="text-xs font-semibold text-gray-900 mb-2">
                       El producto está disponible en las siguientes tiendas:
                     </p>
-                    <div className="space-y-2 mb-3">
+                    <div className="space-y-2 mb-3 max-h-[350px] overflow-y-auto">
                       {storesToDisplay.map((store) => (
                         <div
                           key={store.codigo}

@@ -593,9 +593,52 @@ export default function Step4OrderSummary({
             </p>
           </div>
         </div>
+
+        {/* Debug Info - Solo visible cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES=true */}
+        {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-300 rounded-lg">
+            <p className="text-[10px] font-bold text-yellow-900 mb-1">
+              🔍 DEBUG - Candidate Stores Info
+            </p>
+            <div className="text-[9px] text-yellow-800 space-y-0.5">
+              <div className="flex justify-between">
+                <span>canPickUp (endpoint):</span>
+                <span className="font-mono font-bold">
+                  {isLoadingCanPickUp ? (
+                    <span className="text-blue-600">⏳ loading...</span>
+                  ) : globalCanPickUp === null ? (
+                    <span className="text-gray-500">null</span>
+                  ) : globalCanPickUp ? (
+                    <span className="text-green-600">✅ true</span>
+                  ) : (
+                    <span className="text-red-600">❌ false</span>
+                  )}
+                </span>
+              </div>
+              {debugStoresInfo && (
+                <>
+                  <div className="flex justify-between">
+                    <span>Stores (canPickUp=true):</span>
+                    <span className="font-mono">{debugStoresInfo.stores}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Stores (canPickUp=false):</span>
+                    <span className="font-mono">{debugStoresInfo.availableStoresWhenCanPickUpFalse}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Cities available:</span>
+                    <span className="font-mono">{debugStoresInfo.availableCities}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between">
+                <span>Products count:</span>
+                <span className="font-mono">{products.length}</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-
     </aside>
   );
 }

@@ -28,13 +28,12 @@ export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
     <div className="space-y-3">
       <label
         htmlFor="tienda"
-        className={`flex items-center gap-4 p-4 border rounded-lg transition-all ${
-          disabled || isLoading
-            ? "border-gray-200 bg-gray-100 cursor-not-allowed opacity-60"
-            : deliveryMethod === "tienda"
+        className={`flex items-center gap-4 p-4 border rounded-lg transition-all ${disabled || isLoading
+          ? "border-gray-200 bg-gray-100 cursor-not-allowed opacity-60"
+          : deliveryMethod === "tienda"
             ? "border-blue-500 bg-blue-50 cursor-pointer"
             : "border-gray-200 hover:border-gray-300 hover:bg-gray-50 cursor-pointer"
-        }`}
+          }`}
       >
         <input
           type="radio"
@@ -57,8 +56,8 @@ export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
               {isLoading
                 ? "Verificando disponibilidad..."
                 : disabled
-                ? "Tu producto no cuenta con esa opción"
-                : "Recoge tu pedido en una de nuestras tiendas"}
+                  ? "Tu producto no cuenta con esa opción"
+                  : "Recoge tu pedido en una de nuestras tiendas"}
             </div>
           </div>
           {isLoading && (
@@ -76,7 +75,7 @@ export const StorePickupSelector: React.FC<StorePickupSelectorProps> = ({
           <p className="text-xs text-gray-700 mb-3">
             Cambia tu dirección predeterminada a una zona de cobertura con una tienda disponible.
           </p>
-          
+
           {/* Mostrar tiendas disponibles - agrupadas por ciudad */}
           {availableStoresWhenCanPickUpFalse.length > 0 && (() => {
             // Agrupar tiendas por ciudad

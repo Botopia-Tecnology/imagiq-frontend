@@ -19,6 +19,7 @@ export interface Store {
   codDane: number;                   // Código DANE de la ciudad
   latitud: number | string;          // Latitud para Google Maps
   longitud: number | string;         // Longitud para Google Maps
+  stock?: number;                    // Stock disponible en la tienda (de candidate-stores)
 }
 
 /**

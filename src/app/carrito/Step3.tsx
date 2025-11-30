@@ -257,6 +257,17 @@ export default function Step3({
 
   const hasActiveTradeIn = productsWithTradeIn.length > 0;
 
+  // DEBUG: Log para verificar el estado de hasActiveTradeIn
+  React.useEffect(() => {
+    console.log('🔍 DEBUG hasActiveTradeIn:', {
+      hasActiveTradeIn,
+      productsWithTradeInCount: productsWithTradeIn.length,
+      productsWithTradeIn: productsWithTradeIn.map(p => p.sku),
+      totalProducts: products.length,
+    });
+  }, [hasActiveTradeIn, productsWithTradeIn, products]);
+
+
   // Verificar si TODOS los productos con trade-in pueden ser recogidos en tienda
   const canAllTradeInProductsPickUp = React.useMemo(() => {
     if (productsWithTradeIn.length === 0) return true;
@@ -748,6 +759,7 @@ export default function Step3({
   }, [isInitialTradeInLoading]);
 
   // También forzar recarga cuando el usuario selecciona "Recoger en tienda" y (canPickUp es true O hay Trade In activo)
+  // IMPORTANTE: Solo cargar cuando se CAMBIA A tienda, NO cuando se cambia DE tienda a domicilio
   React.useEffect(() => {
     // BLOQUEAR durante carga inicial - solo el primer useEffect debe llamar al endpoint
     if (!hasCompletedInitialLoadRef.current) {
@@ -760,6 +772,12 @@ export default function Step3({
       : null;
 
     if (globalProcessing) {
+      return;
+    }
+
+    // CRÍTICO: Solo cargar tiendas cuando deliveryMethod es "tienda"
+    // Si es "domicilio", NO hacer nada (evita llamadas innecesarias al cambiar de tienda a domicilio)
+    if (deliveryMethod !== "tienda") {
       return;
     }
 
@@ -1030,8 +1048,10 @@ export default function Step3({
   // 2. canPickUp tenga un valor (no null) - hasCanPickUpValue
   // 3. Si estamos recalculando, esperar a que termine
   // Cuando el endpoint termina, SIEMPRE procesa la información (aunque no haya tiendas), así que NO esperamos tiendas
-  const shouldShowSkeleton = isLoadingCanPickUp ||
-    storesLoading ||
+  // CRÍTICO: NO mostrar skeleton cuando solo se cambia el método de entrega (tienda <-> domicilio)
+  // Solo mostrar skeleton cuando realmente se está recalculando canPickUp (cambio de dirección)
+  const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
+    (storesLoading && !hasCanPickUpValue) ||
     isRecalculatingPickup ||
     isInitialTradeInLoading ||
     !hasCanPickUpValue;
@@ -1119,14 +1139,6 @@ export default function Step3({
                         onAddressAdded={addAddress}
                         addressLoading={addressLoading}
                       />
-                    </div>
-                  )}
-
-                  {/* Debug: Mostrar canPickUp global SIEMPRE cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
-                  {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
-                    <div className="mt-6 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <p className="text-xs font-semibold text-gray-900">Debug: canPickup global</p>
-                      <p className="text-xs text-gray-700">canPickup global: {String(effectiveCanPickUp ?? 'undefined')}</p>
                     </div>
                   )}
 

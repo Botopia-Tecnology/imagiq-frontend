@@ -146,12 +146,12 @@ export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
   getFiltered: (() => {
     const inFlightByKey: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
-    
+
     // Función para normalizar parámetros y crear clave de deduplicación
     // Ignora parámetros no críticos que no afectan qué productos se obtienen
     const normalizeParams = (params: ProductFilterParams): string => {
       const critical: Record<string, string> = {};
-      
+
       // Solo incluir parámetros críticos que afectan qué productos se obtienen
       if (params.categoria) critical.categoria = String(params.categoria);
       if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
@@ -159,15 +159,15 @@ export const productEndpoints = {
       if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
-      
+
       // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
-      
+
       return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
     };
-    
+
     return (params: ProductFilterParams, init?: RequestInit) => {
       const normalizedKey = normalizeParams(params);
-      
+
       // Construir URL completa para la petición real (con todos los parámetros)
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
@@ -192,12 +192,12 @@ export const productEndpoints = {
   })(),
   getFilteredV2: (() => {
     const inFlightByKey: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
-    
+
     // Función para normalizar parámetros y crear clave de deduplicación
     // Ignora parámetros no críticos que no afectan qué productos se obtienen
     const normalizeParams = (params: ProductFilterParams): string => {
       const critical: Record<string, string> = {};
-      
+
       // Solo incluir parámetros críticos que afectan qué productos se obtienen
       if (params.categoria) critical.categoria = String(params.categoria);
       if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
@@ -205,15 +205,15 @@ export const productEndpoints = {
       if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
-      
+
       // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
-      
+
       return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
     };
-    
+
     return (params: ProductFilterParams, init?: RequestInit) => {
       const normalizedKey = normalizeParams(params);
-      
+
       // Construir URL completa para la petición real (con todos los parámetros)
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
@@ -310,7 +310,7 @@ export const productEndpoints = {
     apiClient.delete<void>(
       `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
     ),
-  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string }) =>
+  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string; cities?: string[] }) =>
     apiClient.post<CandidateStoresResponse>('/api/products/candidate-stores', data),
 
   // Bundle-specific endpoints
@@ -604,7 +604,7 @@ export interface ProductApiData {
   memoriaram: string[];
   descGeneral: string[];
   sku: string[];
-  ean:string[];
+  ean: string[];
   desDetallada: string[];
   stockTotal: number[];
   cantidadTiendas: number[];
@@ -774,6 +774,7 @@ export interface CandidateStore {
   place_ID: string;
   distance: number;
   horario: string;
+  stock?: number;  // Stock disponible en esta tienda
   ciudad?: string;  // Ciudad de la tienda (puede venir en la respuesta)
   codDane?: string | number;  // Código DANE (puede venir en la respuesta)
   telefono?: string;  // Teléfono de la tienda (puede venir en la respuesta)

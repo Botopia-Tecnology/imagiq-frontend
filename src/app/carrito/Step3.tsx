@@ -1048,8 +1048,10 @@ export default function Step3({
   // 2. canPickUp tenga un valor (no null) - hasCanPickUpValue
   // 3. Si estamos recalculando, esperar a que termine
   // Cuando el endpoint termina, SIEMPRE procesa la información (aunque no haya tiendas), así que NO esperamos tiendas
-  const shouldShowSkeleton = isLoadingCanPickUp ||
-    storesLoading ||
+  // CRÍTICO: NO mostrar skeleton cuando solo se cambia el método de entrega (tienda <-> domicilio)
+  // Solo mostrar skeleton cuando realmente se está recalculando canPickUp (cambio de dirección)
+  const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
+    (storesLoading && !hasCanPickUpValue) ||
     isRecalculatingPickup ||
     isInitialTradeInLoading ||
     !hasCanPickUpValue;

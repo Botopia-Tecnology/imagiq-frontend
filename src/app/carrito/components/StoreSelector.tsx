@@ -176,7 +176,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                     <p className="text-xs font-semibold text-gray-900 mb-2">
                       El producto está disponible en las siguientes tiendas:
                     </p>
-                    <div className="space-y-2 mb-3 max-h-[350px] overflow-y-auto">
+                    <div className="space-y-2 mb-3 max-h-[420px] overflow-y-auto">
                       {storesToDisplay.map((store) => (
                         <div
                           key={store.codigo}
@@ -245,7 +245,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
             />
           </div>
 
-          <div className="max-h-48 overflow-y-auto border rounded-lg bg-white shadow">
+          <div className="max-h-[420px] overflow-y-auto border rounded-lg bg-white shadow">
             {(() => {
               if (storesLoading) {
                 return (

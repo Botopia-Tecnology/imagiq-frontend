@@ -184,7 +184,11 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       // Si hay datos guardados en localStorage, usarlos
       try {
         const parsed = JSON.parse(savedData);
-        setBillingData(parsed);
+        setBillingData({
+          ...parsed,
+          // Asegurar que tipoDocumento siempre tenga un valor por defecto
+          tipoDocumento: parsed.tipoDocumento || "C.C.",
+        });
         setBillingType(parsed.type || "natural");
 
         // Si hay una dirección guardada, intentar seleccionarla
@@ -200,6 +204,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
         type: "natural",
         nombre: `${user.nombre} ${user.apellido}`.trim(),
         documento: user.numero_documento || "",
+        tipoDocumento: "C.C.", // Valor por defecto
         email: user.email || "",
         telefono: user.telefono || "",
         direccion: null,

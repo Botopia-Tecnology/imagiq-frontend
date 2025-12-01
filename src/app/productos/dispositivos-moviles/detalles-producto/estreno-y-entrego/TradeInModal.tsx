@@ -100,6 +100,7 @@ export default function TradeInModal({
     selectedBrand: formState.selectedBrand,
     selectedCapacity: formState.selectedCapacity,
     deviceState: flowState.deviceState,
+    productSku,
   });
 
   const { handleClose, getStepTitle, getContinueHandler, getBackHandler } =

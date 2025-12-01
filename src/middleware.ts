@@ -4,23 +4,25 @@ import type { NextRequest } from 'next/server';
 /**
  * Lista de rutas estáticas conocidas del sistema
  * Estas NO deben pasar por validación de slug
+ * 
+ * IMPORTANTE: Mantener actualizada con las carpetas en /app
  */
 const KNOWN_ROUTES = new Set([
+  // Rutas del sistema
   'productos',
   'categorias',
   'carrito',
   'checkout',
   'cuenta',
+  'perfil',
   'buscar',
   'ofertas',
   'tiendas',
-  'nosotros',
-  'contacto',
-  'ayuda',
-  'auth',
-  'login',
-  'register',
-  'admin',
+  'favoritos',
+  'soporte',
+  'ventas-corporativas',
+  
+  // Rutas de seguimiento y compras
   'verify-purchase',
   'purchase',
   'order',
@@ -28,6 +30,29 @@ const KNOWN_ROUTES = new Set([
   'payment',
   'pago',
   'error-checkout',
+  'success-checkout',
+  'charging-result',
+  'tracking-service',
+  'pickup-tracking',
+  'imagiq-tracking',
+  
+  // Información
+  'nosotros',
+  'contacto',
+  'ayuda',
+  
+  // Autenticación
+  'auth',
+  'login',
+  'register',
+  
+  // Admin
+  'admin',
+  'dashboard',
+  'chatbot',
+  
+  // API
+  'api',
 ]);
 
 // Cache de slugs válidos
@@ -98,8 +123,12 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
+  // Normalizar: convertir puntos a guiones para compatibilidad
+  // Ejemplo: ventas.corporativas -> ventas-corporativas
+  const normalizedSegment = firstSegment.replace(/\./g, '-').toLowerCase();
+  
   // Si es una ruta conocida del sistema, dejar pasar SIN validar
-  if (KNOWN_ROUTES.has(firstSegment.toLowerCase())) {
+  if (KNOWN_ROUTES.has(normalizedSegment)) {
     return NextResponse.next();
   }
   

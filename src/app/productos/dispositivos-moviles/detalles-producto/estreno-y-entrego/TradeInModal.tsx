@@ -42,20 +42,6 @@ export default function TradeInModal({
   const tradeInData = cachedData || fallbackData;
   const loadingData = cacheLoading || fallbackLoading;
 
-  // Debug logs para entender el estado del cache
-  useEffect(() => {
-    if (isOpen) {
-      console.log('🔍 [TradeInModal] Estado del cache:', {
-        cachedData: !!cachedData,
-        cacheLoading,
-        fallbackData: !!fallbackData,
-        fallbackLoading,
-        finalData: !!tradeInData,
-        finalLoading: loadingData
-      });
-    }
-  }, [isOpen, cachedData, cacheLoading, fallbackData, fallbackLoading, tradeInData, loadingData]);
-
   // Datos por defecto mientras se carga la API
   const safeTradeInData = tradeInData || {
     categories: [],

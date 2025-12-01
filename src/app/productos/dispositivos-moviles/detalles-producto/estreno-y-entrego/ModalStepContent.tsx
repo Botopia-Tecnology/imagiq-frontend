@@ -132,6 +132,7 @@ export default function ModalStepContent({
           brands={availableBrands}
           selectedBrand={selectedBrand}
           isOpen={isBrandDropdownOpen}
+          isDisabled={!selectedCategory || availableBrands.length === 0}
           onToggle={onToggleBrandDropdown}
           onSelectBrand={onSelectBrand}
         />
@@ -139,7 +140,7 @@ export default function ModalStepContent({
           label="Modelo"
           placeholder="Selecciona el modelo de tu dispositivo"
           isOpen={isModelDropdownOpen}
-          isDisabled={!selectedBrand}
+          isDisabled={!selectedBrand || availableModels.length === 0}
           options={availableModels}
           selectedOption={selectedModel}
           onToggle={onToggleModelDropdown}
@@ -149,7 +150,7 @@ export default function ModalStepContent({
           label="Capacidad"
           placeholder="Selecciona la capacidad de tu dispositivo"
           isOpen={isCapacityDropdownOpen}
-          isDisabled={!selectedModel}
+          isDisabled={!selectedModel || availableCapacities.length === 0}
           options={availableCapacities}
           selectedOption={selectedCapacity}
           onToggle={onToggleCapacityDropdown}

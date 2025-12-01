@@ -126,6 +126,16 @@ export default function Step7({ onBack }: Step7Props) {
   const { products, calculations } = useCart();
   const [error, setError] = useState<string | string[] | null>(null);
   const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
+  // NUEVO: Estado separado para skeleton (solo espera canPickUp) y botón (espera cálculo de envío)
+  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = useState(false);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  // Ref para leer el valor actual de isCalculatingShipping en callbacks
+  const isCalculatingShippingRef = React.useRef(false);
+
+  // Actualizar ref cuando cambie el estado
+  React.useEffect(() => {
+    isCalculatingShippingRef.current = isCalculatingShipping;
+  }, [isCalculatingShipping]);
   const [loggedUser] = useSecureStorage<User | null>(
     "imagiq_user",
     null
@@ -438,9 +448,20 @@ export default function Step7({ onBack }: Step7Props) {
         return;
       }
 
-      // Iniciar loading
+      // CRÍTICO: Iniciar loading
+      // - isLoadingCanPickUp: Para el skeleton (espera solo canPickUp)
+      // - isCalculatingShipping: Para el botón (espera cálculo de envío completo)
+      setIsLoadingCanPickUp(true);
       setIsLoadingShippingMethod(true);
       setIsLoadingStoreValidation(true);
+
+      // Bandera para saber si es pickup (solo verificar canPickUp, no calcular envío)
+      const isPickupMethod = shippingData?.type === "pickup";
+
+      // Si NO es pickup, también activar el cálculo de envío
+      if (!isPickupMethod) {
+        setIsCalculatingShipping(true);
+      }
 
       // PASO 1: Obtener canPickUp global del endpoint candidate-stores
       try {
@@ -459,7 +480,9 @@ export default function Step7({ onBack }: Step7Props) {
           setShippingVerification(verification);
           // Guardar en localStorage como respaldo
           localStorage.setItem("checkout-envio-imagiq", "false");
+          setIsLoadingCanPickUp(false);
           setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
           return;
         }
 
@@ -484,7 +507,9 @@ export default function Step7({ onBack }: Step7Props) {
             todos_productos_im_it: false,
             en_zona_cobertura: true,
           });
+          setIsLoadingCanPickUp(false);
           setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
           return;
         }
 
@@ -493,27 +518,26 @@ export default function Step7({ onBack }: Step7Props) {
           products: productsToCheck,
           user_id: userId,
         };
-        console.log("📤 [Step7] Llamando getCandidateStores con body:", JSON.stringify(requestBody, null, 2));
+        console.log("📤 [Step7] Llamando getCandidateStores y stores-for-produtcs en PARALELO con body:", JSON.stringify(requestBody, null, 2));
 
-        const response = await productEndpoints.getCandidateStores(requestBody);
-
-        // NUEVO: Llamar también a stores-for-products para obtener codBodega
-        let storesData: StoreValidationData | null = null;
-        try {
-          console.log("📤 [Step7] Llamando stores-for-produtcs con el mismo body");
-          const storesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
+        // OPTIMIZACIÓN: Ejecutar ambas llamadas en PARALELO para reducir tiempo de carga
+        const [response, storesData] = await Promise.all([
+          productEndpoints.getCandidateStores(requestBody),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
               'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
             },
             body: JSON.stringify(requestBody),
-          });
-          storesData = await storesResponse.json();
-          console.log("📥 [Step7] Respuesta de stores-for-produtcs:", JSON.stringify(storesData, null, 2));
-        } catch (error) {
-          console.error("❌ [Step7] Error llamando stores-for-produtcs:", error);
-        }
+          }).then(res => res.json()).catch(error => {
+            console.error("❌ [Step7] Error llamando stores-for-produtcs:", error);
+            return null;
+          })
+        ]);
+
+        console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(response.data, null, 2));
+        console.log("📥 [Step7] Respuesta de stores-for-produtcs:", JSON.stringify(storesData, null, 2));
 
         if (response.success && response.data) {
           // Si la petición fue exitosa, limpiar el hash de fallo si existía
@@ -553,6 +577,26 @@ export default function Step7({ onBack }: Step7Props) {
           const globalCanPickUp =
             responseData.canPickUp ?? responseData.canPickup ?? false;
 
+          console.log(`🔍 [Step7] canPickUp global: ${globalCanPickUp}, isPickupMethod: ${isPickupMethod}`);
+
+          // CRÍTICO: Ya tenemos canPickUp, ocultar skeleton INMEDIATAMENTE
+          setIsLoadingCanPickUp(false);
+          setIsLoadingShippingMethod(false);
+          console.log("✅ [Step7] canPickUp obtenido - Ocultando skeleton");
+
+          // IMPORTANTE: Si es método pickup, solo validamos canPickUp y terminamos (no calcular cobertura)
+          if (isPickupMethod) {
+            console.log("🏪 [Step7] Método pickup - Solo verificación de canPickUp, no calcular cobertura");
+            setIsCentroDistribucion(false);
+            setIsLoadingStoreValidation(false);
+            // No establecer shippingVerification porque no es necesario para pickup
+            return;
+          }
+
+          // Si llegamos aquí, es método "delivery" → Continuar calculando cobertura en segundo plano
+          console.log("📦 [Step7] Método delivery - Calculando cobertura en segundo plano");
+          // El skeleton ya está oculto, pero el botón seguirá en loading hasta terminar
+
           // PASO 2: Si canPickUp global es FALSE → Verificar si es Centro de Distribución
           if (!globalCanPickUp) {
             const esCentroDistribucion = warehouseCode === "001";
@@ -573,7 +617,7 @@ export default function Step7({ onBack }: Step7Props) {
               setShippingVerification(verification);
               // Guardar en localStorage como respaldo
               localStorage.setItem("checkout-envio-imagiq", "false");
-              setIsLoadingShippingMethod(false);
+              setIsCalculatingShipping(false);
               return;
             }
           } else {
@@ -616,7 +660,8 @@ export default function Step7({ onBack }: Step7Props) {
           setShippingVerification(verification);
           // Guardar en localStorage como respaldo para asegurar que esté disponible al crear la orden
           localStorage.setItem("checkout-envio-imagiq", String(verification.envio_imagiq));
-          setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
+          console.log("✅ [Step7] Cálculo de envío completado - Habilitando botón");
         } else {
           // Si falla la petición, marcar este hash como fallido
           failedCandidateStoresRef.current = requestHash;
@@ -632,7 +677,9 @@ export default function Step7({ onBack }: Step7Props) {
           setShippingVerification(verification);
           // Guardar en localStorage como respaldo
           localStorage.setItem("checkout-envio-imagiq", "false");
+          setIsLoadingCanPickUp(false);
           setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
         }
       } catch (error) {
         // Si hay un error en el catch, también marcar como fallido
@@ -667,7 +714,9 @@ export default function Step7({ onBack }: Step7Props) {
         // Guardar en localStorage como respaldo
         localStorage.setItem("checkout-envio-imagiq", "false");
         setIsLoadingStoreValidation(false);
+        setIsLoadingCanPickUp(false);
         setIsLoadingShippingMethod(false);
+        setIsCalculatingShipping(false);
       }
     };
 
@@ -814,6 +863,23 @@ export default function Step7({ onBack }: Step7Props) {
     if (!billingData) {
       console.error("No billing data available");
       return;
+    }
+
+    // CRÍTICO: Si todavía está calculando el envío, esperar
+    if (isCalculatingShippingRef.current) {
+      console.log("⏳ [Step7] Usuario hizo clic pero todavía calculando envío - Esperando...");
+      // El botón ya muestra "Calculando envío..." por el estado isCalculatingShipping
+      // Esperar en un loop hasta que termine
+      await new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+          // Verificar el valor actual de la ref
+          if (!isCalculatingShippingRef.current) {
+            clearInterval(checkInterval);
+            console.log("✅ [Step7] Cálculo de envío completado - Procediendo con la orden");
+            resolve();
+          }
+        }, 100); // Verificar cada 100ms
+      });
     }
 
     setIsProcessing(true);
@@ -1154,7 +1220,7 @@ export default function Step7({ onBack }: Step7Props) {
     <div className="min-h-screen w-full pb-40 md:pb-0">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6">
-          {isLoadingShippingMethod ? (
+          {isLoadingCanPickUp ? (
             <div className="animate-pulse">
               <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
               <div className="h-5 w-96 bg-gray-200 rounded"></div>
@@ -1174,7 +1240,7 @@ export default function Step7({ onBack }: Step7Props) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sección de resumen */}
           <div className="lg:col-span-2 space-y-4">
-            {isLoadingShippingMethod ? (
+            {isLoadingCanPickUp ? (
               /* Skeleton de toda la sección mientras carga */
               <>
                 {/* Skeleton Método de pago */}
@@ -1603,7 +1669,7 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
           <aside className="hidden md:block lg:col-span-1 space-y-4">
-            {isLoadingShippingMethod ? (
+            {isLoadingCanPickUp ? (
               /* Skeleton del resumen mientras carga */
               <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
                 <div className="space-y-4">
@@ -1691,7 +1757,7 @@ export default function Step7({ onBack }: Step7Props) {
             {/* Información del método de envío - Solo se muestra cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
             {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
               <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-                {isLoadingShippingMethod ? (
+                {isLoadingCanPickUp ? (
                   /* Skeleton mientras carga - incluye título */
                   <div className="animate-pulse space-y-3">
                     <div className="h-4 w-40 bg-blue-200 rounded mb-3"></div>
@@ -1849,14 +1915,20 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Botón confirmar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-2 ${isProcessing || !tradeInValidation.isValid
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}
             onClick={handleConfirmOrder}
-            disabled={isProcessing || !tradeInValidation.isValid || isLoadingShippingMethod}
+            disabled={isProcessing || !tradeInValidation.isValid}
           >
-            {isProcessing ? "Procesando..." : isLoadingShippingMethod ? "Cargando..." : "Confirmar y pagar"}
+            {(isProcessing || isCalculatingShipping) && (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            <span>Confirmar y pagar</span>
           </button>
         </div>
       </div>

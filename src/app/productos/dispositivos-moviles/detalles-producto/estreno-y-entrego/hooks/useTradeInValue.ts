@@ -9,6 +9,7 @@ interface UseTradeInValueProps {
   selectedBrand: Brand | null;
   selectedCapacity: DeviceCapacity | null;
   deviceState: DeviceState | null;
+  productSku?: string | null; // SKU del producto a comprar
 }
 
 export function useTradeInValue({
@@ -16,6 +17,7 @@ export function useTradeInValue({
   selectedBrand,
   selectedCapacity,
   deviceState,
+  productSku,
 }: UseTradeInValueProps) {
   const [tradeInValue, setTradeInValue] = useState<number>(0);
   const [calculatingValue, setCalculatingValue] = useState(false);
@@ -31,10 +33,11 @@ export function useTradeInValue({
         const codMarca = extractCodMarca(selectedBrand.id);
         const codModelo = extractCodModelo(selectedCapacity.id);
 
-        if (codMarca && codModelo) {
+        if (codMarca && codModelo && productSku) {
           setCalculatingValue(true);
           try {
             const response = await tradeInEndpoints.calculateValue({
+              sku: productSku,
               codMarca,
               codModelo,
               grado: deviceState,
@@ -55,7 +58,7 @@ export function useTradeInValue({
     };
 
     calculateTradeInValue();
-  }, [currentStep, deviceState, selectedBrand, selectedCapacity]);
+  }, [currentStep, deviceState, selectedBrand, selectedCapacity, productSku]);
 
   return { tradeInValue, calculatingValue };
 }

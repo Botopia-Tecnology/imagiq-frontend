@@ -158,17 +158,19 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     async (items: Omit<CartProduct, "quantity">[], bundleInfo: BundleInfo) => {
       await addBundleToCartHook(items, bundleInfo, user?.id);
 
-      // Track del evento para analytics (bundle completo)
-      for (const item of items) {
-        trackAddToCart({
-          item_id: item.sku || item.id,
-          item_name: item.name,
-          item_brand: "Samsung",
-          price: Number(item.price),
-          quantity: 1,
-          currency: "COP",
-        });
-      }
+      // Track del evento para analytics (bundle completo con SKU del bundle)
+      const bundleName = items.length > 1
+        ? items.map(item => item.name || item.modelo || '').filter(Boolean).join(' + ')
+        : (items[0]?.name || items[0]?.modelo || 'Bundle');
+      
+      trackAddToCart({
+        item_id: bundleInfo.productSku, // Usar el SKU del bundle
+        item_name: bundleName,
+        item_brand: "Samsung",
+        price: Number(bundleInfo.bundleDiscount),
+        quantity: 1,
+        currency: "COP",
+      });
     },
     [addBundleToCartHook, user?.id, trackAddToCart]
   );

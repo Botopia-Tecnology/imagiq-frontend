@@ -801,8 +801,9 @@ export function useCart(): UseCartReturn {
   // ==================== MÉTODOS DE BUNDLE ====================
 
   /**
-   * Añade todos los productos de un bundle al carrito.
-   * Cada producto se marca con bundleInfo para identificar que pertenece al bundle.
+   * Añade un bundle al carrito.
+   * Guarda los productos individuales pero usa el SKU del bundle como identificador principal.
+   * Cada producto individual se guarda con su SKU original pero con bundleInfo que incluye el productSku del bundle.
    */
   const addBundleToCart = useCallback(
     async (
@@ -813,23 +814,41 @@ export function useCart(): UseCartReturn {
       const effectiveUserId = userId || getUserId();
 
       // Preparar items con bundleInfo y quantity = 1
+      // IMPORTANTE: Usar los SKUs del bundle (skusBundle) en lugar de los SKUs individuales de los items
       console.log("Adding bundle to cart:", items, bundleInfo);
-      const itemsWithBundle: CartProduct[] = items.map((item) => ({
-        ...item,
-        quantity: 1,
-        bundleInfo,
-      }));
+      
+      // Mapear cada item con el SKU correspondiente de skusBundle
+      // El orden de los items debe coincidir con el orden de los SKUs en skusBundle
+      const itemsWithBundle: CartProduct[] = items.map((item, index) => {
+        // Obtener el SKU del bundle correspondiente por índice
+        const bundleSku = bundleInfo.skusBundle[index] || item.sku;
+        
+        // Crear un ID único: usar el índice si el bundleSku es igual a productSku para evitar duplicados
+        const uniqueId = bundleSku === bundleInfo.productSku 
+          ? `${bundleInfo.productSku}-${index}-${item.sku}` 
+          : `${bundleInfo.productSku}-${bundleSku}`;
+        
+        return {
+          ...item,
+          quantity: 1,
+          bundleInfo,
+          // SIEMPRE usar el SKU del bundle como sku principal
+          sku: bundleSku, // SKU del bundle (F-SM-F966BDBJA, SM-L320NDAAOBQ, etc.)
+          // ID único para identificar cada producto del bundle
+          id: uniqueId,
+        };
+      });
 
       // Actualizar estado local
       setProducts((currentProducts) => {
         const newProducts = [...currentProducts];
 
         for (const item of itemsWithBundle) {
-          // Solo buscar productos que pertenezcan al MISMO bundle (mismo codCampana y productSku)
-          // Esto evita mezclar productos individuales con productos de bundle
+          // Buscar productos que pertenezcan al MISMO bundle (mismo codCampana y productSku)
+          // Usar el ID compuesto para identificar productos del mismo bundle
           const existingIndex = newProducts.findIndex(
             (p) =>
-              p.sku === item.sku &&
+              p.id === item.id &&
               p.bundleInfo?.codCampana === bundleInfo.codCampana &&
               p.bundleInfo?.productSku === bundleInfo.productSku
           );
@@ -966,17 +985,26 @@ export function useCart(): UseCartReturn {
 
   /**
    * Elimina un producto de un bundle.
+   * El parámetro sku puede ser el SKU del bundle o cualquier SKU individual del bundle.
    * Si keepOtherProducts es true, los demás productos pierden el bundleInfo y vuelven a precio original.
    * Si keepOtherProducts es false, se eliminan todos los productos del bundle.
    */
   const removeBundleProduct = useCallback(
     async (sku: string, keepOtherProducts: boolean) => {
       setProducts((currentProducts) => {
-        const productToRemove = currentProducts.find((p) => p.sku === sku);
+        // Buscar el producto por SKU (puede ser el SKU del bundle o un SKU individual)
+        let productToRemove = currentProducts.find((p) => p.sku === sku || p.id.includes(sku));
+
+        // Si no se encuentra por SKU directo, buscar si el SKU está en algún bundle
+        if (!productToRemove) {
+          productToRemove = currentProducts.find(
+            (p) => p.bundleInfo?.skusBundle?.includes(sku) || p.bundleInfo?.productSku === sku
+          );
+        }
 
         if (!productToRemove?.bundleInfo) {
           // No tiene bundleInfo, eliminar normalmente
-          return currentProducts.filter((p) => p.sku !== sku);
+          return currentProducts.filter((p) => p.sku !== sku && !p.id.includes(sku));
         }
 
         const { codCampana, productSku } = productToRemove.bundleInfo;
@@ -984,9 +1012,9 @@ export function useCart(): UseCartReturn {
         let newProducts: CartProduct[];
 
         if (keepOtherProducts) {
-          // Eliminar el producto y quitar bundleInfo de los demás
+          // Eliminar el producto específico y quitar bundleInfo de los demás
           newProducts = currentProducts
-            .filter((p) => p.sku !== sku)
+            .filter((p) => p.id !== productToRemove!.id)
             .map((p) => {
               if (
                 p.bundleInfo?.codCampana === codCampana &&

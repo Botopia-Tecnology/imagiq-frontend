@@ -130,23 +130,34 @@ export default function PaymentForm({
   useEffect(() => {
     if (
       savedCards.length > 0 &&
-      paymentMethod === "tarjeta" &&
       !isLoadingCards
     ) {
-      // Si se incrementó el contador de recarga (se agregó una nueva tarjeta), siempre seleccionar la predeterminada o la primera
-      // Si no hay tarjeta seleccionada, también seleccionar la predeterminada o la primera
-      const shouldSelectCard = !selectedCardId || savedCardsReloadCounter !== undefined;
-      
-      if (shouldSelectCard) {
-        const defaultCard =
-          savedCards.find((card) => card.es_predeterminada) || savedCards[0];
-        if (defaultCard) {
-          onCardSelect(String(defaultCard.id));
-          onUseNewCardChange(false);
-          // Cambiar método de pago a tarjeta si no está seleccionado
-          if (paymentMethod !== "tarjeta") {
-            onPaymentMethodChange("tarjeta");
+      // Verificar el método de pago guardado en localStorage
+      const savedPaymentMethod = localStorage.getItem("checkout-payment-method");
+
+      // Solo procesar si el método de pago actual o guardado es "tarjeta"
+      if (paymentMethod === "tarjeta" || savedPaymentMethod === "tarjeta") {
+        // Solo auto-seleccionar si:
+        // 1. No hay tarjeta seleccionada actualmente Y no hay una guardada en localStorage Y el método actual es tarjeta
+        // 2. Se agregó una nueva tarjeta (savedCardsReloadCounter > 0)
+        const savedCardId = localStorage.getItem("checkout-saved-card-id");
+        const shouldSelectCard = (!selectedCardId && !savedCardId && paymentMethod === "tarjeta") || (savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0);
+
+        if (shouldSelectCard) {
+          const defaultCard =
+            savedCards.find((card) => card.es_predeterminada) || savedCards[0];
+          if (defaultCard) {
+            onCardSelect(String(defaultCard.id));
+            onUseNewCardChange(false);
+            // Cambiar método de pago a tarjeta si no está seleccionado
+            if (paymentMethod !== "tarjeta") {
+              onPaymentMethodChange("tarjeta");
+            }
           }
+        } else if (savedCardId && !selectedCardId && paymentMethod === "tarjeta") {
+          // Si hay una tarjeta guardada en localStorage pero no está seleccionada en el estado, seleccionarla
+          // SOLO si el método de pago actual es tarjeta
+          onCardSelect(savedCardId);
         }
       }
     }
@@ -158,6 +169,9 @@ export default function PaymentForm({
     if (savedCards.length > 0 && onFetchZeroInterest) {
       const cardIds = savedCards.map((card) => String(card.id));
       onFetchZeroInterest(cardIds);
+
+      // Guardar tarjetas en localStorage para que step4/page.tsx pueda leer el tipo_tarjeta
+      localStorage.setItem("checkout-cards-cache", JSON.stringify(savedCards));
     }
   }, [savedCards, onFetchZeroInterest]);
 
@@ -476,11 +490,13 @@ export default function PaymentForm({
                       <div
                         className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                           isSelected
-                            ? "border-black bg-black"
+                            ? "border-black bg-white"
                             : "border-gray-300 bg-white"
                         }`}
                       >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                        {isSelected && (
+                          <div className="w-3 h-3 rounded-full bg-black"></div>
+                        )}
                       </div>
                       <CardBrandLogo brand={card.marca} size="md" />
                       <div className="flex flex-col min-w-0 flex-1">

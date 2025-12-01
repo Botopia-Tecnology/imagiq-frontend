@@ -142,11 +142,13 @@ const SavedCardsSelector: React.FC<SavedCardsSelectorProps> = ({
                 <div
                   className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                     isSelected
-                      ? "border-black bg-black"
+                      ? "border-black bg-white"
                       : "border-gray-300 bg-white"
                   }`}
                 >
-                  {isSelected && <Check className="w-3 h-3 text-white" />}
+                  {isSelected && (
+                    <div className="w-3 h-3 rounded-full bg-black"></div>
+                  )}
                 </div>
 
                 {/* Logo de marca */}

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
@@ -165,6 +165,25 @@ export function useCheckoutLogic() {
   );
 
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
+
+  // Cargar método de pago guardado de localStorage al montar
+  useEffect(() => {
+    const savedPaymentMethod = localStorage.getItem("checkout-payment-method");
+    if (savedPaymentMethod) {
+      setPaymentMethod(savedPaymentMethod as PaymentMethod);
+    }
+
+    const savedBankData = localStorage.getItem("checkout-selected-bank");
+    if (savedBankData) {
+      try {
+        const { code, name } = JSON.parse(savedBankData);
+        setSelectedBank(code);
+        setSelectedBankName(name);
+      } catch (error) {
+        console.error("Error parsing saved bank data:", error);
+      }
+    }
+  }, []);
 
   // Función para validar y guardar datos de pago (sin procesar aún)
   const handleSavePaymentData = async (e: React.FormEvent) => {

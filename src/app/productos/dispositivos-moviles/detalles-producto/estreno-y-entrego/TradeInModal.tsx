@@ -37,10 +37,11 @@ export default function TradeInModal({
   // Intentar obtener datos del cache primero, si no están usar el hook normal
   const { tradeInData: cachedData, loading: cacheLoading } = useTradeInDataFromCache();
   const { tradeInData: fallbackData, loading: fallbackLoading } = useTradeInData();
-  
+
   // Usar datos del cache si están disponibles, sino usar los del fallback
   const tradeInData = cachedData || fallbackData;
-  const loadingData = cacheLoading || fallbackLoading;
+  // Si ya tenemos datos en cache, no mostramos loading, aunque el fallback esté inicializándose
+  const loadingData = cachedData ? false : (cacheLoading || fallbackLoading);
 
   // Datos por defecto mientras se carga la API
   const safeTradeInData = tradeInData || {

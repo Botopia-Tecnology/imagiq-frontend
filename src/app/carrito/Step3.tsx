@@ -183,6 +183,10 @@ export default function Step3({
     // Marcar que acabamos de eliminar el trade-in (evitar que useEffect revierta el cambio)
     justRemovedTradeInRef.current = true;
 
+    // IMPORTANTE: Desactivar skeleton inmediatamente al eliminar trade-in
+    // No debe mostrarse skeleton cuando solo se elimina trade-in
+    setIsInitialTradeInLoading(false);
+
     // Marcar en useDelivery que estamos eliminando trade-in (previene fetchCandidateStores)
     if (globalThis.window) {
       globalThis.window.dispatchEvent(
@@ -382,6 +386,8 @@ export default function Step3({
       }
 
       // Cargar tiendas si es necesario (después de la carga inicial)
+      // IMPORTANTE: forceRefreshStores ahora lee del caché primero, así que no activamos skeleton aquí
+      // Solo se activará skeleton si realmente no hay datos en caché
       const hasStoresLoaded = stores.length > 0 || availableStoresWhenCanPickUpFalse.length > 0;
 
       if ((deliveryMethod === "tienda" || savedMethod === "tienda") &&
@@ -390,9 +396,10 @@ export default function Step3({
         !tradeInStoresLoadedRef.current &&
         !hasStoresLoaded) {
 
-        console.log('🔄 Trade-in activo: recargando tiendas');
+        console.log('🔄 Trade-in activo: verificando caché antes de cargar tiendas');
         tradeInStoresLoadedRef.current = true;
-        setIsInitialTradeInLoading(true);
+        // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
+        // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
         forceRefreshStores();
       }
     }
@@ -1009,10 +1016,10 @@ export default function Step3({
     // setDeliveryMethod ya guarda automáticamente en localStorage
     setDeliveryMethod(method);
 
-    // IMPORTANTE: Si se selecciona "tienda", SIEMPRE intentar cargar tiendas
-    // (aunque ya haya tiendas, porque el usuario puede estar intentando refrescar)
+    // IMPORTANTE: Si se selecciona "tienda", intentar cargar tiendas desde caché primero
+    // Solo mostrar skeleton si realmente no hay datos en caché
     if (method === "tienda") {
-      console.log('🏪 Usuario seleccionó "tienda" - forzando carga de tiendas');
+      console.log('🏪 Usuario seleccionó "tienda" - verificando caché antes de cargar');
       console.log('   Estado actual:', {
         storesLength: stores.length,
         availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
@@ -1020,16 +1027,17 @@ export default function Step3({
         isInitialTradeInLoading
       });
 
-      // Si no hay tiendas cargadas, activar skeleton y forzar recarga
+      // Si no hay tiendas cargadas Y no está cargando, intentar cargar desde caché
+      // forceRefreshStores ahora lee del caché primero, así que no activamos skeleton aquí
+      // El skeleton solo se mostrará si realmente no hay datos en caché
       if (stores.length === 0 && availableStoresWhenCanPickUpFalse.length === 0 && !storesLoading && !isInitialTradeInLoading) {
-        setIsInitialTradeInLoading(true);
-        // Usar setTimeout para asegurar que las protecciones se limpien
+        // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
+        // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
         setTimeout(() => {
-          console.log('✅ Llamando forceRefreshStores después de seleccionar tienda');
+          console.log('✅ Llamando forceRefreshStores después de seleccionar tienda (leerá del caché primero)');
           forceRefreshStores();
         }, 100);
       }
-      // ELIMINADO: Ya no hacer recarga silenciosa para evitar demasiadas peticiones
     }
   };
 
@@ -1049,12 +1057,13 @@ export default function Step3({
   // 3. Si estamos recalculando, esperar a que termine
   // Cuando el endpoint termina, SIEMPRE procesa la información (aunque no haya tiendas), así que NO esperamos tiendas
   // CRÍTICO: NO mostrar skeleton cuando solo se cambia el método de entrega (tienda <-> domicilio)
+  // CRÍTICO: NO mostrar skeleton cuando solo se elimina trade-in
   // Solo mostrar skeleton cuando realmente se está recalculando canPickUp (cambio de dirección)
+  // isInitialTradeInLoading solo se usa para la primera carga con trade-in, pero si hay datos en caché no debe mostrar skeleton
   const shouldShowSkeleton = (isLoadingCanPickUp && !hasCanPickUpValue) ||
-    (storesLoading && !hasCanPickUpValue) ||
+    (storesLoading && !hasCanPickUpValue && isRecalculatingPickup) || // Solo mostrar skeleton si está recalculando (cambio de dirección)
     isRecalculatingPickup ||
-    isInitialTradeInLoading ||
-    !hasCanPickUpValue;
+    (!hasCanPickUpValue && isInitialTradeInLoading && storesLoading); // Solo mostrar skeleton si realmente está cargando Y no hay datos en caché
 
   // Callback estable para recibir el estado de canPickUp desde Step4OrderSummary
   const handleCanPickUpReady = React.useCallback((canPickUpValue: boolean, isLoading: boolean) => {

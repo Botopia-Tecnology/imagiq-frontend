@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { DeviceCapacity, Brand, DeviceModel } from "./types";
@@ -26,6 +26,20 @@ export default function IMEIInputSection({
   termsAccepted = false,
   onTermsAcceptedChange,
 }: Readonly<IMEIInputSectionProps>) {
+  const termsRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to terms section when IMEI is valid (15 digits)
+  useEffect(() => {
+    if (imeiInput.length === 15) {
+      setTimeout(() => {
+        termsRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, [imeiInput.length]);
+
   let imeiBorderClass = 'border-gray-300 focus:border-[#0099FF]';
   if (imeiInput.length > 0 && imeiInput.length < 15) {
     imeiBorderClass = 'border-red-500';
@@ -187,7 +201,7 @@ export default function IMEIInputSection({
 
       {/* Terms and Conditions Section */}
       {imeiInput.length === 15 && (
-        <div className="mt-6">
+        <div ref={termsRef} className="mt-6">
           <h4
             className="text-sm font-semibold text-[#222] mb-3"
             style={{ fontFamily: "SamsungSharpSans" }}

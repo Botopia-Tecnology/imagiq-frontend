@@ -46,13 +46,9 @@ export function useTradeInHandlers({
   onCancelWithoutCompletion,
   onCompleteTradeIn,
   tradeInValue,
-  imeiInput,
   selectedBrand,
   selectedModel,
   selectedCapacity,
-  categories,
-  selectedCategory,
-  deviceState,
   flowState,
   productSku,
 }: UseTradeInHandlersProps) {
@@ -119,21 +115,19 @@ export function useTradeInHandlers({
               if (typeof parsed === 'object' && !parsed.deviceName) {
                 tradeIns = parsed;
               }
-            } catch (error) {
-              console.error("Error parsing trade-ins:", error);
+            } catch {
+              // Error parsing, usar objeto vacío
             }
           }
 
           tradeIns[productSku] = tradeInData;
           localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeIns));
-          console.log(`✅ Trade-in guardado para SKU ${productSku}:`, tradeInData);
         } else {
           // Formato antiguo (sin SKU) - para compatibilidad
           localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
-          console.log("✅ Trade-in guardado en localStorage (formato antiguo):", tradeInData);
         }
-      } catch (error) {
-        console.error("❌ Error al guardar trade-in en localStorage:", error);
+      } catch {
+        // Error guardando en localStorage
       }
     }
 
@@ -144,7 +138,7 @@ export function useTradeInHandlers({
     resetFlow();
     onContinue?.();
     onClose();
-  }, [resetForm, resetFlow, onContinue, onClose, onCompleteTradeIn, tradeInValue, selectedBrand, selectedModel, selectedCapacity, flowState]);
+  }, [resetForm, resetFlow, onContinue, onClose, onCompleteTradeIn, tradeInValue, selectedBrand, selectedModel, selectedCapacity, flowState, productSku]);
 
   const getStepTitle = useCallback((currentStep: TradeInStep): StepTitle => {
     switch (currentStep) {

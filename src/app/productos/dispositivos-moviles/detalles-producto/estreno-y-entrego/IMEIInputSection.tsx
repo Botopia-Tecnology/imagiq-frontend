@@ -199,47 +199,45 @@ export default function IMEIInputSection({
         </div>
       </div>
 
-      {/* Terms and Conditions Section */}
-      {imeiInput.length === 15 && (
-        <div ref={termsRef} className="mt-6">
-          <h4
-            className="text-sm font-semibold text-[#222] mb-3"
+      {/* Terms and Conditions Section - Siempre visible */}
+      <div ref={termsRef} className="mt-6">
+        <h4
+          className="text-sm font-semibold text-[#222] mb-3"
+          style={{ fontFamily: "SamsungSharpSans" }}
+        >
+          Confirmar Términos & Condiciones y Políticas de Privacidad
+        </h4>
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="terms-checkbox"
+            checked={termsAccepted}
+            onChange={(e) => onTermsAcceptedChange?.(e.target.checked)}
+            className="mt-1 w-4 h-4 text-[#0099FF] border-gray-300 rounded focus:ring-[#0099FF] focus:ring-2 cursor-pointer"
+          />
+          <label
+            htmlFor="terms-checkbox"
+            className="text-sm text-[#222] leading-relaxed cursor-pointer"
             style={{ fontFamily: "SamsungSharpSans" }}
           >
-            Confirmar Términos & Condiciones y Políticas de Privacidad
-          </h4>
-          <div className="flex items-start gap-2">
-            <input
-              type="checkbox"
-              id="terms-checkbox"
-              checked={termsAccepted}
-              onChange={(e) => onTermsAcceptedChange?.(e.target.checked)}
-              className="mt-1 w-4 h-4 text-[#0099FF] border-gray-300 rounded focus:ring-[#0099FF] focus:ring-2 cursor-pointer"
-            />
-            <label
-              htmlFor="terms-checkbox"
-              className="text-sm text-[#222] leading-relaxed cursor-pointer"
-              style={{ fontFamily: "SamsungSharpSans" }}
+            He leído y acepto los{" "}
+            <Link
+              href="/soporte/tyc-entrego-estreno"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#0099FF] underline hover:text-[#0088EE] transition-colors"
+              onClick={(e) => e.stopPropagation()}
             >
-              He leído y acepto los{" "}
-              <Link
-                href="/soporte/tyc-entrego-estreno"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[#0099FF] underline hover:text-[#0088EE] transition-colors"
-                onClick={(e) => e.stopPropagation()}
-              >
-                Términos y Condiciones del Plan Recambio
-              </Link>
-            </label>
-          </div>
-          {imeiInput.length === 15 && !termsAccepted && (
-            <p className="text-xs text-red-500 mt-1">
-              Campo obligatorio
-            </p>
-          )}
+              Términos y Condiciones del Plan Recambio
+            </Link>
+          </label>
         </div>
-      )}
+        {!termsAccepted && (
+          <p className="text-xs text-red-500 mt-1">
+            Campo obligatorio
+          </p>
+        )}
+      </div>
     </div>
   );
 }

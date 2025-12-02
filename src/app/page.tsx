@@ -23,8 +23,40 @@ import ProductShowcase from "@/components/sections/ProductShowcase";
 import { motion } from "framer-motion";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { apiGet } from "@/lib/api-client";
+import { useEffect } from "react";
 
 export default function HomePage() {
+  // Efecto para manejar el scroll al footer cuando se carga la página con #footer
+  useEffect(() => {
+    // Verificar si la URL contiene #footer
+    if (window.location.hash === '#footer') {
+      // Función para hacer scroll al footer
+      const scrollToFooter = () => {
+        const footer = document.getElementById('footer');
+        if (footer) {
+          // Calcular la posición del footer
+          const footerPosition = footer.getBoundingClientRect().top + window.pageYOffset;
+          window.scrollTo({
+            top: footerPosition,
+            behavior: 'smooth'
+          });
+        }
+      };
+
+      // Intentar scroll después de que todo el contenido se haya cargado
+      // Múltiples intentos para asegurar que llegue al footer
+      const timeouts = [500, 1500, 3000, 5000];
+      timeouts.forEach(delay => {
+        setTimeout(scrollToFooter, delay);
+      });
+
+      // Cleanup
+      return () => {
+        timeouts.forEach(delay => clearTimeout(delay));
+      };
+    }
+  }, []);
+
   // Configuración para animaciones scroll reveal
   const heroReveal = useScrollReveal<HTMLDivElement>({
     offset: 100,

@@ -5,7 +5,7 @@
  */
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useCart } from "@/hooks/useCart";
+import { useCart, type BundleInfo } from "@/hooks/useCart";
 import { useRouter } from "next/navigation";
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { apiPost } from "@/lib/api-client";
@@ -395,10 +395,28 @@ export default function Step2({
           completed: true,
         };
         try {
-          localStorage.setItem(
-            "imagiq_trade_in",
-            JSON.stringify(tradeInDataToSave)
-          );
+          const tradeInString = JSON.stringify(tradeInDataToSave);
+          localStorage.setItem("imagiq_trade_in", tradeInString);
+          
+          // Verificar que se guardó correctamente
+          const verifySave = localStorage.getItem("imagiq_trade_in");
+          if (!verifySave || verifySave !== tradeInString) {
+            console.error("❌ ERROR: Trade-In NO se guardó correctamente en Step2");
+            // Reintentar
+            localStorage.setItem("imagiq_trade_in", tradeInString);
+          } else {
+            console.log("✅ Trade-In guardado correctamente en Step2");
+          }
+          
+          // Disparar eventos de storage
+          try {
+            globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
+              detail: { key: "imagiq_trade_in" },
+            }));
+            globalThis.dispatchEvent(new Event("storage"));
+          } catch (eventError) {
+            console.error("Error disparando eventos de storage:", eventError);
+          }
         } catch (error) {
           console.error(
             "❌ Error al guardar trade-in en localStorage (respaldo):",
@@ -416,7 +434,28 @@ export default function Step2({
         completed: true,
       };
       try {
-        localStorage.setItem("imagiq_trade_in", JSON.stringify(newTradeInData));
+        const tradeInString = JSON.stringify(newTradeInData);
+        localStorage.setItem("imagiq_trade_in", tradeInString);
+        
+        // Verificar que se guardó correctamente
+        const verifySave = localStorage.getItem("imagiq_trade_in");
+        if (!verifySave || verifySave !== tradeInString) {
+          console.error("❌ ERROR: Trade-In NO se guardó correctamente en Step2 (fallback)");
+          // Reintentar
+          localStorage.setItem("imagiq_trade_in", tradeInString);
+        } else {
+          console.log("✅ Trade-In guardado correctamente en Step2 (fallback)");
+        }
+        
+        // Disparar eventos de storage
+        try {
+          globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
+            detail: { key: "imagiq_trade_in" },
+          }));
+          globalThis.dispatchEvent(new Event("storage"));
+        } catch (eventError) {
+          console.error("Error disparando eventos de storage:", eventError);
+        }
       } catch (storageError) {
         console.error(
           "❌ Error al guardar trade-in en localStorage (fallback):",
@@ -449,24 +488,53 @@ export default function Step2({
     if (cartProducts.length === 0) return;
 
     const verifyTradeIn = async () => {
-      // Obtener SKUs únicos (sin duplicados)
+      // Obtener SKUs únicos de productos individuales (sin duplicados)
       const uniqueSkus = Array.from(new Set(cartProducts.map((p) => p.sku)));
 
-      // Filtrar productos que necesitan verificación (solo si no tienen indRetoma definido Y no fueron verificados antes)
-      // PROTECCIÓN: NO verificar SKUs que ya fallaron anteriormente
+      // Obtener productSku únicos de bundles (sin duplicados)
+      const uniqueBundleSkus = Array.from(
+        new Set(
+          cartProducts
+            .filter((p) => p.bundleInfo?.productSku)
+            .map((p) => p.bundleInfo!.productSku)
+        )
+      );
+
+      // Filtrar productos individuales que necesitan verificación
       const productsToVerify = uniqueSkus.filter((sku) => {
         const product = cartProducts.find((p) => p.sku === sku);
-        const needsVerification = product && product.indRetoma === undefined;
+        // Solo productos sin bundleInfo y sin indRetoma definido
+        const needsVerification = 
+          product && 
+          !product.bundleInfo && 
+          product.indRetoma === undefined;
         const notVerifiedYet = !verifiedSkusRef.current.has(sku);
-        const notFailedBefore = !failedSkusRef.current.has(sku); // PROTECCIÓN: no reintentar fallos
+        const notFailedBefore = !failedSkusRef.current.has(sku);
         return needsVerification && notVerifiedYet && notFailedBefore;
       });
 
-      if (productsToVerify.length === 0) return;
+      // Filtrar bundles que necesitan verificación (usando productSku)
+      const bundlesToVerify = uniqueBundleSkus.filter((productSku) => {
+        const bundleProduct = cartProducts.find(
+          (p) => p.bundleInfo?.productSku === productSku
+        );
+        const needsVerification =
+          bundleProduct &&
+          bundleProduct.bundleInfo?.ind_entre_estre === undefined;
+        const notVerifiedYet = !verifiedSkusRef.current.has(productSku);
+        const notFailedBefore = !failedSkusRef.current.has(productSku);
+        return needsVerification && notVerifiedYet && notFailedBefore;
+      });
 
-      // Verificar cada SKU único en segundo plano
-      for (let i = 0; i < productsToVerify.length; i++) {
-        const sku = productsToVerify[i];
+      // Combinar todos los SKUs a verificar (productos individuales + bundles)
+      const allSkusToVerify = [...productsToVerify, ...bundlesToVerify];
+
+      if (allSkusToVerify.length === 0) return;
+
+      // Verificar cada SKU único (productos individuales y bundles)
+      for (let i = 0; i < allSkusToVerify.length; i++) {
+        const sku = allSkusToVerify[i];
+        const isBundle = bundlesToVerify.includes(sku);
 
         // PROTECCIÓN: Verificar si este SKU ya falló antes (ANTES del delay y try)
         if (failedSkusRef.current.has(sku)) {
@@ -483,12 +551,14 @@ export default function Step2({
         }
 
         try {
-          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku });
+          // Para bundles, usar productSku; para productos normales, usar sku
+          const skuToCheck = isBundle ? sku : sku; // sku ya es productSku si es bundle
+          const response = await tradeInEndpoints.checkSkuForTradeIn({ sku: skuToCheck });
           if (!response.success || !response.data) {
             // Si falla la petición, marcar como fallido
             failedSkusRef.current.add(sku);
             console.error(
-              `🚫 Petición falló para SKU ${sku}. NO se reintentará automáticamente para proteger la base de datos.`
+              `🚫 Petición falló para SKU ${skuToCheck}. NO se reintentará automáticamente para proteger la base de datos.`
             );
             verifiedSkusRef.current.add(sku);
             continue;
@@ -505,13 +575,32 @@ export default function Step2({
           const storedProducts = JSON.parse(
             localStorage.getItem("cart-items") || "[]"
           ) as Array<Record<string, unknown>>;
-          const updatedProducts = storedProducts.map((p) => {
-            if (p.sku === sku) {
-              return { ...p, indRetoma };
-            }
-            return p;
-          });
-          localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+
+          if (isBundle) {
+            // Si es bundle, actualizar bundleInfo.ind_entre_estre
+            const updatedProducts = storedProducts.map((p) => {
+              if (p.bundleInfo && (p.bundleInfo as BundleInfo).productSku === sku) {
+                return {
+                  ...p,
+                  bundleInfo: {
+                    ...(p.bundleInfo as BundleInfo),
+                    ind_entre_estre: indRetoma,
+                  },
+                };
+              }
+              return p;
+            });
+            localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+          } else {
+            // Si es producto normal, actualizar indRetoma
+            const updatedProducts = storedProducts.map((p) => {
+              if (p.sku === sku) {
+                return { ...p, indRetoma };
+              }
+              return p;
+            });
+            localStorage.setItem("cart-items", JSON.stringify(updatedProducts));
+          }
 
           // Disparar evento storage para sincronizar
           const customEvent = new CustomEvent("localStorageChange", {

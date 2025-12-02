@@ -6,7 +6,7 @@ import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints, type ProductApiData } from "@/lib/api";
 import { apiDelete, apiPut } from "@/lib/api-client";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
-import React, { useEffect, useRef, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import { toast } from "sonner";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import ProductCard from "./ProductCard";
@@ -44,6 +44,7 @@ export default function Step1({
     deviceName: string;
     value: number;
     completed: boolean;
+    detalles?: unknown; // Detalles opcionales del Trade-In (se preservan en localStorage)
   }>>({});
 
   // Estado para controlar el modal de Trade-In
@@ -142,47 +143,210 @@ export default function Step1({
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
 
-  // Cargar datos de Trade-In desde localStorage
-  // Si el producto aplica (indRetoma === 1) pero no hay trade-in activo, mostrar banner para guiar al usuario
-  useEffect(() => {
-    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
-    if (storedTradeIn) {
-      try {
-        const parsed = JSON.parse(storedTradeIn);
-        // Verificar si es el formato nuevo (objeto de objetos) o antiguo
-        if (parsed && typeof parsed === 'object') {
-          // Si tiene deviceName directamente, es el formato antiguo -> convertirlo
-          if ('deviceName' in parsed) {
-            // Intentar asignar al primer producto si existe
-            if (cartProducts.length === 1) {
-              setTradeInData({ [cartProducts[0].sku]: parsed });
-            }
-          } else {
-            // Asumir formato nuevo
-            setTradeInData(parsed);
-          }
-        }
-      } catch (error) {
-        console.error("❌ Error al cargar datos de Trade-In:", error);
+  // Función para cargar Trade-Ins desde localStorage
+  const loadTradeInFromStorage = useCallback(() => {
+    try {
+      const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+      if (!storedTradeIn) {
+        setTradeInData({});
+        return;
       }
-    } else {
-      // Si no hay trade-in activo pero el producto aplica (indRetoma === 1), mostrar banner guía SIEMPRE
-      // Sin importar canPickUp o si el usuario está logueado
-      const productApplies =
-        cartProducts.length === 1 && cartProducts[0]?.indRetoma === 1;
 
-      if (productApplies) {
-        // Mostrar banner siempre si el producto tiene indRetoma === 1
-        setTradeInData({
-          [cartProducts[0].sku]: {
-            deviceName: cartProducts[0].name,
-            value: 0,
-            completed: false, // No está completado, solo es una guía
+      const parsed = JSON.parse(storedTradeIn);
+      
+      // Verificar si es el formato nuevo (objeto de objetos) o antiguo
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        // Si tiene deviceName directamente, es el formato antiguo
+        if ('deviceName' in parsed) {
+          // Formato antiguo: convertir al nuevo formato cuando haya productos
+          if (cartProducts.length > 0) {
+            const newTradeInData: Record<string, typeof parsed> = {};
+            
+            // Buscar el primer producto o bundle
+            for (const product of cartProducts) {
+              if (product.bundleInfo?.productSku) {
+                // Es un bundle, usar productSku
+                newTradeInData[product.bundleInfo.productSku] = parsed;
+                break;
+              } else if (product.sku) {
+                // Es un producto individual, usar sku
+                newTradeInData[product.sku] = parsed;
+                break;
+              }
+            }
+            
+            if (Object.keys(newTradeInData).length > 0) {
+              // Guardar en el formato nuevo
+              const tradeInString = JSON.stringify(newTradeInData);
+              localStorage.setItem("imagiq_trade_in", tradeInString);
+              setTradeInData(newTradeInData);
+              console.log("✅ Trade-In convertido del formato antiguo al nuevo");
+            }
           }
-        });
+        } else {
+          // Formato nuevo: cargar directamente
+          setTradeInData(parsed);
+          console.log("✅ Trade-Ins cargados desde localStorage (formato nuevo):", Object.keys(parsed));
+        }
       }
+    } catch (error) {
+      console.error("❌ Error al cargar datos de Trade-In:", error);
+      setTradeInData({});
     }
   }, [cartProducts]);
+
+  // Cargar datos de Trade-In desde localStorage INMEDIATAMENTE al montar (sin esperar productos)
+  // IMPORTANTE: Esto asegura que el Trade-In se cargue antes de cualquier validación
+  useEffect(() => {
+    // Cargar inmediatamente al montar, incluso si no hay productos aún
+    try {
+      const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+      if (storedTradeIn) {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          if (!('deviceName' in parsed)) {
+            // Formato nuevo: cargar directamente
+            setTradeInData(parsed);
+            console.log("✅ Trade-Ins cargados inmediatamente desde localStorage:", Object.keys(parsed));
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error al cargar Trade-In al montar:", error);
+    }
+  }, []); // Solo ejecutar una vez al montar
+
+  // Sincronizar Trade-Ins con productos cuando estén disponibles
+  useEffect(() => {
+    if (cartProducts.length > 0) {
+      // Cargar cuando hay productos disponibles para asegurar que se asocien correctamente
+      loadTradeInFromStorage();
+    }
+  }, [cartProducts.length, loadTradeInFromStorage]); // Ejecutar cuando cambie el número de productos
+
+  // Escuchar cambios en localStorage para sincronizar cuando se recarga la página
+  useEffect(() => {
+    const handleStorageChange = () => {
+      // Recargar Trade-Ins cuando cambia localStorage (entre tabs o recargas)
+      if (cartProducts.length > 0) {
+        loadTradeInFromStorage();
+      }
+    };
+
+    // Escuchar eventos de storage (entre tabs y recargas)
+    window.addEventListener("storage", handleStorageChange);
+    window.addEventListener("localStorageChange", handleStorageChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorageChange);
+      window.removeEventListener("localStorageChange", handleStorageChange);
+    };
+  }, [cartProducts.length, loadTradeInFromStorage]);
+
+  // Sincronizar Trade-Ins con los productos del carrito cuando cambian
+  // IMPORTANTE: Esto asegura que los Trade-Ins se mantengan cuando se recarga la página
+  useEffect(() => {
+    if (cartProducts.length === 0) {
+      // Si no hay productos, no limpiar Trade-Ins automáticamente (pueden estar cargándose)
+      return;
+    }
+
+    // Verificar que los Trade-Ins guardados correspondan a productos en el carrito
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+    if (!storedTradeIn) {
+      // Si no hay Trade-In guardado, no hacer nada
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(storedTradeIn);
+      
+      // Solo validar si es formato nuevo (objeto de objetos)
+      if (parsed && typeof parsed === 'object' && !('deviceName' in parsed) && !Array.isArray(parsed)) {
+        const validTradeIns: Record<string, {
+          deviceName: string;
+          value: number;
+          completed: boolean;
+          detalles?: unknown;
+        }> = {};
+        const allSkus = new Set<string>();
+        
+        // Obtener todos los SKUs válidos (productos individuales y bundles)
+        cartProducts.forEach(product => {
+          if (product.bundleInfo?.productSku) {
+            // Para bundles, usar productSku
+            allSkus.add(product.bundleInfo.productSku);
+          } else {
+            // Para productos individuales, usar sku
+            allSkus.add(product.sku);
+          }
+        });
+        
+        // Filtrar Trade-Ins que correspondan a productos en el carrito
+        Object.entries(parsed).forEach(([sku, tradeInData]) => {
+          if (allSkus.has(sku)) {
+            // Validar que el tradeInData tenga la estructura correcta
+            const tradeIn = tradeInData as {
+              deviceName?: string;
+              value?: number;
+              completed?: boolean;
+              detalles?: unknown;
+            };
+            
+            if (tradeIn && typeof tradeIn === 'object' && 
+                tradeIn.deviceName && 
+                typeof tradeIn.value === 'number' && 
+                typeof tradeIn.completed === 'boolean') {
+              validTradeIns[sku] = {
+                deviceName: tradeIn.deviceName,
+                value: tradeIn.value,
+                completed: tradeIn.completed,
+                ...(tradeIn.detalles !== undefined && { detalles: tradeIn.detalles }),
+              };
+            }
+          }
+        });
+        
+        // Actualizar estado si hay cambios o si el estado está vacío pero hay Trade-Ins válidos
+        const currentTradeInsString = JSON.stringify(tradeInData);
+        const validTradeInsString = JSON.stringify(validTradeIns);
+        
+        if (currentTradeInsString !== validTradeInsString) {
+          if (Object.keys(validTradeIns).length > 0) {
+            setTradeInData(validTradeIns);
+            // Guardar de nuevo para asegurar que esté sincronizado y persistente
+            const tradeInString = JSON.stringify(validTradeIns);
+            localStorage.setItem("imagiq_trade_in", tradeInString);
+            
+            // Verificar que se guardó correctamente
+            const verifySave = localStorage.getItem("imagiq_trade_in");
+            if (!verifySave || verifySave !== tradeInString) {
+              console.error("❌ ERROR: Trade-In NO se guardó correctamente al sincronizar");
+              // Reintentar
+              localStorage.setItem("imagiq_trade_in", tradeInString);
+            } else {
+              console.log("✅ Trade-Ins sincronizados y guardados correctamente:", Object.keys(validTradeIns));
+            }
+            
+            // Disparar eventos de storage
+            try {
+              globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
+                detail: { key: "imagiq_trade_in" },
+              }));
+              globalThis.dispatchEvent(new Event("storage"));
+            } catch (eventError) {
+              console.error("Error disparando eventos de storage:", eventError);
+            }
+          } else {
+            // No hay Trade-Ins válidos, pero no los eliminamos automáticamente
+            console.log("⚠️ No se encontraron Trade-Ins válidos para los productos actuales, pero se mantienen en localStorage");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error al sincronizar Trade-Ins:", error);
+    }
+  }, [cartProducts]); // Ejecutar cuando cambian los productos
 
   // Abrir modal automáticamente si viene desde el botón "Entrego y Estreno"
   useEffect(() => {
@@ -663,7 +827,7 @@ export default function Step1({
     try {
       // Cargar trade-ins existentes
       const raw = localStorage.getItem("imagiq_trade_in");
-      let tradeIns: Record<string, { deviceName: string; value: number; completed: boolean }> = {};
+      let tradeIns: Record<string, { deviceName: string; value: number; completed: boolean; detalles?: unknown }> = {};
 
       if (raw) {
         try {
@@ -674,7 +838,7 @@ export default function Step1({
             tradeIns = {};
           } else if (typeof parsed === 'object') {
             // Formato nuevo (objeto con SKUs como claves)
-            tradeIns = parsed;
+            tradeIns = parsed as Record<string, { deviceName: string; value: number; completed: boolean; detalles?: unknown }>;
           }
         } catch (parseError) {
           console.error("❌ Error al parsear trade-ins:", parseError);
@@ -688,9 +852,50 @@ export default function Step1({
         completed: true,
       };
 
-      // NO guardar en localStorage aquí porque ya lo hace el modal (useTradeInHandlers) con todos los detalles
-      // Si guardamos aquí, sobrescribimos y perdemos los 'detalles'
-      // localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeIns));
+      // FORZAR guardado en localStorage como respaldo (el modal también guarda, pero esto asegura persistencia)
+      // IMPORTANTE: El modal guarda con 'detalles', así que intentamos preservar esos detalles
+      try {
+        const existingRaw = localStorage.getItem("imagiq_trade_in");
+        if (existingRaw) {
+          try {
+            const existing = JSON.parse(existingRaw);
+            // Si ya existe un trade-in para este SKU con detalles, preservarlos
+            if (existing[currentTradeInSku] && existing[currentTradeInSku].detalles) {
+              tradeIns[currentTradeInSku] = {
+                ...tradeIns[currentTradeInSku],
+                detalles: existing[currentTradeInSku].detalles as unknown,
+              };
+            }
+          } catch {
+            // Ignorar errores de parseo
+          }
+        }
+        
+        const tradeInString = JSON.stringify(tradeIns);
+        localStorage.setItem("imagiq_trade_in", tradeInString);
+        
+        // Verificar que se guardó correctamente
+        const verifySave = localStorage.getItem("imagiq_trade_in");
+        if (!verifySave || verifySave !== tradeInString) {
+          console.error("❌ ERROR: Trade-In NO se guardó correctamente en Step1");
+          // Reintentar
+          localStorage.setItem("imagiq_trade_in", tradeInString);
+        } else {
+          console.log("✅ Trade-In guardado correctamente en Step1 para SKU:", currentTradeInSku);
+        }
+        
+        // Disparar eventos de storage para sincronizar
+        try {
+          globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
+            detail: { key: "imagiq_trade_in" },
+          }));
+          globalThis.dispatchEvent(new Event("storage"));
+        } catch (eventError) {
+          console.error("Error disparando eventos de storage:", eventError);
+        }
+      } catch (backupError) {
+        console.error("❌ Error en guardado de respaldo en Step1:", backupError);
+      }
 
       // Actualizar el estado
       setTradeInData(prev => ({

@@ -991,6 +991,10 @@ export function useCart(): UseCartReturn {
    */
   const removeBundleProduct = useCallback(
     async (sku: string, keepOtherProducts: boolean) => {
+      // Variables para el toast (fuera de setProducts para evitar duplicados)
+      let shouldShowBundleLostToast = false;
+      let shouldShowBundleRemovedToast = false;
+
       setProducts((currentProducts) => {
         // Buscar el producto por SKU (puede ser el SKU del bundle o un SKU individual)
         let productToRemove = currentProducts.find((p) => p.sku === sku || p.id.includes(sku));
@@ -1058,11 +1062,8 @@ export function useCart(): UseCartReturn {
             }
           }
 
-          toast.warning("Descuento de bundle perdido", {
-            description:
-              "Al eliminar un producto del bundle, los demás productos vuelven a su precio original.",
-            duration: 4000,
-          });
+          // Marcar para mostrar toast DESPUÉS de actualizar el estado
+          shouldShowBundleLostToast = true;
         } else {
           // Eliminar todos los productos del bundle
           newProducts = currentProducts.filter(
@@ -1094,9 +1095,8 @@ export function useCart(): UseCartReturn {
             console.error("Error removing trade-in from storage", e);
           }
 
-          toast.info("Bundle eliminado del carrito", {
-            duration: 2500,
-          });
+          // Marcar para mostrar toast DESPUÉS de actualizar el estado
+          shouldShowBundleRemovedToast = true;
         }
 
         try {
@@ -1114,6 +1114,36 @@ export function useCart(): UseCartReturn {
 
         return newProducts;
       });
+
+      // Mostrar toasts DESPUÉS de actualizar el estado (solo una vez)
+      // Usar ref para evitar duplicados si hay re-renders
+      const toastKey = keepOtherProducts ? "bundle-lost" : "bundle-removed";
+      
+      if (shouldShowBundleLostToast && !toastActiveRef.current[toastKey]) {
+        toastActiveRef.current[toastKey] = true;
+        toast.warning("Descuento de bundle perdido", {
+          description:
+            "Al eliminar un producto del bundle, los demás productos vuelven a su precio original.",
+          duration: 4000,
+          onDismiss: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+          onAutoClose: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+        });
+      } else if (shouldShowBundleRemovedToast && !toastActiveRef.current[toastKey]) {
+        toastActiveRef.current[toastKey] = true;
+        toast.info("Bundle eliminado del carrito", {
+          duration: 2500,
+          onDismiss: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+          onAutoClose: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+        });
+      }
 
       // Llamar al backend
       try {

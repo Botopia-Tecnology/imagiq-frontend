@@ -284,11 +284,50 @@ export default function Step4OrderSummary({
   }, [products, shouldCalculateCanPickUp]);
 
   // Calcular canPickUp global cuando cambian los productos o shouldCalculateCanPickUp
+  // IMPORTANTE: Asegurar que se ejecute DESPUÉS de que los productos estén completamente cargados
+  // Esto es crítico cuando se navega desde "Entrego y Estreno"
   React.useEffect(() => {
-    // NO resetear userClickedWhileLoading aquí - solo cuando cambian los productos o shouldCalculateCanPickUp
-    // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
-    fetchGlobalCanPickUp();
-  }, [fetchGlobalCanPickUp]);
+    // Verificar si viene desde "Entrego y Estreno" (hay un flag en localStorage)
+    const isFromTradeIn = typeof window !== "undefined" && 
+      localStorage.getItem("open_trade_in_modal_sku") !== null;
+    
+    // Si viene desde Trade-In, esperar un poco más para asegurar que los productos estén cargados
+    // También esperar si los productos aún no tienen SKUs válidos (pueden estar cargándose)
+    const hasValidProducts = products.length > 0 && 
+      products.every(p => p.sku && p.sku.trim() !== "");
+    
+    // Si no hay productos válidos, esperar más tiempo
+    const baseDelay = isFromTradeIn ? 300 : 100;
+    const delay = hasValidProducts ? baseDelay : baseDelay + 200;
+    
+    // Esperar un delay para asegurar que los productos estén completamente cargados
+    // especialmente cuando se viene desde "Entrego y Estreno" (los productos se agregan justo antes de navegar)
+    const timer = setTimeout(() => {
+      // Verificar que haya productos antes de calcular canPickUp
+      if (products.length > 0) {
+        // Verificar también que los productos tengan los datos necesarios (sku válido)
+        const allProductsValid = products.every(p => p.sku && p.sku.trim() !== "");
+        
+        if (allProductsValid) {
+          // NO resetear userClickedWhileLoading aquí - solo cuando cambian los productos o shouldCalculateCanPickUp
+          // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
+          console.log("🔄 [canPickUp] Calculando canPickUp global con", products.length, "productos válidos");
+          fetchGlobalCanPickUp();
+        } else {
+          console.log("⚠️ [canPickUp] Esperando productos válidos (algunos productos no tienen SKU)");
+        }
+      } else {
+        console.log("⚠️ [canPickUp] No hay productos para calcular canPickUp");
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [
+    fetchGlobalCanPickUp, 
+    products.length, 
+    // Crear una clave única basada en todos los SKUs para detectar cuando los productos cambian completamente
+    products.map(p => `${p.sku || ""}-${p.quantity || 0}`).sort().join("|")
+  ]);
 
   // Resetear userClickedWhileLoading cuando cambian los productos, shouldCalculateCanPickUp, o cuando canPickUp termina de cargar
   React.useEffect(() => {

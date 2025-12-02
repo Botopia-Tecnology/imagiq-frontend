@@ -121,13 +121,78 @@ export function useTradeInHandlers({
           }
 
           tradeIns[productSku] = tradeInData;
-          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeIns));
+          
+          // FORZAR guardado en localStorage - CRÍTICO
+          const tradeInString = JSON.stringify(tradeIns);
+          localStorage.setItem("imagiq_trade_in", tradeInString);
+          
+          // Verificar que se guardó correctamente
+          const verifySave = localStorage.getItem("imagiq_trade_in");
+          if (!verifySave || verifySave !== tradeInString) {
+            console.error("❌ ERROR: Trade-In NO se guardó correctamente en localStorage");
+            // Reintentar el guardado
+            localStorage.setItem("imagiq_trade_in", tradeInString);
+          } else {
+            console.log("✅ Trade-In guardado correctamente en localStorage para SKU:", productSku);
+          }
+          
+          // Disparar eventos de storage para sincronizar entre tabs y componentes
+          try {
+            globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
+              detail: { key: "imagiq_trade_in" },
+            }));
+            globalThis.dispatchEvent(new Event("storage"));
+          } catch (eventError) {
+            console.error("Error disparando eventos de storage:", eventError);
+          }
         } else {
           // Formato antiguo (sin SKU) - para compatibilidad
-          localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+          const tradeInString = JSON.stringify(tradeInData);
+          localStorage.setItem("imagiq_trade_in", tradeInString);
+          
+          // Verificar que se guardó correctamente
+          const verifySave = localStorage.getItem("imagiq_trade_in");
+          if (!verifySave || verifySave !== tradeInString) {
+            console.error("❌ ERROR: Trade-In NO se guardó correctamente en localStorage");
+            // Reintentar el guardado
+            localStorage.setItem("imagiq_trade_in", tradeInString);
+          }
+          
+          // Disparar eventos de storage
+          try {
+            globalThis.dispatchEvent(new CustomEvent("localStorageChange", {
+              detail: { key: "imagiq_trade_in" },
+            }));
+            globalThis.dispatchEvent(new Event("storage"));
+          } catch (eventError) {
+            console.error("Error disparando eventos de storage:", eventError);
+          }
         }
-      } catch {
-        // Error guardando en localStorage
+      } catch (storageError) {
+        console.error("❌ Error guardando en localStorage:", storageError);
+        // Reintentar una vez más
+        try {
+          if (productSku) {
+            const raw = localStorage.getItem("imagiq_trade_in");
+            let tradeIns: Record<string, typeof tradeInData> = {};
+            if (raw) {
+              try {
+                const parsed = JSON.parse(raw);
+                if (typeof parsed === 'object' && !parsed.deviceName) {
+                  tradeIns = parsed;
+                }
+              } catch {
+                // Ignorar
+              }
+            }
+            tradeIns[productSku] = tradeInData;
+            localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeIns));
+          } else {
+            localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+          }
+        } catch (retryError) {
+          console.error("❌ Error en reintento de guardado:", retryError);
+        }
       }
     }
 

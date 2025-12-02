@@ -460,10 +460,11 @@ export default function Step3({
   const shouldVerifySku = React.useCallback((sku: string, productList: typeof products): boolean => {
     const product = productList.find((p) => p.sku === sku);
     // Solo productos sin bundleInfo y sin indRetoma definido
-    const needsVerification = 
+    const needsVerification = Boolean(
       product && 
       !product.bundleInfo && 
-      product.indRetoma === undefined;
+      product.indRetoma === undefined
+    );
     const notVerifiedYet = !verifiedSkusRef.current.has(sku);
     const notFailedBefore = !failedSkusRef.current.has(sku);
     return needsVerification && notVerifiedYet && notFailedBefore;

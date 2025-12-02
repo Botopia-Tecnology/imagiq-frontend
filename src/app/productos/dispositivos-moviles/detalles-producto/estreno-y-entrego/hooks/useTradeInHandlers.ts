@@ -172,23 +172,31 @@ export function useTradeInHandlers({
         console.error("❌ Error guardando en localStorage:", storageError);
         // Reintentar una vez más
         try {
+          // Recrear tradeInData en el catch porque está fuera del scope del try anterior
+          const tradeInDataRetry = {
+            deviceName,
+            value: tradeInValue,
+            completed: true,
+            detalles: Object.keys(detalles).length > 0 ? detalles : undefined,
+          };
+          
           if (productSku) {
             const raw = localStorage.getItem("imagiq_trade_in");
-            let tradeIns: Record<string, typeof tradeInData> = {};
+            let tradeIns: Record<string, typeof tradeInDataRetry> = {};
             if (raw) {
               try {
                 const parsed = JSON.parse(raw);
                 if (typeof parsed === 'object' && !parsed.deviceName) {
-                  tradeIns = parsed;
+                  tradeIns = parsed as Record<string, typeof tradeInDataRetry>;
                 }
               } catch {
                 // Ignorar
               }
             }
-            tradeIns[productSku] = tradeInData;
+            tradeIns[productSku] = tradeInDataRetry;
             localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeIns));
           } else {
-            localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInData));
+            localStorage.setItem("imagiq_trade_in", JSON.stringify(tradeInDataRetry));
           }
         } catch (retryError) {
           console.error("❌ Error en reintento de guardado:", retryError);

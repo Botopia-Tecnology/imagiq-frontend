@@ -44,6 +44,7 @@ export default function Step1({
     deviceName: string;
     value: number;
     completed: boolean;
+    detalles?: unknown; // Detalles opcionales del Trade-In (se preservan en localStorage)
   }>>({});
 
   // Estado para controlar el modal de Trade-In
@@ -262,7 +263,12 @@ export default function Step1({
       
       // Solo validar si es formato nuevo (objeto de objetos)
       if (parsed && typeof parsed === 'object' && !('deviceName' in parsed) && !Array.isArray(parsed)) {
-        const validTradeIns: Record<string, unknown> = {};
+        const validTradeIns: Record<string, {
+          deviceName: string;
+          value: number;
+          completed: boolean;
+          detalles?: unknown;
+        }> = {};
         const allSkus = new Set<string>();
         
         // Obtener todos los SKUs válidos (productos individuales y bundles)
@@ -279,7 +285,25 @@ export default function Step1({
         // Filtrar Trade-Ins que correspondan a productos en el carrito
         Object.entries(parsed).forEach(([sku, tradeInData]) => {
           if (allSkus.has(sku)) {
-            validTradeIns[sku] = tradeInData;
+            // Validar que el tradeInData tenga la estructura correcta
+            const tradeIn = tradeInData as {
+              deviceName?: string;
+              value?: number;
+              completed?: boolean;
+              detalles?: unknown;
+            };
+            
+            if (tradeIn && typeof tradeIn === 'object' && 
+                tradeIn.deviceName && 
+                typeof tradeIn.value === 'number' && 
+                typeof tradeIn.completed === 'boolean') {
+              validTradeIns[sku] = {
+                deviceName: tradeIn.deviceName,
+                value: tradeIn.value,
+                completed: tradeIn.completed,
+                ...(tradeIn.detalles !== undefined && { detalles: tradeIn.detalles }),
+              };
+            }
           }
         });
         
@@ -803,7 +827,7 @@ export default function Step1({
     try {
       // Cargar trade-ins existentes
       const raw = localStorage.getItem("imagiq_trade_in");
-      let tradeIns: Record<string, { deviceName: string; value: number; completed: boolean }> = {};
+      let tradeIns: Record<string, { deviceName: string; value: number; completed: boolean; detalles?: unknown }> = {};
 
       if (raw) {
         try {
@@ -814,7 +838,7 @@ export default function Step1({
             tradeIns = {};
           } else if (typeof parsed === 'object') {
             // Formato nuevo (objeto con SKUs como claves)
-            tradeIns = parsed;
+            tradeIns = parsed as Record<string, { deviceName: string; value: number; completed: boolean; detalles?: unknown }>;
           }
         } catch (parseError) {
           console.error("❌ Error al parsear trade-ins:", parseError);
@@ -839,7 +863,7 @@ export default function Step1({
             if (existing[currentTradeInSku] && existing[currentTradeInSku].detalles) {
               tradeIns[currentTradeInSku] = {
                 ...tradeIns[currentTradeInSku],
-                detalles: existing[currentTradeInSku].detalles,
+                detalles: existing[currentTradeInSku].detalles as unknown,
               };
             }
           } catch {

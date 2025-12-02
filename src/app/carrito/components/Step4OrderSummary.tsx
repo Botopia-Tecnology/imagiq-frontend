@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useCart } from "@/hooks/useCart";
 import { productEndpoints } from "@/lib/api";
 import { safeGetLocalStorage } from "@/lib/localStorage";
@@ -674,6 +675,24 @@ export default function Step4OrderSummary({
               Envío gratis a toda Colombia. Si compras en Bogotá antes de las
               11:00 am productos de la categoría Smartphones y Accesorios,
               recibirás tu pedido el mismo día
+            </p>
+          </div>
+
+          {/* Información de Addi */}
+          <div className="flex gap-2 items-start">
+            <div className="shrink-0">
+              <div className="w-8 h-8 flex items-center justify-center">
+                <Image
+                  src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764650798/acd66fce-b218-4a0d-95e9-559410496596.png"
+                  alt="Addi"
+                  width={20}
+                  height={20}
+                  className="object-contain"
+                />
+              </div>
+            </div>
+            <p className="text-black">
+              Paga a crédito con <span className="font-semibold">addi</span>. Compra ahora y paga después en cuotas flexibles sin necesidad de tarjeta de crédito
             </p>
           </div>
         </div>

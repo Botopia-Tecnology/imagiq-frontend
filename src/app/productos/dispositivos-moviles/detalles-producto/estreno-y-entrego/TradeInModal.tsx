@@ -37,24 +37,11 @@ export default function TradeInModal({
   // Intentar obtener datos del cache primero, si no están usar el hook normal
   const { tradeInData: cachedData, loading: cacheLoading } = useTradeInDataFromCache();
   const { tradeInData: fallbackData, loading: fallbackLoading } = useTradeInData();
-  
+
   // Usar datos del cache si están disponibles, sino usar los del fallback
   const tradeInData = cachedData || fallbackData;
-  const loadingData = cacheLoading || fallbackLoading;
-
-  // Debug logs para entender el estado del cache
-  useEffect(() => {
-    if (isOpen) {
-      console.log('🔍 [TradeInModal] Estado del cache:', {
-        cachedData: !!cachedData,
-        cacheLoading,
-        fallbackData: !!fallbackData,
-        fallbackLoading,
-        finalData: !!tradeInData,
-        finalLoading: loadingData
-      });
-    }
-  }, [isOpen, cachedData, cacheLoading, fallbackData, fallbackLoading, tradeInData, loadingData]);
+  // Si ya tenemos datos en cache, no mostramos loading, aunque el fallback esté inicializándose
+  const loadingData = cachedData ? false : (cacheLoading || fallbackLoading);
 
   // Datos por defecto mientras se carga la API
   const safeTradeInData = tradeInData || {
@@ -100,6 +87,7 @@ export default function TradeInModal({
     selectedBrand: formState.selectedBrand,
     selectedCapacity: formState.selectedCapacity,
     deviceState: flowState.deviceState,
+    productSku,
   });
 
   const { handleClose, getStepTitle, getContinueHandler, getBackHandler } =

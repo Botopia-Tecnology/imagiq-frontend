@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 
 interface TradeInCompletedSummaryProps {
   readonly deviceName: string;
@@ -90,11 +91,18 @@ export default function TradeInCompletedSummary({
                 </p>
               </button>
             ) : (
-              <p className={`text-sm md:text-base font-bold ${
-                validationError ? "text-red-600" : "text-[#0099FF]"
-              }`}>
-                - $ {tradeInValue.toLocaleString('es-CO')}
-              </p>
+              <div className="flex flex-col items-end">
+                <p className={`text-[10px] md:text-xs ${
+                  validationError ? "text-red-600" : "text-gray-600"
+                }`}>
+                  Recibe hasta:
+                </p>
+                <p className={`text-sm md:text-base font-bold ${
+                  validationError ? "text-red-600" : "text-[#0099FF]"
+                }`}>
+                  - $ {tradeInValue.toLocaleString('es-CO')}
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -127,7 +135,16 @@ export default function TradeInCompletedSummary({
             ) : (
               <>
                 <p className="text-[10px] md:text-xs text-black leading-relaxed">
-                  Este es un valor aproximado del beneficio Entrego y Estreno al que aplicaste. Este valor se desembolsa en la tienda. Aplican TyC*
+                  Este es un valor aproximado del beneficio Entrego y Estreno al que aplicaste. Este valor se desembolsa en la tienda. Aplican{" "}
+                  <Link
+                    href="/soporte/tyc-entrego-estreno"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#0099FF] underline hover:text-[#0088EE] transition-colors"
+                  >
+                    TyC
+                  </Link>
+                  *
                 </p>
                 {showStorePickupMessage && (
                   <p className="text-[10px] md:text-xs text-black leading-relaxed font-medium">

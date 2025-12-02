@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,16 +28,42 @@ export default function SimpleDropdown<T extends DropdownOption>({
   onToggle,
   onSelectOption,
 }: Readonly<SimpleDropdownProps<T>>) {
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll cuando el dropdown se abre
+  useEffect(() => {
+    if (isOpen && dropdownRef.current && !isDisabled) {
+      setTimeout(() => {
+        dropdownRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+      }, 100);
+    }
+  }, [isOpen, isDisabled]);
+
   // Determine button classes based on state
   const getButtonClasses = () => {
-    if (isDisabled) return "bg-gray-50 cursor-not-allowed border-0";
-    if (isOpen) return "border-0 bg-white";
-    return "border border-gray-300 bg-white hover:bg-gray-50";
+    if (isDisabled) return "bg-gray-100 cursor-not-allowed border-0 opacity-60";
+    if (isOpen) return "border-0 bg-white ring-2 ring-[#0099FF]";
+    if (selectedOption) return "border border-[#0099FF] bg-white hover:bg-gray-50";
+    return "border border-gray-200 bg-white hover:bg-gray-50";
+  };
+
+  const getTextClasses = () => {
+    if (isDisabled) return "text-gray-400";
+    return "text-[#222]";
+  };
+
+  const getLabelClasses = () => {
+    if (isDisabled) return "text-gray-300";
+    if (isOpen || selectedOption) return "text-[#0099FF] font-medium";
+    return "text-gray-400";
   };
 
   return (
-    <div className="mb-6 max-w-2xl mx-auto">
-      <span className="block text-xs font-normal text-gray-400 mb-3">
+    <div ref={dropdownRef} className="mb-6 max-w-2xl mx-auto">
+      <span className={`block text-xs mb-3 transition-colors ${getLabelClasses()}`}>
         {label}
       </span>
       <div
@@ -57,26 +83,18 @@ export default function SimpleDropdown<T extends DropdownOption>({
         <button
           onClick={onToggle}
           disabled={isDisabled}
-          className={`w-full px-4 py-4 text-left rounded-md flex items-center justify-between transition-colors ${getButtonClasses()}`}
+          className={`w-full px-4 py-4 text-left rounded-md flex items-center justify-between transition-all ${getButtonClasses()}`}
         >
-          <span
-            className={`text-sm ${
-              isDisabled ? "text-gray-400" : "text-[#222]"
-            }`}
-          >
+          <span className={`text-sm ${getTextClasses()}`}>
             {selectedOption ? selectedOption.name : placeholder}
           </span>
           {isOpen ? (
             <ChevronUp
-              className={`w-4 h-4 ${
-                isDisabled ? "text-gray-400" : "text-[#222]"
-              }`}
+              className={`w-4 h-4 ${isDisabled ? "text-gray-400" : "text-[#0099FF]"}`}
             />
           ) : (
             <ChevronDown
-              className={`w-4 h-4 ${
-                isDisabled ? "text-gray-400" : "text-[#222]"
-              }`}
+              className={`w-4 h-4 ${getTextClasses()}`}
             />
           )}
         </button>

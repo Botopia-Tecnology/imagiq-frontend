@@ -743,9 +743,10 @@ export interface TradeInCategory {
 }
 
 export interface TradeInValueRequest {
-  codMarca: string;
-  codModelo: string;
-  grado: 'A' | 'B' | 'C'; // A=Excelente, B=Buen estado, C=Estado regular
+  sku: string; // SKU del producto a comprar
+  codMarca: string; // Del dispositivo a entregar
+  codModelo: string; // Del dispositivo a entregar
+  grado: 'A' | 'B' | 'C'; // Estado del dispositivo a entregar
 }
 
 export interface TradeInValueResponse {

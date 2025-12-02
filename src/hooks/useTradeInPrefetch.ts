@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { tradeInEndpoints } from '@/lib/api';
 import type { TradeInData, DeviceCategory, Brand, DeviceModel, DeviceCapacity } from '@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/types';
 import type { TradeInCategory } from '@/lib/api';
@@ -14,6 +14,13 @@ let tradeInCache: {
   loading: false,
 };
 
+// Listeners para notificar cambios en el cache
+const listeners = new Set<() => void>();
+
+const notifyListeners = () => {
+  listeners.forEach((listener) => listener());
+};
+
 // TTL del cache (5 minutos)
 const CACHE_TTL = 5 * 60 * 1000;
 
@@ -24,6 +31,16 @@ const CACHE_TTL = 5 * 60 * 1000;
  */
 export function useTradeInPrefetch() {
   const hasInitialized = useRef(false);
+  // Estado local para forzar re-render cuando el cache cambie
+  const [, forceUpdate] = useState({});
+
+  useEffect(() => {
+    const listener = () => forceUpdate({});
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
 
   useEffect(() => {
     // Solo ejecutar una vez por sesión
@@ -33,14 +50,14 @@ export function useTradeInPrefetch() {
     const shouldFetch = () => {
       // No hay datos en cache
       if (!tradeInCache.data) return true;
-      
+
       // Cache expirado
       const now = Date.now();
       if (now - tradeInCache.timestamp > CACHE_TTL) return true;
-      
+
       // Ya se está cargando
       if (tradeInCache.loading) return false;
-      
+
       return false;
     };
 
@@ -64,18 +81,40 @@ export function useTradeInPrefetch() {
  * Si no están en cache, los carga automáticamente
  */
 export function useTradeInDataFromCache() {
+  // Estado local para mantener sincronizado con el cache global
+  const [cacheState, setCacheState] = useState({
+    data: tradeInCache.data,
+    loading: tradeInCache.loading,
+    timestamp: tradeInCache.timestamp
+  });
+
+  // Suscribirse a cambios en el cache global
+  useEffect(() => {
+    const listener = () => {
+      setCacheState({
+        data: tradeInCache.data,
+        loading: tradeInCache.loading,
+        timestamp: tradeInCache.timestamp
+      });
+    };
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }, []);
+
   const getCachedData = () => {
     const now = Date.now();
-    
+
     // Si no hay datos o están expirados, retornar null
-    if (!tradeInCache.data || (now - tradeInCache.timestamp > CACHE_TTL)) {
+    if (!cacheState.data || (now - cacheState.timestamp > CACHE_TTL)) {
       return null;
     }
-    
-    return tradeInCache.data;
+
+    return cacheState.data;
   };
 
-  const isLoading = () => tradeInCache.loading;
+  const isLoading = () => cacheState.loading;
 
   // Si no hay datos, intentar cargarlos
   useEffect(() => {
@@ -87,10 +126,10 @@ export function useTradeInDataFromCache() {
       console.log('📦 [Trade-In Cache] Datos disponibles:', {
         hasData: !!cachedData,
         isLoading: isLoading(),
-        dataAge: tradeInCache.timestamp ? Date.now() - tradeInCache.timestamp : 0
+        dataAge: cacheState.timestamp ? Date.now() - cacheState.timestamp : 0
       });
     }
-  }, []);
+  }, [cacheState.data, cacheState.timestamp, cacheState.loading]); // Dependencias actualizadas
 
   return {
     tradeInData: getCachedData(),
@@ -110,30 +149,34 @@ async function prefetchTradeInData(): Promise<TradeInData | null> {
 
   try {
     tradeInCache.loading = true;
-    
+    notifyListeners(); // Notificar inicio de carga
+
     console.log('🔄 [Trade-In Prefetch] Cargando datos de trade-in...');
-    
+
     const response = await tradeInEndpoints.getHierarchy();
 
     if (response.success && response.data) {
       const transformedData = transformHierarchyToTradeInData(response.data);
-      
+
       tradeInCache = {
         data: transformedData,
         timestamp: Date.now(),
         loading: false,
       };
-      
+      notifyListeners(); // Notificar éxito
+
       console.log('✅ [Trade-In Prefetch] Datos cargados y almacenados en cache');
       return transformedData;
     } else {
       console.error('❌ [Trade-In Prefetch] Error en respuesta:', response.message);
       tradeInCache.loading = false;
+      notifyListeners(); // Notificar error (fin de carga)
       return null;
     }
   } catch (error) {
     console.error('❌ [Trade-In Prefetch] Error de conexión:', error);
     tradeInCache.loading = false;
+    notifyListeners(); // Notificar error (fin de carga)
     return null;
   }
 }
@@ -158,7 +201,7 @@ function transformHierarchyToTradeInData(hierarchy: TradeInCategory[]): TradeInD
     capacitiesArr: DeviceCapacity[]
   ) => {
     const brandName = brand.marca.trim();
-    
+
     // Agregar marca (solo si no existe)
     if (!brandsArr.some((b) => b.id === brandId)) {
       brandsArr.push({

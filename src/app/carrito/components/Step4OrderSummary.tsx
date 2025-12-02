@@ -4,6 +4,11 @@ import { useRouter } from "next/navigation";
 import { useCart } from "@/hooks/useCart";
 import { productEndpoints } from "@/lib/api";
 import { safeGetLocalStorage } from "@/lib/localStorage";
+import {
+  buildGlobalCanPickUpKey,
+  getGlobalCanPickUpFromCache,
+  setGlobalCanPickUpCache,
+} from "../utils/globalCanPickUpCache";
 
 interface ShippingVerification {
   envio_imagiq: boolean;
@@ -188,27 +193,63 @@ export default function Step4OrderSummary({
       return;
     }
 
+    // Obtener user_id del localStorage
+    const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+      "imagiq_user",
+      {}
+    );
+    const userId = user?.id || user?.user_id;
+
+    if (!userId) {
+      setIsLoadingCanPickUp(false);
+      setGlobalCanPickUp(null);
+      return;
+    }
+
+    // Preparar TODOS los productos del carrito para una sola petición
+    const productsToCheck = products.map((p) => ({
+      sku: p.sku,
+      quantity: p.quantity,
+    }));
+
+    // Obtener id de la dirección actual (si existe) para que la clave del caché
+    // cambie automáticamente cuando el usuario cambie de dirección.
+    let addressId: string | null = null;
+    if (typeof globalThis.window !== "undefined") {
+      try {
+        const savedAddress = globalThis.window.localStorage.getItem(
+          "checkout-address"
+        );
+        if (savedAddress && savedAddress !== "undefined") {
+          const parsed = JSON.parse(savedAddress) as { id?: string };
+          if (parsed?.id) {
+            addressId = parsed.id;
+          }
+        }
+      } catch (error) {
+        console.error(
+          "Error leyendo checkout-address para clave de canPickUp global:",
+          error
+        );
+      }
+    }
+
+    // Intentar leer desde el caché antes de hacer la petición
+    const cacheKey = buildGlobalCanPickUpKey({
+      userId,
+      products: productsToCheck,
+      addressId,
+    });
+    const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
+
+    if (cachedValue !== null) {
+      setGlobalCanPickUp(cachedValue);
+      setIsLoadingCanPickUp(false);
+      return;
+    }
+
     setIsLoadingCanPickUp(true);
     try {
-      // Obtener user_id del localStorage
-      const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
-        "imagiq_user",
-        {}
-      );
-      const userId = user?.id || user?.user_id;
-
-      if (!userId) {
-        setIsLoadingCanPickUp(false);
-        setGlobalCanPickUp(null);
-        return;
-      }
-
-      // Preparar TODOS los productos del carrito para una sola petición
-      const productsToCheck = products.map((p) => ({
-        sku: p.sku,
-        quantity: p.quantity,
-      }));
-
       // Llamar al endpoint con TODOS los productos agrupados y el user_id
       const response = await productEndpoints.getCandidateStores({
         products: productsToCheck,
@@ -226,12 +267,16 @@ export default function Step4OrderSummary({
 
         // El canPickUp global es el que responde el endpoint con todos los productos
         setGlobalCanPickUp(canPickUpValue);
+        // Guardar respuesta completa en caché (tiendas, ciudades, canPickUp)
+        setGlobalCanPickUpCache(cacheKey, canPickUpValue, response.data);
       } else {
         setGlobalCanPickUp(false);
+        setGlobalCanPickUpCache(cacheKey, false, null);
       }
     } catch (error) {
       console.error("❌ Error al verificar canPickUp global:", error);
       setGlobalCanPickUp(false);
+      setGlobalCanPickUpCache(cacheKey, false, null);
     } finally {
       setIsLoadingCanPickUp(false);
       // NO resetear userClickedWhileLoading aquí - se resetea en el useEffect después de ejecutar onFinishPayment

@@ -8,8 +8,15 @@ import type { FormattedStore } from "@/types/store";
 import {
   productEndpoints,
   type CandidateStore,
+  type CandidateStoresResponse,
+  type ApiResponse,
 } from "@/lib/api";
 import { useCart } from "@/hooks/useCart";
+import {
+  buildGlobalCanPickUpKey,
+  getFullCandidateStoresResponseFromCache,
+  setGlobalCanPickUpCache,
+} from "../utils/globalCanPickUpCache";
 
 /**
  * Helper para convertir Address a Direccion (legacy)
@@ -101,8 +108,7 @@ export const useDelivery = () => {
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
   const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
   const [availableStoresWhenCanPickUpFalse, setAvailableStoresWhenCanPickUpFalse] = useState<FormattedStore[]>([]); // Tiendas disponibles cuando canPickUp es false
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [lastResponse, setLastResponse] = useState<any>(null); // DEBUG: Estado para guardar la última respuesta
+  const [lastResponse, setLastResponse] = useState<ApiResponse<CandidateStoresResponse> | null>(null); // DEBUG: Estado para guardar la última respuesta
 
   // Ref para prevenir llamadas infinitas a fetchCandidateStores
   const isFetchingRef = useRef(false);
@@ -232,57 +238,137 @@ export const useDelivery = () => {
 
     console.log('✅ Pasó todas las verificaciones, continuando con fetchCandidateStores');
 
+    // Obtener user_id PRIMERO (antes de activar loading)
+    const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+      "imagiq_user",
+      {}
+    );
+    const userId = user?.id || user?.user_id;
+
+    console.log('👤 User ID obtenido:', userId, '| Productos count:', products.length);
+
+    if (!userId || products.length === 0) {
+      console.log('❌ Sin user_id o sin productos, abortando fetchCandidateStores');
+      setStores([]);
+      setFilteredStores([]);
+      setCanPickUp(false);
+      setStoresLoading(false);
+      isFetchingRef.current = false;
+      return;
+    }
+
+    // Preparar TODOS los productos del carrito para una sola petición
+    const productsToCheck = products.map((p) => ({
+      sku: p.sku,
+      quantity: p.quantity,
+    }));
+
+    console.log('📦 Productos a verificar:', productsToCheck);
+
+    // Obtener dirección actual desde localStorage para incluirla en el hash
+    let currentAddressId = lastAddressIdRef.current || '';
+    try {
+      const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+      if (savedAddress) {
+        const parsed = JSON.parse(savedAddress) as Direccion;
+        if (parsed.id) {
+          currentAddressId = parsed.id;
+          // Actualizar lastAddressIdRef si cambió
+          if (lastAddressIdRef.current !== parsed.id) {
+            lastAddressIdRef.current = parsed.id;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error al leer dirección para hash:', error);
+    }
+
+    // CRÍTICO: Intentar leer del caché ANTES de activar storesLoading
+    // Esto evita skeleton cuando se cambia a "recoger en tienda"
+    const cacheKey = buildGlobalCanPickUpKey({
+      userId,
+      products: productsToCheck,
+      addressId: currentAddressId || null,
+    });
+    const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+
+      // Si hay datos en caché, usarlos INMEDIATAMENTE sin activar skeleton
+    if (cachedResponse) {
+      console.log('✅✅✅ Datos encontrados en caché, usando respuesta cacheada SIN activar skeleton');
+      isFetchingRef.current = true;
+      lastFetchTimeRef.current = now;
+      // NO activar setStoresLoading(true) aquí - los datos ya están listos
+
+      // Procesar respuesta cacheada exactamente igual que si viniera del endpoint
+      const responseData = cachedResponse;
+      const globalCanPickUp = responseData.canPickUp ?? false;
+
+      // Procesar tiendas desde la respuesta cacheada
+      let physicalStores: FormattedStore[] = [];
+      const cities: string[] = Object.keys(responseData.stores || {}).filter(city => {
+        const cityStores = responseData.stores?.[city];
+        return cityStores && cityStores.length > 0;
+      });
+
+      if (responseData.stores) {
+        const allStoresInOrder: Array<{ store: CandidateStore; city: string }> = [];
+        for (const [city, cityStores] of Object.entries(responseData.stores)) {
+          if (cityStores && cityStores.length > 0) {
+            for (const store of cityStores) {
+              allStoresInOrder.push({ store, city: city });
+            }
+          }
+        }
+
+        if (allStoresInOrder.length > 0) {
+          const validStores = allStoresInOrder.map(
+            ({ store, city }) => candidateStoreToFormattedStore(store, city)
+          );
+
+          // Filtrar centros de distribución y bodegas
+          physicalStores = validStores.filter((store) => {
+            const descripcion = normalizeText(store.descripcion);
+            const codigo = store.codigo?.toString().trim() || "";
+            const isValid = !descripcion.includes("centro de distribucion") &&
+              !descripcion.includes("centro distribucion") &&
+              !descripcion.includes("bodega") &&
+              codigo !== "001";
+            return isValid;
+          });
+        }
+      }
+
+      // Establecer estados inmediatamente desde caché (sin skeleton)
+      setCanPickUp(globalCanPickUp);
+      setAvailableCities(cities);
+
+      if (globalCanPickUp) {
+        const firstCity = cities.length > 0 ? cities[0] : null;
+        const storesToShow = firstCity
+          ? physicalStores.filter(store => store.ciudad === firstCity)
+          : physicalStores;
+        setStores(storesToShow);
+        setFilteredStores([...storesToShow]);
+        setAvailableStoresWhenCanPickUpFalse(storesToShow);
+      } else {
+        setAvailableStoresWhenCanPickUpFalse(physicalStores);
+        setStores([]);
+        setFilteredStores([]);
+      }
+
+      // NO mostrar skeleton, datos ya están listos
+      setStoresLoading(false);
+      isFetchingRef.current = false;
+      setLastResponse({ success: true, data: cachedResponse });
+      return; // Salir sin hacer petición al endpoint
+    }
+
+    // Si NO hay datos en caché, entonces SÍ hacer la petición al endpoint
+    // Ahora SÍ activar storesLoading porque vamos a hacer una petición real
     try {
       isFetchingRef.current = true;
       lastFetchTimeRef.current = now;
       setStoresLoading(true);
-
-      // Obtener user_id
-      const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
-        "imagiq_user",
-        {}
-      );
-      const userId = user?.id || user?.user_id;
-
-      console.log('👤 User ID obtenido:', userId, '| Productos count:', products.length);
-
-      if (!userId || products.length === 0) {
-        console.log('❌ Sin user_id o sin productos, abortando fetchCandidateStores');
-        setStores([]);
-        setFilteredStores([]);
-        setCanPickUp(false);
-        setStoresLoading(false);
-        isFetchingRef.current = false;
-        return;
-      }
-
-      console.log('✅ User ID y productos válidos, preparando petición a candidate-stores...');
-
-      // Preparar TODOS los productos del carrito para una sola petición
-      const productsToCheck = products.map((p) => ({
-        sku: p.sku,
-        quantity: p.quantity,
-      }));
-
-      console.log('📦 Productos a verificar:', productsToCheck);
-
-      // Obtener dirección actual desde localStorage para incluirla en el hash
-      let currentAddressId = lastAddressIdRef.current || '';
-      try {
-        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-        if (savedAddress) {
-          const parsed = JSON.parse(savedAddress) as Direccion;
-          if (parsed.id) {
-            currentAddressId = parsed.id;
-            // Actualizar lastAddressIdRef si cambió
-            if (lastAddressIdRef.current !== parsed.id) {
-              lastAddressIdRef.current = parsed.id;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Error al leer dirección para hash:', error);
-      }
 
       // Crear hash único de la petición (productos + userId + dirección)
       const requestHash = JSON.stringify({
@@ -467,6 +553,9 @@ export const useDelivery = () => {
           physicalStoresCount: physicalStores.length,
           citiesCount: cities.length,
         });
+
+        // IMPORTANTE: Guardar respuesta completa en caché para evitar skeleton al cambiar a "tienda"
+        setGlobalCanPickUpCache(cacheKey, globalCanPickUp, responseData);
 
         // Si la petición fue exitosa, marcar el hash como exitoso DESPUÉS de procesar
         lastSuccessfulHashRef.current = requestHash;

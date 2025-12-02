@@ -48,7 +48,8 @@ function Footer() {
 
   return (
     <footer
-      className={`bg-white border-t border-gray-200 transition-all duration-700 ${
+      id="footer"
+      className={`bg-white border-t border-gray-200 transition-all duration-700 scroll-mt-20 ${
         isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
       }`}
     >

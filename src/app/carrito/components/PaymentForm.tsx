@@ -209,7 +209,16 @@ export default function PaymentForm({
   if (shouldShowFullSkeleton) {
     return (
       <div>
-        <h2 className="text-[22px] font-bold mb-4">Elije como pagar</h2>
+        <div className="flex items-center gap-5 mb-4">
+          <h2 className="text-[22px] font-bold">Elije como pagar</h2>
+          <Image
+            src="https://ics-networking.com/wp-content/uploads/2024/09/pci-dss-1.webp"
+            alt="Certificación PCI DSS"
+            width={45}
+            height={30}
+            className="object-contain"
+          />
+        </div>
 
         <div className="animate-pulse space-y-6">
           {/* Skeleton de Recomendados */}
@@ -243,7 +252,16 @@ export default function PaymentForm({
 
   return (
     <div>
-      <h2 className="text-[22px] font-bold mb-4">Elije como pagar</h2>
+      <div className="flex items-center gap-5 mb-4">
+        <h2 className="text-[22px] font-bold">Elije como pagar</h2>
+        <Image
+          src="https://ics-networking.com/wp-content/uploads/2024/09/pci-dss-1.webp"
+          alt="Certificación PCI DSS"
+          width={45}
+          height={30}
+          className="object-contain"
+        />
+      </div>
 
       {/* Sección de Recomendados */}
       <div className="mb-6">
@@ -431,7 +449,7 @@ export default function PaymentForm({
           <div className="mb-4 flex justify-end">
             <div className="text-center max-w-fit">
               <a
-                href="https://imagiq.com.co/terminos-condiciones"
+                href="/soporte/tyc-bancolombia"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-[10px] text-gray-900 hover:underline leading-tight mb-1"
@@ -564,7 +582,7 @@ export default function PaymentForm({
           <div className="mb-4 flex justify-end">
             <div className="text-center max-w-fit">
               <a
-                href="https://imagiq.com.co/terminos-condiciones"
+                href="/soporte/tyc-bancolombia"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-[10px] text-gray-900 hover:underline leading-tight mb-1"

@@ -15,6 +15,7 @@ import { CartProduct, BundleInfo, useCart } from "@/hooks/useCart";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { apiClient } from "@/lib/api";
 import { apiPost } from "@/lib/api-client";
+import { preloadCartSuggestions } from "@/lib/preloadCartSuggestions";
 import React, { createContext, useCallback, useContext } from "react";
 
 /**
@@ -133,6 +134,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         quantity: quantity || 1,
         currency: "COP",
       });
+
+      // Precargar sugerencias en background para el popover
+      preloadCartSuggestions();
     },
     [addToCart, user?.id, trackAddToCart]
   );
@@ -162,7 +166,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const bundleName = items.length > 1
         ? items.map(item => item.name || item.modelo || '').filter(Boolean).join(' + ')
         : (items[0]?.name || items[0]?.modelo || 'Bundle');
-      
+
       trackAddToCart({
         item_id: bundleInfo.productSku, // Usar el SKU del bundle
         item_name: bundleName,
@@ -171,6 +175,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         quantity: 1,
         currency: "COP",
       });
+
+      // Precargar sugerencias en background para el popover
+      preloadCartSuggestions();
     },
     [addBundleToCartHook, user?.id, trackAddToCart]
   );

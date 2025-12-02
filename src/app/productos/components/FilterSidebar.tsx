@@ -19,6 +19,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import DynamicFilterSection from "./DynamicFilterSection";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 interface FilterOption {
   label: string;
@@ -35,9 +37,19 @@ interface FilterState {
 }
 
 interface FilterSidebarProps {
-  filterConfig: FilterConfig;
-  filters: FilterState;
-  onFilterChange: (filterType: string, value: string, checked: boolean) => void;
+  // Filtros estáticos (legacy - mantener para compatibilidad)
+  filterConfig?: FilterConfig;
+  filters?: FilterState;
+  onFilterChange?: (filterType: string, value: string, checked: boolean) => void;
+  // Filtros dinámicos (nuevo sistema)
+  dynamicFilters?: DynamicFilterConfig[];
+  dynamicFilterState?: DynamicFilterState;
+  onDynamicFilterChange?: (
+    filterId: string,
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+    checked?: boolean
+  ) => void;
+  // Props comunes
   resultCount: number;
   expandedFilters?: Set<string>;
   onToggleFilter?: (filterKey: string) => void;
@@ -50,11 +62,17 @@ interface FilterSidebarProps {
 }
 
 export default function FilterSidebar({
+  // Filtros estáticos
   filterConfig,
   filters,
   onFilterChange,
+  // Filtros dinámicos
+  dynamicFilters = [],
+  dynamicFilterState = {},
+  onDynamicFilterChange,
+  // Props comunes
   resultCount,
-  expandedFilters = new Set(["almacenamiento"]),
+  expandedFilters,
   onToggleFilter,
   className,
   trackingPrefix = "filter",
@@ -62,8 +80,16 @@ export default function FilterSidebar({
   stickyWrapperClasses = "",
   stickyStyle = {},
 }: FilterSidebarProps) {
+  // Determinar si usar filtros dinámicos o estáticos
+  const useDynamicFilters = dynamicFilters.length > 0;
+  
+  // Inicializar expandedFilters según el tipo de filtros
+  const defaultExpandedFilters = useDynamicFilters
+    ? new Set(dynamicFilters.slice(0, 2).map((f) => f.id))
+    : new Set(["almacenamiento"]);
+  
   const [internalExpandedFilters, setInternalExpandedFilters] =
-    useState<Set<string>>(expandedFilters);
+    useState<Set<string>>(expandedFilters || defaultExpandedFilters);
   const prefersReducedMotion = useReducedMotion();
 
   const handleToggleFilter = (filterKey: string) => {
@@ -94,7 +120,9 @@ export default function FilterSidebar({
     value: string,
     checked: boolean
   ) => {
-    onFilterChange(filterType, value, checked);
+    if (onFilterChange) {
+      onFilterChange(filterType, value, checked);
+    }
 
     posthogUtils.capture(`${trackingPrefix}_applied`, {
       filter_type: filterType,
@@ -102,6 +130,26 @@ export default function FilterSidebar({
       action: checked ? "add" : "remove",
       total_active_filters: getTotalActiveFilters(),
     });
+  };
+
+  const handleDynamicFilterChange = (
+    filterId: string,
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+    checked?: boolean
+  ) => {
+    if (onDynamicFilterChange) {
+      onDynamicFilterChange(filterId, value, checked);
+    }
+
+    const filter = dynamicFilters.find((f) => f.id === filterId);
+    if (filter) {
+      posthogUtils.capture(`${trackingPrefix}_applied`, {
+        filter_type: filter.sectionName,
+        filter_id: filterId,
+        filter_value: typeof value === "string" ? value : JSON.stringify(value),
+        action: checked ? "add" : "change",
+      });
+    }
   };
 
   const currentExpandedFilters = onToggleFilter
@@ -145,30 +193,44 @@ export default function FilterSidebar({
   };
 
   const getTotalActiveFilters = () => {
-    return Object.values(filters).reduce(
-      (total, filterArray) => total + filterArray.length,
-      0
-    );
+    if (useDynamicFilters) {
+      // Contar filtros dinámicos activos
+      return Object.values(dynamicFilterState).reduce((total, state) => {
+        let count = 0;
+        if (state.values) count += state.values.length;
+        if (state.ranges) count += state.ranges.length;
+        if (state.min !== undefined || state.max !== undefined) count += 1;
+        return total + count;
+      }, 0);
+    } else {
+      // Contar filtros estáticos activos
+      return Object.values(filters || {}).reduce(
+        (total, filterArray) => total + filterArray.length,
+        0
+      );
+    }
   };
 
-  // Agrega el filtro de color si no está presente
-  const filterConfigWithColor = {
-    ...filterConfig,
-    color: filterConfig.color || [
-      "Negro",
-      "Blanco",
-      "Azul",
-      "Rojo",
-      "Verde",
-      "Gris",
-      "Dorado",
-      "Plateado",
-      "Rosa",
-      "Morado",
-      "Amarillo",
-      "Naranja",
-    ],
-  };
+  // Agrega el filtro de color si no está presente (solo para filtros estáticos)
+  const filterConfigWithColor = useDynamicFilters
+    ? {}
+    : {
+        ...(filterConfig || {}),
+        color: filterConfig?.color || [
+          "Negro",
+          "Blanco",
+          "Azul",
+          "Rojo",
+          "Verde",
+          "Gris",
+          "Dorado",
+          "Plateado",
+          "Rosa",
+          "Morado",
+          "Amarillo",
+          "Naranja",
+        ],
+      };
 
   return (
     <motion.div
@@ -228,7 +290,65 @@ export default function FilterSidebar({
 
         {/* Contenedor principal con scroll oculto */}
         <div className="overflow-hidden">
-          {Object.entries(filterConfigWithColor).map(([filterKey, options]) => (
+          {/* Renderizar filtros dinámicos si están disponibles */}
+          {useDynamicFilters ? (
+            dynamicFilters.map((filter) => {
+              const isExpanded = currentExpandedFilters.has(filter.id);
+              return (
+                <div key={filter.id} className="border-b border-gray-300">
+                  <button
+                    onClick={() => handleToggleFilter(filter.id)}
+                    className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    aria-expanded={isExpanded}
+                    aria-controls={`filter-panel-${filter.id}`}
+                    aria-label={`${isExpanded ? 'Contraer' : 'Expandir'} filtro de ${filter.sectionName}`}
+                  >
+                    <span className="font-semibold text-black text-sm tracking-wide">
+                      {filter.sectionName}
+                    </span>
+                    <motion.div
+                      animate={{ rotate: isExpanded ? 180 : 0 }}
+                      transition={{ duration: prefersReducedMotion ? 0.01 : 0.3 }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-600" aria-hidden="true" />
+                    </motion.div>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        id={`filter-panel-${filter.id}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                          duration: prefersReducedMotion ? 0.01 : 0.3,
+                          ease: [0.25, 0.1, 0.25, 1],
+                        }}
+                        className="overflow-hidden"
+                        role="region"
+                        aria-labelledby={`filter-header-${filter.id}`}
+                      >
+                        <div className="px-4 pb-4">
+                          <div
+                            className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
+                            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                          >
+                            <DynamicFilterSection
+                              filter={filter}
+                              filterState={dynamicFilterState}
+                              onFilterChange={handleDynamicFilterChange}
+                            />
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })
+          ) : (
+            // Renderizar filtros estáticos (legacy)
+            Object.entries(filterConfigWithColor).map(([filterKey, options]) => (
             <div key={filterKey} className="border-b border-gray-300">
               <button
                 onClick={() => handleToggleFilter(filterKey)}
@@ -359,7 +479,8 @@ export default function FilterSidebar({
                 )}
               </AnimatePresence>
             </div>
-          ))}
+          ))
+          )}
         </div>
         {/* Estilos CSS personalizados para ocultar scrollbars */}
         <style jsx>{`

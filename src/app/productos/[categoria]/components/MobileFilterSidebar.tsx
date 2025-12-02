@@ -6,24 +6,41 @@
 
 import { X } from "lucide-react";
 import FilterSidebar, { type FilterState, type FilterConfig } from "../../components/FilterSidebar";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 interface Props {
   readonly show: boolean;
   readonly onClose: () => void;
-  readonly filterConfig: FilterConfig;
-  readonly filters: FilterState;
-  readonly onFilterChange: (filterType: string, value: string, checked: boolean) => void;
-  readonly expandedFilters: Set<string>;
-  readonly onToggleFilter: (filterKey: string) => void;
+  // Filtros estáticos (legacy)
+  readonly filterConfig?: FilterConfig;
+  readonly filters?: FilterState;
+  readonly onFilterChange?: (filterType: string, value: string, checked: boolean) => void;
+  // Filtros dinámicos (nuevo)
+  readonly dynamicFilters?: DynamicFilterConfig[];
+  readonly dynamicFilterState?: DynamicFilterState;
+  readonly onDynamicFilterChange?: (
+    filterId: string,
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+    checked?: boolean
+  ) => void;
+  // Props comunes
+  readonly expandedFilters?: Set<string>;
+  readonly onToggleFilter?: (filterKey: string) => void;
   readonly resultCount: number;
 }
 
 export default function MobileFilterSidebar({
   show,
   onClose,
+  // Filtros estáticos
   filterConfig,
   filters,
   onFilterChange,
+  // Filtros dinámicos
+  dynamicFilters,
+  dynamicFilterState,
+  onDynamicFilterChange,
+  // Props comunes
   expandedFilters,
   onToggleFilter,
   resultCount,
@@ -53,9 +70,15 @@ export default function MobileFilterSidebar({
         </div>
         <div className="p-4">
           <FilterSidebar
+            // Filtros estáticos
             filterConfig={filterConfig}
             filters={filters}
             onFilterChange={onFilterChange}
+            // Filtros dinámicos
+            dynamicFilters={dynamicFilters}
+            dynamicFilterState={dynamicFilterState}
+            onDynamicFilterChange={onDynamicFilterChange}
+            // Props comunes
             expandedFilters={expandedFilters}
             onToggleFilter={onToggleFilter}
             resultCount={resultCount}

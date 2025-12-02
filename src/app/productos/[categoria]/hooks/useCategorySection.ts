@@ -13,6 +13,8 @@ import {
   convertFiltersToApi,
 } from "../utils/categoryUtils";
 import { getCategoryFilters } from "../constants/categoryConstants";
+import { convertDynamicFiltersToApi } from "../utils/dynamicFilterUtils";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion) {
   const [filters, setFilters] = useState<FilterState>(getCategoryFilters(categoria, seccion));
@@ -165,7 +167,10 @@ export function useCategoryProducts(
   categoryUuid?: string,
   menuUuid?: string,
   submenuUuid?: string,
-  categoryCode?: string
+  categoryCode?: string,
+  // Filtros dinámicos (nuevo)
+  dynamicFilters?: DynamicFilterConfig[],
+  dynamicFilterState?: DynamicFilterState
 ) {
   // Inicializar con el estado de sección actual
   const [previousSeccion, setPreviousSeccion] = useState(seccion);
@@ -209,10 +214,16 @@ export function useCategoryProducts(
   // Memoizar los filtros base y aplicados por separado
   const baseFilters = useMemo(() => getCategoryBaseFilters(categoria, seccion), [categoria, seccion]);
 
-  const appliedFilters = useMemo(() =>
-    convertFiltersToApi(categoria, filters, seccion, submenuUuid),
-    [categoria, filters, seccion, submenuUuid]
-  );
+  // Usar filtros dinámicos si están disponibles, sino usar estáticos
+  const appliedFilters = useMemo(() => {
+    if (dynamicFilters && dynamicFilters.length > 0 && dynamicFilterState) {
+      // Usar conversión de filtros dinámicos
+      return convertDynamicFiltersToApi(dynamicFilterState, dynamicFilters);
+    } else {
+      // Usar conversión de filtros estáticos (legacy)
+      return convertFiltersToApi(categoria, filters, seccion, submenuUuid);
+    }
+  }, [categoria, filters, seccion, submenuUuid, dynamicFilters, dynamicFilterState]);
 
   // Combinar todos los filtros solo cuando sea necesario
   const apiFilters = useMemo(() => {

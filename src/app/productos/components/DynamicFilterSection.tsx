@@ -28,13 +28,48 @@ export default function DynamicFilterSection({
 }: DynamicFilterSectionProps) {
   const state = filterState[filter.id] || {};
 
-  const handleCheckboxChange = (value: string, checked: boolean) => {
-    const currentValues = state.values || [];
-    const newValues = checked
-      ? [...currentValues, value]
-      : currentValues.filter((v) => v !== value);
+  const handleCheckboxChange = (label: string, checked: boolean) => {
+    // Para modo per-value, almacenamos labels en lugar de values para identificar opciones únicas
+    // Para modo column, almacenamos values directamente
+    const isPerValueMode = filter.operatorMode === "per-value";
+    
+    if (isPerValueMode) {
+      // En modo per-value, almacenar labels para identificar opciones únicas
+      const currentLabels = state.values || []; // Reutilizamos values para almacenar labels
+      const newLabels = checked
+        ? [...currentLabels, label]
+        : currentLabels.filter((l) => l !== label);
+      
+      onFilterChange(filter.id, { values: newLabels }, checked);
+    } else {
+      // En modo column, encontrar el value correspondiente al label y almacenarlo
+      const { valueConfig } = filter;
+      let valueToStore: string | null = null;
+      
+      if (valueConfig.type === "manual" && valueConfig.values) {
+        const option = valueConfig.values.find(item => (item.label || item.value) === label);
+        valueToStore = option?.value || null;
+      } else if (valueConfig.type === "mixed" && valueConfig.manualValues) {
+        const option = valueConfig.manualValues.find(item => (item.label || item.value) === label);
+        valueToStore = option?.value || null;
+      } else if (valueConfig.type === "dynamic" && valueConfig.selectedValues) {
+        // Para dinámicos, el label es igual al value
+        const option = valueConfig.selectedValues.find(item => item.value === label);
+        valueToStore = option?.value || null;
+      }
+      
+      if (!valueToStore) {
+        // Si no encontramos el value, usar el label como fallback (para compatibilidad)
+        valueToStore = label;
+      }
+      
+      const currentValues = state.values || [];
+      const newValues = checked
+        ? [...currentValues, valueToStore]
+        : currentValues.filter((v) => v !== valueToStore);
 
-    onFilterChange(filter.id, { values: newValues }, checked);
+      onFilterChange(filter.id, { values: newValues }, checked);
+    }
   };
 
   const handleRadioChange = (value: string) => {
@@ -60,6 +95,9 @@ export default function DynamicFilterSection({
   // Renderizar según el displayType
   switch (filter.displayType) {
     case "checkbox":
+      // Para modo per-value, state.values contiene labels; para modo column, contiene values
+      // FilterCheckbox espera labels, así que pasamos state.values directamente
+      // (ya que en per-value son labels, y en column los values coinciden con labels para dinámicos)
       return (
         <FilterCheckbox
           filter={filter}

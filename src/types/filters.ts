@@ -49,6 +49,8 @@ export interface ManualValue {
   value: string;
   label?: string;
   operator?: FilterOperator; // Solo en modo per-value
+  min?: number; // Para operador "range" en modo per-value
+  max?: number; // Para operador "range" en modo per-value
 }
 
 /**

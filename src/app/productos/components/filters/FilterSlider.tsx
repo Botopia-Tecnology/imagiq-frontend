@@ -66,6 +66,54 @@ export default function FilterSlider({
   const pendingMaxRef = useRef<number | null>(null);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Determinar si es un filtro de precio basado en la columna o sectionName
+  const isPriceFilter = (() => {
+    const columnLower = filter.column.toLowerCase();
+    const sectionNameLower = filter.sectionName.toLowerCase();
+    
+    return columnLower.includes('precio') || 
+           columnLower.includes('price') ||
+           sectionNameLower.includes('precio') ||
+           sectionNameLower.includes('price') ||
+           sectionNameLower.includes('rango de precios');
+  })();
+
+  // Función para formatear valores según el tipo de filtro
+  const formatValue = (value: number) => {
+    if (isPriceFilter) {
+      return new Intl.NumberFormat("es-CO", {
+        style: "currency",
+        currency: "COP",
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(value);
+    } else {
+      // Para otros valores numéricos, solo usar separadores de miles
+      return new Intl.NumberFormat("es-CO", {
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(value);
+    }
+  };
+
+  // Función para obtener el label del campo mínimo
+  const getMinLabel = () => {
+    if (isPriceFilter) {
+      return "Precio mínimo";
+    }
+    // Usar sectionName o un label genérico
+    return filter.sectionName ? `${filter.sectionName} mínimo` : "Valor mínimo";
+  };
+
+  // Función para obtener el label del campo máximo
+  const getMaxLabel = () => {
+    if (isPriceFilter) {
+      return "Precio máximo";
+    }
+    // Usar sectionName o un label genérico
+    return filter.sectionName ? `${filter.sectionName} máximo` : "Valor máximo";
+  };
+
   useEffect(() => {
     setLocalMin(minValue ?? min);
     setLocalMax(maxValue ?? max);
@@ -336,14 +384,6 @@ export default function FilterSlider({
     triggerRangeChange(); // Con debounce para cambios rápidos
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("es-CO", {
-      style: "currency",
-      currency: "COP",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
-  };
 
   return (
     <div className="space-y-4">
@@ -351,7 +391,7 @@ export default function FilterSlider({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Precio mínimo
+            {getMinLabel()}
           </label>
           <div className="relative">
             <input
@@ -389,17 +429,19 @@ export default function FilterSlider({
               className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder={min.toLocaleString("es-CO")}
             />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
-              COP
-            </span>
+            {isPriceFilter && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
+                COP
+              </span>
+            )}
           </div>
           <span className="text-xs text-gray-500 mt-1 block">
-            {formatCurrency(localMin)}
+            {formatValue(localMin)}
           </span>
         </div>
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1.5">
-            Precio máximo
+            {getMaxLabel()}
           </label>
           <div className="relative">
             <input
@@ -437,12 +479,14 @@ export default function FilterSlider({
               className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               placeholder={max.toLocaleString("es-CO")}
             />
-            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
-              COP
-            </span>
+            {isPriceFilter && (
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-500 pointer-events-none">
+                COP
+              </span>
+            )}
           </div>
           <span className="text-xs text-gray-500 mt-1 block">
-            {formatCurrency(localMax)}
+            {formatValue(localMax)}
           </span>
         </div>
       </div>
@@ -510,15 +554,6 @@ export default function FilterSlider({
             handleTouchStart("max", e);
           }}
         />
-      </div>
-
-      {/* Límites del rango */}
-      <div className="flex justify-between text-xs text-gray-500">
-        <span>{formatCurrency(min)}</span>
-        <span className="font-medium text-gray-700">
-          {formatCurrency(localMin)} - {formatCurrency(localMax)}
-        </span>
-        <span>{formatCurrency(max)}</span>
       </div>
     </div>
   );

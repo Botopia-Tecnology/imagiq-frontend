@@ -139,6 +139,7 @@ export default function FilterSidebar({
     }, 0);
   };
 
+
   return (
     <motion.div
       className={cn(
@@ -157,41 +158,43 @@ export default function FilterSidebar({
       <div className={cn(stickyWrapperClasses)}>
         {/* Header igual a la imagen */}
         <div className="p-4 border-b border-gray-300">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-2 font-bold text-black text-lg">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-black"
-                aria-hidden="true"
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-2 font-bold text-black text-lg">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-black"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3.75 6.75H14.25"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M6.75 11.25H11.25"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
+                  <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
+                </svg>
+                Filtros
+              </span>
+              <span
+                className="text-base text-black font-medium border-l border-gray-300 pl-4"
+                aria-live="polite"
+                aria-atomic="true"
               >
-                <path
-                  d="M3.75 6.75H14.25"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M6.75 11.25H11.25"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
-                <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
-              </svg>
-              Filtros
-            </span>
-            <span
-              className="text-base text-black font-medium border-l border-gray-300 pl-4"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              {resultCount} resultados
-            </span>
+                {resultCount} resultados
+              </span>
+            </div>
           </div>
         </div>
 

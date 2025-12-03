@@ -13,6 +13,8 @@ import {
   convertFiltersToApi,
 } from "../utils/categoryUtils";
 import { getCategoryFilters } from "../constants/categoryConstants";
+import { convertDynamicFiltersToApi } from "../utils/dynamicFilterUtils";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion) {
   const [filters, setFilters] = useState<FilterState>(getCategoryFilters(categoria, seccion));
@@ -165,7 +167,10 @@ export function useCategoryProducts(
   categoryUuid?: string,
   menuUuid?: string,
   submenuUuid?: string,
-  categoryCode?: string
+  categoryCode?: string,
+  // Filtros dinámicos (nuevo)
+  dynamicFilters?: DynamicFilterConfig[],
+  dynamicFilterState?: DynamicFilterState
 ) {
   // Inicializar con el estado de sección actual
   const [previousSeccion, setPreviousSeccion] = useState(seccion);
@@ -209,10 +214,30 @@ export function useCategoryProducts(
   // Memoizar los filtros base y aplicados por separado
   const baseFilters = useMemo(() => getCategoryBaseFilters(categoria, seccion), [categoria, seccion]);
 
-  const appliedFilters = useMemo(() =>
-    convertFiltersToApi(categoria, filters, seccion, submenuUuid),
-    [categoria, filters, seccion, submenuUuid]
-  );
+  // Siempre usar filtros dinámicos (eliminados filtros estáticos)
+  // Serializar dynamicFilterState para forzar detección de cambios
+  const dynamicFilterStateSerialized = useMemo(() => {
+    return JSON.stringify(dynamicFilterState || {});
+  }, [dynamicFilterState]);
+
+  const appliedFilters = useMemo(() => {
+    // Si hay filtros dinámicos y estado de filtros (aunque esté vacío), convertir
+    if (dynamicFilters && dynamicFilters.length > 0 && dynamicFilterState) {
+      // Usar conversión de filtros dinámicos (puede retornar {} si no hay selecciones)
+      const converted = convertDynamicFiltersToApi(dynamicFilterState, dynamicFilters);
+      // Debug: Log para verificar que se están convirtiendo los filtros
+      console.log('[useCategoryProducts] Filtros convertidos:', {
+        dynamicFilterState: JSON.parse(JSON.stringify(dynamicFilterState)),
+        converted: JSON.parse(JSON.stringify(converted)),
+        hasFilters: Object.keys(converted).length > 0,
+        convertedKeys: Object.keys(converted)
+      });
+      return converted;
+    } else {
+      // Si no hay filtros dinámicos, retornar objeto vacío
+      return {};
+    }
+  }, [dynamicFilters, dynamicFilterStateSerialized, dynamicFilterState]);
 
   // Combinar todos los filtros solo cuando sea necesario
   const apiFilters = useMemo(() => {
@@ -266,13 +291,24 @@ export function useCategoryProducts(
         delete filtersWithoutUndefined.submenuUuid;
       }
 
-      return applySortToFilters({
+      const finalFilters = applySortToFilters({
         ...filtersWithoutUndefined,
         page: currentPage,
         limit: itemsPerPage,
         lazyLimit: 6, // Cargar 6 productos por scroll
         lazyOffset: 0
       }, sortBy);
+
+      // Debug: Log para verificar que los filtros finales se están creando correctamente
+      console.log('[useCategoryProducts] initialFiltersForProducts:', {
+        apiFilters: JSON.parse(JSON.stringify(apiFilters)),
+        filtersWithoutUndefined: JSON.parse(JSON.stringify(filtersWithoutUndefined)),
+        finalFilters: JSON.parse(JSON.stringify(finalFilters)),
+        currentPage,
+        itemsPerPage
+      });
+
+      return finalFilters;
     },
     // Incluir menuUuid y submenuUuid explícitamente para detectar cambios
     [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy, menuUuid, submenuUuid]

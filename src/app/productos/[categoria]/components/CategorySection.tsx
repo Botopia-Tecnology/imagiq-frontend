@@ -6,7 +6,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { useDeviceType } from "@/components/responsive";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
@@ -15,6 +15,7 @@ import { Breadcrumbs } from "@/components/breadcrumbs";
 import Pagination from "../../dispositivos-moviles/components/Pagination";
 import ItemsPerPageSelector from "../../dispositivos-moviles/components/ItemsPerPageSelector";
 import FilterSidebar from "../../components/FilterSidebar";
+import FilterSidebarSkeleton from "../../components/FilterSidebarSkeleton";
 import CategoryProductsGrid from "./ProductsGrid";
 import HeaderSection from "./HeaderSection";
 import SubmenuCarousel from "./SubmenuCarousel";
@@ -24,7 +25,6 @@ import SkeletonCard from "@/components/SkeletonCard"; // Aún se usa para carga 
 import MobileFilterSidebar from "./MobileFilterSidebar";
 
 import type { CategoriaParams, Seccion } from "../types/index.d";
-import { getCategoryFilterConfig } from "../constants/categoryConstants";
 import { useCurrentMenu } from "@/hooks/useCurrentMenu";
 import { useCategoryMenus } from "@/hooks/useCategoryMenus";
 import { useSelectedHierarchy } from "@/hooks/useSelectedHierarchy";
@@ -32,13 +32,13 @@ import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { useProductBanner } from "@/hooks/useProductBanner";
 import { useSubmenus } from "@/hooks/useSubmenus";
 import {
-  useCategoryFilters,
   useCategoryPagination,
   useCategorySorting,
   useCategoryProducts,
   useCategoryAnalytics,
-  useFilterManagement,
 } from "../hooks/useCategorySection";
+import { useDynamicFilters } from "@/hooks/useDynamicFilters";
+import type { DynamicFilterState } from "@/types/filters";
 
 interface CategorySectionProps {
   readonly categoria: CategoriaParams; // Slug de la URL para mapear filtros
@@ -53,9 +53,26 @@ export default function CategorySection({
   seccion,
   sectionTitle,
 }: CategorySectionProps) {
-  const { filters, setFilters } = useCategoryFilters(categoria, seccion);
+  // Eliminados filtros estáticos - solo usar dinámicos
+  const filters = {};
+  const setFilters = () => {};
   const { categoryCode, categoryUuid, menuUuid, submenuUuid } =
     useSelectedHierarchy(categoriaApiCode, seccion);
+  
+  // Obtener filtros dinámicos según el contexto
+  const {
+    filters: dynamicFilters,
+    loading: dynamicFiltersLoading,
+    error: dynamicFiltersError,
+  } = useDynamicFilters({
+    categoriaUuid: categoryUuid,
+    menuUuid,
+    submenuUuid,
+  });
+
+  // Estado para filtros dinámicos seleccionados
+  const [dynamicFilterState, setDynamicFilterState] = useState<DynamicFilterState>({});
+
   const {
     currentPage,
     itemsPerPage,
@@ -69,9 +86,96 @@ export default function CategorySection({
     submenuUuid,
     categoriaApiCode
   );
+
+  // Handler para cambios en filtros dinámicos
+  const handleDynamicFilterChange = useCallback(
+    (
+      filterId: string,
+      value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+      checked?: boolean
+    ) => {
+      setDynamicFilterState((prev) => {
+        // Crear un nuevo objeto para asegurar que React detecte el cambio
+        const newState = { ...prev };
+        
+        if (typeof value === "string") {
+          // Valor simple (para compatibilidad)
+          const currentValues = newState[filterId]?.values || [];
+          if (checked) {
+            newState[filterId] = {
+              ...(newState[filterId] || {}),
+              values: [...currentValues, value],
+            };
+          } else {
+            const filteredValues = currentValues.filter((v) => v !== value);
+            if (filteredValues.length === 0 && !newState[filterId]?.min && !newState[filterId]?.max && !newState[filterId]?.ranges?.length) {
+              // Si no hay valores, eliminar el filtro del estado
+              const { [filterId]: _, ...rest } = newState;
+              return rest;
+            } else {
+              newState[filterId] = {
+                ...(newState[filterId] || {}),
+                values: filteredValues,
+              };
+            }
+          }
+        } else {
+          // Objeto con min/max/ranges/values
+          // Si todos los valores están vacíos, eliminar el filtro
+          const isEmpty = 
+            (!value.min && !value.max && 
+             (!value.ranges || value.ranges.length === 0) && 
+             (!value.values || value.values.length === 0));
+          
+          if (isEmpty && !newState[filterId]?.min && !newState[filterId]?.max && !newState[filterId]?.ranges?.length && !newState[filterId]?.values?.length) {
+            const { [filterId]: _, ...rest } = newState;
+            return rest;
+          } else {
+            newState[filterId] = {
+              ...(newState[filterId] || {}),
+              ...value,
+            };
+          }
+        }
+        
+        // Debug: Log para verificar cambios
+        console.log('[CategorySection] dynamicFilterState actualizado:', newState);
+        
+        return newState;
+      });
+      
+      // Resetear a página 1 cuando cambian los filtros
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      }
+    },
+    [currentPage, setCurrentPage]
+  );
   const { sortBy, setSortBy } = useCategorySorting();
-  const { expandedFilters, handleFilterChange, handleToggleFilter } =
-    useFilterManagement(categoria, seccion, setFilters);
+  
+  // Estado para filtros expandidos (reemplaza useFilterManagement)
+  const [expandedFilters, setExpandedFilters] = useState<Set<string>>(new Set());
+
+  // Actualizar expandedFilters cuando cambian los filtros dinámicos (solo si está vacío)
+  useEffect(() => {
+    if (dynamicFilters.length > 0 && expandedFilters.size === 0) {
+      // Expandir los primeros 2 filtros por defecto
+      setExpandedFilters(new Set(dynamicFilters.slice(0, 2).map((f) => f.id)));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dynamicFilters]);
+
+  const handleToggleFilter = useCallback((filterKey: string) => {
+    setExpandedFilters((prev) => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(filterKey)) {
+        newExpanded.delete(filterKey);
+      } else {
+        newExpanded.add(filterKey);
+      }
+      return newExpanded;
+    });
+  }, []);
 
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -80,7 +184,8 @@ export default function CategorySection({
   const productsRef = useRef<HTMLDivElement>(null);
   const device = useDeviceType();
 
-  const filterConfig = getCategoryFilterConfig(categoria, seccion);
+  // Siempre usar filtros dinámicos (eliminados filtros estáticos)
+  const filterConfig = undefined;
   const { currentMenu, loading: menuLoading } = useCurrentMenu(
     categoriaApiCode,
     seccion
@@ -125,7 +230,10 @@ export default function CategorySection({
     categoryUuid,
     menuUuid,
     submenuUuid,
-    categoryCode
+    categoryCode,
+    // Pasar filtros dinámicos
+    dynamicFilters,
+    dynamicFilterState
   );
 
   // ✅ NUEVO: Obtener submenús del menú actual
@@ -229,8 +337,13 @@ export default function CategorySection({
         viewMode={viewMode}
         setViewMode={setViewMode}
         onShowMobileFilters={() => setShowMobileFilters(true)}
-        filters={filters}
-        setFilters={setFilters}
+        dynamicFilterState={dynamicFilterState}
+        onClearDynamicFilters={() => {
+          setDynamicFilterState({});
+          if (currentPage !== 1) {
+            setCurrentPage(1);
+          }
+        }}
         clearAllFiltersText={`Ver todos los ${effectiveTitle.toLowerCase()}`}
       />
 
@@ -251,26 +364,35 @@ export default function CategorySection({
               position: "sticky",
             }}
           >
-            <FilterSidebar
-              filterConfig={filterConfig}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              expandedFilters={expandedFilters}
-              onToggleFilter={handleToggleFilter}
-              resultCount={totalItems || 0}
-            />
+            {dynamicFiltersLoading ? (
+              <FilterSidebarSkeleton />
+            ) : (
+              <FilterSidebar
+                // Solo filtros dinámicos
+                dynamicFilters={dynamicFilters}
+                dynamicFilterState={dynamicFilterState}
+                onDynamicFilterChange={handleDynamicFilterChange}
+                // Props comunes
+                expandedFilters={expandedFilters}
+                onToggleFilter={handleToggleFilter}
+                resultCount={totalItems || 0}
+              />
+            )}
           </aside>
         )}
 
         <MobileFilterSidebar
           show={showMobileFilters}
           onClose={() => setShowMobileFilters(false)}
-          filterConfig={filterConfig}
-          filters={filters}
-          onFilterChange={handleFilterChange}
+          // Solo filtros dinámicos
+          dynamicFilters={dynamicFilters}
+          dynamicFilterState={dynamicFilterState}
+          onDynamicFilterChange={handleDynamicFilterChange}
+          // Props comunes
           expandedFilters={expandedFilters}
           onToggleFilter={handleToggleFilter}
           resultCount={totalItems || 0}
+          loading={dynamicFiltersLoading}
         />
 
         <div

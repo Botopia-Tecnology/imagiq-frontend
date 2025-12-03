@@ -26,8 +26,8 @@ export function useSelectedHierarchy(
       : null;
     const categoryCode = category?.nombre || "";
 
-    // UUID de la categoría (para referencia, si se necesita)
-    const categoryUuid = currentMenu?.categoriasVisiblesId || undefined;
+    // UUID de la categoría - obtener directamente de la categoría encontrada
+    const categoryUuid = category?.uuid || undefined;
 
     // UUID del menú actual: solo incluir si hay una sección en la URL
     // Si no hay sección, NO incluir menuUuid para que se muestren todos los productos de la categoría

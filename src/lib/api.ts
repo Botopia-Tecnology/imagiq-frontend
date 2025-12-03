@@ -172,7 +172,49 @@ export const productEndpoints = {
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          searchParams.append(key, String(value));
+          // Detectar si el key tiene sintaxis extendida (column_operator o column_range_min/max)
+          // Patrón: column_operator o column_range_min/max
+          const hasExtendedSyntax = /^[a-zA-Z0-9]+_(equal|not_equal|in|not_in|contains|starts_with|ends_with|greater_than|less_than|greater_than_or_equal|less_than_or_equal|range_min|range_max)$/.test(key);
+
+          if (hasExtendedSyntax) {
+            // Sintaxis extendida: manejar arrays y valores simples
+            if (typeof value === "string" && value.includes(",")) {
+              // Si es string con comas, dividir y crear múltiples query params
+              const values = value.split(",").map(v => v.trim()).filter(v => v);
+              values.forEach(v => {
+                searchParams.append(key, v);
+              });
+            } else {
+              // Valor único con sintaxis extendida
+              searchParams.append(key, String(value));
+            }
+          } else {
+            // Formato antiguo (backward compatibility)
+            const stringValue = String(value);
+            
+            // Campos que deben generar múltiples query params cuando tienen comas
+            const multiValueFields = [
+              "nombreColor",
+              "color",
+              "capacity",
+              "memoriaram",
+              "name",
+              "modelo",
+              "model",
+            ];
+            
+            // Si el campo permite múltiples valores y el valor contiene comas, dividir
+            if (multiValueFields.includes(key) && stringValue.includes(",")) {
+              // Dividir por comas y crear múltiples query params
+              const values = stringValue.split(",").map(v => v.trim()).filter(v => v);
+              values.forEach(v => {
+                searchParams.append(key, v);
+              });
+            } else {
+              // Valor único, agregar normalmente
+              searchParams.append(key, stringValue);
+            }
+          }
         }
       });
       const url = `/api/products/filtered?${searchParams.toString()}`;
@@ -218,7 +260,26 @@ export const productEndpoints = {
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          searchParams.append(key, String(value));
+          // Detectar si el key tiene sintaxis extendida (column_operator o column_range_min/max)
+          // Patrón: column_operator o column_range_min/max
+          const hasExtendedSyntax = /^[a-zA-Z0-9]+_(equal|not_equal|in|not_in|contains|starts_with|ends_with|greater_than|less_than|greater_than_or_equal|less_than_or_equal|range_min|range_max)$/.test(key);
+
+          if (hasExtendedSyntax) {
+            // Sintaxis extendida: manejar arrays y valores simples
+            if (typeof value === "string" && value.includes(",")) {
+              // Si es string con comas, dividir y crear múltiples query params
+              const values = value.split(",").map(v => v.trim()).filter(v => v);
+              values.forEach(v => {
+                searchParams.append(key, v);
+              });
+            } else {
+              // Valor único con sintaxis extendida
+              searchParams.append(key, String(value));
+            }
+          } else {
+            // Formato antiguo (backward compatibility)
+            searchParams.append(key, String(value));
+          }
         }
       });
       const url = `/api/products/v2/filtered?${searchParams.toString()}`;

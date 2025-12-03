@@ -30,6 +30,8 @@ export type FilterOperator =
   | "greater_than_or_equal"
   | "less_than_or_equal"
   | "contains"
+  | "starts_with"
+  | "ends_with"
   | "in"
   | "not_in";
 

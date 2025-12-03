@@ -239,6 +239,25 @@ export const useProducts = (
       if (filters.sortBy) params.sortBy = filters.sortBy;
       if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
+      // CRÍTICO: Copiar todos los campos adicionales que no están mapeados explícitamente
+      // Esto incluye los nuevos filtros dinámicos con sintaxis extendida (nombrecolor_equal, etc.)
+      Object.keys(filters).forEach((key) => {
+        // Solo copiar campos que no hayan sido mapeados ya
+        if (
+          ![
+            'page', 'limit', 'lazyLimit', 'lazyOffset',
+            'category', 'subcategory', 'menuUuid', 'submenuUuid',
+            'precioMin', 'precioMax', 'color', 'nombreColor',
+            'capacity', 'memoriaram', 'name', 'withDiscount',
+            'minStock', 'descriptionKeyword', 'model', 'filterMode',
+            'sortBy', 'sortOrder'
+          ].includes(key)
+        ) {
+          // Copiar el campo directamente (incluye filtros dinámicos con sintaxis extendida)
+          (params as any)[key] = (filters as any)[key];
+        }
+      });
+
       return params;
     },
     [currentPage]
@@ -295,7 +314,8 @@ export const useProducts = (
       try {
         if (!append) {
           // Crear una clave única para los filtros (excluyendo page, limit, lazyLimit, lazyOffset)
-          const filterKey = JSON.stringify({
+          // Incluir todos los campos conocidos y también los filtros dinámicos con sintaxis extendida
+          const knownFields: Record<string, any> = {
             categoria: apiParams.categoria,
             menuUuid: apiParams.menuUuid,
             submenuUuid: apiParams.submenuUuid,
@@ -310,7 +330,32 @@ export const useProducts = (
             color: apiParams.color,
             conDescuento: apiParams.conDescuento,
             stockMinimo: apiParams.stockMinimo,
+          };
+
+          // CRÍTICO: Incluir todos los campos adicionales (filtros dinámicos con sintaxis extendida)
+          // Esto asegura que cambios en filtros dinámicos se detecten correctamente
+          Object.keys(apiParams).forEach((key) => {
+            if (![
+              'page', 'limit', 'lazyLimit', 'lazyOffset', 'sortBy', 'sortOrder',
+              'categoria', 'menuUuid', 'submenuUuid', 'precioMin', 'precioMax',
+              'nombreColor', 'capacidad', 'memoriaram', 'nombre', 'desDetallada',
+              'modelo', 'color', 'conDescuento', 'stockMinimo'
+            ].includes(key)) {
+              knownFields[key] = (apiParams as any)[key];
+            }
           });
+
+          const filterKey = JSON.stringify(knownFields);
+          
+          // Debug: Log para verificar que los filtros de rango se incluyen en filterKey
+          const hasRangeFilters = Object.keys(knownFields).some(key => key.includes('_range_min') || key.includes('_range_max'));
+          if (hasRangeFilters) {
+            console.log('[useProducts] filterKey incluye filtros de rango:', {
+              filterKey,
+              rangeFields: Object.keys(knownFields).filter(key => key.includes('_range_min') || key.includes('_range_max')),
+              knownFields
+            });
+          }
           
           // Detectar cambio de página: comparar filters.page con currentPage
           const isPageChange = filters.page !== undefined && filters.page !== currentPage;
@@ -328,39 +373,76 @@ export const useProducts = (
           const hasValidCache = cachedResponse && cachedResponse.success && cachedResponse.data;
 
           if (isPageChange || filtersChanged || menuSubmenuChanged) {
-            // Cambio de página o filtros: verificar caché primero
-            if (hasValidCache) {
-              // Hay caché disponible: usar datos del caché inmediatamente sin limpiar productos
-              hasCachedData = true;
-              const apiData = cachedResponse.data;
-              const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
-
-              // Establecer todos los estados de forma síncrona
+            // Si cambian los filtros (no solo la página), siempre mostrar skeletons
+            // El caché solo se usa cuando solo cambia la página (sin cambiar filtros)
+            if (filtersChanged && !isPageChange) {
+              // Cambio de filtros: siempre limpiar productos y mostrar skeletons
+              setProducts([]);
+              setBundles([]);
+              setOrderedItems([]);
+              productsRef.current = [];
+              setLoading(true);
               setError(null);
-              setProducts(mappedProducts);
-              setBundles(mappedBundles);
-              setOrderedItems(mappedOrderedItems);
-              productsRef.current = mappedProducts;
-              setGroupedProducts(groupProductsByCategory(mappedProducts));
-              setTotalItems(apiData.totalItems);
-              setTotalPages(apiData.totalPages);
-              setCurrentPage(apiData.currentPage);
-              setHasNextPage(apiData.hasNextPage);
-              setHasPreviousPage(apiData.hasPreviousPage);
-              if (apiData.hasMoreInPage !== undefined) {
-                setHasMoreInPageFromApi(apiData.hasMoreInPage);
+              hasCachedData = false;
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
+            } else if (isPageChange && !filtersChanged) {
+              // Solo cambio de página (sin cambio de filtros): verificar caché
+              if (hasValidCache) {
+                // Hay caché disponible: usar datos del caché inmediatamente sin limpiar productos
+                hasCachedData = true;
+                const apiData = cachedResponse.data;
+                const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
+
+                // Establecer todos los estados de forma síncrona
+                setError(null);
+                setProducts(mappedProducts);
+                setBundles(mappedBundles);
+                setOrderedItems(mappedOrderedItems);
+                productsRef.current = mappedProducts;
+                setGroupedProducts(groupProductsByCategory(mappedProducts));
+                setTotalItems(apiData.totalItems);
+                setTotalPages(apiData.totalPages);
+                setCurrentPage(apiData.currentPage);
+                setHasNextPage(apiData.hasNextPage);
+                setHasPreviousPage(apiData.hasPreviousPage);
+                if (apiData.hasMoreInPage !== undefined) {
+                  setHasMoreInPageFromApi(apiData.hasMoreInPage);
+                }
+                
+                if (!filters.lazyOffset && customOffset === undefined) {
+                  setLazyOffset(0);
+                  setHasMoreInCurrentPage(true);
+                }
+                
+                setLoading(false);
+                // Actualizar referencia de filtros
+                previousFiltersRef.current = filterKey;
+              } else {
+                // No hay caché: limpiar productos, bundles, orderedItems y mostrar skeletons
+                setProducts([]);
+                setBundles([]);
+                setOrderedItems([]);
+                productsRef.current = [];
+                setLoading(true);
+                setError(null);
+                hasCachedData = false;
+                // Actualizar referencia de filtros
+                previousFiltersRef.current = filterKey;
               }
-              
-              if (!filters.lazyOffset && customOffset === undefined) {
-                setLazyOffset(0);
-                setHasMoreInCurrentPage(true);
-              }
-              
-              setLoading(false);
+            } else if (menuSubmenuChanged) {
+              // Cambio de menú/submenú: siempre limpiar productos y mostrar skeletons
+              setProducts([]);
+              setBundles([]);
+              setOrderedItems([]);
+              productsRef.current = [];
+              setLoading(true);
+              setError(null);
+              hasCachedData = false;
               // Actualizar referencia de filtros
               previousFiltersRef.current = filterKey;
             } else {
-              // No hay caché: limpiar productos, bundles, orderedItems y mostrar skeletons
+              // Caso combinado (página + filtros): siempre mostrar skeletons
               setProducts([]);
               setBundles([]);
               setOrderedItems([]);

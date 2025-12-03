@@ -42,9 +42,14 @@ function filterByScope(
     if (!hasScope) return false;
 
     // Determinar el nivel de contexto actual
-    const isInSubmenu = !!submenuUuid;
-    const isInMenu = !!menuUuid && !isInSubmenu;
-    const isInCategory = !!categoriaUuid && !isInMenu && !isInSubmenu;
+    // IMPORTANTE: Verificar que los valores no sean undefined
+    const hasSubmenu = !!submenuUuid;
+    const hasMenu = !!menuUuid;
+    const hasCategory = !!categoriaUuid;
+    
+    const isInSubmenu = hasSubmenu && hasMenu && hasCategory;
+    const isInMenu = hasMenu && hasCategory && !hasSubmenu;
+    const isInCategory = hasCategory && !hasMenu && !hasSubmenu;
 
     // 1. Si estamos en nivel de SUBMENÚ (categoriaUuid + menuUuid + submenuUuid)
     if (isInSubmenu) {
@@ -73,9 +78,10 @@ function filterByScope(
       if (scope.categories.length > 0) {
         if (!scope.categories.includes(categoriaUuid!)) return false;
       }
-      // Si el scope tiene submenús específicos, no mostrar en nivel de menú
-      // (solo mostrar en nivel de submenú)
-      if (scope.submenus.length > 0) return false;
+      // Si el scope tiene submenús específicos, verificar que al menos uno de esos submenús
+      // pertenezca al menú actual. Si no tiene submenús en el scope, está bien mostrarlo.
+      // Si tiene submenús pero ninguno coincide, no mostrarlo (pero esto se maneja en el nivel de submenú)
+      // Por ahora, si tiene la categoría y el menú, mostrarlo incluso si tiene submenús
       return true;
     }
 
@@ -191,6 +197,20 @@ export function useDynamicFilters(
         // Filtrar por scope y ordenar
         const filtered = filterByScope(response.data, context);
         const sorted = sortFiltersByOrder(filtered, context);
+        
+        // Debug: Log para entender qué está pasando
+        if (filtered.length === 0 && response.data.length > 0) {
+          console.warn('[useDynamicFilters] Todos los filtros fueron filtrados por scope', {
+            context,
+            totalFilters: response.data.length,
+            filtersScopes: response.data.map(f => ({
+              id: f.id,
+              sectionName: f.sectionName,
+              scope: f.scope
+            }))
+          });
+        }
+        
         setFilters(sorted);
       } else {
         setError(response.message || "Error al cargar filtros");

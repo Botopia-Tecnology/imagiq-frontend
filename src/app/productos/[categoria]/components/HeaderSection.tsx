@@ -7,9 +7,7 @@ import { cn } from "@/lib/utils";
 import { Filter, Grid3X3, List } from "lucide-react";
 import SortDropdown from "@/components/ui/SortDropdown";
 
-interface FilterState {
-  [key: string]: string[];
-}
+import type { DynamicFilterState } from "@/types/filters";
 
 interface HeaderSectionProps {
   title: string;
@@ -19,8 +17,8 @@ interface HeaderSectionProps {
   viewMode: "grid" | "list";
   setViewMode: (mode: "grid" | "list") => void;
   onShowMobileFilters: () => void;
-  filters?: FilterState;
-  setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
+  dynamicFilterState?: DynamicFilterState;
+  onClearDynamicFilters?: () => void;
   clearAllFiltersText: string; // Texto completo para el botón de limpiar filtros
 }
 
@@ -32,21 +30,22 @@ export default function HeaderSection({
   viewMode,
   setViewMode,
   onShowMobileFilters,
-  filters,
-  setFilters,
+  dynamicFilterState,
+  onClearDynamicFilters,
   clearAllFiltersText,
 }: HeaderSectionProps) {
   const hasActiveFilters =
-    filters &&
-    Object.values(filters).some((filterArray) => filterArray.length > 0);
+    dynamicFilterState &&
+    Object.values(dynamicFilterState).some((state) => {
+      if (state.values && state.values.length > 0) return true;
+      if (state.ranges && state.ranges.length > 0) return true;
+      if (state.min !== undefined || state.max !== undefined) return true;
+      return false;
+    });
 
   const clearAllFilters = () => {
-    if (setFilters && filters) {
-      const clearedFilters: FilterState = {};
-      Object.keys(filters).forEach((key) => {
-        clearedFilters[key] = [];
-      });
-      setFilters(clearedFilters);
+    if (onClearDynamicFilters) {
+      onClearDynamicFilters();
     }
   };
 

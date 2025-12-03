@@ -11,17 +11,47 @@ import type {
 import type { ApiFilters } from "@/lib/sharedInterfaces";
 
 /**
+ * Estructura intermedia para manejar múltiples valores del mismo parámetro
+ * Ahora soporta sintaxis extendida: column_operator=value
+ */
+interface ApiFiltersWithArrays {
+  [key: string]: string | number | boolean | (string | number)[];
+}
+
+/**
+ * Genera el nombre del query param con sintaxis extendida: column_operator
+ * Convierte el nombre de la columna a lowercase y agrega el operador
+ */
+function getExtendedQueryParamName(column: string, operator: FilterOperator): string {
+  // Convertir columna a lowercase para la sintaxis extendida
+  const normalizedColumn = column.toLowerCase();
+  return `${normalizedColumn}_${operator}`;
+}
+
+/**
+ * Genera el nombre del query param para rangos: column_range_min o column_range_max
+ */
+function getRangeQueryParamName(column: string, rangeType: "min" | "max"): string {
+  const normalizedColumn = column.toLowerCase();
+  return `${normalizedColumn}_range_${rangeType}`;
+}
+
+/**
  * Convierte filtros dinámicos seleccionados a parámetros de API
  * 
  * @param filterState - Estado de filtros dinámicos seleccionados
  * @param dynamicFilterConfigs - Configuraciones de filtros dinámicos disponibles
  * @returns Objeto con parámetros de API para filtrar productos
+ * 
+ * Nota: Para operadores "equal" con múltiples valores, se crean arrays que luego
+ * se convertirán a múltiples query params (ej: nombreColor=Rojo&nombreColor=Azul)
  */
 export function convertDynamicFiltersToApi(
   filterState: DynamicFilterState,
   dynamicFilterConfigs: DynamicFilterConfig[]
 ): Partial<ApiFilters> {
-  const apiFilters: Partial<ApiFilters> = {};
+  // Usar estructura intermedia que permite arrays
+  const apiFiltersWithArrays: ApiFiltersWithArrays = {};
 
   // Procesar cada filtro dinámico seleccionado
   for (const filter of dynamicFilterConfigs) {
@@ -34,7 +64,7 @@ export function convertDynamicFiltersToApi(
     if (operatorMode === "column") {
       // Un operador para todos los valores
       processColumnModeFilter(
-        apiFilters,
+        apiFiltersWithArrays,
         column,
         operator,
         valueConfig,
@@ -43,11 +73,37 @@ export function convertDynamicFiltersToApi(
     } else if (operatorMode === "per-value") {
       // Operador por valor
       processPerValueModeFilter(
-        apiFilters,
+        apiFiltersWithArrays,
         column,
         valueConfig,
         state
       );
+    }
+  }
+
+  // Convertir arrays a formato compatible con ApiFilters
+  // Los arrays se manejarán en la construcción de query params
+  return convertToApiFilters(apiFiltersWithArrays);
+}
+
+/**
+ * Convierte la estructura intermedia a ApiFilters
+ * Para campos con arrays (especialmente con sintaxis extendida), se unen con comas
+ * La construcción real de query params se hace en api.ts, que detectará la sintaxis extendida
+ * y creará múltiples query params cuando sea necesario
+ */
+function convertToApiFilters(
+  filtersWithArrays: ApiFiltersWithArrays
+): Partial<ApiFilters> {
+  const apiFilters: Partial<ApiFilters> = {};
+
+  for (const [key, value] of Object.entries(filtersWithArrays)) {
+    if (Array.isArray(value)) {
+      // Para arrays, unir con comas
+      // api.ts detectará si el key tiene sintaxis extendida y creará múltiples query params
+      (apiFilters as any)[key] = value.join(",");
+    } else {
+      (apiFilters as any)[key] = value;
     }
   }
 
@@ -58,24 +114,19 @@ export function convertDynamicFiltersToApi(
  * Procesa un filtro en modo column (un operador para todos)
  */
 function processColumnModeFilter(
-  apiFilters: Partial<ApiFilters>,
+  apiFilters: ApiFiltersWithArrays,
   column: string,
   operator: FilterOperator,
   valueConfig: DynamicFilterConfig["valueConfig"],
   state: DynamicFilterState[string]
 ) {
-  // Para operador range, procesar rangos
+  // Para operador range, procesar rangos usando sintaxis extendida
   if (operator === "range") {
     if (state.ranges && state.ranges.length > 0) {
       processRanges(apiFilters, column, state.ranges, valueConfig);
     } else if (state.min !== undefined || state.max !== undefined) {
-      // Slider: min/max directos
-      if (state.min !== undefined) {
-        setFilterValue(apiFilters, column, state.min, "greater_than_or_equal");
-      }
-      if (state.max !== undefined) {
-        setFilterValue(apiFilters, column, state.max, "less_than_or_equal");
-      }
+      // Slider: min/max directos - usar sintaxis extendida para rangos
+      setRangeFilter(apiFilters, column, state.min, state.max);
     }
     return;
   }
@@ -90,7 +141,7 @@ function processColumnModeFilter(
  * Procesa un filtro en modo per-value (operador por valor)
  */
 function processPerValueModeFilter(
-  apiFilters: Partial<ApiFilters>,
+  apiFilters: ApiFiltersWithArrays,
   column: string,
   valueConfig: DynamicFilterConfig["valueConfig"],
   state: DynamicFilterState[string]
@@ -133,7 +184,7 @@ function processPerValueModeFilter(
     }
   }
 
-  // Procesar rangos con operadores
+  // Procesar rangos con operadores (usando sintaxis extendida)
   if (state.ranges && state.ranges.length > 0) {
     if (valueConfig.type === "manual" && valueConfig.ranges) {
       for (const selectedRangeLabel of state.ranges) {
@@ -143,9 +194,10 @@ function processPerValueModeFilter(
         if (range) {
           const rangeOperator = range.operator || "range";
           if (rangeOperator === "range") {
+            // Usar sintaxis extendida: column_range_min y column_range_max
             setRangeFilter(apiFilters, column, range.min, range.max);
           } else {
-            // Otros operadores con rangos
+            // Otros operadores con rangos - usar sintaxis extendida
             if (rangeOperator === "greater_than_or_equal") {
               setFilterValue(apiFilters, column, range.min, rangeOperator);
             } else if (rangeOperator === "less_than_or_equal") {
@@ -162,8 +214,10 @@ function processPerValueModeFilter(
         if (range) {
           const rangeOperator = range.operator || "range";
           if (rangeOperator === "range") {
+            // Usar sintaxis extendida: column_range_min y column_range_max
             setRangeFilter(apiFilters, column, range.min, range.max);
           } else {
+            // Otros operadores con rangos - usar sintaxis extendida
             if (rangeOperator === "greater_than_or_equal") {
               setFilterValue(apiFilters, column, range.min, rangeOperator);
             } else if (rangeOperator === "less_than_or_equal") {
@@ -180,7 +234,7 @@ function processPerValueModeFilter(
  * Procesa valores según el operador
  */
 function processValues(
-  apiFilters: Partial<ApiFilters>,
+  apiFilters: ApiFiltersWithArrays,
   column: string,
   operator: FilterOperator,
   values: string[],
@@ -188,28 +242,29 @@ function processValues(
 ) {
   switch (operator) {
     case "equal":
-      // Múltiples valores iguales se unen con comas
-      setFilterValue(apiFilters, column, values.join(","), "equal");
+      // Para "equal", crear múltiples query params (uno por valor)
+      // Guardar como array para que se procese correctamente
+      setFilterValueArray(apiFilters, column, values, "equal");
       break;
 
     case "not_equal":
-      // Valores a excluir
-      setFilterValue(apiFilters, column, values.join(","), "not_equal");
+      // Valores a excluir - también crear múltiples params
+      setFilterValueArray(apiFilters, column, values, "not_equal");
       break;
 
     case "in":
-      // Valores en lista
-      setFilterValue(apiFilters, column, values.join(","), "in");
+      // Valores en lista - crear múltiples params
+      setFilterValueArray(apiFilters, column, values, "in");
       break;
 
     case "not_in":
-      // Valores no en lista
-      setFilterValue(apiFilters, column, values.join(","), "not_in");
+      // Valores no en lista - crear múltiples params
+      setFilterValueArray(apiFilters, column, values, "not_in");
       break;
 
     case "contains":
-      // Contiene texto (para búsquedas)
-      setFilterValue(apiFilters, column, values.join(","), "contains");
+      // Contiene texto (para búsquedas) - crear múltiples params
+      setFilterValueArray(apiFilters, column, values, "contains");
       break;
 
     case "greater_than":
@@ -234,7 +289,7 @@ function processValues(
  * Procesa rangos seleccionados
  */
 function processRanges(
-  apiFilters: Partial<ApiFilters>,
+  apiFilters: ApiFiltersWithArrays,
   column: string,
   selectedRangeLabels: string[],
   valueConfig: DynamicFilterConfig["valueConfig"]
@@ -272,92 +327,119 @@ function processRanges(
 }
 
 /**
+ * Establece múltiples valores de filtro (para operadores que requieren múltiples query params)
+ * Usa sintaxis extendida: column_operator=value1&column_operator=value2
+ */
+function setFilterValueArray(
+  apiFilters: ApiFiltersWithArrays,
+  column: string,
+  values: string[],
+  operator: FilterOperator
+) {
+  // Usar sintaxis extendida: column_operator
+  const queryParamName = getExtendedQueryParamName(column, operator);
+
+  // Para operadores que requieren múltiples query params, crear array
+  const multiParamOperators = ["equal", "not_equal", "in", "not_in", "contains", "starts_with", "ends_with"];
+  if (multiParamOperators.includes(operator)) {
+    const currentValue = apiFilters[queryParamName];
+    if (Array.isArray(currentValue)) {
+      // Si ya hay un array, agregar los nuevos valores
+      apiFilters[queryParamName] = [...currentValue, ...values];
+    } else if (currentValue !== undefined) {
+      // Si hay un valor existente, convertirlo a array y agregar nuevos
+      apiFilters[queryParamName] = [String(currentValue), ...values];
+    } else {
+      // Crear nuevo array
+      apiFilters[queryParamName] = values;
+    }
+  }
+}
+
+/**
  * Establece un valor de filtro en los parámetros de API
+ * Usa sintaxis extendida: column_operator=value
  */
 function setFilterValue(
-  apiFilters: Partial<ApiFilters>,
+  apiFilters: ApiFiltersWithArrays,
   column: string,
   value: string | number,
   operator: FilterOperator
 ) {
-  // Mapear columnas comunes a campos de API
-  const columnMap: Record<string, keyof ApiFilters> = {
-    precioNormal: "precioMin",
-    precioeccommerce: "precioMin",
-    nombreColor: "nombreColor",
-    color: "nombreColor",
-    stock: "stockMinimo",
-    descuento: "conDescuento",
-    capacidad: "capacity",
-    memoriaram: "memoriaram",
-    marca: "name",
-    modelo: "model",
-  };
-
-  const apiField = columnMap[column] || (column as keyof ApiFilters);
+  // Usar sintaxis extendida: column_operator
+  const queryParamName = getExtendedQueryParamName(column, operator);
 
   switch (operator) {
     case "equal":
-      // Para igualdad, usar el campo directamente
-      if (apiField === "precioMin" || apiField === "precioMax") {
-        // Para precios, usar min/max según corresponda
-        if (typeof value === "number") {
-          if (column.includes("Min") || column === "precioNormal") {
-            (apiFilters as any)[apiField] = value;
-          } else {
-            (apiFilters as any)["precioMax"] = value;
-          }
-        }
-      } else if (apiField === "nombreColor") {
-        // Para colores, unir con comas si hay múltiples
-        const currentValue = (apiFilters as any)[apiField];
-        if (currentValue) {
-          (apiFilters as any)[apiField] = `${currentValue},${value}`;
-        } else {
-          (apiFilters as any)[apiField] = value;
-        }
+      // Para igualdad, agregar al array si ya existe, sino crear nuevo
+      const currentValue = apiFilters[queryParamName];
+      if (Array.isArray(currentValue)) {
+        apiFilters[queryParamName] = [...currentValue, String(value)];
+      } else if (currentValue !== undefined) {
+        apiFilters[queryParamName] = [String(currentValue), String(value)];
       } else {
-        (apiFilters as any)[apiField] = value;
+        apiFilters[queryParamName] = String(value);
       }
       break;
 
     case "not_equal":
-      // Para not_equal, podríamos necesitar un campo especial
-      // Por ahora, usar el campo con un prefijo o sufijo
-      console.warn(`not_equal operator not fully supported for ${column}`);
+      // Para not_equal, usar sintaxis extendida
+      const currentNotEqual = apiFilters[queryParamName];
+      if (Array.isArray(currentNotEqual)) {
+        apiFilters[queryParamName] = [...currentNotEqual, String(value)];
+      } else if (currentNotEqual !== undefined) {
+        apiFilters[queryParamName] = [String(currentNotEqual), String(value)];
+      } else {
+        apiFilters[queryParamName] = String(value);
+      }
       break;
 
     case "greater_than":
     case "greater_than_or_equal":
-      if (apiField === "precioMin" || apiField === "stockMinimo") {
-        const currentValue = (apiFilters as any)[apiField];
-        if (typeof value === "number") {
-          (apiFilters as any)[apiField] = Math.max(
-            currentValue || 0,
-            value
-          );
+      // Para operadores de comparación numérica, usar el valor directamente
+      if (typeof value === "number") {
+        const currentNumValue = apiFilters[queryParamName];
+        if (typeof currentNumValue === "number") {
+          // Si ya hay un valor, usar el mayor (para greater_than) o el mayor (para greater_than_or_equal)
+          apiFilters[queryParamName] = Math.max(currentNumValue, value);
+        } else {
+          apiFilters[queryParamName] = value;
         }
+      } else {
+        apiFilters[queryParamName] = String(value);
       }
       break;
 
     case "less_than":
     case "less_than_or_equal":
-      if (apiField === "precioMin") {
-        // Para precios, usar precioMax
-        if (typeof value === "number") {
-          const currentMax = (apiFilters as any)["precioMax"];
-          (apiFilters as any)["precioMax"] = currentMax
-            ? Math.min(currentMax, value)
-            : value;
+      // Para operadores de comparación numérica, usar el valor directamente
+      if (typeof value === "number") {
+        const currentNumValue = apiFilters[queryParamName];
+        if (typeof currentNumValue === "number") {
+          // Si ya hay un valor, usar el menor (para less_than) o el menor (para less_than_or_equal)
+          apiFilters[queryParamName] = Math.min(currentNumValue, value);
+        } else {
+          apiFilters[queryParamName] = value;
         }
+      } else {
+        apiFilters[queryParamName] = String(value);
       }
       break;
 
     case "in":
     case "not_in":
     case "contains":
-      // Para estos operadores, usar el campo directamente
-      (apiFilters as any)[apiField] = value;
+    case "starts_with":
+    case "ends_with":
+      // Para estos operadores, agregar al array si es necesario
+      const currentValueForIn = apiFilters[queryParamName];
+      if (Array.isArray(currentValueForIn)) {
+        apiFilters[queryParamName] = [...currentValueForIn, String(value)];
+      } else if (currentValueForIn !== undefined) {
+        apiFilters[queryParamName] = [String(currentValueForIn), String(value)];
+      } else {
+        apiFilters[queryParamName] = String(value);
+      }
       break;
 
     default:
@@ -367,33 +449,34 @@ function setFilterValue(
 
 /**
  * Establece un filtro de rango (min/max)
+ * Usa sintaxis extendida: column_range_min y column_range_max
  */
 function setRangeFilter(
-  apiFilters: Partial<ApiFilters>,
+  apiFilters: ApiFiltersWithArrays,
   column: string,
   min: number | undefined,
   max: number | undefined
 ) {
-  // Mapear columnas de precio
-  if (column.includes("precio") || column === "precioNormal") {
-    if (min !== undefined) {
-      const currentMin = apiFilters.precioMin || 0;
-      apiFilters.precioMin = Math.max(currentMin, min);
+  // Usar sintaxis extendida para rangos: column_range_min y column_range_max
+  if (min !== undefined) {
+    const minParamName = getRangeQueryParamName(column, "min");
+    const currentMin = apiFilters[minParamName];
+    if (typeof currentMin === "number") {
+      // Si ya hay un valor, usar el mayor
+      apiFilters[minParamName] = Math.max(currentMin, min);
+    } else {
+      apiFilters[minParamName] = min;
     }
-    if (max !== undefined) {
-      const currentMax = apiFilters.precioMax;
-      apiFilters.precioMax = currentMax
-        ? Math.min(currentMax, max)
-        : max;
-    }
-  } else if (column === "stock") {
-    if (min !== undefined) {
-      apiFilters.stockMinimo = min;
-    }
-  } else {
-    // Para otras columnas numéricas, usar capacity o el campo correspondiente
-    if (min !== undefined || max !== undefined) {
-      console.warn(`Range filter not fully supported for column: ${column}`);
+  }
+  
+  if (max !== undefined) {
+    const maxParamName = getRangeQueryParamName(column, "max");
+    const currentMax = apiFilters[maxParamName];
+    if (typeof currentMax === "number") {
+      // Si ya hay un valor, usar el menor
+      apiFilters[maxParamName] = Math.min(currentMax, max);
+    } else {
+      apiFilters[maxParamName] = max;
     }
   }
 }

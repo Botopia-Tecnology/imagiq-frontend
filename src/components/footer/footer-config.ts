@@ -118,6 +118,11 @@ export const getFooterSections = (
           href: "/soporte/tyc-davivienda",
         },
         {
+          name: "T&C 0% de interés Addi",
+          href: "https://co.addi.com/tyc-0-interes",
+          external: true,
+        },
+        {
           name: "T&C Entrego y Estreno",
           href: "/soporte/tyc-entrego-estreno",
         },

@@ -241,9 +241,11 @@ const ProductCard: React.FC<ProductCardProps> = ({
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <span className="text-xs text-gray-500">
-                  Disponibles: {disponible}
-                </span>
+                {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+                  <span className="text-xs text-gray-500">
+                    Disponibles: {disponible}
+                  </span>
+                )}
                 {isLoadingCanPickUp && (
                   <div className="h-3 w-20 bg-gray-200 animate-pulse rounded mt-1" />
                 )}

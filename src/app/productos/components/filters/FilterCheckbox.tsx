@@ -5,9 +5,11 @@
 
 "use client";
 
-import { motion } from "framer-motion";
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import type { DynamicFilterConfig, ValueConfig } from "@/types/filters";
 
 interface FilterCheckboxProps {
@@ -72,6 +74,8 @@ function getFilterOptions(filter: DynamicFilterConfig): Array<{
   return options;
 }
 
+const INITIAL_OPTIONS_LIMIT = 10;
+
 export default function FilterCheckbox({
   filter,
   selectedValues,
@@ -79,10 +83,15 @@ export default function FilterCheckbox({
 }: FilterCheckboxProps) {
   const prefersReducedMotion = useReducedMotion();
   const options = getFilterOptions(filter);
+  const [showAll, setShowAll] = useState(false);
+  
+  const hasMoreOptions = options.length > INITIAL_OPTIONS_LIMIT;
+  const visibleOptions = showAll ? options : options.slice(0, INITIAL_OPTIONS_LIMIT);
+  const hiddenCount = options.length - INITIAL_OPTIONS_LIMIT;
 
   return (
     <div className="space-y-2">
-      {options.map((option, index) => {
+      {visibleOptions.map((option, index) => {
         const isChecked = selectedValues.includes(option.value);
 
         return (
@@ -119,6 +128,33 @@ export default function FilterCheckbox({
           </motion.label>
         );
       })}
+      
+      {hasMoreOptions && (
+        <motion.button
+          type="button"
+          onClick={() => setShowAll(!showAll)}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 py-2 px-2 mt-2 text-sm font-medium text-blue-600",
+            "hover:bg-blue-50 rounded-md transition-colors duration-200",
+            "focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          )}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: prefersReducedMotion ? 0.01 : 0.2 }}
+        >
+          {showAll ? (
+            <>
+              <span>Ver menos</span>
+              <ChevronUp className="w-4 h-4" />
+            </>
+          ) : (
+            <>
+              <span>Ver más ({hiddenCount} más)</span>
+              <ChevronDown className="w-4 h-4" />
+            </>
+          )}
+        </motion.button>
+      )}
     </div>
   );
 }

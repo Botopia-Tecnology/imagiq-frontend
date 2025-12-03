@@ -128,21 +128,19 @@ export default function FilterSlider({
     }
 
     const executeChange = () => {
-      // Usar valores pendientes si existen, sino usar valores locales actuales
+      // Siempre usar los valores actuales de los thumbs (localMin y localMax)
+      // Si hay valores pendientes, usarlos; sino, usar los valores locales actuales
       const finalMin = pendingMinRef.current !== null 
         ? pendingMinRef.current 
-        : (localMin !== min ? localMin : null);
+        : localMin;
       const finalMax = pendingMaxRef.current !== null 
         ? pendingMaxRef.current 
-        : (localMax !== max ? localMax : null);
+        : localMax;
       
-      // Solo disparar si hay cambios reales
-      const currentMin = minValue ?? null;
-      const currentMax = maxValue ?? null;
-      
-      if (finalMin !== currentMin || finalMax !== currentMax) {
-        onRangeChange(finalMin, finalMax);
-      }
+      // Siempre enviar ambos valores, incluso si solo se movió uno
+      // Si el valor es igual al mínimo/máximo del rango, enviarlo igualmente
+      // (no enviar null, sino el valor actual del thumb)
+      onRangeChange(finalMin, finalMax);
       
       // Resetear valores pendientes
       pendingMinRef.current = null;
@@ -198,16 +196,16 @@ export default function FilterSlider({
     // Asegurar que el valor esté dentro del rango válido
     if (localMin < min) {
       setLocalMin(min);
-      pendingMinRef.current = null;
+      pendingMinRef.current = min; // Siempre enviar el valor, no null
       triggerRangeChange(true);
     } else if (localMin >= localMax) {
       const adjustedMin = Math.max(localMax - 1, min);
       setLocalMin(adjustedMin);
-      pendingMinRef.current = adjustedMin === min ? null : adjustedMin;
+      pendingMinRef.current = adjustedMin; // Siempre enviar el valor, no null
       triggerRangeChange(true);
     } else {
-      // Disparar cualquier cambio pendiente
-      pendingMinRef.current = localMin === min ? null : localMin;
+      // Disparar cualquier cambio pendiente - siempre enviar el valor actual
+      pendingMinRef.current = localMin;
       triggerRangeChange(true);
     }
   };
@@ -218,16 +216,16 @@ export default function FilterSlider({
     // Asegurar que el valor esté dentro del rango válido
     if (localMax > max) {
       setLocalMax(max);
-      pendingMaxRef.current = null;
+      pendingMaxRef.current = max; // Siempre enviar el valor, no null
       triggerRangeChange(true);
     } else if (localMax <= localMin) {
       const adjustedMax = Math.min(localMin + 1, max);
       setLocalMax(adjustedMax);
-      pendingMaxRef.current = adjustedMax === max ? null : adjustedMax;
+      pendingMaxRef.current = adjustedMax; // Siempre enviar el valor, no null
       triggerRangeChange(true);
     } else {
-      // Disparar cualquier cambio pendiente
-      pendingMaxRef.current = localMax === max ? null : localMax;
+      // Disparar cualquier cambio pendiente - siempre enviar el valor actual
+      pendingMaxRef.current = localMax;
       triggerRangeChange(true);
     }
   };
@@ -250,14 +248,14 @@ export default function FilterSlider({
         const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
         setLocalMin(newMin);
         setEditingMin(null);
-        // Solo actualizar visualmente, guardar valor pendiente
-        pendingMinRef.current = newMin === min ? null : newMin;
+        // Solo actualizar visualmente, guardar valor pendiente - siempre enviar el valor
+        pendingMinRef.current = newMin;
       } else {
         const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
         setLocalMax(newMax);
         setEditingMax(null);
-        // Solo actualizar visualmente, guardar valor pendiente
-        pendingMaxRef.current = newMax === max ? null : newMax;
+        // Solo actualizar visualmente, guardar valor pendiente - siempre enviar el valor
+        pendingMaxRef.current = newMax;
       }
     };
 
@@ -300,14 +298,14 @@ export default function FilterSlider({
         const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
         setLocalMin(newMin);
         setEditingMin(null);
-        // Solo actualizar visualmente, guardar valor pendiente
-        pendingMinRef.current = newMin === min ? null : newMin;
+        // Solo actualizar visualmente, guardar valor pendiente - siempre enviar el valor
+        pendingMinRef.current = newMin;
       } else {
         const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
         setLocalMax(newMax);
         setEditingMax(null);
-        // Solo actualizar visualmente, guardar valor pendiente
-        pendingMaxRef.current = newMax === max ? null : newMax;
+        // Solo actualizar visualmente, guardar valor pendiente - siempre enviar el valor
+        pendingMaxRef.current = newMax;
       }
     };
 
@@ -351,14 +349,14 @@ export default function FilterSlider({
       const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
       setLocalMin(newMin);
       setEditingMin(null);
-      pendingMinRef.current = newMin === min ? null : newMin;
+      pendingMinRef.current = newMin; // Siempre enviar el valor
       triggerRangeChange(true); // Disparar inmediatamente para clics
     } else {
       // Mover thumb máximo
       const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
       setLocalMax(newMax);
       setEditingMax(null);
-      pendingMaxRef.current = newMax === max ? null : newMax;
+      pendingMaxRef.current = newMax; // Siempre enviar el valor
       triggerRangeChange(true); // Disparar inmediatamente para clics
     }
   };
@@ -370,7 +368,7 @@ export default function FilterSlider({
     const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
     setLocalMin(newMin);
     setEditingMin(null); // Limpiar estado de edición cuando se usa el slider
-    pendingMinRef.current = newMin === min ? null : newMin;
+    pendingMinRef.current = newMin; // Siempre enviar el valor
     triggerRangeChange(); // Con debounce para cambios rápidos
   };
 
@@ -380,7 +378,7 @@ export default function FilterSlider({
     const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
     setLocalMax(newMax);
     setEditingMax(null); // Limpiar estado de edición cuando se usa el slider
-    pendingMaxRef.current = newMax === max ? null : newMax;
+    pendingMaxRef.current = newMax; // Siempre enviar el valor
     triggerRangeChange(); // Con debounce para cambios rápidos
   };
 
@@ -410,7 +408,7 @@ export default function FilterSlider({
                 if (!isNaN(numValue) && numValue >= 0) {
                   const newMin = Math.min(Math.max(numValue, min), localMax - 1);
                   setLocalMin(newMin);
-                  pendingMinRef.current = newMin === min ? null : newMin;
+                  pendingMinRef.current = newMin; // Siempre enviar el valor
                   triggerRangeChange(); // Con debounce para cambios mientras se escribe
                 }
               }}
@@ -460,7 +458,7 @@ export default function FilterSlider({
                 if (!isNaN(numValue) && numValue >= 0) {
                   const newMax = Math.max(Math.min(numValue, max), localMin + 1);
                   setLocalMax(newMax);
-                  pendingMaxRef.current = newMax === max ? null : newMax;
+                  pendingMaxRef.current = newMax; // Siempre enviar el valor
                   triggerRangeChange(); // Con debounce para cambios mientras se escribe
                 }
               }}

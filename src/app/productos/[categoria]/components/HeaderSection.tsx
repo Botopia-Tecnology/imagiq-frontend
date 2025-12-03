@@ -4,7 +4,7 @@
  */
 
 import { cn } from "@/lib/utils";
-import { Filter, Grid3X3, List } from "lucide-react";
+import { Filter, Grid3X3, List, X } from "lucide-react";
 import SortDropdown from "@/components/ui/SortDropdown";
 
 import type { DynamicFilterState } from "@/types/filters";
@@ -54,6 +54,19 @@ export default function HeaderSection({
       <div className="max-w-7xl">
         {/* Header principal */}
         <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4 flex-1">
+            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium text-gray-700 transition-colors duration-200"
+                aria-label="Limpiar filtros"
+              >
+                <X className="w-4 h-4" />
+                <span>Limpiar filtros</span>
+              </button>
+            )}
+          </div>
           {/* Botón de filtros móvil - ahora a la derecha del título */}
           <button
             onClick={onShowMobileFilters}

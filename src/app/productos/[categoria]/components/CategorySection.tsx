@@ -87,6 +87,18 @@ export default function CategorySection({
     categoriaApiCode
   );
 
+  // Handler para limpiar todos los filtros
+  const handleClearAllFilters = useCallback(() => {
+    // Limpiar todos los filtros dinámicos
+    setDynamicFilterState({});
+    // Resetear a página 1 para cargar productos sin filtros
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+    // El cambio de estado disparará automáticamente la recarga de productos
+    // a través de useCategoryProducts que detecta cambios en dynamicFilterState
+  }, [currentPage, setCurrentPage]);
+
   // Handler para cambios en filtros dinámicos
   const handleDynamicFilterChange = useCallback(
     (
@@ -338,12 +350,7 @@ export default function CategorySection({
         setViewMode={setViewMode}
         onShowMobileFilters={() => setShowMobileFilters(true)}
         dynamicFilterState={dynamicFilterState}
-        onClearDynamicFilters={() => {
-          setDynamicFilterState({});
-          if (currentPage !== 1) {
-            setCurrentPage(1);
-          }
-        }}
+        onClearDynamicFilters={handleClearAllFilters}
         clearAllFiltersText={`Ver todos los ${effectiveTitle.toLowerCase()}`}
       />
 

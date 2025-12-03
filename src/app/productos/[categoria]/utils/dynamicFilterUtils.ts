@@ -147,17 +147,20 @@ function processPerValueModeFilter(
   state: DynamicFilterState[string]
 ) {
   // Procesar valores dinámicos con operadores
+  // En modo per-value, state.values puede contener labels en lugar de values
+  // Para valores dinámicos, el label es igual al value, pero buscamos por ambos para robustez
   if (valueConfig.type === "dynamic" || valueConfig.type === "mixed") {
     if (state.values && state.values.length > 0 && valueConfig.dynamicValues) {
-      for (const selectedValue of state.values) {
+      for (const selectedItem of state.values) {
+        // Buscar por value (el label es igual al value para dinámicos)
         const dynamicValue = valueConfig.dynamicValues.find(
-          (dv) => dv.value === selectedValue
+          (dv) => dv.value === selectedItem
         );
         if (dynamicValue) {
           setFilterValue(
             apiFilters,
             column,
-            selectedValue,
+            dynamicValue.value,
             dynamicValue.operator
           );
         }
@@ -166,19 +169,69 @@ function processPerValueModeFilter(
   }
 
   // Procesar valores manuales con operadores
-  if (valueConfig.type === "manual" || valueConfig.type === "mixed") {
-    if (state.values && state.values.length > 0 && valueConfig.manualValues) {
-      for (const selectedValue of state.values) {
-        const manualValue = valueConfig.manualValues.find(
-          (mv) => mv.value === selectedValue
+  // CORRECCIÓN: Buscar en valueConfig.values cuando es type: "manual"
+  // En modo per-value, state.values puede contener labels en lugar de values
+  if (valueConfig.type === "manual") {
+    if (state.values && state.values.length > 0 && valueConfig.values) {
+      for (const selectedItem of state.values) {
+        // En modo per-value, selectedItem puede ser un label, buscar por label primero
+        // Si no se encuentra, buscar por value (compatibilidad con modo column)
+        const manualValue = valueConfig.values.find(
+          (mv) => (mv.label || mv.value) === selectedItem || mv.value === selectedItem
         );
         if (manualValue && manualValue.operator) {
-          setFilterValue(
-            apiFilters,
-            column,
-            selectedValue,
-            manualValue.operator
-          );
+          // Si el operador es "range" y el valor tiene min y max, procesar como rango
+          if (manualValue.operator === "range") {
+            if (manualValue.min !== undefined && manualValue.max !== undefined) {
+              setRangeFilter(apiFilters, column, manualValue.min, manualValue.max);
+            } else {
+              // Fallback: usar el value como min y max si no hay min/max explícitos
+              const numValue = Number(manualValue.value);
+              if (!isNaN(numValue)) {
+                setRangeFilter(apiFilters, column, numValue, numValue);
+              }
+            }
+          } else {
+            // Para otros operadores, usar el valor con el operador
+            setFilterValue(
+              apiFilters,
+              column,
+              manualValue.value,
+              manualValue.operator
+            );
+          }
+        }
+      }
+    }
+  } else if (valueConfig.type === "mixed") {
+    // Para mixed, buscar en manualValues
+    // En modo per-value, state.values puede contener labels en lugar de values
+    if (state.values && state.values.length > 0 && valueConfig.manualValues) {
+      for (const selectedItem of state.values) {
+        // En modo per-value, selectedItem puede ser un label, buscar por label primero
+        // Si no se encuentra, buscar por value (compatibilidad con modo column)
+        const manualValue = valueConfig.manualValues.find(
+          (mv) => (mv.label || mv.value) === selectedItem || mv.value === selectedItem
+        );
+        if (manualValue && manualValue.operator) {
+          // Si el operador es "range" y el valor tiene min y max, procesar como rango
+          if (manualValue.operator === "range") {
+            if (manualValue.min !== undefined && manualValue.max !== undefined) {
+              setRangeFilter(apiFilters, column, manualValue.min, manualValue.max);
+            } else {
+              const numValue = Number(manualValue.value);
+              if (!isNaN(numValue)) {
+                setRangeFilter(apiFilters, column, numValue, numValue);
+              }
+            }
+          } else {
+            setFilterValue(
+              apiFilters,
+              column,
+              manualValue.value,
+              manualValue.operator
+            );
+          }
         }
       }
     }

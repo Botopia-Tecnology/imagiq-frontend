@@ -40,12 +40,13 @@ function getFilterOptions(filter: DynamicFilterConfig): Array<{
       });
     }
   } else if (valueConfig.type === "manual") {
-    // Valores manuales
+    // Valores manuales - incluir operator si está disponible (para modo per-value)
     if (valueConfig.values) {
       valueConfig.values.forEach((item) => {
         options.push({
           value: item.value,
           label: item.label || item.value,
+          operator: item.operator, // Incluir el operador para modo per-value
         });
       });
     }
@@ -92,11 +93,13 @@ export default function FilterCheckbox({
   return (
     <div className="space-y-2">
       {visibleOptions.map((option, index) => {
-        const isChecked = selectedValues.includes(option.value);
+        // CORRECCIÓN: Usar label como identificador único (cada opción tiene un label único)
+        // Esto permite que opciones con el mismo value pero diferentes operadores se seleccionen independientemente
+        const isChecked = selectedValues.includes(option.label);
 
         return (
           <motion.label
-            key={`${filter.id}-${option.value}-${index}`}
+            key={`${filter.id}-${option.label}-${index}`}
             className={cn(
               "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-200",
               "hover:bg-blue-50",
@@ -118,7 +121,8 @@ export default function FilterCheckbox({
             <input
               type="checkbox"
               checked={isChecked}
-              onChange={(e) => onValueChange(option.value, e.target.checked)}
+              // CORRECCIÓN: Pasar label en lugar de value para identificar opciones únicas
+              onChange={(e) => onValueChange(option.label, e.target.checked)}
               className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
               aria-label={option.label}
             />

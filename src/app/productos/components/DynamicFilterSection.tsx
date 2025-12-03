@@ -72,8 +72,38 @@ export default function DynamicFilterSection({
     }
   };
 
-  const handleRadioChange = (value: string) => {
-    onFilterChange(filter.id, { values: [value] }, true);
+  const handleRadioChange = (label: string) => {
+    // Para modo per-value, almacenamos labels en lugar de values para identificar opciones únicas
+    // Para modo column, almacenamos values directamente
+    const isPerValueMode = filter.operatorMode === "per-value";
+    
+    if (isPerValueMode) {
+      // En modo per-value, almacenar label para identificar opción única
+      onFilterChange(filter.id, { values: [label] }, true);
+    } else {
+      // En modo column, encontrar el value correspondiente al label y almacenarlo
+      const { valueConfig } = filter;
+      let valueToStore: string | null = null;
+      
+      if (valueConfig.type === "manual" && valueConfig.values) {
+        const option = valueConfig.values.find(item => (item.label || item.value) === label);
+        valueToStore = option?.value || null;
+      } else if (valueConfig.type === "mixed" && valueConfig.manualValues) {
+        const option = valueConfig.manualValues.find(item => (item.label || item.value) === label);
+        valueToStore = option?.value || null;
+      } else if (valueConfig.type === "dynamic" && valueConfig.selectedValues) {
+        // Para dinámicos, el label es igual al value
+        const option = valueConfig.selectedValues.find(item => item.value === label);
+        valueToStore = option?.value || null;
+      }
+      
+      if (!valueToStore) {
+        // Si no encontramos el value, usar el label como fallback (para compatibilidad)
+        valueToStore = label;
+      }
+      
+      onFilterChange(filter.id, { values: [valueToStore] }, true);
+    }
   };
 
   const handleRangeChange = (rangeLabel: string, checked: boolean) => {

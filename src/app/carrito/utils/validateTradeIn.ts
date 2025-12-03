@@ -41,22 +41,81 @@ export function validateTradeInProducts(products: CartProduct[]): {
   // CAMBIO: Ya NO validamos que solo puede haber un producto
   // Ahora se permite múltiples productos, cada uno con su propio bono
 
-  // Validación: Buscar productos que tienen indRetoma === 0 (no aplican para el beneficio)
+  // Obtener trade-ins activos desde localStorage para saber qué SKUs tienen Trade-In
+  const activeTradeInSkus = (() => {
+    try {
+      const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+      if (!storedTradeIn) return new Set<string>();
+      const parsed = JSON.parse(storedTradeIn);
+      
+      if (parsed?.completed === true && parsed?.sku) {
+        return new Set([parsed.sku]); // Formato antiguo
+      }
+      if (typeof parsed === 'object' && Object.keys(parsed).length > 0) {
+        // Formato nuevo: obtener todos los SKUs con Trade-In completado
+        const skus = new Set<string>();
+        Object.entries(parsed).forEach(([sku, tradeIn]: [string, unknown]) => {
+          const trade = tradeIn as { completed?: boolean };
+          if (trade?.completed === true) {
+            skus.add(sku);
+          }
+        });
+        return skus;
+      }
+      return new Set<string>();
+    } catch {
+      return new Set<string>();
+    }
+  })();
+
+  // Separar productos en bundles y productos individuales
+  const bundleGroups = new Map<string, typeof products>();
+  const individualProducts: typeof products = [];
+
+  products.forEach((product) => {
+    if (product.bundleInfo?.productSku) {
+      const key = product.bundleInfo.productSku;
+      if (!bundleGroups.has(key)) {
+        bundleGroups.set(key, []);
+      }
+      bundleGroups.get(key)!.push(product);
+    } else {
+      individualProducts.push(product);
+    }
+  });
+
+  // Validar bundles: verificar si tienen ind_entre_estre === 0
+  const bundlesWithoutRetoma: typeof products = [];
+  bundleGroups.forEach((bundleProducts, productSku) => {
+    const firstProduct = bundleProducts[0];
+    // Si el bundle tiene ind_entre_estre === 0 y tiene Trade-In activo, marcarlo como inválido
+    if (
+      firstProduct.bundleInfo?.ind_entre_estre === 0 &&
+      activeTradeInSkus.has(productSku)
+    ) {
+      bundlesWithoutRetoma.push(...bundleProducts);
+    }
+  });
+
+  // Validar productos individuales: buscar productos que tienen indRetoma === 0
   // IMPORTANTE: 
   // - indRetoma === 0 significa NO aplica
   // - indRetoma === 1 significa SÍ aplica
   // - indRetoma === undefined significa que aún no se ha verificado, NO tratarlo como "no aplica"
-  const productsWithoutRetoma = products.filter(
-    (product) => product.indRetoma === 0
+  const productsWithoutRetoma = individualProducts.filter(
+    (product) => product.indRetoma === 0 && activeTradeInSkus.has(product.sku)
   );
 
-  // Si hay productos con indRetoma === 0 (no aplican) y había un trade-in activo, 
-  // significa que el producto cambió de 1 (aplicaba) a 0 (no aplica)
+  // Combinar productos y bundles sin retoma
+  const allWithoutRetoma = [...productsWithoutRetoma, ...bundlesWithoutRetoma];
+
+  // Si hay productos/bundles con indRetoma/ind_entre_estre === 0 y tenía un trade-in activo, 
+  // significa que el producto/bundle cambió de 1 (aplicaba) a 0 (no aplica)
   // IMPORTANTE: Solo mostrar el mensaje "Te removimos" si había un trade-in activo en localStorage
-  if (productsWithoutRetoma.length > 0 && hasActiveTradeIn) {
+  if (allWithoutRetoma.length > 0 && hasActiveTradeIn) {
     return {
       isValid: false,
-      productsWithoutRetoma,
+      productsWithoutRetoma: allWithoutRetoma,
       hasMultipleProducts: false,
       errorMessage: "Te removimos el cupón de entrego y estreno. El producto seleccionado ya no aplica para este beneficio.",
     };
@@ -64,24 +123,39 @@ export function validateTradeInProducts(products: CartProduct[]): {
 
   // Si hay productos sin retoma pero NO había trade-in activo, no mostrar el mensaje de "Te removimos"
   // Solo retornar que no es válido sin el mensaje personalizado
-  if (productsWithoutRetoma.length > 0) {
+  if (allWithoutRetoma.length > 0) {
     return {
       isValid: false,
-      productsWithoutRetoma,
+      productsWithoutRetoma: allWithoutRetoma,
       hasMultipleProducts: false,
     };
   }
 
-  // IMPORTANTE: Si el producto tiene indRetoma === undefined, no validar aún (aún no se ha verificado)
-  // Solo validar cuando indRetoma está definido (0 o 1)
-  const productsWithUndefined = products.filter(
-    (product) => product.indRetoma === undefined
+  // IMPORTANTE: Si el producto tiene indRetoma === undefined o el bundle tiene ind_entre_estre === undefined,
+  // no validar aún (aún no se ha verificado)
+  // Solo validar cuando indRetoma/ind_entre_estre está definido (0 o 1)
+  
+  // Verificar productos individuales con indRetoma undefined que tienen Trade-In activo
+  const individualProductsWithUndefined = individualProducts.filter(
+    (product) => product.indRetoma === undefined && activeTradeInSkus.has(product.sku)
   );
   
-  // Si hay productos con indRetoma undefined y hay un trade-in activo, mantener el trade-in
-  // hasta que se verifique el indRetoma
-  if (productsWithUndefined.length > 0 && hasActiveTradeIn) {
-    // Mantener el trade-in activo hasta que se verifique indRetoma
+  // Verificar bundles con ind_entre_estre undefined que tienen Trade-In activo
+  const bundlesWithUndefined: typeof products = [];
+  bundleGroups.forEach((bundleProducts, productSku) => {
+    const firstProduct = bundleProducts[0];
+    if (
+      firstProduct.bundleInfo?.ind_entre_estre === undefined &&
+      activeTradeInSkus.has(productSku)
+    ) {
+      bundlesWithUndefined.push(...bundleProducts);
+    }
+  });
+  
+  // Si hay productos/bundles con indRetoma/ind_entre_estre undefined y tienen un trade-in activo,
+  // mantener el trade-in hasta que se verifique
+  if ((individualProductsWithUndefined.length > 0 || bundlesWithUndefined.length > 0) && hasActiveTradeIn) {
+    // Mantener el trade-in activo hasta que se verifique indRetoma/ind_entre_estre
     return {
       isValid: true,
       productsWithoutRetoma: [],

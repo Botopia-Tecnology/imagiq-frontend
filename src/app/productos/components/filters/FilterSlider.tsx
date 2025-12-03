@@ -60,11 +60,63 @@ export default function FilterSlider({
   const sliderRef = useRef<HTMLDivElement>(null);
   const minInputRef = useRef<HTMLInputElement>(null);
   const maxInputRef = useRef<HTMLInputElement>(null);
+  
+  // Refs para almacenar los valores finales que se enviarán cuando termine el arrastre
+  const pendingMinRef = useRef<number | null>(null);
+  const pendingMaxRef = useRef<number | null>(null);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     setLocalMin(minValue ?? min);
     setLocalMax(maxValue ?? max);
   }, [minValue, maxValue, min, max]);
+
+  // Función para disparar la petición con debounce
+  const triggerRangeChange = (immediate = false) => {
+    // Limpiar timer anterior si existe
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+
+    const executeChange = () => {
+      // Usar valores pendientes si existen, sino usar valores locales actuales
+      const finalMin = pendingMinRef.current !== null 
+        ? pendingMinRef.current 
+        : (localMin !== min ? localMin : null);
+      const finalMax = pendingMaxRef.current !== null 
+        ? pendingMaxRef.current 
+        : (localMax !== max ? localMax : null);
+      
+      // Solo disparar si hay cambios reales
+      const currentMin = minValue ?? null;
+      const currentMax = maxValue ?? null;
+      
+      if (finalMin !== currentMin || finalMax !== currentMax) {
+        onRangeChange(finalMin, finalMax);
+      }
+      
+      // Resetear valores pendientes
+      pendingMinRef.current = null;
+      pendingMaxRef.current = null;
+    };
+
+    if (immediate) {
+      executeChange();
+    } else {
+      // Debounce de 300ms para cambios durante el arrastre o inputs
+      debounceTimerRef.current = setTimeout(executeChange, 300);
+    }
+  };
+
+  // Cleanup del timer al desmontar
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Calcular porcentajes para el rango seleccionado
   const minPercent = ((localMin - min) / (max - min)) * 100;
@@ -98,11 +150,17 @@ export default function FilterSlider({
     // Asegurar que el valor esté dentro del rango válido
     if (localMin < min) {
       setLocalMin(min);
-      onRangeChange(null, maxValue);
+      pendingMinRef.current = null;
+      triggerRangeChange(true);
     } else if (localMin >= localMax) {
       const adjustedMin = Math.max(localMax - 1, min);
       setLocalMin(adjustedMin);
-      onRangeChange(adjustedMin === min ? null : adjustedMin, maxValue);
+      pendingMinRef.current = adjustedMin === min ? null : adjustedMin;
+      triggerRangeChange(true);
+    } else {
+      // Disparar cualquier cambio pendiente
+      pendingMinRef.current = localMin === min ? null : localMin;
+      triggerRangeChange(true);
     }
   };
 
@@ -112,11 +170,17 @@ export default function FilterSlider({
     // Asegurar que el valor esté dentro del rango válido
     if (localMax > max) {
       setLocalMax(max);
-      onRangeChange(minValue, null);
+      pendingMaxRef.current = null;
+      triggerRangeChange(true);
     } else if (localMax <= localMin) {
       const adjustedMax = Math.min(localMin + 1, max);
       setLocalMax(adjustedMax);
-      onRangeChange(minValue, adjustedMax === max ? null : adjustedMax);
+      pendingMaxRef.current = adjustedMax === max ? null : adjustedMax;
+      triggerRangeChange(true);
+    } else {
+      // Disparar cualquier cambio pendiente
+      pendingMaxRef.current = localMax === max ? null : localMax;
+      triggerRangeChange(true);
     }
   };
 
@@ -138,12 +202,14 @@ export default function FilterSlider({
         const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
         setLocalMin(newMin);
         setEditingMin(null);
-        onRangeChange(newMin === min ? null : newMin, maxValue);
+        // Solo actualizar visualmente, guardar valor pendiente
+        pendingMinRef.current = newMin === min ? null : newMin;
       } else {
         const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
         setLocalMax(newMax);
         setEditingMax(null);
-        onRangeChange(minValue, newMax === max ? null : newMax);
+        // Solo actualizar visualmente, guardar valor pendiente
+        pendingMaxRef.current = newMax === max ? null : newMax;
       }
     };
 
@@ -151,6 +217,10 @@ export default function FilterSlider({
       isActive = false;
       setIsDragging(false);
       setActiveThumb(null);
+      
+      // Disparar la petición inmediatamente cuando termine el arrastre
+      triggerRangeChange(true);
+      
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
@@ -182,12 +252,14 @@ export default function FilterSlider({
         const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
         setLocalMin(newMin);
         setEditingMin(null);
-        onRangeChange(newMin === min ? null : newMin, maxValue);
+        // Solo actualizar visualmente, guardar valor pendiente
+        pendingMinRef.current = newMin === min ? null : newMin;
       } else {
         const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
         setLocalMax(newMax);
         setEditingMax(null);
-        onRangeChange(minValue, newMax === max ? null : newMax);
+        // Solo actualizar visualmente, guardar valor pendiente
+        pendingMaxRef.current = newMax === max ? null : newMax;
       }
     };
 
@@ -195,6 +267,10 @@ export default function FilterSlider({
       isActive = false;
       setIsDragging(false);
       setActiveThumb(null);
+      
+      // Disparar la petición inmediatamente cuando termine el arrastre
+      triggerRangeChange(true);
+      
       window.removeEventListener("touchmove", handleTouchMove);
       window.removeEventListener("touchend", handleTouchEnd);
     };
@@ -227,13 +303,15 @@ export default function FilterSlider({
       const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
       setLocalMin(newMin);
       setEditingMin(null);
-      onRangeChange(newMin === min ? null : newMin, maxValue);
+      pendingMinRef.current = newMin === min ? null : newMin;
+      triggerRangeChange(true); // Disparar inmediatamente para clics
     } else {
       // Mover thumb máximo
       const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
       setLocalMax(newMax);
       setEditingMax(null);
-      onRangeChange(minValue, newMax === max ? null : newMax);
+      pendingMaxRef.current = newMax === max ? null : newMax;
+      triggerRangeChange(true); // Disparar inmediatamente para clics
     }
   };
 
@@ -244,7 +322,8 @@ export default function FilterSlider({
     const newMin = Math.min(Math.max(newValue, min), Math.max(localMax - 1, min));
     setLocalMin(newMin);
     setEditingMin(null); // Limpiar estado de edición cuando se usa el slider
-    onRangeChange(newMin === min ? null : newMin, maxValue);
+    pendingMinRef.current = newMin === min ? null : newMin;
+    triggerRangeChange(); // Con debounce para cambios rápidos
   };
 
   const handleMaxSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -253,7 +332,8 @@ export default function FilterSlider({
     const newMax = Math.max(Math.min(newValue, max), Math.min(localMin + 1, max));
     setLocalMax(newMax);
     setEditingMax(null); // Limpiar estado de edición cuando se usa el slider
-    onRangeChange(minValue, newMax === max ? null : newMax);
+    pendingMaxRef.current = newMax === max ? null : newMax;
+    triggerRangeChange(); // Con debounce para cambios rápidos
   };
 
   const formatCurrency = (value: number) => {
@@ -290,7 +370,8 @@ export default function FilterSlider({
                 if (!isNaN(numValue) && numValue >= 0) {
                   const newMin = Math.min(Math.max(numValue, min), localMax - 1);
                   setLocalMin(newMin);
-                  onRangeChange(newMin === min ? null : newMin, maxValue);
+                  pendingMinRef.current = newMin === min ? null : newMin;
+                  triggerRangeChange(); // Con debounce para cambios mientras se escribe
                 }
               }}
               onFocus={(e) => {
@@ -337,7 +418,8 @@ export default function FilterSlider({
                 if (!isNaN(numValue) && numValue >= 0) {
                   const newMax = Math.max(Math.min(numValue, max), localMin + 1);
                   setLocalMax(newMax);
-                  onRangeChange(minValue, newMax === max ? null : newMax);
+                  pendingMaxRef.current = newMax === max ? null : newMax;
+                  triggerRangeChange(); // Con debounce para cambios mientras se escribe
                 }
               }}
               onFocus={(e) => {

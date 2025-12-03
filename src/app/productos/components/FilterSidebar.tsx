@@ -236,16 +236,11 @@ export default function FilterSidebar({
                         aria-labelledby={`filter-header-${filter.id}`}
                       >
                         <div className="px-4 pb-4">
-                          <div
-                            className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
-                            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-                          >
-                            <DynamicFilterSection
-                              filter={filter}
-                              filterState={dynamicFilterState}
-                              onFilterChange={handleDynamicFilterChange}
-                            />
-                          </div>
+                          <DynamicFilterSection
+                            filter={filter}
+                            filterState={dynamicFilterState}
+                            onFilterChange={handleDynamicFilterChange}
+                          />
                         </div>
                       </motion.div>
                     )}

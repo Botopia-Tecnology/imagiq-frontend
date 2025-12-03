@@ -80,12 +80,13 @@ export interface ValueConfig {
   
   // Para type: "manual"
   values?: ManualValue[];
-  ranges?: ManualRange[];
   
   // Para type: "mixed"
   dynamicValues?: DynamicValueWithOperator[];
   manualValues?: ManualValue[];
-  ranges?: ManualRange[]; // Rangos también pueden estar en mixed
+  
+  // Rangos (compartidos entre "manual" y "mixed")
+  ranges?: ManualRange[];
 }
 
 /**

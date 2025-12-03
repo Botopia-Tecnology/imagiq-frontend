@@ -131,6 +131,8 @@ export const useProducts = (
       : initialFilters || {}
   );
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
+  // requestId se usa internamente para invalidar peticiones anteriores
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [requestId, setRequestId] = useState(0);
   const [lazyOffset, setLazyOffset] = useState(0);
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
@@ -254,7 +256,10 @@ export const useProducts = (
           ].includes(key)
         ) {
           // Copiar el campo directamente (incluye filtros dinámicos con sintaxis extendida)
-          (params as any)[key] = (filters as any)[key];
+          const value = (filters as Record<string, string | number | boolean | undefined>)[key];
+          if (value !== undefined) {
+            (params as ProductFilterParams & Record<string, string | number | boolean>)[key] = value as string | number | boolean;
+          }
         }
       });
 
@@ -315,7 +320,7 @@ export const useProducts = (
         if (!append) {
           // Crear una clave única para los filtros (excluyendo page, limit, lazyLimit, lazyOffset)
           // Incluir todos los campos conocidos y también los filtros dinámicos con sintaxis extendida
-          const knownFields: Record<string, any> = {
+          const knownFields: Record<string, string | number | boolean | undefined> = {
             categoria: apiParams.categoria,
             menuUuid: apiParams.menuUuid,
             submenuUuid: apiParams.submenuUuid,
@@ -341,7 +346,10 @@ export const useProducts = (
               'nombreColor', 'capacidad', 'memoriaram', 'nombre', 'desDetallada',
               'modelo', 'color', 'conDescuento', 'stockMinimo'
             ].includes(key)) {
-              knownFields[key] = (apiParams as any)[key];
+              const value = (apiParams as Record<string, string | number | boolean | undefined>)[key];
+              if (value !== undefined) {
+                knownFields[key] = value;
+              }
             }
           });
 

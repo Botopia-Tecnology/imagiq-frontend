@@ -94,16 +94,16 @@ export function convertDynamicFiltersToApi(
  */
 function convertToApiFilters(
   filtersWithArrays: ApiFiltersWithArrays
-): Partial<ApiFilters> {
-  const apiFilters: Partial<ApiFilters> = {};
+): Partial<ApiFilters & Record<string, string | number | boolean>> {
+  const apiFilters: Partial<ApiFilters & Record<string, string | number | boolean>> = {};
 
   for (const [key, value] of Object.entries(filtersWithArrays)) {
     if (Array.isArray(value)) {
       // Para arrays, unir con comas
       // api.ts detectará si el key tiene sintaxis extendida y creará múltiples query params
-      (apiFilters as any)[key] = value.join(",");
+      apiFilters[key] = value.join(",");
     } else {
-      (apiFilters as any)[key] = value;
+      apiFilters[key] = value;
     }
   }
 

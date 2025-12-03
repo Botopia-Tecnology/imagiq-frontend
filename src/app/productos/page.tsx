@@ -268,14 +268,12 @@ function ProductosContent() {
         viewMode={viewMode}
         setViewMode={setViewMode}
         onShowMobileFilters={() => {}} // No hay filtros móviles en esta página
-        filters={filters}
-        setFilters={setFilters}
         clearAllFiltersText="Ver todos los productos"
       />
 
       <div className={searchQuery ? "" : "flex gap-8"}>
-        {/* Panel de filtros - solo mostrar cuando NO hay búsqueda */}
-        {!searchQuery && (
+        {/* Panel de filtros - Comentado temporalmente ya que FilterSidebar ahora solo acepta filtros dinámicos */}
+        {/* {!searchQuery && (
           <aside className="hidden lg:block w-80 flex-shrink-0">
             <FilterSidebar
               filterConfig={filterConfig}
@@ -286,8 +284,8 @@ function ProductosContent() {
               onToggleFilter={handleToggleFilter}
             />
           </aside>
-        )}
-        <main className={searchQuery ? "w-full" : "flex-1"}>
+        )} */}
+        <main className={searchQuery ? "w-full" : "w-full"}>
           {loading && products.length > 0 && (
             <div className="mb-4 flex justify-center">
               <LoadingSpinner />

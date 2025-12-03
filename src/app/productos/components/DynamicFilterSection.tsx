@@ -16,7 +16,7 @@ interface DynamicFilterSectionProps {
   filterState: DynamicFilterState;
   onFilterChange: (
     filterId: string,
-    value: string | { min?: number; max?: number; ranges?: string[] },
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
     checked?: boolean
   ) => void;
 }

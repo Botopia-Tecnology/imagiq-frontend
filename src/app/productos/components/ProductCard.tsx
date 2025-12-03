@@ -1109,7 +1109,7 @@ export default function ProductCard({
                             : "text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px]" // Tamaño normal en catálogo
                         )}
                       >
-                        Aplican T&C
+                        Aplican T&C <span className="text-red-600">*</span>
                       </span>
                     </p>
                   </Link>

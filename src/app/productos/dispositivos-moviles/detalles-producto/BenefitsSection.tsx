@@ -35,8 +35,8 @@ export const benefits: Benefit[] = [
   },
   {
     icon: addiIcon,
-    title: "Retira en más de 35",
-    subtitle: "tiendas en Colombia",
+    title: "Paga a crédito con addi",
+    subtitle: "Sin tarjeta de crédito",
   },
 ];
 

@@ -220,6 +220,18 @@ export function useCategoryProducts(
     return JSON.stringify(dynamicFilterState || {});
   }, [dynamicFilterState]);
 
+  // Rastrear cambios en filtros para forzar mostrar skeletons
+  const [previousFilterState, setPreviousFilterState] = useState<string>(dynamicFilterStateSerialized);
+  const [filtersChanged, setFiltersChanged] = useState(false);
+
+  useEffect(() => {
+    if (previousFilterState !== dynamicFilterStateSerialized) {
+      // Los filtros cambiaron
+      setFiltersChanged(true);
+      setPreviousFilterState(dynamicFilterStateSerialized);
+    }
+  }, [dynamicFilterStateSerialized, previousFilterState]);
+
   const appliedFilters = useMemo(() => {
     // Si hay filtros dinámicos y estado de filtros (aunque esté vacío), convertir
     if (dynamicFilters && dynamicFilters.length > 0 && dynamicFilterState) {
@@ -316,6 +328,17 @@ export function useCategoryProducts(
 
   const productsResult = useProducts(initialFiltersForProducts);
 
+  // Resetear el flag de filtros cambiados cuando los productos se carguen
+  useEffect(() => {
+    if (filtersChanged && (!productsResult.loading || productsResult.products.length > 0)) {
+      // Si los filtros cambiaron y:
+      // - Ya terminó de cargar, O
+      // - Hay productos cargados (aunque siga cargando)
+      // Resetear el flag
+      setFiltersChanged(false);
+    }
+  }, [filtersChanged, productsResult.loading, productsResult.products.length]);
+
   // Finalizar transición cuando los productos se carguen (con o sin resultados)
   useEffect(() => {
     // Si hay productos, finalizar transición inmediatamente (incluso si está cargando)
@@ -333,7 +356,12 @@ export function useCategoryProducts(
 
   // Retornar loading como true durante la transición SOLO si no hay productos cargados
   // Si hay productos (del caché), no mostrar loading aunque esté en transición
-  const finalLoading = productsResult.loading || (isTransitioning && productsResult.products.length === 0);
+  // CRÍTICO: Si los filtros cambiaron, siempre mostrar loading hasta que termine de cargar o haya productos nuevos
+  // Esto asegura que se muestren skeletons cuando cambian los filtros
+  const finalLoading = 
+    productsResult.loading || 
+    (isTransitioning && productsResult.products.length === 0) ||
+    (filtersChanged && (productsResult.loading || productsResult.products.length === 0));
 
   return {
     ...productsResult,

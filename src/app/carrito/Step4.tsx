@@ -159,6 +159,21 @@ export default function Step4({
     };
   }, [router]);
 
+  // Validar si el método de pago está seleccionado correctamente
+  const isPaymentMethodValid = React.useMemo(() => {
+    // Si no hay método de pago seleccionado
+    if (!paymentMethod) return false;
+
+    // Si es tarjeta, debe tener una tarjeta seleccionada
+    if (paymentMethod === "tarjeta" && !selectedCardId) return false;
+
+    // Si es PSE, debe tener un banco seleccionado
+    if (paymentMethod === "pse" && !selectedBank) return false;
+
+    // Si es Addi, siempre está válido (no requiere más datos)
+    return true;
+  }, [paymentMethod, selectedCardId, selectedBank]);
+
   const handleContinueToNextStep = async (e: React.FormEvent) => {
     // Validar Trade-In antes de continuar
     const validation = validateTradeInProducts(products);
@@ -235,7 +250,7 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
-            disabled={isProcessing || !tradeInValidation.isValid}
+            disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
             isSticky={false}
             deliveryMethod={
               typeof window !== "undefined"
@@ -285,7 +300,7 @@ export default function Step4({
           {/* Botón continuar */}
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              isProcessing || !tradeInValidation.isValid
+              isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
             }`}
@@ -293,7 +308,7 @@ export default function Step4({
               const form = document.getElementById("checkout-form") as HTMLFormElement;
               if (form) form.requestSubmit();
             }}
-            disabled={isProcessing || !tradeInValidation.isValid}
+            disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
           >
             {isProcessing ? "Procesando..." : "Continuar"}
           </button>

@@ -29,6 +29,8 @@ export default function Step3({
   const { products, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
+  // OPTIMIZACIÓN: Step3 SOLO lee del caché, NO hace llamadas al endpoint
+  // Step1 ya llenó el caché con la llamada inicial
   const {
     address,
     setAddress,
@@ -52,7 +54,10 @@ export default function Step3({
     availableCities,
     availableStoresWhenCanPickUpFalse,
     lastResponse,
-  } = useDelivery();
+  } = useDelivery({
+    canFetchFromEndpoint: true, // Permitir llamadas solo cuando cambia dirección
+    onlyReadCache: false, // En Step3 sí permitimos llamadas al cambiar dirección
+  });
 
   // Hook para precarga de tarjetas y zero interest
   const { preloadCards, preloadZeroInterest } = useCardsCache();
@@ -335,7 +340,7 @@ export default function Step3({
   const hasLoadedPickupOnceRef = React.useRef(false);
 
   // Ref para rastrear el último valor de canPickUp para el que ya se forzó la recarga
-  const lastCanPickUpForcedRef = React.useRef<boolean | null>(null);
+  const lastCanPickUpForcedRef = React.useRef<boolean | undefined | null>(null);
 
   // Ref para rastrear la última dirección para detectar cambios
   const lastAddressIdRef = React.useRef<string | null>(null);
@@ -1116,29 +1121,12 @@ export default function Step3({
     // setDeliveryMethod ya guarda automáticamente en localStorage
     setDeliveryMethod(method);
 
-    // IMPORTANTE: Si se selecciona "tienda", intentar cargar tiendas desde caché primero
-    // Solo mostrar skeleton si realmente no hay datos en caché
-    if (method === "tienda") {
-      console.log('🏪 Usuario seleccionó "tienda" - verificando caché antes de cargar');
-      console.log('   Estado actual:', {
-        storesLength: stores.length,
-        availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
-        storesLoading,
-        isInitialTradeInLoading
-      });
-
-      // Si no hay tiendas cargadas Y no está cargando, intentar cargar desde caché
-      // forceRefreshStores ahora lee del caché primero, así que no activamos skeleton aquí
-      // El skeleton solo se mostrará si realmente no hay datos en caché
-      if (stores.length === 0 && availableStoresWhenCanPickUpFalse.length === 0 && !storesLoading && !isInitialTradeInLoading) {
-        // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
-        // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
-        setTimeout(() => {
-          console.log('✅ Llamando forceRefreshStores después de seleccionar tienda (leerá del caché primero)');
-          forceRefreshStores();
-        }, 100);
-      }
-    }
+    // IMPORTANTE: NO llamar forceRefreshStores al cambiar entre métodos de entrega
+    // Solo debe cargarse cuando:
+    // 1. Se cambia la dirección predeterminada desde el navbar
+    // 2. Se agrega/cambia dirección desde "Envío a domicilio"
+    // 3. Hay trade-in activo (manejado en otro useEffect)
+    // El cambio entre "tienda" y "domicilio" NO debe mostrar skeleton
   };
 
   const selectedStoreChanged = (store: typeof selectedStore) => {

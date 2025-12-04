@@ -138,16 +138,64 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                       : "Tu ubicación predeterminada no cuenta con tiendas disponibles para este producto."}
                   </p>
                   {!hasActiveTradeIn && (
-                    <p className="text-xs text-gray-700 mb-3">
-                      Por favor selecciona otra dirección o agrega una nueva dirección en una zona con cobertura.
-                    </p>
+                    <>
+                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-gray-800 mb-2">
+                          💡 <strong>Tip:</strong> Al cambiar tu dirección predeterminada se recalcularán las tiendas disponibles cercanas a tu nueva ubicación.
+                        </p>
+                      </div>
+                      <p className="text-xs text-gray-700 mb-3">
+                        Por favor selecciona otra dirección o agrega una nueva dirección en una zona con cobertura.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Disparar el menú de direcciones del navbar
+                          if (typeof window !== 'undefined') {
+                            const addressButton = document.querySelector('[data-address-trigger]');
+                            if (addressButton) {
+                              (addressButton as HTMLElement).click();
+                            } else {
+                              alert('Por favor, cambia tu dirección desde el navbar (esquina superior derecha)');
+                            }
+                          }
+                        }}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition mb-3"
+                      >
+                        📍 Cambiar o agregar dirección
+                      </button>
+                    </>
                   )}
                   {hasActiveTradeIn && (
-                    <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-sm text-gray-800">
-                        Actualmente los productos de tu carrito no se encuentran disponibles para recoger en un punto físico.
-                      </p>
-                    </div>
+                    <>
+                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-xs text-gray-800 mb-2">
+                          💡 <strong>Tip:</strong> Al cambiar tu dirección predeterminada se recalcularán las tiendas disponibles cercanas a tu nueva ubicación.
+                        </p>
+                      </div>
+                      <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg mb-3">
+                        <p className="text-sm text-gray-800">
+                          Actualmente los productos de tu carrito no se encuentran disponibles para recoger en un punto físico.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Disparar el menú de direcciones del navbar
+                          if (typeof window !== 'undefined') {
+                            const addressButton = document.querySelector('[data-address-trigger]');
+                            if (addressButton) {
+                              (addressButton as HTMLElement).click();
+                            } else {
+                              alert('Por favor, cambia tu dirección desde el navbar (esquina superior derecha)');
+                            }
+                          }
+                        }}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition mb-3"
+                      >
+                        📍 Cambiar o agregar dirección
+                      </button>
+                    </>
                   )}
                 </>
               );
@@ -164,9 +212,33 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                   Tu ubicación predeterminada no cuenta con tiendas disponibles para este producto.
                 </p>
                 {!hasActiveTradeIn && (
-                  <p className="text-xs text-gray-700 mb-3">
-                    Por favor selecciona otra dirección o agrega una nueva dirección. El producto está disponible en las siguientes tiendas:
-                  </p>
+                  <>
+                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-xs text-gray-800 mb-2">
+                        💡 <strong>Tip:</strong> Al cambiar tu dirección predeterminada se recalcularán las tiendas disponibles cercanas a tu nueva ubicación.
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-700 mb-3">
+                      Por favor selecciona otra dirección o agrega una nueva dirección. El producto está disponible en las siguientes tiendas:
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Disparar el menú de direcciones del navbar
+                        if (typeof window !== 'undefined') {
+                          const addressButton = document.querySelector('[data-address-trigger]');
+                          if (addressButton) {
+                            (addressButton as HTMLElement).click();
+                          } else {
+                            alert('Por favor, cambia tu dirección desde el navbar (esquina superior derecha)');
+                          }
+                        }
+                      }}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition mb-3"
+                    >
+                      📍 Cambiar o agregar dirección
+                    </button>
+                  </>
                 )}
                 {hasActiveTradeIn && (
                   <p className="text-xs text-gray-700 mb-3">

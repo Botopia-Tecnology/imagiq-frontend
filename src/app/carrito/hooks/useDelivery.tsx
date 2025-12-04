@@ -16,6 +16,7 @@ import {
   buildGlobalCanPickUpKey,
   getFullCandidateStoresResponseFromCache,
   setGlobalCanPickUpCache,
+  invalidateCacheOnAddressChange,
 } from "../utils/globalCanPickUpCache";
 
 /**
@@ -94,7 +95,27 @@ const candidateStoreToFormattedStore = (
   };
 };
 
-export const useDelivery = () => {
+interface UseDeliveryConfig {
+  /**
+   * Controla si este hook puede hacer llamadas al endpoint candidate-stores
+   * - true: Puede hacer llamadas (Step1, cambios de dirección)
+   * - false: Solo lee del caché, nunca hace llamadas (Steps 2-6)
+   * @default true
+   */
+  canFetchFromEndpoint?: boolean;
+
+  /**
+   * Si es true, solo lee del caché y no hace llamadas aunque canFetchFromEndpoint sea true
+   * Útil para Steps 2-6 que solo necesitan leer datos precargados
+   * @default false
+   */
+  onlyReadCache?: boolean;
+}
+
+export const useDelivery = (config?: UseDeliveryConfig) => {
+  const canFetchFromEndpoint = config?.canFetchFromEndpoint ?? true;
+  const onlyReadCache = config?.onlyReadCache ?? false;
+
   const [address, setAddress] = useState<Direccion | null>(null);
   const [addressEdit, setAddressEdit] = useState(false);
   const [storeQuery, setStoreQuery] = useState("");
@@ -104,7 +125,7 @@ export const useDelivery = () => {
     null
   );
   const [addresses, setAddresses] = useState<Direccion[]>([]);
-  const [canPickUp, setCanPickUp] = useState<boolean>(true); // Estado para saber si se puede recoger en tienda
+  const [canPickUp, setCanPickUp] = useState<boolean | undefined>(true); // Estado para saber si se puede recoger en tienda
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
   const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
   const [availableStoresWhenCanPickUpFalse, setAvailableStoresWhenCanPickUpFalse] = useState<FormattedStore[]>([]); // Tiendas disponibles cuando canPickUp es false
@@ -215,6 +236,122 @@ export const useDelivery = () => {
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
     console.log('🚀🚀🚀 INICIO fetchCandidateStores - FUNCIÓN LLAMADA');
+    console.log('   Configuración:', { canFetchFromEndpoint, onlyReadCache });
+
+    // OPTIMIZACIÓN: Si onlyReadCache es true, SOLO leer del caché y retornar inmediatamente
+    if (onlyReadCache) {
+      console.log('📖 [Optimización] onlyReadCache=true - Solo leyendo del caché, NO se hará petición al endpoint');
+
+      // Intentar leer del caché
+      const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+        "imagiq_user",
+        {}
+      );
+      const userId = user?.id || user?.user_id;
+
+      if (!userId || products.length === 0) {
+        console.log('❌ Sin user_id o sin productos');
+        return;
+      }
+
+      const productsToCheck = products.map((p) => ({
+        sku: p.sku,
+        quantity: p.quantity,
+      }));
+
+      let currentAddressId = lastAddressIdRef.current || '';
+      try {
+        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          const parsed = JSON.parse(savedAddress) as Direccion;
+          if (parsed.id) {
+            currentAddressId = parsed.id;
+            if (lastAddressIdRef.current !== parsed.id) {
+              lastAddressIdRef.current = parsed.id;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error al leer dirección para caché:', error);
+      }
+
+      const cacheKey = buildGlobalCanPickUpKey({
+        userId,
+        products: productsToCheck,
+        addressId: currentAddressId || null,
+      });
+
+      const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+
+      if (cachedResponse) {
+        console.log('✅ [Cache] Datos encontrados en caché, usando sin hacer petición');
+        // Procesar respuesta cacheada (código existente)
+        const responseData = cachedResponse;
+        const globalCanPickUp = responseData.canPickUp;
+
+        let physicalStores: FormattedStore[] = [];
+        const cities: string[] = Object.keys(responseData.stores || {}).filter(city => {
+          const cityStores = responseData.stores?.[city];
+          return cityStores && cityStores.length > 0;
+        });
+
+        if (responseData.stores) {
+          const allStoresInOrder: Array<{ store: CandidateStore; city: string }> = [];
+          for (const [city, cityStores] of Object.entries(responseData.stores)) {
+            if (cityStores && cityStores.length > 0) {
+              for (const store of cityStores) {
+                allStoresInOrder.push({ store, city: city });
+              }
+            }
+          }
+
+          if (allStoresInOrder.length > 0) {
+            const validStores = allStoresInOrder.map(
+              ({ store, city }) => candidateStoreToFormattedStore(store, city)
+            );
+
+            physicalStores = validStores.filter((store) => {
+              const descripcion = normalizeText(store.descripcion);
+              const codigo = store.codigo?.toString().trim() || "";
+              const isValid = !descripcion.includes("centro de distribucion") &&
+                !descripcion.includes("centro distribucion") &&
+                !descripcion.includes("bodega") &&
+                codigo !== "001";
+              return isValid;
+            });
+          }
+        }
+
+        setCanPickUp(globalCanPickUp);
+        setAvailableCities(cities);
+
+        if (globalCanPickUp) {
+          const firstCity = cities.length > 0 ? cities[0] : null;
+          const storesToShow = firstCity
+            ? physicalStores.filter(store => store.ciudad === firstCity)
+            : physicalStores;
+          setStores(storesToShow);
+          setFilteredStores([...storesToShow]);
+          setAvailableStoresWhenCanPickUpFalse(storesToShow);
+        } else {
+          setAvailableStoresWhenCanPickUpFalse(physicalStores);
+          setStores([]);
+          setFilteredStores([]);
+        }
+
+        setStoresLoading(false);
+        setLastResponse({ success: true, data: cachedResponse });
+      } else {
+        console.log('⚠️ [Cache] No hay datos en caché, pero onlyReadCache=true - no se hará petición');
+      }
+      return;
+    }
+
+    // PROTECCIÓN: Si canFetchFromEndpoint es false, NO hacer petición
+    if (!canFetchFromEndpoint) {
+      console.log('🚫 [Optimización] canFetchFromEndpoint=false - No se permite hacer peticiones en este contexto');
+      return;
+    }
 
     // PROTECCIÓN CRÍTICA: NO hacer peticiones durante eliminación de trade-in
     if (isRemovingTradeInRef.current) {
@@ -263,8 +400,6 @@ export const useDelivery = () => {
       quantity: p.quantity,
     }));
 
-    console.log('📦 Productos a verificar:', productsToCheck);
-
     // Obtener dirección actual desde localStorage para incluirla en el hash
     let currentAddressId = lastAddressIdRef.current || '';
     try {
@@ -301,7 +436,7 @@ export const useDelivery = () => {
 
       // Procesar respuesta cacheada exactamente igual que si viniera del endpoint
       const responseData = cachedResponse;
-      const globalCanPickUp = responseData.canPickUp ?? false;
+      const globalCanPickUp = responseData.canPickUp;
 
       // Procesar tiendas desde la respuesta cacheada
       let physicalStores: FormattedStore[] = [];
@@ -391,15 +526,42 @@ export const useDelivery = () => {
         lastSuccessfulHashRef.current = null;
       }
 
+      // Obtener ciudad de la dirección predeterminada
+      let userCity: string | undefined = undefined;
+      let hasSavedAddress = false;
+      try {
+        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          hasSavedAddress = true;
+          const parsed = JSON.parse(savedAddress);
+          const city = parsed.ciudad?.toUpperCase();
+          // Solo incluir cities si ES Bogotá
+          if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
+            userCity = "BOGOTÁ";
+          }
+        }
+      } catch (error) {
+        console.error('Error al leer ciudad de dirección:', error);
+      }
+
       // Llamar al endpoint con TODOS los productos agrupados
       console.log('🌐 Llamando al endpoint getCandidateStores con:', {
         products: productsToCheck,
         user_id: userId,
+        hasSavedAddress,
+        ...(userCity && { cities: [userCity] }),
       });
+
+      console.log('🚨 PAYLOAD EXACTO QUE SE ENVIARÁ AL ENDPOINT:', JSON.stringify({
+        products: productsToCheck,
+        user_id: userId,
+        ...(userCity && { cities: [userCity] }),
+      }, null, 2));
 
       const response = await productEndpoints.getCandidateStores({
         products: productsToCheck,
         user_id: userId,
+        ...(userCity && { cities: [userCity] }),
       });
 
       setLastResponse(response); // DEBUG: Guardar respuesta cruda
@@ -418,6 +580,12 @@ export const useDelivery = () => {
 
         console.log('🔥 DATOS DE LA RESPUESTA:', {
           canPickUp: responseData.canPickUp,
+          canPickUpType: typeof responseData.canPickUp,
+          canPickUpIsUndefined: responseData.canPickUp === undefined,
+          canPickUpIsNull: responseData.canPickUp === null,
+          canPickUpValue: JSON.stringify(responseData.canPickUp),
+          canPickUpStrictTrue: responseData.canPickUp === true,
+          canPickUpStrictFalse: responseData.canPickUp === false,
           storesType: typeof responseData.stores,
           storesIsArray: Array.isArray(responseData.stores),
           storesKeys: responseData.stores ? Object.keys(responseData.stores) : 'NO STORES',
@@ -425,7 +593,14 @@ export const useDelivery = () => {
         });
 
         // Obtener canPickUp global de la respuesta
-        const globalCanPickUp = responseData.canPickUp ?? false;
+        // IMPORTANTE: Usar el valor exacto del endpoint sin conversiones
+        const globalCanPickUp = responseData.canPickUp;
+
+        console.log('✅ globalCanPickUp procesado:', {
+          raw: responseData.canPickUp,
+          processed: globalCanPickUp,
+          type: typeof globalCanPickUp
+        });
 
         // Procesar tiendas INMEDIATAMENTE (sin delays) - PRESERVAR ORDEN EXACTO DEL ENDPOINT
         let physicalStores: FormattedStore[] = [];
@@ -555,7 +730,7 @@ export const useDelivery = () => {
         });
 
         // IMPORTANTE: Guardar respuesta completa en caché para evitar skeleton al cambiar a "tienda"
-        setGlobalCanPickUpCache(cacheKey, globalCanPickUp, responseData);
+        setGlobalCanPickUpCache(cacheKey, globalCanPickUp, responseData, currentAddressId);
 
         // Si la petición fue exitosa, marcar el hash como exitoso DESPUÉS de procesar
         lastSuccessfulHashRef.current = requestHash;
@@ -570,15 +745,14 @@ export const useDelivery = () => {
         // IMPORTANTE: NO agregar delays - React procesará los estados de inmediato
         // Las tiendas ya están establecidas en el estado arriba
       } else {
-        // Si falla la petición, verificar si es 429 (Too Many Requests)
-        const is429Error = response.message?.includes('429') || response.message?.includes('Too Many Requests') || response.message?.includes('ThrottleException');
-
         console.log('❌ RESPUESTA NO EXITOSA O SIN DATOS:', {
           success: response.success,
           hasData: !!response.data,
           message: response.message,
-          is429: is429Error,
         });
+
+        // Si falla la petición, verificar si es 429 (Too Many Requests)
+        const is429Error = response.message?.includes('429') || response.message?.includes('Too Many Requests') || response.message?.includes('ThrottleException');
 
         // Si es 429, reintentar después de 3 segundos (máximo 2 reintentos)
         if (is429Error && retry429CountRef.current < 2) {
@@ -645,20 +819,52 @@ export const useDelivery = () => {
   // PROTECCIÓN: Solo ejecutar una vez al montar o cuando cambian los productos significativamente
   const productsHashRef = useRef<string>('');
   useEffect(() => {
+    // Si no hay productos, no hacer nada
+    if (products.length === 0) {
+      console.log('⏭️ [useDelivery] No hay productos, saltando fetchCandidateStores');
+      return;
+    }
+
     // Crear un hash de los productos para detectar cambios reales
-    const productsHash = JSON.stringify(products.map(p => ({ sku: p.sku, quantity: p.quantity })));
+    // IMPORTANTE: Incluir skuPostback en el hash
+    const productsHash = JSON.stringify(products.map(p => ({
+      sku: p.skuPostback || p.sku, // Usar skuPostback si existe
+      quantity: p.quantity
+    })));
+
+    console.log('🔍 [useDelivery] Verificando cambios de productos:', {
+      hashAnterior: productsHashRef.current.substring(0, 50) + '...',
+      hashActual: productsHash.substring(0, 50) + '...',
+      cambió: productsHashRef.current !== productsHash,
+      productosCount: products.length,
+      productos: products.map(p => ({
+        sku: p.sku,
+        skuPostback: p.skuPostback,
+        skuAEnviar: p.skuPostback || p.sku,
+        quantity: p.quantity
+      }))
+    });
 
     // Solo ejecutar si realmente cambiaron los productos O es la primera vez
     if (productsHashRef.current === '' || productsHashRef.current !== productsHash) {
       productsHashRef.current = productsHash;
+      console.log('✅ [useDelivery] Productos cambiaron - llamando fetchCandidateStores');
 
       // Verificar que NO estemos eliminando trade-in
       if (!isRemovingTradeInRef.current) {
-        fetchCandidateStores();
+        // IMPORTANTE: Delay breve para asegurar que el producto se agregó completamente
+        // Especialmente importante cuando se viene desde "Entrego y Estreno"
+        setTimeout(() => {
+          fetchCandidateStores();
+        }, 100);
+      } else {
+        console.log('⏸️ [useDelivery] NO llamando fetchCandidateStores porque se está eliminando trade-in');
       }
+    } else {
+      console.log('⏭️ [useDelivery] Productos NO cambiaron - saltando fetchCandidateStores');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [products]); // Depender de products completo pero con protección de hash
+  }, [products, canFetchFromEndpoint, onlyReadCache]); // Depender de products completo pero con protección de hash
 
   // Escuchar cambios de dirección (desde header O desde checkout)
   useEffect(() => {
@@ -780,6 +986,10 @@ export const useDelivery = () => {
           // IMPORTANTE: Limpiar el hash de la última petición exitosa para forzar nueva petición
           // cuando cambia la dirección
           lastSuccessfulHashRef.current = null;
+
+          // CRÍTICO: Limpiar caché de candidate-stores cuando cambia la dirección
+          invalidateCacheOnAddressChange(newAddressId);
+          console.log('🗑️ [handleAddressChange] Caché limpiado por cambio de dirección');
 
           // IMPORTANTE: Limpiar la tienda seleccionada cuando cambia la dirección
           // porque las tiendas disponibles pueden cambiar

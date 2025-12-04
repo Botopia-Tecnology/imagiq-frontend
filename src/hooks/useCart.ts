@@ -300,17 +300,34 @@ export function useCart(): UseCartReturn {
   // Función para cargar información de envío de un producto
   const loadShippingInfoForProduct = useCallback(async (sku: string, userId: string, quantity: number) => {
     setLoadingShippingInfo((prev) => ({ ...prev, [sku]: true }));
- 
+
     try {
+      // Obtener ciudad de la dirección predeterminada
+      let userCity: string | undefined = undefined;
+      try {
+        const savedAddress = localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          const parsed = JSON.parse(savedAddress);
+          const city = parsed.ciudad?.toUpperCase();
+          // Solo incluir cities si ES Bogotá
+          if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
+            userCity = "BOGOTÁ";
+          }
+        }
+      } catch (error) {
+        console.error("Error al leer ciudad de dirección:", error);
+      }
+
       const response = await productEndpoints.getCandidateStores({
-        products: [{ sku, quantity }],
+        products: [{ sku: sku, quantity }],
         user_id: userId,
+        ...(userCity && { cities: [userCity] }),
       });
 
       if (response.success && response.data) {
         const { stores, default_direction, canPickUp } = response.data;
 
-        let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
+        let shippingCity = "BOGOTÁ"; // default_direction.ciudad ||
         let shippingStore = "";
 
         const storeEntries = Object.entries(stores);
@@ -321,6 +338,12 @@ export function useCart(): UseCartReturn {
             shippingStore = firstCityStores[0].nombre_tienda.trim();
           }
         }
+
+        console.log('✅ [loadShippingInfoForProduct] Resultado:', {
+          canPickUp,
+          shippingCity,
+          storesCount: Object.keys(stores || {}).length
+        });
 
         setProducts((currentProducts) => {
           const updatedProducts = currentProducts.map(p =>
@@ -455,6 +478,15 @@ export function useCart(): UseCartReturn {
       }
       addProductTimeoutRef.current[productId] = now;
 
+      // Limpiar caché de candidate-stores cuando se agrega un producto
+      try {
+        const { clearGlobalCanPickUpCache } = await import("@/app/carrito/utils/globalCanPickUpCache");
+        clearGlobalCanPickUpCache();
+        console.log('🗑️ [addProduct] Caché limpiado después de agregar producto');
+      } catch (error) {
+        console.error('Error al limpiar caché:', error);
+      }
+
       // Obtener userId automáticamente si no se proporciona
       const effectiveUserId = userId || getUserId();
 
@@ -521,12 +553,29 @@ export function useCart(): UseCartReturn {
       if (effectiveUserId) {
         // Marcar este SKU específico como cargando
         setLoadingShippingInfo((prev) => ({ ...prev, [product.sku]: true }));
-        
+
         setTimeout(async () => {
           try {
+            // Obtener ciudad de la dirección predeterminada
+            let userCity: string | undefined = undefined;
+            try {
+              const savedAddress = localStorage.getItem("checkout-address");
+              if (savedAddress) {
+                const parsed = JSON.parse(savedAddress);
+                const city = parsed.ciudad?.toUpperCase();
+                // Solo incluir cities si ES Bogotá
+                if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
+                  userCity = "BOGOTÁ";
+                }
+              }
+            } catch (error) {
+              console.error("Error al leer ciudad de dirección:", error);
+            }
+
             const response = await productEndpoints.getCandidateStores({
               products: [{ sku: product.sku, quantity: totalQuantityInCart }],
               user_id: effectiveUserId,
+              ...(userCity && { cities: [userCity] }),
             });
 
             if (response.success && response.data) {
@@ -610,6 +659,14 @@ export function useCart(): UseCartReturn {
       toastActiveRef.current[removeKey] = true;
 
       const productName = productToRemove.name;
+
+      // Limpiar caché de candidate-stores cuando se elimina un producto
+      import("@/app/carrito/utils/globalCanPickUpCache").then(({ clearGlobalCanPickUpCache }) => {
+        clearGlobalCanPickUpCache();
+        console.log('🗑️ [removeProduct] Caché limpiado después de eliminar producto');
+      }).catch((error) => {
+        console.error('Error al limpiar caché:', error);
+      });
 
       // ✅ Eliminar trade-in del cache si existe para este SKU
       try {
@@ -695,6 +752,14 @@ export function useCart(): UseCartReturn {
         removeProduct(productId);
         return;
       }
+
+      // Limpiar caché de candidate-stores cuando se actualiza cantidad
+      import("@/app/carrito/utils/globalCanPickUpCache").then(({ clearGlobalCanPickUpCache }) => {
+        clearGlobalCanPickUpCache();
+        console.log('🗑️ [updateQuantity] Caché limpiado después de actualizar cantidad');
+      }).catch((error) => {
+        console.error('Error al limpiar caché:', error);
+      });
 
       // Actualizar productos localmente
       const newProducts = products.map((p) =>

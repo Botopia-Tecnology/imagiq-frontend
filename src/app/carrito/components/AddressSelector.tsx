@@ -107,7 +107,20 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                         type="radio"
                         name="address"
                         checked={address?.id === ad.id}
-                        onChange={() => onAddressChange(ad)}
+                        onChange={() => {
+                          onAddressChange(ad);
+
+                          // Disparar evento para sincronizar navbar con la dirección seleccionada
+                          if (typeof window !== 'undefined') {
+                            window.dispatchEvent(new CustomEvent('address-changed', {
+                              detail: {
+                                address: ad,
+                                addressId: ad.id,
+                                fromHeader: false
+                              }
+                            }));
+                          }
+                        }}
                         className="mt-1 accent-blue-600 h-4 w-4"
                       />
                       <div className="flex-1 min-w-0">

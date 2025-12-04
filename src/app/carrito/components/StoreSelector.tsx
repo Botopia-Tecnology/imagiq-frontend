@@ -211,45 +211,20 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                 <p className="text-sm font-bold text-gray-900 mb-2">
                   Tu ubicación predeterminada no cuenta con tiendas disponibles para este producto.
                 </p>
-                {!hasActiveTradeIn && (
-                  <>
-                    <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-xs text-gray-800 mb-2">
-                        💡 <strong>Tip:</strong> Al cambiar tu dirección predeterminada se recalcularán las tiendas disponibles cercanas a tu nueva ubicación.
-                      </p>
-                    </div>
-                    <p className="text-xs text-gray-700 mb-3">
-                      Por favor selecciona otra dirección o agrega una nueva dirección. El producto está disponible en las siguientes tiendas:
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Disparar el menú de direcciones del navbar
-                        if (typeof window !== 'undefined') {
-                          const addressButton = document.querySelector('[data-address-trigger]');
-                          if (addressButton) {
-                            (addressButton as HTMLElement).click();
-                          } else {
-                            alert('Por favor, cambia tu dirección desde el navbar (esquina superior derecha)');
-                          }
-                        }
-                      }}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2 px-4 rounded-lg transition mb-3"
-                    >
-                      📍 Cambiar o agregar dirección
-                    </button>
-                  </>
-                )}
-                {hasActiveTradeIn && (
-                  <p className="text-xs text-gray-700 mb-3">
-                    El producto está disponible en las siguientes tiendas:
-                  </p>
-                )}
+
+                <p className="text-xs text-gray-700 mb-3">
+                  Por favor cambia o agrega una dirección predeterminada con una tienda cercana.
+                </p>
+
+                {/* Mensaje de tiendas disponibles */}
+                <p className="text-sm font-semibold text-gray-900 mb-3">
+                  El producto está disponible en las siguientes tiendas:
+                </p>
 
                 {/* Mostrar tiendas disponibles cuando hay tiendas */}
                 {storesToDisplay.length > 0 && (
                   <>
-                    <div className="space-y-2 mb-3 max-h-[420px] overflow-y-auto">
+                    <div className="space-y-2 mb-3 max-h-[308px] overflow-y-auto">
                       {storesToDisplay.map((store) => (
                         <div
                           key={store.codigo}
@@ -287,15 +262,15 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                   </div>
                 )}
 
-                {/* Botón para agregar dirección (solo si no hay trade-in activo) */}
-                {!hasActiveTradeIn && (
-                  <button
-                    onClick={() => setShowAddAddressModal(true)}
-                    className="w-full px-4 py-2 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition"
-                  >
-                    Agregar nueva dirección
-                  </button>
-                )}
+                {/* Botón para agregar dirección (DESPUÉS de la lista de tiendas) */}
+                <button
+                  onClick={() => setShowAddAddressModal(true)}
+                  className="w-full px-4 py-2.5 bg-[#222] hover:bg-[#333] text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"
+                  type="button"
+                >
+                  <span className="text-white text-lg">+</span>
+                  <span>Agregar nueva dirección</span>
+                </button>
               </>
             );
           })()}

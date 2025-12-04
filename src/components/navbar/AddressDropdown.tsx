@@ -191,13 +191,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   };
 
   const handleAddNewAddress = () => {
-    // Verificar si el usuario está autenticado antes de abrir el modal
-    if (!isAuthenticated || !user?.id) {
-      // Redirigir al login con redirect para volver después
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      return;
-    }
+    // Permitir crear direcciones tanto para usuarios autenticados como guest
+    // El modal de AddressModal maneja la creación con el guest ID si es necesario
     setOpen(false);
     setShowModal(true);
   };

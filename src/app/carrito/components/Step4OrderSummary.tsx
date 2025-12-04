@@ -178,9 +178,12 @@ export default function Step4OrderSummary({
     onFinishPaymentRef.current = onFinishPayment;
   }, [onFinishPayment]);
 
-  // Llamar a candidate-stores con TODOS los productos del carrito agrupados en una sola petición
-  // Ejecutar en Steps 1-6 (cuando shouldCalculateCanPickUp es true)
+  // OPTIMIZACIÓN: SOLO leer del caché, NO hacer llamadas al endpoint
+  // useDelivery en Step1 es el único que hace llamadas y llena el caché
+  // Este componente solo consume el caché para mostrar el valor
   const fetchGlobalCanPickUp = React.useCallback(async () => {
+    // console.log('📖 [Step4OrderSummary] fetchGlobalCanPickUp - SOLO leyendo del caché');
+
     // Solo calcular si shouldCalculateCanPickUp es true (Steps 1-6) o si la variable de debug está activa
     const shouldFetch =
       shouldCalculateCanPickUp ||
@@ -207,9 +210,10 @@ export default function Step4OrderSummary({
       return;
     }
 
-    // Preparar TODOS los productos del carrito para una sola petición
+    // Preparar TODOS los productos del carrito para construir la clave del caché
+    // IMPORTANTE: Usar SKU regular (NO skuPostback) para coincidir con useDelivery
     const productsToCheck = products.map((p) => ({
-      sku: p.sku,
+      sku: p.sku, // Siempre usar sku para coincidir con la clave de useDelivery
       quantity: p.quantity,
     }));
 
@@ -235,100 +239,117 @@ export default function Step4OrderSummary({
       }
     }
 
-    // Intentar leer desde el caché antes de hacer la petición
+    // OPTIMIZACIÓN: SOLO leer desde el caché, NO hacer petición al endpoint
     const cacheKey = buildGlobalCanPickUpKey({
       userId,
       products: productsToCheck,
       addressId,
     });
+
+    // console.log('🔑 [Step4OrderSummary] Buscando en caché con clave:', {
+    //   userId,
+    //   addressId,
+    //   productsCount: productsToCheck.length,
+    //   cacheKey: cacheKey.substring(0, 100) + '...'
+    // });
+
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
 
     if (cachedValue !== null) {
+      // console.log('✅ [Step4OrderSummary] Valor encontrado en caché:', cachedValue);
       setGlobalCanPickUp(cachedValue);
       setIsLoadingCanPickUp(false);
       return;
     }
 
+    // console.log('⚠️ [Step4OrderSummary] No hay valor en caché para esta clave');
+    // Si no hay caché disponible, establecer loading=true para mostrar "⏳ loading..."
+    // mientras esperamos a que el endpoint responda y llene el caché
+    // El caché se llenará cuando useDelivery en Step1 obtenga la respuesta
+    setGlobalCanPickUp(null);
     setIsLoadingCanPickUp(true);
-    try {
-      // Llamar al endpoint con TODOS los productos agrupados y el user_id
-      const response = await productEndpoints.getCandidateStores({
-        products: productsToCheck,
-        user_id: userId,
-      });
-
-      if (response.success && response.data) {
-        const responseData = response.data as {
-          canPickUp?: boolean;
-          canPickup?: boolean;
-        };
-        // Obtener canPickUp de la respuesta (puede venir como canPickUp o canPickup)
-        const canPickUpValue =
-          responseData.canPickUp ?? responseData.canPickup ?? false;
-
-        // El canPickUp global es el que responde el endpoint con todos los productos
-        setGlobalCanPickUp(canPickUpValue);
-        // Guardar respuesta completa en caché (tiendas, ciudades, canPickUp)
-        setGlobalCanPickUpCache(cacheKey, canPickUpValue, response.data);
-      } else {
-        setGlobalCanPickUp(false);
-        setGlobalCanPickUpCache(cacheKey, false, null);
-      }
-    } catch (error) {
-      console.error("❌ Error al verificar canPickUp global:", error);
-      setGlobalCanPickUp(false);
-      setGlobalCanPickUpCache(cacheKey, false, null);
-    } finally {
-      setIsLoadingCanPickUp(false);
-      // NO resetear userClickedWhileLoading aquí - se resetea en el useEffect después de ejecutar onFinishPayment
-    }
   }, [products, shouldCalculateCanPickUp]);
 
-  // Calcular canPickUp global cuando cambian los productos o shouldCalculateCanPickUp
-  // IMPORTANTE: Asegurar que se ejecute DESPUÉS de que los productos estén completamente cargados
-  // Esto es crítico cuando se navega desde "Entrego y Estreno"
+  // OPTIMIZACIÓN: En Steps 4-7, NO recalcular automáticamente
+  // SOLO recalcular cuando se cambia la dirección desde el navbar
+  // En Step1-3, sí se calcula automáticamente
   React.useEffect(() => {
-    // Verificar si viene desde "Entrego y Estreno" (hay un flag en localStorage)
-    const isFromTradeIn = typeof window !== "undefined" && 
-      localStorage.getItem("open_trade_in_modal_sku") !== null;
-    
-    // Si viene desde Trade-In, esperar un poco más para asegurar que los productos estén cargados
-    // También esperar si los productos aún no tienen SKUs válidos (pueden estar cargándose)
-    const hasValidProducts = products.length > 0 && 
-      products.every(p => p.sku && p.sku.trim() !== "");
-    
-    // Si no hay productos válidos, esperar más tiempo
-    const baseDelay = isFromTradeIn ? 300 : 100;
-    const delay = hasValidProducts ? baseDelay : baseDelay + 200;
-    
-    // Esperar un delay para asegurar que los productos estén completamente cargados
-    // especialmente cuando se viene desde "Entrego y Estreno" (los productos se agregan justo antes de navegar)
-    const timer = setTimeout(() => {
-      // Verificar que haya productos antes de calcular canPickUp
-      if (products.length > 0) {
-        // Verificar también que los productos tengan los datos necesarios (sku válido)
-        const allProductsValid = products.every(p => p.sku && p.sku.trim() !== "");
-        
-        if (allProductsValid) {
-          // NO resetear userClickedWhileLoading aquí - solo cuando cambian los productos o shouldCalculateCanPickUp
-          // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
-          console.log("🔄 [canPickUp] Calculando canPickUp global con", products.length, "productos válidos");
-          fetchGlobalCanPickUp();
-        } else {
-          console.log("⚠️ [canPickUp] Esperando productos válidos (algunos productos no tienen SKU)");
-        }
-      } else {
-        console.log("⚠️ [canPickUp] No hay productos para calcular canPickUp");
-      }
-    }, delay);
+    // Si shouldCalculateCanPickUp es false (Step7), NO hacer nada
+    if (!shouldCalculateCanPickUp) {
+      return;
+    }
 
-    return () => clearTimeout(timer);
+    // Si isStep1 es true, calcular normalmente (flujo original)
+    if (isStep1) {
+      // Verificar si viene desde "Entrego y Estreno" (hay un flag en localStorage)
+      const isFromTradeIn = typeof window !== "undefined" &&
+        localStorage.getItem("open_trade_in_modal_sku") !== null;
+
+      // Si viene desde Trade-In, esperar un poco más para asegurar que los productos estén cargados
+      // También esperar si los productos aún no tienen SKUs válidos (pueden estar cargándose)
+      const hasValidProducts = products.length > 0 &&
+        products.every(p => p.sku && p.sku.trim() !== "");
+
+      // Si no hay productos válidos, esperar más tiempo
+      const baseDelay = isFromTradeIn ? 300 : 100;
+      const delay = hasValidProducts ? baseDelay : baseDelay + 200;
+
+      // Esperar un delay para asegurar que los productos estén completamente cargados
+      // especialmente cuando se viene desde "Entrego y Estreno" (los productos se agregan justo antes de navegar)
+      const timer = setTimeout(() => {
+        // Verificar que haya productos antes de calcular canPickUp
+        if (products.length > 0) {
+          // Verificar también que los productos tengan los datos necesarios (sku válido)
+          const allProductsValid = products.every(p => p.sku && p.sku.trim() !== "");
+
+          if (allProductsValid) {
+            // NO resetear userClickedWhileLoading aquí - solo cuando cambian los productos o shouldCalculateCanPickUp
+            // Llamar a fetch (la lógica de si debe ejecutarse está dentro de fetchGlobalCanPickUp)
+            // console.log("🔄 [canPickUp] Calculando canPickUp global con", products.length, "productos válidos");
+            fetchGlobalCanPickUp();
+          } else {
+            console.log("⚠️ [canPickUp] Esperando productos válidos (algunos productos no tienen SKU)");
+          }
+        } else {
+          console.log("⚠️ [canPickUp] No hay productos para calcular canPickUp");
+        }
+      }, delay);
+
+      return () => clearTimeout(timer);
+    }
+
+    // Si NO es Step1 (Steps 4-7), SOLO leer del caché inmediatamente
+    // NO esperar delays, NO recalcular automáticamente
+    // console.log("📖 [Step4-7] Solo leyendo del caché, NO recalculando automáticamente");
+    fetchGlobalCanPickUp();
   }, [
-    fetchGlobalCanPickUp, 
-    products.length, 
-    // Crear una clave única basada en todos los SKUs para detectar cuando los productos cambian completamente
-    products.map(p => `${p.sku || ""}-${p.quantity || 0}`).sort().join("|")
+    fetchGlobalCanPickUp,
+    isStep1,
+    shouldCalculateCanPickUp,
+    // Solo en Step1 depender de productos (usar sku regular para coincidir con useDelivery)
+    ...(isStep1 ? [
+      products.length,
+      products.map(p => `${p.sku || ""}-${p.quantity || 0}`).sort().join("|")
+    ] : [])
   ]);
+
+  // Escuchar cuando el caché se actualiza para volver a leer
+  React.useEffect(() => {
+    const handleCacheUpdate = () => {
+      // console.log('🔔 [Step4OrderSummary] Caché actualizado, volviendo a leer');
+      fetchGlobalCanPickUp();
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('canPickUpCache-updated', handleCacheUpdate);
+    }
+
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('canPickUpCache-updated', handleCacheUpdate);
+      }
+    };
+  }, [fetchGlobalCanPickUp]);
 
   // Resetear userClickedWhileLoading cuando cambian los productos, shouldCalculateCanPickUp, o cuando canPickUp termina de cargar
   React.useEffect(() => {
@@ -382,28 +403,82 @@ export default function Step4OrderSummary({
   }, [userClickedWhileLoading, isLoadingCanPickUp, shouldCalculateCanPickUp]);
 
   // Escuchar cambios en la dirección para recalcular canPickUp
+  // IMPORTANTE: En Steps 4-7, SOLO recalcular cuando viene del navbar (fromHeader: true)
   React.useEffect(() => {
-    const handleAddressChange = () => {
-      fetchGlobalCanPickUp();
+    const handleAddressChange = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const fromHeader = customEvent.detail?.fromHeader;
+
+      // En Steps 4-7 (cuando NO es Step1), SOLO recalcular si viene del navbar
+      if (!isStep1 && !fromHeader) {
+        // console.log('📖 [Step4-7] Cambio de dirección NO viene del navbar, ignorando');
+        return;
+      }
+
+      // En Step1 o cuando viene del navbar, recalcular
+      // console.log('🔄 [Step4OrderSummary] Recalculando canPickUp por cambio de dirección', {
+      //   isStep1,
+      //   fromHeader
+      // });
+
+      // Invalidar caché antes de recalcular (usando import dinámico)
+      // Intentar obtener el nuevo addressId del evento
+      let newAddressId: string | null = null;
+      if (customEvent.detail?.address?.id) {
+        newAddressId = customEvent.detail.address.id;
+      } else {
+        // Intentar leer desde localStorage
+        try {
+          const saved = localStorage.getItem('checkout-address');
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            newAddressId = parsed.id || null;
+          }
+        } catch (error) {
+          console.error('Error leyendo dirección:', error);
+        }
+      }
+
+      // Invalidar caché usando import dinámico
+      import('../utils/globalCanPickUpCache').then(({ invalidateCacheOnAddressChange, clearGlobalCanPickUpCache }) => {
+        if (newAddressId) {
+          invalidateCacheOnAddressChange(newAddressId);
+        } else {
+          // Si no hay addressId, limpiar caché completamente
+          clearGlobalCanPickUpCache();
+        }
+
+        // Recalcular después de invalidar caché
+        fetchGlobalCanPickUp();
+      }).catch((error) => {
+        console.error('Error al invalidar caché:', error);
+      });
     };
 
-    globalThis.window.addEventListener("address-changed", handleAddressChange);
-    globalThis.window.addEventListener("checkout-address-changed", handleAddressChange);
+    globalThis.window.addEventListener("address-changed", handleAddressChange as EventListener);
+    globalThis.window.addEventListener("checkout-address-changed", handleAddressChange as EventListener);
 
-    // También escuchar cambios en localStorage
+    // También escuchar cambios en localStorage (pero aplicar misma lógica)
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === "checkout-address") {
+        // Los eventos storage no tienen detail, así que no sabemos si vienen del header
+        // En Steps 4-7, NO recalcular automáticamente por eventos storage
+        if (!isStep1) {
+          console.log('📖 [Step4-7] Cambio en localStorage, ignorando (no es Step1)');
+          return;
+        }
+
         fetchGlobalCanPickUp();
       }
     };
     globalThis.window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      globalThis.window.removeEventListener("address-changed", handleAddressChange);
-      globalThis.window.removeEventListener("checkout-address-changed", handleAddressChange);
+      globalThis.window.removeEventListener("address-changed", handleAddressChange as EventListener);
+      globalThis.window.removeEventListener("checkout-address-changed", handleAddressChange as EventListener);
       globalThis.window.removeEventListener("storage", handleStorageChange);
     };
-  }, [fetchGlobalCanPickUp]);
+  }, [fetchGlobalCanPickUp, isStep1]);
 
   const baseContainerClasses =
     "bg-white rounded-2xl p-6 shadow flex flex-col gap-4 h-fit border border-[#E5E5E5]";

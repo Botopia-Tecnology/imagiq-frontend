@@ -18,6 +18,7 @@ import {
 import { safeGetLocalStorage } from "@/lib/localStorage";
 import { CartBundleGroup } from "./components/CartBundleGroup";
 import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
+import { useDelivery } from "./hooks/useDelivery";
 
 /**
  * Paso 1 del carrito de compras
@@ -34,6 +35,13 @@ export default function Step1({
 }: {
   readonly onContinue: () => void;
 }) {
+  // IMPORTANTE: En Step1, useDelivery hace la llamada inicial a candidate-stores
+  // Esto llena el caché para que los demás steps solo lean de él
+  useDelivery({
+    canFetchFromEndpoint: true,  // Permitir llamadas en Step1
+    onlyReadCache: false,         // NO solo lectura, debe hacer llamada inicial
+  });
+
   const [showCouponModal, setShowCouponModal] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const { trackBeginCheckout } = useAnalyticsWithUser();

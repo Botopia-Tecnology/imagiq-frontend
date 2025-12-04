@@ -2,6 +2,9 @@
 // Se comparte entre Step1 y Step3 para evitar llamar dos veces seguidas
 // al endpoint /api/products/candidate-stores con el mismo estado.
 // Ahora guarda toda la respuesta completa (canPickUp, stores, cities) para evitar skeleton al cambiar a "tienda"
+//
+// OPTIMIZACIÓN: El caché se llena SOLO en Step1 y al cambiar dirección.
+// Los demás steps (2-6) SOLO leen del caché sin hacer llamadas nuevas.
 
 import type { CandidateStoresResponse } from "@/lib/api";
 
@@ -16,11 +19,15 @@ interface CacheEntry {
   value: boolean; // canPickUp boolean (para compatibilidad con código existente)
   fullResponse: CandidateStoresResponse | null; // Respuesta completa del endpoint
   timestamp: number;
+  addressId: string | null; // Para detectar cambios de dirección
 }
 
-const TTL_MS = 5 * 60 * 1000; // 5 minutos
+const TTL_MS = 10 * 60 * 1000; // 10 minutos (aumentado para mejor rendimiento)
 
 let cache: CacheEntry | null = null;
+
+// Flag global para evitar llamadas múltiples simultáneas
+let isFetching = false;
 
 export function buildGlobalCanPickUpKey(input: CacheKeyInput): string {
   const userPart = input.userId ?? "anonymous";
@@ -68,18 +75,86 @@ export function getFullCandidateStoresResponseFromCache(key: string): CandidateS
 export function setGlobalCanPickUpCache(
   key: string,
   value: boolean,
-  fullResponse?: CandidateStoresResponse | null
+  fullResponse?: CandidateStoresResponse | null,
+  addressId?: string | null
 ): void {
   cache = {
     key,
     value,
     fullResponse: fullResponse ?? null,
     timestamp: Date.now(),
+    addressId: addressId ?? null,
   };
+  // console.log('✅ [Cache] Guardado en caché:', { key: key.substring(0, 50), addressId, canPickUp: value });
+
+  // Disparar evento para notificar que el caché se actualizó
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
+      detail: { key, value, addressId }
+    }));
+  }
 }
 
 export function clearGlobalCanPickUpCache(): void {
+  console.log('🗑️ [Cache] Limpiando caché completo');
   cache = null;
+}
+
+/**
+ * Verifica si el caché es válido para una clave dada
+ */
+export function isCacheValid(key: string): boolean {
+  if (!cache) return false;
+  if (cache.key !== key) return false;
+
+  const isExpired = Date.now() - cache.timestamp > TTL_MS;
+  if (isExpired) {
+    cache = null;
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Invalida el caché si la dirección cambió
+ * Retorna true si se invalidó, false si no era necesario
+ */
+export function invalidateCacheOnAddressChange(newAddressId: string | null): boolean {
+  if (!cache) return false;
+
+  // Si la dirección cambió, invalidar caché
+  if (cache.addressId !== newAddressId) {
+    console.log('🔄 [Cache] Invalidando caché por cambio de dirección:', {
+      old: cache.addressId,
+      new: newAddressId
+    });
+    cache = null;
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Obtiene el addressId del caché actual
+ */
+export function getCurrentCachedAddressId(): string | null {
+  return cache?.addressId ?? null;
+}
+
+/**
+ * Establece el flag de fetching para evitar llamadas duplicadas
+ */
+export function setIsFetching(value: boolean): void {
+  isFetching = value;
+}
+
+/**
+ * Verifica si hay una petición en curso
+ */
+export function getIsFetching(): boolean {
+  return isFetching;
 }
 
 

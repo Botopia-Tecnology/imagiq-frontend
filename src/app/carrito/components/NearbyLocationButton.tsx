@@ -5,7 +5,7 @@ import type { Address } from "@/types/address";
 import { syncAddress } from "@/lib/addressSync";
 import { useAuthContext } from "@/features/auth/context";
 import { apiPost } from "@/lib/api-client";
-import { getOrCreateGuestId } from "@/lib/guestUser";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 interface NearbyLocationButtonProps {
   onAddressAdded?: (address: Address) => void;
@@ -22,16 +22,43 @@ export function NearbyLocationButton({ onAddressAdded, className }: NearbyLocati
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Obtiene el ID del usuario (logueado o no logueado)
-   * Usa la utilidad centralizada para guest IDs
+   * Obtiene el ID del usuario usando la MISMA lógica que addressesService
+   * para garantizar consistencia entre creación manual y "Cerca de mí"
+   *
+   * Si no existe usuario en imagiq_user, genera un guest ID temporal
    */
   const getUserId = (): string => {
     if (user?.id) {
+      console.log("✅ Cerca de mí: Usando user.id del context:", user.id);
       return user.id;
     }
 
-    // Usuario no logueado: usar utilidad centralizada
-    return getOrCreateGuestId();
+    // Usuario no logueado: usar la MISMA lógica que addressesService
+    // Obtener del localStorage imagiq_user (creado en Step2)
+    const userInfo = safeGetLocalStorage<{ id?: string; email?: string }>("imagiq_user", {});
+
+    if (userInfo.id) {
+      console.log("✅ Cerca de mí: Usando userInfo.id desde imagiq_user:", userInfo.id);
+      return userInfo.id;
+    }
+
+    if (userInfo.email) {
+      console.log("✅ Cerca de mí: Usando userInfo.email desde imagiq_user:", userInfo.email);
+      return userInfo.email;
+    }
+
+    // Si no hay usuario en imagiq_user, generar un guest ID temporal
+    // Este ID se usará hasta que el usuario complete Step 2
+    let guestId = localStorage.getItem("imagiq_guest_id");
+    if (!guestId) {
+      guestId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      localStorage.setItem("imagiq_guest_id", guestId);
+      console.log("🆕 Cerca de mí: Nuevo guest ID generado:", guestId);
+    } else {
+      console.log("✅ Cerca de mí: Usando guest ID existente:", guestId);
+    }
+
+    return guestId;
   };
 
   /**

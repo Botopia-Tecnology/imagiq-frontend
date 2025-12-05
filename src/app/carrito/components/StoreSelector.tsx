@@ -4,6 +4,8 @@ import { X } from "lucide-react";
 import type { FormattedStore } from "@/types/store";
 import AddNewAddressForm from "./AddNewAddressForm";
 import type { Address } from "@/types/address";
+import { NearbyLocationButton } from "./NearbyLocationButton";
+import type { Direccion } from "@/types/user";
 
 interface StoreSelectorProps {
   storeQuery: string;
@@ -19,6 +21,7 @@ interface StoreSelectorProps {
   availableCities?: string[];
   hasActiveTradeIn?: boolean;
   availableStoresWhenCanPickUpFalse?: FormattedStore[];
+  onAddressChange?: (address: Direccion) => void;
 }
 
 
@@ -36,6 +39,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   availableCities = [],
   hasActiveTradeIn = false,
   availableStoresWhenCanPickUpFalse = [],
+  onAddressChange,
 }) => {
   const [showAddAddressModal, setShowAddAddressModal] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
@@ -262,7 +266,46 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                   </div>
                 )}
 
-                {/* Botón para agregar dirección (DESPUÉS de la lista de tiendas) */}
+                {/* Botón "Cerca de mí" para usar geolocalización */}
+                <div className="space-y-3">
+                  <NearbyLocationButton
+                    onAddressAdded={(newAddress: Address) => {
+                      console.log('📍 Dirección obtenida por geolocalización:', newAddress);
+
+                      // Convertir Address a Direccion para compatibilidad
+                      const direccion: Direccion = {
+                        id: newAddress.id,
+                        usuario_id: newAddress.usuarioId,
+                        email: "",
+                        linea_uno: newAddress.direccionFormateada,
+                        codigo_dane: newAddress.codigo_dane || "",
+                        ciudad: newAddress.ciudad || "",
+                        pais: newAddress.pais,
+                        esPredeterminada: newAddress.esPredeterminada,
+                      };
+
+                      // Actualizar la dirección y refrescar tiendas
+                      if (onAddressChange) {
+                        onAddressChange(direccion);
+                      }
+
+                      // Refrescar tiendas para recalcular con la nueva dirección
+                      if (onRefreshStores) {
+                        setTimeout(() => {
+                          onRefreshStores();
+                        }, 500);
+                      }
+                    }}
+                  />
+
+                  <div className="relative flex items-center">
+                    <div className="flex-grow border-t border-gray-300"></div>
+                    <span className="flex-shrink mx-4 text-gray-500 text-sm">o</span>
+                    <div className="flex-grow border-t border-gray-300"></div>
+                  </div>
+                </div>
+
+                {/* Botón para agregar dirección manualmente (DESPUÉS del botón "Cerca de mí") */}
                 <button
                   onClick={() => setShowAddAddressModal(true)}
                   className="w-full px-4 py-2.5 bg-[#222] hover:bg-[#333] text-white rounded-lg text-sm font-semibold transition flex items-center justify-center gap-2"

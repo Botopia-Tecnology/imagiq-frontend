@@ -66,14 +66,32 @@ export class AddressesService {
       const requestData = { ...addressData };
 
       // SIEMPRE incluir usuarioId explícitamente
+      // Usa la misma lógica que NearbyLocationButton para consistencia
+      // Prioridad: 1) userInfo.id, 2) userInfo.email, 3) guest ID temporal
       if (userInfo.id) {
         requestData.usuarioId = userInfo.id;
+        console.log("✅ addressesService: Usando userInfo.id:", requestData.usuarioId);
       } else if (userInfo.email) {
         requestData.usuarioId = userInfo.email;
+        console.log("✅ addressesService: Usando userInfo.email:", requestData.usuarioId);
       } else {
-        throw new Error(
-          "No se encontró información del usuario. Por favor, inicia sesión nuevamente."
-        );
+        // Si no hay usuario en imagiq_user, usar guest ID temporal
+        // Este ID se usará hasta que el usuario complete Step 2
+        if (typeof window !== 'undefined') {
+          let guestId = localStorage.getItem("imagiq_guest_id");
+          if (!guestId) {
+            guestId = `guest_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+            localStorage.setItem("imagiq_guest_id", guestId);
+            console.log("🆕 addressesService: Nuevo guest ID generado:", guestId);
+          } else {
+            console.log("✅ addressesService: Usando guest ID existente:", guestId);
+          }
+          requestData.usuarioId = guestId;
+        } else {
+          throw new Error(
+            "No se encontró información del usuario. Por favor, inicia sesión nuevamente."
+          );
+        }
       }
 
       // Verificar si es la primera dirección del usuario

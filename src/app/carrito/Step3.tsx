@@ -1285,6 +1285,7 @@ export default function Step3({
                           availableCities={availableCities}
                           hasActiveTradeIn={hasActiveTradeIn}
                           availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+                          onAddressChange={handleAddressChange}
                         />
                       </div>
                     );

@@ -191,13 +191,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
   };
 
   const handleAddNewAddress = () => {
-    // Verificar si el usuario está autenticado antes de abrir el modal
-    if (!isAuthenticated || !user?.id) {
-      // Redirigir al login con redirect para volver después
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-      router.push(`/login?redirect=${encodeURIComponent(currentPath)}`);
-      return;
-    }
+    // Permitir crear direcciones tanto para usuarios autenticados como guest
+    // El modal de AddressModal maneja la creación con el guest ID si es necesario
     setOpen(false);
     setShowModal(true);
   };
@@ -362,7 +357,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
             </button>
           )}
 
-          {/* Dropdown para mostrar la dirección (solo lectura para invitados) */}
+          {/* Dropdown para mostrar la dirección y permitir agregar más (también para invitados) */}
           {open && (
             <div
               className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden"
@@ -378,9 +373,19 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
                     <p className="text-xs text-gray-500 mt-1">{displayAddress.ciudad}</p>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 italic">
-                  Inicia sesión para gestionar tus direcciones
-                </p>
+
+                {/* Botón para agregar nueva dirección (disponible para invitados) */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddNewAddress();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Agregar nueva dirección</span>
+                </button>
               </div>
             </div>
           )}

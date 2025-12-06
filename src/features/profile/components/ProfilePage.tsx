@@ -51,7 +51,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   const handleAddressesClick = () => setCurrentView("addresses");
   const handleCouponsClick = () => setCurrentView("coupons");
   const handleLoyaltyClick = () => setCurrentView("loyalty");
-  const handleNotificationsClick = () => console.log("Ver notificaciones");
   const handleTermsClick = () => console.log("Ver términos");
   const handlePrivacyClick = () => console.log("Ver privacidad");
   const handleRelevantInfoClick = () =>
@@ -166,7 +165,7 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
         />
 
         {/* Settings Section */}
-        <SettingsSection onNotificationsClick={handleNotificationsClick} />
+        <SettingsSection userId={state.user.id} />
 
         {/* More Information Section */}
         <LegalSection

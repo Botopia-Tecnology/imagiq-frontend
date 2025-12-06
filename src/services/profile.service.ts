@@ -3,7 +3,7 @@
  * @description Servicio para interactuar con el API de perfil del backend
  */
 
-import { apiGet, apiPost, apiPut } from "@/lib/api-client";
+import { apiGet, apiPost, apiPatch } from "@/lib/api-client";
 import { EncryptedCard } from "../features/profile/types";
 
 /**
@@ -76,12 +76,30 @@ export interface AddressData {
 
 /**
  * Interface para actualizar el perfil
+ * Basada en la especificación del endpoint PATCH /auth/profile/:id
  */
 export interface UpdateProfileRequest {
   nombre?: string;
   apellido?: string;
+  email?: string;
   telefono?: string;
-  fecha_nacimiento?: Date;
+  tipo_documento?: string;
+  numero_documento?: string;
+  codigo_pais?: string;
+  fecha_nacimiento?: Date | string;
+}
+
+/**
+ * Interface para la respuesta del endpoint de actualización de perfil
+ */
+export interface UpdateProfileResponse {
+  id: string;
+  nombre: string;
+  apellido: string;
+  email: string;
+  rol: number;
+  telefono: string | null;
+  numero_documento: string | null;
 }
 
 /**
@@ -183,7 +201,9 @@ export class ProfileService {
    * Llama al endpoint /api/payments/cards/:userId que devuelve datos encriptados
    * IMPORTANTE: Los datos vienen encriptados y deben ser desencriptados con encryptionService
    */
-  public async getUserPaymentMethodsEncrypted(userId?: string): Promise<EncryptedCard[]> {
+  public async getUserPaymentMethodsEncrypted(
+    userId?: string
+  ): Promise<EncryptedCard[]> {
     try {
       const id = userId || this.getUserId();
       if (!id) {
@@ -207,15 +227,20 @@ export class ProfileService {
 
   /**
    * Actualiza información del perfil del usuario
+   * Endpoint: PATCH /auth/profile/:id
+   * Solo se actualizan los campos enviados (actualización parcial)
    */
   public async updateProfile(
     userId: string,
     data: UpdateProfileRequest
-  ): Promise<ProfileResponse> {
+  ): Promise<UpdateProfileResponse> {
     try {
       console.log("📤 Actualizando perfil para usuario:", userId, data);
 
-      const result = await apiPut<ProfileResponse>(`/api/auth/profile/${userId}`, data);
+      const result = await apiPatch<UpdateProfileResponse>(
+        `/api/auth/profile/${userId}`,
+        data
+      );
       console.log("✅ Perfil actualizado exitosamente:", result);
       return result;
     } catch (error: unknown) {

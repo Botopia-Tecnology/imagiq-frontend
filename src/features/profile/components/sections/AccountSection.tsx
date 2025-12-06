@@ -1,12 +1,11 @@
 import React from "react";
-import { MapPin, CreditCard, FileText, ChevronRight } from "lucide-react";
+import { MapPin, CreditCard, ChevronRight } from "lucide-react";
 
 interface AccountSectionProps {
   addressesCount: number;
   paymentMethodsCount: number;
   onAddressesClick: () => void;
   onPaymentMethodsClick: () => void;
-  onBillingClick: () => void;
 }
 
 const AccountSection: React.FC<AccountSectionProps> = ({
@@ -14,7 +13,6 @@ const AccountSection: React.FC<AccountSectionProps> = ({
   paymentMethodsCount,
   onAddressesClick,
   onPaymentMethodsClick,
-  onBillingClick
 }) => {
   return (
     <div className="py-6">
@@ -52,18 +50,6 @@ const AccountSection: React.FC<AccountSectionProps> = ({
             </span>
             <ChevronRight className="w-5 h-5 text-gray-400" />
           </div>
-        </button>
-
-        {/* Información de Facturación */}
-        <button
-          onClick={onBillingClick}
-          className="w-full flex items-center justify-between p-4 bg-white rounded-xl border-2 border-gray-200 hover:border-black transition-all"
-        >
-          <div className="flex items-center gap-3">
-            <FileText className="w-5 h-5" />
-            <span className="font-semibold">Información de Facturación</span>
-          </div>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
         </button>
       </div>
     </div>

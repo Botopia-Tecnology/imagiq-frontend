@@ -26,7 +26,7 @@ import {
 import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
 import { apiPost } from "@/lib/api-client";
 import { safeGetLocalStorage } from "@/lib/localStorage";
-import { productEndpoints } from "@/lib/api";
+import { productEndpoints, deliveryEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
 
@@ -141,15 +141,15 @@ export default function Step7({ onBack }: Step7Props) {
     null
   );
   const [checkoutAddress, _] = useSecureStorage<{
-  "id": string,
-  "usuario_id": string,
-  "email": string,
-  "linea_uno": string,
-  "codigo_dane": string,
-  "ciudad": string,
-  "pais": string,
-  "esPredeterminada": boolean
-} | null>('checkout-address', null);
+    "id": string,
+    "usuario_id": string,
+    "email": string,
+    "linea_uno": string,
+    "codigo_dane": string,
+    "ciudad": string,
+    "pais": string,
+    "esPredeterminada": boolean
+  } | null>('checkout-address', null);
 
   // Store/Warehouse validation state
   const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
@@ -596,6 +596,108 @@ export default function Step7({ onBack }: Step7Props) {
           // Si llegamos aquí, es método "delivery" → Continuar calculando cobertura en segundo plano
           console.log("📦 [Step7] Método delivery - Calculando cobertura en segundo plano");
           // El skeleton ya está oculto, pero el botón seguirá en loading hasta terminar
+
+          // ---------------------------------------------------------------------------
+          // NUEVO: Cotización Multi-Origen (Solo para Domicilio)
+          try {
+            // 1. Obtener ciudades de origen únicas de storesData
+            const originCities = new Set<string>();
+
+            // Interfaz auxiliar para evitar el uso de any
+            interface StoreDataLike {
+              ciudad?: string;
+              city?: string;
+              nearest?: { ciudad?: string; city?: string };
+              stores?: StoreDataLike[];
+            }
+
+            if (Array.isArray(storesData)) {
+              (storesData as StoreDataLike[]).forEach((store) => {
+                // Intentar obtener ciudad de varias propiedades posibles
+                const city = store.ciudad || store.city || store.nearest?.ciudad || store.nearest?.city;
+                if (city) originCities.add(city);
+
+                // También buscar en stores dentro del objeto si existe
+                if (Array.isArray(store.stores)) {
+                  store.stores.forEach((s) => {
+                    const sCity = s.ciudad || s.city;
+                    if (sCity) originCities.add(sCity);
+                  });
+                }
+              });
+            } else if (storesData) {
+              const sd = storesData as StoreDataLike;
+              const city = sd.ciudad || sd.city || sd.nearest?.ciudad || sd.nearest?.city;
+              if (city) originCities.add(city);
+            }
+
+            // Si no encontramos ciudades en storesData, intentar fallback con response.data
+            if (originCities.size === 0 && response.data) {
+              // response.data es CandidateStoresResponse, por lo que tiene la propiedad stores
+              // pero necesitamos asegurarnos de que TypeScript lo sepa
+              const storesMap = (response.data as unknown as { stores: Record<string, StoreDataLike[]> }).stores;
+              if (storesMap) {
+                Object.values(storesMap).forEach((storesList) => {
+                  if (Array.isArray(storesList)) {
+                    storesList.forEach((s) => {
+                      if (s.ciudad) originCities.add(s.ciudad);
+                    });
+                  }
+                });
+              }
+            }
+
+            console.log("🏙️ [Step7] Ciudades de origen encontradas:", Array.from(originCities));
+
+            // 2. Obtener ciudad de destino
+            const destinationCity = shippingData?.city ||
+              (checkoutAddress?.codigo_dane || checkoutAddress?.ciudad);
+
+            // 3. Llamar al endpoint si tenemos datos suficientes
+            if (originCities.size > 0 && destinationCity) {
+              console.log("🚚 [Step7] Iniciando cotización multi-origen...");
+
+              // Preparar detalle de productos (asumiendo 1kg por unidad como solicitado)
+              const quoteDetails = products.map(p => ({
+                ubl: 0, // Valor por defecto
+                alto: 10, // Valor por defecto
+                ancho: 10, // Valor por defecto
+                largo: 10, // Valor por defecto
+                peso: p.quantity, // 1kg por unidad * cantidad
+                unidades: p.quantity
+              }));
+
+              const quotePayload = {
+                ciudades_origen: Array.from(originCities),
+                ciudad_destino: destinationCity,
+                cuenta: "1", // Valor por defecto
+                producto: "0", // Valor por defecto
+                valoracion: String(calculations.total || 100000), // Valor del carrito o default
+                nivel_servicio: [1], // Valor por defecto
+                detalle: quoteDetails
+              };
+
+              // Llamada asíncrona (no bloquea el flujo principal)
+              deliveryEndpoints.quoteNationalMultiOrigin(quotePayload)
+                .then(quoteResponse => {
+                  if (quoteResponse.success) {
+                    console.log("✅ [Step7] Cotización Multi-Origen Exitosa:", quoteResponse.data);
+                    // Aquí se podría guardar en estado si se necesitara mostrar en UI
+                    // setMultiOriginQuote(quoteResponse.data);
+                  } else {
+                    console.warn("⚠️ [Step7] Falló cotización multi-origen:", quoteResponse.message);
+                  }
+                })
+                .catch(err => {
+                  console.error("❌ [Step7] Error en cotización multi-origen:", err);
+                });
+            } else {
+              console.log("⚠️ [Step7] No se pudo cotizar multi-origen: Faltan ciudades origen o destino", { originCities: Array.from(originCities), destinationCity });
+            }
+          } catch (quoteError) {
+            console.error("❌ [Step7] Error inesperado en lógica de cotización:", quoteError);
+          }
+          // ---------------------------------------------------------------------------
 
           // PASO 2: Si canPickUp global es FALSE → Verificar si es Centro de Distribución
           if (!globalCanPickUp) {

@@ -191,7 +191,7 @@ export const productEndpoints = {
           } else {
             // Formato antiguo (backward compatibility)
             const stringValue = String(value);
-            
+
             // Campos que deben generar múltiples query params cuando tienen comas
             const multiValueFields = [
               "nombreColor",
@@ -202,7 +202,7 @@ export const productEndpoints = {
               "modelo",
               "model",
             ];
-            
+
             // Si el campo permite múltiples valores y el valor contiene comas, dividir
             if (multiValueFields.includes(key) && stringValue.includes(",")) {
               // Dividir por comas y crear múltiples query params
@@ -854,6 +854,43 @@ export interface CandidateStoresResponse {
   stores: Record<string, CandidateStore[]>;
   canPickUp: boolean;
   default_direction: DefaultDirection;
+}
+
+// Delivery API endpoints
+export const deliveryEndpoints = {
+  quoteNationalMultiOrigin: (data: MultiOriginQuoteRequest) =>
+    apiClient.post<MultiOriginQuoteResponse[]>('/api/deliveries/coordinadora/cotizar-nacional-multi', data),
+};
+
+export interface MultiOriginQuoteRequest {
+  ciudades_origen: string[];
+  ciudad_destino: string;
+  cuenta: string;
+  producto: string;
+  valoracion: string;
+  nivel_servicio: number[];
+  detalle: {
+    ubl: number;
+    alto: number;
+    ancho: number;
+    largo: number;
+    peso: number;
+    unidades: number;
+  }[];
+}
+
+export interface MultiOriginQuoteResponse {
+  ciudad_origen: string;
+  nombre_ciudad: string;
+  flete_total: number;
+  dias_entrega: number;
+  detalles: {
+    peso_liquidado: number;
+    producto: number;
+    ubl: number;
+    volumen: number;
+    peso_real: number;
+  };
 }
 
 /**

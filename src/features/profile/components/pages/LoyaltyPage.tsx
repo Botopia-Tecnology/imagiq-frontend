@@ -3,11 +3,12 @@ import { ArrowLeft, Star } from "lucide-react";
 
 interface PageProps {
   onBack: () => void;
+  className?: string;
 }
 
-const LoyaltyPage: React.FC<PageProps> = ({ onBack }) => {
+const LoyaltyPage: React.FC<PageProps> = ({ onBack, className }) => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen bg-white ${className}`}>
       {/* Header */}
       <div className="bg-white border-b-2 border-gray-100">
         <div className="max-w-6xl mx-auto px-4 py-4">

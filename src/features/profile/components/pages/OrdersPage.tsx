@@ -19,9 +19,10 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 interface OrdersPageProps {
   onBack: () => void;
   userEmail: string;
+  className?: string;
 }
 
-const OrdersPage: React.FC<OrdersPageProps> = ({ onBack, userEmail }) => {
+const OrdersPage: React.FC<OrdersPageProps> = ({ onBack, userEmail, className }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -111,7 +112,7 @@ const OrdersPage: React.FC<OrdersPageProps> = ({ onBack, userEmail }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={`min-h-screen bg-white ${className}`}>
       {/* Cancel Confirmation Modal */}
       {confirmCancelOrderId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">

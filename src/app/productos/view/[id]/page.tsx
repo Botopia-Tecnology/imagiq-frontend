@@ -71,6 +71,7 @@ function convertProductForView(product: ProductCardProps) {
         name: safeValue(color.name || color.label, "None"),
         hex: safeValue(color.hex, "#808080"),
       })) || [],
+    category: product.apiProduct?.categoria || "", // Use category from API
     description: safeValue(product.apiProduct?.descGeneral?.[0], "None"),
     specs: [
       { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
@@ -140,8 +141,8 @@ export default function ProductViewPage({ params }) {
   type ParamsWithId = { id: string };
   const id =
     resolvedParams &&
-    typeof resolvedParams === "object" &&
-    "id" in resolvedParams
+      typeof resolvedParams === "object" &&
+      "id" in resolvedParams
       ? (resolvedParams as ParamsWithId).id
       : undefined;
   const { product, loading, error } = useProduct(id ?? "");
@@ -150,7 +151,7 @@ export default function ProductViewPage({ params }) {
     React.useState<ProductSelectionData | null>(null);
   const stockNotification = useStockNotification();
   const { trackViewItem } = useAnalytics();
-  
+
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
 

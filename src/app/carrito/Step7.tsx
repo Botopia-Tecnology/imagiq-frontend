@@ -129,6 +129,8 @@ export default function Step7({ onBack }: Step7Props) {
   // NUEVO: Estado separado para skeleton (solo espera canPickUp) y botón (espera cálculo de envío)
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = useState(false);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  // Estado para guardar el código de bodega de candidate-stores
+  const [candidateWarehouseCode, setCandidateWarehouseCode] = useState<string | undefined>();
   // Ref para leer el valor actual de isCalculatingShipping en callbacks
   const isCalculatingShippingRef = React.useRef(false);
 
@@ -518,26 +520,12 @@ export default function Step7({ onBack }: Step7Props) {
           products: productsToCheck,
           user_id: userId,
         };
-        console.log("📤 [Step7] Llamando getCandidateStores y stores-for-produtcs en PARALELO con body:", JSON.stringify(requestBody, null, 2));
+        console.log("📤 [Step7] Llamando getCandidateStores con TODO el carrito, body:", JSON.stringify(requestBody, null, 2));
 
-        // OPTIMIZACIÓN: Ejecutar ambas llamadas en PARALELO para reducir tiempo de carga
-        const [response, storesData] = await Promise.all([
-          productEndpoints.getCandidateStores(requestBody),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
-            },
-            body: JSON.stringify(requestBody),
-          }).then(res => res.json()).catch(error => {
-            console.error("❌ [Step7] Error llamando stores-for-produtcs:", error);
-            return null;
-          })
-        ]);
+        // Llamar SOLO a candidate-stores (que analiza TODO el carrito completo)
+        const response = await productEndpoints.getCandidateStores(requestBody);
 
         console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(response.data, null, 2));
-        console.log("📥 [Step7] Respuesta de stores-for-produtcs:", JSON.stringify(storesData, null, 2));
 
         if (response.success && response.data) {
           // Si la petición fue exitosa, limpiar el hash de fallo si existía
@@ -556,22 +544,25 @@ export default function Step7({ onBack }: Step7Props) {
 
           console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(responseData, null, 2));
 
-          // Obtener codBodega de stores-for-products (no de getCandidateStores)
-          console.log("🔍 [Step7] storesData completo:", storesData);
+          // Obtener codBodega de candidate-stores (analiza TODO el carrito)
+          console.log("🔍 [Step7] responseData completo:", responseData);
 
           let warehouseCode: string | undefined;
 
-          if (Array.isArray(storesData) && storesData.length > 0) {
-            // Si es un array, tomar el primer elemento
-            const firstItem = storesData[0];
-            warehouseCode = firstItem?.nearest?.codBodega || firstItem?.codBodega;
-            console.log("🔍 [Step7] Tomado del primer elemento del array:", warehouseCode);
-          } else if (storesData && !Array.isArray(storesData)) {
-            // Si es un objeto (fallback)
-            warehouseCode = storesData.codBodega || storesData.nearest?.codBodega;
+          // candidate-stores devuelve la estructura con nearest que contiene la bodega más cercana
+          // que puede surtir TODO el pedido completo
+          if (responseData.nearest?.codBodega) {
+            warehouseCode = responseData.nearest.codBodega;
+            console.log("🔍 [Step7] codBodega tomado de responseData.nearest:", warehouseCode);
+          } else if (responseData.codeBodega) {
+            warehouseCode = responseData.codeBodega;
+            console.log("🔍 [Step7] codBodega tomado de responseData.codeBodega:", warehouseCode);
           }
 
-          console.log("🏭 [Step7] codBodega (de stores-for-products):", warehouseCode);
+          console.log("🏭 [Step7] codBodega final (de candidate-stores):", warehouseCode);
+
+          // Guardar en estado para usar al crear la orden
+          setCandidateWarehouseCode(warehouseCode);
 
           // Obtener canPickUp global de la respuesta
           const globalCanPickUp =
@@ -600,7 +591,7 @@ export default function Step7({ onBack }: Step7Props) {
           // ---------------------------------------------------------------------------
           // NUEVO: Cotización Multi-Origen (Solo para Domicilio)
           try {
-            // 1. Obtener ciudades de origen únicas de storesData
+            // 1. Obtener ciudades de origen únicas de candidate-stores response
             const originCities = new Set<string>();
 
             // Interfaz auxiliar para evitar el uso de any
@@ -611,28 +602,9 @@ export default function Step7({ onBack }: Step7Props) {
               stores?: StoreDataLike[];
             }
 
-            if (Array.isArray(storesData)) {
-              (storesData as StoreDataLike[]).forEach((store) => {
-                // Intentar obtener ciudad de varias propiedades posibles
-                const city = store.ciudad || store.city || store.nearest?.ciudad || store.nearest?.city;
-                if (city) originCities.add(city);
-
-                // También buscar en stores dentro del objeto si existe
-                if (Array.isArray(store.stores)) {
-                  store.stores.forEach((s) => {
-                    const sCity = s.ciudad || s.city;
-                    if (sCity) originCities.add(sCity);
-                  });
-                }
-              });
-            } else if (storesData) {
-              const sd = storesData as StoreDataLike;
-              const city = sd.ciudad || sd.city || sd.nearest?.ciudad || sd.nearest?.city;
-              if (city) originCities.add(city);
-            }
-
-            // Si no encontramos ciudades en storesData, intentar fallback con response.data
-            if (originCities.size === 0 && response.data) {
+            // candidate-stores devuelve response.data que es CandidateStoresResponse
+            // Intentar obtener ciudad desde la respuesta
+            if (response.data) {
               // response.data es CandidateStoresResponse, por lo que tiene la propiedad stores
               // pero necesitamos asegurarnos de que TypeScript lo sepa
               const storesMap = (response.data as unknown as { stores: Record<string, StoreDataLike[]> }).stores;
@@ -1087,8 +1059,21 @@ export default function Step7({ onBack }: Step7Props) {
         shippingVerification: shippingVerification
       });
 
+      // Validar que tenemos la dirección de envío
+      console.log("📍 [Step7] Dirección de envío:", {
+        direccionId: checkoutAddress?.id,
+        linea_uno: checkoutAddress?.linea_uno,
+        ciudad: checkoutAddress?.ciudad,
+        codigo_dane: checkoutAddress?.codigo_dane
+      });
+
+      if (!checkoutAddress?.id) {
+        throw new Error("No se encontró la dirección de envío. Por favor, agrega una dirección antes de continuar.");
+      }
+
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
+        // Para pickup: usar la tienda seleccionada
         try {
           const storeStr = localStorage.getItem("checkout-store");
           if (storeStr) {
@@ -1099,7 +1084,22 @@ export default function Step7({ onBack }: Step7Props) {
         } catch {
           // ignore
         }
+      } else {
+        // Para delivery: usar la bodega de candidate-stores
+        // Esta bodega puede surtir TODO el pedido completo
+        codigo_bodega = candidateWarehouseCode;
+        console.log("🏭 [Step7] Usando bodega de candidate-stores para delivery:", codigo_bodega);
       }
+
+      // Log final antes de enviar al backend
+      console.log("📤 [Step7] Datos que se enviarán al backend:", {
+        direccionId: checkoutAddress?.id,
+        userId: authContext.user?.id || String(loggedUser?.id),
+        codigo_bodega,
+        metodo_envio,
+        totalAmount: calculations.total,
+        shippingAmount: calculations.shipping
+      });
 
       switch (paymentData?.method) {
         case "tarjeta": {

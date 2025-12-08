@@ -31,11 +31,11 @@ export interface DetalleDispositivoRetoma {
 
 export interface BeneficiosDTO {
   type:
-    | "0%_interes"
-    | "entrego_y_estreno"
-    | "bundle"
-    | "soporte"
-    | "sin_beneficios";
+  | "0%_interes"
+  | "entrego_y_estreno"
+  | "bundle"
+  | "soporte"
+  | "sin_beneficios";
   dispositivo_a_recibir?: string;
   valor_retoma?: number;
   dispositivo_a_entregar?: string;
@@ -54,6 +54,7 @@ export interface Item {
   skupostback: string;
   desDetallada: string;
   ean: string;
+  categoria?: string; // Category for shipping logic
 }
 
 export interface UserInfo {

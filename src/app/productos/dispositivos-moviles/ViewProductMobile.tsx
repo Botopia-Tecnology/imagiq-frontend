@@ -14,7 +14,7 @@
 import { useCartContext } from "@/features/cart/CartContext";
 import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 
-import  { StaticImageData } from "next/image";
+import { StaticImageData } from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
@@ -29,7 +29,7 @@ type RawProduct = {
   name: string;
   image: string | StaticImageData;
   price: string | number;
-  colors: Array<{ name: string; hex: string; label?: string; sku?: string,ean?: string  }>;
+  colors: Array<{ name: string; hex: string; label?: string; sku?: string, ean?: string }>;
   originalPrice?: string;
   discount?: string;
   description?: string;
@@ -71,20 +71,20 @@ function convertToProductCardProps(product: RawProduct): ProductCardProps {
       typeof product.price === "string" ? product.price : String(product.price),
     colors: Array.isArray(product.colors)
       ? product.colors.map((color) => ({
-          ...color,
-          label: color.label || color.name,
-          sku: color.sku || color.name || "SKU",
-          ean: color.ean || color.name || "EAN",
-        }))
+        ...color,
+        label: color.label || color.name,
+        sku: color.sku || color.name || "SKU",
+        ean: color.ean || color.name || "EAN",
+      }))
       : [],
     selectedColor:
       Array.isArray(product.colors) && product.colors.length > 0
         ? {
-            ...product.colors[0],
-            label: product.colors[0].label || product.colors[0].name,
-            sku: product.colors[0].sku || product.colors[0].name || "SKU",
-            ean: product.colors[0].ean || product.colors[0].name || "EAN",
-          }
+          ...product.colors[0],
+          label: product.colors[0].label || product.colors[0].name,
+          sku: product.colors[0].sku || product.colors[0].name || "SKU",
+          ean: product.colors[0].ean || product.colors[0].name || "EAN",
+        }
         : undefined,
     puntos_q: product.puntos_q ?? 4,
     originalPrice: product.originalPrice,
@@ -218,7 +218,7 @@ export default function ViewProduct({
           {cartFeedback}
         </div>
       )}
-{/*  */}
+      {/*  */}
 
       {/* Estilos CSS globales optimizados para transiciones cinematográficas */}
       <style

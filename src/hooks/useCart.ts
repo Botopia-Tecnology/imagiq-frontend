@@ -54,7 +54,7 @@ export interface CartProduct {
   /** Memoria RAM del producto (ej: "8GB", "12GB") */
   ram?: string;
   skuPostback?: string;
-  desDetallada?:string;
+  desDetallada?: string;
   /** Modelo del producto (ej: "Galaxy S24", "Galaxy Watch") - usado para sugerencias relacionadas */
   modelo?: string;
   /** Categoría del producto (ej: "IT", "AV", "HA") */
@@ -184,6 +184,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     const ram = asString(p.ram);
     const desDetallada = asString(p.desDetallada);
     const modelo = asString(p.modelo);
+    const categoria = asString(p.categoria); // CRITICAL: Preserve category field
     const canPickUp = typeof p.canPickUp === "boolean" ? p.canPickUp : undefined;
     const indRetoma = typeof p.indRetoma === "number" ? p.indRetoma : undefined;
 
@@ -225,6 +226,7 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       skuPostback,
       desDetallada,
       modelo,
+      categoria, // CRITICAL: Include category in return object
       canPickUp,
       indRetoma,
       bundleInfo,
@@ -512,7 +514,7 @@ export function useCart(): UseCartReturn {
           };
           wasUpdated = true;
         } else {
-          newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom , }];
+          newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom, }];
           finalQuantity = quantity;
         }
 
@@ -582,9 +584,9 @@ export function useCart(): UseCartReturn {
               const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
               const { stores } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
-              const canPickUp = responseData.canPickUp ?? 
-                                responseData.canPickup ?? 
-                                false;
+              const canPickUp = responseData.canPickUp ??
+                responseData.canPickup ??
+                false;
 
               // Obtener la primera ciudad y tienda disponible
               let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
@@ -881,18 +883,18 @@ export function useCart(): UseCartReturn {
       // Preparar items con bundleInfo y quantity = 1
       // IMPORTANTE: Usar los SKUs del bundle (skusBundle) en lugar de los SKUs individuales de los items
       console.log("Adding bundle to cart:", items, bundleInfo);
-      
+
       // Mapear cada item con el SKU correspondiente de skusBundle
       // El orden de los items debe coincidir con el orden de los SKUs en skusBundle
       const itemsWithBundle: CartProduct[] = items.map((item, index) => {
         // Obtener el SKU del bundle correspondiente por índice
         const bundleSku = bundleInfo.skusBundle[index] || item.sku;
-        
+
         // Crear un ID único: usar el índice si el bundleSku es igual a productSku para evitar duplicados
-        const uniqueId = bundleSku === bundleInfo.productSku 
-          ? `${bundleInfo.productSku}-${index}-${item.sku}` 
+        const uniqueId = bundleSku === bundleInfo.productSku
+          ? `${bundleInfo.productSku}-${index}-${item.sku}`
           : `${bundleInfo.productSku}-${bundleSku}`;
-        
+
         return {
           ...item,
           quantity: 1,
@@ -1183,7 +1185,7 @@ export function useCart(): UseCartReturn {
       // Mostrar toasts DESPUÉS de actualizar el estado (solo una vez)
       // Usar ref para evitar duplicados si hay re-renders
       const toastKey = keepOtherProducts ? "bundle-lost" : "bundle-removed";
-      
+
       if (shouldShowBundleLostToast && !toastActiveRef.current[toastKey]) {
         toastActiveRef.current[toastKey] = true;
         toast.warning("Descuento de bundle perdido", {

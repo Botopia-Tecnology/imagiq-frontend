@@ -142,7 +142,10 @@ export default function Step7({ onBack }: Step7Props) {
     "imagiq_user",
     null
   );
-  const [checkoutAddress, _] = useSecureStorage<{
+  
+  // CRÍTICO: Leer dirección desde localStorage normal, NO desde useSecureStorage
+  // porque se guarda en localStorage.setItem("checkout-address") en Step3
+  const [checkoutAddress, setCheckoutAddress] = useState<{
     "id": string,
     "usuario_id": string,
     "email": string,
@@ -151,7 +154,24 @@ export default function Step7({ onBack }: Step7Props) {
     "ciudad": string,
     "pais": string,
     "esPredeterminada": boolean
-  } | null>('checkout-address', null);
+  } | null>(null);
+
+  // Cargar dirección desde localStorage al montar el componente
+  useEffect(() => {
+    try {
+      const addressStr = localStorage.getItem('checkout-address');
+      if (addressStr) {
+        const parsed = JSON.parse(addressStr);
+        console.log("📍 [Step7 - Init] Dirección cargada desde localStorage:", parsed);
+        console.log("📍 [Step7 - Init] UUID de dirección:", parsed.id);
+        setCheckoutAddress(parsed);
+      } else {
+        console.warn("⚠️ [Step7 - Init] No se encontró checkout-address en localStorage");
+      }
+    } catch (error) {
+      console.error("❌ [Step7 - Init] Error al cargar checkout-address:", error);
+    }
+  }, []);
 
   // Store/Warehouse validation state
   const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
@@ -326,6 +346,12 @@ export default function Step7({ onBack }: Step7Props) {
       if (shippingAddress) {
         try {
           const parsed = JSON.parse(shippingAddress);
+          console.log("📍 [Step7 - useEffect] Dirección de envío cargada desde localStorage:", parsed);
+          console.log("📍 [Step7 - useEffect] UUID de dirección:", parsed.id);
+          console.log("📍 [Step7 - useEffect] Usuario ID (de dirección):", parsed.usuario_id);
+          console.log("📍 [Step7 - useEffect] Línea uno:", parsed.linea_uno);
+          console.log("📍 [Step7 - useEffect] Ciudad:", parsed.ciudad);
+          console.log("📍 [Step7 - useEffect] Código DANE:", parsed.codigo_dane);
           setShippingData({
             type: "delivery",
             address: parsed.linea_uno,
@@ -334,6 +360,8 @@ export default function Step7({ onBack }: Step7Props) {
         } catch (error) {
           console.error("Error parsing shipping address:", error);
         }
+      } else {
+        console.warn("⚠️ [Step7 - useEffect] No se encontró dirección en localStorage (checkout-address)");
       }
     }
 
@@ -425,6 +453,31 @@ export default function Step7({ onBack }: Step7Props) {
           "🔄 Dirección cambiada desde header en Step7, redirigiendo a Step3..."
         );
         router.push("/carrito/step3");
+      } else {
+        // Si cambia la dirección (pero no desde header), actualizar el estado
+        try {
+          const addressStr = localStorage.getItem('checkout-address');
+          if (addressStr) {
+            const parsed = JSON.parse(addressStr);
+            console.log("🔄 [Step7] Dirección actualizada desde evento:", parsed);
+            setCheckoutAddress(parsed);
+          }
+        } catch (error) {
+          console.error("❌ [Step7] Error al actualizar dirección:", error);
+        }
+      }
+    };
+
+    // Escuchar cambios en localStorage también
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'checkout-address' && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          console.log("🔄 [Step7] Dirección actualizada desde storage event:", parsed);
+          setCheckoutAddress(parsed);
+        } catch (error) {
+          console.error("❌ [Step7] Error al parsear dirección de storage:", error);
+        }
       }
     };
 
@@ -432,12 +485,14 @@ export default function Step7({ onBack }: Step7Props) {
       "address-changed",
       handleAddressChange as EventListener
     );
+    globalThis.window.addEventListener("storage", handleStorageChange);
 
     return () => {
       globalThis.window.removeEventListener(
         "address-changed",
         handleAddressChange as EventListener
       );
+      globalThis.window.removeEventListener("storage", handleStorageChange);
     };
   }, [router]);
 
@@ -1060,16 +1115,27 @@ export default function Step7({ onBack }: Step7Props) {
       });
 
       // Validar que tenemos la dirección de envío
-      console.log("📍 [Step7] Dirección de envío:", {
+      console.log("� [Step7 - Validación] ========== VALIDACIÓN DE DIRECCIÓN ==========");
+      console.log("🔍 [Step7 - Validación] checkoutAddress completo:", checkoutAddress);
+      console.log("🔍 [Step7 - Validación] checkoutAddress?.id:", checkoutAddress?.id);
+      console.log("🔍 [Step7 - Validación] Tipo de checkoutAddress?.id:", typeof checkoutAddress?.id);
+      console.log("🔍 [Step7 - Validación] ¿Es undefined?:", checkoutAddress?.id === undefined);
+      console.log("🔍 [Step7 - Validación] ¿Es null?:", checkoutAddress?.id === null);
+      console.log("🔍 [Step7 - Validación] ¿Es string vacío?:", checkoutAddress?.id === "");
+      console.log("🔍 [Step7 - Validación] Dirección de envío:", {
         direccionId: checkoutAddress?.id,
         linea_uno: checkoutAddress?.linea_uno,
         ciudad: checkoutAddress?.ciudad,
         codigo_dane: checkoutAddress?.codigo_dane
       });
+      console.log("🔍 [Step7 - Validación] ============================================");
 
       if (!checkoutAddress?.id) {
+        console.error("❌ [Step7 - Validación] ERROR: No se encontró el ID de la dirección");
         throw new Error("No se encontró la dirección de envío. Por favor, agrega una dirección antes de continuar.");
       }
+
+      console.log("✅ [Step7 - Validación] Dirección válida con ID:", checkoutAddress.id);
 
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
@@ -1101,8 +1167,31 @@ export default function Step7({ onBack }: Step7Props) {
         shippingAmount: calculations.shipping
       });
 
+      // ========================================
+      // 🔍 LOGS DETALLADOS DE DIRECCIÓN
+      // ========================================
+      console.log("🏠 [Step7] ========== INFORMACIÓN DE DIRECCIÓN ==========");
+      console.log("🏠 [Step7] Dirección completa desde checkoutAddress:", checkoutAddress);
+      console.log("🏠 [Step7] UUID de dirección (userInfo.direccionId):", checkoutAddress?.id);
+      console.log("🏠 [Step7] UUID de dirección (informacion_facturacion.direccion_id):", informacion_facturacion.direccion_id);
+      console.log("🏠 [Step7] Línea uno:", checkoutAddress?.linea_uno);
+      console.log("🏠 [Step7] Ciudad:", checkoutAddress?.ciudad);
+      console.log("🏠 [Step7] Código DANE:", checkoutAddress?.codigo_dane);
+      console.log("🏠 [Step7] País:", checkoutAddress?.pais);
+      console.log("🏠 [Step7] Usuario ID (de la dirección):", checkoutAddress?.usuario_id);
+      console.log("🏠 [Step7] Usuario ID (del contexto):", authContext.user?.id || loggedUser?.id);
+      console.log("🏠 [Step7] =============================================");
+
       switch (paymentData?.method) {
         case "tarjeta": {
+          console.log("💳 [Step7] ========== PAGO CON TARJETA ==========");
+          console.log("💳 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("💳 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("💳 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("💳 [Step7] metodo_envio:", metodo_envio);
+          console.log("💳 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("💳 [Step7] ==========================================");
+
           const res = await payWithCard({
             currency: "COP",
             dues: String(paymentData.installments || "1"),
@@ -1196,6 +1285,15 @@ export default function Step7({ onBack }: Step7Props) {
           break;
         }
         case "pse": {
+          console.log("🏦 [Step7] ========== PAGO CON PSE ==========");
+          console.log("🏦 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("🏦 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("🏦 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("🏦 [Step7] metodo_envio:", metodo_envio);
+          console.log("🏦 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("🏦 [Step7] Banco seleccionado:", paymentData.bank, "-", paymentData.bankName);
+          console.log("🏦 [Step7] ==========================================");
+
           const res = await payWithPse({
             totalAmount: String(calculations.total),
             shippingAmount: String(calculations.shipping),
@@ -1241,6 +1339,14 @@ export default function Step7({ onBack }: Step7Props) {
           break;
         }
         case "addi": {
+          console.log("💰 [Step7] ========== PAGO CON ADDI ==========");
+          console.log("💰 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("💰 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("💰 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("💰 [Step7] metodo_envio:", metodo_envio);
+          console.log("💰 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("💰 [Step7] ==========================================");
+
           const res = await payWithAddi({
             totalAmount: String(calculations.total),
             shippingAmount: String(calculations.shipping),

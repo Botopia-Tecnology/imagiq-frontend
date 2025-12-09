@@ -578,9 +578,14 @@ export default function Step2({
   // Handler para cuando se agrega una dirección exitosamente
   const handleAddressAdded = async (address: Address) => {
     console.log("✅ Dirección agregada exitosamente:", address);
+    console.log("📦 DEBUG - Productos en carrito:", {
+      length: cartProducts.length,
+      products: cartProducts.map(p => ({ sku: p.sku, quantity: p.quantity, name: p.name }))
+    });
 
     // Activar estado de loading
     setIsSavingAddress(true);
+    console.log("🔄 Estado isSavingAddress activado");
 
     // NO mostrar toast ni avanzar automáticamente
     // El formulario mantiene el loading hasta que termine la consulta de candidate stores
@@ -594,18 +599,47 @@ export default function Step2({
     // directamente al endpoint de candidate stores aquí
     // Esto evita recálculos duplicados en useDelivery
 
+    // IMPORTANTE: Limpiar el caché de candidate stores ANTES de calcular los nuevos
+    // Esto es crucial porque la dirección cambió y necesitamos datos frescos
+    try {
+      console.log("🗑️ Intentando limpiar caché...");
+      const { invalidateCacheOnAddressChange } = await import('@/app/carrito/utils/globalCanPickUpCache');
+      const wasInvalidated = invalidateCacheOnAddressChange(address.id);
+      console.log('🗑️ Caché de candidate stores:', wasInvalidated ? 'limpiado' : 'ya estaba limpio');
+    } catch (error) {
+      console.error('❌ Error limpiando caché:', error);
+    }
+
+    // IMPORTANTE: Esperar un momento para que la dirección se guarde completamente en la BD
+    // antes de consultar candidate stores
+    console.log('⏳ Esperando a que la dirección se guarde completamente...');
+    await new Promise(resolve => setTimeout(resolve, 500));
+    console.log('✅ Delay completado');
+
     // Llamar al endpoint de candidate stores y esperar la respuesta
     try {
-      console.log('🔄 Consultando candidate stores...');
+      console.log('🔄 Iniciando consulta de candidate stores...');
       const { productEndpoints } = await import('@/lib/api');
+      console.log('✅ Módulo productEndpoints importado');
 
       // Obtener el user_id del localStorage
       const savedUser = safeGetLocalStorage<{ id?: string } | null>("imagiq_user", null);
       const userId = savedUser?.id;
 
+      console.log('👤 DEBUG - Usuario obtenido:', {
+        userId,
+        savedUser,
+        hasUserId: !!userId
+      });
+
       if (!userId) {
         console.error('❌ No se encontró user_id para consultar candidate stores');
+        console.log('⚠️ Avanzando al Step3 sin consultar candidate stores (no hay userId)');
+        // Avanzar sin candidate stores si no hay userId
         setIsSavingAddress(false);
+        if (typeof onContinue === "function") {
+          onContinue();
+        }
         return;
       }
 
@@ -615,49 +649,82 @@ export default function Step2({
         quantity: p.quantity || 1,
       }));
 
+      console.log('📦 DEBUG - Productos preparados:', {
+        productsCount: products.length,
+        products
+      });
+
+      // IMPORTANTE: Usar el addressId de la dirección recién agregada
+      const addressId = address.id;
+
+      console.log('📦 Consultando candidate stores con:', {
+        userId,
+        addressId,
+        productsCount: products.length,
+        products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
+      });
+
+      console.log('🌐 Llamando a productEndpoints.getCandidateStores...');
       // Llamar al endpoint de candidate stores y procesar la respuesta
       const response = await productEndpoints.getCandidateStores({
         products,
         user_id: userId,
       });
+      console.log('✅ Respuesta recibida del endpoint');
 
-      console.log('✅ Candidate stores consultados exitosamente, procesando respuesta...');
+      console.log('✅ Candidate stores consultados exitosamente:', {
+        canPickUp: response?.data?.canPickUp,
+        storesCount: response?.data?.stores ? Object.keys(response.data.stores).length : 0
+      });
 
       // IMPORTANTE: Procesar y guardar la respuesta en el caché
       // Esto es crucial para que Step3 pueda leer los datos del caché
       if (response?.data) {
+        console.log('💾 Guardando respuesta en caché...');
         // Importar las funciones de caché
         const { buildGlobalCanPickUpKey, setGlobalCanPickUpCache } = await import('@/app/carrito/utils/globalCanPickUpCache');
-        
-        // Obtener la dirección actual para el caché
-        const savedAddress = safeGetLocalStorage<{ id?: string } | null>("checkout-address", null);
-        const addressId = savedAddress?.id || null;
-        
-        // Construir la clave de caché
+
+        // Construir la clave de caché con el addressId correcto
         const cacheKey = buildGlobalCanPickUpKey({
           userId,
           products,
           addressId,
         });
-        
+
         // Guardar en caché con la respuesta completa
         setGlobalCanPickUpCache(cacheKey, response.data.canPickUp, response.data, addressId);
-        console.log('✅ Respuesta guardada en caché con clave:', cacheKey);
+        console.log('✅ Respuesta guardada en caché:', {
+          cacheKey,
+          canPickUp: response.data.canPickUp,
+          addressId
+        });
       } else {
         console.warn('⚠️ La respuesta del endpoint no contiene datos para guardar en caché');
       }
+
+      // IMPORTANTE: Solo avanzar DESPUÉS de guardar en caché exitosamente
+      console.log('🏁 Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
+      setIsSavingAddress(false);
+      if (typeof onContinue === "function") {
+        console.log("✅ Avanzando automáticamente a Step3");
+        onContinue();
+      } else {
+        console.warn("⚠️ No se puede avanzar - onContinue no es una función");
+      }
+
     } catch (error) {
       console.error('❌ Error consultando candidate stores:', error);
+      console.error('❌ Detalles del error:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      // IMPORTANTE: Avanzar de todas formas al Step3 a pesar del error
+      console.log('⚠️ Avanzando al Step3 a pesar del error en candidate stores');
       setIsSavingAddress(false);
-      return;
-    }
-
-    // Avanzar automáticamente al Step3 después de consultar candidate stores
-    // NO poner setHasAddedAddress(true) porque vamos a cambiar de paso inmediatamente
-    if (typeof onContinue === "function") {
-      console.log("✅ Candidate stores calculados, avanzando automáticamente a Step3");
-      setIsSavingAddress(false);
-      onContinue();
+      if (typeof onContinue === "function") {
+        onContinue();
+      }
     }
   };
 

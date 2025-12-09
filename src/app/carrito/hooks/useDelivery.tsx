@@ -269,12 +269,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       try {
         if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
           addressCheckDetails.savedAddressExists = true;
-          const parsed = JSON.parse(savedAddress) as Address;
+          const parsed = JSON.parse(savedAddress) as Address & { linea_uno?: string };
           addressCheckDetails.hasCiudad = !!parsed.ciudad;
-          addressCheckDetails.hasLineaUno = !!parsed.lineaUno;
-          
+          // Soportar tanto camelCase (lineaUno) como snake_case (linea_uno)
+          const lineaUnoValue = parsed.lineaUno || parsed.linea_uno;
+          addressCheckDetails.hasLineaUno = !!lineaUnoValue;
+
           // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
-          if (parsed.ciudad && parsed.lineaUno) {
+          // Aceptar tanto camelCase como snake_case para compatibilidad
+          if (parsed.ciudad && lineaUnoValue) {
             hasAddress = true;
           }
         }
@@ -402,10 +405,18 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     );
     const userId = user?.id || user?.user_id;
 
-    console.log('👤 User ID obtenido:', userId, '| Productos count:', products.length);
+    console.log('👤 DEBUG useDelivery - User ID obtenido:', {
+      userId,
+      user,
+      productsCount: products.length,
+      products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
+    });
 
     if (!userId || products.length === 0) {
-      console.log('❌ Sin user_id o sin productos, abortando fetchCandidateStores');
+      console.log('❌ useDelivery - Sin user_id o sin productos, abortando fetchCandidateStores', {
+        hasUserId: !!userId,
+        productsCount: products.length
+      });
       setStores([]);
       setFilteredStores([]);
       setCanPickUp(false);
@@ -414,41 +425,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
-    // IMPORTANTE: Verificar que haya dirección guardada antes de calcular candidate stores
-    // Esto evita calcular cuando el usuario se registra como invitado pero aún no ha agregado dirección
-    let hasAddress = false;
-    let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
-    try {
-      const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-      addressCheckDetails.savedAddressExists = !!savedAddress;
-      
-      if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
-        const parsed = JSON.parse(savedAddress) as Address;
-        addressCheckDetails.hasCiudad = !!parsed.ciudad;
-        addressCheckDetails.hasLineaUno = !!parsed.lineaUno;
-        
-        // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
-        if (parsed.ciudad && parsed.lineaUno) {
-          hasAddress = true;
-        }
-      }
-    } catch (error) {
-      console.error('Error al verificar dirección:', error);
-    }
-
-    if (!hasAddress) {
-      console.log('⏸️ [useDelivery] NO hay dirección guardada aún, abortando fetchCandidateStores');
-      console.log('   Detalles de verificación:', addressCheckDetails);
-      console.log('   Esto es normal cuando el usuario se registra como invitado pero aún no ha agregado dirección');
-      setStores([]);
-      setFilteredStores([]);
-      setCanPickUp(false);
-      setStoresLoading(false);
-      isFetchingRef.current = false;
-      return;
-    }
-    
-    console.log('✅ [useDelivery] Dirección verificada correctamente, continuando con fetchCandidateStores');
+    // IMPORTANTE: Candidate stores solo necesita userId + productos SKU
+    // NO necesita dirección para calcular qué tiendas tienen stock
+    console.log('✅ [useDelivery] Tenemos userId y productos, continuando con fetchCandidateStores');
 
     // Preparar TODOS los productos del carrito para una sola petición
     const productsToCheck = products.map((p) => ({
@@ -456,12 +435,25 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       quantity: p.quantity,
     }));
 
-    // Obtener dirección actual desde localStorage para incluirla en el hash
+    // Obtener dirección actual desde localStorage para incluirla en la clave del caché
+    // IMPORTANTE: El addressId NO es necesario para calcular candidate stores,
+    // pero SÍ se incluye en la clave del caché para diferenciar cachés por dirección
     let currentAddressId = lastAddressIdRef.current || '';
     try {
       const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-      if (savedAddress) {
-        const parsed = JSON.parse(savedAddress) as Address;
+      console.log('📍 DEBUG useDelivery - Leyendo dirección para caché:', {
+        hasSavedAddress: !!savedAddress,
+        savedAddressRaw: savedAddress
+      });
+
+      if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
+        const parsed = JSON.parse(savedAddress) as Address & { usuario_id?: string };
+        console.log('📍 DEBUG useDelivery - Dirección parseada para caché:', {
+          id: parsed.id,
+          usuario_id: parsed.usuario_id,
+          ciudad: parsed.ciudad
+        });
+
         if (parsed.id) {
           currentAddressId = parsed.id;
           // Actualizar lastAddressIdRef si cambió
@@ -474,6 +466,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       console.error('Error al leer dirección para hash:', error);
     }
 
+    console.log('🔑 DEBUG useDelivery - Construyendo clave de caché:', {
+      userId,
+      productsCount: productsToCheck.length,
+      addressId: currentAddressId || null
+    });
+
     // CRÍTICO: Intentar leer del caché ANTES de activar storesLoading
     // Esto evita skeleton cuando se cambia a "recoger en tienda"
     const cacheKey = buildGlobalCanPickUpKey({
@@ -481,7 +479,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       products: productsToCheck,
       addressId: currentAddressId || null,
     });
+
+    console.log('🔑 DEBUG useDelivery - Clave de caché construida:', cacheKey);
+
     const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+
+    console.log('💾 DEBUG useDelivery - Resultado búsqueda en caché:', {
+      foundInCache: !!cachedResponse,
+      cacheKey
+    });
 
       // Si hay datos en caché, usarlos INMEDIATAMENTE sin activar skeleton
     if (cachedResponse) {
@@ -881,36 +887,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
-    // IMPORTANTE: Verificar que haya dirección guardada ANTES de intentar calcular candidate stores
-    // Esto evita calcular cuando el usuario se registra como invitado pero aún no ha agregado dirección
-    let hasAddress = false;
-    let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
-    try {
-      const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-      addressCheckDetails.savedAddressExists = !!savedAddress;
-      
-      if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
-        const parsed = JSON.parse(savedAddress) as Address;
-        addressCheckDetails.hasCiudad = !!parsed.ciudad;
-        addressCheckDetails.hasLineaUno = !!parsed.lineaUno;
-        
-        // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
-        if (parsed.ciudad && parsed.lineaUno) {
-          hasAddress = true;
-        }
-      }
-    } catch (error) {
-      console.error('Error al verificar dirección en useEffect de productos:', error);
-    }
-
-    if (!hasAddress) {
-      console.log('⏸️ [useDelivery - useEffect productos] NO hay dirección guardada aún, saltando fetchCandidateStores');
-      console.log('   Detalles de verificación:', addressCheckDetails);
-      console.log('   Esto es normal cuando el usuario se registra como invitado pero aún no ha agregado dirección');
-      return;
-    }
-    
-    console.log('✅ [useDelivery - useEffect productos] Dirección verificada correctamente, continuando');
+    // IMPORTANTE: Candidate stores solo necesita userId + productos
+    // Ya NO verificamos dirección aquí porque no es necesaria para calcular candidate stores
+    console.log('✅ [useDelivery - useEffect productos] Listos para calcular candidate stores (solo necesita userId + productos)');
 
     // Crear un hash de los productos para detectar cambios reales
     // IMPORTANTE: Incluir skuPostback en el hash

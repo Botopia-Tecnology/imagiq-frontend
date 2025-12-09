@@ -217,18 +217,23 @@ export default function Step4OrderSummary({
       quantity: p.quantity,
     }));
 
-    // Obtener id de la dirección actual (si existe) para que la clave del caché
-    // cambie automáticamente cuando el usuario cambie de dirección.
+    // IMPORTANTE: Verificar que haya dirección válida antes de intentar leer del caché
+    // Esto evita mostrar "loading" cuando el usuario se registra como invitado pero aún no ha agregado dirección
+    let hasValidAddress = false;
     let addressId: string | null = null;
     if (typeof globalThis.window !== "undefined") {
       try {
         const savedAddress = globalThis.window.localStorage.getItem(
           "checkout-address"
         );
-        if (savedAddress && savedAddress !== "undefined") {
-          const parsed = JSON.parse(savedAddress) as { id?: string };
-          if (parsed?.id) {
-            addressId = parsed.id;
+        if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
+          const parsed = JSON.parse(savedAddress) as { id?: string; ciudad?: string; linea_uno?: string };
+          // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
+          if (parsed.ciudad && parsed.linea_uno) {
+            hasValidAddress = true;
+            if (parsed?.id) {
+              addressId = parsed.id;
+            }
           }
         }
       } catch (error) {
@@ -237,6 +242,13 @@ export default function Step4OrderSummary({
           error
         );
       }
+    }
+
+    // Si no hay dirección válida, no mostrar loading, solo mostrar null
+    if (!hasValidAddress) {
+      setGlobalCanPickUp(null);
+      setIsLoadingCanPickUp(false);
+      return;
     }
 
     // OPTIMIZACIÓN: SOLO leer desde el caché, NO hacer petición al endpoint
@@ -266,6 +278,7 @@ export default function Step4OrderSummary({
     // Si no hay caché disponible, establecer loading=true para mostrar "⏳ loading..."
     // mientras esperamos a que el endpoint responda y llene el caché
     // El caché se llenará cuando useDelivery en Step1 obtenga la respuesta
+    // IMPORTANTE: Solo mostrar loading si hay dirección válida (ya verificado arriba)
     setGlobalCanPickUp(null);
     setIsLoadingCanPickUp(true);
   }, [products, shouldCalculateCanPickUp]);
@@ -619,12 +632,15 @@ export default function Step4OrderSummary({
 
         <button
           type="button"
-          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
+          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${
+            buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
+          } ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
             ? "opacity-70 cursor-not-allowed"
             : "cursor-pointer"
             }`}
           disabled={isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)}
           data-testid="checkout-finish-btn"
+          data-button-text={buttonText}
           aria-busy={isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)}
           onClick={() => {
             // Si está cargando canPickUp cuando el usuario hace clic, marcar que hizo clic y esperar
@@ -641,7 +657,9 @@ export default function Step4OrderSummary({
         >
           {(isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)) ? (
             <span
-              className="flex items-center justify-center gap-2"
+              className={`flex gap-2 ${
+                buttonText === "Registrarse como invitado" ? "flex-wrap items-center justify-center whitespace-normal text-center" : "items-center justify-center"
+              }`}
               aria-live="polite"
             >
               <svg
@@ -663,7 +681,11 @@ export default function Step4OrderSummary({
                   d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
                 />
               </svg>
-              <span>{buttonText}</span>
+              <span className={buttonText === "Registrarse como invitado" ? "whitespace-normal text-center break-words" : ""}>{buttonText}</span>
+            </span>
+          ) : buttonText === "Registrarse como invitado" ? (
+            <span className="whitespace-normal text-center break-words leading-tight">
+              Registrarse<br />como invitado
             </span>
           ) : (
             buttonText

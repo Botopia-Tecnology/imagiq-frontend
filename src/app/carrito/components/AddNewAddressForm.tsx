@@ -24,15 +24,21 @@ type ExtendedPlaceDetails = PlaceDetails & {
 };
 
 interface AddNewAddressFormProps {
-  onAddressAdded?: (address: Address) => void;
+  onAddressAdded?: (address: Address) => void | Promise<void>;
   onCancel?: () => void;
   withContainer?: boolean; // Si debe mostrar el contenedor con padding y border
+  onSubmitRef?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de submit
+  onFormValidChange?: (isValid: boolean) => void; // Callback para notificar cuando el formulario es válido
+  disabled?: boolean; // Si los campos deben estar deshabilitados
 }
 
 export default function AddNewAddressForm({
   onAddressAdded,
   onCancel,
   withContainer = true,
+  onSubmitRef,
+  onFormValidChange,
+  disabled = false,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -75,6 +81,41 @@ export default function AddNewAddressForm({
   const [suggestedAddress, setSuggestedAddress] = useState("");
   const [currentStep, setCurrentStep] = useState<1 | 2>(1); // Control de pasos del formulario
   const [showTooltip, setShowTooltip] = useState(false);
+
+  // Verificar si el formulario completo (paso 2) es válido
+  const isFormComplete = React.useMemo(() => {
+    // Solo validar si estamos en el paso 2
+    if (currentStep !== 2) return false;
+    
+    return !!(
+      selectedAddress &&
+      formData.nombreDireccion.trim() &&
+      formData.instruccionesEntrega.trim() &&
+      formData.departamento.trim() &&
+      formData.ciudad.trim() &&
+      formData.nombreCalle.trim() &&
+      formData.numeroPrincipal.trim() &&
+      (formData.usarMismaParaFacturacion || selectedBillingAddress)
+    );
+  }, [
+    currentStep,
+    selectedAddress,
+    formData.nombreDireccion,
+    formData.instruccionesEntrega,
+    formData.departamento,
+    formData.ciudad,
+    formData.nombreCalle,
+    formData.numeroPrincipal,
+    formData.usarMismaParaFacturacion,
+    selectedBillingAddress
+  ]);
+
+  // Notificar cuando el formulario es válido
+  React.useEffect(() => {
+    if (onFormValidChange) {
+      onFormValidChange(isFormComplete);
+    }
+  }, [isFormComplete, onFormValidChange]);
 
   // Estados para departamentos y ciudades dinámicas
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -298,9 +339,7 @@ export default function AddNewAddressForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmitInternal = async () => {
     if (!validateForm() || !selectedAddress) {
       return;
     }
@@ -510,8 +549,20 @@ export default function AddNewAddressForm({
         }
       }
 
-      // Callback with the created address
-      onAddressAdded?.(shippingResponse);
+      // Callback with the created address - ESPERAR la promesa si devuelve una
+      const result = onAddressAdded?.(shippingResponse);
+
+      // Si onAddressAdded devuelve una promesa, esperarla (para consultar candidate stores)
+      if (result instanceof Promise) {
+        console.log('⏳ Esperando consulta de candidate stores...');
+        await result;
+        console.log('✅ Candidate stores consultados');
+      }
+
+      // Resetear el ref después de guardar
+      if (onSubmitRef) {
+        onSubmitRef.current = null;
+      }
 
       // Reset form
       setFormData({
@@ -819,18 +870,38 @@ export default function AddNewAddressForm({
     }
   };
 
+  // Exponer handleSubmit a través del ref si se proporciona
+  React.useEffect(() => {
+    if (onSubmitRef) {
+      onSubmitRef.current = async () => {
+        // Validar antes de proceder
+        if (!validateForm() || !selectedAddress) {
+          return;
+        }
+        // Llamar a handleSubmitInternal
+        await handleSubmitInternal();
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSubmitRef, selectedAddress?.placeId, formData.nombreDireccion, formData.instruccionesEntrega, formData.usarMismaParaFacturacion]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSubmitInternal();
+  };
+
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
       {/* Indicador de pasos y botón continuar */}
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-2">
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+        <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
+          <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
             currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
           }`}>
             1
           </div>
-          <div className="w-12 h-0.5 bg-gray-300"></div>
-          <div className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-sm ${
+          <div className={`${!withContainer ? 'w-8' : 'w-12'} h-0.5 bg-gray-300`}></div>
+          <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
             currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
           }`}>
             2
@@ -892,10 +963,10 @@ export default function AddNewAddressForm({
                 // Limpiar la ciudad seleccionada cuando cambia el departamento
                 handleInputChange("ciudad", "");
               }}
-              disabled={loadingDepartments}
+              disabled={disabled || loadingDepartments}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                loadingDepartments
-                  ? "bg-gray-100 cursor-not-allowed"
+                disabled || loadingDepartments
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
                   : getFieldBackgroundClass(formData.departamento)
               } ${
                 getFieldBorderClass(formData.departamento, !!errors.departamento)
@@ -927,10 +998,10 @@ export default function AddNewAddressForm({
               id="ciudad"
               value={formData.ciudad}
               onChange={(e) => handleInputChange("ciudad", e.target.value)}
-              disabled={!formData.departamento || loadingCities}
+              disabled={disabled || !formData.departamento || loadingCities}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                !formData.departamento || loadingCities
-                  ? "bg-gray-100 cursor-not-allowed border-gray-300"
+                disabled || !formData.departamento || loadingCities
+                  ? "bg-gray-100 cursor-not-allowed border-gray-300 opacity-60"
                   : `${getFieldBackgroundClass(formData.ciudad)} ${getFieldBorderClass(formData.ciudad, !!errors.ciudad)}`
               }`}
             >
@@ -954,7 +1025,7 @@ export default function AddNewAddressForm({
         </div>
 
         {/* Grid: Tipo de Vía y números de dirección en una sola línea */}
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-2">
+        <div className={!withContainer ? "grid grid-cols-[1.75fr_1fr_0.55fr_0.65fr] gap-2" : "grid grid-cols-[2fr_1fr_0.6fr_0.6fr] gap-2"}>
           {/* Tipo de Vía */}
           <div>
             <label
@@ -967,8 +1038,11 @@ export default function AddNewAddressForm({
               id="nombreCalle"
               value={formData.nombreCalle}
               onChange={(e) => handleInputChange("nombreCalle", e.target.value)}
+              disabled={disabled}
               className={`w-full px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                getFieldBackgroundClass(formData.nombreCalle)
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.nombreCalle)
               } ${
                 getFieldBorderClass(formData.nombreCalle, !!errors.nombreCalle)
               }`}
@@ -999,8 +1073,11 @@ export default function AddNewAddressForm({
               value={formData.numeroPrincipal}
               onChange={(e) => handleInputChange("numeroPrincipal", e.target.value)}
               placeholder="80"
+              disabled={disabled}
               className={`w-full px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                getFieldBackgroundClass(formData.numeroPrincipal)
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.numeroPrincipal)
               } ${
                 getFieldBorderClass(formData.numeroPrincipal, !!errors.numeroPrincipal)
               }`}
@@ -1026,8 +1103,11 @@ export default function AddNewAddressForm({
                 value={formData.numeroSecundario}
                 onChange={(e) => handleInputChange("numeroSecundario", e.target.value)}
                 placeholder="15"
+                disabled={disabled}
                 className={`flex-1 px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                  getFieldBackgroundClass(formData.numeroSecundario)
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : getFieldBackgroundClass(formData.numeroSecundario)
                 } ${
                   getFieldBorderClass(formData.numeroSecundario)
                 }`}
@@ -1051,8 +1131,11 @@ export default function AddNewAddressForm({
                 value={formData.numeroComplementario}
                 onChange={(e) => handleInputChange("numeroComplementario", e.target.value)}
                 placeholder="25"
+                disabled={disabled}
                 className={`flex-1 px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                  getFieldBackgroundClass(formData.numeroComplementario)
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : getFieldBackgroundClass(formData.numeroComplementario)
                 } ${
                   getFieldBorderClass(formData.numeroComplementario)
                 }`}
@@ -1077,8 +1160,11 @@ export default function AddNewAddressForm({
               value={formData.barrio}
               onChange={(e) => handleInputChange("barrio", e.target.value)}
               placeholder="ej: Chicó"
+              disabled={disabled}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                getFieldBackgroundClass(formData.barrio)
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.barrio)
               } ${
                 getFieldBorderClass(formData.barrio)
               }`}
@@ -1101,8 +1187,11 @@ export default function AddNewAddressForm({
                 handleInputChange("setsReferencia", e.target.value)
               }
               placeholder="ej: Oficina 204"
+              disabled={disabled}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                getFieldBackgroundClass(formData.setsReferencia)
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.setsReferencia)
               } ${
                 getFieldBorderClass(formData.setsReferencia)
               }`}
@@ -1126,7 +1215,7 @@ export default function AddNewAddressForm({
               }
               onPlaceSelect={handleAddressSelect}
               value={suggestedAddress}
-              disabled={!formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad}
+              disabled={disabled || !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad}
             />
           </div>
           {errors.address && (
@@ -1172,8 +1261,11 @@ export default function AddNewAddressForm({
                   handleInputChange("nombreDireccion", e.target.value)
                 }
                 placeholder="ej: Casa, Oficina, Casa de mamá"
+                disabled={disabled}
                 className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                  getFieldBackgroundClass(formData.nombreDireccion)
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : getFieldBackgroundClass(formData.nombreDireccion)
                 } ${
                   errors.nombreDireccion ? "border-red-500" : "border-gray-300"
                 }`}
@@ -1199,7 +1291,12 @@ export default function AddNewAddressForm({
                 onChange={(e) =>
                   handleInputChange("tipoDireccion", e.target.value)
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition bg-gray-50"
+                disabled={disabled}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : "bg-gray-50"
+                }`}
               >
                 <option value="oficina">Oficina</option>
                 <option value="casa">Casa</option>
@@ -1225,8 +1322,11 @@ export default function AddNewAddressForm({
                 handleInputChange("instruccionesEntrega", e.target.value)
               }
               placeholder="ej: Portería 24 horas, llamar al llegar"
+              disabled={disabled}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                getFieldBackgroundClass(formData.instruccionesEntrega)
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.instruccionesEntrega)
               } ${
                 errors.instruccionesEntrega ? "border-red-500" : "border-gray-300"
               }`}
@@ -1251,47 +1351,66 @@ export default function AddNewAddressForm({
       {/* Botones de navegación y submit - Solo en paso 2 */}
       {currentStep === 2 && (
         <div className="flex gap-3 pt-2">
-          <button
-            type="button"
-            onClick={() => setCurrentStep(1)}
-            className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
-          >
-            Atrás
-          </button>
-          <button
-            type="submit"
-            disabled={
-              isLoading ||
-              !selectedAddress ||
-              !formData.nombreDireccion ||
-              !formData.instruccionesEntrega ||
-              (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
-            }
-            className="flex-1 bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Guardando...
-              </span>
-            ) : (
-              "Guardar dirección"
-            )}
-          </button>
+          {!withContainer ? (
+            // En Step2: Solo mostrar "Atrás" que ocupe todo el ancho
+            <button
+              type="button"
+              onClick={() => setCurrentStep(1)}
+              disabled={disabled}
+              className={`w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              Atrás
+            </button>
+          ) : (
+            // En Modal: Mostrar ambos botones
+            <>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+              >
+                Atrás
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  isLoading ||
+                  !selectedAddress ||
+                  !formData.nombreDireccion ||
+                  !formData.instruccionesEntrega ||
+                  (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
+                }
+                className="flex-1 bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Guardando...
+                  </span>
+                ) : (
+                  "Guardar dirección"
+                )}
+              </button>
+            </>
+          )}
         </div>
       )}
 
@@ -1605,6 +1724,8 @@ export default function AddNewAddressForm({
       {formContent}
     </div>
   ) : (
-    formContent
+    <div className="w-full max-w-4xl">
+      {formContent}
+    </div>
   );
 }

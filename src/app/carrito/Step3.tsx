@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useCart, type CartProduct, type BundleInfo } from "@/hooks/useCart";
 import { useDelivery } from "./hooks/useDelivery";
 import {
@@ -18,6 +19,7 @@ import { toast } from "sonner";
 import { useCardsCache } from "./hooks/useCardsCache";
 import { useAuthContext } from "@/features/auth/context";
 import { syncAddress } from "@/lib/addressSync";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export default function Step3({
   onBack,
@@ -26,11 +28,13 @@ export default function Step3({
   readonly onBack?: () => void;
   readonly onContinue?: () => void;
 }) {
+  const router = useRouter();
   const { products, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
-  // OPTIMIZACIÓN: Step3 SOLO lee del caché, NO hace llamadas al endpoint
-  // Step1 ya llenó el caché con la llamada inicial
+  // OPTIMIZACIÓN: Step3 SOLO lee del caché por defecto
+  // Si viene de Step1 o Step2, usa el caché ya calculado
+  // Solo recalcula candidate stores si cambia la dirección
   const {
     address,
     setAddress,
@@ -57,8 +61,8 @@ export default function Step3({
     availableStoresWhenCanPickUpFalse,
     lastResponse,
   } = useDelivery({
-    canFetchFromEndpoint: true, // Permitir llamadas solo cuando cambia dirección
-    onlyReadCache: false, // En Step3 sí permitimos llamadas al cambiar dirección
+    canFetchFromEndpoint: true, // Permitir llamadas cuando cambia dirección
+    onlyReadCache: true, // Por defecto solo leer del caché (si viene de paso anterior)
   });
 
   // Hook para precarga de tarjetas y zero interest
@@ -201,6 +205,36 @@ export default function Step3({
 
     return () => clearTimeout(timer);
   }, []);
+
+  // IMPORTANTE: Validar que haya dirección al cargar Step3, si no hay, redirigir a Step2
+  React.useEffect(() => {
+    // Esperar un momento para que useDelivery cargue la dirección
+    const checkAddress = setTimeout(() => {
+      // Verificar si hay dirección en localStorage
+      const savedAddress = safeGetLocalStorage<Address | null>(
+        "checkout-address",
+        null
+      );
+      
+      // Si no hay dirección guardada y el método de entrega es domicilio, redirigir a Step2
+      if (!savedAddress && deliveryMethod === "domicilio") {
+        console.log("⚠️ No hay dirección seleccionada, redirigiendo a Step2");
+        toast.error("Por favor selecciona una dirección para continuar");
+        router.push("/carrito/step2");
+        return;
+      }
+      
+      // También verificar el estado de address del hook useDelivery
+      // Si después de cargar no hay dirección y el método es domicilio, redirigir
+      if (!address && deliveryMethod === "domicilio" && hasCompletedInitialLoadRef.current) {
+        console.log("⚠️ No hay dirección en useDelivery, redirigiendo a Step2");
+        toast.error("Por favor selecciona una dirección para continuar");
+        router.push("/carrito/step2");
+      }
+    }, 1500); // Esperar 1.5 segundos para que useDelivery complete la carga
+
+    return () => clearTimeout(checkAddress);
+  }, [address, deliveryMethod, router]);
 
 
   // Handle Trade-In removal (ahora soporta eliminar por SKU)
@@ -1006,6 +1040,13 @@ export default function Step3({
   }, [products]);
 
   const handleContinue = () => {
+    // IMPORTANTE: Validar que haya dirección antes de continuar
+    if (deliveryMethod === "domicilio" && !address) {
+      toast.error("Por favor selecciona una dirección para continuar");
+      router.push("/carrito/step2");
+      return;
+    }
+
     // Validar Trade-In antes de continuar
     const validation = validateTradeInProducts(products);
     if (!validation.isValid) {

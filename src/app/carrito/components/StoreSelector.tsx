@@ -17,7 +17,7 @@ interface StoreSelectorProps {
   storesLoading?: boolean;
   canPickUp?: boolean;
   allStores?: FormattedStore[];
-  onAddressAdded?: () => void;
+  onAddressAdded?: (address?: Address) => void | Promise<void>;
   onRefreshStores?: () => void;
   availableCities?: string[];
   hasActiveTradeIn?: boolean;
@@ -70,9 +70,16 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   };
 
   // Función para manejar cuando se agrega una nueva dirección
-  const handleAddressAdded = (newAddress: Address) => {
+  const handleAddressAdded = async (newAddress: Address) => {
+    // Llamar a onAddressAdded y esperar si devuelve una promesa (consulta de candidate stores)
+    const result = onAddressAdded?.(newAddress);
+    if (result instanceof Promise) {
+      console.log('⏳ Esperando consulta de candidate stores en StoreSelector...');
+      await result;
+      console.log('✅ Candidate stores consultados en StoreSelector');
+    }
+
     setShowAddAddressModal(false);
-    onAddressAdded?.();
 
     // Recargar las tiendas candidatas con la nueva dirección predeterminada
     if (onRefreshStores) {

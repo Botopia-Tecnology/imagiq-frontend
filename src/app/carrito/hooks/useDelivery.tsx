@@ -129,6 +129,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const processingAddressChangeRef = useRef<string | null>(null); // Dirección que se está procesando actualmente
   const lastAddressChangeProcessedTimeRef = useRef<number>(0); // Timestamp del último cambio de dirección procesado
   const retry429CountRef = useRef(0); // Contador de reintentos por error 429
+  const allowFetchOnAddressChangeRef = useRef(false); // Flag para permitir peticiones cuando cambia dirección (aunque onlyReadCache=true)
 
   // Flag global compartido para evitar procesar el mismo cambio desde múltiples listeners
   // Se usa en window para que sea compartido entre todos los componentes
@@ -220,10 +221,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
     console.log('🚀🚀🚀 INICIO fetchCandidateStores - FUNCIÓN LLAMADA');
-    console.log('   Configuración:', { canFetchFromEndpoint, onlyReadCache });
+    console.log('   Configuración:', { canFetchFromEndpoint, onlyReadCache, allowFetchOnAddressChange: allowFetchOnAddressChangeRef.current });
 
     // OPTIMIZACIÓN: Si onlyReadCache es true, SOLO leer del caché y retornar inmediatamente
-    if (onlyReadCache) {
+    // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true, permitir petición (cambio de dirección)
+    if (onlyReadCache && !allowFetchOnAddressChangeRef.current) {
       console.log('📖 [Optimización] onlyReadCache=true - Solo leyendo del caché, NO se hará petición al endpoint');
 
       // Intentar leer del caché
@@ -244,8 +246,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }));
 
       let currentAddressId = lastAddressIdRef.current || '';
+      let savedAddress: string | null = null;
       try {
-        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        savedAddress = globalThis.window?.localStorage.getItem("checkout-address") || null;
         if (savedAddress) {
           const parsed = JSON.parse(savedAddress) as Address;
           if (parsed.id) {
@@ -258,6 +261,39 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       } catch (error) {
         console.error('Error al leer dirección para caché:', error);
       }
+
+      // IMPORTANTE: Verificar que haya dirección guardada antes de intentar leer del cache
+      // Esto evita intentar leer del cache cuando el usuario se registra como invitado pero aún no ha agregado dirección
+      let hasAddress = false;
+      let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
+      try {
+        if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
+          addressCheckDetails.savedAddressExists = true;
+          const parsed = JSON.parse(savedAddress) as Address;
+          addressCheckDetails.hasCiudad = !!parsed.ciudad;
+          addressCheckDetails.hasLineaUno = !!parsed.lineaUno;
+          
+          // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
+          if (parsed.ciudad && parsed.lineaUno) {
+            hasAddress = true;
+          }
+        }
+      } catch (error) {
+        console.error('Error al verificar dirección en onlyReadCache:', error);
+      }
+
+      if (!hasAddress) {
+        console.log('⏸️ [onlyReadCache] NO hay dirección guardada aún, no se leerá del cache');
+        console.log('   Detalles de verificación:', addressCheckDetails);
+        console.log('   Esto es normal cuando el usuario se registra como invitado pero aún no ha agregado dirección');
+        setStores([]);
+        setFilteredStores([]);
+        setCanPickUp(false);
+        setStoresLoading(false);
+        return;
+      }
+      
+      console.log('✅ [onlyReadCache] Dirección verificada correctamente, continuando con lectura del cache');
 
       const cacheKey = buildGlobalCanPickUpKey({
         userId,
@@ -377,6 +413,42 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       isFetchingRef.current = false;
       return;
     }
+
+    // IMPORTANTE: Verificar que haya dirección guardada antes de calcular candidate stores
+    // Esto evita calcular cuando el usuario se registra como invitado pero aún no ha agregado dirección
+    let hasAddress = false;
+    let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
+    try {
+      const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+      addressCheckDetails.savedAddressExists = !!savedAddress;
+      
+      if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
+        const parsed = JSON.parse(savedAddress) as Address;
+        addressCheckDetails.hasCiudad = !!parsed.ciudad;
+        addressCheckDetails.hasLineaUno = !!parsed.lineaUno;
+        
+        // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
+        if (parsed.ciudad && parsed.lineaUno) {
+          hasAddress = true;
+        }
+      }
+    } catch (error) {
+      console.error('Error al verificar dirección:', error);
+    }
+
+    if (!hasAddress) {
+      console.log('⏸️ [useDelivery] NO hay dirección guardada aún, abortando fetchCandidateStores');
+      console.log('   Detalles de verificación:', addressCheckDetails);
+      console.log('   Esto es normal cuando el usuario se registra como invitado pero aún no ha agregado dirección');
+      setStores([]);
+      setFilteredStores([]);
+      setCanPickUp(false);
+      setStoresLoading(false);
+      isFetchingRef.current = false;
+      return;
+    }
+    
+    console.log('✅ [useDelivery] Dirección verificada correctamente, continuando con fetchCandidateStores');
 
     // Preparar TODOS los productos del carrito para una sola petición
     const productsToCheck = products.map((p) => ({
@@ -809,6 +881,37 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
+    // IMPORTANTE: Verificar que haya dirección guardada ANTES de intentar calcular candidate stores
+    // Esto evita calcular cuando el usuario se registra como invitado pero aún no ha agregado dirección
+    let hasAddress = false;
+    let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
+    try {
+      const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+      addressCheckDetails.savedAddressExists = !!savedAddress;
+      
+      if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
+        const parsed = JSON.parse(savedAddress) as Address;
+        addressCheckDetails.hasCiudad = !!parsed.ciudad;
+        addressCheckDetails.hasLineaUno = !!parsed.lineaUno;
+        
+        // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
+        if (parsed.ciudad && parsed.lineaUno) {
+          hasAddress = true;
+        }
+      }
+    } catch (error) {
+      console.error('Error al verificar dirección en useEffect de productos:', error);
+    }
+
+    if (!hasAddress) {
+      console.log('⏸️ [useDelivery - useEffect productos] NO hay dirección guardada aún, saltando fetchCandidateStores');
+      console.log('   Detalles de verificación:', addressCheckDetails);
+      console.log('   Esto es normal cuando el usuario se registra como invitado pero aún no ha agregado dirección');
+      return;
+    }
+    
+    console.log('✅ [useDelivery - useEffect productos] Dirección verificada correctamente, continuando');
+
     // Crear un hash de los productos para detectar cambios reales
     // IMPORTANTE: Incluir skuPostback en el hash
     const productsHash = JSON.stringify(products.map(p => ({
@@ -987,9 +1090,17 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           // Actualizar el ref para indicar que la dirección cambió
           lastAddressForStoreSelectionRef.current = null;
 
+          // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando cambia la dirección
+          allowFetchOnAddressChangeRef.current = true;
+          
           // Recalcular canPickUp global y tiendas cuando cambia la dirección
           // El debounce de 8000ms en fetchCandidateStores evitará peticiones múltiples
-          fetchCandidateStores();
+          fetchCandidateStores().finally(() => {
+            // Resetear el flag después de la petición
+            setTimeout(() => {
+              allowFetchOnAddressChangeRef.current = false;
+            }, 1000);
+          });
         } else if (enoughTimePassed) {
           // Si es la misma dirección pero pasó suficiente tiempo, actualizar tiempo pero no hacer petición
           // (ya se hizo una petición recientemente para esta dirección)
@@ -1067,7 +1178,36 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         return;
       }
 
+      // IMPORTANTE: Verificar que haya dirección válida antes de procesar cambios
+      // Esto evita calcular candidate stores cuando el usuario se registra como invitado pero aún no ha agregado dirección
       const currentCheckoutAddress = localStorage.getItem('checkout-address');
+      if (currentCheckoutAddress && currentCheckoutAddress !== 'null' && currentCheckoutAddress !== 'undefined') {
+        try {
+          const parsed = JSON.parse(currentCheckoutAddress) as Address;
+          // Si la dirección no tiene ciudad y lineaUno, no es válida aún
+          if (!parsed.ciudad || !parsed.lineaUno) {
+            // Actualizar lastCheckoutAddress para evitar procesar el mismo cambio vacío repetidamente
+            if (lastCheckoutAddress !== currentCheckoutAddress) {
+              lastCheckoutAddress = currentCheckoutAddress;
+            }
+            return; // No procesar dirección incompleta
+          }
+        } catch (error) {
+          // Si no se puede parsear, no procesar (puede ser dirección vacía o inválida)
+          if (lastCheckoutAddress !== currentCheckoutAddress) {
+            lastCheckoutAddress = currentCheckoutAddress;
+          }
+          return;
+        }
+      } else {
+        // Si no hay dirección o es null/undefined, no procesar
+        // Actualizar lastCheckoutAddress para evitar procesar el mismo estado repetidamente
+        if (lastCheckoutAddress !== currentCheckoutAddress) {
+          lastCheckoutAddress = currentCheckoutAddress;
+        }
+        return;
+      }
+
       const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
 
       // Verificar si realmente cambió la dirección (comparar IDs, no solo el string completo)
@@ -1078,6 +1218,13 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
         try {
           const parsed = JSON.parse(currentCheckoutAddress || '{}') as Address;
+          // IMPORTANTE: Solo considerar cambio si la dirección tiene ciudad y lineaUno
+          if (!parsed.ciudad || !parsed.lineaUno) {
+            // Dirección incompleta, actualizar lastCheckoutAddress pero no procesar
+            lastCheckoutAddress = currentCheckoutAddress;
+            return;
+          }
+          
           const lastParsed = JSON.parse(lastCheckoutAddress || '{}') as Address;
           // Solo considerar cambio si el ID cambió
           if (parsed.id !== lastParsed.id) {
@@ -1085,8 +1232,9 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             newAddressId = parsed.id || null;
           }
         } catch {
-          // Si no se puede parsear, considerar cambio si el string cambió
-          checkoutAddressChanged = true;
+          // Si no se puede parsear, no procesar (puede ser dirección vacía o inválida)
+          lastCheckoutAddress = currentCheckoutAddress;
+          return;
         }
       }
 
@@ -1113,15 +1261,39 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }
 
       if (checkoutAddressChanged) {
-        handleAddressChange(new Event('checkout-address-changed'));
-        lastCheckoutAddress = currentCheckoutAddress;
+        // IMPORTANTE: Verificar nuevamente que la dirección sea válida antes de procesar
+        try {
+          const parsed = JSON.parse(currentCheckoutAddress || '{}') as Address;
+          if (parsed.ciudad && parsed.lineaUno) {
+            handleAddressChange(new Event('checkout-address-changed'));
+            lastCheckoutAddress = currentCheckoutAddress;
+          } else {
+            // Dirección incompleta, actualizar lastCheckoutAddress pero no procesar
+            lastCheckoutAddress = currentCheckoutAddress;
+          }
+        } catch (error) {
+          // Si no se puede parsear, no procesar
+          lastCheckoutAddress = currentCheckoutAddress;
+        }
       }
 
       if (defaultAddressChanged && !checkoutAddressChanged) {
-        // Solo procesar defaultAddressChanged si no se procesó checkoutAddressChanged
-        // para evitar procesar el mismo cambio dos veces
-        handleAddressChange(new Event('address-changed'));
-        lastDefaultAddress = currentDefaultAddress;
+        // IMPORTANTE: Verificar que la dirección sea válida antes de procesar
+        try {
+          const parsed = JSON.parse(currentDefaultAddress || '{}') as Address;
+          if (parsed.ciudad && parsed.lineaUno) {
+            // Solo procesar defaultAddressChanged si no se procesó checkoutAddressChanged
+            // para evitar procesar el mismo cambio dos veces
+            handleAddressChange(new Event('address-changed'));
+            lastDefaultAddress = currentDefaultAddress;
+          } else {
+            // Dirección incompleta, actualizar lastDefaultAddress pero no procesar
+            lastDefaultAddress = currentDefaultAddress;
+          }
+        } catch (error) {
+          // Si no se puede parsear, no procesar
+          lastDefaultAddress = currentDefaultAddress;
+        }
       }
     };
 
@@ -1235,20 +1407,23 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     (deliveryMethod === "tienda" && selectedStore !== null);
 
   // Función para refrescar direcciones después de agregar una nueva
-  const addAddress = () => {
-    // Esta función solo refresca la lista de direcciones
-    // La creación real se hace en AddNewAddressForm
-    addressesService
-      .getUserAddresses()
-      .then((addresses: Address[]) => {
-        setAddresses(addresses);
-        return addresses;
-      })
-      .catch((error) => {
-        console.error("Error refreshing addresses:", error);
-        setAddresses([]);
-        return [];
-      });
+  const addAddress = async (newAddress?: Address): Promise<void> => {
+    // Esta función refresca la lista de direcciones y opcionalmente
+    // dispara la consulta de candidate stores si se proporciona la nueva dirección
+    try {
+      const addresses = await addressesService.getUserAddresses();
+      setAddresses(addresses);
+
+      // Si se proporcionó la nueva dirección, disparar consulta de candidate stores
+      if (newAddress) {
+        console.log('🔄 Nueva dirección agregada, consultando candidate stores...');
+        // Disparar el efecto que consulta candidate stores
+        setAddress(newAddress);
+      }
+    } catch (error) {
+      console.error("Error refreshing addresses:", error);
+      setAddresses([]);
+    }
   };
 
   // Función para forzar recarga de tiendas ignorando protecciones
@@ -1277,12 +1452,20 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     }
 
     console.log('✅ Forzando recarga de tiendas - limpiando protecciones');
+    // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando se fuerza recarga
+    allowFetchOnAddressChangeRef.current = true;
+    
     // Limpiar refs de protección para forzar la recarga
     lastSuccessfulHashRef.current = null;
     lastFetchTimeRef.current = 0;
     isFetchingRef.current = false;
     // Llamar a fetchCandidateStores
-    fetchCandidateStores();
+    fetchCandidateStores().finally(() => {
+      // Resetear el flag después de la petición
+      setTimeout(() => {
+        allowFetchOnAddressChangeRef.current = false;
+      }, 1000);
+    });
   }, [fetchCandidateStores]);
 
   return {

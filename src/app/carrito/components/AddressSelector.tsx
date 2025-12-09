@@ -9,7 +9,7 @@ interface AddressSelectorProps {
   addressEdit: boolean;
   onAddressChange: (address: Address) => void;
   onEditToggle: (edit: boolean) => void;
-  onAddressAdded?: () => void;
+  onAddressAdded?: (address?: Address) => void | Promise<void>;
   addressLoading?: boolean; // Para mostrar skeleton al recargar dirección desde header
 }
 
@@ -53,8 +53,12 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
     }
   }, [address, addresses, onAddressChange]);
 
-  const handleAddressAdded = (newAddress: Address) => {
-    onAddressAdded?.();
+  const handleAddressAdded = async (newAddress: Address) => {
+    // Llamar a onAddressAdded y esperar si devuelve una promesa
+    const result = onAddressAdded?.(newAddress);
+    if (result instanceof Promise) {
+      await result;
+    }
     onAddressChange(newAddress);
     setShowAddForm(false);
     onEditToggle(false);

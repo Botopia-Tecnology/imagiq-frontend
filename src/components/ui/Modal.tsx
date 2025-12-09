@@ -63,7 +63,7 @@ const Modal: React.FC<ModalProps> = ({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl h-[calc(100vh-16px)] md:h-[calc(100vh-32px)] overflow-y-auto`}
+        className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl max-h-[50vh] overflow-y-auto`}
       >
         {/* Close button */}
         {showCloseButton && (

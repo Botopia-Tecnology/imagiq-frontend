@@ -619,7 +619,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         {/* Botón para Desktop (>= 1280px) - Una línea */}
         <button
           className={cn(
-            "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+            "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium w-full hover:opacity-80 transition-opacity cursor-pointer",
             showWhiteItems ? "text-white/90" : "text-black/80"
           )}
           onClick={handleToggle}
@@ -628,7 +628,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           type="button"
         >
           <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-          <span className="truncate block" style={{ lineHeight: "1.4" }}>
+          <span className="truncate block min-w-0 flex-1" style={{ lineHeight: "1.4" }}>
             {displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
           </span>
           <ChevronDown className="w-3.5 h-3.5 flex-shrink-0 ml-1" />

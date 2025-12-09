@@ -31,33 +31,34 @@ export type ImageTransformType =
  * - b_auto:predominant: Rellena espacios vacíos con color predominante
  */
 const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
-  // Catálogo - 1200x1200, ULTRA ALTA CALIDAD, zero pixelación
-  // q_100: Calidad máxima absoluta (sin compresión perceptible)
-  // dpr_2.0: Device Pixel Ratio para pantallas Retina (2400x2400 píxeles efectivos)
+  // Catálogo - 1000x1000, ALTA CALIDAD optimizada para velocidad
+  // q_90: Calidad premium (diferencia imperceptible vs q_100, 40% menos peso)
+  // SIN dpr_2.0: Next.js maneja Retina con srcset automático, evita timeouts de generación
   // fl_progressive: Carga progresiva para mejor percepción
   // c_pad: Mantiene producto completo sin recortes
-  catalog: 'f_auto,q_100,c_pad,w_1200,h_1200,dpr_2.0,fl_progressive',
+  catalog: 'f_auto,q_90,c_pad,w_1000,h_1000,fl_progressive',
 
-  // Vista principal producto - 1200x1200, máxima calidad
-  // q_100 para calidad profesional sin compresión
-  'product-main': 'f_auto,q_100,c_pad,g_auto,w_1200,h_1200,dpr_2.0,fl_progressive',
+  // Vista principal producto - 1200x1200, calidad premium balanceada
+  // q_95: Calidad excelente con buen rendimiento
+  'product-main': 'f_auto,q_95,c_pad,g_auto,w_1200,h_1200,fl_progressive',
 
-  // Detalle producto - 1500x1500, calidad premium para zoom
-  // Resolución aumentada para permitir zoom sin pérdida
-  'product-detail': 'f_auto,q_100,c_pad,w_1500,h_1500,dpr_2.0,fl_progressive',
+  // Detalle producto - 1200x1200, máxima calidad para zoom
+  // q_100: Máxima calidad donde realmente importa (vista detallada)
+  // Tamaño razonable evita timeouts de Cloudinary
+  'product-detail': 'f_auto,q_100,c_pad,w_1200,h_1200,fl_progressive',
 
-  // Thumbnail - 300x300, alta calidad incluso en miniaturas
-  // dpr_2.0 para Retina displays
-  thumbnail: 'f_auto,q_95,c_pad,g_auto,w_300,h_300,dpr_2.0,b_auto:predominant',
+  // Thumbnail - 200x200, calidad eficiente
+  // q_85: Suficiente para miniaturas, tamaño pequeño
+  thumbnail: 'f_auto,q_85,c_pad,g_auto,w_200,h_200,b_auto:predominant',
 
   // Comparación - 400x400, calidad óptima
-  comparison: 'f_auto,q_100,c_pad,g_auto,w_400,h_400,dpr_2.0,b_auto:predominant',
+  comparison: 'f_auto,q_90,c_pad,g_auto,w_400,h_400,b_auto:predominant',
 
-  // Hero/Banner - 1600x800, ultra calidad para heros
-  hero: 'f_auto,q_100,c_pad,g_auto,w_1600,h_800,dpr_2.0,fl_progressive',
+  // Hero/Banner - 1600x800, alta calidad para heros
+  hero: 'f_auto,q_95,c_pad,g_auto,w_1600,h_800,fl_progressive',
 
-  // Original - calidad máxima sin transformación de tamaño
-  original: 'f_auto,q_100,fl_progressive',
+  // Original - alta calidad sin transformación de tamaño
+  original: 'f_auto,q_95,fl_progressive',
 };
 
 /**
@@ -192,13 +193,13 @@ export function getResponsiveSrcSet(
 /**
  * Configuración de dimensiones CSS por tipo de transformación
  * Para usar con Next.js Image component
- * Dimensiones actualizadas para ultra-alta calidad y soporte Retina
+ * Dimensiones optimizadas para balance calidad/rendimiento
  */
 export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; height: number }> = {
-  catalog: { width: 1200, height: 1200 },
+  catalog: { width: 1000, height: 1000 },
   'product-main': { width: 1200, height: 1200 },
-  'product-detail': { width: 1500, height: 1500 },
-  thumbnail: { width: 300, height: 300 },
+  'product-detail': { width: 1200, height: 1200 },
+  thumbnail: { width: 200, height: 200 },
   comparison: { width: 400, height: 400 },
   hero: { width: 1600, height: 800 },
   original: { width: 1200, height: 1200 },

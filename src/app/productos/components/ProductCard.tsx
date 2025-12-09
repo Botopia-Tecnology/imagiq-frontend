@@ -765,6 +765,8 @@ export default function ProductCard({
                       src={transformedSrc}
                       alt={`${name} - imagen ${index + 1}`}
                       fill
+                      priority={index === 0}
+                      loading={index === 0 ? "eager" : "lazy"}
                       className="object-cover"
                       sizes={cloudinaryImage.imageProps.sizes}
                     />

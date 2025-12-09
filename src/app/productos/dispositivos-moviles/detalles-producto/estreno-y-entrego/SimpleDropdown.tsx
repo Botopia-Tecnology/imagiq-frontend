@@ -1,4 +1,3 @@
-import React, { useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,19 +27,6 @@ export default function SimpleDropdown<T extends DropdownOption>({
   onToggle,
   onSelectOption,
 }: Readonly<SimpleDropdownProps<T>>) {
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll cuando el dropdown se abre
-  useEffect(() => {
-    if (isOpen && dropdownRef.current && !isDisabled) {
-      setTimeout(() => {
-        dropdownRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'center',
-        });
-      }, 100);
-    }
-  }, [isOpen, isDisabled]);
 
   // Determine button classes based on state
   const getButtonClasses = () => {
@@ -62,7 +48,7 @@ export default function SimpleDropdown<T extends DropdownOption>({
   };
 
   return (
-    <div ref={dropdownRef} className="mb-6 max-w-2xl mx-auto">
+    <div className="mb-6 max-w-2xl mx-auto">
       <span className={`block text-xs mb-3 transition-colors ${getLabelClasses()}`}>
         {label}
       </span>
@@ -108,19 +94,21 @@ export default function SimpleDropdown<T extends DropdownOption>({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
-              {options.map((option, index) => (
-                <button
-                  key={option.id}
-                  onClick={() => onSelectOption(option)}
-                  className={`w-full px-4 py-4 text-left hover:bg-gray-50 transition-colors ${
-                    index === options.length - 1 ? "" : "border-b border-gray-200"
-                  }`}
-                >
-                  <span className="text-sm font-medium text-[#222]">
-                    {option.name}
-                  </span>
-                </button>
-              ))}
+              <div className="max-h-64 overflow-y-auto">
+                {options.map((option, index) => (
+                  <button
+                    key={option.id}
+                    onClick={() => onSelectOption(option)}
+                    className={`w-full px-4 py-4 text-left hover:bg-gray-50 transition-colors ${
+                      index === options.length - 1 ? "" : "border-b border-gray-200"
+                    }`}
+                  >
+                    <span className="text-sm font-medium text-[#222]">
+                      {option.name}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>

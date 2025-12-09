@@ -22,7 +22,7 @@ interface StoreSelectorProps {
   availableCities?: string[];
   hasActiveTradeIn?: boolean;
   availableStoresWhenCanPickUpFalse?: FormattedStore[];
-  onAddressChange?: (address: Direccion) => void;
+  onAddressChange?: (address: Address) => void;
   storeEdit?: boolean;
   onEditToggle?: (edit: boolean) => void;
 }
@@ -277,21 +277,9 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                     onAddressAdded={(newAddress: Address) => {
                       console.log('📍 Dirección obtenida por geolocalización:', newAddress);
 
-                      // Convertir Address a Direccion para compatibilidad
-                      const direccion: Direccion = {
-                        id: newAddress.id,
-                        usuario_id: newAddress.usuarioId,
-                        email: "",
-                        linea_uno: newAddress.direccionFormateada,
-                        codigo_dane: newAddress.codigo_dane || "",
-                        ciudad: newAddress.ciudad || "",
-                        pais: newAddress.pais,
-                        esPredeterminada: newAddress.esPredeterminada,
-                      };
-
                       // Actualizar la dirección y refrescar tiendas
                       if (onAddressChange) {
-                        onAddressChange(direccion);
+                        onAddressChange(newAddress);
                       }
 
                       // Refrescar tiendas para recalcular con la nueva dirección

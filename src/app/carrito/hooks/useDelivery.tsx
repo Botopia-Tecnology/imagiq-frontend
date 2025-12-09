@@ -247,7 +247,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       try {
         const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
         if (savedAddress) {
-          const parsed = JSON.parse(savedAddress) as Direccion;
+          const parsed = JSON.parse(savedAddress) as Address;
           if (parsed.id) {
             currentAddressId = parsed.id;
             if (lastAddressIdRef.current !== parsed.id) {

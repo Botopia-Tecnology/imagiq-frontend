@@ -17,10 +17,18 @@ export interface CreateAddressRequest {
   tipo: "ENVIO" | "FACTURACION" | "AMBOS";
   esPredeterminada?: boolean;
   placeDetails: PlaceDetails;
-  complemento?: string;
+  // Campos estructurados de la dirección (siguiendo formato Samsung)
+  departamento?: string;
+  ciudad?: string; // Ciudad seleccionada por el usuario (código DANE)
+  nombreCalle?: string;
+  numeroPrincipal?: string;
+  numeroSecundario?: string;
+  barrio?: string;
+  setsReferencia?: string; // Antes "puntoReferencia"
   instruccionesEntrega?: string;
+  // Campos legacy (mantener por compatibilidad)
+  complemento?: string;
   puntoReferencia?: string;
-  ciudad?: string; // Ciudad seleccionada por el usuario
   usuarioId?: string; // Para usuarios invitados sin JWT
 }
 

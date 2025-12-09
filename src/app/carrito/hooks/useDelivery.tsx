@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Direccion } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
 import { safeGetLocalStorage } from "@/lib/localStorage";
@@ -18,22 +17,6 @@ import {
   setGlobalCanPickUpCache,
   invalidateCacheOnAddressChange,
 } from "../utils/globalCanPickUpCache";
-
-/**
- * Helper para convertir Address a Direccion (legacy)
- */
-const addressToDireccion = (address: Address): Direccion => {
-  return {
-    id: address.id,
-    usuario_id: address.usuarioId,
-    email: "", // Se llenará del localStorage si es necesario
-    linea_uno: address.direccionFormateada,
-    codigo_dane: address.codigo_dane, // Backend lo llena
-    ciudad: address.ciudad || "",
-    pais: address.pais,
-    esPredeterminada: address.esPredeterminada,
-  };
-};
 
 /**
  * Normaliza texto removiendo acentos y convirtiendo a minúsculas
@@ -116,15 +99,16 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const canFetchFromEndpoint = config?.canFetchFromEndpoint ?? true;
   const onlyReadCache = config?.onlyReadCache ?? false;
 
-  const [address, setAddress] = useState<Direccion | null>(null);
+  const [address, setAddress] = useState<Address | null>(null);
   const [addressEdit, setAddressEdit] = useState(false);
+  const [storeEdit, setStoreEdit] = useState(false);
   const [storeQuery, setStoreQuery] = useState("");
   const [stores, setStores] = useState<FormattedStore[]>([]);
   const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
   const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(
     null
   );
-  const [addresses, setAddresses] = useState<Direccion[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [canPickUp, setCanPickUp] = useState<boolean | undefined>(true); // Estado para saber si se puede recoger en tienda
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
   const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
@@ -405,7 +389,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     try {
       const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
       if (savedAddress) {
-        const parsed = JSON.parse(savedAddress) as Direccion;
+        const parsed = JSON.parse(savedAddress) as Address;
         if (parsed.id) {
           currentAddressId = parsed.id;
           // Actualizar lastAddressIdRef si cambió
@@ -893,7 +877,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       if (currentAddress) {
         try {
-          const parsed = JSON.parse(currentAddress) as Direccion;
+          const parsed = JSON.parse(currentAddress) as Address;
           newAddressId = parsed.id || null;
           // Si la dirección no cambió realmente, no hacer nada
           if (newAddressId === lastAddressIdRef.current) {
@@ -948,7 +932,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         try {
           const saved = JSON.parse(
             globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Direccion;
+          ) as Address;
 
           if (saved?.id) {
             setAddress(saved);
@@ -1093,8 +1077,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
         try {
-          const parsed = JSON.parse(currentCheckoutAddress || '{}') as Direccion;
-          const lastParsed = JSON.parse(lastCheckoutAddress || '{}') as Direccion;
+          const parsed = JSON.parse(currentCheckoutAddress || '{}') as Address;
+          const lastParsed = JSON.parse(lastCheckoutAddress || '{}') as Address;
           // Solo considerar cambio si el ID cambió
           if (parsed.id !== lastParsed.id) {
             checkoutAddressChanged = true;
@@ -1108,8 +1092,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       if (currentDefaultAddress !== lastDefaultAddress && lastDefaultAddress !== null) {
         try {
-          const parsed = JSON.parse(currentDefaultAddress || '{}') as Direccion;
-          const lastParsed = JSON.parse(lastDefaultAddress || '{}') as Direccion;
+          const parsed = JSON.parse(currentDefaultAddress || '{}') as Address;
+          const lastParsed = JSON.parse(lastDefaultAddress || '{}') as Address;
           // Solo considerar cambio si el ID cambió
           if (parsed.id !== lastParsed.id) {
             defaultAddressChanged = true;
@@ -1164,9 +1148,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       addressesService
         .getUserAddresses()
         .then((addresses: Address[]) => {
-          // Convertir Address[] a Direccion[] para mantener compatibilidad
-          const direcciones = addresses.map(addressToDireccion);
-          setAddresses(direcciones);
+          setAddresses(addresses);
         })
         .catch((error) => {
           console.error("Error loading addresses:", error);
@@ -1201,7 +1183,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
       if (savedAddress && savedAddress !== "undefined") {
         try {
-          const saved = JSON.parse(savedAddress) as Direccion;
+          const saved = JSON.parse(savedAddress) as Address;
           if (saved.id) {
             setAddress(saved);
           }
@@ -1259,10 +1241,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     addressesService
       .getUserAddresses()
       .then((addresses: Address[]) => {
-        // Convertir Address[] a Direccion[] para mantener compatibilidad
-        const direcciones = addresses.map(addressToDireccion);
-        setAddresses(direcciones);
-        return direcciones;
+        setAddresses(addresses);
+        return addresses;
       })
       .catch((error) => {
         console.error("Error refreshing addresses:", error);
@@ -1310,6 +1290,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     setAddress,
     addressEdit,
     setAddressEdit,
+    storeEdit,
+    setStoreEdit,
     storeQuery,
     setStoreQuery,
     filteredStores,

@@ -4,6 +4,7 @@ interface UseCartHoverReturn {
   isOpen: boolean;
   handleMouseEnter: () => void;
   handleMouseLeave: () => void;
+  closePopover: () => void;
 }
 
 export function useCartHover(
@@ -40,9 +41,24 @@ export function useCartHover(
     }, closeDelay);
   }, [closeDelay]);
 
+  const closePopover = useCallback(() => {
+    // Cancelar timers pendientes
+    if (openTimeoutRef.current) {
+      clearTimeout(openTimeoutRef.current);
+      openTimeoutRef.current = null;
+    }
+    if (closeTimeoutRef.current) {
+      clearTimeout(closeTimeoutRef.current);
+      closeTimeoutRef.current = null;
+    }
+    // Cerrar inmediatamente
+    setIsOpen(false);
+  }, []);
+
   return {
     isOpen,
     handleMouseEnter,
     handleMouseLeave,
+    closePopover,
   };
 }

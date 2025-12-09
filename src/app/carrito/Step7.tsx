@@ -10,6 +10,7 @@ import {
   Truck,
   Store,
   Edit2,
+  User as UserIcon,
 } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
@@ -119,6 +120,13 @@ export default function Step7({ onBack }: Step7Props) {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const [recipientData, setRecipientData] = useState<{
+    receivedByClient: boolean;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  } | null>(null);
   const [zeroInterestData, setZeroInterestData] =
     useState<CheckZeroInterestResponse | null>(null);
   const [shippingVerification, setShippingVerification] =
@@ -374,6 +382,32 @@ export default function Step7({ onBack }: Step7Props) {
       } catch (error) {
         console.error("Error parsing billing data:", error);
       }
+    }
+
+    // Cargar datos del receptor
+    try {
+      const receivedByClientStr = localStorage.getItem("checkout-received-by-client");
+      const recipientDataStr = localStorage.getItem("checkout-recipient-data");
+
+      const receivedByClient = receivedByClientStr ? JSON.parse(receivedByClientStr) : true;
+
+      if (!receivedByClient && recipientDataStr) {
+        const parsed = JSON.parse(recipientDataStr);
+        setRecipientData({
+          receivedByClient: false,
+          firstName: parsed.firstName,
+          lastName: parsed.lastName,
+          email: parsed.email,
+          phone: parsed.phone,
+        });
+      } else {
+        setRecipientData({
+          receivedByClient: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing recipient data:", error);
+      setRecipientData({ receivedByClient: true });
     }
 
     // Load Trade-In data
@@ -1483,6 +1517,20 @@ export default function Step7({ onBack }: Step7Props) {
                   <div className="h-16 bg-gray-100 rounded-lg"></div>
                 </div>
 
+                {/* Skeleton Información del receptor */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-40 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+
                 {/* Skeleton Datos de facturación */}
                 <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
@@ -1517,9 +1565,11 @@ export default function Step7({ onBack }: Step7Props) {
               </>
             ) : (
               <>
-                {/* Método de pago */}
-                {paymentData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                {/* Fila 1: Método de pago e Información del receptor */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Método de pago */}
+                  {paymentData && (
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1677,8 +1727,80 @@ export default function Step7({ onBack }: Step7Props) {
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
+                    </div>
+                  )}
+
+                  {/* Información del receptor */}
+                  {recipientData && (
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-gray-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-bold text-gray-900">
+                              Información del receptor
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                              {recipientData.receivedByClient
+                                ? "Será recibido por el cliente"
+                                : "Será recibido por otra persona"}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => router.push("/carrito/step3")}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Editar
+                        </button>
+                      </div>
+
+                      {!recipientData.receivedByClient && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Nombre */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.firstName}
+                            </p>
+                          </div>
+
+                          {/* Apellido */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Apellido</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.lastName}
+                            </p>
+                          </div>
+
+                          {/* Email */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Correo electrónico
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.email}
+                            </p>
+                          </div>
+
+                          {/* Teléfono */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Número de celular
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.phone}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Método de entrega */}
                 {shippingData && (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FC } from "react";
@@ -22,13 +23,21 @@ export const CartIcon: FC<Props> = ({
   onClick,
   colorClass,
 }) => {
-  const { isOpen, handleMouseEnter, handleMouseLeave } = useCartHover(200, 100);
+  const pathname = usePathname();
+  const isCarritoPage = pathname === "/carrito" || pathname?.startsWith("/carrito/");
+
+  const { isOpen, handleMouseEnter, handleMouseLeave, closePopover } = useCartHover(200, 0);
+
+  const handleClick = () => {
+    closePopover();
+    onClick();
+  };
 
   return (
     <div
       className="relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={isCarritoPage ? undefined : handleMouseEnter}
+      onMouseLeave={isCarritoPage ? undefined : handleMouseLeave}
     >
       <Link
         href="/carrito"
@@ -38,7 +47,7 @@ export const CartIcon: FC<Props> = ({
           "relative"
         )}
         title="Carrito de compras"
-        onClick={onClick}
+        onClick={handleClick}
       >
         <ShoppingCart className={cn("w-5 h-5", colorClass)} />
         {isClient && count > 0 && (
@@ -54,12 +63,14 @@ export const CartIcon: FC<Props> = ({
         )}
       </Link>
 
-      {/* Cart Popover - Solo desktop */}
-      <CartPopover
-        isOpen={isOpen}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      />
+      {/* Cart Popover - Solo desktop y solo si NO estamos en /carrito */}
+      {!isCarritoPage && (
+        <CartPopover
+          isOpen={isOpen}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        />
+      )}
     </div>
   );
 };

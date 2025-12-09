@@ -6,6 +6,7 @@ import AddNewAddressForm from "./AddNewAddressForm";
 import type { Address } from "@/types/address";
 import { NearbyLocationButton } from "./NearbyLocationButton";
 import type { Direccion } from "@/types/user";
+import Modal from "@/components/ui/Modal";
 
 interface StoreSelectorProps {
   storeQuery: string;
@@ -21,7 +22,9 @@ interface StoreSelectorProps {
   availableCities?: string[];
   hasActiveTradeIn?: boolean;
   availableStoresWhenCanPickUpFalse?: FormattedStore[];
-  onAddressChange?: (address: Direccion) => void;
+  onAddressChange?: (address: Address) => void;
+  storeEdit?: boolean;
+  onEditToggle?: (edit: boolean) => void;
 }
 
 
@@ -40,6 +43,8 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   hasActiveTradeIn = false,
   availableStoresWhenCanPickUpFalse = [],
   onAddressChange,
+  storeEdit = false,
+  onEditToggle,
 }) => {
   const [showAddAddressModal, setShowAddAddressModal] = React.useState(false);
   const [isMounted, setIsMounted] = React.useState(false);
@@ -49,9 +54,23 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
     setIsMounted(true);
   }, []);
 
+  // Función para cerrar el modal
+  const handleCloseModal = () => {
+    if (onEditToggle) {
+      onEditToggle(false);
+    }
+    setShowAddAddressModal(false);
+  };
+
+  // Función para manejar selección de tienda y cerrar modal
+  const handleStoreSelect = (store: FormattedStore) => {
+    onStoreSelect(store);
+    // Cerrar el modal automáticamente después de seleccionar una tienda
+    handleCloseModal();
+  };
+
   // Función para manejar cuando se agrega una nueva dirección
   const handleAddressAdded = (newAddress: Address) => {
-    console.log('🆕 Nueva dirección agregada desde carrito:', newAddress);
     setShowAddAddressModal(false);
     onAddressAdded?.();
 
@@ -61,7 +80,6 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
     }
 
     // Disparar eventos para que el navbar se actualice
-    console.log('🔔 Disparando evento address-changed desde carrito');
     globalThis.window.dispatchEvent(new CustomEvent('address-changed', { detail: { address: newAddress } }));
     globalThis.window.dispatchEvent(new Event('storage')); // También disparar storage event
   };
@@ -72,33 +90,29 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
     ? availableStoresWhenCanPickUpFalse
     : [];
 
-  // DEBUG: Log para ver qué tiendas tenemos disponibles
-  React.useEffect(() => {
-    console.log('🔍 StoreSelector - Estado actual:', {
-      canPickUp,
-      storesLoading,
-      availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
-      storesToShowWhenCanPickUpFalse: storesToShowWhenCanPickUpFalse.length,
-      availableCities: availableCities.length,
-      hasActiveTradeIn,
-      storesArray: availableStoresWhenCanPickUpFalse.map(s => s.descripcion),
-    });
-
-    if (canPickUp === false && !storesLoading) {
-      console.log('🔍 StoreSelector - canPickUp=false, storesLoading=false:', {
-        availableStoresWhenCanPickUpFalse: availableStoresWhenCanPickUpFalse.length,
-        storesToShowWhenCanPickUpFalse: storesToShowWhenCanPickUpFalse.length,
-        availableCities: availableCities.length,
-        hasActiveTradeIn,
-        storesArray: availableStoresWhenCanPickUpFalse.map(s => s.descripcion),
-      });
-    }
-  }, [canPickUp, storesLoading, availableStoresWhenCanPickUpFalse, storesToShowWhenCanPickUpFalse, availableCities, hasActiveTradeIn]);
-
   return (
-    <div className="space-y-4">
-      {/* Mostrar skeleton mientras carga */}
-      {storesLoading && (
+    <Modal isOpen={storeEdit} onClose={handleCloseModal} size="lg" showCloseButton={false}>
+      <div className="space-y-6">
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-gray-200">
+          <h4 className="text-xl font-semibold text-gray-900">
+            Selecciona tu tienda
+          </h4>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCloseModal}
+              className="text-gray-700 text-sm font-medium hover:text-gray-900 transition flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="space-y-4">
+          {/* Mostrar skeleton mientras carga */}
+          {storesLoading && (
         <div className="p-4 bg-white border-2 border-gray-200 rounded-lg shadow-sm animate-pulse">
           <div className="h-4 bg-gray-200 rounded w-3/4 mb-3"></div>
           <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
@@ -122,15 +136,6 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
             const hasStores = availableStoresWhenCanPickUpFalse.length > 0 || storesToShowWhenCanPickUpFalse.length > 0;
             const hasCities = availableCities.length > 0;
             const reallyNoStores = !hasStores && !hasCities;
-
-            // DEBUG: Log inmediato para ver qué está pasando
-            console.log('🎨 StoreSelector renderizando:', {
-              hasStores,
-              hasCities,
-              reallyNoStores,
-              availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
-              storesToShowWhenCanPickUpFalseLength: storesToShowWhenCanPickUpFalse.length,
-            });
 
             // Si NO hay tiendas, mostrar mensaje de "no hay tiendas"
             if (reallyNoStores) {
@@ -272,21 +277,9 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                     onAddressAdded={(newAddress: Address) => {
                       console.log('📍 Dirección obtenida por geolocalización:', newAddress);
 
-                      // Convertir Address a Direccion para compatibilidad
-                      const direccion: Direccion = {
-                        id: newAddress.id,
-                        usuario_id: newAddress.usuarioId,
-                        email: "",
-                        linea_uno: newAddress.direccionFormateada,
-                        codigo_dane: newAddress.codigo_dane || "",
-                        ciudad: newAddress.ciudad || "",
-                        pais: newAddress.pais,
-                        esPredeterminada: newAddress.esPredeterminada,
-                      };
-
                       // Actualizar la dirección y refrescar tiendas
                       if (onAddressChange) {
-                        onAddressChange(direccion);
+                        onAddressChange(newAddress);
                       }
 
                       // Refrescar tiendas para recalcular con la nueva dirección
@@ -384,7 +377,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
                     type="button"
                     className={`w-full text-left p-3 cursor-pointer hover:bg-blue-50 ${isSelected ? "bg-blue-100" : ""
                       }`}
-                    onClick={() => onStoreSelect(store)}
+                    onClick={() => handleStoreSelect(store)}
                   >
                     <div className="font-semibold text-sm">{store.descripcion}</div>
                     <div className="text-xs text-gray-600">
@@ -398,69 +391,53 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
               });
             })()}
           </div>
-
-          {selectedStore && (
-            <div className="p-4 border rounded-lg bg-blue-50">
-              <div className="font-bold text-base mb-1">{selectedStore.descripcion}</div>
-              <div className="text-sm text-gray-700">
-                {selectedStore.direccion}, {selectedStore.ciudad}
-              </div>
-              {selectedStore.ubicacion_cc && (
-                <div className="text-xs text-gray-500 mt-1">{selectedStore.ubicacion_cc}</div>
-              )}
-              <div className="text-xs text-gray-500 mt-1">
-                Tel: {selectedStore.telefono} {selectedStore.extension ? `Ext ${selectedStore.extension}` : ""}
-              </div>
-              <div className="text-xs text-gray-500 mt-1">
-                Horario: {selectedStore.horario}
-              </div>
-            </div>
-          )}
         </>
       )}
 
-      {/* Modal para agregar dirección - usando Portal para renderizar fuera del componente */}
-      {showAddAddressModal && isMounted && createPortal(
-        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50">
-          <button
-            type="button"
-            aria-label="Cerrar modal"
-            className="absolute inset-0 w-full h-full border-0 bg-transparent p-0 cursor-default"
-            onClick={() => setShowAddAddressModal(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                setShowAddAddressModal(false);
-              }
-            }}
-          />
-          <div
-            aria-labelledby="modal-title"
-            className="relative bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
-          >
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
-              <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
-                Agregar nueva dirección
-              </h2>
-              <button
-                onClick={() => setShowAddAddressModal(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                type="button"
-              >
-                <X className="w-5 h-5 text-gray-500" />
-              </button>
-            </div>
+        {/* Modal para agregar dirección - usando Portal para renderizar fuera del componente */}
+        {showAddAddressModal && isMounted && createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/50">
+            <button
+              type="button"
+              aria-label="Cerrar modal"
+              className="absolute inset-0 w-full h-full border-0 bg-transparent p-0 cursor-default"
+              onClick={() => setShowAddAddressModal(false)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setShowAddAddressModal(false);
+                }
+              }}
+            />
+            <div
+              aria-labelledby="modal-title"
+              className="relative bg-white rounded-lg shadow-2xl w-full max-w-3xl max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 flex-shrink-0">
+                <h2 id="modal-title" className="text-xl font-semibold text-gray-900">
+                  Agregar nueva dirección
+                </h2>
+                <button
+                  onClick={() => setShowAddAddressModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  type="button"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
 
-            <div className="overflow-y-auto p-6">
-              <AddNewAddressForm
-                onAddressAdded={handleAddressAdded}
-                onCancel={() => setShowAddAddressModal(false)}
-                withContainer={false}
-              />
+              <div className="overflow-y-auto p-6">
+                <AddNewAddressForm
+                  onAddressAdded={handleAddressAdded}
+                  onCancel={() => setShowAddAddressModal(false)}
+                  withContainer={false}
+                />
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body
-      )}
-    </div>
+          </div>,
+          document.body
+        )}
+        </div>
+      </div>
+    </Modal>
   );
 };

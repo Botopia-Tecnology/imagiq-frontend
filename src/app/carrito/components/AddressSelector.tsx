@@ -1,32 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { Direccion } from "@/types/user";
 import type { Address } from "@/types/address";
 import AddNewAddressForm from "./AddNewAddressForm";
+import Modal from "@/components/ui/Modal";
 
 interface AddressSelectorProps {
-  address: Direccion | null;
-  addresses: Direccion[];
+  address: Address | null;
+  addresses: Address[];
   addressEdit: boolean;
-  onAddressChange: (address: Direccion) => void;
+  onAddressChange: (address: Address) => void;
   onEditToggle: (edit: boolean) => void;
   onAddressAdded?: () => void;
   addressLoading?: boolean; // Para mostrar skeleton al recargar dirección desde header
 }
 
 /**
- * Helper para convertir Address a Direccion (legacy)
+ * Helper para obtener el icono del tipo de dirección
  */
-const addressToDireccion = (address: Address): Direccion => {
-  return {
-    id: address.id,
-    usuario_id: address.usuarioId,
-    email: "", // Se llenará del localStorage si es necesario
-    linea_uno: address.direccionFormateada,
-    codigo_dane: "", // Backend lo llena
-    ciudad: address.ciudad || "",
-    pais: address.pais,
-    esPredeterminada: address.esPredeterminada || false,
-  };
+const getTipoDireccionIcon = (tipo?: string) => {
+  switch(tipo?.toLowerCase()) {
+    case 'casa': return '🏠';
+    case 'apartamento': return '🏢';
+    case 'oficina': return '🏢';
+    default: return '📍';
+  }
+};
+
+/**
+ * Helper para obtener el label del tipo de dirección
+ */
+const getTipoDireccionLabel = (tipo?: string) => {
+  if (!tipo) return 'Otro';
+  return tipo.charAt(0).toUpperCase() + tipo.slice(1).toLowerCase();
 };
 
 export const AddressSelector: React.FC<AddressSelectorProps> = ({
@@ -51,57 +55,73 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
 
   const handleAddressAdded = (newAddress: Address) => {
     onAddressAdded?.();
-    // Convertir Address a Direccion para mantener compatibilidad
-    const direccion = addressToDireccion(newAddress);
-    onAddressChange(direccion);
+    onAddressChange(newAddress);
     setShowAddForm(false);
     onEditToggle(false);
   };
 
+  const handleCloseModal = () => {
+    onEditToggle(false);
+    setShowAddForm(false);
+  };
+
   return (
-    <div className="space-y-4">
-      {!addressEdit ? (
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <div className="flex-1">
-            <h4 className="text-sm font-medium text-gray-900 mb-1">
-              Dirección seleccionada
-            </h4>
-            {addressLoading ? (
-              /* Skeleton mientras se actualiza la dirección desde el header */
-              <div className="space-y-2 animate-pulse">
-                <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-                <div className="h-4 bg-gray-300 rounded w-1/2"></div>
+    <Modal isOpen={addressEdit} onClose={handleCloseModal} size="lg" showCloseButton={false}>
+      <div className="space-y-6">
+        {/* Vista de selección de direcciones */}
+        {!showAddForm && (
+          <>
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-gray-200">
+              <h4 className="text-xl font-semibold text-gray-900">
+                Selecciona tu dirección de envío
+              </h4>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="text-gray-700 text-sm font-medium hover:text-gray-900 transition flex items-center gap-1.5 px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(true)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-black rounded-lg hover:bg-gray-800 transition flex items-center gap-1.5"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Añadir nueva
+                </button>
               </div>
-            ) : (
-              <p className="text-sm text-gray-600">
-                {address
-                  ? `${address.linea_uno}, ${address.ciudad}`
-                  : "No hay dirección seleccionada"}
-              </p>
-            )}
-          </div>
-          <button
-            type="button"
-            className="text-blue-600 text-sm font-medium hover:text-blue-700 transition self-start sm:self-center cursor-pointer"
-            onClick={() => onEditToggle(true)}
-            disabled={addressLoading}
-          >
-            {address ? "Cambiar dirección" : "Seleccionar dirección"}
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          <form className="space-y-4">
+            </div>
+
+            {/* Lista de direcciones */}
             {addresses.length > 0 && (
-              <div className="space-y-3">
-                <h4 className="text-base font-medium text-gray-900">
-                  Direcciones guardadas
-                </h4>
-                <div className="space-y-2">
-                  {addresses.map((ad, i) => (
+              <div className="space-y-2 max-h-[calc(100vh-350px)] overflow-y-auto pr-2">
+                {addresses.map((ad, i) => {
+                  const icon = getTipoDireccionIcon(ad.tipoDireccion);
+                  const label = getTipoDireccionLabel(ad.tipoDireccion);
+                  const mainAddress = ad.direccionFormateada || ad.nombreDireccion || 'Dirección';
+                  const barrio = ad.barrio || '';
+                  const ciudad = ad.ciudad || '';
+                  const complemento = ad.complemento || '';
+
+                  return (
                     <label
                       key={ad.id || i}
-                      className="flex items-start gap-3 p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all"
+                      className="flex items-center gap-3 p-3 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition-all"
                     >
                       <input
                         type="radio"
@@ -120,31 +140,77 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                               }
                             }));
                           }
+
+                          // Cerrar el modal automáticamente después de seleccionar una dirección
+                          handleCloseModal();
                         }}
                         className="mt-1 accent-blue-600 h-4 w-4"
                       />
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-gray-900 text-sm">
-                          {ad.linea_uno}
+
+                      {/* Layout responsive: una línea en desktop, multi-línea en mobile */}
+                      <div className="flex-1 min-w-0 flex flex-col md:flex-row md:items-center gap-1 md:gap-2 text-sm">
+                        {/* Badge de tipo */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-base">{icon}</span>
+                          <span className="font-medium text-gray-900">{label}</span>
                         </div>
-                        <div className="text-gray-500 text-sm">
-                          {ad.ciudad}, {ad.pais}
-                        </div>
+
+                        {/* Separador desktop */}
+                        <span className="hidden md:inline text-gray-400">-</span>
+
+                        {/* Dirección principal */}
+                        <span className="font-medium text-gray-900">{mainAddress}</span>
+
+                        {/* Detalles adicionales */}
+                        {(barrio || ciudad || complemento) && (
+                          <>
+                            <span className="text-gray-500">
+                              {barrio && ciudad ? `${barrio}, ${ciudad}` : barrio || ciudad}
+                            </span>
+                            {complemento && (
+                              <>
+                                <span className="hidden md:inline text-gray-400">•</span>
+                                <span className="text-gray-500 italic">{complemento}</span>
+                              </>
+                            )}
+                          </>
+                        )}
                       </div>
+
+                      {/* Indicador de predeterminada */}
+                      {ad.esPredeterminada && (
+                        <span className="text-blue-600 text-lg" title="Dirección predeterminada">
+                          ✓
+                        </span>
+                      )}
                     </label>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
             )}
 
-            <div className="border-t border-gray-200 pt-4">
+            {/* Mensaje cuando no hay direcciones */}
+            {addresses.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <p className="mb-4">No tienes direcciones guardadas</p>
+                <p className="text-sm">Haz click en "Añadir nueva" para crear tu primera dirección</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Vista de formulario de nueva dirección */}
+        {showAddForm && (
+          <>
+            {/* Header con botón de volver */}
+            <div className="flex items-center gap-3 pb-4 border-b border-gray-200">
               <button
                 type="button"
-                onClick={() => setShowAddForm(!showAddForm)}
-                className="w-full sm:w-auto text-blue-600 text-sm font-medium hover:text-blue-700 transition flex items-center justify-center gap-2 p-3 border border-blue-200 rounded-lg hover:bg-blue-50 cursor-pointer"
+                onClick={() => setShowAddForm(false)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition"
               >
                 <svg
-                  className="h-4 w-4"
+                  className="h-5 w-5 text-gray-600"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -153,39 +219,26 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M12 4v16m8-8H4"
+                    d="M15 19l-7-7 7-7"
                   />
                 </svg>
-                {showAddForm
-                  ? "Cancelar nueva dirección"
-                  : "Añadir nueva dirección"}
               </button>
+              <h4 className="text-xl font-semibold text-gray-900">
+                Agregar nueva dirección
+              </h4>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                className="flex-1 sm:flex-none text-gray-600 text-sm font-medium px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition cursor-pointer"
-                onClick={() => {
-                  onEditToggle(false);
-                  setShowAddForm(false);
-                }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </form>
-
-          {showAddForm && (
-            <div className="border-t border-gray-200 pt-6">
+            {/* Formulario con scroll independiente */}
+            <div className="max-h-[calc(100vh-150px)] overflow-y-auto pr-2">
               <AddNewAddressForm
                 onAddressAdded={handleAddressAdded}
                 onCancel={() => setShowAddForm(false)}
+                withContainer={false}
               />
             </div>
-          )}
-        </div>
-      )}
-    </div>
+          </>
+        )}
+      </div>
+    </Modal>
   );
 };

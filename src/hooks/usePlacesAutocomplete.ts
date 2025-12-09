@@ -312,13 +312,13 @@ export function usePlacesAutocomplete({
       if (response.status === 'OK') {
         // Limpiar la dirección para eliminar duplicados de ciudades
         const cleanedAddress = cleanFormattedAddress(response.place.formattedAddress);
-        
+
         // Crear un nuevo objeto PlaceDetails con la dirección limpia
         const cleanedPlace: PlaceDetails = {
           ...response.place,
           formattedAddress: cleanedAddress
         };
-        
+
         setState(prev => ({
           ...prev,
           isLoading: false,
@@ -334,9 +334,10 @@ export function usePlacesAutocomplete({
         onPlaceSelectRef.current?.(cleanedPlace);
 
         // Resetear flag después de completar la selección
+        // Aumentamos el timeout para asegurar que no se dispare la búsqueda
         setTimeout(() => {
           isSelectingPlaceRef.current = false;
-        }, 100);
+        }, 600);
       } else {
         throw new Error(response.errorMessage || 'Error obteniendo detalles del lugar');
       }

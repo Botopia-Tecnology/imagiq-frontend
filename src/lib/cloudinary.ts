@@ -31,33 +31,33 @@ export type ImageTransformType =
  * - b_auto:predominant: Rellena espacios vacíos con color predominante
  */
 const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
-  // Catálogo - 1000x1000, pad para mantener producto completo sin recortes
-  // q_auto:best para máxima calidad en catálogo
-  // c_pad NO recorta, mantiene producto completo con fondo blanco
-  // b_white necesario para imágenes WebP con transparencia
-  // g_auto centra el producto en el frame
-  // Solo las MUY verticales (como Z Fold)
-  catalog: 'f_auto,q_auto:best,c_pad,w_1000,h_1000',
+  // Catálogo - 1200x1200, ULTRA ALTA CALIDAD, zero pixelación
+  // q_100: Calidad máxima absoluta (sin compresión perceptible)
+  // dpr_2.0: Device Pixel Ratio para pantallas Retina (2400x2400 píxeles efectivos)
+  // fl_progressive: Carga progresiva para mejor percepción
+  // c_pad: Mantiene producto completo sin recortes
+  catalog: 'f_auto,q_100,c_pad,w_1200,h_1200,dpr_2.0,fl_progressive',
 
-  // Vista principal producto - 1000x1000, fill_pad (mantiene proporciones, rellena espacios)
-  // q_auto:best para máxima calidad
-  'product-main': 'f_auto,q_auto:best,c_pad,g_auto,w_1000,h_1000',
+  // Vista principal producto - 1200x1200, máxima calidad
+  // q_100 para calidad profesional sin compresión
+  'product-main': 'f_auto,q_100,c_pad,g_auto,w_1200,h_1200,dpr_2.0,fl_progressive',
 
-  // Detalle producto - 1000x1000, pad (mantiene proporciones completas, máxima calidad)
-  // q_auto:best para máxima calidad
-  'product-detail': 'f_auto,q_auto:best,c_pad,w_1000,h_1000',
+  // Detalle producto - 1500x1500, calidad premium para zoom
+  // Resolución aumentada para permitir zoom sin pérdida
+  'product-detail': 'f_auto,q_100,c_pad,w_1500,h_1500,dpr_2.0,fl_progressive',
 
-  // Thumbnail - 150x150, pad con relleno
-  thumbnail: 'f_auto,q_auto:best,c_pad,g_auto,w_150,h_150,b_auto:predominant',
+  // Thumbnail - 300x300, alta calidad incluso en miniaturas
+  // dpr_2.0 para Retina displays
+  thumbnail: 'f_auto,q_95,c_pad,g_auto,w_300,h_300,dpr_2.0,b_auto:predominant',
 
-  // Comparación - 300x300, pad
-  comparison: 'f_auto,q_auto:best,c_pad,g_auto,w_300,h_300,b_auto:predominant',
+  // Comparación - 400x400, calidad óptima
+  comparison: 'f_auto,q_100,c_pad,g_auto,w_400,h_400,dpr_2.0,b_auto:predominant',
 
-  // Hero/Banner - 1200x600, pad (recorta para llenar completamente)
-  hero: 'f_auto,q_auto:best,c_pad,g_auto,w_1200,h_600',
+  // Hero/Banner - 1600x800, ultra calidad para heros
+  hero: 'f_auto,q_100,c_pad,g_auto,w_1600,h_800,dpr_2.0,fl_progressive',
 
-  // Original - solo formato y calidad automática (máxima calidad)
-  original: 'f_auto,q_auto:best',
+  // Original - calidad máxima sin transformación de tamaño
+  original: 'f_auto,q_100,fl_progressive',
 };
 
 /**
@@ -192,15 +192,16 @@ export function getResponsiveSrcSet(
 /**
  * Configuración de dimensiones CSS por tipo de transformación
  * Para usar con Next.js Image component
+ * Dimensiones actualizadas para ultra-alta calidad y soporte Retina
  */
 export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; height: number }> = {
-  catalog: { width: 1000, height: 1000 },
-  'product-main': { width: 800, height: 800 },
-  'product-detail': { width: 1000, height: 1000 },
-  thumbnail: { width: 150, height: 150 },
-  comparison: { width: 300, height: 300 },
-  hero: { width: 1200, height: 600 },
-  original: { width: 800, height: 800 }, // Fallback
+  catalog: { width: 1200, height: 1200 },
+  'product-main': { width: 1200, height: 1200 },
+  'product-detail': { width: 1500, height: 1500 },
+  thumbnail: { width: 300, height: 300 },
+  comparison: { width: 400, height: 400 },
+  hero: { width: 1600, height: 800 },
+  original: { width: 1200, height: 1200 },
 };
 
 /**

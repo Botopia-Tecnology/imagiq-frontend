@@ -122,6 +122,7 @@ const DeviceCarousel: React.FC<DeviceCarouselProps> = ({
                 className="object-contain object-center"
                 sizes={cloudinaryImage.imageProps.sizes}
                 priority={currentImageIndex === 0}
+                loading={currentImageIndex === 0 ? "eager" : "lazy"}
               />
             </motion.div>
           </AnimatePresence>

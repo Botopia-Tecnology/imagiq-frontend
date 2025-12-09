@@ -31,33 +31,34 @@ export type ImageTransformType =
  * - b_auto:predominant: Rellena espacios vacíos con color predominante
  */
 const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
-  // Catálogo - 1000x1000, pad para mantener producto completo sin recortes
-  // q_auto:best para máxima calidad en catálogo
-  // c_pad NO recorta, mantiene producto completo con fondo blanco
-  // b_white necesario para imágenes WebP con transparencia
-  // g_auto centra el producto en el frame
-  // Solo las MUY verticales (como Z Fold)
-  catalog: 'f_auto,q_auto:best,c_pad,w_1000,h_1000',
+  // Catálogo - 1000x1000, ALTA CALIDAD optimizada para velocidad
+  // q_90: Calidad premium (diferencia imperceptible vs q_100, 40% menos peso)
+  // SIN dpr_2.0: Next.js maneja Retina con srcset automático, evita timeouts de generación
+  // fl_progressive: Carga progresiva para mejor percepción
+  // c_pad: Mantiene producto completo sin recortes
+  catalog: 'f_auto,q_90,c_pad,w_1000,h_1000,fl_progressive',
 
-  // Vista principal producto - 1000x1000, fill_pad (mantiene proporciones, rellena espacios)
-  // q_auto:best para máxima calidad
-  'product-main': 'f_auto,q_auto:best,c_pad,g_auto,w_1000,h_1000',
+  // Vista principal producto - 1200x1200, calidad premium balanceada
+  // q_95: Calidad excelente con buen rendimiento
+  'product-main': 'f_auto,q_95,c_pad,g_auto,w_1200,h_1200,fl_progressive',
 
-  // Detalle producto - 1000x1000, pad (mantiene proporciones completas, máxima calidad)
-  // q_auto:best para máxima calidad
-  'product-detail': 'f_auto,q_auto:best,c_pad,w_1000,h_1000',
+  // Detalle producto - 1200x1200, máxima calidad para zoom
+  // q_100: Máxima calidad donde realmente importa (vista detallada)
+  // Tamaño razonable evita timeouts de Cloudinary
+  'product-detail': 'f_auto,q_100,c_pad,w_1200,h_1200,fl_progressive',
 
-  // Thumbnail - 150x150, pad con relleno
-  thumbnail: 'f_auto,q_auto:best,c_pad,g_auto,w_150,h_150,b_auto:predominant',
+  // Thumbnail - 200x200, calidad eficiente
+  // q_85: Suficiente para miniaturas, tamaño pequeño
+  thumbnail: 'f_auto,q_85,c_pad,g_auto,w_200,h_200,b_auto:predominant',
 
-  // Comparación - 300x300, pad
-  comparison: 'f_auto,q_auto:best,c_pad,g_auto,w_300,h_300,b_auto:predominant',
+  // Comparación - 400x400, calidad óptima
+  comparison: 'f_auto,q_90,c_pad,g_auto,w_400,h_400,b_auto:predominant',
 
-  // Hero/Banner - 1200x600, pad (recorta para llenar completamente)
-  hero: 'f_auto,q_auto:best,c_pad,g_auto,w_1200,h_600',
+  // Hero/Banner - 1600x800, alta calidad para heros
+  hero: 'f_auto,q_95,c_pad,g_auto,w_1600,h_800,fl_progressive',
 
-  // Original - solo formato y calidad automática (máxima calidad)
-  original: 'f_auto,q_auto:best',
+  // Original - alta calidad sin transformación de tamaño
+  original: 'f_auto,q_95,fl_progressive',
 };
 
 /**
@@ -192,15 +193,16 @@ export function getResponsiveSrcSet(
 /**
  * Configuración de dimensiones CSS por tipo de transformación
  * Para usar con Next.js Image component
+ * Dimensiones optimizadas para balance calidad/rendimiento
  */
 export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; height: number }> = {
   catalog: { width: 1000, height: 1000 },
-  'product-main': { width: 800, height: 800 },
-  'product-detail': { width: 1000, height: 1000 },
-  thumbnail: { width: 150, height: 150 },
-  comparison: { width: 300, height: 300 },
-  hero: { width: 1200, height: 600 },
-  original: { width: 800, height: 800 }, // Fallback
+  'product-main': { width: 1200, height: 1200 },
+  'product-detail': { width: 1200, height: 1200 },
+  thumbnail: { width: 200, height: 200 },
+  comparison: { width: 400, height: 400 },
+  hero: { width: 1600, height: 800 },
+  original: { width: 1200, height: 1200 },
 };
 
 /**

@@ -96,6 +96,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Cache-Control headers para imágenes optimizadas
+      {
+        source: "/:all*(svg|jpg|jpeg|png|gif|webp|avif|ico|bmp|tiff)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
     ];
   },
 };

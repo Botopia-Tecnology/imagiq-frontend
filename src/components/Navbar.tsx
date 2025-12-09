@@ -750,7 +750,7 @@ export default function Navbar() {
             <div className="w-full flex items-center justify-end gap-4">
               {/* Dirección predeterminada del usuario con dropdown */}
               {/* Se muestra siempre: si no está logueado, muestra "Agregar dirección" y redirige a login */}
-              <div className="flex-none min-w-0 max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
+              <div className="flex-none min-w-0 w-[240px] xl:w-[280px] 2xl:w-[320px]">
                 <AddressDropdown showWhiteItems={shouldShowWhiteItems} />
               </div>
 

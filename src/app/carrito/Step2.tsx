@@ -99,6 +99,23 @@ export default function Step2({
   // Estado para rastrear cuando se está guardando la dirección
   const [isSavingAddress, setIsSavingAddress] = useState(false);
 
+  // Estado para datos de geolocalización
+  const [geoLocationData, setGeoLocationData] = useState<{
+    departamento?: string;
+    ciudad?: string;
+    tipo_via?: string;
+    numero_principal?: string;
+    numero_secundario?: string;
+    numero_complementario?: string;
+    barrio?: string;
+  } | null>(null);
+
+  // Ref para saber si ya se solicitó geolocalización
+  const geoLocationRequestedRef = React.useRef(false);
+
+  // Estado para rastrear si la geolocalización está en proceso
+  const [isRequestingLocation, setIsRequestingLocation] = useState(false);
+
   // Ref para poder hacer submit del formulario de dirección desde el botón del sidebar
   const addressFormSubmitRef = React.useRef<(() => void) | null>(null);
 
@@ -445,6 +462,138 @@ export default function Step2({
       }
     }
   }, []);
+
+  // useEffect para solicitar geolocalización automáticamente cuando aparece el formulario de dirección
+  useEffect(() => {
+    // Solo ejecutar si:
+    // 1. El usuario se registró como invitado
+    // 2. NO ha agregado dirección aún
+    // 3. NO se ha solicitado geolocalización todavía
+    // 4. La API de geolocalización está disponible
+    if (
+      isRegisteredAsGuest &&
+      !hasAddedAddress &&
+      !geoLocationRequestedRef.current &&
+      typeof window !== 'undefined' &&
+      'geolocation' in navigator
+    ) {
+      // Marcar que ya se solicitó para evitar múltiples llamadas
+      geoLocationRequestedRef.current = true;
+
+      console.log('📍 Detectado formulario de dirección, solicitando geolocalización...');
+      setIsRequestingLocation(true);
+
+      // Solicitar permiso de geolocalización
+      navigator.geolocation.getCurrentPosition(
+        // Éxito: se obtuvo la ubicación
+        async (position) => {
+          const { latitude, longitude } = position.coords;
+          console.log('✅ Geolocalización obtenida:', { latitude, longitude });
+
+          try {
+            // Llamar al endpoint de reverse geocoding con autenticación
+            const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+            const response = await fetch('/api/addresses/reverse-geocode', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`,
+                'X-API-Key': apiKey || '',
+              },
+              body: JSON.stringify({ lat: latitude, lng: longitude }),
+            });
+
+            if (!response.ok) {
+              throw new Error(`Error del servidor: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('✅ Datos de geolocalización recibidos:', data);
+
+            // Procesar y mapear los datos de respuesta al formato esperado
+            console.log('🗺️ Datos recibidos del endpoint:', data);
+            
+            // Extraer información de address_components para completar campos
+            let departamento = data.departamento || '';
+            let ciudad = data.ciudad || data.city || '';
+            let tipo_via = data.tipo_via || '';
+            let numero_principal = data.numero_principal || '';
+            let numero_secundario = data.numero_secundario || '';
+            let numero_complementario = data.numero_complementario || '';
+            let barrio = data.barrio || '';
+            
+            // Si no vienen en el formato esperado, extraer de addressComponents
+            if (data.addressComponents && Array.isArray(data.addressComponents)) {
+              for (const component of data.addressComponents) {
+                // Departamento
+                if (component.types.includes('administrative_area_level_1') && !departamento) {
+                  departamento = component.longName;
+                }
+                // Ciudad
+                if ((component.types.includes('locality') || component.types.includes('administrative_area_level_2')) && !ciudad) {
+                  ciudad = component.longName;
+                }
+                // Barrio
+                if ((component.types.includes('sublocality_level_1') || component.types.includes('neighborhood')) && !barrio) {
+                  barrio = component.longName;
+                }
+                // Tipo de vía (ruta)
+                if (component.types.includes('route') && !tipo_via) {
+                  const routeName = component.longName;
+                  // Extraer tipo de vía de la ruta
+                  const viaMatch = routeName.match(/^(Carrera|Calle|Avenida|Diagonal|Transversal|Cra\.?|Cl\.?|Av\.?)/i);
+                  if (viaMatch) {
+                    tipo_via = viaMatch[1];
+                    // Extraer números si están en la misma cadena
+                    const numberMatch = routeName.match(/(\d+)(?:\s*#?\s*(\d+))?(?:\s*-\s*(\d+))?/);
+                    if (numberMatch) {
+                      numero_principal = numberMatch[1] || numero_principal;
+                      numero_secundario = numberMatch[2] || numero_secundario;
+                      numero_complementario = numberMatch[3] || numero_complementario;
+                    }
+                  }
+                }
+              }
+            }
+            
+            console.log('📝 Datos procesados para formulario:', {
+              departamento, ciudad, tipo_via, numero_principal, 
+              numero_secundario, numero_complementario, barrio
+            });
+
+            // Guardar los datos procesados en el estado
+            setGeoLocationData({
+              departamento,
+              ciudad,
+              tipo_via,
+              numero_principal,
+              numero_secundario,
+              numero_complementario,
+              barrio,
+            });
+
+            setIsRequestingLocation(false);
+          } catch (error) {
+            console.error('❌ Error al obtener datos de geolocalización:', error);
+            setIsRequestingLocation(false);
+            // Continuar con el flujo normal - el usuario llenará el formulario manualmente
+          }
+        },
+        // Error: el usuario denegó el permiso o hubo un error
+        (error) => {
+          console.log('ℹ️ Geolocalización no disponible:', error.message);
+          setIsRequestingLocation(false);
+          // Continuar con el flujo normal - el usuario llenará el formulario manualmente
+        },
+        // Opciones de geolocalización
+        {
+          enableHighAccuracy: true,
+          timeout: 10000, // 10 segundos máximo
+          maximumAge: 0, // No usar caché
+        }
+      );
+    }
+  }, [isRegisteredAsGuest, hasAddedAddress]);
 
   useEffect(() => {
     // IMPORTANTE: NO redirigir automáticamente a Step3
@@ -1136,11 +1285,11 @@ export default function Step2({
           {/* Formulario de dirección - Mostrar siempre cuando está registrado como invitado */}
           {isRegisteredAsGuest && (
             <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900">
-                Agregar dirección de envío
+              <h2 className="text-2xl font-bold mb-2 text-gray-900">
+                ¿Dónde te encuentras?
               </h2>
               <p className="text-gray-600 mb-6">
-                Para continuar con tu compra, necesitamos que agregues una dirección de envío
+                Necesitamos que agregues una dirección para conocer tu ubicación
               </p>
               <AddNewAddressForm
                 onAddressAdded={handleAddressAdded}
@@ -1149,6 +1298,8 @@ export default function Step2({
                 onSubmitRef={addressFormSubmitRef}
                 onFormValidChange={setIsAddressFormValid}
                 disabled={hasAddedAddress}
+                geoLocationData={geoLocationData}
+                isRequestingLocation={isRequestingLocation}
               />
             </div>
           )}

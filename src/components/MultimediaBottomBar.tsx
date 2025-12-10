@@ -111,34 +111,45 @@ export default function MultimediaBottomBar({
       const textoInteresCompleto = ceroInteres.formatText();
       const textoInteresSimple = ceroInteres.formatTextSimple();
 
-      // Si hay error o está cargando, solo mostrar precio
-      if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
-        return (
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-lg md:text-xl font-bold text-[#222]">
-              {formatPrice(price)}
-            </span>
-          </div>
-        );
-      }
+      // Calcular cuota mensual: usar del hook si existe, sino dividir entre 24
+      const cuotaMensualCalculada = ceroInteres.cuotaMensual || Math.round(price / 24);
+      const plazoMeses = ceroInteres.plazoMaximo || 24;
+
+      // Formatear precio de cuota
+      const cuotaFormateada = formatPrice(cuotaMensualCalculada);
+
+      // Texto fallback si el hook no retornó datos
+      const textoCompletoFinal = textoInteresCompleto || `Desde ${cuotaFormateada} al mes en ${plazoMeses} cuotas sin interés`;
+      const textoSimpleFinal = textoInteresSimple || `${cuotaFormateada} en ${plazoMeses} meses`;
 
       return (
-        <div className="flex items-center justify-start md:justify-center w-full px-2">
-          {/* Layout limpio - simplificado en móvil */}
-          <div className="flex flex-col items-start md:items-center gap-1">
-            {/* Móvil: Texto simplificado - Desktop: Texto completo */}
-            <span className="text-xs sm:text-sm md:text-base font-bold text-[#222] leading-tight text-left md:text-center">
-              <span className="md:hidden">{textoInteresSimple}</span>
-              <span className="hidden md:inline">{textoInteresCompleto}</span>
+        <>
+          {/* Móvil: Layout de 3 filas a la izquierda */}
+          <div className="flex flex-col items-start gap-0.5 md:hidden">
+            {/* Fila 1: Cuota mensual */}
+            <span className="text-sm font-bold text-[#222]">
+              {textoSimpleFinal}
             </span>
-            {/* Separador "o" solo en móvil */}
-            <span className="text-[10px] text-gray-500 md:hidden">o</span>
-            {/* Precio de contado */}
-            <span className="text-[13px] sm:text-sm md:text-base font-bold text-[#222]">
+            {/* Fila 2: Nombre del producto */}
+            <span className="text-xs text-[#222] font-medium line-clamp-1">
+              {productName}
+            </span>
+            {/* Fila 3: Precio de contado */}
+            <span className="text-xs text-gray-500">
+              o {formatPrice(price)}
+            </span>
+          </div>
+
+          {/* Desktop: Layout centrado original */}
+          <div className="hidden md:flex flex-col items-center gap-1">
+            <span className="text-base font-bold text-[#222] leading-tight text-center">
+              {textoCompletoFinal}
+            </span>
+            <span className="text-sm font-bold text-[#222]">
               {formatPrice(price)}
             </span>
           </div>
-        </div>
+        </>
       );
     }
 

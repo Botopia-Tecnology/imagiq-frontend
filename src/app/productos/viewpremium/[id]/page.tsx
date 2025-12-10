@@ -24,6 +24,7 @@ import { useProductLogic } from "../hooks/useProductLogic";
 import BenefitsSection from "../../dispositivos-moviles/detalles-producto/BenefitsSection";
 import Specifications from "../../dispositivos-moviles/detalles-producto/Specifications";
 import AddToCartButton from "../components/AddToCartButton";
+import { ProductCardProps } from "@/app/productos/components/ProductCard";
 
 // @ts-expect-error Next.js infiere el tipo de params automáticamente
 export default function ProductViewPage({ params }) {
@@ -35,7 +36,80 @@ export default function ProductViewPage({ params }) {
       "id" in resolvedParams
       ? (resolvedParams as ParamsWithId).id
       : undefined;
-  const { product, loading, error } = useProduct(id ?? "");
+  // Estado para almacenar el producto inicial desde localStorage (Optimistic UI)
+  const [initialProduct, setInitialProduct] = React.useState<ProductCardProps | null>(() => {
+    if (typeof window !== 'undefined' && id) {
+      try {
+        const saved = localStorage.getItem(`product_selection_${id}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Convertir datos guardados a estructura ProductCardProps mínima necesaria
+          return {
+            id: id,
+            name: parsed.productName || "",
+            image: parsed.image || fallbackImage.src,
+            price: parsed.price?.toString(),
+            originalPrice: parsed.originalPrice?.toString(),
+            colors: parsed.color ? [{
+              name: parsed.color,
+              hex: parsed.colorHex || "#000000",
+              label: parsed.color,
+              sku: parsed.sku || "",
+              ean: parsed.ean || ""
+            }] : [],
+            capacities: parsed.capacity ? [{
+              value: parsed.capacity,
+              label: parsed.capacity
+            }] : [],
+            segmento: parsed.segmento,
+            skuflixmedia: parsed.skuflixmedia, // Mapear skuflixmedia desde localStorage
+            // Datos mínimos para que funcione la UI
+            apiProduct: {
+              codigoMarketBase: id,
+              codigoMarket: [],
+              nombreMarket: [parsed.productName || ""],
+              categoria: "Móviles", // Fallback seguro
+              subcategoria: "",
+              modelo: [parsed.productName || ""],
+              color: [],
+              capacidad: [],
+              memoriaram: [],
+              descGeneral: [],
+              sku: [],
+              ean: [],
+              desDetallada: [],
+              stockTotal: [],
+              cantidadTiendas: [],
+              cantidadTiendasReserva: [],
+              urlImagenes: [],
+              urlRender3D: [],
+              imagePreviewUrl: [],
+              imageDetailsUrls: [],
+              precioNormal: [],
+              precioeccommerce: [],
+              fechaInicioVigencia: [],
+              fechaFinalVigencia: [],
+              indRetoma: [],
+              indcerointeres: [],
+              skuPostback: [],
+              skuflixmedia: parsed.skuflixmedia ? [parsed.skuflixmedia] : [], // También en apiProduct por si acaso
+              segmento: parsed.segmento ? (Array.isArray(parsed.segmento) ? parsed.segmento : [parsed.segmento]) : ["PREMIUM"], // Asegurar que pase la validación de premium
+              imagenPremium: [["placeholder"]], // Hack para pasar validación de contenido premium
+            }
+          } as ProductCardProps;
+        }
+      } catch (e) {
+        console.error("Error parsing saved product selection:", e);
+      }
+    }
+    return null;
+  });
+
+  const { product: apiProduct, loading, error } = useProduct(id ?? "");
+
+  // Usar producto del API si está listo, sino usar el inicial de localStorage
+  const product = apiProduct || initialProduct;
+
   const [showContent, setShowContent] = React.useState(false);
 
   // Hook personalizado para manejar toda la lógica del producto
@@ -200,23 +274,37 @@ export default function ProductViewPage({ params }) {
 
   // Delay para asegurar transición suave
   React.useEffect(() => {
-    if (!loading && product) {
-      const timer = setTimeout(() => setShowContent(true), 150);
+    if (product) {
+      // Si tenemos producto (local o API), mostrar contenido inmediatamente o con mínimo delay
+      // Si es local, queremos instantáneo (0 o 50ms). Si es API, el delay original estaba bien.
+      // Reducimos a 50ms para que sea casi instantáneo pero permita renderizado inicial
+      const timer = setTimeout(() => setShowContent(true), 50);
       return () => clearTimeout(timer);
     } else {
       setShowContent(false);
     }
-  }, [loading, product]);
+  }, [product]);
 
   if (!id) {
     return notFound();
   }
-  if (loading || !showContent) {
+
+  // Mostrar skeleton solo si no hay producto Y está cargando
+  if (!product && loading) {
     return <ViewPremiumSkeleton />;
   }
-  if (error) {
+
+  // Si tenemos producto pero showContent es false (el breve delay), mostrar skeleton
+  // OJO: Si es Optimistic UI, queremos evitar esto si es posible, pero el delay de 50ms es imperceptible
+  if (product && !showContent) {
+    // Podríamos retornar null o el skeleton. El skeleton evita saltos de layout.
+    return <ViewPremiumSkeleton />;
+  }
+
+  if (error && !product) {
     return notFound();
   }
+
   if (!product) {
     return (
       <div className="container mx-auto px-6 py-8">

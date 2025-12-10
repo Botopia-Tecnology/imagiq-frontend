@@ -285,7 +285,7 @@ export default function MultimediaPage({
 
       {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
       <div
-        className="flex-1 pt-[70px] xl:pt-[50px]"
+        className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
       >
         <FlixmediaPlayer
           mpn={productSku}

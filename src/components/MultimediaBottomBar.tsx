@@ -57,22 +57,52 @@ export default function MultimediaBottomBar({
   const renderPriceInfo = () => {
     if (indcerointeres === 0) {
       // CASO 0: Solo precio de contado (SIN cuotas)
+      // Móvil: 3 filas (precio+tachado, nombre, ahorro)
+      // Desktop: layout horizontal
       return (
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-lg md:text-xl font-bold text-[#222]">
-            {formatPrice(price)}
-          </span>
-          {originalPrice && originalPrice > price && (
-            <>
-              <span className="text-sm text-gray-400 line-through">
-                {formatPrice(originalPrice)}
+        <>
+          {/* Móvil: Layout de 3 filas */}
+          <div className="flex flex-col items-start gap-0.5 md:hidden">
+            {/* Fila 1: Precio actual + precio tachado */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-lg font-bold text-[#222]">
+                {formatPrice(price)}
               </span>
-              <span className="text-sm text-green-600 font-semibold">
+              {originalPrice && originalPrice > price && (
+                <span className="text-sm text-gray-400 line-through">
+                  {formatPrice(originalPrice)}
+                </span>
+              )}
+            </div>
+            {/* Fila 2: Nombre del producto */}
+            <span className="text-xs text-[#222] font-medium line-clamp-1">
+              {productName}
+            </span>
+            {/* Fila 3: Ahorra X */}
+            {originalPrice && originalPrice > price && (
+              <span className="text-xs text-green-600 font-semibold">
                 Ahorra {formatPrice(savings)}
               </span>
-            </>
-          )}
-        </div>
+            )}
+          </div>
+
+          {/* Desktop: Layout horizontal original */}
+          <div className="hidden md:flex items-baseline gap-2 flex-wrap justify-center">
+            <span className="text-xl font-bold text-[#222]">
+              {formatPrice(price)}
+            </span>
+            {originalPrice && originalPrice > price && (
+              <>
+                <span className="text-sm text-gray-400 line-through">
+                  {formatPrice(originalPrice)}
+                </span>
+                <span className="text-sm text-green-600 font-semibold">
+                  Ahorra {formatPrice(savings)}
+                </span>
+              </>
+            )}
+          </div>
+        </>
       );
     }
 
@@ -80,7 +110,7 @@ export default function MultimediaBottomBar({
       // CASO 1: Cuotas sin interés (0%)
       const textoInteresCompleto = ceroInteres.formatText();
       const textoInteresSimple = ceroInteres.formatTextSimple();
-      
+
       // Si hay error o está cargando, solo mostrar precio
       if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
         return (
@@ -93,11 +123,11 @@ export default function MultimediaBottomBar({
       }
 
       return (
-        <div className="flex items-center justify-center w-full px-2">
+        <div className="flex items-center justify-start md:justify-center w-full px-2">
           {/* Layout limpio - simplificado en móvil */}
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex flex-col items-start md:items-center gap-1">
             {/* Móvil: Texto simplificado - Desktop: Texto completo */}
-            <span className="text-xs sm:text-sm md:text-base font-bold text-[#222] leading-tight text-center">
+            <span className="text-xs sm:text-sm md:text-base font-bold text-[#222] leading-tight text-left md:text-center">
               <span className="md:hidden">{textoInteresSimple}</span>
               <span className="hidden md:inline">{textoInteresCompleto}</span>
             </span>
@@ -155,7 +185,7 @@ export default function MultimediaBottomBar({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}
-          className="fixed left-0 right-0 z-40 bg-white  top-[64px] xl:top-[100px]"
+          className="fixed left-0 right-0 z-40 bg-white top-[55px] xl:top-[100px]"
           style={{
             fontFamily: "SamsungSharpSans"
           }}
@@ -163,14 +193,14 @@ export default function MultimediaBottomBar({
           <div className=" mx-auto px-6 md:px-8">
             <div className="flex items-center justify-between gap-3 md:gap-4 py-2 md:py-2.5">
               {/* IZQUIERDA: Nombre del producto (oculto en móvil) */}
-              <div className="flex-shrink min-w-0 max-w-[200px] xl:max-w-[250px]">
+              <div className="hidden md:block flex-shrink min-w-0 max-w-[200px] xl:max-w-[250px]">
                 <h3 className="text-sm font-semibold text-[#222] leading-tight line-clamp-2 break-words overflow-hidden">
                   {productName}
                 </h3>
               </div>
 
-              {/* CENTRO: Precio completo pero minimalista */}
-              <div className="flex-1 flex justify-center items-center">
+              {/* CENTRO: Precio completo pero minimalista - izquierda en móvil */}
+              <div className="flex-1 flex justify-start md:justify-center items-center">
                 {renderPriceInfo()}
               </div>
 

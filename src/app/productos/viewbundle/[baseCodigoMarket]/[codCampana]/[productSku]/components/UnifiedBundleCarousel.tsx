@@ -211,13 +211,13 @@ export default function UnifiedBundleCarousel({
       {totalSlides > 1 && (
         <div className="space-y-2">
           {/* Primera fila: Imagen compuesta del bundle + producto principal */}
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide justify-center">
+          <div className="flex gap-2 overflow-x-auto py-1 scrollbar-hide justify-center">
             {/* Thumbnail de la imagen compuesta */}
             {hasCompositeImage && (
               <button
                 onClick={() => handleThumbnailClick(0)}
                 className={`
-                  relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden transition-all bg-white
+                  relative flex-shrink-0 w-[72px] h-[72px] rounded-xl transition-all bg-white p-0.5
                   ${
                     currentImageIndex === 0
                       ? "ring-2 ring-black shadow-md"
@@ -226,7 +226,7 @@ export default function UnifiedBundleCarousel({
                 `}
                 aria-label="Ver bundle completo"
               >
-                <div className="w-full h-full relative">
+                <div className="w-full h-full relative overflow-hidden rounded-[10px]">
                   <BundlePreviewImages images={bundleCompositeImages} bundleName={bundleName} />
                 </div>
               </button>
@@ -238,7 +238,7 @@ export default function UnifiedBundleCarousel({
                 key={imageIndex}
                 onClick={() => handleThumbnailClick(image.globalIndex)}
                 className={`
-                  relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden transition-all bg-white
+                  relative flex-shrink-0 w-[72px] h-[72px] rounded-xl transition-all bg-white p-0.5
                   ${
                     currentImageIndex === image.globalIndex
                       ? "ring-2 ring-black shadow-md"
@@ -247,36 +247,48 @@ export default function UnifiedBundleCarousel({
                 `}
                 aria-label={`Ver ${imagesByProduct[0].productName}`}
               >
-                <Image
-                  src={image.url}
-                  alt={`${imagesByProduct[0].productName} thumbnail`}
-                  fill
-                  className="object-contain p-2"
-                  sizes="72px"
-                />
+                <div className="w-full h-full relative overflow-hidden rounded-[10px]">
+                  <Image
+                    src={image.url}
+                    alt={`${imagesByProduct[0].productName} thumbnail`}
+                    fill
+                    className="object-contain p-2"
+                    sizes="72px"
+                  />
+                </div>
               </button>
             ))}
 
             {/* Indicador de más imágenes en la primera fila */}
             {imagesByProduct.length > 0 && imagesByProduct[0].images.length > 4 && (
-              <div className="relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-gray-100 ring-1 ring-gray-200 flex items-center justify-center">
+              <button
+                onClick={() => {
+                  // Abrir modal con la primera imagen que no se muestra (índice 4)
+                  const firstHiddenImage = imagesByProduct[0].images[4];
+                  if (onOpenModal && firstHiddenImage) {
+                    onOpenModal(firstHiddenImage.globalIndex);
+                  }
+                }}
+                className="relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-gray-100 ring-1 ring-gray-200 hover:ring-gray-300 flex items-center justify-center transition-all cursor-pointer"
+                aria-label={`Ver ${imagesByProduct[0].images.length - 4} imágenes más de ${imagesByProduct[0].productName}`}
+              >
                 <span className="text-sm font-medium text-gray-600">
                   +{imagesByProduct[0].images.length - 4} más
                 </span>
-              </div>
+              </button>
             )}
           </div>
 
           {/* Filas siguientes: Imágenes de los demás productos (saltando el primero) */}
           {imagesByProduct.slice(1).map((product, productIndex) => (
             <div key={productIndex + 1}>
-              <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide justify-center">
+              <div className="flex gap-2 overflow-x-auto py-1 scrollbar-hide justify-center">
                 {product.images.slice(0, 5).map((image, imageIndex) => (
                   <button
                     key={imageIndex}
                     onClick={() => handleThumbnailClick(image.globalIndex)}
                     className={`
-                      relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden transition-all bg-white
+                      relative flex-shrink-0 w-[72px] h-[72px] rounded-xl transition-all bg-white p-0.5
                       ${
                         currentImageIndex === image.globalIndex
                           ? "ring-2 ring-black shadow-md"
@@ -285,23 +297,35 @@ export default function UnifiedBundleCarousel({
                     `}
                     aria-label={`Ver ${product.productName}`}
                   >
-                    <Image
-                      src={image.url}
-                      alt={`${product.productName} thumbnail`}
-                      fill
-                      className="object-contain p-2"
-                      sizes="72px"
-                    />
+                    <div className="w-full h-full relative overflow-hidden rounded-[10px]">
+                      <Image
+                        src={image.url}
+                        alt={`${product.productName} thumbnail`}
+                        fill
+                        className="object-contain p-2"
+                        sizes="72px"
+                      />
+                    </div>
                   </button>
                 ))}
 
                 {/* Indicador de más imágenes */}
                 {product.images.length > 5 && (
-                  <div className="relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-gray-100 ring-1 ring-gray-200 flex items-center justify-center">
+                  <button
+                    onClick={() => {
+                      // Abrir modal con la primera imagen que no se muestra (índice 5)
+                      const firstHiddenImage = product.images[5];
+                      if (onOpenModal && firstHiddenImage) {
+                        onOpenModal(firstHiddenImage.globalIndex);
+                      }
+                    }}
+                    className="relative flex-shrink-0 w-[72px] h-[72px] rounded-xl overflow-hidden bg-gray-100 ring-1 ring-gray-200 hover:ring-gray-300 flex items-center justify-center transition-all cursor-pointer"
+                    aria-label={`Ver ${product.images.length - 5} imágenes más de ${product.productName}`}
+                  >
                     <span className="text-sm font-medium text-gray-600">
                       +{product.images.length - 5} más
                     </span>
-                  </div>
+                  </button>
                 )}
               </div>
             </div>

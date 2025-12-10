@@ -32,8 +32,6 @@ export default function FlixmediaPlayer({
   productId,
   segmento,
 }: FlixmediaPlayerProps) {
-  const [actualMpn, setActualMpn] = useState<string | null>(null);
-  const [actualEan, setActualEan] = useState<string | null>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -73,7 +71,7 @@ export default function FlixmediaPlayer({
       }
 
       // 2. Cargar Script Inmediatamente
-      console.log(`🚀 [FAST LOAD] Inyectando script para ${targetMpn || targetEan}`);
+      console.log(`�🔥🔥 [SUPER FAST LOAD] Inyectando script para ${targetMpn || targetEan}`);
 
       // Limpiar scripts anteriores
       const existingScripts = document.querySelectorAll('script[src*="flixfacts.com"]');

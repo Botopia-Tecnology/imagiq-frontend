@@ -235,6 +235,7 @@ function FlixmediaDetailsComponent({
           const container = document.getElementById(uniqueId);
 
           if (container) {
+            // resolve(container);
             resolve(container);
           } else if (attempts >= maxAttempts) {
             reject(new Error('Container timeout'));

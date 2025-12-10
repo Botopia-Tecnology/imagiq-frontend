@@ -93,7 +93,7 @@ function FlixmediaPlayerComponent({
           const container = document.getElementById(uniqueId);
 
           if (container) {
-            console.log(`[FLIXMEDIA] ✅ Contenedor ${uniqueId} listo (intento ${attempts})`);
+            // console.log(`[FLIXMEDIA] ✅ Contenedor ${uniqueId} listo (intento ${attempts})`);
             resolve(container);
           } else if (attempts >= maxAttempts) {
             console.error(`[FLIXMEDIA] ❌ Timeout esperando contenedor ${uniqueId}`);

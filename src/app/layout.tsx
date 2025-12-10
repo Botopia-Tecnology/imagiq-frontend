@@ -143,7 +143,11 @@ export default function RootLayout({
         } as React.CSSProperties
       }
     >
-      <head></head>
+      <head>
+        {/* Optimización Flixmedia: Preconectar y precargar script */}
+        <link rel="preconnect" href="//media.flixfacts.com" crossOrigin="" />
+        <link rel="preload" href="//media.flixfacts.com/js/loader.js" as="script" />
+      </head>
       <body className="antialiased">
         <SecurityInitializer>
           <AnalyticsScripts />

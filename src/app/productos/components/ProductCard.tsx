@@ -36,6 +36,7 @@ import {
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { shouldRenderValue } from "./utils/shouldRenderValue";
+import { prefetchFlixmediaScript } from "@/lib/flixmedia";
 
 /**
  * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
@@ -117,6 +118,7 @@ export interface ProductCardProps {
   acceptsTradeIn?: boolean;
   desDetallada?: string; // Indica si el producto acepta retoma (basado en indRetoma)
   isInChat?: boolean; // Indica si está siendo renderizado en el chat (para ajustar estilos)
+  skuflixmedia?: string; // SKU específico para Flixmedia
 }
 
 export default function ProductCard({
@@ -677,6 +679,10 @@ export default function ProductCard({
     return selectedColor;
   }, [apiProduct, productSelection, selectedColor]);
 
+  const handleMouseEnter = () => {
+    prefetchFlixmediaScript();
+  };
+
   return (
     <>
       <StockNotificationModal
@@ -713,6 +719,7 @@ export default function ProductCard({
           "rounded-lg w-full h-full flex flex-col mx-auto",
           className
         )}
+        onMouseEnter={handleMouseEnter}
       >
         {/* Sección de imagen con carrusel */}
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">

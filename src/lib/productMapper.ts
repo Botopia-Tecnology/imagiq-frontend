@@ -114,6 +114,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
     apiProduct: apiProduct, // Incluir el producto original de la API para acceso a campos adicionales
     acceptsTradeIn, // Indicador de si acepta retoma
+    skuflixmedia: apiProduct.skuflixmedia?.[0], // Mapear skuflixmedia (tomar el primero si existe)
   };
 }
 

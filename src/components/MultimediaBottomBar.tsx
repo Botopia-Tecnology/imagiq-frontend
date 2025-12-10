@@ -111,16 +111,16 @@ export default function MultimediaBottomBar({
       const textoInteresCompleto = ceroInteres.formatText();
       const textoInteresSimple = ceroInteres.formatTextSimple();
 
-      // Si hay error o está cargando, solo mostrar precio
-      if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
-        return (
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-lg md:text-xl font-bold text-[#222]">
-              {formatPrice(price)}
-            </span>
-          </div>
-        );
-      }
+      // Calcular cuota mensual: usar del hook si existe, sino dividir entre 24
+      const cuotaMensualCalculada = ceroInteres.cuotaMensual || Math.round(price / 24);
+      const plazoMeses = ceroInteres.plazoMaximo || 24;
+
+      // Formatear precio de cuota
+      const cuotaFormateada = formatPrice(cuotaMensualCalculada);
+
+      // Texto fallback si el hook no retornó datos
+      const textoCompletoFinal = textoInteresCompleto || `Desde ${cuotaFormateada} al mes en ${plazoMeses} cuotas sin interés`;
+      const textoSimpleFinal = textoInteresSimple || `${cuotaFormateada} en ${plazoMeses} meses`;
 
       return (
         <>
@@ -128,7 +128,7 @@ export default function MultimediaBottomBar({
           <div className="flex flex-col items-start gap-0.5 md:hidden">
             {/* Fila 1: Cuota mensual */}
             <span className="text-sm font-bold text-[#222]">
-              {textoInteresSimple}
+              {textoSimpleFinal}
             </span>
             {/* Fila 2: Nombre del producto */}
             <span className="text-xs text-[#222] font-medium line-clamp-1">
@@ -143,7 +143,7 @@ export default function MultimediaBottomBar({
           {/* Desktop: Layout centrado original */}
           <div className="hidden md:flex flex-col items-center gap-1">
             <span className="text-base font-bold text-[#222] leading-tight text-center">
-              {textoInteresCompleto}
+              {textoCompletoFinal}
             </span>
             <span className="text-sm font-bold text-[#222]">
               {formatPrice(price)}

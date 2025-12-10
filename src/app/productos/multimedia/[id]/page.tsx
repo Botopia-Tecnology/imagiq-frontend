@@ -228,8 +228,28 @@ export default function MultimediaPage({
 
   // Usar datos de localStorage si existen, sino usar los del producto general
   const numericPrice = selectedProductData?.price ?? parsePrice(product?.price);
-  const numericOriginalPrice = selectedProductData?.originalPrice ??
-    (product?.originalPrice ? parsePrice(product.originalPrice) : undefined);
+
+  // Para originalPrice: usar localStorage, o product.originalPrice, o precioNormal del apiProduct
+  const getOriginalPrice = (): number | undefined => {
+    // 1. Primero verificar localStorage
+    if (selectedProductData?.originalPrice) {
+      return selectedProductData.originalPrice;
+    }
+    // 2. Luego verificar product.originalPrice directo
+    if (product?.originalPrice) {
+      return parsePrice(product.originalPrice);
+    }
+    // 3. Finalmente, verificar apiProduct.precioNormal (viene como array)
+    if (product?.apiProduct?.precioNormal && product.apiProduct.precioNormal.length > 0) {
+      const precioNormal = product.apiProduct.precioNormal[0];
+      if (precioNormal && precioNormal > 0) {
+        return precioNormal;
+      }
+    }
+    return undefined;
+  };
+
+  const numericOriginalPrice = getOriginalPrice();
 
   // Obtener indcerointeres del producto (puede venir como array del API)
   const getIndcerointeres = (): number => {
@@ -249,8 +269,10 @@ export default function MultimediaPage({
 
   const indcerointeres = getIndcerointeres();
 
-  // Obtener allPrices: usar de localStorage si existe, sino del producto
-  const allPrices = selectedProductData?.allPrices ?? product?.apiProduct?.precioeccommerce ?? [];
+  // Obtener allPrices: usar de localStorage si existe, sino del producto, sino usar el precio actual
+  const rawAllPrices = selectedProductData?.allPrices ?? product?.apiProduct?.precioeccommerce ?? [];
+  // Asegurar que allPrices tenga al menos el precio actual para el cálculo de cuotas
+  const allPrices = rawAllPrices.length > 0 ? rawAllPrices : (numericPrice > 0 ? [numericPrice] : []);
 
   // Obtener nombre del producto: usar de localStorage si existe, sino del producto
   const displayProductName = selectedProductData?.productName ?? product?.name;

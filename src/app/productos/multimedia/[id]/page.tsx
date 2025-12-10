@@ -105,6 +105,7 @@ export default function MultimediaPage({
     image?: string;
     indcerointeres?: number;
     allPrices?: number[];
+    skuflixmedia?: string;
   } | null>(null);
 
   // Cargar la selección del usuario desde localStorage
@@ -187,8 +188,13 @@ export default function MultimediaPage({
   }
 
   // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaPlayer)
-  const productSku = allSkus.length > 0 ? allSkus.join(',') : null;
-  const productEan = allEans.length > 0 ? allEans.join(',') : null;
+  // SI existe un skuflixmedia seleccionado, usar SOLO ese para optimizar la carga
+  // SI NO, usar el primer SKU disponible (evitar listas largas para mejorar rendimiento)
+  const productSku = selectedProductData?.skuflixmedia
+    ? selectedProductData.skuflixmedia
+    : (allSkus.length > 0 ? allSkus[0] : null);
+
+  const productEan = allEans.length > 0 ? allEans[0] : null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {

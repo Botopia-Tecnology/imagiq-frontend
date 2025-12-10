@@ -23,9 +23,6 @@ function FlixmediaDetailsComponent({
   productName = "Producto",
   className = "",
 }: FlixmediaDetailsProps) {
-  const [actualMpn, setActualMpn] = useState<string | null>(null);
-  const [actualEan, setActualEan] = useState<string | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
   const [scriptLoaded, setScriptLoaded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -415,20 +412,6 @@ function FlixmediaDetailsComponent({
     return null;
   }
 
-  // Mostrar loading mientras busca
-  if (isSearching) {
-    return (
-      <div className={className}>
-        <div className="flex items-center justify-center py-8">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-8 h-8 border-4 border-gray-200 border-t-[#0099FF] rounded-full animate-spin" />
-            <p className="text-sm text-gray-500">Buscando contenido...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div ref={containerRef} className={`${className} w-full min-h-[200px] relative`}>
       {/* Contenedor para las especificaciones y galería de Flixmedia - SIEMPRE VISIBLE */}
@@ -441,17 +424,6 @@ function FlixmediaDetailsComponent({
           transition: 'opacity 0.5s ease-in-out',
         }}
       />
-
-      {/* Loading indicator - Solo visible mientras carga el script */}
-      {!scriptLoaded && (actualMpn || actualEan) && (
-        <div className="absolute inset-0 flex items-center justify-center py-12 bg-white">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-gray-200 border-t-[#0099FF] rounded-full animate-spin" />
-            <p className="text-sm text-gray-600 font-medium">Cargando contenido multimedia...</p>
-            <p className="text-xs text-gray-400">Espere un momento...</p>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

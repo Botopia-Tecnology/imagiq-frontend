@@ -67,13 +67,19 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
     const allEans: string[] = [];
 
     // 0. Si hay skuflixmedia (del backend o localStorage), usarlo DIRECTAMENTE y EXCLUSIVAMENTE
-    // El usuario pidió "quita e de barriao de sku y vente a la fija"
-    if (product.skuflixmedia && product.skuflixmedia.trim()) {
-      allSkus.push(product.skuflixmedia.trim());
+    // Prioridad: flix.skuflixmedia > flix.apiProduct.skuflixmedia > product.skuflixmedia
+    const flixSkuMedia = flix?.skuflixmedia || flix?.apiProduct?.skuflixmedia?.[0] || product.skuflixmedia;
+
+    if (flixSkuMedia && flixSkuMedia.trim()) {
+      allSkus.push(flixSkuMedia.trim());
+      console.log('🎬 Specifications usando skuflixmedia:', flixSkuMedia);
     } else {
-      // 1. Fallback simple: Solo el SKU principal del producto
-      // Eliminamos el "barrido" de colores y capacidades para ir "a la fija"
-      if (product.apiProduct?.sku?.[0]) {
+      // 1. Fallback: SKU del producto del API o del selectedSku
+      if (selectedSku && selectedSku.trim()) {
+        allSkus.push(selectedSku.trim());
+      } else if (flix?.apiProduct?.sku?.[0]) {
+        allSkus.push(flix.apiProduct.sku[0]);
+      } else if (product.apiProduct?.sku?.[0]) {
         allSkus.push(product.apiProduct.sku[0]);
       } else if (product.colors?.[0]?.sku) {
         allSkus.push(product.colors[0].sku);

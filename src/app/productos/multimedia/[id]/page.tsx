@@ -307,6 +307,7 @@ export default function MultimediaPage({
         className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
       >
         <FlixmediaPlayer
+          key={`flix-${productSku || id}`}
           mpn={productSku}
           ean={productEan}
           productName={displayProductName}

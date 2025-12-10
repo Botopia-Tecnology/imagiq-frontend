@@ -30,6 +30,16 @@ interface AddNewAddressFormProps {
   onSubmitRef?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de submit
   onFormValidChange?: (isValid: boolean) => void; // Callback para notificar cuando el formulario es válido
   disabled?: boolean; // Si los campos deben estar deshabilitados
+  geoLocationData?: {
+    departamento?: string;
+    ciudad?: string;
+    tipo_via?: string;
+    numero_principal?: string;
+    numero_secundario?: string;
+    numero_complementario?: string;
+    barrio?: string;
+  } | null; // Datos de geolocalización automática
+  isRequestingLocation?: boolean; // Si está en proceso de obtener la ubicación
 }
 
 export default function AddNewAddressForm({
@@ -39,6 +49,8 @@ export default function AddNewAddressForm({
   onSubmitRef,
   onFormValidChange,
   disabled = false,
+  geoLocationData,
+  isRequestingLocation = false,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -224,6 +236,97 @@ export default function AddNewAddressForm({
       setSuggestedAddress("");
     }
   }, [formData.nombreCalle, formData.numeroPrincipal, formData.numeroSecundario, formData.numeroComplementario, formData.barrio, formData.ciudad, cities]);
+
+  // useEffect para aplicar datos de geolocalización automática
+  useEffect(() => {
+    if (geoLocationData && !isRequestingLocation) {
+      console.log('📍 Aplicando datos de geolocalización al formulario:', geoLocationData);
+      
+      // CORRECCIÓN TEMPORAL: Si el backend devuelve "Bogotá" como departamento, corregirlo a "Cundinamarca"
+      let departamentoCorregido = geoLocationData.departamento || '';
+      if (geoLocationData.ciudad && 
+          (geoLocationData.ciudad.toLowerCase().includes('bogotá') || geoLocationData.ciudad.toLowerCase().includes('bogota')) && 
+          departamentoCorregido === 'Bogotá') {
+        departamentoCorregido = 'Cundinamarca';
+        console.log('🔄 [FRONTEND-FIX] Corrigiendo departamento de "Bogotá" a "Cundinamarca"');
+      }
+      
+      // PASO 1: Aplicar departamento corregido y otros datos (excepto ciudad)
+      setFormData((prev) => ({
+        ...prev,
+        // Usar departamento corregido
+        departamento: prev.departamento || departamentoCorregido,
+        // NO aplicar ciudad aún - esperar a que se carguen las ciudades del departamento
+        // Solo actualizar tipo de vía si está vacío
+        nombreCalle: prev.nombreCalle || geoLocationData.tipo_via || '',
+        // Solo actualizar números si están vacíos
+        numeroPrincipal: prev.numeroPrincipal || geoLocationData.numero_principal || '',
+        numeroSecundario: prev.numeroSecundario || geoLocationData.numero_secundario || '',
+        numeroComplementario: prev.numeroComplementario || geoLocationData.numero_complementario || '',
+        // Solo actualizar barrio si está vacío
+        barrio: prev.barrio || geoLocationData.barrio || '',
+      }));
+      
+      console.log('✅ Datos de geolocalización aplicados al formulario con corrección:', { departamentoCorregido });
+    }
+  }, [geoLocationData, isRequestingLocation]);
+
+  // useEffect separado para aplicar ciudad DESPUÉS de que se carguen las ciudades
+  useEffect(() => {
+    console.log('🔍 [DEBUG] useEffect ciudad - Condiciones:', {
+      hasGeoData: !!geoLocationData,
+      notRequesting: !isRequestingLocation, 
+      hasCities: cities.length,
+      currentCiudad: formData.ciudad,
+      targetCiudad: geoLocationData?.ciudad
+    });
+
+    if (geoLocationData && !isRequestingLocation && cities.length > 0) {
+      // Solo aplicar si la ciudad actual está vacía o no coincide con la de geolocalización
+      if (!formData.ciudad || (geoLocationData.ciudad && !cities.find(c => c.codigo === formData.ciudad && geoLocationData.ciudad && c.nombre.toLowerCase() === geoLocationData.ciudad.toLowerCase()))) {
+        
+        console.log('🏙️ Aplicando ciudad de geolocalización después de cargar lista:', geoLocationData.ciudad);
+        console.log('🏙️ [DEBUG] Ciudades disponibles:', cities.map(c => `${c.nombre} (${c.codigo})`));
+        
+        // Buscar la ciudad por NOMBRE (no por código) en la lista de ciudades cargadas
+        const ciudadEncontrada = cities.find(city => 
+          geoLocationData.ciudad && city.nombre.toLowerCase().includes(geoLocationData.ciudad.toLowerCase())
+        );
+        
+        if (ciudadEncontrada) {
+          console.log('✅ Ciudad encontrada en lista:', ciudadEncontrada);
+          
+          // PASO 2: Aplicar el CÓDIGO de la ciudad (no el nombre)
+          setFormData((prev) => ({
+            ...prev,
+            ciudad: ciudadEncontrada.codigo, // ← Usar CÓDIGO, no nombre
+          }));
+          
+          console.log('✅ Ciudad de geolocalización aplicada:', ciudadEncontrada.nombre, 'con código:', ciudadEncontrada.codigo);
+        } else {
+          console.warn('⚠️ Ciudad no encontrada en lista:', geoLocationData.ciudad);
+          console.warn('⚠️ [DEBUG] Nombres disponibles:', cities.map(c => c.nombre));
+          
+          // Intentar búsqueda más flexible
+          const ciudadFlexible = cities.find(city =>
+            geoLocationData.ciudad && (
+              city.nombre.toLowerCase().includes('bogot') ||
+              geoLocationData.ciudad.toLowerCase().includes(city.nombre.toLowerCase())
+            )
+          );
+          
+          if (ciudadFlexible) {
+            console.log('✅ Ciudad encontrada con búsqueda flexible:', ciudadFlexible);
+            setFormData((prev) => ({
+              ...prev,
+              ciudad: ciudadFlexible.codigo,
+            }));
+            console.log('✅ Ciudad flexible aplicada:', ciudadFlexible.nombre, 'con código:', ciudadFlexible.codigo);
+          }
+        }
+      }
+    }
+  }, [geoLocationData, isRequestingLocation, cities, formData.ciudad]);
 
   // Validar si el Step 1 está completo para habilitar el botón "Continuar"
   const isStep1Complete = useMemo(() => {
@@ -942,6 +1045,19 @@ export default function AddNewAddressForm({
         )}
       </div>
 
+      {/* Indicador de geolocalización */}
+      {isRequestingLocation && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+            <div className="text-blue-700">
+              <div className="font-medium">🌍 Detectando tu ubicación...</div>
+              <div className="text-sm text-blue-600">Completaremos automáticamente: departamento, ciudad, barrio y tipo de vía</div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* PASO 1: Datos esenciales de la dirección */}
       {currentStep === 1 && (
         <div className="space-y-4">

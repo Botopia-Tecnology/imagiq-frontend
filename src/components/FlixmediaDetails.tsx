@@ -260,7 +260,7 @@ function FlixmediaDetailsComponent({
       flixScript.type = 'text/javascript';
       flixScript.async = true;
 
-      flixScript.setAttribute('data-flix-distributor', '9329');
+      flixScript.setAttribute('data-flix-distributor', '17257');
       flixScript.setAttribute('data-flix-language', 'f5');
       flixScript.setAttribute('data-flix-brand', 'Samsung');
       flixScript.setAttribute('data-flix-mpn', targetMpn || '');

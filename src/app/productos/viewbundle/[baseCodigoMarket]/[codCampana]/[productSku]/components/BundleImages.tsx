@@ -1,4 +1,9 @@
+"use client";
+
+import { useState, useMemo } from "react";
 import UnifiedBundleCarousel from "./UnifiedBundleCarousel";
+import ImageGalleryModal from "@/app/productos/dispositivos-moviles/detalles-producto/ImageGalleryModal";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 import type { BundleProduct } from "@/lib/api";
 
 interface BundleImagesProps {
@@ -20,6 +25,49 @@ export function BundleImages({
   mainProduct,
   allProducts,
 }: BundleImagesProps) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalImageIndex, setModalImageIndex] = useState(0);
+
+  // Construir array completo de imágenes para el modal
+  const allModalImages = useMemo(() => {
+    const images: string[] = [];
+
+    // Agregar imágenes compuestas del bundle
+    if (imagePreviewUrl && imagePreviewUrl.length > 0) {
+      imagePreviewUrl.forEach((url) => {
+        images.push(getCloudinaryUrl(url, "catalog"));
+      });
+    }
+
+    // Agregar imágenes de cada producto
+    if (allProducts && allProducts.length > 0) {
+      allProducts.forEach((product) => {
+        // Agregar imagen preview
+        if (product.imagePreviewUrl) {
+          images.push(getCloudinaryUrl(product.imagePreviewUrl, "catalog"));
+        }
+
+        // Agregar imágenes de detalles
+        if (product.imageDetailsUrls && product.imageDetailsUrls.length > 0) {
+          product.imageDetailsUrls.forEach((url) => {
+            images.push(getCloudinaryUrl(url, "catalog"));
+          });
+        }
+      });
+    }
+
+    return images;
+  }, [imagePreviewUrl, allProducts]);
+
+  const handleOpenModal = (imageIndex: number) => {
+    setModalImageIndex(imageIndex);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
+
   return (
     <div className="space-y-6">
       {/* Carrusel unificado con imagen compuesta + productos individuales */}
@@ -28,10 +76,16 @@ export function BundleImages({
         bundleCompositeImages={imagePreviewUrl}
         mainProduct={mainProduct}
         allProducts={allProducts}
-        onOpenModal={(imageIndex) => {
-          // TODO: Implementar modal de imagen ampliada
-          console.log("Abrir modal con imagen:", imageIndex);
-        }}
+        onOpenModal={handleOpenModal}
+      />
+
+      {/* Modal de imagen ampliada con zoom y drag */}
+      <ImageGalleryModal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        images={allModalImages}
+        currentIndex={modalImageIndex}
+        productName={bundleName}
       />
     </div>
   );

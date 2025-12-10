@@ -133,3 +133,27 @@ export function parseSkuString(skuString: string): string[] {
     .map((sku) => sku.trim())
     .filter((sku) => sku.length > 0);
 }
+
+/**
+ * Prefetch del script de Flixmedia para mejorar la velocidad de carga
+ * Se debe llamar en eventos como hover o focus
+ */
+export function prefetchFlixmediaScript() {
+  if (typeof window === 'undefined') return;
+
+  // Verificar si ya existe el preload o el script
+  if (
+    document.querySelector('link[href*="flixfacts.com/js/loader.js"]') ||
+    document.querySelector('script[src*="flixfacts.com/js/loader.js"]')
+  ) {
+    return;
+  }
+
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.as = 'script';
+  link.href = '//media.flixfacts.com/js/loader.js';
+  document.head.appendChild(link);
+
+  console.log('🚀 [Flixmedia] Script prefetching initiated');
+}

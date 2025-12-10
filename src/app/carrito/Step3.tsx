@@ -1,5 +1,6 @@
 "use client";
 import React from "react";
+import { useRouter } from "next/navigation";
 import { useCart, type CartProduct, type BundleInfo } from "@/hooks/useCart";
 import { useDelivery } from "./hooks/useDelivery";
 import {
@@ -10,14 +11,15 @@ import {
 } from "./components";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
-import { Direccion } from "@/types/user";
+import type { Address } from "@/types/address";
 import { useAnalyticsWithUser } from "@/lib/analytics";
 import { tradeInEndpoints } from "@/lib/api";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 import { toast } from "sonner";
 import { useCardsCache } from "./hooks/useCardsCache";
 import { useAuthContext } from "@/features/auth/context";
-import { syncAddress, direccionToAddress } from "@/lib/addressSync";
+import { syncAddress } from "@/lib/addressSync";
+import { safeGetLocalStorage } from "@/lib/localStorage";
 
 export default function Step3({
   onBack,
@@ -26,16 +28,20 @@ export default function Step3({
   readonly onBack?: () => void;
   readonly onContinue?: () => void;
 }) {
+  const router = useRouter();
   const { products, calculations } = useCart();
   const { trackAddPaymentInfo } = useAnalyticsWithUser();
   const { user, login } = useAuthContext();
-  // OPTIMIZACIÓN: Step3 SOLO lee del caché, NO hace llamadas al endpoint
-  // Step1 ya llenó el caché con la llamada inicial
+  // OPTIMIZACIÓN: Step3 SOLO lee del caché por defecto
+  // Si viene de Step1 o Step2, usa el caché ya calculado
+  // Solo recalcula candidate stores si cambia la dirección
   const {
     address,
     setAddress,
     addressEdit,
     setAddressEdit,
+    storeEdit,
+    setStoreEdit,
     storeQuery,
     setStoreQuery,
     filteredStores,
@@ -55,8 +61,8 @@ export default function Step3({
     availableStoresWhenCanPickUpFalse,
     lastResponse,
   } = useDelivery({
-    canFetchFromEndpoint: true, // Permitir llamadas solo cuando cambia dirección
-    onlyReadCache: false, // En Step3 sí permitimos llamadas al cambiar dirección
+    canFetchFromEndpoint: true, // Permitir llamadas cuando cambia dirección
+    onlyReadCache: true, // Por defecto solo leer del caché (si viene de paso anterior)
   });
 
   // Hook para precarga de tarjetas y zero interest
@@ -199,6 +205,36 @@ export default function Step3({
 
     return () => clearTimeout(timer);
   }, []);
+
+  // IMPORTANTE: Validar que haya dirección al cargar Step3, si no hay, redirigir a Step2
+  React.useEffect(() => {
+    // Esperar un momento para que useDelivery cargue la dirección
+    const checkAddress = setTimeout(() => {
+      // Verificar si hay dirección en localStorage
+      const savedAddress = safeGetLocalStorage<Address | null>(
+        "checkout-address",
+        null
+      );
+      
+      // Si no hay dirección guardada y el método de entrega es domicilio, redirigir a Step2
+      if (!savedAddress && deliveryMethod === "domicilio") {
+        console.log("⚠️ No hay dirección seleccionada, redirigiendo a Step2");
+        toast.error("Por favor selecciona una dirección para continuar");
+        router.push("/carrito/step2");
+        return;
+      }
+      
+      // También verificar el estado de address del hook useDelivery
+      // Si después de cargar no hay dirección y el método es domicilio, redirigir
+      if (!address && deliveryMethod === "domicilio" && hasCompletedInitialLoadRef.current) {
+        console.log("⚠️ No hay dirección en useDelivery, redirigiendo a Step2");
+        toast.error("Por favor selecciona una dirección para continuar");
+        router.push("/carrito/step2");
+      }
+    }, 1500); // Esperar 1.5 segundos para que useDelivery complete la carga
+
+    return () => clearTimeout(checkAddress);
+  }, [address, deliveryMethod, router]);
 
 
   // Handle Trade-In removal (ahora soporta eliminar por SKU)
@@ -638,7 +674,7 @@ export default function Step3({
         try {
           const saved = JSON.parse(
             globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Direccion;
+          ) as Address;
           newAddressId = saved?.id || null;
         } catch {
           return;
@@ -668,25 +704,14 @@ export default function Step3({
         // Si el evento trae la dirección, usarla directamente
         if (addressFromEvent?.id) {
           lastAddressIdRef.current = addressFromEvent.id;
-          // Convertir Address a Direccion si es necesario
-          const direccionFormat: Direccion = {
-            id: addressFromEvent.id,
-            usuario_id: addressFromEvent.usuarioId || '',
-            email: '',
-            linea_uno: addressFromEvent.direccionFormateada || '',
-            codigo_dane: addressFromEvent.codigo_dane || '',
-            ciudad: addressFromEvent.ciudad || '',
-            pais: addressFromEvent.pais || 'Colombia',
-            esPredeterminada: addressFromEvent.esPredeterminada || false,
-          };
-          setAddress(direccionFormat);
+          setAddress(addressFromEvent);
         }
       } else {
         // Si no viene del header, leer de localStorage
         try {
           const saved = JSON.parse(
             globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Direccion;
+          ) as Address;
 
           if (saved?.id && saved.id !== lastAddressIdRef.current) {
             setIsRecalculatingPickup(true);
@@ -1015,6 +1040,13 @@ export default function Step3({
   }, [products]);
 
   const handleContinue = () => {
+    // IMPORTANTE: Validar que haya dirección antes de continuar
+    if (deliveryMethod === "domicilio" && !address) {
+      toast.error("Por favor selecciona una dirección para continuar");
+      router.push("/carrito/step2");
+      return;
+    }
+
     // Validar Trade-In antes de continuar
     const validation = validateTradeInProducts(products);
     if (!validation.isValid) {
@@ -1071,7 +1103,7 @@ export default function Step3({
       onContinue();
     }
   };
-  const handleAddressChange = async (newAddress: Direccion) => {
+  const handleAddressChange = async (newAddress: Address) => {
     // IMPORTANTE: Si cambió la dirección, marcar que estamos recalculando INMEDIATAMENTE
     // Esto asegura que el skeleton se muestre antes de que se oculte el contenido anterior
     if (newAddress.id && newAddress.id !== lastAddressIdRef.current) {
@@ -1088,13 +1120,10 @@ export default function Step3({
     // Si la dirección tiene id, sincronizar con el backend y otros componentes
     if (newAddress.id) {
       try {
-        // Convertir Direccion a Address para usar la utility centralizada
-        const addressFormat = direccionToAddress(newAddress);
-
         // Usar utility centralizada para sincronizar dirección
         await syncAddress({
-          address: addressFormat,
-          userEmail: user?.email || newAddress.email,
+          address: newAddress,
+          userEmail: user?.email,
           user,
           loginFn: login,
           fromHeader: false, // Viene del checkout
@@ -1121,12 +1150,33 @@ export default function Step3({
     // setDeliveryMethod ya guarda automáticamente en localStorage
     setDeliveryMethod(method);
 
-    // IMPORTANTE: NO llamar forceRefreshStores al cambiar entre métodos de entrega
-    // Solo debe cargarse cuando:
-    // 1. Se cambia la dirección predeterminada desde el navbar
-    // 2. Se agrega/cambia dirección desde "Envío a domicilio"
-    // 3. Hay trade-in activo (manejado en otro useEffect)
-    // El cambio entre "tienda" y "domicilio" NO debe mostrar skeleton
+    // IMPORTANTE: Si se selecciona "tienda", abrir el selector automáticamente
+    if (method === "tienda") {
+      setStoreEdit(true); // Abrir el selector de tiendas
+
+      console.log('🏪 Usuario seleccionó "tienda" - verificando caché antes de cargar');
+      console.log('   Estado actual:', {
+        storesLength: stores.length,
+        availableStoresWhenCanPickUpFalseLength: availableStoresWhenCanPickUpFalse.length,
+        storesLoading,
+        isInitialTradeInLoading
+      });
+
+      // Si no hay tiendas cargadas Y no está cargando, intentar cargar desde caché
+      // forceRefreshStores ahora lee del caché primero, así que no activamos skeleton aquí
+      // El skeleton solo se mostrará si realmente no hay datos en caché
+      if (stores.length === 0 && availableStoresWhenCanPickUpFalse.length === 0 && !storesLoading && !isInitialTradeInLoading) {
+        // NO activar isInitialTradeInLoading aquí - forceRefreshStores lo manejará si es necesario
+        // Si hay datos en caché, forceRefreshStores los usará inmediatamente sin skeleton
+        setTimeout(() => {
+          console.log('✅ Llamando forceRefreshStores después de seleccionar tienda (leerá del caché primero)');
+          forceRefreshStores();
+        }, 100);
+      }
+    } else {
+      // Si cambia a domicilio, cerrar el selector de tiendas
+      setStoreEdit(false);
+    }
   };
 
   const selectedStoreChanged = (store: typeof selectedStore) => {
@@ -1223,6 +1273,10 @@ export default function Step3({
                     }
                     disableStorePickup={!effectiveCanPickUp && !hasActiveTradeIn}
                     disableStorePickupReason={!effectiveCanPickUp && !hasActiveTradeIn ? "Este producto no está disponible para recoger en tienda" : undefined}
+                    address={address}
+                    onEditToggle={setAddressEdit}
+                    addressLoading={addressLoading}
+                    addressEdit={addressEdit}
                   />
 
                   {deliveryMethod === "domicilio" && !hasActiveTradeIn && (
@@ -1251,13 +1305,15 @@ export default function Step3({
                       availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
                       hasActiveTradeIn={hasActiveTradeIn}
                       canPickUp={effectiveCanPickUp}
+                      onStoreEditToggle={setStoreEdit}
+                      storeEdit={storeEdit}
+                      selectedStore={selectedStore}
                     />
                   </div>
 
-                  {/* Mostrar selector de tiendas cuando el método es "tienda" */}
+                  {/* Mostrar selector de tiendas cuando está seleccionado recoger en tienda Y storeEdit es true */}
                   {/* El StoreSelector manejará internamente si mostrar el mensaje (canPickUp=false) o el selector (canPickUp=true) */}
-                  {/* IMPORTANTE: Mostrar SIEMPRE cuando el método es tienda, el StoreSelector manejará internamente si hay datos */}
-                  {deliveryMethod === "tienda" && (() => {
+                  {deliveryMethod === "tienda" && storeEdit && (() => {
                     // DEBUG: Log para ver qué se está pasando a StoreSelector
                     console.log('📍 Step3 - Pasando props a StoreSelector:', {
                       effectiveCanPickUp,
@@ -1285,6 +1341,9 @@ export default function Step3({
                           availableCities={availableCities}
                           hasActiveTradeIn={hasActiveTradeIn}
                           availableStoresWhenCanPickUpFalse={availableStoresWhenCanPickUpFalse}
+                          onAddressChange={handleAddressChange}
+                          storeEdit={storeEdit}
+                          onEditToggle={setStoreEdit}
                         />
                       </div>
                     );

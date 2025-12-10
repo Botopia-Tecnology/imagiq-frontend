@@ -25,7 +25,7 @@ export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
   const { products: cartProducts, appliedDiscount, calculations } = useCart();
-  const [checkoutAddress, _ ] = useSecureStorage<{id: string} | null>("checkout-address", null);
+  const [checkoutAddress, _] = useSecureStorage<{ id: string } | null>("checkout-address", null);
 
   // Hook de caché para zero interest
   const {
@@ -130,12 +130,12 @@ export function useCheckoutLogic() {
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
   const handleAddCardSuccess = async (newCardId?: string) => {
     setIsAddCardModalOpen(false);
-    
+
     // Forzar recarga de tarjetas - la tarjeta se seleccionará automáticamente en PaymentForm después de recargar
     setSavedCardsReloadCounter((c) => c + 1);
     setPaymentMethod("tarjeta");
     setUseNewCard(false);
-    
+
     // Si se proporcionó el ID de la nueva tarjeta, consultar cuotas sin interés
     if (newCardId) {
       fetchZeroInterestInfo([newCardId]);
@@ -377,6 +377,7 @@ export function useCheckoutLogic() {
               unitPrice: String(p.price),
               skupostback: p.skuPostback || p.sku || "",
               desDetallada: p.desDetallada || p.name || "",
+              categoria: p.categoria || "",
               // Incluir bundleInfo si el producto es parte de un bundle
               ...(p.bundleInfo && {
                 bundleInfo: {
@@ -436,6 +437,7 @@ export function useCheckoutLogic() {
                 unitPrice: String(p.price),
                 skupostback: p.skuPostback || p.sku || "",
                 desDetallada: p.desDetallada || p.name || "",
+                categoria: p.categoria || "",
                 ...(p.bundleInfo && {
                   bundleInfo: {
                     codCampana: p.bundleInfo.codCampana,
@@ -523,6 +525,7 @@ export function useCheckoutLogic() {
                 unitPrice: String(p.price),
                 skupostback: p.skuPostback || p.sku || "",
                 desDetallada: p.desDetallada || p.name || "",
+                categoria: p.categoria || "",
                 ...(p.bundleInfo && {
                   bundleInfo: {
                     codCampana: p.bundleInfo.codCampana,
@@ -606,6 +609,7 @@ export function useCheckoutLogic() {
               unitPrice: String(p.price),
               skupostback: p.skuPostback || p.sku || "",
               desDetallada: p.desDetallada || p.name || "",
+              categoria: p.categoria || "",
               ...(p.bundleInfo && {
                 bundleInfo: {
                   codCampana: p.bundleInfo.codCampana,

@@ -45,22 +45,33 @@ type AddressLike = {
 const getShortAddressLabel = (address: AddressLike | null): string => {
   if (!address) return "";
 
-  const candidates = [
-    address.direccionFormateada,
-    address.lineaUno,
-    address.ciudad,
-    address.nombreDireccion,
-  ];
+  const { direccionFormateada, ciudad, lineaUno } = address;
 
-  const rawValue = candidates.find(
-    (value): value is string =>
-      typeof value === "string" && value.trim().length > 0
-  );
+  // If no formatted address and no line one, return city
+  if ((!direccionFormateada || direccionFormateada.trim().length === 0) &&
+      (!lineaUno || lineaUno.trim().length === 0)) {
+    return ciudad || "";
+  }
 
-  if (!rawValue) return "";
+  // Use formatted address or line one
+  const fullAddress = (direccionFormateada && direccionFormateada.trim()) ||
+                      (lineaUno && lineaUno.trim()) || "";
 
-  const normalized = rawValue.trim();
-  return normalized.length > 32 ? `${normalized.slice(0, 32)}…` : normalized;
+  // If no city, return address as is
+  if (!ciudad || ciudad.trim().length === 0) {
+    return fullAddress;
+  }
+
+  // Find city in the full address and extract up to it (including the city)
+  const cityIndex = fullAddress.indexOf(ciudad);
+  if (cityIndex !== -1) {
+    // Extract up to city name + city length
+    const addressUpToCity = fullAddress.substring(0, cityIndex + ciudad.length);
+    return addressUpToCity;
+  }
+
+  // Fallback: if city not found in address, just return the full address
+  return fullAddress;
 };
 
 export default function Navbar() {
@@ -750,7 +761,7 @@ export default function Navbar() {
             <div className="w-full flex items-center justify-end gap-4">
               {/* Dirección predeterminada del usuario con dropdown */}
               {/* Se muestra siempre: si no está logueado, muestra "Agregar dirección" y redirige a login */}
-              <div className="flex-1 min-w-0">
+              <div className="flex-none min-w-0 w-[240px] xl:w-[280px] 2xl:w-[320px]">
                 <AddressDropdown showWhiteItems={shouldShowWhiteItems} />
               </div>
 

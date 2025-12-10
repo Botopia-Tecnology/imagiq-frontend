@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import AddressAutocomplete from "@/components/forms/AddressAutocomplete";
 import AddressMap3D from "@/components/AddressMap3D";
 import { PlaceDetails } from "@/types/places.types";
@@ -8,9 +8,10 @@ import {
   CreateAddressRequest,
 } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
-import { useCities } from "@/hooks/useCities";
 import { useAuthContext } from "@/features/auth/context";
 import { syncAddress } from "@/lib/addressSync";
+import { locationsService, Department, City } from "@/services/locations.service";
+import { COLOMBIA_STREET_TYPES } from "@/data/colombia-street-types";
 
 // Tipo extendido para manejar diferentes estructuras de PlaceDetails
 type ExtendedPlaceDetails = PlaceDetails & {
@@ -23,15 +24,33 @@ type ExtendedPlaceDetails = PlaceDetails & {
 };
 
 interface AddNewAddressFormProps {
-  onAddressAdded?: (address: Address) => void;
+  onAddressAdded?: (address: Address) => void | Promise<void>;
   onCancel?: () => void;
   withContainer?: boolean; // Si debe mostrar el contenedor con padding y border
+  onSubmitRef?: React.MutableRefObject<(() => void) | null>; // Ref para exponer la función de submit
+  onFormValidChange?: (isValid: boolean) => void; // Callback para notificar cuando el formulario es válido
+  disabled?: boolean; // Si los campos deben estar deshabilitados
+  geoLocationData?: {
+    departamento?: string;
+    ciudad?: string;
+    tipo_via?: string;
+    numero_principal?: string;
+    numero_secundario?: string;
+    numero_complementario?: string;
+    barrio?: string;
+  } | null; // Datos de geolocalización automática
+  isRequestingLocation?: boolean; // Si está en proceso de obtener la ubicación
 }
 
 export default function AddNewAddressForm({
   onAddressAdded,
   onCancel,
   withContainer = true,
+  onSubmitRef,
+  onFormValidChange,
+  disabled = false,
+  geoLocationData,
+  isRequestingLocation = false,
 }: AddNewAddressFormProps) {
   const { user, login } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -44,10 +63,15 @@ export default function AddNewAddressForm({
     tipoDireccion: "casa" as "casa" | "apartamento" | "oficina" | "otro",
     usarMismaParaFacturacion: true,
     // Campos de dirección de envío
-    complemento: "",
-    instruccionesEntrega: "",
-    puntoReferencia: "",
+    departamento: "",
     ciudad: "",
+    nombreCalle: "",
+    numeroPrincipal: "",
+    numeroSecundario: "", // Antes "complemento"
+    numeroComplementario: "", // Nuevo campo para completar dirección (ej: -25 en Calle 80 #15-25)
+    barrio: "",
+    setsReferencia: "", // Antes "puntoReferencia"
+    instruccionesEntrega: "",
     // Campos de dirección de facturación
     nombreDireccionFacturacion: "",
     tipoDireccionFacturacion: "casa" as
@@ -55,13 +79,303 @@ export default function AddNewAddressForm({
       | "apartamento"
       | "oficina"
       | "otro",
-    complementoFacturacion: "",
+    departamentoFacturacion: "",
+    nombreCalleFacturacion: "",
+    numeroPrincipalFacturacion: "",
+    numeroSecundarioFacturacion: "",
+    numeroComplementarioFacturacion: "", // Nuevo campo para facturación
+    barrioFacturacion: "",
+    setsReferenciaFacturacion: "",
     instruccionesEntregaFacturacion: "",
-    puntoReferenciaFacturacion: "",
   });
-  const { cities } = useCities();
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [isCityAutoCompleted, setIsCityAutoCompleted] = useState(false);
+  const [suggestedAddress, setSuggestedAddress] = useState("");
+  const [currentStep, setCurrentStep] = useState<1 | 2>(1); // Control de pasos del formulario
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  // Verificar si el formulario completo (paso 2) es válido
+  const isFormComplete = React.useMemo(() => {
+    // Solo validar si estamos en el paso 2
+    if (currentStep !== 2) return false;
+    
+    return !!(
+      selectedAddress &&
+      formData.nombreDireccion.trim() &&
+      formData.instruccionesEntrega.trim() &&
+      formData.departamento.trim() &&
+      formData.ciudad.trim() &&
+      formData.nombreCalle.trim() &&
+      formData.numeroPrincipal.trim() &&
+      (formData.usarMismaParaFacturacion || selectedBillingAddress)
+    );
+  }, [
+    currentStep,
+    selectedAddress,
+    formData.nombreDireccion,
+    formData.instruccionesEntrega,
+    formData.departamento,
+    formData.ciudad,
+    formData.nombreCalle,
+    formData.numeroPrincipal,
+    formData.usarMismaParaFacturacion,
+    selectedBillingAddress
+  ]);
+
+  // Notificar cuando el formulario es válido
+  React.useEffect(() => {
+    if (onFormValidChange) {
+      onFormValidChange(isFormComplete);
+    }
+  }, [isFormComplete, onFormValidChange]);
+
+  // Estados para departamentos y ciudades dinámicas
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [billingCities, setBillingCities] = useState<City[]>([]);
+  const [loadingDepartments, setLoadingDepartments] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingBillingCities, setLoadingBillingCities] = useState(false);
+
+  // Cargar departamentos al montar el componente
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        setLoadingDepartments(true);
+        const data = await locationsService.getDepartments();
+        setDepartments(data);
+      } catch (error) {
+        console.error("Error cargando departamentos:", error);
+      } finally {
+        setLoadingDepartments(false);
+      }
+    };
+
+    loadDepartments();
+  }, []);
+
+  // Cargar ciudades cuando se selecciona un departamento
+  useEffect(() => {
+    const loadCities = async () => {
+      if (!formData.departamento) {
+        setCities([]);
+        return;
+      }
+
+      try {
+        setLoadingCities(true);
+        const data = await locationsService.getCitiesByDepartment(formData.departamento);
+        setCities(data);
+      } catch (error) {
+        console.error("Error cargando ciudades:", error);
+        setCities([]);
+      } finally {
+        setLoadingCities(false);
+      }
+    };
+
+    loadCities();
+  }, [formData.departamento]);
+
+  // Cargar ciudades de facturación cuando se selecciona un departamento de facturación
+  useEffect(() => {
+    const loadBillingCities = async () => {
+      if (!formData.departamentoFacturacion) {
+        setBillingCities([]);
+        return;
+      }
+
+      try {
+        setLoadingBillingCities(true);
+        const data = await locationsService.getCitiesByDepartment(formData.departamentoFacturacion);
+        setBillingCities(data);
+      } catch (error) {
+        console.error("Error cargando ciudades de facturación:", error);
+        setBillingCities([]);
+      } finally {
+        setLoadingBillingCities(false);
+      }
+    };
+
+    loadBillingCities();
+  }, [formData.departamentoFacturacion]);
+
+  // Ciudades disponibles para envío
+  const availableCities = useMemo(() => cities, [cities]);
+
+  // Ciudades disponibles para facturación
+  const availableBillingCities = useMemo(() => billingCities, [billingCities]);
+
+  // Construir dirección sugerida automáticamente cuando cambien los campos manuales
+  useEffect(() => {
+    // Solo construir si tenemos TODOS los campos requeridos: Tipo de Vía, Principal, Secund., Compl. y ciudad
+    if (
+      formData.nombreCalle &&
+      formData.numeroPrincipal &&
+      formData.numeroSecundario &&
+      formData.numeroComplementario &&
+      formData.ciudad
+    ) {
+      // Buscar el nombre de la ciudad en las ciudades cargadas
+      const city = cities.find(c => c.codigo === formData.ciudad);
+      const cityName = city?.nombre || "";
+
+      // Construir la dirección en formato colombiano
+      const parts: string[] = [];
+
+      if (formData.nombreCalle) parts.push(formData.nombreCalle);
+      if (formData.numeroPrincipal) parts.push(`#${formData.numeroPrincipal}`);
+      if (formData.numeroSecundario) parts.push(formData.numeroSecundario);
+      if (formData.numeroComplementario) parts.push(`-${formData.numeroComplementario}`);
+      if (formData.barrio && cityName) parts.push(`${formData.barrio}, ${cityName}`);
+      else if (cityName) parts.push(cityName);
+
+      const constructedAddress = parts.join(' ');
+      setSuggestedAddress(constructedAddress);
+    } else {
+      setSuggestedAddress("");
+    }
+  }, [formData.nombreCalle, formData.numeroPrincipal, formData.numeroSecundario, formData.numeroComplementario, formData.barrio, formData.ciudad, cities]);
+
+  // useEffect para aplicar datos de geolocalización automática
+  useEffect(() => {
+    if (geoLocationData && !isRequestingLocation) {
+      console.log('📍 Aplicando datos de geolocalización al formulario:', geoLocationData);
+      
+      // CORRECCIÓN TEMPORAL: Si el backend devuelve "Bogotá" como departamento, corregirlo a "Cundinamarca"
+      let departamentoCorregido = geoLocationData.departamento || '';
+      if (geoLocationData.ciudad && 
+          (geoLocationData.ciudad.toLowerCase().includes('bogotá') || geoLocationData.ciudad.toLowerCase().includes('bogota')) && 
+          departamentoCorregido === 'Bogotá') {
+        departamentoCorregido = 'Cundinamarca';
+        console.log('🔄 [FRONTEND-FIX] Corrigiendo departamento de "Bogotá" a "Cundinamarca"');
+      }
+      
+      // PASO 1: Aplicar departamento corregido y otros datos (excepto ciudad)
+      setFormData((prev) => ({
+        ...prev,
+        // Usar departamento corregido
+        departamento: prev.departamento || departamentoCorregido,
+        // NO aplicar ciudad aún - esperar a que se carguen las ciudades del departamento
+        // Solo actualizar tipo de vía si está vacío
+        nombreCalle: prev.nombreCalle || geoLocationData.tipo_via || '',
+        // Solo actualizar números si están vacíos
+        numeroPrincipal: prev.numeroPrincipal || geoLocationData.numero_principal || '',
+        numeroSecundario: prev.numeroSecundario || geoLocationData.numero_secundario || '',
+        numeroComplementario: prev.numeroComplementario || geoLocationData.numero_complementario || '',
+        // Solo actualizar barrio si está vacío
+        barrio: prev.barrio || geoLocationData.barrio || '',
+      }));
+      
+      console.log('✅ Datos de geolocalización aplicados al formulario con corrección:', { departamentoCorregido });
+    }
+  }, [geoLocationData, isRequestingLocation]);
+
+  // useEffect separado para aplicar ciudad DESPUÉS de que se carguen las ciudades
+  useEffect(() => {
+    console.log('🔍 [DEBUG] useEffect ciudad - Condiciones:', {
+      hasGeoData: !!geoLocationData,
+      notRequesting: !isRequestingLocation, 
+      hasCities: cities.length,
+      currentCiudad: formData.ciudad,
+      targetCiudad: geoLocationData?.ciudad
+    });
+
+    if (geoLocationData && !isRequestingLocation && cities.length > 0) {
+      // Solo aplicar si la ciudad actual está vacía o no coincide con la de geolocalización
+      if (!formData.ciudad || (geoLocationData.ciudad && !cities.find(c => c.codigo === formData.ciudad && geoLocationData.ciudad && c.nombre.toLowerCase() === geoLocationData.ciudad.toLowerCase()))) {
+        
+        console.log('🏙️ Aplicando ciudad de geolocalización después de cargar lista:', geoLocationData.ciudad);
+        console.log('🏙️ [DEBUG] Ciudades disponibles:', cities.map(c => `${c.nombre} (${c.codigo})`));
+        
+        // Buscar la ciudad por NOMBRE (no por código) en la lista de ciudades cargadas
+        const ciudadEncontrada = cities.find(city => 
+          geoLocationData.ciudad && city.nombre.toLowerCase().includes(geoLocationData.ciudad.toLowerCase())
+        );
+        
+        if (ciudadEncontrada) {
+          console.log('✅ Ciudad encontrada en lista:', ciudadEncontrada);
+          
+          // PASO 2: Aplicar el CÓDIGO de la ciudad (no el nombre)
+          setFormData((prev) => ({
+            ...prev,
+            ciudad: ciudadEncontrada.codigo, // ← Usar CÓDIGO, no nombre
+          }));
+          
+          console.log('✅ Ciudad de geolocalización aplicada:', ciudadEncontrada.nombre, 'con código:', ciudadEncontrada.codigo);
+        } else {
+          console.warn('⚠️ Ciudad no encontrada en lista:', geoLocationData.ciudad);
+          console.warn('⚠️ [DEBUG] Nombres disponibles:', cities.map(c => c.nombre));
+          
+          // Intentar búsqueda más flexible
+          const ciudadFlexible = cities.find(city =>
+            geoLocationData.ciudad && (
+              city.nombre.toLowerCase().includes('bogot') ||
+              geoLocationData.ciudad.toLowerCase().includes(city.nombre.toLowerCase())
+            )
+          );
+          
+          if (ciudadFlexible) {
+            console.log('✅ Ciudad encontrada con búsqueda flexible:', ciudadFlexible);
+            setFormData((prev) => ({
+              ...prev,
+              ciudad: ciudadFlexible.codigo,
+            }));
+            console.log('✅ Ciudad flexible aplicada:', ciudadFlexible.nombre, 'con código:', ciudadFlexible.codigo);
+          }
+        }
+      }
+    }
+  }, [geoLocationData, isRequestingLocation, cities, formData.ciudad]);
+
+  // Validar si el Step 1 está completo para habilitar el botón "Continuar"
+  const isStep1Complete = useMemo(() => {
+    return !!(
+      selectedAddress &&
+      formData.departamento.trim() &&
+      formData.ciudad.trim() &&
+      formData.nombreCalle.trim() &&
+      formData.numeroPrincipal.trim() &&
+      formData.numeroSecundario.trim() &&
+      formData.numeroComplementario.trim() &&
+      formData.setsReferencia.trim()
+    );
+  }, [
+    selectedAddress,
+    formData.departamento,
+    formData.ciudad,
+    formData.nombreCalle,
+    formData.numeroPrincipal,
+    formData.numeroSecundario,
+    formData.numeroComplementario,
+    formData.setsReferencia
+  ]);
+
+  // Calcular campos faltantes para mostrar en tooltip
+  const missingFields = useMemo(() => {
+    const missing: string[] = [];
+
+    if (!formData.departamento.trim()) missing.push("Departamento");
+    if (!formData.ciudad.trim()) missing.push("Ciudad");
+    if (!formData.nombreCalle.trim()) missing.push("Tipo de Vía");
+    if (!formData.numeroPrincipal.trim()) missing.push("# Principal");
+    if (!formData.numeroSecundario.trim()) missing.push("# Secund.");
+    if (!formData.numeroComplementario.trim()) missing.push("# Compl.");
+    if (!formData.setsReferencia.trim()) missing.push("Sets de referencia");
+    if (!selectedAddress) missing.push("Dirección de Google Maps");
+
+    return missing;
+  }, [
+    selectedAddress,
+    formData.departamento,
+    formData.ciudad,
+    formData.nombreCalle,
+    formData.numeroPrincipal,
+    formData.numeroSecundario,
+    formData.numeroComplementario,
+    formData.setsReferencia
+  ]);
+
   const validateForm = () => {
     const newErrors: { [key: string]: string } = {};
 
@@ -74,10 +388,25 @@ export default function AddNewAddressForm({
       newErrors.nombreDireccion = "El nombre de la dirección es requerido";
     }
 
-    // Solo validar ciudad si NO está auto-completada (campo visible)
-    // Si está auto-completada, la ciudad viene de Google Maps y es válida
-    if (!isCityAutoCompleted && !formData.ciudad.trim()) {
+    if (!formData.instruccionesEntrega.trim()) {
+      newErrors.instruccionesEntrega = "Las instrucciones de entrega son requeridas";
+    }
+
+    // Validar campos requeridos de dirección
+    if (!formData.departamento.trim()) {
+      newErrors.departamento = "El departamento es requerido";
+    }
+
+    if (!formData.ciudad.trim()) {
       newErrors.ciudad = "La ciudad es requerida";
+    }
+
+    if (!formData.nombreCalle.trim()) {
+      newErrors.nombreCalle = "El nombre de la calle es requerido";
+    }
+
+    if (!formData.numeroPrincipal.trim()) {
+      newErrors.numeroPrincipal = "El número principal es requerido";
     }
 
     // Validar dirección de facturación si no usa la misma
@@ -92,9 +421,20 @@ export default function AddNewAddressForm({
           "El nombre de la dirección de facturación es requerido";
       }
 
-      // Solo validar ciudad si no está auto-completada
-      if (!isCityAutoCompleted && !formData.ciudad.trim()) {
+      if (!formData.departamentoFacturacion.trim()) {
+        newErrors.departamentoFacturacion = "El departamento es requerido";
+      }
+
+      if (!formData.ciudad.trim()) {
         newErrors.ciudad = "La ciudad es requerida para facturación";
+      }
+
+      if (!formData.nombreCalleFacturacion.trim()) {
+        newErrors.nombreCalleFacturacion = "El nombre de la calle es requerido";
+      }
+
+      if (!formData.numeroPrincipalFacturacion.trim()) {
+        newErrors.numeroPrincipalFacturacion = "El número principal es requerido";
       }
     }
 
@@ -102,9 +442,7 @@ export default function AddNewAddressForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const handleSubmitInternal = async () => {
     if (!validateForm() || !selectedAddress) {
       return;
     }
@@ -174,9 +512,14 @@ export default function AddNewAddressForm({
         tipo: formData.usarMismaParaFacturacion ? "AMBOS" : "ENVIO",
         esPredeterminada: true, // Marcar como predeterminada automáticamente
         placeDetails: transformedPlaceDetails as PlaceDetails,
-        complemento: formData.complemento || undefined,
+        // Nuevos campos estructurados
+        departamento: formData.departamento || undefined,
+        nombreCalle: formData.nombreCalle || undefined,
+        numeroPrincipal: formData.numeroPrincipal || undefined,
+        numeroSecundario: formData.numeroSecundario || undefined,
+        barrio: formData.barrio || undefined,
+        setsReferencia: formData.setsReferencia || undefined,
         instruccionesEntrega: formData.instruccionesEntrega || undefined,
-        puntoReferencia: formData.puntoReferencia || undefined,
         // Solo enviar ciudad si es un código válido (string numérico)
         ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
       };
@@ -252,10 +595,15 @@ export default function AddNewAddressForm({
           tipo: "FACTURACION",
           esPredeterminada: false,
           placeDetails: transformedBillingPlaceDetails as PlaceDetails,
-          complemento: formData.complementoFacturacion || undefined,
+          // Nuevos campos estructurados para facturación
+          departamento: formData.departamentoFacturacion || undefined,
+          nombreCalle: formData.nombreCalleFacturacion || undefined,
+          numeroPrincipal: formData.numeroPrincipalFacturacion || undefined,
+          numeroSecundario: formData.numeroSecundarioFacturacion || undefined,
+          barrio: formData.barrioFacturacion || undefined,
+          setsReferencia: formData.setsReferenciaFacturacion || undefined,
           instruccionesEntrega:
             formData.instruccionesEntregaFacturacion || undefined,
-          puntoReferencia: formData.puntoReferenciaFacturacion || undefined,
           // Solo enviar ciudad si es un código válido (string numérico)
           ciudad: formData.ciudad && /^\d+$/.test(formData.ciudad) ? formData.ciudad : undefined,
         };
@@ -304,23 +652,45 @@ export default function AddNewAddressForm({
         }
       }
 
-      // Callback with the created address
-      onAddressAdded?.(shippingResponse);
+      // Callback with the created address - ESPERAR la promesa si devuelve una
+      const result = onAddressAdded?.(shippingResponse);
+
+      // Si onAddressAdded devuelve una promesa, esperarla (para consultar candidate stores)
+      if (result instanceof Promise) {
+        console.log('⏳ Esperando consulta de candidate stores...');
+        await result;
+        console.log('✅ Candidate stores consultados');
+      }
+
+      // Resetear el ref después de guardar
+      if (onSubmitRef) {
+        onSubmitRef.current = null;
+      }
 
       // Reset form
       setFormData({
         nombreDireccion: "",
         tipoDireccion: "casa",
         usarMismaParaFacturacion: true,
-        complemento: "",
-        instruccionesEntrega: "",
-        puntoReferencia: "",
+        departamento: "",
         ciudad: "",
+        nombreCalle: "",
+        numeroPrincipal: "",
+        numeroSecundario: "",
+        numeroComplementario: "",
+        barrio: "",
+        setsReferencia: "",
+        instruccionesEntrega: "",
         nombreDireccionFacturacion: "",
         tipoDireccionFacturacion: "casa",
-        complementoFacturacion: "",
+        departamentoFacturacion: "",
+        nombreCalleFacturacion: "",
+        numeroPrincipalFacturacion: "",
+        numeroSecundarioFacturacion: "",
+        numeroComplementarioFacturacion: "",
+        barrioFacturacion: "",
+        setsReferenciaFacturacion: "",
         instruccionesEntregaFacturacion: "",
-        puntoReferenciaFacturacion: "",
       });
       setSelectedAddress(null);
       setSelectedBillingAddress(null);
@@ -347,6 +717,25 @@ export default function AddNewAddressForm({
     }
   };
 
+  // Helper para determinar el estilo del borde basado en si el campo está lleno
+  const getFieldBorderClass = (fieldValue: string, hasError: boolean = false): string => {
+    if (hasError) {
+      return "border-red-500";
+    }
+    if (fieldValue.trim()) {
+      return "border-green-200"; // Verde muy tenue, casi pastel
+    }
+    return "border-red-200"; // Rojo muy tenue, casi pastel
+  };
+
+  // Helper para determinar el color de fondo basado en si el campo está lleno
+  const getFieldBackgroundClass = (fieldValue: string): string => {
+    if (fieldValue.trim()) {
+      return "bg-gray-50"; // Fondo gris cuando está lleno
+    }
+    return "bg-white"; // Fondo blanco cuando está vacío
+  };
+
   // Helper para extraer la ciudad de PlaceDetails
   const extractCityFromPlace = (place: PlaceDetails): string => {
     // Primero intentar usar el campo city directo
@@ -371,6 +760,34 @@ export default function AddNewAddressForm({
     );
   };
 
+  // Helper para encontrar el departamento por nombre
+  const findDepartmentByName = (departmentName: string): string => {
+    if (!departmentName) return "";
+
+    // Limpiar y normalizar el nombre del departamento
+    const normalizedName = departmentName
+      .toLowerCase()
+      .normalize("NFD")
+      .replaceAll(/[\u0300-\u036f]/g, "") // Remover acentos
+      .trim();
+
+    // Buscar coincidencia exacta o parcial en los departamentos cargados
+    const department = departments.find((d) => {
+      const normalizedDeptName = d.nombre
+        .toLowerCase()
+        .normalize("NFD")
+        .replaceAll(/[\u0300-\u036f]/g, "");
+
+      const exactMatch = normalizedDeptName === normalizedName;
+      const partialMatch = normalizedDeptName.includes(normalizedName) ||
+                          normalizedName.includes(normalizedDeptName);
+
+      return exactMatch || partialMatch;
+    });
+
+    return department?.nombre || "";
+  };
+
   // Helper para encontrar el código de ciudad por nombre
   const findCityCodeByName = (cityName: string): string => {
     if (!cityName) return "";
@@ -387,22 +804,22 @@ export default function AddNewAddressForm({
       .normalize("NFD")
       .replaceAll(/[\u0300-\u036f]/g, ""); // Remover acentos
 
-    // Buscar coincidencia exacta o parcial
+    // Buscar coincidencia exacta o parcial en las ciudades cargadas dinámicamente
     const city = cities.find((c) => {
       const normalizedCityName = c.nombre
         .toLowerCase()
         .normalize("NFD")
         .replaceAll(/[\u0300-\u036f]/g, "");
-      
+
       // Comparar nombres normalizados
       const exactMatch = normalizedCityName === normalizedName;
-      const partialMatch = normalizedCityName.includes(normalizedName) || 
+      const partialMatch = normalizedCityName.includes(normalizedName) ||
                           normalizedName.includes(normalizedCityName);
-      
+
       // También verificar si el nombre original contiene la ciudad (sin normalizar)
       const originalMatch = c.nombre.toLowerCase().includes(cleanCityName.toLowerCase()) ||
                            cleanCityName.toLowerCase().includes(c.nombre.toLowerCase());
-      
+
       return exactMatch || partialMatch || originalMatch;
     });
 
@@ -411,37 +828,62 @@ export default function AddNewAddressForm({
 
   const handleAddressSelect = (place: PlaceDetails) => {
     setSelectedAddress(place as ExtendedPlaceDetails);
-    
-    // Auto-completar la ciudad si está disponible en PlaceDetails
+
+    // Debug: Ver qué trae Google Maps
+    console.log("🔍 Place Details:", {
+      neighborhood: place.neighborhood,
+      department: place.department,
+      city: place.city,
+      fullPlace: place
+    });
+
+    // Auto-completar departamento
+    const departmentName = place.department || "";
+    const departmentMatch = findDepartmentByName(departmentName);
+
+    // Auto-completar la ciudad
     const extractedCity = extractCityFromPlace(place);
+    let cityCode = "";
     if (extractedCity) {
-      const cityCode = findCityCodeByName(extractedCity);
-      if (cityCode) {
-        setFormData((prev) => ({ ...prev, ciudad: cityCode }));
-        setIsCityAutoCompleted(true); // Marcar como auto-completada y ocultar campo
+      cityCode = findCityCodeByName(extractedCity);
+      if (!cityCode) {
+        // Si no se encuentra la ciudad en la lista, mostrar error
+        setErrors((prev) => ({
+          ...prev,
+          ciudad: `No se encontró la ciudad "${extractedCity}" en la lista. Por favor, selecciónala manualmente.`,
+        }));
+      } else {
         // Limpiar error de ciudad si existe
         setErrors((prev) => {
           const newErrors = { ...prev };
           delete newErrors.ciudad;
           return newErrors;
         });
-      } else {
-        // Si no se encuentra la ciudad en la lista, mostrar el campo
-        // para que el usuario pueda seleccionarla manualmente
-        setIsCityAutoCompleted(false);
-        setFormData((prev) => ({ ...prev, ciudad: "" }));
-        // Mostrar un error informativo
-        setErrors((prev) => ({
-          ...prev,
-          ciudad: `No se encontró la ciudad "${extractedCity}" en la lista. Por favor, selecciónala manualmente.`,
-        }));
       }
-    } else {
-      // Si no hay ciudad en la dirección, mostrar campo para selección manual
-      setIsCityAutoCompleted(false);
-      setFormData((prev) => ({ ...prev, ciudad: "" }));
     }
-    
+
+    // Auto-completar nombre de calle (solo el tipo de vía)
+    const nombreCalle = place.nomenclature?.type || place.streetName?.split(' ')[0] || "";
+
+    // Auto-completar número principal
+    const numeroPrincipal = place.streetNumber || "";
+
+    // Auto-completar barrio
+    const barrio = place.neighborhood || "";
+
+    // Actualizar campos - SOLO auto-completar los que están vacíos para preservar valores manuales
+    setFormData((prev) => ({
+      ...prev,
+      departamento: prev.departamento || departmentMatch,
+      ciudad: prev.ciudad || cityCode,
+      // Solo auto-completar si el usuario NO ha llenado el campo manualmente
+      nombreCalle: prev.nombreCalle || nombreCalle,
+      numeroPrincipal: prev.numeroPrincipal || numeroPrincipal,
+      barrio: prev.barrio || barrio,
+    }));
+
+    setIsCityAutoCompleted(!!cityCode); // Solo marcar como auto-completada si encontramos la ciudad
+
     // Clear address error when address is selected
     if (errors.address) {
       setErrors((prev) => ({ ...prev, address: "" }));
@@ -450,24 +892,52 @@ export default function AddNewAddressForm({
 
   const handleBillingAddressSelect = (place: PlaceDetails) => {
     setSelectedBillingAddress(place as ExtendedPlaceDetails);
-    
-    // Auto-completar la ciudad si está disponible en PlaceDetails
-    // (usar la misma ciudad para facturación si no se ha especificado otra)
-    if (!formData.ciudad) {
-      const extractedCity = extractCityFromPlace(place);
-      if (extractedCity) {
-        const cityCode = findCityCodeByName(extractedCity);
-        if (cityCode) {
-          setFormData((prev) => ({ ...prev, ciudad: cityCode }));
-          setIsCityAutoCompleted(true); // Marcar como auto-completada
-          // Limpiar error de ciudad si existe
-          if (errors.ciudad) {
-            setErrors((prev) => ({ ...prev, ciudad: "" }));
-          }
-        }
+
+    // Auto-completar departamento para facturación
+    const departmentName = place.department || "";
+    const departmentMatch = findDepartmentByName(departmentName);
+
+    // Auto-completar la ciudad
+    const extractedCity = extractCityFromPlace(place);
+    let cityCode = "";
+    if (extractedCity) {
+      cityCode = findCityCodeByName(extractedCity);
+      if (!cityCode) {
+        setErrors((prev) => ({
+          ...prev,
+          ciudad: `No se encontró la ciudad "${extractedCity}" en la lista. Por favor, selecciónala manualmente.`,
+        }));
+      } else {
+        setErrors((prev) => {
+          const newErrors = { ...prev };
+          delete newErrors.ciudad;
+          return newErrors;
+        });
       }
     }
-    
+
+    // Auto-completar nombre de calle para facturación (solo el tipo de vía)
+    const nombreCalleFacturacion = place.nomenclature?.type || place.streetName?.split(' ')[0] || "";
+
+    // Auto-completar número principal para facturación
+    const numeroPrincipalFacturacion = place.streetNumber || "";
+
+    // Auto-completar barrio para facturación
+    const barrioFacturacion = place.neighborhood || "";
+
+    // Actualizar campos de facturación - SOLO auto-completar los que están vacíos
+    setFormData((prev) => ({
+      ...prev,
+      departamentoFacturacion: prev.departamentoFacturacion || departmentMatch,
+      ciudad: prev.ciudad || cityCode, // La ciudad es compartida
+      // Solo auto-completar si el usuario NO ha llenado el campo manualmente
+      nombreCalleFacturacion: prev.nombreCalleFacturacion || nombreCalleFacturacion,
+      numeroPrincipalFacturacion: prev.numeroPrincipalFacturacion || numeroPrincipalFacturacion,
+      barrioFacturacion: prev.barrioFacturacion || barrioFacturacion,
+    }));
+
+    setIsCityAutoCompleted(!!cityCode);
+
     // Clear billing address error when address is selected
     if (errors.billingAddress) {
       setErrors((prev) => ({ ...prev, billingAddress: "" }));
@@ -485,9 +955,13 @@ export default function AddNewAddressForm({
         ...prev,
         nombreDireccionFacturacion: "",
         tipoDireccionFacturacion: "casa",
-        complementoFacturacion: "",
+        departamentoFacturacion: "",
+        nombreCalleFacturacion: "",
+        numeroPrincipalFacturacion: "",
+        numeroSecundarioFacturacion: "",
+        barrioFacturacion: "",
+        setsReferenciaFacturacion: "",
         instruccionesEntregaFacturacion: "",
-        puntoReferenciaFacturacion: "",
       }));
       // Limpiar errores de facturación
       setErrors((prev) => {
@@ -499,98 +973,162 @@ export default function AddNewAddressForm({
     }
   };
 
+  // Exponer handleSubmit a través del ref si se proporciona
+  React.useEffect(() => {
+    if (onSubmitRef) {
+      onSubmitRef.current = async () => {
+        // Validar antes de proceder
+        if (!validateForm() || !selectedAddress) {
+          return;
+        }
+        // Llamar a handleSubmitInternal
+        await handleSubmitInternal();
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onSubmitRef, selectedAddress?.placeId, formData.nombreDireccion, formData.instruccionesEntrega, formData.usarMismaParaFacturacion]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await handleSubmitInternal();
+  };
+
   const formContent = (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Sección de dirección de envío */}
-      <div className="space-y-4">
-        {/* Campos básicos para envío */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Indicador de pasos y botón continuar */}
+      <div className="flex items-center justify-between mb-6">
+        <div className={`flex items-center ${!withContainer ? 'gap-1' : 'gap-2'}`}>
+          <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+            currentStep === 1 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
+          }`}>
+            1
+          </div>
+          <div className={`${!withContainer ? 'w-8' : 'w-12'} h-0.5 bg-gray-300`}></div>
+          <div className={`flex items-center justify-center ${!withContainer ? 'w-6 h-6 text-xs' : 'w-8 h-8 text-sm'} rounded-full font-bold ${
+            currentStep === 2 ? "bg-black text-white" : "bg-gray-200 text-gray-600"
+          }`}>
+            2
+          </div>
+        </div>
+
+        {/* Botón Continuar - solo visible en paso 1 */}
+        {currentStep === 1 && (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setCurrentStep(2)}
+              disabled={!isStep1Complete}
+              onMouseEnter={() => !isStep1Complete && setShowTooltip(true)}
+              onMouseLeave={() => setShowTooltip(false)}
+              className="px-6 py-2 bg-black text-white rounded-lg font-medium hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continuar
+            </button>
+
+            {/* Tooltip mostrando campos faltantes */}
+            {showTooltip && !isStep1Complete && missingFields.length > 0 && (
+              <div className="absolute bottom-full right-0 mb-2 w-64 bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg z-50">
+                <div className="font-semibold mb-2">Campos faltantes:</div>
+                <ul className="space-y-1">
+                  {missingFields.map((field, index) => (
+                    <li key={index} className="flex items-start gap-1.5">
+                      <span className="text-red-400 mt-0.5">•</span>
+                      <span>{field}</span>
+                    </li>
+                  ))}
+                </ul>
+                {/* Flecha del tooltip */}
+                <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-gray-900"></div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Indicador de geolocalización */}
+      {isRequestingLocation && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <div className="flex items-center gap-3">
+            <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></div>
+            <div className="text-blue-700">
+              <div className="font-medium">🌍 Detectando tu ubicación...</div>
+              <div className="text-sm text-blue-600">Completaremos automáticamente: departamento, ciudad, barrio y tipo de vía</div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* PASO 1: Datos esenciales de la dirección */}
+      {currentStep === 1 && (
+        <div className="space-y-4">
+          {/* Grid de campos según Samsung: Departamento y Ciudad */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Departamento */}
           <div>
             <label
-              htmlFor="nombreDireccion"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              htmlFor="departamento"
+              className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Nombre de la dirección *
+              Departamento <span className="text-red-500">*</span>
             </label>
-            <input
-              id="nombreDireccion"
-              type="text"
-              value={formData.nombreDireccion}
-              onChange={(e) =>
-                handleInputChange("nombreDireccion", e.target.value)
-              }
-              placeholder="ej: Casa, Oficina, Casa de mamá"
+            <select
+              id="departamento"
+              value={formData.departamento}
+              onChange={(e) => {
+                handleInputChange("departamento", e.target.value);
+                // Limpiar la ciudad seleccionada cuando cambia el departamento
+                handleInputChange("ciudad", "");
+              }}
+              disabled={disabled || loadingDepartments}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                errors.nombreDireccion ? "border-red-500" : "border-gray-300"
+                disabled || loadingDepartments
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.departamento)
+              } ${
+                getFieldBorderClass(formData.departamento, !!errors.departamento)
               }`}
-            />
-            {errors.nombreDireccion && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.nombreDireccion}
-              </p>
+            >
+              <option value="">
+                {loadingDepartments ? "Cargando departamentos..." : "-- Selecciona un departamento --"}
+              </option>
+              {departments.map((dept) => (
+                <option key={dept.nombre} value={dept.nombre}>
+                  {dept.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.departamento && (
+              <p className="text-red-500 text-xs mt-1">{errors.departamento}</p>
             )}
           </div>
 
-          <div>
-            <label
-              htmlFor="tipoDireccion"
-              className="block text-sm font-medium text-gray-700 mb-1"
-            >
-              Tipo de dirección
-            </label>
-            <select
-              id="tipoDireccion"
-              value={formData.tipoDireccion}
-              onChange={(e) =>
-                handleInputChange("tipoDireccion", e.target.value)
-              }
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-            >
-              <option value="casa">Casa</option>
-              <option value="apartamento">Apartamento</option>
-              <option value="oficina">Oficina</option>
-              <option value="otro">Otro</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Autocompletado de dirección de envío */}
-        <div>
-          <label
-            htmlFor="direccionEnvio"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Dirección de envío *
-          </label>
-          <AddressAutocomplete
-            addressType="shipping"
-            placeholder="ej: Calle 80 # 15-25, Bogotá)"
-            onPlaceSelect={handleAddressSelect}
-          />
-          {errors.address && (
-            <p className="text-red-500 text-xs mt-1">{errors.address}</p>
-          )}
-        </div>
-
-        {/* Ciudad - Solo se muestra si NO fue auto-completada desde Google Maps */}
-        {!isCityAutoCompleted && (
+          {/* Ciudad */}
           <div>
             <label
               htmlFor="ciudad"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Ciudad *
+              Ciudad <span className="text-red-500">*</span>
             </label>
             <select
               id="ciudad"
               value={formData.ciudad}
               onChange={(e) => handleInputChange("ciudad", e.target.value)}
+              disabled={disabled || !formData.departamento || loadingCities}
               className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                errors.ciudad ? "border-red-500" : "border-gray-300"
+                disabled || !formData.departamento || loadingCities
+                  ? "bg-gray-100 cursor-not-allowed border-gray-300 opacity-60"
+                  : `${getFieldBackgroundClass(formData.ciudad)} ${getFieldBorderClass(formData.ciudad, !!errors.ciudad)}`
               }`}
             >
-              <option value="">-- Selecciona una ciudad --</option>
-              {cities.map((city) => (
+              <option value="">
+                {!formData.departamento
+                  ? "-- Primero selecciona un departamento --"
+                  : loadingCities
+                  ? "Cargando ciudades..."
+                  : "-- Selecciona una ciudad --"}
+              </option>
+              {availableCities.map((city) => (
                 <option key={city.codigo} value={city.codigo}>
                   {city.nombre}
                 </option>
@@ -600,154 +1138,444 @@ export default function AddNewAddressForm({
               <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Campos adicionales para dirección de envío */}
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Grid: Tipo de Vía y números de dirección en una sola línea */}
+        <div className={!withContainer ? "grid grid-cols-[1.75fr_1fr_0.55fr_0.65fr] gap-2" : "grid grid-cols-[2fr_1fr_0.6fr_0.6fr] gap-2"}>
+          {/* Tipo de Vía */}
           <div>
             <label
-              htmlFor="complemento"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              htmlFor="nombreCalle"
+              className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Complemento (Opcional)
+              Tipo de Vía <span className="text-red-500">*</span>
+            </label>
+            <select
+              id="nombreCalle"
+              value={formData.nombreCalle}
+              onChange={(e) => handleInputChange("nombreCalle", e.target.value)}
+              disabled={disabled}
+              className={`w-full px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.nombreCalle)
+              } ${
+                getFieldBorderClass(formData.nombreCalle, !!errors.nombreCalle)
+              }`}
+            >
+              <option value="">-- Selecciona --</option>
+              {COLOMBIA_STREET_TYPES.map((streetType) => (
+                <option key={streetType.codigo} value={streetType.nombre}>
+                  {streetType.nombre}
+                </option>
+              ))}
+            </select>
+            {errors.nombreCalle && (
+              <p className="text-red-500 text-xs mt-1">{errors.nombreCalle}</p>
+            )}
+          </div>
+
+          {/* Número Principal */}
+          <div>
+            <label
+              htmlFor="numeroPrincipal"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              # Principal <span className="text-red-500">*</span>
             </label>
             <input
-              id="complemento"
+              id="numeroPrincipal"
               type="text"
-              value={formData.complemento}
-              onChange={(e) => handleInputChange("complemento", e.target.value)}
-              placeholder="ej: Apartamento 301, Torre B, Piso 2"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              value={formData.numeroPrincipal}
+              onChange={(e) => handleInputChange("numeroPrincipal", e.target.value)}
+              placeholder="80"
+              disabled={disabled}
+              className={`w-full px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.numeroPrincipal)
+              } ${
+                getFieldBorderClass(formData.numeroPrincipal, !!errors.numeroPrincipal)
+              }`}
+            />
+            {errors.numeroPrincipal && (
+              <p className="text-red-500 text-xs mt-1">{errors.numeroPrincipal}</p>
+            )}
+          </div>
+
+          {/* Número Secundario */}
+          <div>
+            <label
+              htmlFor="numeroSecundario"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              # Secund.
+            </label>
+            <div className="flex items-center gap-0.5">
+              <span className="text-gray-600 font-medium text-xs">#</span>
+              <input
+                id="numeroSecundario"
+                type="text"
+                value={formData.numeroSecundario}
+                onChange={(e) => handleInputChange("numeroSecundario", e.target.value)}
+                placeholder="15"
+                disabled={disabled}
+                className={`flex-1 px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : getFieldBackgroundClass(formData.numeroSecundario)
+                } ${
+                  getFieldBorderClass(formData.numeroSecundario)
+                }`}
+              />
+            </div>
+          </div>
+
+          {/* Número Complementario */}
+          <div>
+            <label
+              htmlFor="numeroComplementario"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              # Compl.
+            </label>
+            <div className="flex items-center gap-0.5">
+              <span className="text-gray-600 font-medium text-xs">-</span>
+              <input
+                id="numeroComplementario"
+                type="text"
+                value={formData.numeroComplementario}
+                onChange={(e) => handleInputChange("numeroComplementario", e.target.value)}
+                placeholder="25"
+                disabled={disabled}
+                className={`flex-1 px-2 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : getFieldBackgroundClass(formData.numeroComplementario)
+                } ${
+                  getFieldBorderClass(formData.numeroComplementario)
+                }`}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Grid: Barrio y Sets de referencia en una sola fila */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Barrio */}
+          <div>
+            <label
+              htmlFor="barrio"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              Barrio
+            </label>
+            <input
+              id="barrio"
+              type="text"
+              value={formData.barrio}
+              onChange={(e) => handleInputChange("barrio", e.target.value)}
+              placeholder="ej: Chicó"
+              disabled={disabled}
+              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.barrio)
+              } ${
+                getFieldBorderClass(formData.barrio)
+              }`}
             />
           </div>
 
+          {/* Sets de referencia (antes puntoReferencia) */}
+          <div>
+            <label
+              htmlFor="setsReferencia"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              Sets de referencia 
+            </label>
+            <input
+              id="setsReferencia"
+              type="text"
+              value={formData.setsReferencia}
+              onChange={(e) =>
+                handleInputChange("setsReferencia", e.target.value)
+              }
+              placeholder="ej: Oficina 204"
+              disabled={disabled}
+              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.setsReferencia)
+              } ${
+                getFieldBorderClass(formData.setsReferencia)
+              }`}
+            />
+          </div>
+        </div>
+
+        {/* Google Maps - Buscar y validar dirección completa */}
+        <div>
+          <div className={`${
+            !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad
+              ? "pointer-events-none"
+              : ""
+          }`}>
+            <AddressAutocomplete
+              addressType="shipping"
+              placeholder={
+                !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad
+                  ? "Completa todos los campos de dirección primero (Tipo, Principal, Secund., Compl.)"
+                  : "Busca tu dirección completa (ej: Calle 80 # 15-25, Bogotá)"
+              }
+              onPlaceSelect={handleAddressSelect}
+              value={suggestedAddress}
+              disabled={disabled || !formData.nombreCalle || !formData.numeroPrincipal || !formData.numeroSecundario || !formData.numeroComplementario || !formData.departamento || !formData.ciudad}
+            />
+          </div>
+          {errors.address && (
+            <p className="text-red-500 text-xs mt-1">{errors.address}</p>
+          )}
+        </div>
+
+        {/* Mapa 3D - mostrar cuando se selecciona una dirección */}
+        {selectedAddress && (
+          <div className="mt-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Ubicación de dirección de envío en el mapa
+            </label>
+            <AddressMap3D
+              address={selectedAddress}
+              height="200px"
+              enable3D={true}
+              showControls={false}
+            />
+          </div>
+        )}
+        </div>
+      )}
+
+      {/* PASO 2: Información adicional */}
+      {currentStep === 2 && (
+        <div className="space-y-4">
+          {/* Nombre de la dirección y Tipo de propiedad en la misma fila */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Nombre de la dirección */}
+            <div>
+              <label
+                htmlFor="nombreDireccion"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Nombre de la dirección <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="nombreDireccion"
+                type="text"
+                value={formData.nombreDireccion}
+                onChange={(e) =>
+                  handleInputChange("nombreDireccion", e.target.value)
+                }
+                placeholder="ej: Casa, Oficina, Casa de mamá"
+                disabled={disabled}
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : getFieldBackgroundClass(formData.nombreDireccion)
+                } ${
+                  errors.nombreDireccion ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.nombreDireccion && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.nombreDireccion}
+                </p>
+              )}
+            </div>
+
+            {/* Tipo de propiedad */}
+            <div>
+              <label
+                htmlFor="tipoDireccionPropiedad"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Tipo de propiedad <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="tipoDireccionPropiedad"
+                value={formData.tipoDireccion}
+                onChange={(e) =>
+                  handleInputChange("tipoDireccion", e.target.value)
+                }
+                disabled={disabled}
+                className={`w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  disabled
+                    ? "bg-gray-100 cursor-not-allowed opacity-60"
+                    : "bg-gray-50"
+                }`}
+              >
+                <option value="oficina">Oficina</option>
+                <option value="casa">Casa</option>
+                <option value="apartamento">Apartamento</option>
+                <option value="otro">Otro</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Instrucciones de entrega */}
           <div>
             <label
               htmlFor="instruccionesEntrega"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Instrucciones de entrega (Opcional)
+              Instrucciones de entrega <span className="text-red-500">*</span>
             </label>
-            <textarea
+            <input
               id="instruccionesEntrega"
+              type="text"
               value={formData.instruccionesEntrega}
               onChange={(e) =>
                 handleInputChange("instruccionesEntrega", e.target.value)
               }
               placeholder="ej: Portería 24 horas, llamar al llegar"
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
+              disabled={disabled}
+              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : getFieldBackgroundClass(formData.instruccionesEntrega)
+              } ${
+                errors.instruccionesEntrega ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {errors.instruccionesEntrega && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.instruccionesEntrega}
+              </p>
+            )}
           </div>
-        </div>
 
-        <div>
-          <label
-            htmlFor="puntoReferencia"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
-            Punto de referencia (Opcional)
-          </label>
-          <input
-            id="puntoReferencia"
-            type="text"
-            value={formData.puntoReferencia}
-            onChange={(e) =>
-              handleInputChange("puntoReferencia", e.target.value)
-            }
-            placeholder="ej: Frente al Centro Comercial Andino"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-          />
         </div>
+      )}
 
-        {/* Checkbox para usar misma dirección para facturación */}
-        <div className="border-t border-gray-200 pt-4">
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={formData.usarMismaParaFacturacion}
-              onChange={handleCheckboxChange}
-              className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-            />
-            <span className="text-sm font-medium text-gray-700">
-              Usar esta misma dirección para facturación
-            </span>
-          </label>
+      {/* Errores generales - Solo en paso 2 */}
+      {currentStep === 2 && errors.submit && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <p className="text-red-500 text-sm">{errors.submit}</p>
         </div>
-      </div>
+      )}
 
-      {/* Sección de dirección de facturación (se muestra solo si no usa la misma) */}
-      {!formData.usarMismaParaFacturacion && (
+      {/* Botones de navegación y submit - Solo en paso 2 */}
+      {currentStep === 2 && (
+        <div className="flex gap-3 pt-2">
+          {!withContainer ? (
+            // En Step2: Solo mostrar "Atrás" que ocupe todo el ancho
+            <button
+              type="button"
+              onClick={() => setCurrentStep(1)}
+              disabled={disabled}
+              className={`w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium transition ${
+                disabled
+                  ? "bg-gray-100 cursor-not-allowed opacity-60"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              Atrás
+            </button>
+          ) : (
+            // En Modal: Mostrar ambos botones
+            <>
+              <button
+                type="button"
+                onClick={() => setCurrentStep(1)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition"
+              >
+                Atrás
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  isLoading ||
+                  !selectedAddress ||
+                  !formData.nombreDireccion ||
+                  !formData.instruccionesEntrega ||
+                  (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
+                }
+                className="flex-1 bg-black text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Guardando...
+                  </span>
+                ) : (
+                  "Guardar dirección"
+                )}
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Sección de dirección de facturación - REMOVIDA */}
+      {false && (
         <div className="space-y-4 border-t border-gray-200 pt-4">
           <h5 className="text-sm font-semibold text-gray-900 border-b border-gray-200 pb-1">
             Dirección de Facturación
           </h5>
 
-          {/* Campos básicos para facturación */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="nombreDireccionFacturacion"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Nombre de la dirección *
-              </label>
-              <input
-                id="nombreDireccionFacturacion"
-                type="text"
-                value={formData.nombreDireccionFacturacion}
-                onChange={(e) =>
-                  handleInputChange(
-                    "nombreDireccionFacturacion",
-                    e.target.value
-                  )
-                }
-                placeholder="ej: Oficina, Empresa, Otro"
-                className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
-                  errors.nombreDireccionFacturacion
-                    ? "border-red-500"
-                    : "border-gray-300"
-                }`}
-              />
-              {errors.nombreDireccionFacturacion && (
-                <p className="text-red-500 text-xs mt-1">
-                  {errors.nombreDireccionFacturacion}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor="tipoDireccionFacturacion"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                Tipo de dirección
-              </label>
-              <select
-                id="tipoDireccionFacturacion"
-                value={formData.tipoDireccionFacturacion}
-                onChange={(e) =>
-                  handleInputChange("tipoDireccionFacturacion", e.target.value)
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-              >
-                <option value="casa">Casa</option>
-                <option value="apartamento">Apartamento</option>
-                <option value="oficina">Oficina</option>
-                <option value="otro">Otro</option>
-              </select>
-            </div>
+          {/* Nombre de dirección de facturación */}
+          <div>
+            <label
+              htmlFor="nombreDireccionFacturacion"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              Nombre de la dirección <span className="text-red-500">*</span>
+            </label>
+            <input
+              id="nombreDireccionFacturacion"
+              type="text"
+              value={formData.nombreDireccionFacturacion}
+              onChange={(e) =>
+                handleInputChange(
+                  "nombreDireccionFacturacion",
+                  e.target.value
+                )
+              }
+              placeholder="ej: Oficina, Empresa, Otro"
+              className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                errors.nombreDireccionFacturacion
+                  ? "border-red-500"
+                  : "border-gray-300"
+              }`}
+            />
+            {errors.nombreDireccionFacturacion && (
+              <p className="text-red-500 text-xs mt-1">
+                {errors.nombreDireccionFacturacion}
+              </p>
+            )}
           </div>
 
           {/* Autocompletado de dirección de facturación */}
           <div>
             <label
               htmlFor="direccionFacturacion"
-              className="block text-sm font-medium text-gray-700 mb-1"
+              className="block text-sm font-bold text-gray-900 mb-1"
             >
-              Dirección de facturación *
+              Buscar dirección (Google Maps) <span className="text-red-500">*</span>
             </label>
             <AddressAutocomplete
               addressType="billing"
@@ -761,94 +1589,236 @@ export default function AddNewAddressForm({
             )}
           </div>
 
-          {/* Campos adicionales para facturación */}
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="complementoFacturacion"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Complemento (Opcional)
-                </label>
-                <input
-                  id="complementoFacturacion"
-                  type="text"
-                  value={formData.complementoFacturacion}
-                  onChange={(e) =>
-                    handleInputChange("complementoFacturacion", e.target.value)
-                  }
-                  placeholder="ej: Apartamento 301, Torre B, Piso 2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="instruccionesEntregaFacturacion"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Instrucciones de entrega (Opcional)
-                </label>
-                <textarea
-                  id="instruccionesEntregaFacturacion"
-                  value={formData.instruccionesEntregaFacturacion}
-                  onChange={(e) =>
-                    handleInputChange(
-                      "instruccionesEntregaFacturacion",
-                      e.target.value
-                    )
-                  }
-                  placeholder="ej: Horario de oficina, llamar antes de llegar"
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
-                />
-              </div>
+          {/* Grid de campos de facturación: Departamento y Ciudad */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="departamentoFacturacion"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Departamento <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="departamentoFacturacion"
+                value={formData.departamentoFacturacion}
+                onChange={(e) => {
+                  handleInputChange("departamentoFacturacion", e.target.value);
+                  // Limpiar la ciudad seleccionada cuando cambia el departamento de facturación
+                  handleInputChange("ciudad", "");
+                }}
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  errors.departamentoFacturacion ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">
+                  {loadingDepartments ? "Cargando departamentos..." : "-- Selecciona un departamento --"}
+                </option>
+                {departments.map((dept) => (
+                  <option key={dept.nombre} value={dept.nombre}>
+                    {dept.nombre}
+                  </option>
+                ))}
+              </select>
+              {errors.departamentoFacturacion && (
+                <p className="text-red-500 text-xs mt-1">{errors.departamentoFacturacion}</p>
+              )}
             </div>
 
             <div>
               <label
-                htmlFor="puntoReferenciaFacturacion"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                htmlFor="ciudadFacturacion"
+                className="block text-sm font-bold text-gray-900 mb-1"
               >
-                Punto de referencia (Opcional)
+                Ciudad <span className="text-red-500">*</span> (compartida con envío)
+              </label>
+              <select
+                id="ciudadFacturacion"
+                value={formData.ciudad}
+                onChange={(e) => handleInputChange("ciudad", e.target.value)}
+                disabled={!formData.departamentoFacturacion}
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  !formData.departamentoFacturacion
+                    ? "bg-gray-100 cursor-not-allowed"
+                    : errors.ciudad
+                    ? "border-red-500"
+                    : "border-gray-300"
+                }`}
+              >
+                <option value="">
+                  {!formData.departamentoFacturacion
+                    ? "-- Primero selecciona un departamento --"
+                    : "-- Selecciona una ciudad --"}
+                </option>
+                {availableBillingCities.map((city) => (
+                  <option key={city.codigo} value={city.codigo}>
+                    {city.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Grid: Nombre Calle y Número Principal para facturación */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="nombreCalleFacturacion"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Tipo de Vía <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="nombreCalleFacturacion"
+                value={formData.nombreCalleFacturacion}
+                onChange={(e) => handleInputChange("nombreCalleFacturacion", e.target.value)}
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  errors.nombreCalleFacturacion ? "border-red-500" : "border-gray-300"
+                }`}
+              >
+                <option value="">-- Selecciona tipo de vía --</option>
+                {COLOMBIA_STREET_TYPES.map((streetType) => (
+                  <option key={streetType.codigo} value={streetType.nombre}>
+                    {streetType.nombre}
+                  </option>
+                ))}
+              </select>
+              {errors.nombreCalleFacturacion && (
+                <p className="text-red-500 text-xs mt-1">{errors.nombreCalleFacturacion}</p>
+              )}
+            </div>
+
+            <div>
+              <label
+                htmlFor="numeroPrincipalFacturacion"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Número principal *
               </label>
               <input
-                id="puntoReferenciaFacturacion"
+                id="numeroPrincipalFacturacion"
                 type="text"
-                value={formData.puntoReferenciaFacturacion}
-                onChange={(e) =>
-                  handleInputChange(
-                    "puntoReferenciaFacturacion",
-                    e.target.value
-                  )
-                }
-                placeholder="ej: Edificio azul, junto al semáforo"
+                value={formData.numeroPrincipalFacturacion}
+                onChange={(e) => handleInputChange("numeroPrincipalFacturacion", e.target.value)}
+                placeholder="ej: 98"
+                className={`w-full px-3 py-2 border rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${
+                  errors.numeroPrincipalFacturacion ? "border-red-500" : "border-gray-300"
+                }`}
+              />
+              {errors.numeroPrincipalFacturacion && (
+                <p className="text-red-500 text-xs mt-1">{errors.numeroPrincipalFacturacion}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Grid: Número Secundario y Barrio para facturación */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="numeroSecundarioFacturacion"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Número secundario
+              </label>
+              <input
+                id="numeroSecundarioFacturacion"
+                type="text"
+                value={formData.numeroSecundarioFacturacion}
+                onChange={(e) => handleInputChange("numeroSecundarioFacturacion", e.target.value)}
+                placeholder="ej: -28"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="barrioFacturacion"
+                className="block text-sm font-bold text-gray-900 mb-1"
+              >
+                Barrio
+              </label>
+              <input
+                id="barrioFacturacion"
+                type="text"
+                value={formData.barrioFacturacion}
+                onChange={(e) => handleInputChange("barrioFacturacion", e.target.value)}
+                placeholder="ej: Chicó"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
               />
             </div>
           </div>
-        </div>
-      )}
 
-      {/* Mapas 3D */}
-      {selectedAddress && (
-        <div className="space-y-4">
+          {/* Tipo de propiedad para facturación */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Ubicación de dirección de envío en el mapa
+            <label
+              htmlFor="tipoDireccionFacturacionPropiedad"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              Tipo de propiedad <span className="text-red-500">*</span>
             </label>
-            <AddressMap3D
-              address={selectedAddress}
-              height="200px"
-              enable3D={true}
-              showControls={false}
+            <select
+              id="tipoDireccionFacturacionPropiedad"
+              value={formData.tipoDireccionFacturacion}
+              onChange={(e) =>
+                handleInputChange("tipoDireccionFacturacion", e.target.value)
+              }
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            >
+              <option value="oficina">Oficina</option>
+              <option value="casa">Casa</option>
+              <option value="apartamento">Apartamento</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+
+          {/* Sets de referencia para facturación */}
+          <div>
+            <label
+              htmlFor="setsReferenciaFacturacion"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              Sets de referencia
+            </label>
+            <input
+              id="setsReferenciaFacturacion"
+              type="text"
+              value={formData.setsReferenciaFacturacion}
+              onChange={(e) =>
+                handleInputChange(
+                  "setsReferenciaFacturacion",
+                  e.target.value
+                )
+              }
+              placeholder="ej: Oficina 204"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+            />
+          </div>
+
+          {/* Instrucciones de entrega para facturación */}
+          <div>
+            <label
+              htmlFor="instruccionesEntregaFacturacion"
+              className="block text-sm font-bold text-gray-900 mb-1"
+            >
+              Instrucciones de entrega (Opcional)
+            </label>
+            <textarea
+              id="instruccionesEntregaFacturacion"
+              value={formData.instruccionesEntregaFacturacion}
+              onChange={(e) =>
+                handleInputChange(
+                  "instruccionesEntregaFacturacion",
+                  e.target.value
+                )
+              }
+              placeholder="ej: Horario de oficina, llamar antes de llegar"
+              rows={2}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition resize-none"
             />
           </div>
 
           {/* Mapa de dirección de facturación si es diferente */}
-          {!formData.usarMismaParaFacturacion && selectedBillingAddress && (
-            <div>
+          {selectedBillingAddress && (
+            <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Ubicación de dirección de facturación en el mapa
               </label>
@@ -862,60 +1832,6 @@ export default function AddNewAddressForm({
           )}
         </div>
       )}
-
-      {/* Errores generales */}
-      {errors.submit && (
-        <div className="bg-red-50 border border-red-200 rounded-md p-3">
-          <p className="text-red-500 text-sm">{errors.submit}</p>
-        </div>
-      )}
-
-      {/* Botones */}
-      <div className="flex gap-3 pt-2">
-        <button
-          type="submit"
-          disabled={
-            isLoading ||
-            !selectedAddress ||
-            (!formData.usarMismaParaFacturacion && !selectedBillingAddress)
-          }
-          className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  fill="none"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                />
-              </svg>
-              Guardando...
-            </span>
-          ) : (
-            "Agregar dirección"
-          )}
-        </button>
-
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-600 text-sm font-medium hover:text-gray-800 transition"
-          >
-            Cancelar
-          </button>
-        )}
-      </div>
     </form>
   );
 
@@ -924,6 +1840,8 @@ export default function AddNewAddressForm({
       {formContent}
     </div>
   ) : (
-    formContent
+    <div className="w-full max-w-4xl">
+      {formContent}
+    </div>
   );
 }

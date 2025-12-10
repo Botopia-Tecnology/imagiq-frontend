@@ -10,6 +10,7 @@ import {
   Truck,
   Store,
   Edit2,
+  User as UserIcon,
 } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
@@ -26,7 +27,7 @@ import {
 import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
 import { apiPost } from "@/lib/api-client";
 import { safeGetLocalStorage } from "@/lib/localStorage";
-import { productEndpoints } from "@/lib/api";
+import { productEndpoints, deliveryEndpoints } from "@/lib/api";
 import useSecureStorage from "@/hooks/useSecureStorage";
 import { User } from "@/types/user";
 
@@ -119,6 +120,13 @@ export default function Step7({ onBack }: Step7Props) {
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const [recipientData, setRecipientData] = useState<{
+    receivedByClient: boolean;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  } | null>(null);
   const [zeroInterestData, setZeroInterestData] =
     useState<CheckZeroInterestResponse | null>(null);
   const [shippingVerification, setShippingVerification] =
@@ -129,6 +137,8 @@ export default function Step7({ onBack }: Step7Props) {
   // NUEVO: Estado separado para skeleton (solo espera canPickUp) y botón (espera cálculo de envío)
   const [isLoadingCanPickUp, setIsLoadingCanPickUp] = useState(false);
   const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  // Estado para guardar el código de bodega de candidate-stores
+  const [candidateWarehouseCode, setCandidateWarehouseCode] = useState<string | undefined>();
   // Ref para leer el valor actual de isCalculatingShipping en callbacks
   const isCalculatingShippingRef = React.useRef(false);
 
@@ -140,16 +150,36 @@ export default function Step7({ onBack }: Step7Props) {
     "imagiq_user",
     null
   );
-  const [checkoutAddress, _] = useSecureStorage<{
-  "id": string,
-  "usuario_id": string,
-  "email": string,
-  "linea_uno": string,
-  "codigo_dane": string,
-  "ciudad": string,
-  "pais": string,
-  "esPredeterminada": boolean
-} | null>('checkout-address', null);
+  
+  // CRÍTICO: Leer dirección desde localStorage normal, NO desde useSecureStorage
+  // porque se guarda en localStorage.setItem("checkout-address") en Step3
+  const [checkoutAddress, setCheckoutAddress] = useState<{
+    "id": string,
+    "usuario_id": string,
+    "email": string,
+    "linea_uno": string,
+    "codigo_dane": string,
+    "ciudad": string,
+    "pais": string,
+    "esPredeterminada": boolean
+  } | null>(null);
+
+  // Cargar dirección desde localStorage al montar el componente
+  useEffect(() => {
+    try {
+      const addressStr = localStorage.getItem('checkout-address');
+      if (addressStr) {
+        const parsed = JSON.parse(addressStr);
+        console.log("📍 [Step7 - Init] Dirección cargada desde localStorage:", parsed);
+        console.log("📍 [Step7 - Init] UUID de dirección:", parsed.id);
+        setCheckoutAddress(parsed);
+      } else {
+        console.warn("⚠️ [Step7 - Init] No se encontró checkout-address en localStorage");
+      }
+    } catch (error) {
+      console.error("❌ [Step7 - Init] Error al cargar checkout-address:", error);
+    }
+  }, []);
 
   // Store/Warehouse validation state
   const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
@@ -324,6 +354,12 @@ export default function Step7({ onBack }: Step7Props) {
       if (shippingAddress) {
         try {
           const parsed = JSON.parse(shippingAddress);
+          console.log("📍 [Step7 - useEffect] Dirección de envío cargada desde localStorage:", parsed);
+          console.log("📍 [Step7 - useEffect] UUID de dirección:", parsed.id);
+          console.log("📍 [Step7 - useEffect] Usuario ID (de dirección):", parsed.usuario_id);
+          console.log("📍 [Step7 - useEffect] Línea uno:", parsed.linea_uno);
+          console.log("📍 [Step7 - useEffect] Ciudad:", parsed.ciudad);
+          console.log("📍 [Step7 - useEffect] Código DANE:", parsed.codigo_dane);
           setShippingData({
             type: "delivery",
             address: parsed.linea_uno,
@@ -332,6 +368,8 @@ export default function Step7({ onBack }: Step7Props) {
         } catch (error) {
           console.error("Error parsing shipping address:", error);
         }
+      } else {
+        console.warn("⚠️ [Step7 - useEffect] No se encontró dirección en localStorage (checkout-address)");
       }
     }
 
@@ -344,6 +382,32 @@ export default function Step7({ onBack }: Step7Props) {
       } catch (error) {
         console.error("Error parsing billing data:", error);
       }
+    }
+
+    // Cargar datos del receptor
+    try {
+      const receivedByClientStr = localStorage.getItem("checkout-received-by-client");
+      const recipientDataStr = localStorage.getItem("checkout-recipient-data");
+
+      const receivedByClient = receivedByClientStr ? JSON.parse(receivedByClientStr) : true;
+
+      if (!receivedByClient && recipientDataStr) {
+        const parsed = JSON.parse(recipientDataStr);
+        setRecipientData({
+          receivedByClient: false,
+          firstName: parsed.firstName,
+          lastName: parsed.lastName,
+          email: parsed.email,
+          phone: parsed.phone,
+        });
+      } else {
+        setRecipientData({
+          receivedByClient: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing recipient data:", error);
+      setRecipientData({ receivedByClient: true });
     }
 
     // Load Trade-In data
@@ -423,6 +487,31 @@ export default function Step7({ onBack }: Step7Props) {
           "🔄 Dirección cambiada desde header en Step7, redirigiendo a Step3..."
         );
         router.push("/carrito/step3");
+      } else {
+        // Si cambia la dirección (pero no desde header), actualizar el estado
+        try {
+          const addressStr = localStorage.getItem('checkout-address');
+          if (addressStr) {
+            const parsed = JSON.parse(addressStr);
+            console.log("🔄 [Step7] Dirección actualizada desde evento:", parsed);
+            setCheckoutAddress(parsed);
+          }
+        } catch (error) {
+          console.error("❌ [Step7] Error al actualizar dirección:", error);
+        }
+      }
+    };
+
+    // Escuchar cambios en localStorage también
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'checkout-address' && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          console.log("🔄 [Step7] Dirección actualizada desde storage event:", parsed);
+          setCheckoutAddress(parsed);
+        } catch (error) {
+          console.error("❌ [Step7] Error al parsear dirección de storage:", error);
+        }
       }
     };
 
@@ -430,12 +519,14 @@ export default function Step7({ onBack }: Step7Props) {
       "address-changed",
       handleAddressChange as EventListener
     );
+    globalThis.window.addEventListener("storage", handleStorageChange);
 
     return () => {
       globalThis.window.removeEventListener(
         "address-changed",
         handleAddressChange as EventListener
       );
+      globalThis.window.removeEventListener("storage", handleStorageChange);
     };
   }, [router]);
 
@@ -518,26 +609,12 @@ export default function Step7({ onBack }: Step7Props) {
           products: productsToCheck,
           user_id: userId,
         };
-        console.log("📤 [Step7] Llamando getCandidateStores y stores-for-produtcs en PARALELO con body:", JSON.stringify(requestBody, null, 2));
+        console.log("📤 [Step7] Llamando getCandidateStores con TODO el carrito, body:", JSON.stringify(requestBody, null, 2));
 
-        // OPTIMIZACIÓN: Ejecutar ambas llamadas en PARALELO para reducir tiempo de carga
-        const [response, storesData] = await Promise.all([
-          productEndpoints.getCandidateStores(requestBody),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/products/stores-for-produtcs`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '',
-            },
-            body: JSON.stringify(requestBody),
-          }).then(res => res.json()).catch(error => {
-            console.error("❌ [Step7] Error llamando stores-for-produtcs:", error);
-            return null;
-          })
-        ]);
+        // Llamar SOLO a candidate-stores (que analiza TODO el carrito completo)
+        const response = await productEndpoints.getCandidateStores(requestBody);
 
         console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(response.data, null, 2));
-        console.log("📥 [Step7] Respuesta de stores-for-produtcs:", JSON.stringify(storesData, null, 2));
 
         if (response.success && response.data) {
           // Si la petición fue exitosa, limpiar el hash de fallo si existía
@@ -556,22 +633,25 @@ export default function Step7({ onBack }: Step7Props) {
 
           console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(responseData, null, 2));
 
-          // Obtener codBodega de stores-for-products (no de getCandidateStores)
-          console.log("🔍 [Step7] storesData completo:", storesData);
+          // Obtener codBodega de candidate-stores (analiza TODO el carrito)
+          console.log("🔍 [Step7] responseData completo:", responseData);
 
           let warehouseCode: string | undefined;
 
-          if (Array.isArray(storesData) && storesData.length > 0) {
-            // Si es un array, tomar el primer elemento
-            const firstItem = storesData[0];
-            warehouseCode = firstItem?.nearest?.codBodega || firstItem?.codBodega;
-            console.log("🔍 [Step7] Tomado del primer elemento del array:", warehouseCode);
-          } else if (storesData && !Array.isArray(storesData)) {
-            // Si es un objeto (fallback)
-            warehouseCode = storesData.codBodega || storesData.nearest?.codBodega;
+          // candidate-stores devuelve la estructura con nearest que contiene la bodega más cercana
+          // que puede surtir TODO el pedido completo
+          if (responseData.nearest?.codBodega) {
+            warehouseCode = responseData.nearest.codBodega;
+            console.log("🔍 [Step7] codBodega tomado de responseData.nearest:", warehouseCode);
+          } else if (responseData.codeBodega) {
+            warehouseCode = responseData.codeBodega;
+            console.log("🔍 [Step7] codBodega tomado de responseData.codeBodega:", warehouseCode);
           }
 
-          console.log("🏭 [Step7] codBodega (de stores-for-products):", warehouseCode);
+          console.log("🏭 [Step7] codBodega final (de candidate-stores):", warehouseCode);
+
+          // Guardar en estado para usar al crear la orden
+          setCandidateWarehouseCode(warehouseCode);
 
           // Obtener canPickUp global de la respuesta
           const globalCanPickUp =
@@ -596,6 +676,89 @@ export default function Step7({ onBack }: Step7Props) {
           // Si llegamos aquí, es método "delivery" → Continuar calculando cobertura en segundo plano
           console.log("📦 [Step7] Método delivery - Calculando cobertura en segundo plano");
           // El skeleton ya está oculto, pero el botón seguirá en loading hasta terminar
+
+          // ---------------------------------------------------------------------------
+          // NUEVO: Cotización Multi-Origen (Solo para Domicilio)
+          try {
+            // 1. Obtener ciudades de origen únicas de candidate-stores response
+            const originCities = new Set<string>();
+
+            // Interfaz auxiliar para evitar el uso de any
+            interface StoreDataLike {
+              ciudad?: string;
+              city?: string;
+              nearest?: { ciudad?: string; city?: string };
+              stores?: StoreDataLike[];
+            }
+
+            // candidate-stores devuelve response.data que es CandidateStoresResponse
+            // Intentar obtener ciudad desde la respuesta
+            if (response.data) {
+              // response.data es CandidateStoresResponse, por lo que tiene la propiedad stores
+              // pero necesitamos asegurarnos de que TypeScript lo sepa
+              const storesMap = (response.data as unknown as { stores: Record<string, StoreDataLike[]> }).stores;
+              if (storesMap) {
+                Object.values(storesMap).forEach((storesList) => {
+                  if (Array.isArray(storesList)) {
+                    storesList.forEach((s) => {
+                      if (s.ciudad) originCities.add(s.ciudad);
+                    });
+                  }
+                });
+              }
+            }
+
+            console.log("🏙️ [Step7] Ciudades de origen encontradas:", Array.from(originCities));
+
+            // 2. Obtener ciudad de destino
+            const destinationCity = shippingData?.city ||
+              (checkoutAddress?.codigo_dane || checkoutAddress?.ciudad);
+
+            // 3. Llamar al endpoint si tenemos datos suficientes
+            if (originCities.size > 0 && destinationCity) {
+              console.log("🚚 [Step7] Iniciando cotización multi-origen...");
+
+              // Preparar detalle de productos (asumiendo 1kg por unidad como solicitado)
+              const quoteDetails = products.map(p => ({
+                ubl: 0, // Valor por defecto
+                alto: 10, // Valor por defecto
+                ancho: 10, // Valor por defecto
+                largo: 10, // Valor por defecto
+                peso: p.quantity, // 1kg por unidad * cantidad
+                unidades: p.quantity
+              }));
+
+              const quotePayload = {
+                ciudades_origen: Array.from(originCities),
+                ciudad_destino: destinationCity,
+                cuenta: "1", // Valor por defecto
+                producto: "0", // Valor por defecto
+                valoracion: String(calculations.total || 100000), // Valor del carrito o default
+                nivel_servicio: [1], // Valor por defecto
+                detalle: quoteDetails
+              };
+
+              // Llamada asíncrona (no bloquea el flujo principal)
+              deliveryEndpoints.quoteNationalMultiOrigin(quotePayload)
+                .then(quoteResponse => {
+                  if (quoteResponse.success) {
+                    console.log("✅ [Step7] Cotización Multi-Origen Exitosa:", quoteResponse.data);
+                    // Aquí se podría guardar en estado si se necesitara mostrar en UI
+                    // setMultiOriginQuote(quoteResponse.data);
+                  } else {
+                    console.warn("⚠️ [Step7] Falló cotización multi-origen:", quoteResponse.message);
+                  }
+                })
+                .catch(err => {
+                  console.error("❌ [Step7] Error en cotización multi-origen:", err);
+                });
+            } else {
+              console.log("⚠️ [Step7] No se pudo cotizar multi-origen: Faltan ciudades origen o destino", { originCities: Array.from(originCities), destinationCity });
+            }
+          } catch (quoteError) {
+            console.error("❌ [Step7] Error inesperado en lógica de cotización:", quoteError);
+          }
+          // ---------------------------------------------------------------------------
 
           // PASO 2: Si canPickUp global es FALSE → Verificar si es Centro de Distribución
           if (!globalCanPickUp) {
@@ -985,8 +1148,32 @@ export default function Step7({ onBack }: Step7Props) {
         shippingVerification: shippingVerification
       });
 
+      // Validar que tenemos la dirección de envío
+      console.log("� [Step7 - Validación] ========== VALIDACIÓN DE DIRECCIÓN ==========");
+      console.log("🔍 [Step7 - Validación] checkoutAddress completo:", checkoutAddress);
+      console.log("🔍 [Step7 - Validación] checkoutAddress?.id:", checkoutAddress?.id);
+      console.log("🔍 [Step7 - Validación] Tipo de checkoutAddress?.id:", typeof checkoutAddress?.id);
+      console.log("🔍 [Step7 - Validación] ¿Es undefined?:", checkoutAddress?.id === undefined);
+      console.log("🔍 [Step7 - Validación] ¿Es null?:", checkoutAddress?.id === null);
+      console.log("🔍 [Step7 - Validación] ¿Es string vacío?:", checkoutAddress?.id === "");
+      console.log("🔍 [Step7 - Validación] Dirección de envío:", {
+        direccionId: checkoutAddress?.id,
+        linea_uno: checkoutAddress?.linea_uno,
+        ciudad: checkoutAddress?.ciudad,
+        codigo_dane: checkoutAddress?.codigo_dane
+      });
+      console.log("🔍 [Step7 - Validación] ============================================");
+
+      if (!checkoutAddress?.id) {
+        console.error("❌ [Step7 - Validación] ERROR: No se encontró el ID de la dirección");
+        throw new Error("No se encontró la dirección de envío. Por favor, agrega una dirección antes de continuar.");
+      }
+
+      console.log("✅ [Step7 - Validación] Dirección válida con ID:", checkoutAddress.id);
+
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
+        // Para pickup: usar la tienda seleccionada
         try {
           const storeStr = localStorage.getItem("checkout-store");
           if (storeStr) {
@@ -997,10 +1184,48 @@ export default function Step7({ onBack }: Step7Props) {
         } catch {
           // ignore
         }
+      } else {
+        // Para delivery: usar la bodega de candidate-stores
+        // Esta bodega puede surtir TODO el pedido completo
+        codigo_bodega = candidateWarehouseCode;
+        console.log("🏭 [Step7] Usando bodega de candidate-stores para delivery:", codigo_bodega);
       }
+
+      // Log final antes de enviar al backend
+      console.log("📤 [Step7] Datos que se enviarán al backend:", {
+        direccionId: checkoutAddress?.id,
+        userId: authContext.user?.id || String(loggedUser?.id),
+        codigo_bodega,
+        metodo_envio,
+        totalAmount: calculations.total,
+        shippingAmount: calculations.shipping
+      });
+
+      // ========================================
+      // 🔍 LOGS DETALLADOS DE DIRECCIÓN
+      // ========================================
+      console.log("🏠 [Step7] ========== INFORMACIÓN DE DIRECCIÓN ==========");
+      console.log("🏠 [Step7] Dirección completa desde checkoutAddress:", checkoutAddress);
+      console.log("🏠 [Step7] UUID de dirección (userInfo.direccionId):", checkoutAddress?.id);
+      console.log("🏠 [Step7] UUID de dirección (informacion_facturacion.direccion_id):", informacion_facturacion.direccion_id);
+      console.log("🏠 [Step7] Línea uno:", checkoutAddress?.linea_uno);
+      console.log("🏠 [Step7] Ciudad:", checkoutAddress?.ciudad);
+      console.log("🏠 [Step7] Código DANE:", checkoutAddress?.codigo_dane);
+      console.log("🏠 [Step7] País:", checkoutAddress?.pais);
+      console.log("🏠 [Step7] Usuario ID (de la dirección):", checkoutAddress?.usuario_id);
+      console.log("🏠 [Step7] Usuario ID (del contexto):", authContext.user?.id || loggedUser?.id);
+      console.log("🏠 [Step7] =============================================");
 
       switch (paymentData?.method) {
         case "tarjeta": {
+          console.log("💳 [Step7] ========== PAGO CON TARJETA ==========");
+          console.log("💳 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("💳 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("💳 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("💳 [Step7] metodo_envio:", metodo_envio);
+          console.log("💳 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("💳 [Step7] ==========================================");
+
           const res = await payWithCard({
             currency: "COP",
             dues: String(paymentData.installments || "1"),
@@ -1094,6 +1319,15 @@ export default function Step7({ onBack }: Step7Props) {
           break;
         }
         case "pse": {
+          console.log("🏦 [Step7] ========== PAGO CON PSE ==========");
+          console.log("🏦 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("🏦 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("🏦 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("🏦 [Step7] metodo_envio:", metodo_envio);
+          console.log("🏦 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("🏦 [Step7] Banco seleccionado:", paymentData.bank, "-", paymentData.bankName);
+          console.log("🏦 [Step7] ==========================================");
+
           const res = await payWithPse({
             totalAmount: String(calculations.total),
             shippingAmount: String(calculations.shipping),
@@ -1139,6 +1373,14 @@ export default function Step7({ onBack }: Step7Props) {
           break;
         }
         case "addi": {
+          console.log("💰 [Step7] ========== PAGO CON ADDI ==========");
+          console.log("💰 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("💰 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("💰 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("💰 [Step7] metodo_envio:", metodo_envio);
+          console.log("💰 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("💰 [Step7] ==========================================");
+
           const res = await payWithAddi({
             totalAmount: String(calculations.total),
             shippingAmount: String(calculations.shipping),
@@ -1275,6 +1517,20 @@ export default function Step7({ onBack }: Step7Props) {
                   <div className="h-16 bg-gray-100 rounded-lg"></div>
                 </div>
 
+                {/* Skeleton Información del receptor */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-40 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+
                 {/* Skeleton Datos de facturación */}
                 <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
@@ -1309,9 +1565,11 @@ export default function Step7({ onBack }: Step7Props) {
               </>
             ) : (
               <>
-                {/* Método de pago */}
-                {paymentData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                {/* Fila 1: Método de pago e Información del receptor */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Método de pago */}
+                  {paymentData && (
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1469,8 +1727,80 @@ export default function Step7({ onBack }: Step7Props) {
                         </div>
                       )}
                     </div>
-                  </div>
-                )}
+                    </div>
+                  )}
+
+                  {/* Información del receptor */}
+                  {recipientData && (
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-gray-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-bold text-gray-900">
+                              Información del receptor
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                              {recipientData.receivedByClient
+                                ? "Será recibido por el cliente"
+                                : "Será recibido por otra persona"}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => router.push("/carrito/step3")}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Editar
+                        </button>
+                      </div>
+
+                      {!recipientData.receivedByClient && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Nombre */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.firstName}
+                            </p>
+                          </div>
+
+                          {/* Apellido */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Apellido</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.lastName}
+                            </p>
+                          </div>
+
+                          {/* Email */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Correo electrónico
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.email}
+                            </p>
+                          </div>
+
+                          {/* Teléfono */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Número de celular
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.phone}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Método de entrega */}
                 {shippingData && (

@@ -36,6 +36,7 @@ import {
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { shouldRenderValue } from "./utils/shouldRenderValue";
+import { prefetchFlixmediaScript } from "@/lib/flixmedia";
 
 /**
  * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
@@ -117,6 +118,7 @@ export interface ProductCardProps {
   acceptsTradeIn?: boolean;
   desDetallada?: string; // Indica si el producto acepta retoma (basado en indRetoma)
   isInChat?: boolean; // Indica si está siendo renderizado en el chat (para ajustar estilos)
+  skuflixmedia?: string; // SKU específico para Flixmedia
 }
 
 export default function ProductCard({
@@ -387,8 +389,8 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? "",
+              ? image
+              : image.src ?? "",
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
@@ -396,8 +398,8 @@ export default function ProductCard({
         originalPrice:
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(
-                finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
-              )
+              finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+            )
             : finalCurrentOriginalPrice,
         stock: productSelection.selectedVariant?.stockDisponible ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
@@ -406,30 +408,30 @@ export default function ProductCard({
         puntos_q,
         color:
           displayedSelectedColor?.hex &&
-          shouldRenderValue(displayedSelectedColor.hex)
+            shouldRenderValue(displayedSelectedColor.hex)
             ? displayedSelectedColor.hex
             : undefined,
         colorName:
           displayedSelectedColor?.nombreColorDisplay &&
-          shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
             ? displayedSelectedColor.nombreColorDisplay
             : productSelection.selection.selectedColor &&
               shouldRenderValue(productSelection.selection.selectedColor)
-            ? productSelection.selection.selectedColor
-            : selectedColor?.label && shouldRenderValue(selectedColor.label)
-            ? selectedColor.label
-            : undefined,
+              ? productSelection.selection.selectedColor
+              : selectedColor?.label && shouldRenderValue(selectedColor.label)
+                ? selectedColor.label
+                : undefined,
         capacity:
           productSelection.selection.selectedCapacity &&
-          shouldRenderValue(productSelection.selection.selectedCapacity)
+            shouldRenderValue(productSelection.selection.selectedCapacity)
             ? productSelection.selection.selectedCapacity
             : selectedCapacity?.label &&
               shouldRenderValue(selectedCapacity.label)
-            ? selectedCapacity.label
-            : undefined,
+              ? selectedCapacity.label
+              : undefined,
         ram:
           productSelection.selection.selectedMemoriaram &&
-          shouldRenderValue(productSelection.selection.selectedMemoriaram)
+            shouldRenderValue(productSelection.selection.selectedMemoriaram)
             ? productSelection.selection.selectedMemoriaram
             : undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
@@ -438,7 +440,7 @@ export default function ProductCard({
         categoria: apiProduct?.categoria || "",
         indRetoma:
           apiProduct?.indRetoma?.[
-            productSelection.selectedVariant?.index || 0
+          productSelection.selectedVariant?.index || 0
           ] ?? (acceptsTradeIn ? 1 : 0),
       });
     } finally {
@@ -507,10 +509,11 @@ export default function ProductCard({
         typeof currentImage === "string"
           ? currentImage
           : typeof image === "string"
-          ? image
-          : image.src,
+            ? image
+            : image.src,
       indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
       allPrices: apiProduct?.precioeccommerce || [],
+      skuflixmedia: productSelection.selectedSkuflixmedia,
     };
 
     // Guardar en localStorage con una clave única por producto
@@ -565,8 +568,8 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? "",
+              ? image
+              : image.src ?? "",
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
@@ -574,8 +577,8 @@ export default function ProductCard({
         originalPrice:
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(
-                finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
-              )
+              finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+            )
             : finalCurrentOriginalPrice,
         stock: productSelection.selectedVariant?.stockDisponible ?? 0,
         quantity: 1,
@@ -584,30 +587,30 @@ export default function ProductCard({
         puntos_q,
         color:
           displayedSelectedColor?.hex &&
-          shouldRenderValue(displayedSelectedColor.hex)
+            shouldRenderValue(displayedSelectedColor.hex)
             ? displayedSelectedColor.hex
             : undefined,
         colorName:
           displayedSelectedColor?.nombreColorDisplay &&
-          shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
             ? displayedSelectedColor.nombreColorDisplay
             : productSelection.selection.selectedColor &&
               shouldRenderValue(productSelection.selection.selectedColor)
-            ? productSelection.selection.selectedColor
-            : selectedColor?.label && shouldRenderValue(selectedColor.label)
-            ? selectedColor.label
-            : undefined,
+              ? productSelection.selection.selectedColor
+              : selectedColor?.label && shouldRenderValue(selectedColor.label)
+                ? selectedColor.label
+                : undefined,
         capacity:
           productSelection.selection.selectedCapacity &&
-          shouldRenderValue(productSelection.selection.selectedCapacity)
+            shouldRenderValue(productSelection.selection.selectedCapacity)
             ? productSelection.selection.selectedCapacity
             : selectedCapacity?.label &&
               shouldRenderValue(selectedCapacity.label)
-            ? selectedCapacity.label
-            : undefined,
+              ? selectedCapacity.label
+              : undefined,
         ram:
           productSelection.selection.selectedMemoriaram &&
-          shouldRenderValue(productSelection.selection.selectedMemoriaram)
+            shouldRenderValue(productSelection.selection.selectedMemoriaram)
             ? productSelection.selection.selectedMemoriaram
             : undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
@@ -616,7 +619,7 @@ export default function ProductCard({
         categoria: apiProduct?.categoria || "",
         indRetoma:
           apiProduct?.indRetoma?.[
-            productSelection.selectedVariant?.index || 0
+          productSelection.selectedVariant?.index || 0
           ] ?? (acceptsTradeIn ? 1 : 0),
       });
 
@@ -676,6 +679,10 @@ export default function ProductCard({
     return selectedColor;
   }, [apiProduct, productSelection, selectedColor]);
 
+  const handleMouseEnter = () => {
+    prefetchFlixmediaScript();
+  };
+
   return (
     <>
       <StockNotificationModal
@@ -686,21 +693,21 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? ""
+              ? image
+              : image.src ?? ""
         }
         selectedColor={
           displayedSelectedColor?.nombreColorDisplay &&
-          shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
             ? displayedSelectedColor.nombreColorDisplay
             : productSelection.selection.selectedColor &&
               shouldRenderValue(productSelection.selection.selectedColor)
-            ? productSelection.selection.selectedColor
-            : undefined
+              ? productSelection.selection.selectedColor
+              : undefined
         }
         selectedStorage={
           productSelection.selection.selectedCapacity &&
-          shouldRenderValue(productSelection.selection.selectedCapacity)
+            shouldRenderValue(productSelection.selection.selectedCapacity)
             ? productSelection.selection.selectedCapacity
             : undefined
         }
@@ -712,6 +719,7 @@ export default function ProductCard({
           "rounded-lg w-full h-full flex flex-col mx-auto",
           className
         )}
+        onMouseEnter={handleMouseEnter}
       >
         {/* Sección de imagen con carrusel */}
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
@@ -728,7 +736,7 @@ export default function ProductCard({
               Paga con <span className="font-bold">addi</span>
             </p>
           </div>
-          
+
           <button
             onClick={(e) => {
               e.stopPropagation(); // Prevenir que se active el click de la card
@@ -765,6 +773,8 @@ export default function ProductCard({
                       src={transformedSrc}
                       alt={`${name} - imagen ${index + 1}`}
                       fill
+                      priority={index === 0}
+                      loading={index === 0 ? "eager" : "lazy"}
                       className="object-cover"
                       sizes={cloudinaryImage.imageProps.sizes}
                     />
@@ -881,18 +891,18 @@ export default function ProductCard({
                       colors={
                         apiProduct
                           ? productSelection
-                              .getColorOptions()
-                              .map((colorOption) => ({
-                                name: colorOption.color,
-                                hex: colorOption.hex,
-                                label:
-                                  colorOption.nombreColorDisplay ||
-                                  colorOption.color,
-                                nombreColorDisplay:
-                                  colorOption.nombreColorDisplay || undefined,
-                                sku: colorOption.variants[0]?.sku || "",
-                                ean: colorOption.variants[0]?.ean || "",
-                              }))
+                            .getColorOptions()
+                            .map((colorOption) => ({
+                              name: colorOption.color,
+                              hex: colorOption.hex,
+                              label:
+                                colorOption.nombreColorDisplay ||
+                                colorOption.color,
+                              nombreColorDisplay:
+                                colorOption.nombreColorDisplay || undefined,
+                              sku: colorOption.variants[0]?.sku || "",
+                              ean: colorOption.variants[0]?.ean || "",
+                            }))
                           : colors
                       }
                       selectedColor={displayedSelectedColor}
@@ -912,49 +922,49 @@ export default function ProductCard({
                       capacities={
                         apiProduct
                           ? productSelection.availableCapacities.map(
-                              (capacityName) => {
-                                // Crear un ProductCapacity basado en el nombre de la capacidad
-                                const formattedLabel =
-                                  formatCapacityLabel(capacityName);
-                                const capacityInfo = capacities?.find(
-                                  (c) => c.label === capacityName
-                                ) || {
-                                  value: capacityName
-                                    .toLowerCase()
-                                    .replaceAll(/\s+/g, ""),
-                                  label: formattedLabel,
-                                  sku: "",
-                                  ean: "",
-                                };
-                                return capacityInfo;
-                              }
-                            )
+                            (capacityName) => {
+                              // Crear un ProductCapacity basado en el nombre de la capacidad
+                              const formattedLabel =
+                                formatCapacityLabel(capacityName);
+                              const capacityInfo = capacities?.find(
+                                (c) => c.label === capacityName
+                              ) || {
+                                value: capacityName
+                                  .toLowerCase()
+                                  .replaceAll(/\s+/g, ""),
+                                label: formattedLabel,
+                                sku: "",
+                                ean: "",
+                              };
+                              return capacityInfo;
+                            }
+                          )
                           : capacities || []
                       }
                       selectedCapacity={
                         apiProduct
                           ? productSelection.availableCapacities
-                              .map((capacityName) => {
-                                const formattedLabel =
-                                  formatCapacityLabel(capacityName);
-                                const capacityInfo = capacities?.find(
-                                  (c) => c.label === capacityName
-                                ) || {
-                                  value: capacityName
-                                    .toLowerCase()
-                                    .replaceAll(/\s+/g, ""),
-                                  label: formattedLabel,
-                                };
-                                return capacityInfo;
-                              })
-                              .find(
-                                (c) =>
-                                  c.label ===
-                                  formatCapacityLabel(
-                                    productSelection.selection
-                                      .selectedCapacity || ""
-                                  )
-                              ) || null
+                            .map((capacityName) => {
+                              const formattedLabel =
+                                formatCapacityLabel(capacityName);
+                              const capacityInfo = capacities?.find(
+                                (c) => c.label === capacityName
+                              ) || {
+                                value: capacityName
+                                  .toLowerCase()
+                                  .replaceAll(/\s+/g, ""),
+                                label: formattedLabel,
+                              };
+                              return capacityInfo;
+                            })
+                            .find(
+                              (c) =>
+                                c.label ===
+                                formatCapacityLabel(
+                                  productSelection.selection
+                                    .selectedCapacity || ""
+                                )
+                            ) || null
                           : selectedCapacity
                       }
                       onCapacitySelect={handleCapacitySelect}

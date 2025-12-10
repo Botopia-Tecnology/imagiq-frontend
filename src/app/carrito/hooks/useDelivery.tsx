@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Direccion } from "@/types/user";
 import { addressesService } from "@/services/addresses.service";
 import type { Address } from "@/types/address";
 import { safeGetLocalStorage } from "@/lib/localStorage";
@@ -18,22 +17,6 @@ import {
   setGlobalCanPickUpCache,
   invalidateCacheOnAddressChange,
 } from "../utils/globalCanPickUpCache";
-
-/**
- * Helper para convertir Address a Direccion (legacy)
- */
-const addressToDireccion = (address: Address): Direccion => {
-  return {
-    id: address.id,
-    usuario_id: address.usuarioId,
-    email: "", // Se llenará del localStorage si es necesario
-    linea_uno: address.direccionFormateada,
-    codigo_dane: address.codigo_dane, // Backend lo llena
-    ciudad: address.ciudad || "",
-    pais: address.pais,
-    esPredeterminada: address.esPredeterminada,
-  };
-};
 
 /**
  * Normaliza texto removiendo acentos y convirtiendo a minúsculas
@@ -116,15 +99,16 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const canFetchFromEndpoint = config?.canFetchFromEndpoint ?? true;
   const onlyReadCache = config?.onlyReadCache ?? false;
 
-  const [address, setAddress] = useState<Direccion | null>(null);
+  const [address, setAddress] = useState<Address | null>(null);
   const [addressEdit, setAddressEdit] = useState(false);
+  const [storeEdit, setStoreEdit] = useState(false);
   const [storeQuery, setStoreQuery] = useState("");
   const [stores, setStores] = useState<FormattedStore[]>([]);
   const [filteredStores, setFilteredStores] = useState<FormattedStore[]>([]);
   const [selectedStore, setSelectedStore] = useState<FormattedStore | null>(
     null
   );
-  const [addresses, setAddresses] = useState<Direccion[]>([]);
+  const [addresses, setAddresses] = useState<Address[]>([]);
   const [canPickUp, setCanPickUp] = useState<boolean | undefined>(true); // Estado para saber si se puede recoger en tienda
   const [addressLoading, setAddressLoading] = useState(false); // Estado para mostrar skeleton al recargar dirección
   const [availableCities, setAvailableCities] = useState<string[]>([]); // Ciudades donde hay tiendas disponibles
@@ -145,6 +129,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   const processingAddressChangeRef = useRef<string | null>(null); // Dirección que se está procesando actualmente
   const lastAddressChangeProcessedTimeRef = useRef<number>(0); // Timestamp del último cambio de dirección procesado
   const retry429CountRef = useRef(0); // Contador de reintentos por error 429
+  const allowFetchOnAddressChangeRef = useRef(false); // Flag para permitir peticiones cuando cambia dirección (aunque onlyReadCache=true)
 
   // Flag global compartido para evitar procesar el mismo cambio desde múltiples listeners
   // Se usa en window para que sea compartido entre todos los componentes
@@ -236,10 +221,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
   // Llama al endpoint con TODOS los productos agrupados para obtener canPickUp global y sus tiendas
   const fetchCandidateStores = useCallback(async () => {
     console.log('🚀🚀🚀 INICIO fetchCandidateStores - FUNCIÓN LLAMADA');
-    console.log('   Configuración:', { canFetchFromEndpoint, onlyReadCache });
+    console.log('   Configuración:', { canFetchFromEndpoint, onlyReadCache, allowFetchOnAddressChange: allowFetchOnAddressChangeRef.current });
 
     // OPTIMIZACIÓN: Si onlyReadCache es true, SOLO leer del caché y retornar inmediatamente
-    if (onlyReadCache) {
+    // EXCEPCIÓN: Si allowFetchOnAddressChangeRef es true, permitir petición (cambio de dirección)
+    if (onlyReadCache && !allowFetchOnAddressChangeRef.current) {
       console.log('📖 [Optimización] onlyReadCache=true - Solo leyendo del caché, NO se hará petición al endpoint');
 
       // Intentar leer del caché
@@ -260,10 +246,11 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }));
 
       let currentAddressId = lastAddressIdRef.current || '';
+      let savedAddress: string | null = null;
       try {
-        const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
+        savedAddress = globalThis.window?.localStorage.getItem("checkout-address") || null;
         if (savedAddress) {
-          const parsed = JSON.parse(savedAddress) as Direccion;
+          const parsed = JSON.parse(savedAddress) as Address;
           if (parsed.id) {
             currentAddressId = parsed.id;
             if (lastAddressIdRef.current !== parsed.id) {
@@ -274,6 +261,42 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       } catch (error) {
         console.error('Error al leer dirección para caché:', error);
       }
+
+      // IMPORTANTE: Verificar que haya dirección guardada antes de intentar leer del cache
+      // Esto evita intentar leer del cache cuando el usuario se registra como invitado pero aún no ha agregado dirección
+      let hasAddress = false;
+      let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
+      try {
+        if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
+          addressCheckDetails.savedAddressExists = true;
+          const parsed = JSON.parse(savedAddress) as Address & { linea_uno?: string };
+          addressCheckDetails.hasCiudad = !!parsed.ciudad;
+          // Soportar tanto camelCase (lineaUno) como snake_case (linea_uno)
+          const lineaUnoValue = parsed.lineaUno || parsed.linea_uno;
+          addressCheckDetails.hasLineaUno = !!lineaUnoValue;
+
+          // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
+          // Aceptar tanto camelCase como snake_case para compatibilidad
+          if (parsed.ciudad && lineaUnoValue) {
+            hasAddress = true;
+          }
+        }
+      } catch (error) {
+        console.error('Error al verificar dirección en onlyReadCache:', error);
+      }
+
+      if (!hasAddress) {
+        console.log('⏸️ [onlyReadCache] NO hay dirección guardada aún, no se leerá del cache');
+        console.log('   Detalles de verificación:', addressCheckDetails);
+        console.log('   Esto es normal cuando el usuario se registra como invitado pero aún no ha agregado dirección');
+        setStores([]);
+        setFilteredStores([]);
+        setCanPickUp(false);
+        setStoresLoading(false);
+        return;
+      }
+      
+      console.log('✅ [onlyReadCache] Dirección verificada correctamente, continuando con lectura del cache');
 
       const cacheKey = buildGlobalCanPickUpKey({
         userId,
@@ -382,10 +405,18 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     );
     const userId = user?.id || user?.user_id;
 
-    console.log('👤 User ID obtenido:', userId, '| Productos count:', products.length);
+    console.log('👤 DEBUG useDelivery - User ID obtenido:', {
+      userId,
+      user,
+      productsCount: products.length,
+      products: products.map(p => ({ sku: p.sku, quantity: p.quantity }))
+    });
 
     if (!userId || products.length === 0) {
-      console.log('❌ Sin user_id o sin productos, abortando fetchCandidateStores');
+      console.log('❌ useDelivery - Sin user_id o sin productos, abortando fetchCandidateStores', {
+        hasUserId: !!userId,
+        productsCount: products.length
+      });
       setStores([]);
       setFilteredStores([]);
       setCanPickUp(false);
@@ -394,18 +425,35 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
+    // IMPORTANTE: Candidate stores solo necesita userId + productos SKU
+    // NO necesita dirección para calcular qué tiendas tienen stock
+    console.log('✅ [useDelivery] Tenemos userId y productos, continuando con fetchCandidateStores');
+
     // Preparar TODOS los productos del carrito para una sola petición
     const productsToCheck = products.map((p) => ({
       sku: p.sku,
       quantity: p.quantity,
     }));
 
-    // Obtener dirección actual desde localStorage para incluirla en el hash
+    // Obtener dirección actual desde localStorage para incluirla en la clave del caché
+    // IMPORTANTE: El addressId NO es necesario para calcular candidate stores,
+    // pero SÍ se incluye en la clave del caché para diferenciar cachés por dirección
     let currentAddressId = lastAddressIdRef.current || '';
     try {
       const savedAddress = globalThis.window?.localStorage.getItem("checkout-address");
-      if (savedAddress) {
-        const parsed = JSON.parse(savedAddress) as Direccion;
+      console.log('📍 DEBUG useDelivery - Leyendo dirección para caché:', {
+        hasSavedAddress: !!savedAddress,
+        savedAddressRaw: savedAddress
+      });
+
+      if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
+        const parsed = JSON.parse(savedAddress) as Address & { usuario_id?: string };
+        console.log('📍 DEBUG useDelivery - Dirección parseada para caché:', {
+          id: parsed.id,
+          usuario_id: parsed.usuario_id,
+          ciudad: parsed.ciudad
+        });
+
         if (parsed.id) {
           currentAddressId = parsed.id;
           // Actualizar lastAddressIdRef si cambió
@@ -418,6 +466,12 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       console.error('Error al leer dirección para hash:', error);
     }
 
+    console.log('🔑 DEBUG useDelivery - Construyendo clave de caché:', {
+      userId,
+      productsCount: productsToCheck.length,
+      addressId: currentAddressId || null
+    });
+
     // CRÍTICO: Intentar leer del caché ANTES de activar storesLoading
     // Esto evita skeleton cuando se cambia a "recoger en tienda"
     const cacheKey = buildGlobalCanPickUpKey({
@@ -425,7 +479,15 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       products: productsToCheck,
       addressId: currentAddressId || null,
     });
+
+    console.log('🔑 DEBUG useDelivery - Clave de caché construida:', cacheKey);
+
     const cachedResponse = getFullCandidateStoresResponseFromCache(cacheKey);
+
+    console.log('💾 DEBUG useDelivery - Resultado búsqueda en caché:', {
+      foundInCache: !!cachedResponse,
+      cacheKey
+    });
 
       // Si hay datos en caché, usarlos INMEDIATAMENTE sin activar skeleton
     if (cachedResponse) {
@@ -825,6 +887,10 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       return;
     }
 
+    // IMPORTANTE: Candidate stores solo necesita userId + productos
+    // Ya NO verificamos dirección aquí porque no es necesaria para calcular candidate stores
+    console.log('✅ [useDelivery - useEffect productos] Listos para calcular candidate stores (solo necesita userId + productos)');
+
     // Crear un hash de los productos para detectar cambios reales
     // IMPORTANTE: Incluir skuPostback en el hash
     const productsHash = JSON.stringify(products.map(p => ({
@@ -893,7 +959,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       if (currentAddress) {
         try {
-          const parsed = JSON.parse(currentAddress) as Direccion;
+          const parsed = JSON.parse(currentAddress) as Address;
           newAddressId = parsed.id || null;
           // Si la dirección no cambió realmente, no hacer nada
           if (newAddressId === lastAddressIdRef.current) {
@@ -948,7 +1014,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         try {
           const saved = JSON.parse(
             globalThis.window.localStorage.getItem("checkout-address") || "{}"
-          ) as Direccion;
+          ) as Address;
 
           if (saved?.id) {
             setAddress(saved);
@@ -1003,9 +1069,17 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
           // Actualizar el ref para indicar que la dirección cambió
           lastAddressForStoreSelectionRef.current = null;
 
+          // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando cambia la dirección
+          allowFetchOnAddressChangeRef.current = true;
+          
           // Recalcular canPickUp global y tiendas cuando cambia la dirección
           // El debounce de 8000ms en fetchCandidateStores evitará peticiones múltiples
-          fetchCandidateStores();
+          fetchCandidateStores().finally(() => {
+            // Resetear el flag después de la petición
+            setTimeout(() => {
+              allowFetchOnAddressChangeRef.current = false;
+            }, 1000);
+          });
         } else if (enoughTimePassed) {
           // Si es la misma dirección pero pasó suficiente tiempo, actualizar tiempo pero no hacer petición
           // (ya se hizo una petición recientemente para esta dirección)
@@ -1083,7 +1157,36 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         return;
       }
 
+      // IMPORTANTE: Verificar que haya dirección válida antes de procesar cambios
+      // Esto evita calcular candidate stores cuando el usuario se registra como invitado pero aún no ha agregado dirección
       const currentCheckoutAddress = localStorage.getItem('checkout-address');
+      if (currentCheckoutAddress && currentCheckoutAddress !== 'null' && currentCheckoutAddress !== 'undefined') {
+        try {
+          const parsed = JSON.parse(currentCheckoutAddress) as Address;
+          // Si la dirección no tiene ciudad y lineaUno, no es válida aún
+          if (!parsed.ciudad || !parsed.lineaUno) {
+            // Actualizar lastCheckoutAddress para evitar procesar el mismo cambio vacío repetidamente
+            if (lastCheckoutAddress !== currentCheckoutAddress) {
+              lastCheckoutAddress = currentCheckoutAddress;
+            }
+            return; // No procesar dirección incompleta
+          }
+        } catch (error) {
+          // Si no se puede parsear, no procesar (puede ser dirección vacía o inválida)
+          if (lastCheckoutAddress !== currentCheckoutAddress) {
+            lastCheckoutAddress = currentCheckoutAddress;
+          }
+          return;
+        }
+      } else {
+        // Si no hay dirección o es null/undefined, no procesar
+        // Actualizar lastCheckoutAddress para evitar procesar el mismo estado repetidamente
+        if (lastCheckoutAddress !== currentCheckoutAddress) {
+          lastCheckoutAddress = currentCheckoutAddress;
+        }
+        return;
+      }
+
       const currentDefaultAddress = localStorage.getItem('imagiq_default_address');
 
       // Verificar si realmente cambió la dirección (comparar IDs, no solo el string completo)
@@ -1093,23 +1196,31 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
       if (currentCheckoutAddress !== lastCheckoutAddress && lastCheckoutAddress !== null) {
         try {
-          const parsed = JSON.parse(currentCheckoutAddress || '{}') as Direccion;
-          const lastParsed = JSON.parse(lastCheckoutAddress || '{}') as Direccion;
+          const parsed = JSON.parse(currentCheckoutAddress || '{}') as Address;
+          // IMPORTANTE: Solo considerar cambio si la dirección tiene ciudad y lineaUno
+          if (!parsed.ciudad || !parsed.lineaUno) {
+            // Dirección incompleta, actualizar lastCheckoutAddress pero no procesar
+            lastCheckoutAddress = currentCheckoutAddress;
+            return;
+          }
+          
+          const lastParsed = JSON.parse(lastCheckoutAddress || '{}') as Address;
           // Solo considerar cambio si el ID cambió
           if (parsed.id !== lastParsed.id) {
             checkoutAddressChanged = true;
             newAddressId = parsed.id || null;
           }
         } catch {
-          // Si no se puede parsear, considerar cambio si el string cambió
-          checkoutAddressChanged = true;
+          // Si no se puede parsear, no procesar (puede ser dirección vacía o inválida)
+          lastCheckoutAddress = currentCheckoutAddress;
+          return;
         }
       }
 
       if (currentDefaultAddress !== lastDefaultAddress && lastDefaultAddress !== null) {
         try {
-          const parsed = JSON.parse(currentDefaultAddress || '{}') as Direccion;
-          const lastParsed = JSON.parse(lastDefaultAddress || '{}') as Direccion;
+          const parsed = JSON.parse(currentDefaultAddress || '{}') as Address;
+          const lastParsed = JSON.parse(lastDefaultAddress || '{}') as Address;
           // Solo considerar cambio si el ID cambió
           if (parsed.id !== lastParsed.id) {
             defaultAddressChanged = true;
@@ -1129,15 +1240,39 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       }
 
       if (checkoutAddressChanged) {
-        handleAddressChange(new Event('checkout-address-changed'));
-        lastCheckoutAddress = currentCheckoutAddress;
+        // IMPORTANTE: Verificar nuevamente que la dirección sea válida antes de procesar
+        try {
+          const parsed = JSON.parse(currentCheckoutAddress || '{}') as Address;
+          if (parsed.ciudad && parsed.lineaUno) {
+            handleAddressChange(new Event('checkout-address-changed'));
+            lastCheckoutAddress = currentCheckoutAddress;
+          } else {
+            // Dirección incompleta, actualizar lastCheckoutAddress pero no procesar
+            lastCheckoutAddress = currentCheckoutAddress;
+          }
+        } catch (error) {
+          // Si no se puede parsear, no procesar
+          lastCheckoutAddress = currentCheckoutAddress;
+        }
       }
 
       if (defaultAddressChanged && !checkoutAddressChanged) {
-        // Solo procesar defaultAddressChanged si no se procesó checkoutAddressChanged
-        // para evitar procesar el mismo cambio dos veces
-        handleAddressChange(new Event('address-changed'));
-        lastDefaultAddress = currentDefaultAddress;
+        // IMPORTANTE: Verificar que la dirección sea válida antes de procesar
+        try {
+          const parsed = JSON.parse(currentDefaultAddress || '{}') as Address;
+          if (parsed.ciudad && parsed.lineaUno) {
+            // Solo procesar defaultAddressChanged si no se procesó checkoutAddressChanged
+            // para evitar procesar el mismo cambio dos veces
+            handleAddressChange(new Event('address-changed'));
+            lastDefaultAddress = currentDefaultAddress;
+          } else {
+            // Dirección incompleta, actualizar lastDefaultAddress pero no procesar
+            lastDefaultAddress = currentDefaultAddress;
+          }
+        } catch (error) {
+          // Si no se puede parsear, no procesar
+          lastDefaultAddress = currentDefaultAddress;
+        }
       }
     };
 
@@ -1164,9 +1299,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       addressesService
         .getUserAddresses()
         .then((addresses: Address[]) => {
-          // Convertir Address[] a Direccion[] para mantener compatibilidad
-          const direcciones = addresses.map(addressToDireccion);
-          setAddresses(direcciones);
+          setAddresses(addresses);
         })
         .catch((error) => {
           console.error("Error loading addresses:", error);
@@ -1201,7 +1334,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       const savedAddress = globalThis.window.localStorage.getItem("checkout-address");
       if (savedAddress && savedAddress !== "undefined") {
         try {
-          const saved = JSON.parse(savedAddress) as Direccion;
+          const saved = JSON.parse(savedAddress) as Address;
           if (saved.id) {
             setAddress(saved);
           }
@@ -1253,22 +1386,23 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     (deliveryMethod === "tienda" && selectedStore !== null);
 
   // Función para refrescar direcciones después de agregar una nueva
-  const addAddress = () => {
-    // Esta función solo refresca la lista de direcciones
-    // La creación real se hace en AddNewAddressForm
-    addressesService
-      .getUserAddresses()
-      .then((addresses: Address[]) => {
-        // Convertir Address[] a Direccion[] para mantener compatibilidad
-        const direcciones = addresses.map(addressToDireccion);
-        setAddresses(direcciones);
-        return direcciones;
-      })
-      .catch((error) => {
-        console.error("Error refreshing addresses:", error);
-        setAddresses([]);
-        return [];
-      });
+  const addAddress = async (newAddress?: Address): Promise<void> => {
+    // Esta función refresca la lista de direcciones y opcionalmente
+    // dispara la consulta de candidate stores si se proporciona la nueva dirección
+    try {
+      const addresses = await addressesService.getUserAddresses();
+      setAddresses(addresses);
+
+      // Si se proporcionó la nueva dirección, disparar consulta de candidate stores
+      if (newAddress) {
+        console.log('🔄 Nueva dirección agregada, consultando candidate stores...');
+        // Disparar el efecto que consulta candidate stores
+        setAddress(newAddress);
+      }
+    } catch (error) {
+      console.error("Error refreshing addresses:", error);
+      setAddresses([]);
+    }
   };
 
   // Función para forzar recarga de tiendas ignorando protecciones
@@ -1297,12 +1431,20 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     }
 
     console.log('✅ Forzando recarga de tiendas - limpiando protecciones');
+    // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando se fuerza recarga
+    allowFetchOnAddressChangeRef.current = true;
+    
     // Limpiar refs de protección para forzar la recarga
     lastSuccessfulHashRef.current = null;
     lastFetchTimeRef.current = 0;
     isFetchingRef.current = false;
     // Llamar a fetchCandidateStores
-    fetchCandidateStores();
+    fetchCandidateStores().finally(() => {
+      // Resetear el flag después de la petición
+      setTimeout(() => {
+        allowFetchOnAddressChangeRef.current = false;
+      }, 1000);
+    });
   }, [fetchCandidateStores]);
 
   return {
@@ -1310,6 +1452,8 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     setAddress,
     addressEdit,
     setAddressEdit,
+    storeEdit,
+    setStoreEdit,
     storeQuery,
     setStoreQuery,
     filteredStores,

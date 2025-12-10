@@ -26,14 +26,50 @@ interface UniversalCacheData {
 }
 
 /**
- * Verifica si un accesorio es universal (device = "Universal")
+ * Mapeo de categorías a sufijos de Universal
+ * IM = Imagiq (dispositivos móviles), HA = Home Appliances (electrodomésticos), AV = Audio/Video
  */
-function isUniversalAccessory(product: ProductApiData): boolean {
+const CATEGORY_TO_UNIVERSAL_MAP: Record<string, string[]> = {
+  "IM": ["universal_im"],
+  "IT": ["universal_im"], // Dispositivos móviles también pueden ser IT
+  "HA": ["universal_ha"],
+  "AV": ["universal_av"],
+  "TV": ["universal_tv", "universal_av"],
+};
+
+/**
+ * Verifica si un accesorio es universal (device = "Universal" o "Universal_CATEGORIA")
+ * y si corresponde a las categorías de productos en el carrito
+ * Ejemplos: "Universal", "Universal_IM", "Universal_TV", "Universal_Audio"
+ */
+function isUniversalAccessory(
+  product: ProductApiData,
+  cartCategories: Set<string>
+): boolean {
   const deviceValues = product.device || [];
 
   for (const device of deviceValues) {
-    if (device && device.toLowerCase().trim() === "universal") {
+    if (!device) continue;
+
+    const normalizedDevice = device.toLowerCase().trim();
+
+    // Si es exactamente "universal" sin sufijo, es compatible con todas las categorías
+    if (normalizedDevice === "universal") {
       return true;
+    }
+
+    // Si empieza con "universal_", verificar que el sufijo coincida con alguna categoría del carrito
+    if (normalizedDevice.startsWith("universal_")) {
+      // Si no hay categorías en el carrito, no mostrar accesorios con sufijo específico
+      if (cartCategories.size === 0) continue;
+
+      // Verificar si alguna categoría del carrito coincide con el sufijo del universal
+      for (const category of cartCategories) {
+        const validSuffixes = CATEGORY_TO_UNIVERSAL_MAP[category.toUpperCase()] || [];
+        if (validSuffixes.some(suffix => normalizedDevice === suffix)) {
+          return true;
+        }
+      }
     }
   }
 
@@ -79,6 +115,21 @@ function setCacheUniversalData(productos: ProductApiData[]): void {
   } catch {
     // Ignorar errores de storage
   }
+}
+
+/**
+ * Extrae las categorías únicas de los productos del carrito
+ */
+function extractUniqueCategories(cartProducts: CartProduct[]): Set<string> {
+  const categories = new Set<string>();
+
+  for (const product of cartProducts) {
+    if (product.categoria && product.categoria.trim()) {
+      categories.add(product.categoria.trim());
+    }
+  }
+
+  return categories;
 }
 
 /**
@@ -224,6 +275,9 @@ export default function Sugerencias({
   // Extraer modelos únicos de los productos del carrito
   const modelos = useMemo(() => extractUniqueModelos(cartProducts), [cartProducts]);
 
+  // Extraer categorías únicas de los productos del carrito
+  const cartCategories = useMemo(() => extractUniqueCategories(cartProducts), [cartProducts]);
+
   // SKUs de productos ya en el carrito (para no sugerirlos)
   const cartSkus = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
 
@@ -276,7 +330,7 @@ export default function Sugerencias({
         if (!product.imagePreviewUrl?.[0] || product.imagePreviewUrl[0].trim() === '') continue;
         if (!hasStock(product)) continue;
 
-        if (isUniversalAccessory(product)) {
+        if (isUniversalAccessory(product, cartCategories)) {
           if (universalAccessories.length < 4) universalAccessories.push(product);
         } else if (modelos.length > 0) {
           const isCompatible = isAccessoryCompatible(product, modelos);
@@ -308,7 +362,7 @@ export default function Sugerencias({
     } finally {
       setLoading(false);
     }
-  }, [modelos, cartSkus]);
+  }, [modelos, cartSkus, cartCategories]);
 
   useEffect(() => {
     fetchAccessoriosRelacionados();

@@ -28,6 +28,7 @@ export interface ProductVariant {
   desDetallada?: string;
   indcerointeres: number;
   indRetoma: number; // Indicador de retoma (0 o 1)
+  skuflixmedia: string;
 }
 
 export interface SelectionState {
@@ -53,45 +54,46 @@ export interface StorageOption {
 export interface UseProductSelectionReturn {
   // Estado de selección
   selection: SelectionState;
-  
+
   // Opciones disponibles filtradas
   availableColors: string[];
   availableCapacities: string[];
   availableMemoriaram: string[];
-  
+
   // Información del producto seleccionado
   selectedSku: string | null;
   selectedSkuPostback: string | null;
+  selectedSkuflixmedia: string | null;
   selectedCodigoMarket: string | null;
   selectedPrice: number | null;
   selectedOriginalPrice: number | null;
   selectedDiscount: number | null;
   selectedStockTotal: number | null;
   selectedVariant: ProductVariant | null;
-  
+
   // Funciones de selección
   selectColor: (color: string) => void;
   selectCapacity: (capacity: string) => void;
   selectMemoriaram: (memoriaram: string) => void;
   selectVariant: (variant: ProductVariant) => void;
   resetSelection: () => void;
-  
+
   // Funciones helper para compatibilidad con componentes legacy
   getColorOptions: () => ColorOption[];
   getStorageOptions: () => StorageOption[];
   getSelectedColorOption: () => ColorOption | null;
   getSelectedStorageOption: () => StorageOption | null;
-  
+
   // Información de debug
   allVariants: ProductVariant[];
 
 }
 
-export function useProductSelection(apiProduct: ProductApiData, productColors?: Array<{label: string, hex: string}>): UseProductSelectionReturn {  
+export function useProductSelection(apiProduct: ProductApiData, productColors?: Array<{ label: string, hex: string }>): UseProductSelectionReturn {
   // Crear todas las variantes del producto basadas en los arrays indexados
   const allVariants = useMemo((): ProductVariant[] => {
     const variants: ProductVariant[] = [];
-    
+
     // Asegurar que todos los arrays tengan el mismo tamaño
     const maxLength = Math.max(
       apiProduct.color.length,
@@ -130,9 +132,10 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
         desDetallada: apiProduct.desDetallada?.[i] || '',
         indcerointeres: apiProduct.indcerointeres?.[i] ?? 0,
         indRetoma: apiProduct.indRetoma?.[i] ?? 0,
+        skuflixmedia: apiProduct.skuflixmedia?.[i] || '',
       });
     }
-    
+
     return variants;
   }, [apiProduct]);
 
@@ -319,12 +322,12 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       // Excluir: vacíos, "no aplica", guiones solos, "N/A", etc.
       const capacityValue = variant.capacity?.trim();
       const isValidCapacity = capacityValue &&
-                             capacityValue !== '' &&
-                             capacityValue !== '-' &&
-                             capacityValue.toLowerCase() !== 'no aplica' &&
-                             capacityValue.toLowerCase() !== 'n/a' &&
-                             capacityValue.toLowerCase() !== 'no especifica' &&
-                             capacityValue.toLowerCase() !== 'no especificado';
+        capacityValue !== '' &&
+        capacityValue !== '-' &&
+        capacityValue.toLowerCase() !== 'no aplica' &&
+        capacityValue.toLowerCase() !== 'n/a' &&
+        capacityValue.toLowerCase() !== 'no especifica' &&
+        capacityValue.toLowerCase() !== 'no especificado';
 
       if (colorMatch && memoriaramMatch && isValidCapacity) {
         capacities.add(variant.capacity);
@@ -347,12 +350,12 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
       // Excluir: vacíos, "no aplica", guiones solos, "N/A", etc.
       const memoriaramValue = variant.memoriaram?.trim();
       const isValidMemoriaram = memoriaramValue &&
-                               memoriaramValue !== '' &&
-                               memoriaramValue !== '-' &&
-                               memoriaramValue.toLowerCase() !== 'no aplica' &&
-                               memoriaramValue.toLowerCase() !== 'n/a' &&
-                               memoriaramValue.toLowerCase() !== 'no especifica' &&
-                               memoriaramValue.toLowerCase() !== 'no especificado';
+        memoriaramValue !== '' &&
+        memoriaramValue !== '-' &&
+        memoriaramValue.toLowerCase() !== 'no aplica' &&
+        memoriaramValue.toLowerCase() !== 'n/a' &&
+        memoriaramValue.toLowerCase() !== 'no especifica' &&
+        memoriaramValue.toLowerCase() !== 'no especificado';
 
       if (colorMatch && capacityMatch && isValidMemoriaram) {
         memoriaram.add(variant.memoriaram);
@@ -393,13 +396,13 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
 
       // Solo verificar capacity si está definida en la selección y no es vacía/null
       const matchesCapacity = !selection.selectedCapacity ||
-                            selection.selectedCapacity === '' ||
-                            variant.capacity === selection.selectedCapacity;
+        selection.selectedCapacity === '' ||
+        variant.capacity === selection.selectedCapacity;
 
       // Solo verificar memoriaram si está definida en la selección y no es vacía/null
       const matchesMemoriaram = !selection.selectedMemoriaram ||
-                               selection.selectedMemoriaram === '' ||
-                               variant.memoriaram === selection.selectedMemoriaram;
+        selection.selectedMemoriaram === '' ||
+        variant.memoriaram === selection.selectedMemoriaram;
 
       return matchesColor && matchesCapacity && matchesMemoriaram;
     }) || null;
@@ -580,6 +583,7 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     availableMemoriaram: availableMemoriaramFiltered,
     selectedSku,
     selectedSkuPostback: selectedVariant?.skuPostback || null,
+    selectedSkuflixmedia: selectedVariant?.skuflixmedia || null,
     selectedCodigoMarket,
     selectedPrice,
     selectedOriginalPrice,

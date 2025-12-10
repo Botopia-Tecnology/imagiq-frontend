@@ -19,6 +19,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useReducedMotion } from "@/hooks/useReducedMotion";
+import DynamicFilterSection from "./DynamicFilterSection";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 interface FilterOption {
   label: string;
@@ -35,9 +37,15 @@ interface FilterState {
 }
 
 interface FilterSidebarProps {
-  filterConfig: FilterConfig;
-  filters: FilterState;
-  onFilterChange: (filterType: string, value: string, checked: boolean) => void;
+  // Filtros dinámicos
+  dynamicFilters?: DynamicFilterConfig[];
+  dynamicFilterState?: DynamicFilterState;
+  onDynamicFilterChange?: (
+    filterId: string,
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+    checked?: boolean
+  ) => void;
+  // Props comunes
   resultCount: number;
   expandedFilters?: Set<string>;
   onToggleFilter?: (filterKey: string) => void;
@@ -50,11 +58,13 @@ interface FilterSidebarProps {
 }
 
 export default function FilterSidebar({
-  filterConfig,
-  filters,
-  onFilterChange,
+  // Filtros dinámicos
+  dynamicFilters = [],
+  dynamicFilterState = {},
+  onDynamicFilterChange,
+  // Props comunes
   resultCount,
-  expandedFilters = new Set(["almacenamiento"]),
+  expandedFilters,
   onToggleFilter,
   className,
   trackingPrefix = "filter",
@@ -62,8 +72,11 @@ export default function FilterSidebar({
   stickyWrapperClasses = "",
   stickyStyle = {},
 }: FilterSidebarProps) {
+  // Inicializar expandedFilters para filtros dinámicos
+  const defaultExpandedFilters = new Set(dynamicFilters.slice(0, 2).map((f) => f.id));
+  
   const [internalExpandedFilters, setInternalExpandedFilters] =
-    useState<Set<string>>(expandedFilters);
+    useState<Set<string>>(expandedFilters || defaultExpandedFilters);
   const prefersReducedMotion = useReducedMotion();
 
   const handleToggleFilter = (filterKey: string) => {
@@ -81,7 +94,7 @@ export default function FilterSidebar({
 
     posthogUtils.capture(`${trackingPrefix}_toggle`, {
       filter_type: filterKey,
-      action: (onToggleFilter ? expandedFilters : internalExpandedFilters).has(
+      action: (onToggleFilter ? (expandedFilters || new Set<string>()) : internalExpandedFilters).has(
         filterKey
       )
         ? "collapse"
@@ -89,86 +102,43 @@ export default function FilterSidebar({
     });
   };
 
-  const handleFilterChange = (
-    filterType: string,
-    value: string,
-    checked: boolean
-  ) => {
-    onFilterChange(filterType, value, checked);
 
-    posthogUtils.capture(`${trackingPrefix}_applied`, {
-      filter_type: filterType,
-      filter_value: value,
-      action: checked ? "add" : "remove",
-      total_active_filters: getTotalActiveFilters(),
-    });
+  const handleDynamicFilterChange = (
+    filterId: string,
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+    checked?: boolean
+  ) => {
+    if (onDynamicFilterChange) {
+      onDynamicFilterChange(filterId, value, checked);
+    }
+
+    const filter = dynamicFilters.find((f) => f.id === filterId);
+    if (filter) {
+      posthogUtils.capture(`${trackingPrefix}_applied`, {
+        filter_type: filter.sectionName,
+        filter_id: filterId,
+        filter_value: typeof value === "string" ? value : JSON.stringify(value),
+        action: checked ? "add" : "change",
+      });
+    }
   };
 
   const currentExpandedFilters = onToggleFilter
-    ? expandedFilters
+    ? (expandedFilters || new Set<string>())
     : internalExpandedFilters;
 
-  const formatFilterKey = (key: string) => {
-    const translations: { [key: string]: string } = {
-      almacenamiento: "ALMACENAMIENTO",
-      caracteristicas: "CARACTERÍSTICAS",
-      camara: "CÁMARA",
-      rangoPrecio: "RANGO DE PRECIOS",
-      serie: "SERIE",
-      pantalla: "PANTALLA",
-      procesador: "PROCESADOR",
-      ram: "MEMORIA RAM",
-      tamanoPantalla: "TAMAÑO DE PANTALLA",
-      conectividad: "CONECTIVIDAD",
-      tamanoCaja: "TAMAÑO DE CAJA",
-      material: "MATERIAL",
-      correa: "CORREA",
-      duracionBateria: "DURACIÓN DE BATERÍA",
-      resistenciaAgua: "RESISTENCIA AL AGUA",
-      tipoAccesorio: "TIPO DE ACCESORIO",
-      compatibilidad: "COMPATIBILIDAD",
-      color: "COLOR",
-      marca: "MARCA",
-      tipoConector: "TIPO DE CONECTOR",
-    };
-    return translations[key] || key.replace(/([A-Z])/g, " $1").toUpperCase();
-  };
-
-  const isRangeFilter = (
-    options: string[] | FilterOption[]
-  ): options is FilterOption[] => {
-    return (
-      options.length > 0 &&
-      typeof options[0] === "object" &&
-      "label" in options[0]
-    );
-  };
 
   const getTotalActiveFilters = () => {
-    return Object.values(filters).reduce(
-      (total, filterArray) => total + filterArray.length,
-      0
-    );
+    // Contar filtros dinámicos activos
+    return Object.values(dynamicFilterState).reduce((total, state) => {
+      let count = 0;
+      if (state.values) count += state.values.length;
+      if (state.ranges) count += state.ranges.length;
+      if (state.min !== undefined || state.max !== undefined) count += 1;
+      return total + count;
+    }, 0);
   };
 
-  // Agrega el filtro de color si no está presente
-  const filterConfigWithColor = {
-    ...filterConfig,
-    color: filterConfig.color || [
-      "Negro",
-      "Blanco",
-      "Azul",
-      "Rojo",
-      "Verde",
-      "Gris",
-      "Dorado",
-      "Plateado",
-      "Rosa",
-      "Morado",
-      "Amarillo",
-      "Naranja",
-    ],
-  };
 
   return (
     <motion.div
@@ -188,178 +158,105 @@ export default function FilterSidebar({
       <div className={cn(stickyWrapperClasses)}>
         {/* Header igual a la imagen */}
         <div className="p-4 border-b border-gray-300">
-          <div className="flex items-center gap-4">
-            <span className="flex items-center gap-2 font-bold text-black text-lg">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 18 18"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-black"
-                aria-hidden="true"
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span className="flex items-center gap-2 font-bold text-black text-lg">
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 18 18"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="text-black"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3.75 6.75H14.25"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M6.75 11.25H11.25"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
+                  <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
+                </svg>
+                Filtros
+              </span>
+              <span
+                className="text-base text-black font-medium border-l border-gray-300 pl-4"
+                aria-live="polite"
+                aria-atomic="true"
               >
-                <path
-                  d="M3.75 6.75H14.25"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M6.75 11.25H11.25"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-                <circle cx="6.75" cy="6.75" r="1.125" fill="currentColor" />
-                <circle cx="11.25" cy="11.25" r="1.125" fill="currentColor" />
-              </svg>
-              Filtros
-            </span>
-            <span
-              className="text-base text-black font-medium border-l border-gray-300 pl-4"
-              aria-live="polite"
-              aria-atomic="true"
-            >
-              {resultCount} resultados
-            </span>
+                {resultCount} resultados
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Contenedor principal con scroll oculto */}
         <div className="overflow-hidden">
-          {Object.entries(filterConfigWithColor).map(([filterKey, options]) => (
-            <div key={filterKey} className="border-b border-gray-300">
-              <button
-                onClick={() => handleToggleFilter(filterKey)}
-                className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-                aria-expanded={currentExpandedFilters.has(filterKey)}
-                aria-controls={`filter-panel-${filterKey}`}
-                aria-label={`${currentExpandedFilters.has(filterKey) ? 'Contraer' : 'Expandir'} filtro de ${formatFilterKey(filterKey)}`}
-              >
-                <span className="font-semibold text-black text-sm tracking-wide">
-                  {formatFilterKey(filterKey)}
-                </span>
-                <motion.div
-                  animate={{ rotate: currentExpandedFilters.has(filterKey) ? 180 : 0 }}
-                  transition={{ duration: prefersReducedMotion ? 0.01 : 0.3 }}
-                >
-                  <ChevronDown className="w-4 h-4 text-gray-600" aria-hidden="true" />
-                </motion.div>
-              </button>
-              <AnimatePresence initial={false}>
-                {currentExpandedFilters.has(filterKey) && (
-                  <motion.div
-                    id={`filter-panel-${filterKey}`}
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{
-                      duration: prefersReducedMotion ? 0.01 : 0.3,
-                      ease: [0.25, 0.1, 0.25, 1],
-                    }}
-                    className="overflow-hidden"
-                    role="region"
-                    aria-labelledby={`filter-header-${filterKey}`}
+          {/* Renderizar filtros dinámicos */}
+          {dynamicFilters.length > 0 ? (
+            dynamicFilters.map((filter) => {
+              const isExpanded = currentExpandedFilters.has(filter.id);
+              return (
+                <div key={filter.id} className="border-b border-gray-300">
+                  <button
+                    onClick={() => handleToggleFilter(filter.id)}
+                    className="w-full flex items-center justify-between py-4 px-4 text-left hover:bg-gray-100 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                    aria-expanded={isExpanded}
+                    aria-controls={`filter-panel-${filter.id}`}
+                    aria-label={`${isExpanded ? 'Contraer' : 'Expandir'} filtro de ${filter.sectionName}`}
                   >
-                    <div className="px-4 pb-4">
-                      <div
-                        className="space-y-2 max-h-[500px] overflow-y-auto scrollbar-hide"
-                        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                    <span className="font-semibold text-black text-sm tracking-wide">
+                      {filter.sectionName}
+                    </span>
+                    <motion.div
+                      animate={{ rotate: isExpanded ? 180 : 0 }}
+                      transition={{ duration: prefersReducedMotion ? 0.01 : 0.3 }}
+                    >
+                      <ChevronDown className="w-4 h-4 text-gray-600" aria-hidden="true" />
+                    </motion.div>
+                  </button>
+                  <AnimatePresence initial={false}>
+                    {isExpanded && (
+                      <motion.div
+                        id={`filter-panel-${filter.id}`}
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{
+                          duration: prefersReducedMotion ? 0.01 : 0.3,
+                          ease: [0.25, 0.1, 0.25, 1],
+                        }}
+                        className="overflow-hidden"
+                        role="region"
+                        aria-labelledby={`filter-header-${filter.id}`}
                       >
-                        {isRangeFilter(options)
-                          ? options.map((range, index) => (
-                              <motion.label
-                                key={`${filterKey}-${index}`}
-                                className={cn(
-                                  "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-200",
-                                  "hover:bg-blue-50",
-                                  filters[filterKey]?.includes(range.label) &&
-                                    "bg-blue-50 font-semibold text-blue-700"
-                                )}
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{
-                                  duration: prefersReducedMotion ? 0.01 : 0.3,
-                                  delay: prefersReducedMotion ? 0 : index * 0.05,
-                                  ease: [0.25, 0.1, 0.25, 1],
-                                }}
-                                whileHover={
-                                  prefersReducedMotion
-                                    ? {}
-                                    : { scale: 1.02, transition: { duration: 0.2 } }
-                                }
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    filters[filterKey]?.includes(range.label) ||
-                                    false
-                                  }
-                                  onChange={(e) =>
-                                    handleFilterChange(
-                                      filterKey,
-                                      range.label,
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                                  aria-label={range.label}
-                                />
-                                <span className="ml-3 text-sm transition-colors duration-200">
-                                  {range.label}
-                                </span>
-                              </motion.label>
-                            ))
-                          : (options as string[]).map((option, index) => (
-                              <motion.label
-                                key={`${filterKey}-${option}`}
-                                className={cn(
-                                  "flex items-center py-2 cursor-pointer rounded-md px-2 -mx-2 transition-all duration-200",
-                                  "hover:bg-blue-50",
-                                  filters[filterKey]?.includes(option) &&
-                                    "bg-blue-50 font-semibold text-blue-700"
-                                )}
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{
-                                  duration: prefersReducedMotion ? 0.01 : 0.3,
-                                  delay: prefersReducedMotion ? 0 : index * 0.05,
-                                  ease: [0.25, 0.1, 0.25, 1],
-                                }}
-                                whileHover={
-                                  prefersReducedMotion
-                                    ? {}
-                                    : { scale: 1.02, transition: { duration: 0.2 } }
-                                }
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={
-                                    filters[filterKey]?.includes(option) || false
-                                  }
-                                  onChange={(e) =>
-                                    handleFilterChange(
-                                      filterKey,
-                                      option,
-                                      e.target.checked
-                                    )
-                                  }
-                                  className="w-4 h-4 rounded border-gray-400 text-blue-600 focus:ring-blue-500 focus:ring-2 transition-all duration-200"
-                                  aria-label={option}
-                                />
-                                <span className="ml-3 text-sm transition-colors duration-200">
-                                  {option}
-                                </span>
-                              </motion.label>
-                            ))}
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                        <div className="px-4 pb-4">
+                          <DynamicFilterSection
+                            filter={filter}
+                            filterState={dynamicFilterState}
+                            onFilterChange={handleDynamicFilterChange}
+                          />
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })
+          ) : (
+            // Si no hay filtros dinámicos, no mostrar nada (o mostrar mensaje)
+            <div className="p-4 text-sm text-gray-500">
+              No hay filtros disponibles
             </div>
-          ))}
+          )}
         </div>
         {/* Estilos CSS personalizados para ocultar scrollbars */}
         <style jsx>{`

@@ -4,12 +4,10 @@
  */
 
 import { cn } from "@/lib/utils";
-import { Filter, Grid3X3, List } from "lucide-react";
+import { Filter, Grid3X3, List, X } from "lucide-react";
 import SortDropdown from "@/components/ui/SortDropdown";
 
-interface FilterState {
-  [key: string]: string[];
-}
+import type { DynamicFilterState } from "@/types/filters";
 
 interface HeaderSectionProps {
   title: string;
@@ -19,8 +17,8 @@ interface HeaderSectionProps {
   viewMode: "grid" | "list";
   setViewMode: (mode: "grid" | "list") => void;
   onShowMobileFilters: () => void;
-  filters?: FilterState;
-  setFilters?: React.Dispatch<React.SetStateAction<FilterState>>;
+  dynamicFilterState?: DynamicFilterState;
+  onClearDynamicFilters?: () => void;
   clearAllFiltersText: string; // Texto completo para el botón de limpiar filtros
 }
 
@@ -32,21 +30,22 @@ export default function HeaderSection({
   viewMode,
   setViewMode,
   onShowMobileFilters,
-  filters,
-  setFilters,
+  dynamicFilterState,
+  onClearDynamicFilters,
   clearAllFiltersText,
 }: HeaderSectionProps) {
   const hasActiveFilters =
-    filters &&
-    Object.values(filters).some((filterArray) => filterArray.length > 0);
+    dynamicFilterState &&
+    Object.values(dynamicFilterState).some((state) => {
+      if (state.values && state.values.length > 0) return true;
+      if (state.ranges && state.ranges.length > 0) return true;
+      if (state.min !== undefined || state.max !== undefined) return true;
+      return false;
+    });
 
   const clearAllFilters = () => {
-    if (setFilters && filters) {
-      const clearedFilters: FilterState = {};
-      Object.keys(filters).forEach((key) => {
-        clearedFilters[key] = [];
-      });
-      setFilters(clearedFilters);
+    if (onClearDynamicFilters) {
+      onClearDynamicFilters();
     }
   };
 
@@ -55,6 +54,19 @@ export default function HeaderSection({
       <div className="max-w-7xl">
         {/* Header principal */}
         <div className="flex items-center justify-between gap-4 mb-6">
+          <div className="flex items-center gap-4 flex-1">
+            <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
+            {hasActiveFilters && (
+              <button
+                onClick={clearAllFilters}
+                className="inline-flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium text-gray-700 transition-colors duration-200"
+                aria-label="Limpiar filtros"
+              >
+                <X className="w-4 h-4" />
+                <span>Limpiar filtros</span>
+              </button>
+            )}
+          </div>
           {/* Botón de filtros móvil - ahora a la derecha del título */}
           <button
             onClick={onShowMobileFilters}

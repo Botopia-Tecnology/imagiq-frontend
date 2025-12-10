@@ -7,7 +7,8 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Search, MapPin, X, AlertCircle, Loader2 } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Search, MapPin, AlertCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   AddressAutocompleteProps,
@@ -39,6 +40,9 @@ export function AddressAutocomplete({
 }: AddressAutocompleteProps) {
   // Estado local del componente
   const [isOpen, setIsOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [justSelected, setJustSelected] = useState(false);
 
   // Referencias para el manejo del DOM
   const inputRef = useRef<HTMLInputElement>(null);
@@ -78,14 +82,17 @@ export function AddressAutocomplete({
   } = usePlacesAutocomplete({
     options: defaultOptions,
     onPlaceSelect: (place) => {
+      // Asegurar que el dropdown esté cerrado
+      setIsOpen(false);
       onPlaceSelect?.(place);
       if (clearOnSelect) {
         reset();
       }
-      setIsOpen(false);
     },
     onError: (error) => {
       console.error('Error en autocompletado:', error);
+      // Cerrar dropdown incluso si hay error
+      setIsOpen(false);
     },
     validateCoverage: shouldValidateCoverage
   });
@@ -114,7 +121,18 @@ export function AddressAutocomplete({
    * Maneja la selección de una predicción
    */
   const handlePredictionSelect = async (prediction: PlacePrediction) => {
+    // Marcar que acabamos de seleccionar para evitar que se abra el dropdown
+    setJustSelected(true);
+    // Cerrar dropdown inmediatamente al seleccionar
+    setIsOpen(false);
+    // Limpiar resultados para evitar que reaparezcan
+    clearResults();
     await selectPlace(prediction);
+
+    // Limpiar el flag después de un momento
+    setTimeout(() => {
+      setJustSelected(false);
+    }, 500);
   };
 
   /**
@@ -149,30 +167,78 @@ export function AddressAutocomplete({
     }
   };
 
-  /**
-   * Limpia el input
-   */
-  const handleClear = () => {
-    reset();
-    setIsOpen(false);
-    inputRef.current?.focus();
-  };
 
   /**
-   * Inicializa el input con el valor externo solo la primera vez
+   * Inicializa el input con el valor externo
+   */
+  const prevValueRef = useRef<string>('');
+  useEffect(() => {
+    // Solo actualizar si el valor externo cambió y es diferente del valor actual del input
+    if (value !== undefined && value !== '' && value !== prevValueRef.current) {
+      setInputValue(value);
+      prevValueRef.current = value;
+      // No abrir dropdown aquí - dejar que el hook haga la búsqueda
+    }
+  }, [value, setInputValue]);
+
+  /**
+   * Detectar si estamos en el cliente
    */
   useEffect(() => {
-    if (value !== undefined && value !== inputValue && value !== '') {
-      setInputValue(value);
+    setIsMounted(true);
+  }, []);
+
+  /**
+   * Actualizar posición del dropdown cuando se abre
+   */
+  useEffect(() => {
+    if (isOpen && inputRef.current && isMounted) {
+      const updatePosition = () => {
+        const rect = inputRef.current?.getBoundingClientRect();
+        if (rect) {
+          setDropdownPosition({
+            top: rect.bottom + window.scrollY,
+            left: rect.left + window.scrollX,
+            width: rect.width
+          });
+        }
+      };
+
+      updatePosition();
+
+      // Actualizar posición al hacer scroll o resize
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
+
+      return () => {
+        window.removeEventListener('scroll', updatePosition, true);
+        window.removeEventListener('resize', updatePosition);
+      };
     }
-  }, [value, inputValue]);
+  }, [isOpen, isMounted]);
+
+  /**
+   * Abrir dropdown cuando hay predicciones disponibles
+   * SOLO si no acabamos de seleccionar una opción
+   */
+  useEffect(() => {
+    if (predictions.length > 0 && inputValue.trim() && !isLoading && !justSelected) {
+      setIsOpen(true);
+    }
+  }, [predictions, inputValue, isLoading, justSelected]);
 
   /**
    * Efecto para cerrar dropdown al hacer click fuera
+   * IMPORTANTE: Verificar tanto containerRef como dropdownRef porque el dropdown
+   * se renderiza con portal en document.body (fuera de containerRef)
    */
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      const isClickInContainer = containerRef.current?.contains(event.target as Node);
+      const isClickInDropdown = dropdownRef.current?.contains(event.target as Node);
+
+      // Solo cerrar si el click NO está en el container NI en el dropdown
+      if (!isClickInContainer && !isClickInDropdown) {
         setIsOpen(false);
       }
     };
@@ -190,18 +256,24 @@ export function AddressAutocomplete({
       'border-gray-200 focus:border-blue-500': !error,
       'border-red-300 focus:border-red-500': error,
       'pl-12': showSearchIcon,
-      'pr-10': inputValue || isLoading
+      'pr-10': isLoading
     },
     className
   );
 
   const dropdownClasses = cn(
-    'absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg',
+    'fixed z-[200000] bg-white border border-gray-200 rounded-lg shadow-lg pointer-events-auto',
     'max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300',
     {
       'border-red-300': error
     }
   );
+
+  const dropdownStyles = {
+    top: `${dropdownPosition.top + 4}px`,
+    left: `${dropdownPosition.left}px`,
+    width: `${dropdownPosition.width}px`
+  };
 
   return (
     <div ref={containerRef} className="relative w-full">
@@ -249,63 +321,47 @@ export function AddressAutocomplete({
           {isLoading && (
             <Loader2 className="h-5 w-5 text-gray-400 animate-spin" />
           )}
-
-          {inputValue && !isLoading && (
-            <button
-              type="button"
-              onClick={handleClear}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Limpiar dirección"
-            >
-              <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-            </button>
-          )}
         </div>
       </div>
 
-      {/* Dropdown de predicciones */}
-      {(() => {
-        // IMPORTANTE: Esta IIFE evita un race condition en el cierre del dropdown
-        return isOpen && predictions.length > 0 && (
-          <div ref={dropdownRef} className={dropdownClasses}>
-            <ul role="listbox" id="address-listbox" className="py-1">
-              {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
-              {predictions.map((prediction, _index) => (
-                <li
-                  key={prediction.placeId}
-                  role="option"
-                  aria-selected="false"
-                  className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                  }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handlePredictionSelect(prediction);
-                  }}
-                >
-                  <div className="flex items-start space-x-3">
-                    <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium text-gray-900 truncate">
-                        {prediction.structuredFormatting?.mainText || prediction.mainText}
-                      </div>
-                      <div className="text-sm text-gray-500 truncate">
-                        {prediction.structuredFormatting?.secondaryText || prediction.secondaryText}
-                      </div>
+      {/* Dropdown de predicciones - renderizado con portal */}
+      {isMounted && isOpen && predictions.length > 0 && createPortal(
+        <div ref={dropdownRef} className={dropdownClasses} style={dropdownStyles}>
+          <ul role="listbox" id="address-listbox" className="py-1">
+            {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+            {predictions.map((prediction, _index) => (
+              <li
+                key={prediction.placeId}
+                role="option"
+                aria-selected="false"
+                className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handlePredictionSelect(prediction);
+                }}
+              >
+                <div className="flex items-start space-x-3">
+                  <MapPin className="h-5 w-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-medium text-gray-900 truncate">
+                      {prediction.structuredFormatting?.mainText || prediction.mainText}
+                    </div>
+                    <div className="text-sm text-gray-500 truncate">
+                      {prediction.structuredFormatting?.secondaryText || prediction.secondaryText}
                     </div>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </div>
-        );
-      })()}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>,
+        document.body
+      )}
 
-      {/* Estado vacío cuando se busca pero no hay resultados */}
-      {isOpen && !isLoading && predictions.length === 0 && inputValue.trim() && (
-        <div className={dropdownClasses}>
+      {/* Estado vacío cuando se busca pero no hay resultados - renderizado con portal */}
+      {isMounted && isOpen && !isLoading && predictions.length === 0 && inputValue.trim() && createPortal(
+        <div className={dropdownClasses} style={dropdownStyles}>
           <div className="px-4 py-6 text-center text-gray-500">
             <MapPin className="h-8 w-8 mx-auto mb-2 text-gray-300" />
             <p className="text-sm">No se encontraron direcciones</p>
@@ -313,7 +369,8 @@ export function AddressAutocomplete({
               Intenta con términos más específicos
             </p>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Mensaje de error */}
@@ -321,21 +378,6 @@ export function AddressAutocomplete({
         <div className="mt-2 flex items-center space-x-2 text-sm text-red-600">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           <span id={`${label}-error`}>{error}</span>
-        </div>
-      )}
-
-
-      {/* Indicador de cobertura */}
-      {shouldValidateCoverage && selectedPlace && (
-        <div className="mt-2 text-xs text-gray-500">
-          ✓ Dirección verificada en zona de cobertura
-        </div>
-      )}
-
-      {/* Información adicional para compatibilidad */}
-      {addressType === 'billing' && !validateCoverage && (
-        <div className="mt-2 text-xs text-gray-500">
-          (Sin validación de cobertura)
         </div>
       )}
     </div>

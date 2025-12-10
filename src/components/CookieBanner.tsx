@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect } from "react";
 import { Cookie, X, ChevronDown } from "lucide-react";
+import { saveLocationPermission } from "@/lib/consent/location";
 
 /**
- * CookieBanner - Sistema de Consentimiento de Cookies SIMPLIFICADO
+ * CookieBanner - Sistema de Consentimiento de Cookies y Ubicación ULTRA-PROTEGIDO
  *
  * ESTRATEGIA DE TRACKING DUAL:
  *
@@ -24,16 +25,132 @@ import { Cookie, X, ChevronDown } from "lucide-react";
  * Base legal Colombia (Ley 1581/2012):
  * - Datos anonimizados NO requieren consentimiento
  * - Tracking client-side SÍ requiere consentimiento
+ *
+ * PROTECCIÓN ANTI-REAPARICIÓN:
+ * - Triple verificación: localStorage + sessionStorage + cookie
+ * - Detección de manipulación de storage
+ * - Timestamp de aceptación para auditoría
+ * - Sistema de "accepted" vs "rejected" explícito
  */
 
 const STORAGE_KEY = "imagiq_consent";
 const CONSENT_VERSION = "2.0";
+const SESSION_KEY = "imagiq_consent_session";
+const COOKIE_NAME = "imagiq_consent_backup";
+
+// Estados posibles del consentimiento
+type ConsentDecision = "accepted" | "rejected" | "pending";
 
 interface ConsentState {
-  analytics: boolean;  // Clarity, Sentry
-  marketing: boolean;  // GTM, Meta Pixel, TikTok Pixel
+  analytics: boolean; // Clarity, Sentry
+  marketing: boolean; // GTM, Meta Pixel, TikTok Pixel
+  decision: ConsentDecision; // Estado explícito de la decisión
   timestamp: number;
   version: string;
+}
+
+/**
+ * Lee el consentimiento de TODAS las fuentes con protección
+ */
+function getConsentFromAllSources(): ConsentState | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    // 1. Intentar leer de localStorage (fuente principal)
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as ConsentState;
+      // Validar estructura completa
+      if (
+        typeof parsed.analytics === "boolean" &&
+        typeof parsed.marketing === "boolean" &&
+        typeof parsed.decision === "string" &&
+        typeof parsed.timestamp === "number" &&
+        parsed.decision !== "pending"
+      ) {
+        return parsed;
+      }
+    }
+
+    // 2. Intentar leer de sessionStorage (backup de sesión)
+    const sessionStored = sessionStorage.getItem(SESSION_KEY);
+    if (sessionStored) {
+      const parsed = JSON.parse(sessionStored) as ConsentState;
+      if (parsed.decision !== "pending") {
+        // Restaurar a localStorage si se perdió
+        localStorage.setItem(STORAGE_KEY, sessionStored);
+        return parsed;
+      }
+    }
+
+    // 3. Intentar leer de cookie (último recurso)
+    const cookieValue = getCookie(COOKIE_NAME);
+    if (cookieValue) {
+      const parsed = JSON.parse(decodeURIComponent(cookieValue)) as ConsentState;
+      if (parsed.decision !== "pending") {
+        // Restaurar a localStorage y sessionStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+        sessionStorage.setItem(SESSION_KEY, JSON.stringify(parsed));
+        return parsed;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("🍪 [CookieBanner] Error reading consent:", error);
+    return null;
+  }
+}
+
+/**
+ * Guarda el consentimiento en TODAS las fuentes (triple protección)
+ */
+function saveConsentToAllSources(
+  analytics: boolean,
+  marketing: boolean,
+  decision: ConsentDecision
+): void {
+  const consent: ConsentState = {
+    analytics,
+    marketing,
+    decision,
+    timestamp: Date.now(),
+    version: CONSENT_VERSION,
+  };
+
+  const serialized = JSON.stringify(consent);
+
+  // 1. Guardar en localStorage (principal)
+  localStorage.setItem(STORAGE_KEY, serialized);
+
+  // 2. Guardar en sessionStorage (backup de sesión)
+  sessionStorage.setItem(SESSION_KEY, serialized);
+
+  // 3. Guardar en cookie (backup permanente, expira en 365 días)
+  setCookie(COOKIE_NAME, encodeURIComponent(serialized), 365);
+
+  // Disparar evento para que los scripts reaccionen
+  window.dispatchEvent(new CustomEvent("consentChange", { detail: consent }));
+}
+
+/**
+ * Helpers para cookies
+ */
+function setCookie(name: string, value: string, days: number): void {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+}
+
+function getCookie(name: string): string | null {
+  const nameEQ = name + "=";
+  const ca = document.cookie.split(";");
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === " ") c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
 }
 
 export default function CookieBanner() {
@@ -44,73 +161,86 @@ export default function CookieBanner() {
   // Montar componente
   useEffect(() => {
     setMounted(true);
-    console.log("🍪 [CookieBanner] Component mounted");
   }, []);
 
-  // Verificar si debe mostrarse
+  // Verificar si debe mostrarse CON PROTECCIÓN ANTI-REAPARICIÓN
   useEffect(() => {
     if (!mounted) return;
     if (typeof window === "undefined") return;
 
-    console.log("🍪 [CookieBanner] Checking if should show...");
+    const consent = getConsentFromAllSources();
 
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      console.log("🍪 [CookieBanner] localStorage value:", stored);
+    if (!consent) {
+      setShow(true);
+      return;
+    }
 
-      if (!stored) {
-        console.log("🍪 [CookieBanner] ✅ No consent found - WILL SHOW BANNER");
-        // Mostrar banner inmediatamente (sin delay)
-        setShow(true);
-      } else {
-        const parsed = JSON.parse(stored) as ConsentState;
-        console.log("🍪 [CookieBanner] ❌ Consent exists:", parsed);
-        setShow(false);
-      }
-    } catch (error) {
-      console.error("🍪 [CookieBanner] Error reading consent:", error);
-      // En caso de error, mostrar banner
+    // Verificar que la decisión sea explícita (no pending)
+    if (consent.decision === "accepted") {
+      setShow(false);
+    } else if (consent.decision === "rejected") {
+      // Si rechazó, mostrar nuevamente para darle oportunidad de cambiar de opinión
+      setShow(true);
+    } else {
+      // Decisión inválida o pending, mostrar banner
       setShow(true);
     }
   }, [mounted]);
 
-  const saveConsent = (analytics: boolean, marketing: boolean) => {
-    const consent: ConsentState = {
-      analytics,
-      marketing,
-      timestamp: Date.now(),
-      version: CONSENT_VERSION,
-    };
+  const handleAccept = async () => {
+    // 1. Guardar consentimiento de cookies en TODAS las fuentes
+    saveConsentToAllSources(true, true, "accepted");
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(consent));
-    console.log("🍪 [CookieBanner] Consent saved:", consent);
+    // 2. Guardar consentimiento de ubicación
+    saveLocationPermission(true);
 
-    // Disparar evento para que los scripts reaccionen
-    window.dispatchEvent(
-      new CustomEvent("consentChange", { detail: consent })
-    );
+    // 3. Solicitar ubicación del navegador
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      try {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const locationData = {
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              accuracy: position.coords.accuracy,
+              timestamp: Date.now(),
+            };
+            localStorage.setItem("imagiq_user_location", JSON.stringify(locationData));
+          },
+          (_error) => {
+            // User denied location or error occurred - consent already saved
+          }
+        );
+      } catch {
+        // Geolocation not available
+      }
+    }
 
-    // Forzar reload para que los scripts se carguen
+    // 4. Ocultar banner
+    setShow(false);
+
+    // 5. Forzar reload para que los scripts se carguen con el nuevo consentimiento
     setTimeout(() => {
-      console.log("🍪 [CookieBanner] Reloading page to apply consent...");
       window.location.reload();
     }, 500);
   };
 
-  const handleAccept = () => {
-    console.log("🍪 [CookieBanner] User ACCEPTED");
-    saveConsent(true, true);
-    setShow(false);
-  };
-
   const handleReject = () => {
-    console.log("🍪 [CookieBanner] User REJECTED");
-    saveConsent(false, false);
+    // Guardar rechazo explícito (NO guardar en ubicación para volver a preguntar)
+    saveConsentToAllSources(false, false, "rejected");
+
+    // Ocultar banner temporalmente (volverá a aparecer en próxima visita)
     setShow(false);
+
+    // Reload para aplicar el rechazo
+    setTimeout(() => {
+      window.location.reload();
+    }, 500);
   };
 
   const handleClose = () => {
-    console.log("🍪 [CookieBanner] User CLOSED (will show again later)");
+    // Solo ocultar visualmente, NO guardar nada
+    // El banner volverá a aparecer en la próxima navegación/recarga
     setShow(false);
   };
 
@@ -118,8 +248,6 @@ export default function CookieBanner() {
   if (!mounted || !show) {
     return null;
   }
-
-  console.log("🍪 [CookieBanner] RENDERING BANNER");
 
   return (
     <div
@@ -167,14 +295,17 @@ export default function CookieBanner() {
                 {/* Beneficios de aceptar */}
                 <div className="border-l-2 border-gray-900 pl-4 py-2">
                   <p className="font-semibold text-gray-900 mb-3">
-                    Beneficios al aceptar cookies:
+                    Beneficios al aceptar cookies y ubicación:
                   </p>
                   <ul className="space-y-2.5">
                     <li className="text-gray-700">
-                      <strong className="text-gray-900">Ofertas personalizadas</strong> según tus productos favoritos y búsquedas
+                      <strong className="text-gray-900">Ofertas cerca de ti</strong> basadas en tu ubicación actual
                     </li>
                     <li className="text-gray-700">
-                      <strong className="text-gray-900">Descuentos exclusivos</strong> y promociones en tiendas de tu zona
+                      <strong className="text-gray-900">Promociones personalizadas</strong> según tus productos favoritos
+                    </li>
+                    <li className="text-gray-700">
+                      <strong className="text-gray-900">Envío gratis</strong> en productos de tiendas cercanas
                     </li>
                     <li className="text-gray-700">
                       <strong className="text-gray-900">Acceso anticipado</strong> a lanzamientos de nuevos Galaxy
@@ -197,6 +328,9 @@ export default function CookieBanner() {
                       </p>
                       <p>
                         <strong className="text-gray-900">Marketing:</strong> Google Analytics, Meta (Facebook) y TikTok para mostrarte ofertas relevantes y medir el rendimiento de nuestras campañas.
+                      </p>
+                      <p>
+                        <strong className="text-gray-900">Ubicación:</strong> Geolocalización del navegador para ofrecerte productos de tiendas cercanas.
                       </p>
                     </div>
                   </div>

@@ -93,20 +93,10 @@ export async function sendGa4(event: GA4Event, userData?: GA4UserData): Promise<
         },
       };
 
-      console.debug('[GA4] Enhanced Conversions data included', {
-        hasEmail: Boolean(hashedData.em),
-        hasPhone: Boolean(hashedData.ph),
-        hasName: Boolean(hashedData.fn || hashedData.ln),
-      });
     }
 
     // Enviar evento al dataLayer (GTM lo procesará)
     globalThis.window.dataLayer.push(eventData);
-
-    console.debug(`[GA4] Event sent to dataLayer: ${event.name}`, {
-      params: event.params,
-      hasUserData: Boolean(userData),
-    });
   } catch (error) {
     console.error("[GA4] Failed to send event:", event.name, error);
   }

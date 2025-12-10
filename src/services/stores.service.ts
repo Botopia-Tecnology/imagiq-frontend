@@ -48,13 +48,7 @@ class StoresService {
         // Validar si las coordenadas son válidas
         const hasValidCoords = !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
 
-        // Si las coordenadas no son válidas, mostrar advertencia
-        if (!hasValidCoords) {
-          console.warn(`⚠️ Tienda sin coordenadas válidas (no se mostrará en el mapa): ${store.descripcion}`, {
-            latitud: store.latitud,
-            longitud: store.longitud
-          });
-        }
+        // Si las coordenadas no son válidas, usar valores por defecto
 
         // Retornar la tienda formateada (incluso si no tiene coordenadas válidas)
         return {

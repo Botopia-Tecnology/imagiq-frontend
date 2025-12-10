@@ -20,6 +20,7 @@ import AddToCartButton from "../../viewpremium/components/AddToCartButton";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
 import { useAnalytics } from "@/lib/analytics/hooks/useAnalytics";
+import { useTradeInPrefetch } from "@/hooks/useTradeInPrefetch";
 
 // Type for the product selection data passed from DetailsProductSection
 // This is a subset of UseProductSelectionReturn with only the properties passed by the callback
@@ -70,6 +71,7 @@ function convertProductForView(product: ProductCardProps) {
         name: safeValue(color.name || color.label, "None"),
         hex: safeValue(color.hex, "#808080"),
       })) || [],
+    category: product.apiProduct?.categoria || "", // Use category from API
     description: safeValue(product.apiProduct?.descGeneral?.[0], "None"),
     specs: [
       { label: "Marca", value: "Samsung" }, // ProductApiData no tiene campo marca, todos son Samsung
@@ -139,16 +141,90 @@ export default function ProductViewPage({ params }) {
   type ParamsWithId = { id: string };
   const id =
     resolvedParams &&
-    typeof resolvedParams === "object" &&
-    "id" in resolvedParams
+      typeof resolvedParams === "object" &&
+      "id" in resolvedParams
       ? (resolvedParams as ParamsWithId).id
       : undefined;
-  const { product, loading, error } = useProduct(id ?? "");
+  // Estado para almacenar el producto inicial desde localStorage (Optimistic UI)
+  const [initialProduct, setInitialProduct] = React.useState<ProductCardProps | null>(() => {
+    if (typeof window !== 'undefined' && id) {
+      try {
+        const saved = localStorage.getItem(`product_selection_${id}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Convertir datos guardados a estructura ProductCardProps mínima necesaria
+          return {
+            id: id,
+            name: parsed.productName || "",
+            image: parsed.image || smartphonesImg.src,
+            price: parsed.price?.toString(),
+            originalPrice: parsed.originalPrice?.toString(),
+            colors: parsed.color ? [{
+              name: parsed.color,
+              hex: parsed.colorHex || "#000000",
+              label: parsed.color,
+              sku: parsed.sku || "",
+              ean: parsed.ean || ""
+            }] : [],
+            capacities: parsed.capacity ? [{
+              value: parsed.capacity,
+              label: parsed.capacity
+            }] : [],
+            segmento: parsed.segmento,
+            skuflixmedia: parsed.skuflixmedia, // Mapear skuflixmedia desde localStorage
+            // Datos mínimos para que funcione la UI
+            apiProduct: {
+              codigoMarketBase: id,
+              codigoMarket: [],
+              nombreMarket: [parsed.productName || ""],
+              categoria: "Móviles", // Fallback seguro
+              subcategoria: "",
+              modelo: [parsed.productName || ""],
+              color: [],
+              capacidad: [],
+              memoriaram: [],
+              descGeneral: [],
+              sku: [],
+              ean: [],
+              desDetallada: [],
+              stockTotal: [],
+              cantidadTiendas: [],
+              cantidadTiendasReserva: [],
+              urlImagenes: [],
+              urlRender3D: [],
+              imagePreviewUrl: [],
+              imageDetailsUrls: [],
+              precioNormal: [],
+              precioeccommerce: [],
+              fechaInicioVigencia: [],
+              fechaFinalVigencia: [],
+              indRetoma: [],
+              indcerointeres: [],
+              skuPostback: [],
+              skuflixmedia: parsed.skuflixmedia ? [parsed.skuflixmedia] : [], // También en apiProduct por si acaso
+            }
+          } as ProductCardProps;
+        }
+      } catch (e) {
+        console.error("Error parsing saved product selection:", e);
+      }
+    }
+    return null;
+  });
+
+  const { product: apiProduct, loading, error } = useProduct(id ?? "");
+
+  // Usar producto del API si está listo, sino usar el inicial de localStorage
+  const product = apiProduct || initialProduct;
+
   const [variantsReady, setVariantsReady] = React.useState(false);
   const [productSelection, setProductSelection] =
     React.useState<ProductSelectionData | null>(null);
   const stockNotification = useStockNotification();
   const { trackViewItem } = useAnalytics();
+
+  // 🚀 Prefetch automático de datos de Trade-In
+  useTradeInPrefetch();
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
@@ -209,10 +285,12 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
 
-  if (error) {
+  // Solo mostrar error si no tenemos ni producto API ni producto inicial
+  if (error && !product) {
     return notFound();
   }
 
+  // Solo mostrar skeleton si no tenemos ningún producto
   if (!product && loading) {
     return <ProductDetailSkeleton />;
   }
@@ -234,11 +312,13 @@ export default function ProductViewPage({ params }) {
     );
   }
 
-  const isFullyLoaded = !loading && variantsReady;
+  // Consideramos cargado si tenemos producto (sea local o API)
+  // Si es local, variantsReady podría ser false inicialmente, pero queremos mostrar contenido
+  const isFullyLoaded = !!product;
 
   return (
     <>
-      {/* Mostrar skeleton mientras carga */}
+      {/* Mostrar skeleton solo si no hay producto en absoluto */}
       {!isFullyLoaded && <ProductDetailSkeleton />}
 
       {/* Modal de notificación de stock */}
@@ -263,7 +343,7 @@ export default function ProductViewPage({ params }) {
         onNotificationRequest={handleRequestStockNotification}
       />
 
-      {/* Renderizar contenido (oculto o visible según estado) */}
+      {/* Renderizar contenido inmediatamente si tenemos producto */}
       <div style={{ display: isFullyLoaded ? "block" : "none" }}>
         <ProductContentWithVariants
           product={product}

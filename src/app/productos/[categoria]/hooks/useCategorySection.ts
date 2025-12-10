@@ -13,6 +13,8 @@ import {
   convertFiltersToApi,
 } from "../utils/categoryUtils";
 import { getCategoryFilters } from "../constants/categoryConstants";
+import { convertDynamicFiltersToApi } from "../utils/dynamicFilterUtils";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 export function useCategoryFilters(categoria: CategoriaParams, seccion: Seccion) {
   const [filters, setFilters] = useState<FilterState>(getCategoryFilters(categoria, seccion));
@@ -80,20 +82,6 @@ export function useCategoryPagination(
 
     const locationChanged = categoriaChanged || menuUuidChanged || submenuUuidChanged;
 
-    console.log('🔍 Detectando cambios:', {
-      isInitialized: isInitializedRef.current,
-      locationChanged,
-      prev: {
-        categoria: previousCategoriaRef.current,
-        menuUuid: prevMenuUuidNorm,
-        submenuUuid: prevSubmenuUuidNorm
-      },
-      current: {
-        categoria,
-        menuUuid: currentMenuUuidNorm,
-        submenuUuid: currentSubmenuUuidNorm
-      }
-    });
 
     if (!isInitializedRef.current) {
       // Primera inicialización: intentar restaurar página guardada
@@ -179,7 +167,10 @@ export function useCategoryProducts(
   categoryUuid?: string,
   menuUuid?: string,
   submenuUuid?: string,
-  categoryCode?: string
+  categoryCode?: string,
+  // Filtros dinámicos (nuevo)
+  dynamicFilters?: DynamicFilterConfig[],
+  dynamicFilterState?: DynamicFilterState
 ) {
   // Inicializar con el estado de sección actual
   const [previousSeccion, setPreviousSeccion] = useState(seccion);
@@ -223,10 +214,42 @@ export function useCategoryProducts(
   // Memoizar los filtros base y aplicados por separado
   const baseFilters = useMemo(() => getCategoryBaseFilters(categoria, seccion), [categoria, seccion]);
 
-  const appliedFilters = useMemo(() =>
-    convertFiltersToApi(categoria, filters, seccion, submenuUuid),
-    [categoria, filters, seccion, submenuUuid]
-  );
+  // Siempre usar filtros dinámicos (eliminados filtros estáticos)
+  // Serializar dynamicFilterState para forzar detección de cambios
+  const dynamicFilterStateSerialized = useMemo(() => {
+    return JSON.stringify(dynamicFilterState || {});
+  }, [dynamicFilterState]);
+
+  // Rastrear cambios en filtros para forzar mostrar skeletons
+  const [previousFilterState, setPreviousFilterState] = useState<string>(dynamicFilterStateSerialized);
+  const [filtersChanged, setFiltersChanged] = useState(false);
+
+  useEffect(() => {
+    if (previousFilterState !== dynamicFilterStateSerialized) {
+      // Los filtros cambiaron
+      setFiltersChanged(true);
+      setPreviousFilterState(dynamicFilterStateSerialized);
+    }
+  }, [dynamicFilterStateSerialized, previousFilterState]);
+
+  const appliedFilters = useMemo(() => {
+    // Si hay filtros dinámicos y estado de filtros (aunque esté vacío), convertir
+    if (dynamicFilters && dynamicFilters.length > 0 && dynamicFilterState) {
+      // Usar conversión de filtros dinámicos (puede retornar {} si no hay selecciones)
+      const converted = convertDynamicFiltersToApi(dynamicFilterState, dynamicFilters);
+      // Debug: Log para verificar que se están convirtiendo los filtros
+      console.log('[useCategoryProducts] Filtros convertidos:', {
+        dynamicFilterState: JSON.parse(JSON.stringify(dynamicFilterState)),
+        converted: JSON.parse(JSON.stringify(converted)),
+        hasFilters: Object.keys(converted).length > 0,
+        convertedKeys: Object.keys(converted)
+      });
+      return converted;
+    } else {
+      // Si no hay filtros dinámicos, retornar objeto vacío
+      return {};
+    }
+  }, [dynamicFilters, dynamicFilterStateSerialized, dynamicFilterState]);
 
   // Combinar todos los filtros solo cuando sea necesario
   const apiFilters = useMemo(() => {
@@ -280,19 +303,41 @@ export function useCategoryProducts(
         delete filtersWithoutUndefined.submenuUuid;
       }
 
-      return applySortToFilters({
+      const finalFilters = applySortToFilters({
         ...filtersWithoutUndefined,
         page: currentPage,
         limit: itemsPerPage,
         lazyLimit: 6, // Cargar 6 productos por scroll
         lazyOffset: 0
       }, sortBy);
+
+      // Debug: Log para verificar que los filtros finales se están creando correctamente
+      console.log('[useCategoryProducts] initialFiltersForProducts:', {
+        apiFilters: JSON.parse(JSON.stringify(apiFilters)),
+        filtersWithoutUndefined: JSON.parse(JSON.stringify(filtersWithoutUndefined)),
+        finalFilters: JSON.parse(JSON.stringify(finalFilters)),
+        currentPage,
+        itemsPerPage
+      });
+
+      return finalFilters;
     },
     // Incluir menuUuid y submenuUuid explícitamente para detectar cambios
     [shouldMakeApiCall, apiFilters, currentPage, itemsPerPage, sortBy, menuUuid, submenuUuid]
   );
 
   const productsResult = useProducts(initialFiltersForProducts);
+
+  // Resetear el flag de filtros cambiados cuando los productos se carguen
+  useEffect(() => {
+    if (filtersChanged && (!productsResult.loading || productsResult.products.length > 0)) {
+      // Si los filtros cambiaron y:
+      // - Ya terminó de cargar, O
+      // - Hay productos cargados (aunque siga cargando)
+      // Resetear el flag
+      setFiltersChanged(false);
+    }
+  }, [filtersChanged, productsResult.loading, productsResult.products.length]);
 
   // Finalizar transición cuando los productos se carguen (con o sin resultados)
   useEffect(() => {
@@ -311,7 +356,12 @@ export function useCategoryProducts(
 
   // Retornar loading como true durante la transición SOLO si no hay productos cargados
   // Si hay productos (del caché), no mostrar loading aunque esté en transición
-  const finalLoading = productsResult.loading || (isTransitioning && productsResult.products.length === 0);
+  // CRÍTICO: Si los filtros cambiaron, siempre mostrar loading hasta que termine de cargar o haya productos nuevos
+  // Esto asegura que se muestren skeletons cuando cambian los filtros
+  const finalLoading = 
+    productsResult.loading || 
+    (isTransitioning && productsResult.products.length === 0) ||
+    (filtersChanged && (productsResult.loading || productsResult.products.length === 0));
 
   return {
     ...productsResult,
@@ -321,7 +371,8 @@ export function useCategoryProducts(
     // hasLoadedOnce indica si ya se completó al menos una carga
     hasLoadedOnce,
     // forceKey para forzar re-mount del grid cuando cambia la sección
-    forceKey
+    forceKey,
+    // bundles ya viene en productsResult, así que se incluye automáticamente con el spread
   };
 }
 

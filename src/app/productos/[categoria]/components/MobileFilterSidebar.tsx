@@ -5,28 +5,40 @@
 "use client";
 
 import { X } from "lucide-react";
-import FilterSidebar, { type FilterState, type FilterConfig } from "../../components/FilterSidebar";
+import FilterSidebar from "../../components/FilterSidebar";
+import FilterSidebarSkeleton from "../../components/FilterSidebarSkeleton";
+import type { DynamicFilterConfig, DynamicFilterState } from "@/types/filters";
 
 interface Props {
   readonly show: boolean;
   readonly onClose: () => void;
-  readonly filterConfig: FilterConfig;
-  readonly filters: FilterState;
-  readonly onFilterChange: (filterType: string, value: string, checked: boolean) => void;
-  readonly expandedFilters: Set<string>;
-  readonly onToggleFilter: (filterKey: string) => void;
+  // Filtros dinámicos
+  readonly dynamicFilters?: DynamicFilterConfig[];
+  readonly dynamicFilterState?: DynamicFilterState;
+  readonly onDynamicFilterChange?: (
+    filterId: string,
+    value: string | { min?: number; max?: number; ranges?: string[]; values?: string[] },
+    checked?: boolean
+  ) => void;
+  // Props comunes
+  readonly expandedFilters?: Set<string>;
+  readonly onToggleFilter?: (filterKey: string) => void;
   readonly resultCount: number;
+  readonly loading?: boolean;
 }
 
 export default function MobileFilterSidebar({
   show,
   onClose,
-  filterConfig,
-  filters,
-  onFilterChange,
+  // Filtros dinámicos
+  dynamicFilters,
+  dynamicFilterState,
+  onDynamicFilterChange,
+  // Props comunes
   expandedFilters,
   onToggleFilter,
   resultCount,
+  loading = false,
 }: Props) {
   if (!show) return null;
 
@@ -52,14 +64,20 @@ export default function MobileFilterSidebar({
           </div>
         </div>
         <div className="p-4">
-          <FilterSidebar
-            filterConfig={filterConfig}
-            filters={filters}
-            onFilterChange={onFilterChange}
-            expandedFilters={expandedFilters}
-            onToggleFilter={onToggleFilter}
-            resultCount={resultCount}
-          />
+          {loading ? (
+            <FilterSidebarSkeleton />
+          ) : (
+            <FilterSidebar
+              // Solo filtros dinámicos
+              dynamicFilters={dynamicFilters}
+              dynamicFilterState={dynamicFilterState}
+              onDynamicFilterChange={onDynamicFilterChange}
+              // Props comunes
+              expandedFilters={expandedFilters}
+              onToggleFilter={onToggleFilter}
+              resultCount={resultCount}
+            />
+          )}
         </div>
       </div>
     </div>

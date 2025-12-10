@@ -41,7 +41,7 @@ interface QueuedPrefetch {
 // Cola global de prefetches pendientes
 const prefetchQueue: QueuedPrefetch[] = [];
 // Número máximo de peticiones simultáneas (reducido para evitar 429)
-const MAX_CONCURRENT_PREFETCHES = 2;
+const MAX_CONCURRENT_PREFETCHES = 4;
 // Contador de peticiones activas
 let activePrefetches = 0;
 // Flag para indicar si el procesador de cola está corriendo
@@ -167,7 +167,7 @@ export function usePrefetchProducts() {
 
       try {
         // Llamada silenciosa a la API (sin mostrar loading ni errores)
-        const response = await productEndpoints.getFiltered(params);
+        const response = await productEndpoints.getFilteredV2(params);
 
         // Verificar si la respuesta indica un error 429
         // El backend devuelve statusCode: 429 en la respuesta

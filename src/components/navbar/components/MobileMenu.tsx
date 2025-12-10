@@ -7,6 +7,7 @@ import { MobileMenuHeader } from "./MobileMenuHeader";
 import { MobileMenuPromo } from "./MobileMenuPromo";
 import { MobileMenuContent } from "./MobileMenuContent";
 import { DynamicMobileSubmenu } from "./DynamicMobileSubmenu";
+import { SearchBar } from "./SearchBar";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import type { Menu } from "@/lib/api";
@@ -177,7 +178,24 @@ export const MobileMenu: FC<Props> = ({
           onSearchSubmit={onSearchSubmit}
         />
 
-        <MobileMenuPromo onClose={onClose} />
+        {!activeSubmenu && (
+          <div className="sticky top-0 bg-white z-10">
+            <MobileMenuPromo onClose={onClose} />
+
+            <div
+              className="px-4 pb-4 pt-3"
+              style={{
+                background: "linear-gradient(to bottom, #f3f4f6 0%, #ffffff 100%)"
+              }}
+            >
+              <SearchBar
+                value={searchQuery}
+                onChange={onSearchChange}
+                onSubmit={onSearchSubmit}
+              />
+            </div>
+          </div>
+        )}
 
         {SubmenuComponent || (
           <MobileMenuContent

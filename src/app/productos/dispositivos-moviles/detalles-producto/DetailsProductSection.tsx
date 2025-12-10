@@ -4,7 +4,6 @@ import { useScrollNavbar } from "@/hooks/useScrollNavbar";
 import { useSelectedColor } from "@/contexts/SelectedColorContext";
 import { useProductSelection } from "@/hooks/useProductSelection";
 import { useCartContext } from "@/features/cart/CartContext";
-import { useRouter } from "next/navigation";
 import { useFavorites } from "@/features/products/useProducts";
 import type { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { StaticImageData } from "next/image";
@@ -103,15 +102,13 @@ const DetailsProductSection: React.FC<{
     productSelection.selectedStockTotal,
     productSelection.selectedVariant,
     productSelection.selectedSkuPostback,
-    productSelection.selection.selectedColor,
-    productSelection.selection.selectedCapacity,
-    productSelection.selection.selectedMemoriaram,
+    productSelection.selection,
+    productSelection.getSelectedColorOption,
     onProductSelectionChange,
   ]);
 
   const { setSelectedColor: setGlobalSelectedColor } = useSelectedColor();
   const { addProduct } = useCartContext();
-  const router = useRouter();
   const {
     addToFavorites,
     removeFromFavorites,
@@ -228,11 +225,14 @@ const DetailsProductSection: React.FC<{
         capacity: productSelection.selection.selectedCapacity || undefined,
         ram: productSelection.selection.selectedMemoriaram || undefined,
         skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
+        desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: product.apiProduct?.modelo?.[0] || "",
+        categoria: product.apiProduct?.categoria || "",
+        indRetoma: product.apiProduct?.indRetoma?.[productSelection.selectedVariant?.index || 0] ?? (product.acceptsTradeIn ? 1 : 0),
       });
-     
+
     } catch (error) {
-      
+      console.error("Error al agregar producto al carrito:", error);
     } finally {
       setLoading(false);
     }
@@ -240,7 +240,7 @@ const DetailsProductSection: React.FC<{
 
   const handleBuyNow = async () => {
     await handleAddToCart();
-    
+
   };
 
   const handleRequestStockNotification = async (email: string) => {
@@ -291,7 +291,7 @@ const DetailsProductSection: React.FC<{
     };
   }, [showStickyBar]);
 
- 
+
 
   // Price calculations
   const originalPrice = React.useMemo(() => {
@@ -305,9 +305,9 @@ const DetailsProductSection: React.FC<{
       typeof product.originalPrice === "number"
         ? product.originalPrice
         : Number.parseInt(
-            String(product.originalPrice).replaceAll(/[^\d]/g, ""),
-            10
-          ) || 0;
+          String(product.originalPrice).replaceAll(/[^\d]/g, ""),
+          10
+        ) || 0;
     return parsedOriginalPrice;
   }, [productSelection.selectedOriginalPrice, product.originalPrice]);
 
@@ -368,6 +368,7 @@ const DetailsProductSection: React.FC<{
         onClose={handleCloseTradeInModal}
         onCancelWithoutCompletion={handleCancelTradeIn}
         onCompleteTradeIn={handleCompleteTradeIn}
+        productSku={productSelection.selectedSku || undefined}
       />
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
@@ -407,7 +408,7 @@ const DetailsProductSection: React.FC<{
                   }
                   imageDetailsUrls={
                     product.apiProduct?.imageDetailsUrls?.[
-                      productSelection.selectedVariant?.index || 0
+                    productSelection.selectedVariant?.index || 0
                     ] || []
                   }
                   onImageClick={handleImageClick}
@@ -511,7 +512,7 @@ const DetailsProductSection: React.FC<{
               }
               imageDetailsUrls={
                 product.apiProduct?.imageDetailsUrls?.[
-                  productSelection.selectedVariant?.index || 0
+                productSelection.selectedVariant?.index || 0
                 ] || []
               }
               onImageClick={handleImageClick}

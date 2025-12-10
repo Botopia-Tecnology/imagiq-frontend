@@ -8,8 +8,9 @@ interface ImageModalProps {
   productImages: string[];
   modalImageIndex: number;
   slideDirection: 'left' | 'right';
-  product: ProductCardProps;
-  selectedColor: string | null;
+  product?: ProductCardProps;
+  selectedColor?: string | null;
+  productName?: string;
   onClose: () => void;
   onNextImage: () => void;
   onPrevImage: () => void;
@@ -23,12 +24,17 @@ const ImageModal: React.FC<ImageModalProps> = ({
   slideDirection,
   product,
   selectedColor,
+  productName,
   onClose,
   onNextImage,
   onPrevImage,
   onGoToImage,
 }) => {
   if (!isOpen || productImages.length === 0) return null;
+
+  // Determinar el nombre para el alt text
+  const altName = productName || product?.name || 'Producto';
+  const altColor = selectedColor || '';
 
   return (
     <>
@@ -44,7 +50,7 @@ const ImageModal: React.FC<ImageModalProps> = ({
             opacity: 1;
           }
         }
-        
+
         @keyframes slideInLeft {
           from {
             transform: translateX(-100%);
@@ -55,16 +61,16 @@ const ImageModal: React.FC<ImageModalProps> = ({
             opacity: 1;
           }
         }
-        
+
         .animate-slide-in-right {
           animation: slideInRight 0.5s ease-in-out;
         }
-        
+
         .animate-slide-in-left {
           animation: slideInLeft 0.5s ease-in-out;
         }
       `}</style>
-      
+
       <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4 md:p-8">
         <div className="relative w-full h-full max-w-6xl max-h-[55vh] md:max-h-[90vh] bg-white rounded-2xl shadow-2xl flex items-center justify-center overflow-hidden">
           {/* Botón cerrar */}
@@ -81,10 +87,10 @@ const ImageModal: React.FC<ImageModalProps> = ({
             <img
               key={modalImageIndex}
               src={productImages[modalImageIndex]}
-              alt={`${product.name} - ${selectedColor} ${modalImageIndex + 1}`}
+              alt={`${altName}${altColor ? ` - ${altColor}` : ''} ${modalImageIndex + 1}`}
               className={`w-full h-full object-contain ${
-                slideDirection === 'right' 
-                  ? 'animate-slide-in-right' 
+                slideDirection === 'right'
+                  ? 'animate-slide-in-right'
                   : 'animate-slide-in-left'
               }`}
             />

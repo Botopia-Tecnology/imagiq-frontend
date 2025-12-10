@@ -81,15 +81,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setUser(null);
 
-    // Limpiar todo el localStorage excepto la versión de la app
+    // Limpiar todo el localStorage EXCEPTO datos críticos que deben persistir
     const VERSION_KEY = "app_version";
+    const CONSENT_KEY = "imagiq_consent";
+    const LOCATION_PERMISSION_KEY = "imagiq_location_permission";
+
     const appVersion = localStorage.getItem(VERSION_KEY);
+    const userConsent = localStorage.getItem(CONSENT_KEY);
+    const locationPermission = localStorage.getItem(LOCATION_PERMISSION_KEY);
 
     localStorage.clear();
 
-    // Restaurar la versión
+    // Restaurar datos que deben persistir entre sesiones
     if (appVersion) {
       localStorage.setItem(VERSION_KEY, appVersion);
+    }
+    if (userConsent) {
+      localStorage.setItem(CONSENT_KEY, userConsent);
+    }
+    if (locationPermission) {
+      localStorage.setItem(LOCATION_PERMISSION_KEY, locationPermission);
     }
 
     apiClient.removeAuthToken();

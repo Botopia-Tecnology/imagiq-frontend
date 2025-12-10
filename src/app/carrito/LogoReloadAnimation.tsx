@@ -15,9 +15,13 @@ type LogoReloadAnimationProps = {
   onFinish?: () => void;
 };
 
-// Logo Samsung desde Cloudinary (SVG vectorial - mejor calidad)
-const LOGO_SRC =
-  "https://res.cloudinary.com/dnglv0zqg/image/upload/v1760575601/Samsung_black_ec1b9h.svg";
+// Logo Samsung desde Cloudinary - Usando el patrón estándar de la app
+const CLOUDINARY_CLOUD_NAME = "dqsdl9bwv";
+const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload`;
+const LOGO_PUBLIC_ID = "Diseño_sin_título_-_2025-11-21T234250.302_ikybzx";
+
+// URL optimizada con f_auto para formato automático (mejor compatibilidad Safari)
+const LOGO_SRC = `${CLOUDINARY_BASE_URL}/f_auto,q_auto:best/${LOGO_PUBLIC_ID}`;
 
 /**
  * LogoReloadAnimation
@@ -49,12 +53,12 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
     }
   }, [open, onFinish]);
 
-  // Cambiar texto a mitad de la animación (5 segundos de 10 total)
+  // Cambiar texto a mitad de la animación (7 segundos)
   useEffect(() => {
     if (open) {
       const timer = setTimeout(() => {
         setShowSecondText(true);
-      }, 5000); // Cambia el texto a los 5 segundos
+      }, 4000); // Cambia el texto a los 7 segundos
 
       return () => {
         clearTimeout(timer);
@@ -66,10 +70,10 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
   /**
    * Subcomponente: Logo Samsung con máscara de ola SVG animada
    * Inspirado en el efecto CodePen, la ola sube y "llena" el logo.
-   * Usando React.useMemo para evitar que el SVG se recree cuando cambia el texto
+   * Usando useMemo para evitar recrear el SVG cuando cambia el texto
    * IMPORTANTE: Este hook debe estar antes del early return para cumplir con Rules of Hooks
    */
-  const animatedLogoWithWaveMask = React.useMemo(
+  const AnimatedLogoWithWaveMask = React.useMemo(
     () => (
       <div
         className="relative flex flex-col items-center justify-center z-10 w-full max-w-[1000px] h-[420px] md:w-[1000px] md:h-[420px] px-2"
@@ -105,19 +109,19 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               <stop offset="1" stopColor="#fff" stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* Ola blanca animada solo dentro del logo PNG */}
+          {/* Ola negra/gris animada solo dentro del logo PNG */}
           <g>
             <path
               id="wave-path"
               d="M0,420 Q250,380 500,420 Q750,460 1000,420 L1000,420 L0,420 Z"
-              fill="#FFFFFF"
+              fill="#1a1a1a"
               opacity="0.92"
               mask="url(#wave-logo-mask)"
             >
               <animate
                 ref={animationRef}
                 attributeName="d"
-                dur="10s"
+                dur="8s"
                 repeatCount="1"
                 fill="freeze"
                 values="
@@ -130,7 +134,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               "
               />
             </path>
-            {/* Brillo animado sobre la ola */}
+            {/* Brillo animado sobre la ola - se desvanece al final */}
             <rect
               x="0"
               y="0"
@@ -147,9 +151,16 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
                 dur="8s"
                 repeatCount="indefinite"
               />
+              <animate
+                attributeName="opacity"
+                values="0.18;0.18;0.18;0.18;0.12;0.06;0"
+                keyTimes="0;0.7;0.8;0.85;0.9;0.95;1"
+                dur="8s"
+                fill="freeze"
+              />
             </rect>
           </g>
-          {/* Logo Samsung SVG visible encima de la ola, con opacidad animada y filtro blanco */}
+          {/* Logo Samsung PNG visible encima de la ola, con opacidad animada */}
           <image
             href={LOGO_SRC}
             x="0"
@@ -158,7 +169,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
             height="420"
             style={{
               filter:
-                "brightness(0) invert(1) drop-shadow(0 2px 8px #2020201a) drop-shadow(0 0px 80px #fff8)",
+                "drop-shadow(0 20px 80px rgba(0,0,0,0.5)) drop-shadow(0 0px 40px rgba(255,255,255,0.3))",
               opacity: 0,
               transform: "scale(1)",
               transition: "transform 1.2s cubic-bezier(0.77,0,0.175,1)",
@@ -168,7 +179,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
               attributeName="opacity"
               values="0;0;0.1;0.5;0.85;0.99"
               keyTimes="0;0.18;0.32;0.55;0.75;1"
-              dur="10s"
+              dur="8s"
               fill="freeze"
             />
           </image>
@@ -186,7 +197,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       </div>
     ),
     [showSecondText]
-  ); // Solo se recrea cuando cambia el texto, manteniendo la animación SVG intacta
+  ); // Solo recrea cuando cambia el texto
 
   // Early return después de todos los hooks para cumplir con Rules of Hooks
   if (!open) return null;
@@ -198,6 +209,8 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       style={{
         minHeight: "100vh",
         background: "#000000",
+        backgroundSize: "200% 200%",
+        animation: "logo-reload-bgMove 16s ease-in-out infinite alternate",
         padding: "0 0.5rem",
       }}
       role="dialog"
@@ -205,7 +218,7 @@ const LogoReloadAnimation: React.FC<LogoReloadAnimationProps> = ({
       aria-label="Procesando compra"
     >
       {/* Logo Samsung animado con ola SVG subiendo y llenando el logo */}
-      {animatedLogoWithWaveMask}
+      {AnimatedLogoWithWaveMask}
     </div>
   );
 };

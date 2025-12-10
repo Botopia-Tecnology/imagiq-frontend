@@ -66,47 +66,44 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
     const allSkus: string[] = [];
     const allEans: string[] = [];
 
-    // 1. Si hay SKU/EAN seleccionado, agregarlo PRIMERO (prioridad)
-    if (selectedSku && selectedSku.trim()) {
-      allSkus.push(selectedSku.trim());
+    // 0. Si hay skuflixmedia (del backend o localStorage), usarlo DIRECTAMENTE y EXCLUSIVAMENTE
+    // Prioridad: flix.skuflixmedia > flix.apiProduct.skuflixmedia > product.skuflixmedia
+    const flixSkuMedia = flix?.skuflixmedia || flix?.apiProduct?.skuflixmedia?.[0] || product.skuflixmedia;
+
+    if (flixSkuMedia && flixSkuMedia.trim()) {
+      allSkus.push(flixSkuMedia.trim());
+      console.log('🎬 Specifications usando skuflixmedia:', flixSkuMedia);
+    } else {
+      // 1. Fallback: SKU del producto del API o del selectedSku
+      if (selectedSku && selectedSku.trim()) {
+        allSkus.push(selectedSku.trim());
+      } else if (flix?.apiProduct?.sku?.[0]) {
+        allSkus.push(flix.apiProduct.sku[0]);
+      } else if (product.apiProduct?.sku?.[0]) {
+        allSkus.push(product.apiProduct.sku[0]);
+      } else if (product.colors?.[0]?.sku) {
+        allSkus.push(product.colors[0].sku);
+      }
     }
+
+    // Lógica de EANs (se mantiene igual)
     if (selectedEan && selectedEan.trim()) {
       allEans.push(selectedEan.trim());
     }
-
-    // 2. Agregar SKUs de colores si existen (SIEMPRE, como en multimedia)
     if (product.colors) {
       product.colors.forEach(color => {
-        if (color.sku && color.sku.trim() && !allSkus.includes(color.sku.trim())) {
-          allSkus.push(color.sku.trim());
-        }
         if (color.ean && color.ean.trim() && !allEans.includes(color.ean.trim())) {
           allEans.push(color.ean.trim());
         }
       });
     }
-
-    // 3. Agregar SKUs de capacidades si existen (SIEMPRE, como en multimedia)
     if (product.capacities) {
       product.capacities.forEach(capacity => {
-        if (capacity.sku && capacity.sku.trim() && !allSkus.includes(capacity.sku.trim())) {
-          allSkus.push(capacity.sku.trim());
-        }
         if (capacity.ean && capacity.ean.trim() && !allEans.includes(capacity.ean.trim())) {
           allEans.push(capacity.ean.trim());
         }
       });
     }
-
-    // 4. Fallback a apiProduct SKUs/EANs si existen
-    if (product.apiProduct?.sku) {
-      product.apiProduct.sku.forEach(sku => {
-        if (sku && sku.trim() && !allSkus.includes(sku.trim())) {
-          allSkus.push(sku.trim());
-        }
-      });
-    }
-
     if (product.apiProduct?.ean) {
       product.apiProduct.ean.forEach(ean => {
         if (ean && ean.trim() && !allEans.includes(ean.trim())) {
@@ -116,7 +113,8 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
     }
 
     // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por Flixmedia)
-    const skuString = allSkus.length > 0 ? allSkus.join(',') : null;
+    // Si tenemos skuflixmedia, allSkus solo tendrá ese elemento (o los que hayamos decidido)
+    const skuString = allSkus.length > 0 ? allSkus[0] : null; // SIEMPRE usar el primero si hay lista, pero con skuflixmedia ya garantizamos que es el correcto
     const eanString = allEans.length > 0 ? allEans.join(',') : null;
 
     console.log('🎬 Specifications - SKUs para Flixmedia:', skuString);
@@ -127,7 +125,7 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
       productSku: skuString,
       productEan: eanString,
     };
-  }, [product.id, product.colors, product.capacities, product.apiProduct, selectedSku, selectedEan]);
+  }, [product.id, product.colors, product.capacities, product.apiProduct, selectedSku, selectedEan, product.skuflixmedia]);
 
 
   // --- VISUAL: UX mejorada, tabs y contenido ---
@@ -138,11 +136,11 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
       aria-label="Especificaciones técnicas"
     >
       <FlixmediaDetails
-          mpn={productSku}
-          ean={productEan}
-          productName={product.name}
-          className="w-full"
-        />
+        mpn={productSku}
+        ean={productEan}
+        productName={product.name}
+        className="w-full"
+      />
     </section>
   );
 };

@@ -15,7 +15,7 @@
 
 "use client";
 
-import React, { use } from "react";
+import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useProduct } from "@/features/products/useProducts";
 import FlixmediaPlayer from "@/components/FlixmediaPlayer";
@@ -91,22 +91,74 @@ export default function MultimediaPage({
 
   const { product, loading, error } = useProduct(id);
 
+  // Estado para almacenar la selección del usuario desde localStorage
+  // Inicializar directamente desde localStorage para evitar el "flash" del skeleton (Optimistic UI)
+  const [selectedProductData, setSelectedProductData] = useState<{
+    productName?: string;
+    price?: number;
+    originalPrice?: number;
+    color?: string;
+    colorHex?: string;
+    capacity?: string;
+    ram?: string;
+    sku?: string;
+    ean?: string;
+    image?: string;
+    indcerointeres?: number;
+    allPrices?: number[];
+    skuflixmedia?: string;
+    segmento?: string | string[];
+  } | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem(`product_selection_${id}`);
+        if (saved) {
+          return JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error("Error parsing saved product selection:", e);
+      }
+    }
+    return null;
+  });
+
+  // Mantener useEffect para actualizar si el ID cambia (navegación entre productos)
+  useEffect(() => {
+    const savedSelection = localStorage.getItem(`product_selection_${id}`);
+    if (savedSelection) {
+      try {
+        const parsedData = JSON.parse(savedSelection);
+        // Solo actualizar si es diferente para evitar re-renders
+        setSelectedProductData(prev => {
+          if (JSON.stringify(prev) !== JSON.stringify(parsedData)) {
+            return parsedData;
+          }
+          return prev;
+        });
+      } catch (e) {
+        console.error("Error parsing saved product selection:", e);
+      }
+    }
+  }, [id]);
+
   // Precargar los datos del producto para la vista de detalle (view/viewpremium)
   // mientras el usuario ve el multimedia. Esto hace que la navegación sea instantánea
   usePrefetchProduct({
     productId: id,
-    delay: 2000, // Esperar 2 segundos para no interferir con la carga de multimedia
+    delay: 0, // Sin delay para precarga inmediata
     enabled: !loading && !error && !!product, // Solo precargar si el producto se cargó exitosamente
   });
 
 
-  // Loading state
-  if (loading) {
+  // Loading state - Solo mostrar skeleton si NO hay datos locales
+  // Si tenemos datos locales (Optimistic UI), mostramos la página inmediatamente
+  // mientras useProduct actualiza los datos en background
+  if (loading && !selectedProductData) {
     return <MultimediaPageSkeleton />;
   }
 
-  // Error state
-  if (error || !product) {
+  // Error state - Solo si no hay producto Y no hay datos locales
+  if ((error || !product) && !selectedProductData) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
@@ -144,20 +196,25 @@ export default function MultimediaPage({
 
   // Extraer TODOS los SKUs y EANs del producto desde los colores/capacidades
   // Recolectamos todos los SKUs para que Flixmedia pueda buscar en todos hasta encontrar contenido
-  const allSkus = product.colors?.map(color => color.sku).filter(Boolean) || [];
-  const allEans = product.colors?.map(color => color.ean).filter(Boolean) || [];
+  const allSkus = product?.colors?.map(color => color.sku).filter(Boolean) || [];
+  const allEans = product?.colors?.map(color => color.ean).filter(Boolean) || [];
 
   // Agregar SKUs de capacidades si existen
-  if (product.capacities) {
+  if (product?.capacities) {
     product.capacities.forEach(capacity => {
       if (capacity.sku) allSkus.push(capacity.sku);
       if (capacity.ean) allEans.push(capacity.ean);
     });
   }
 
-  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaPlayer)
-  const productSku = allSkus.length > 0 ? allSkus.join(',') : null;
-  const productEan = allEans.length > 0 ? allEans.join(',') : null;
+  // SOLO usar el campo skuflixmedia - NO usar otros SKUs
+  // Si no hay skuflixmedia, no mostrar contenido de Flixmedia
+  const productSku = selectedProductData?.skuflixmedia
+    ? selectedProductData.skuflixmedia
+    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || null);
+
+  // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
+  const productEan = productSku ? (allEans.length > 0 ? allEans[0] : null) : null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {
@@ -166,15 +223,39 @@ export default function MultimediaPage({
     return parseInt(price.replace(/[^\d]/g, "")) || 0;
   };
 
-  const numericPrice = parsePrice(product.price);
-  const numericOriginalPrice = product.originalPrice
-    ? parsePrice(product.originalPrice)
-    : undefined;
+  // Usar datos de localStorage si existen, sino usar los del producto general
+  const numericPrice = selectedProductData?.price ?? parsePrice(product?.price);
+
+  // Para originalPrice: usar localStorage, o product.originalPrice, o precioNormal del apiProduct
+  const getOriginalPrice = (): number | undefined => {
+    // 1. Primero verificar localStorage
+    if (selectedProductData?.originalPrice) {
+      return selectedProductData.originalPrice;
+    }
+    // 2. Luego verificar product.originalPrice directo
+    if (product?.originalPrice) {
+      return parsePrice(product.originalPrice);
+    }
+    // 3. Finalmente, verificar apiProduct.precioNormal (viene como array)
+    if (product?.apiProduct?.precioNormal && product.apiProduct.precioNormal.length > 0) {
+      const precioNormal = product.apiProduct.precioNormal[0];
+      if (precioNormal && precioNormal > 0) {
+        return precioNormal;
+      }
+    }
+    return undefined;
+  };
+
+  const numericOriginalPrice = getOriginalPrice();
 
   // Obtener indcerointeres del producto (puede venir como array del API)
   const getIndcerointeres = (): number => {
+    // Si hay datos de localStorage, usar esos
+    if (selectedProductData?.indcerointeres !== undefined) {
+      return selectedProductData.indcerointeres;
+    }
     // Si el producto tiene apiProduct (datos del API)
-    if (product.apiProduct?.indcerointeres) {
+    if (product?.apiProduct?.indcerointeres) {
       const indcerointeresArray = product.apiProduct.indcerointeres;
       // Tomar el primer valor del array, si no existe usar 0
       return indcerointeresArray[0] ?? 0;
@@ -185,6 +266,14 @@ export default function MultimediaPage({
 
   const indcerointeres = getIndcerointeres();
 
+  // Obtener allPrices: usar de localStorage si existe, sino del producto, sino usar el precio actual
+  const rawAllPrices = selectedProductData?.allPrices ?? product?.apiProduct?.precioeccommerce ?? [];
+  // Asegurar que allPrices tenga al menos el precio actual para el cálculo de cuotas
+  const allPrices = rawAllPrices.length > 0 ? rawAllPrices : (numericPrice > 0 ? [numericPrice] : []);
+
+  // Obtener nombre del producto: usar de localStorage si existe, sino del producto
+  const displayProductName = selectedProductData?.productName ?? product?.name;
+
   // Función helper para verificar si el producto es premium
   const isPremiumProduct = (segmento?: string | string[]): boolean => {
     if (!segmento) return false;
@@ -193,7 +282,9 @@ export default function MultimediaPage({
   };
 
   // Determinar la ruta según el segmento del producto
-  const isPremium = isPremiumProduct(product.segmento);
+  // Usar segmento de localStorage si existe, sino del producto
+  const segmento = selectedProductData?.segmento ?? product?.segmento;
+  const isPremium = isPremiumProduct(segmento);
   const viewRoute = isPremium
     ? `/productos/viewpremium/${id}`
     : `/productos/view/${id}`;
@@ -202,31 +293,29 @@ export default function MultimediaPage({
     <div className="min-h-screen bg-white flex flex-col">
       {/* Top Bar con info del producto y CTA - Fixed debajo del Navbar */}
       <MultimediaBottomBar
-        productName={product.name}
+        productName={displayProductName || ""}
         price={numericPrice}
         originalPrice={numericOriginalPrice}
         indcerointeres={indcerointeres}
-        allPrices={product.apiProduct?.precioeccommerce || []}
+        allPrices={allPrices}
         onViewDetailsClick={() => router.push(viewRoute)}
         isVisible={true}
       />
 
       {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5, delay: 0.2 }}
-        className="flex-1 pt-[70px] xl:pt-[50px]"
+      <div
+        className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
       >
         <FlixmediaPlayer
+          key={`flix-${productSku || id}`}
           mpn={productSku}
           ean={productEan}
-          productName={product.name}
+          productName={displayProductName}
           productId={id}
-          segmento={product.segmento}
+          segmento={segmento}
           className=""
         />
-      </motion.div>
+      </div>
     </div>
   );
 }

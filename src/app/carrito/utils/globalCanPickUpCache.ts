@@ -1,0 +1,242 @@
+// Caché en memoria para el valor global de canPickUp del carrito
+// Se comparte entre Step1 y Step3 para evitar llamar dos veces seguidas
+// al endpoint /api/products/candidate-stores con el mismo estado.
+// Ahora guarda toda la respuesta completa (canPickUp, stores, cities) para evitar skeleton al cambiar a "tienda"
+//
+// OPTIMIZACIÓN: El caché se llena SOLO en Step1 y al cambiar dirección.
+// Los demás steps (2-6) SOLO leen del caché sin hacer llamadas nuevas.
+//
+// PERSISTENCIA: Se guarda en localStorage para sobrevivir a recargas de página en pasos 4-6.
+
+import type { CandidateStoresResponse } from "@/lib/api";
+
+interface CacheKeyInput {
+  userId?: string | null;
+  products: { sku: string; quantity: number }[];
+  addressId?: string | null;
+}
+
+interface CacheEntry {
+  key: string;
+  value: boolean; // canPickUp boolean (para compatibilidad con código existente)
+  fullResponse: CandidateStoresResponse | null; // Respuesta completa del endpoint
+  timestamp: number;
+  addressId: string | null; // Para detectar cambios de dirección
+}
+
+const TTL_MS = 10 * 60 * 1000; // 10 minutos (aumentado para mejor rendimiento)
+const LOCAL_STORAGE_KEY = "imagiq_candidate_stores_cache";
+
+let cache: CacheEntry | null = null;
+
+// Flag global para evitar llamadas múltiples simultáneas
+let isFetching = false;
+
+export function buildGlobalCanPickUpKey(input: CacheKeyInput): string {
+  const userPart = input.userId ?? "anonymous";
+  const addressPart = input.addressId ?? "no-address";
+
+  // Ordenar productos por SKU para que la clave sea estable
+  const productsPart = [...input.products]
+    .sort((a, b) => a.sku.localeCompare(b.sku))
+    .map((p) => `${p.sku}:${p.quantity}`)
+    .join("|");
+
+  return `${userPart}::${addressPart}::${productsPart}`;
+}
+
+/**
+ * Intenta cargar el caché desde localStorage si no está en memoria
+ */
+function loadFromLocalStorage(): void {
+  if (typeof window === "undefined") return;
+
+  try {
+    const stored = window.localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (stored) {
+      const parsed = JSON.parse(stored) as CacheEntry;
+      // Validar TTL
+      if (Date.now() - parsed.timestamp <= TTL_MS) {
+        cache = parsed;
+        // console.log('📦 [Cache] Restaurado desde localStorage:', { key: cache.key.substring(0, 30) + '...' });
+      } else {
+        // console.log('🗑️ [Cache] Datos en localStorage expirados');
+        window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
+    }
+  } catch (error) {
+    console.error("Error cargando caché desde localStorage:", error);
+  }
+}
+
+/**
+ * Guarda el caché actual en localStorage
+ */
+function saveToLocalStorage(): void {
+  if (typeof window === "undefined" || !cache) return;
+
+  try {
+    window.localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cache));
+  } catch (error) {
+    console.error("Error guardando caché en localStorage:", error);
+  }
+}
+
+export function getGlobalCanPickUpFromCache(key: string): boolean | null {
+  // Si no hay caché en memoria, intentar cargar de localStorage
+  if (!cache) {
+    loadFromLocalStorage();
+  }
+
+  if (!cache) return null;
+  if (cache.key !== key) return null;
+
+  const isExpired = Date.now() - cache.timestamp > TTL_MS;
+  if (isExpired) {
+    cache = null;
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    return null;
+  }
+
+  return cache.value;
+}
+
+/**
+ * Obtiene la respuesta completa del caché (tiendas, ciudades, canPickUp)
+ * Útil para evitar skeleton al cambiar a "recoger en tienda"
+ */
+export function getFullCandidateStoresResponseFromCache(key: string): CandidateStoresResponse | null {
+  // Si no hay caché en memoria, intentar cargar de localStorage
+  if (!cache) {
+    loadFromLocalStorage();
+  }
+
+  if (!cache) return null;
+  if (cache.key !== key) return null;
+
+  const isExpired = Date.now() - cache.timestamp > TTL_MS;
+  if (isExpired) {
+    cache = null;
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    return null;
+  }
+
+  return cache.fullResponse;
+}
+
+export function setGlobalCanPickUpCache(
+  key: string,
+  value: boolean,
+  fullResponse?: CandidateStoresResponse | null,
+  addressId?: string | null
+): void {
+  cache = {
+    key,
+    value,
+    fullResponse: fullResponse ?? null,
+    timestamp: Date.now(),
+    addressId: addressId ?? null,
+  };
+
+  // Persistir en localStorage
+  saveToLocalStorage();
+
+  // console.log('✅ [Cache] Guardado en caché (memoria + localStorage):', { key: key.substring(0, 50), addressId, canPickUp: value });
+
+  // Disparar evento para notificar que el caché se actualizó
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('canPickUpCache-updated', {
+      detail: { key, value, addressId }
+    }));
+  }
+}
+
+export function clearGlobalCanPickUpCache(): void {
+  console.log('🗑️ [Cache] Limpiando caché completo (memoria + localStorage)');
+  cache = null;
+  if (typeof window !== "undefined") {
+    window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+  }
+}
+
+/**
+ * Verifica si el caché es válido para una clave dada
+ */
+export function isCacheValid(key: string): boolean {
+  // Si no hay caché en memoria, intentar cargar de localStorage
+  if (!cache) {
+    loadFromLocalStorage();
+  }
+
+  if (!cache) return false;
+  if (cache.key !== key) return false;
+
+  const isExpired = Date.now() - cache.timestamp > TTL_MS;
+  if (isExpired) {
+    cache = null;
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    return false;
+  }
+
+  return true;
+}
+
+/**
+ * Invalida el caché si la dirección cambió
+ * Retorna true si se invalidó, false si no era necesario
+ */
+export function invalidateCacheOnAddressChange(newAddressId: string | null): boolean {
+  // Si no hay caché en memoria, intentar cargar de localStorage
+  if (!cache) {
+    loadFromLocalStorage();
+  }
+
+  if (!cache) return false;
+
+  // Si la dirección cambió, invalidar caché
+  if (cache.addressId !== newAddressId) {
+    console.log('🔄 [Cache] Invalidando caché por cambio de dirección:', {
+      old: cache.addressId,
+      new: newAddressId
+    });
+    cache = null;
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem(LOCAL_STORAGE_KEY);
+    }
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Obtiene el addressId del caché actual
+ */
+export function getCurrentCachedAddressId(): string | null {
+  if (!cache) {
+    loadFromLocalStorage();
+  }
+  return cache?.addressId ?? null;
+}
+
+/**
+ * Establece el flag de fetching para evitar llamadas duplicadas
+ */
+export function setIsFetching(value: boolean): void {
+  isFetching = value;
+}
+
+/**
+ * Verifica si hay una petición en curso
+ */
+export function getIsFetching(): boolean {
+  return isFetching;
+}
+
+

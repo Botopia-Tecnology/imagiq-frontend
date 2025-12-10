@@ -13,7 +13,11 @@ import {
   DBCard,
   DecryptedCardData,
 } from "../types";
-import { profileService, ProfileResponse } from "@/services/profile.service";
+import {
+  profileService,
+  ProfileResponse,
+  UpdateProfileRequest,
+} from "@/services/profile.service";
 import { encryptionService } from "@/lib/encryption";
 
 interface UseProfileReturn {
@@ -21,6 +25,7 @@ interface UseProfileReturn {
   actions: {
     loadProfile: () => Promise<void>;
     refreshData: () => Promise<void>;
+    updateProfile: (data: UpdateProfileRequest) => Promise<boolean>;
     logout: () => Promise<void>;
   };
   isLoading: boolean;
@@ -157,6 +162,37 @@ export const useProfile = (): UseProfileReturn => {
     await loadProfile();
   }, [loadProfile]);
 
+  // Actualizar perfil
+  const updateProfile = useCallback(
+    async (data: UpdateProfileRequest): Promise<boolean> => {
+      if (!authContext.user?.id) {
+        setError("Usuario no autenticado");
+        return false;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        await profileService.updateProfile(authContext.user.id, data);
+
+        // Recargar el perfil para obtener los datos actualizados
+        await loadProfile();
+
+        return true;
+      } catch (err) {
+        console.error("Error actualizando perfil:", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Error al actualizar perfil";
+        setError(errorMessage);
+        return false;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [authContext.user?.id, loadProfile]
+  );
+
   // Logout
   const logout = useCallback(async () => {
     authContext.logout();
@@ -183,6 +219,7 @@ export const useProfile = (): UseProfileReturn => {
     actions: {
       loadProfile,
       refreshData,
+      updateProfile,
       logout,
     },
     isLoading: loading,

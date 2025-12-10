@@ -85,6 +85,7 @@ const PremiumProductInfo: React.FC<{ product: ProductCardProps }> = ({
         sku: selectedVariant.sku,
         ean: selectedVariant.ean || "",
         puntos_q: 4,
+        categoria: product.apiProduct?.categoria || "",
       });
 
       posthogUtils.capture("add_to_cart_click", {

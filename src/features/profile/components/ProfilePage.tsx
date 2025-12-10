@@ -18,8 +18,18 @@ import LegalSection from "./sections/LegalSection";
 import LogoutSection from "./sections/LogoutSection";
 import AddressesPage from "./pages/AddressesPage";
 import PaymentMethodsPage from "./pages/PaymentMethodsPage";
+import CouponsPage from "./pages/CouponsPage";
+import LoyaltyPage from "./pages/LoyaltyPage";
+import OrdersPage from "./pages/OrdersPage";
+import EditProfileModal, { EditProfileData } from "./modals/EditProfileModal";
 
-type CurrentView = "main" | "addresses" | "payment-methods";
+type CurrentView =
+  | "main"
+  | "addresses"
+  | "payment-methods"
+  | "coupons"
+  | "loyalty"
+  | "orders";
 
 interface ProfilePageProps {
   className?: string;
@@ -28,27 +38,42 @@ interface ProfilePageProps {
 export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
   const { state, actions, isLoading } = useProfile();
   const [currentView, setCurrentView] = useState<CurrentView>("main");
+  const [isEditProfileModalOpen, setIsEditProfileModalOpen] = useState(false);
 
   const handleLogout = async () => {
     await actions.logout();
   };
 
   // Handlers de navegación
-  const handleEditProfile = () => console.log("Editar perfil");
-  const handleOrdersClick = () => console.log("Ver pedidos");
-  const handleHelpClick = () => console.log("Ver ayuda");
+  const handleEditProfile = () => setIsEditProfileModalOpen(true);
+  const handleOrdersClick = () => setCurrentView("orders");
   const handlePaymentMethodsClick = () => setCurrentView("payment-methods");
   const handleAddressesClick = () => setCurrentView("addresses");
-  const handleBillingClick = () => console.log("Ver facturación");
-  const handleCouponsClick = () => console.log("Ver cupones");
-  const handleLoyaltyClick = () => console.log("Ver programa de lealtad");
-  const handleNotificationsClick = () => console.log("Ver notificaciones");
+  const handleCouponsClick = () => setCurrentView("coupons");
+  const handleLoyaltyClick = () => setCurrentView("loyalty");
   const handleTermsClick = () => console.log("Ver términos");
   const handlePrivacyClick = () => console.log("Ver privacidad");
-  const handleRelevantInfoClick = () => console.log("Ver información relevante");
-  const handleDataProcessingClick = () => console.log("Ver procesamiento de datos");
+  const handleRelevantInfoClick = () =>
+    console.log("Ver información relevante");
+  const handleDataProcessingClick = () =>
+    console.log("Ver procesamiento de datos");
 
   const handleBackToMain = () => setCurrentView("main");
+
+  const handleSaveProfile = async (data: EditProfileData) => {
+    const success = await actions.updateProfile({
+      nombre: data.nombre,
+      apellido: data.apellido,
+      email: data.email,
+      telefono: data.telefono,
+      tipo_documento: data.tipo_documento,
+      numero_documento: data.numero_documento,
+    });
+
+    if (success) {
+      setIsEditProfileModalOpen(false);
+    }
+  };
 
   if (!state.user) {
     return (
@@ -90,6 +115,23 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
     return <PaymentMethodsPage onBack={handleBackToMain} />;
   }
 
+  // Renderizar vista de cupones
+  if (currentView === "coupons") {
+    return <CouponsPage onBack={handleBackToMain} />;
+  }
+
+  // Renderizar vista de programa de lealtad
+  if (currentView === "loyalty") {
+    return <LoyaltyPage onBack={handleBackToMain} />;
+  }
+
+  // Renderizar vista de órdenes
+  if (currentView === "orders") {
+    return (
+      <OrdersPage onBack={handleBackToMain} userEmail={state.user.email} />
+    );
+  }
+
   return (
     <div className={cn("min-h-screen bg-white", className)}>
       {/* Profile Header */}
@@ -102,7 +144,6 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
       {/* Quick Actions */}
       <QuickActions
         onOrdersClick={handleOrdersClick}
-        onHelpClick={handleHelpClick}
         onPaymentMethodsClick={handlePaymentMethodsClick}
       />
 
@@ -121,14 +162,10 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
           paymentMethodsCount={state.user.tarjetas?.length || 0}
           onAddressesClick={handleAddressesClick}
           onPaymentMethodsClick={handlePaymentMethodsClick}
-          onBillingClick={handleBillingClick}
         />
 
         {/* Settings Section */}
-        <SettingsSection
-          onNotificationsClick={handleNotificationsClick}
-          onHelpClick={handleHelpClick}
-        />
+        <SettingsSection userId={state.user.id} />
 
         {/* More Information Section */}
         <LegalSection
@@ -141,6 +178,15 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({ className }) => {
         {/* Logout Section */}
         <LogoutSection onLogout={handleLogout} />
       </div>
+
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        isOpen={isEditProfileModalOpen}
+        onClose={() => setIsEditProfileModalOpen(false)}
+        user={state.user}
+        onSave={handleSaveProfile}
+        isLoading={isLoading}
+      />
 
       {/* Loading Overlay */}
       {isLoading && (

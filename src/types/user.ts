@@ -24,6 +24,37 @@ export interface Usuario {
   codigo_pais: string;
 }
 
+export interface Cart {
+  _id: string;
+  userId?: string;
+  guestToken?: string;
+  items: Item[];
+  __v: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Item {
+  id: string;
+  name: string;
+  image: string;
+  price: number;
+  originalPrice: number
+  stock: number;
+  sku: string;
+  ean: string;
+  puntos_q: number;
+  color: string;
+  colorName: string;
+  capacity: string;
+  ram: string;
+  skuPostback: string;
+  desDetallada: string;
+  quantity: number;
+  bundles: string[];
+  _id: string;
+}
+
 // Internal user interface for the frontend
 export interface User {
   id: string;

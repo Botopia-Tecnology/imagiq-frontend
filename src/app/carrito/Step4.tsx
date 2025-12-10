@@ -14,6 +14,8 @@ import {
   getTradeInValidationMessage,
 } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 export default function Step4({
   onBack,
@@ -51,6 +53,10 @@ export default function Step4({
     fetchZeroInterestInfo,
     setSaveInfo,
   } = useCheckoutLogic();
+  const [loggedUser, setLoggedUser] = useSecureStorage<User | null>(
+    "imagiq_user",
+    null
+  );
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = React.useState<{
@@ -78,6 +84,18 @@ export default function Step4({
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -141,6 +159,21 @@ export default function Step4({
     };
   }, [router]);
 
+  // Validar si el método de pago está seleccionado correctamente
+  const isPaymentMethodValid = React.useMemo(() => {
+    // Si no hay método de pago seleccionado
+    if (!paymentMethod) return false;
+
+    // Si es tarjeta, debe tener una tarjeta seleccionada
+    if (paymentMethod === "tarjeta" && !selectedCardId) return false;
+
+    // Si es PSE, debe tener un banco seleccionado
+    if (paymentMethod === "pse" && !selectedBank) return false;
+
+    // Si es Addi, siempre está válido (no requiere más datos)
+    return true;
+  }, [paymentMethod, selectedCardId, selectedBank]);
+
   const handleContinueToNextStep = async (e: React.FormEvent) => {
     // Validar Trade-In antes de continuar
     const validation = validateTradeInProducts(products);
@@ -157,7 +190,7 @@ export default function Step4({
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0">
+    <div className="min-h-screen bg-white flex flex-col items-center py-8 px-2 md:px-0 pb-40 md:pb-8">
       {/* Modal para agregar nueva tarjeta */}
       <Modal
         isOpen={isAddCardModalOpen}
@@ -166,10 +199,7 @@ export default function Step4({
         showCloseButton={false}
       >
         <AddCardForm
-          userId={
-            authContext.user?.id ||
-            JSON.parse(localStorage.getItem("imagiq_user")!).id
-          }
+          userId={authContext.user?.id || String(loggedUser?.id)}
           onSuccess={handleAddCardSuccess}
           onCancel={handleCloseAddCardModal}
           showAsModal={true}
@@ -208,8 +238,8 @@ export default function Step4({
           />
         </form>
 
-        {/* Resumen de compra y Trade-In */}
-        <div className="space-y-4">
+        {/* Resumen de compra y Trade-In - Hidden en mobile */}
+        <aside className="hidden md:block space-y-4">
           <Step4OrderSummary
             isProcessing={isProcessing}
             onFinishPayment={() => {
@@ -220,10 +250,22 @@ export default function Step4({
             }}
             onBack={onBack}
             buttonText="Continuar"
-            disabled={isProcessing || !tradeInValidation.isValid}
+            disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
+            isSticky={false}
+            deliveryMethod={
+              typeof window !== "undefined"
+                ? (() => {
+                    const method = localStorage.getItem("checkout-delivery-method");
+                    if (method === "tienda") return "pickup";
+                    if (method === "domicilio") return "delivery";
+                    if (method === "delivery" || method === "pickup") return method;
+                    return undefined;
+                  })()
+                : undefined
+            }
           />
 
-          {/* Banner de Trade-In - Debajo del resumen */}
+          {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
           {tradeInData?.completed && (
             <TradeInCompletedSummary
               deviceName={tradeInData.deviceName}
@@ -236,6 +278,40 @@ export default function Step4({
               }
             />
           )}
+        </aside>
+      </div>
+
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4">
+          {/* Resumen compacto */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-gray-500">
+                Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                productos)
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                $ {Number(products.reduce((acc, p) => acc + p.price * p.quantity, 0)).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Botón continuar */}
+          <button
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
+              isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+            }`}
+            onClick={() => {
+              const form = document.getElementById("checkout-form") as HTMLFormElement;
+              if (form) form.requestSubmit();
+            }}
+            disabled={isProcessing || !tradeInValidation.isValid || !isPaymentMethodValid}
+          >
+            {isProcessing ? "Procesando..." : "Continuar"}
+          </button>
         </div>
       </div>
     </div>

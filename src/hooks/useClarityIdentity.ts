@@ -24,7 +24,6 @@ export function useClarityIdentity() {
   // Identificar usuario cuando se autentica
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    if (!hasAnalyticsConsent()) return;
 
     // Esperar a que Clarity esté disponible y luego identificar
     const identifyUser = async () => {
@@ -32,7 +31,12 @@ export function useClarityIdentity() {
         await waitForClarity(10, 1000); // Esperar hasta 10 segundos
         identifyUserInClarity(user);
       } catch (error) {
-        console.error("[useClarityIdentity] Failed to identify user:", error);
+        // Solo mostrar error en producción, en desarrollo es normal que falle si el backend no está corriendo
+        if (process.env.NODE_ENV === 'production') {
+          console.error("[useClarityIdentity] Failed to identify user:", error);
+        } else {
+          console.log("[useClarityIdentity] Clarity not available (development mode - backend may not be running)");
+        }
       }
     };
 
@@ -42,30 +46,9 @@ export function useClarityIdentity() {
   // Re-identificar en cada cambio de ruta para tracking de navegación
   useEffect(() => {
     if (!isAuthenticated || !user) return;
-    if (!hasAnalyticsConsent()) return;
 
     if (typeof window !== "undefined" && window.clarity) {
       reidentifyUserOnNavigation(user, pathname);
     }
   }, [pathname, user, isAuthenticated]);
-
-  // Escuchar cambios de consentimiento
-  useEffect(() => {
-    const handleConsentChange = () => {
-      if (!isAuthenticated || !user) return;
-
-      if (hasAnalyticsConsent()) {
-        // Re-identificar cuando se otorga consentimiento
-        if (typeof window !== "undefined" && window.clarity) {
-          identifyUserInClarity(user);
-        }
-      }
-    };
-
-    window.addEventListener("consentChange", handleConsentChange);
-
-    return () => {
-      window.removeEventListener("consentChange", handleConsentChange);
-    };
-  }, [user, isAuthenticated]);
 }

@@ -12,7 +12,9 @@ import CookieBanner from "@/components/CookieBanner";
 import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
 import { useClarityIdentity } from "@/hooks/useClarityIdentity";
+import { useInWebCampaign } from "@/hooks/useInWebCampaign";
 import VersionManager from "@/components/VersionManager";
+import { InWebCampaignDisplay } from "@/components/InWebCampaign/InWebCampaignDisplay";
 
 // Rutas donde el Navbar NO debe mostrarse
 const HIDDEN_NAVBAR_ROUTES = [
@@ -39,6 +41,11 @@ export default function ClientLayout({
   const { hideNavbar: hideNavbarDynamic } = useNavbarVisibility();
   const [isClient, setIsClient] = useState(false);
 
+  // Hook para gestionar campañas InWeb
+  const { activeCampaigns, closeCampaign } = useInWebCampaign({
+    channelName: "inweb"
+  });
+
   // Precargar productos de todas las combinaciones posibles en background
   usePreloadAllProducts();
 
@@ -46,13 +53,20 @@ export default function ClientLayout({
   const safeChildren =
     typeof children === "number" && isNaN(children) ? null : children;
 
-  // Ocultar el Footer solo en /carrito, /ofertas y las rutas de animaciones
+  // Ocultar el Footer solo en /carrito (sin step), /ofertas y las rutas de animaciones
+  // Mostrar el Footer en /carrito/step2 y otros pasos del carrito
+  const isCarritoStep = pathname?.startsWith("/carrito/step");
   const hideFooter =
-    pathname === "/carrito" ||
+    (!isCarritoStep && (pathname === "/carrito" || pathname === "/carrito/")) ||
     pathname === "/ofertas" ||
     pathname === "/charging-result" ||
     pathname === "/success-checkout" ||
     pathname === "/carrito/error-checkout";
+
+  // Debug: verificar si el footer debe mostrarse
+  if (typeof window !== "undefined" && pathname?.includes("/carrito/step2")) {
+    console.log("🔍 Footer debug - pathname:", pathname, "hideFooter:", hideFooter, "isCarritoStep:", isCarritoStep);
+  }
 
   // Identificación automática de usuarios en Clarity
   useClarityIdentity();
@@ -61,10 +75,18 @@ export default function ClientLayout({
     setIsClient(true);
   }, []);
 
+
   return (
     <>
       <VersionManager />
       <CookieBanner />
+      {activeCampaigns.map((campaign) => (
+        <InWebCampaignDisplay
+          key={campaign.id}
+          campaign={campaign}
+          onClose={() => closeCampaign(campaign.id)}
+        />
+      ))}
       <div id="main-layout" className="min-h-screen flex flex-col md:mr-0">
         {/* Solo monta el Navbar si no debe ocultarse por ruta ni por scroll dinámico */}
         {!hideNavbar && !hideNavbarDynamic && isClient && <Navbar />}

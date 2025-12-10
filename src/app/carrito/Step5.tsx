@@ -75,6 +75,18 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -94,6 +106,9 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     if (!validation.isValid && validation.errorMessage && validation.errorMessage.includes("Te removimos")) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
+
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
 
       // Mostrar notificación toast
       toast.error("Cupón removido", {
@@ -232,7 +247,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   };
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full pb-40 md:pb-0">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Formulario de selección de cuotas */}
@@ -301,16 +316,28 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
             </div>
           </div>
 
-          {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
+          {/* Resumen de compra y Trade-In - Hidden en mobile */}
+          <aside className="hidden md:block lg:col-span-1 space-y-4">
             <Step4OrderSummary
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
               disabled={selectedInstallments === null || !tradeInValidation.isValid}
+              isSticky={false}
+              deliveryMethod={
+                typeof window !== "undefined"
+                  ? (() => {
+                      const method = localStorage.getItem("checkout-delivery-method");
+                      if (method === "tienda") return "pickup";
+                      if (method === "domicilio") return "delivery";
+                      if (method === "delivery" || method === "pickup") return method;
+                      return undefined;
+                    })()
+                  : undefined
+              }
             />
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
@@ -319,7 +346,38 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
                 validationError={!tradeInValidation.isValid ? getTradeInValidationMessage(tradeInValidation) : undefined}
               />
             )}
+          </aside>
+        </div>
+      </div>
+
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4">
+          {/* Resumen compacto */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-gray-500">
+                Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                productos)
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                $ {Number(calculations.total).toLocaleString()}
+              </p>
+            </div>
           </div>
+
+          {/* Botón continuar */}
+          <button
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
+              selectedInstallments === null || !tradeInValidation.isValid
+                ? "bg-gray-400 cursor-not-allowed opacity-70"
+                : "bg-[#222] hover:bg-[#333] cursor-pointer"
+            }`}
+            onClick={handleContinue}
+            disabled={selectedInstallments === null || !tradeInValidation.isValid}
+          >
+            Continuar
+          </button>
         </div>
       </div>
     </div>

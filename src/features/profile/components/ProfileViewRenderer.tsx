@@ -28,7 +28,7 @@ export const ProfileViewRenderer: React.FC<ProfileViewRendererProps> = ({
 }) => {
   switch (currentView) {
     case "orders":
-      return <OrdersPage onBack={onBack} className={className} />;
+      return <OrdersPage onBack={onBack} className={className} userEmail=""/>;
 
     case "addresses":
       return <AddressesPage onBack={onBack} className={className} />;

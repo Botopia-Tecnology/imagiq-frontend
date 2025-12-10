@@ -19,9 +19,9 @@ export async function payWithAddi(
 
 export async function payWithCard(
   props: CardPaymentData
-): Promise<{ redirectionUrl: string } | { error: string; message: string }> {
+): Promise<{ redirectionUrl: string; requires3DS?: boolean; data3DS?: unknown; orderId?: string } | { error: string; message: string }> {
   try {
-    const data = await apiPost<{ redirectionUrl: string }>('/api/payments/epayco/credit-card', {
+    const data = await apiPost<{ redirectionUrl: string; requires3DS?: boolean; data3DS?: unknown; orderId?: string }>('/api/payments/epayco/credit-card', {
       ...props,
       dues: props.dues.trim() === "" ? "1" : props.dues,
     });
@@ -38,9 +38,9 @@ export async function payWithCard(
 // Nueva función para pagar con tarjeta guardada (token)
 export async function payWithSavedCard(
   props: Omit<CardPaymentData, "cardNumber" | "cardExpMonth" | "cardExpYear" | "cardCvc"> & { cardId: string }
-): Promise<{ redirectionUrl: string } | { error: string; message: string }> {
+): Promise<{ redirectionUrl: string; requires3DS?: boolean; data3DS?: unknown; orderId?: string } | { error: string; message: string }> {
   try {
-    const data = await apiPost<{ redirectionUrl: string }>('/api/payments/epayco/saved-card', {
+    const data = await apiPost<{ redirectionUrl: string; requires3DS?: boolean; data3DS?: unknown; orderId?: string }>('/api/payments/epayco/saved-card', {
       ...props,
       dues: props.dues.trim() === "" ? "1" : props.dues,
     });
@@ -99,7 +99,6 @@ export async function checkZeroInterest(
     const data = await apiPost<CheckZeroInterestResponse>('/api/payments/check-zero-interest', request);
     return data;
   } catch (error) {
-    console.error("Error checking zero interest:", error);
     // Fail silently - don't block the checkout flow
     return null;
   }

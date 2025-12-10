@@ -2,7 +2,7 @@
 
 import { useAuthContext } from "@/features/auth/context";
 import { posthogUtils } from "@/lib/posthogClient";
-import { Usuario } from "@/types/user";
+import { Cart, Usuario } from "@/types/user";
 import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -11,7 +11,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { notifyError, notifyLoginSuccess } from "./notifications";
-import { apiPost } from "@/lib/api-client";
+import { apiGet, apiPost } from "@/lib/api-client";
+import Link from "next/link";
 
 interface LoginSuccessResponse {
   access_token?: string;
@@ -64,7 +65,9 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center space-y-6">
-          <h1 className="text-2xl font-bold text-gray-900">Ya iniciaste sesión</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Ya iniciaste sesión
+          </h1>
           <p className="text-sm text-gray-600">
             Si deseas acceder a tu panel, haz clic en el botón.
           </p>
@@ -96,15 +99,18 @@ export default function LoginPage() {
       // 🔒 VERIFICACIÓN OBLIGATORIA - Si el backend retorna requiresVerification
       if (result.requiresVerification) {
         // Guardar datos temporalmente para continuar verificación en paso 2
-        sessionStorage.setItem("pending_registration_step2", JSON.stringify({
-          userId: result.userId,
-          email: result.email,
-          nombre: result.nombre,
-          apellido: result.apellido,
-          telefono: result.telefono,
-          numero_documento: result.numero_documento,
-          fromLogin: true, // Bandera para saber que viene de login
-        }));
+        sessionStorage.setItem(
+          "pending_registration_step2",
+          JSON.stringify({
+            userId: result.userId,
+            email: result.email,
+            nombre: result.nombre,
+            apellido: result.apellido,
+            telefono: result.telefono,
+            numero_documento: result.numero_documento,
+            fromLogin: true, // Bandera para saber que viene de login
+          })
+        );
 
         posthogUtils.capture("login_requires_verification", {
           user_id: result.userId,
@@ -130,7 +136,9 @@ export default function LoginPage() {
       });
 
       if (skus && Array.isArray(skus)) {
-        const skuStrings = skus.map(item => typeof item === 'string' ? item : item.sku);
+        const skuStrings = skus.map((item) =>
+          typeof item === "string" ? item : item.sku
+        );
         localStorage.setItem("imagiq_favorites", JSON.stringify(skuStrings));
       }
 
@@ -149,8 +157,13 @@ export default function LoginPage() {
 
       await notifyLoginSuccess(user.nombre);
 
+      const cartItems = await apiGet<Cart>("/api/cart");
+      if (cartItems) {
+        localStorage.setItem("cart-items", JSON.stringify(cartItems.items));
+      }
+
       setTimeout(() => {
-        router.push(user.rol === 1 ? "/dashboard" : "/");
+        router.push("/");
       }, 500);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Error de conexión";
@@ -186,7 +199,9 @@ export default function LoginPage() {
               type="email"
               placeholder="tu@email.com"
               value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
               disabled={isLoading}
               autoComplete="username"
             />
@@ -201,7 +216,9 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
                 disabled={isLoading}
                 autoComplete="current-password"
                 className="pr-10"
@@ -213,7 +230,11 @@ export default function LoginPage() {
                 disabled={isLoading}
                 tabIndex={-1}
               >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                {showPassword ? (
+                  <EyeOff className="w-4 h-4" />
+                ) : (
+                  <Eye className="w-4 h-4" />
+                )}
               </button>
             </div>
           </div>
@@ -227,9 +248,12 @@ export default function LoginPage() {
 
           {/* Forgot password & Submit button in same row */}
           <div className="flex items-center justify-between gap-4">
-            <a href="#" className="text-sm text-gray-600 hover:text-gray-900 underline whitespace-nowrap">
+            <Link
+              href="/login/password-recovery"
+              className="text-sm text-gray-600 hover:text-gray-900 underline whitespace-nowrap"
+            >
               ¿Olvidaste tu contraseña?
-            </a>
+            </Link>
             <Button
               type="submit"
               disabled={isLoading}

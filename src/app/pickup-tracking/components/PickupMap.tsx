@@ -1,10 +1,8 @@
 "use client";
 
-
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
+import { useState, useEffect } from "react";
 import Image from "next/image";
-import "leaflet/dist/leaflet.css";
+import { GoogleMapRouteMultiMode } from "@/app/tracking-service/components/GoogleMapRouteMultiMode";
 
 interface PickupMapProps {
   direccionTienda?: string;
@@ -23,6 +21,9 @@ export default function PickupMap({
   latitudTienda,
   longitudTienda,
 }: Readonly<PickupMapProps>) {
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+
   // Remover "Ses" del inicio de la descripción si existe
   const nombreTiendaFormateado = descripcionTienda
     ? descripcionTienda.replace(/^Ses\s+/i, '').trim()
@@ -33,40 +34,40 @@ export default function PickupMap({
     ? `${direccionTienda}, ${ciudadTienda}`
     : direccionTienda || nombreTiendaFormateado || "Ubicación de la tienda";
 
-  // Coordenadas de la tienda (usar coordenadas reales de la API)
-  const tiendaCoords: [number, number] | null = (() => {
-    if (latitudTienda && longitudTienda) {
-      const lat = Number.parseFloat(String(latitudTienda).trim());
-      const lng = Number.parseFloat(String(longitudTienda).trim());
-      // Validar que sean números válidos y dentro de rangos razonables
-      if (!Number.isNaN(lat) && !Number.isNaN(lng) && 
-          lat >= -90 && lat <= 90 && 
-          lng >= -180 && lng <= 180) {
-        return [lat, lng];
-      }
+  // Obtener ubicación del usuario - Solicitar permiso inmediatamente al cargar
+  useEffect(() => {
+    if (navigator.geolocation) {
+      // Solicitar permiso de ubicación inmediatamente
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          });
+          setLocationError(null);
+        },
+        (error) => {
+          console.warn("Error obteniendo ubicación:", error);
+          let errorMessage = "No se pudo obtener tu ubicación. La ruta se mostrará sin punto de origen.";
+          if (error.code === error.PERMISSION_DENIED) {
+            errorMessage = "Permiso de ubicación denegado. Por favor, permite el acceso a tu ubicación para ver la ruta desde tu posición actual.";
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            errorMessage = "Tu ubicación no está disponible. La ruta se mostrará sin punto de origen.";
+          } else if (error.code === error.TIMEOUT) {
+            errorMessage = "Tiempo de espera agotado al obtener tu ubicación. La ruta se mostrará sin punto de origen.";
+          }
+          setLocationError(errorMessage);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0, // No usar caché, siempre obtener ubicación fresca
+        }
+      );
+    } else {
+      setLocationError("Tu navegador no soporta geolocalización.");
     }
-    // Si hay dirección pero no coordenadas, usar coordenadas por defecto de Bogotá
-    if (direccionTienda) {
-      return [4.6097, -74.0817]; // Bogotá centro como fallback
-    }
-    return null;
-  })();
-
-  // Icono para la tienda (azul)
-  const tiendaIcon = L.divIcon({
-    className: "custom-marker",
-    html: `
-      <div style="width:40px;height:50px;display:flex;align-items:center;justify-content:center;">
-        <svg width="40" height="50" viewBox="0 0 40 50" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M20 0C9.09 0 0 9.45 0 21.13C0 33.88 20 50 20 50C20 50 40 33.88 40 21.13C40 9.45 30.91 0 20 0Z" fill="#2563eb" stroke="white" stroke-width="3"/>
-          <text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="white">S</text>
-        </svg>
-      </div>
-    `,
-    iconSize: [40, 50],
-    iconAnchor: [20, 50],
-    popupAnchor: [0, -50],
-  });
+  }, []);
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col h-full">
@@ -146,43 +147,48 @@ export default function PickupMap({
         </div>
       </div>
 
-      {/* Interactive Map */}
-      {(tiendaCoords || direccionTienda || nombreTiendaFormateado) && (
+      {/* Interactive Map with Google Maps - Multiple Transport Modes */}
+      {(latitudTienda && longitudTienda) || direccionTienda ? (
         <div className="relative w-full h-[350px]">
-          {tiendaCoords ? (
-            <MapContainer
-              center={tiendaCoords}
-              zoom={15}
-              scrollWheelZoom={true}
-              style={{ width: "100%", height: "100%" }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-
-              {/* Marcador de la Tienda */}
-              <Marker position={tiendaCoords} icon={tiendaIcon}>
-                <Popup>
-                  <b>{nombreTiendaFormateado}</b>
-                  <br />
-                  {fullTiendaAddress}
-                </Popup>
-              </Marker>
-            </MapContainer>
+          {userLocation ? (
+            <GoogleMapRouteMultiMode
+              origenLat={userLocation.lat}
+              origenLng={userLocation.lng}
+              destinoLat={latitudTienda ? Number.parseFloat(String(latitudTienda).trim()) : undefined}
+              destinoLng={longitudTienda ? Number.parseFloat(String(longitudTienda).trim()) : undefined}
+              direccionDestino={fullTiendaAddress}
+              isPickup={true}
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gray-100">
-              <p className="text-gray-500">Cargando mapa...</p>
+            <div className="relative w-full h-[350px]">
+              <GoogleMapRouteMultiMode
+                destinoLat={latitudTienda ? Number.parseFloat(String(latitudTienda).trim()) : undefined}
+                destinoLng={longitudTienda ? Number.parseFloat(String(longitudTienda).trim()) : undefined}
+                direccionDestino={fullTiendaAddress}
+                isPickup={true}
+              />
+              {locationError && (
+                <div className="absolute top-2 left-2 right-2 bg-yellow-50 border border-yellow-200 rounded-lg p-2 z-20">
+                  <p className="text-xs text-yellow-800 font-medium mb-1">⚠️ {locationError}</p>
+                  <p className="text-xs text-yellow-700">
+                    El mapa muestra solo la ubicación de la tienda. Para ver la ruta desde tu ubicación, permite el acceso a tu ubicación.
+                  </p>
+                </div>
+              )}
             </div>
           )}
+        </div>
+      ) : (
+        <div className="relative w-full h-[350px] bg-gray-100 flex items-center justify-center">
+          <p className="text-gray-500">Cargando información de la tienda...</p>
         </div>
       )}
 
       {/* Store Info - Instructions */}
       <div className="px-6 py-4 bg-white border-t border-gray-200">
         <div className="flex items-start gap-3">
-          <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 aspect-square">
-            <span className="text-white text-sm font-bold">S</span>
+          <div className="w-8 h-8 bg-white border-2 border-black rounded-full flex items-center justify-center flex-shrink-0 aspect-square">
+            <span className="text-black text-base font-bold leading-none">S</span>
           </div>
           <div className="flex-1">
             <p className="text-sm font-semibold text-gray-900 mb-1">

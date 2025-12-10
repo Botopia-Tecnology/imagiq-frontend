@@ -1,12 +1,3 @@
-/**
- * 📱 PRODUCT SHOWCASE - 4 Product Cards
- *
- * Muestra Z Fold 7, Z Flip 7, S25 Ultra y Watch 8
- * Productos específicos con búsqueda por SKU
- */
-
-"use client";
-
 import { useMemo, useState, useCallback } from "react";
 import { useProducts } from "@/features/products/useProducts";
 import { useFavorites } from "@/features/products/useProducts";
@@ -23,17 +14,26 @@ export default function ProductShowcase() {
   }), []);
 
   const { products: allProducts, loading } = useProducts(filters);
-  
+
   // Hook de favoritos
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-  
+
   // Estados para el modal de invitado
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
 
-  // Filtrar productos específicos: Z Fold 7, Z Flip 7, S25 Ultra, Watch 8
+  // Filtrar productos específicos para el showcase
   const products = useMemo(() => {
     if (!allProducts || allProducts.length === 0) return [];
+
+    // Función auxiliar para limpiar y parsear precios (robusta para cualquier formato)
+    const parsePrice = (price: string | number | undefined): number => {
+      if (typeof price === 'number') return price;
+      if (!price) return 0;
+      // Eliminar todo lo que no sea dígito (elimina $, puntos, comas, espacios)
+      const cleanPrice = price.toString().replace(/\D/g, '');
+      return parseFloat(cleanPrice || '0');
+    };
 
     // Función auxiliar: verifica si un producto tiene un SKU que coincide
     const hasMatchingSKU = (product: ProductCardProps, skuPrefix: string): boolean => {
@@ -42,55 +42,116 @@ export default function ProductShowcase() {
       return skuArray.some(sku => sku?.includes(skuPrefix));
     };
 
-    // Buscar cada producto por su SKU específico
-    const zFold7 = allProducts.find(p => hasMatchingSKU(p, 'SM-F966B'));
-    const zFlip7 = allProducts.find(p => hasMatchingSKU(p, 'SM-F766B'));
-    const s25Ultra = allProducts.find(p => hasMatchingSKU(p, 'SM-S938B'));
+    // 1. Encontrar el Watch 8 (Prioridad 1)
     const watch8 = allProducts.find(p =>
       hasMatchingSKU(p, 'SM-L500') ||
-      hasMatchingSKU(p, 'SM-L500N')
+      hasMatchingSKU(p, 'SM-L320') ||
+      (p.name && p.name.includes('Watch8'))
     );
 
-    // Combinar productos encontrados en orden
-    const foundProducts: ProductCardProps[] = [];
-    if (zFold7) foundProducts.push(zFold7);
-    if (zFlip7) foundProducts.push(zFlip7);
-    if (s25Ultra) foundProducts.push(s25Ultra);
-    if (watch8) foundProducts.push(watch8);
+    // 2. Encontrar los Celulares más caros (Premium)
+    const phones = allProducts
+      .filter(p => {
+        const name = p.name ? p.name.toLowerCase() : '';
+        const price = parsePrice(p.price);
 
-    return foundProducts;
+        // Debe ser un Galaxy
+        const isGalaxy = name.includes('galaxy');
+
+        // FILTRO DE PRECIO: Solo productos de más de 2 Millones
+        const isPremiumPrice = price > 2000000;
+
+        // Exclusiones explícitas de accesorios y otros
+        const isNotAccessory = !name.includes('funda') &&
+          !name.includes('cover') &&
+          !name.includes('cubierta') &&
+          !name.includes('case') &&
+          !name.includes('protector') &&
+          !name.includes('cargador') &&
+          !name.includes('adaptador') &&
+          !name.includes('correa') &&
+          !name.includes('fit') &&
+          !name.includes('buds') &&
+          !name.includes('watch');
+
+        // No debe ser "Test"
+        const isNotTest = !name.includes('test');
+
+        return isGalaxy && isPremiumPrice && isNotAccessory && isNotTest;
+      })
+      .sort((a, b) => {
+        // Ordenar por precio descendente
+        return parsePrice(b.price) - parsePrice(a.price);
+      });
+
+    // Construir la lista final: Watch 8 + Top 3 Celulares Premium
+    const finalProducts: ProductCardProps[] = [];
+
+    if (watch8) {
+      finalProducts.push(watch8);
+    }
+
+    // Rellenar con los teléfonos más caros encontrados
+    const phonesNeeded = 4 - finalProducts.length;
+    const uniquePhones = phones.filter(p => p.id !== watch8?.id);
+    finalProducts.push(...uniquePhones.slice(0, phonesNeeded));
+
+    // FALLBACK: Si aún faltan productos (algo falló con los filtros estrictos),
+    // rellenar con cualquier cosa cara que no sea accesorio obvio
+    if (finalProducts.length < 4) {
+      const existingIds = new Set(finalProducts.map(p => p.id));
+      const remainingNeeded = 4 - finalProducts.length;
+
+      const fallbackProducts = allProducts
+        .filter(p => !existingIds.has(p.id))
+        .filter(p => {
+          const name = p.name ? p.name.toLowerCase() : '';
+          const price = parsePrice(p.price);
+          return price > 500000 && // Precio decente
+            !name.includes('funda') &&
+            !name.includes('cover') &&
+            !name.includes('tv') &&
+            !name.includes('nevera');
+        })
+        .sort((a, b) => parsePrice(b.price) - parsePrice(a.price))
+        .slice(0, remainingNeeded);
+
+      finalProducts.push(...fallbackProducts);
+    }
+
+    return finalProducts.slice(0, 4);
   }, [allProducts]);
-  
+
   // Manejar toggle de favoritos
   const handleToggleFavorite = useCallback(async (productId: string) => {
     // Verificar si el usuario está autenticado o tiene datos guardados
     const userData = localStorage.getItem("imagiq_user");
     const parsedUser = userData ? JSON.parse(userData) : null;
-    
+
     // Si no hay usuario guardado, mostrar modal de invitado
     if (!parsedUser?.id) {
       setPendingFavorite(productId);
       setShowGuestModal(true);
       return;
     }
-    
+
     // Si ya es favorito, remover
     if (isFavorite(productId)) {
       try {
         await removeFromFavorites(productId, parsedUser);
       } catch (error) {
-        console.error("Error al remover favorito:", error);
+        console.error("Error removing favorite:", error);
       }
     } else {
       // Si no es favorito, agregar
       try {
         await addToFavorites(productId, parsedUser);
       } catch (error) {
-        console.error("Error al agregar favorito:", error);
+        console.error("Error adding favorite:", error);
       }
     }
   }, [isFavorite, addToFavorites, removeFromFavorites]);
-  
+
   // Manejar envío del modal de invitado
   const handleGuestSubmit = useCallback(async (guestData: {
     nombre: string;
@@ -101,7 +162,7 @@ export default function ProductShowcase() {
     numero_documento?: string;
   }) => {
     if (!pendingFavorite) return;
-    
+
     try {
       // addToFavorites filtrará automáticamente los campos no permitidos
       const userInfo = await addToFavorites(pendingFavorite, guestData);
@@ -117,20 +178,21 @@ export default function ProductShowcase() {
       }
       setShowGuestModal(false);
       setPendingFavorite(null);
+
     } catch (error) {
-      console.error("Error al agregar favorito:", error);
+      console.error("Error handling guest favorite:", error);
+      // Aquí podrías mostrar un error al usuario si lo deseas
     }
   }, [pendingFavorite, addToFavorites]);
 
-  // Mostrar skeletons mientras carga
   if (loading) {
     return (
       <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
         <div className="w-full" style={{ maxWidth: "1440px" }}>
           {/* Desktop: Grid 4 columnas */}
           <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
-            {Array.from({ length: 4 }, (_, i) => (
-              <div key={`skeleton-${i}`} className="w-full">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="w-full">
                 <SkeletonCard />
               </div>
             ))}
@@ -139,8 +201,8 @@ export default function ProductShowcase() {
           {/* Mobile: Scroll horizontal */}
           <div className="md:hidden overflow-x-auto scrollbar-hide">
             <div className="flex gap-[25px] px-4">
-              {Array.from({ length: 4 }, (_, i) => (
-                <div key={`skeleton-mobile-${i}`} className="shrink-0 w-[280px]">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="shrink-0 w-[280px]">
                   <SkeletonCard />
                 </div>
               ))}
@@ -151,7 +213,6 @@ export default function ProductShowcase() {
     );
   }
 
-  // Si no hay productos, no mostrar nada
   if (!products || products.length === 0) {
     return null;
   }
@@ -189,7 +250,7 @@ export default function ProductShowcase() {
           </div>
         </div>
       </div>
-      
+
       {/* Modal de datos de invitado */}
       {showGuestModal && (
         <GuestDataModal

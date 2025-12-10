@@ -10,6 +10,7 @@ import {
   Truck,
   Store,
   Edit2,
+  User as UserIcon,
 } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
@@ -26,11 +27,28 @@ import {
 import { CheckZeroInterestResponse, BeneficiosDTO } from "./types";
 import { apiPost } from "@/lib/api-client";
 import { safeGetLocalStorage } from "@/lib/localStorage";
-import { productEndpoints } from "@/lib/api";
+import { productEndpoints, deliveryEndpoints } from "@/lib/api";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
+
+declare global {
+  interface Window {
+    validate3ds: (data: unknown) => void;
+  }
+}
 
 interface Step7Props {
-  onBack?: () => void;
+  readonly onBack?: () => void;
 }
+
+interface StoreValidationResponse {
+  codBodega?: string;
+  nearest?: {
+    codBodega?: string;
+  };
+}
+
+type StoreValidationData = StoreValidationResponse | StoreValidationResponse[];
 
 interface CardData {
   cardNumber: string;
@@ -95,15 +113,87 @@ export default function Step7({ onBack }: Step7Props) {
   const authContext = useAuthContext();
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // Ref para rastrear peticiones fallidas a getCandidateStores (evita reintentos)
+  const failedCandidateStoresRef = React.useRef<string | null>(null);
+
   // Estados para datos de resumen
   const [paymentData, setPaymentData] = useState<PaymentData | null>(null);
   const [shippingData, setShippingData] = useState<ShippingData | null>(null);
   const [billingData, setBillingData] = useState<BillingData | null>(null);
+  const [recipientData, setRecipientData] = useState<{
+    receivedByClient: boolean;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    phone?: string;
+  } | null>(null);
   const [zeroInterestData, setZeroInterestData] =
     useState<CheckZeroInterestResponse | null>(null);
   const [shippingVerification, setShippingVerification] =
     useState<ShippingVerification | null>(null);
   const { products, calculations } = useCart();
+  const [error, setError] = useState<string | string[] | null>(null);
+  const [isLoadingShippingMethod, setIsLoadingShippingMethod] = useState(false);
+  // NUEVO: Estado separado para skeleton (solo espera canPickUp) y botón (espera cálculo de envío)
+  const [isLoadingCanPickUp, setIsLoadingCanPickUp] = useState(false);
+  const [isCalculatingShipping, setIsCalculatingShipping] = useState(false);
+  // Estado para guardar el código de bodega de candidate-stores
+  const [candidateWarehouseCode, setCandidateWarehouseCode] = useState<string | undefined>();
+  // Ref para leer el valor actual de isCalculatingShipping en callbacks
+  const isCalculatingShippingRef = React.useRef(false);
+
+  // Actualizar ref cuando cambie el estado
+  React.useEffect(() => {
+    isCalculatingShippingRef.current = isCalculatingShipping;
+  }, [isCalculatingShipping]);
+  const [loggedUser] = useSecureStorage<User | null>(
+    "imagiq_user",
+    null
+  );
+  
+  // CRÍTICO: Leer dirección desde localStorage normal, NO desde useSecureStorage
+  // porque se guarda en localStorage.setItem("checkout-address") en Step3
+  const [checkoutAddress, setCheckoutAddress] = useState<{
+    "id": string,
+    "usuario_id": string,
+    "email": string,
+    "linea_uno": string,
+    "codigo_dane": string,
+    "ciudad": string,
+    "pais": string,
+    "esPredeterminada": boolean
+  } | null>(null);
+
+  // Cargar dirección desde localStorage al montar el componente
+  useEffect(() => {
+    try {
+      const addressStr = localStorage.getItem('checkout-address');
+      if (addressStr) {
+        const parsed = JSON.parse(addressStr);
+        console.log("📍 [Step7 - Init] Dirección cargada desde localStorage:", parsed);
+        console.log("📍 [Step7 - Init] UUID de dirección:", parsed.id);
+        setCheckoutAddress(parsed);
+      } else {
+        console.warn("⚠️ [Step7 - Init] No se encontró checkout-address en localStorage");
+      }
+    } catch (error) {
+      console.error("❌ [Step7 - Init] Error al cargar checkout-address:", error);
+    }
+  }, []);
+
+  // Store/Warehouse validation state
+  const [isCentroDistribucion, setIsCentroDistribucion] = useState<boolean | null>(null);
+  const [isLoadingStoreValidation, setIsLoadingStoreValidation] = useState(false);
+
+  // 3DS Modal state - Not used anymore, kept for backward compatibility
+  // const [show3DSModal, setShow3DSModal] = useState(false);
+  // const [challengeData, setChallengeData] = useState<{
+  //   acsURL: string;
+  //   encodedCReq: string;
+  //   threeDSServerTransID?: string;
+  //   acsTransID?: string;
+  // } | null>(null);
+  // const [currentOrderId, setCurrentOrderId] = useState<string>("");
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -127,12 +217,12 @@ export default function Step7({ onBack }: Step7Props) {
         let savedCard: DBCard | undefined;
 
         // Si usó una tarjeta guardada, cargar sus datos completos
-        if (savedCardId && authContext.user?.id) {
+        // Usar authContext o loggedUser (para usuarios sin sesión activa pero con cuenta creada en Step2)
+        const userId = authContext.user?.id || loggedUser?.id;
+        if (savedCardId && userId) {
           try {
             const encryptedCards =
-              await profileService.getUserPaymentMethodsEncrypted(
-                authContext.user.id
-              );
+              await profileService.getUserPaymentMethodsEncrypted(userId);
 
             const decryptedCards: DBCard[] = encryptedCards
               .map((encCard) => {
@@ -264,6 +354,12 @@ export default function Step7({ onBack }: Step7Props) {
       if (shippingAddress) {
         try {
           const parsed = JSON.parse(shippingAddress);
+          console.log("📍 [Step7 - useEffect] Dirección de envío cargada desde localStorage:", parsed);
+          console.log("📍 [Step7 - useEffect] UUID de dirección:", parsed.id);
+          console.log("📍 [Step7 - useEffect] Usuario ID (de dirección):", parsed.usuario_id);
+          console.log("📍 [Step7 - useEffect] Línea uno:", parsed.linea_uno);
+          console.log("📍 [Step7 - useEffect] Ciudad:", parsed.ciudad);
+          console.log("📍 [Step7 - useEffect] Código DANE:", parsed.codigo_dane);
           setShippingData({
             type: "delivery",
             address: parsed.linea_uno,
@@ -272,6 +368,8 @@ export default function Step7({ onBack }: Step7Props) {
         } catch (error) {
           console.error("Error parsing shipping address:", error);
         }
+      } else {
+        console.warn("⚠️ [Step7 - useEffect] No se encontró dirección en localStorage (checkout-address)");
       }
     }
 
@@ -286,6 +384,32 @@ export default function Step7({ onBack }: Step7Props) {
       }
     }
 
+    // Cargar datos del receptor
+    try {
+      const receivedByClientStr = localStorage.getItem("checkout-received-by-client");
+      const recipientDataStr = localStorage.getItem("checkout-recipient-data");
+
+      const receivedByClient = receivedByClientStr ? JSON.parse(receivedByClientStr) : true;
+
+      if (!receivedByClient && recipientDataStr) {
+        const parsed = JSON.parse(recipientDataStr);
+        setRecipientData({
+          receivedByClient: false,
+          firstName: parsed.firstName,
+          lastName: parsed.lastName,
+          email: parsed.email,
+          phone: parsed.phone,
+        });
+      } else {
+        setRecipientData({
+          receivedByClient: true,
+        });
+      }
+    } catch (error) {
+      console.error("Error parsing recipient data:", error);
+      setRecipientData({ receivedByClient: true });
+    }
+
     // Load Trade-In data
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
     if (storedTradeIn) {
@@ -298,12 +422,24 @@ export default function Step7({ onBack }: Step7Props) {
         console.error("Error parsing Trade-In data:", error);
       }
     }
-  }, []);
+  }, [authContext.user?.id, loggedUser?.id]);
 
   // Handle Trade-In removal
   const handleRemoveTradeIn = () => {
     localStorage.removeItem("imagiq_trade_in");
     setTradeInData(null);
+
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
   };
 
   // Estado para validación de Trade-In
@@ -321,12 +457,15 @@ export default function Step7({ onBack }: Step7Props) {
 
     // Si el producto ya no aplica (indRetoma === 0), quitar banner inmediatamente y mostrar notificación
     if (
-      !validation.isValid &&
-      validation.errorMessage &&
+      validation.isValid === false &&
+      validation.errorMessage !== undefined &&
       validation.errorMessage.includes("Te removimos")
     ) {
       // Limpiar localStorage inmediatamente
       localStorage.removeItem("imagiq_trade_in");
+
+      // Quitar el banner inmediatamente
+      setTradeInData(null);
 
       // Mostrar notificación toast
       toast.error("Cupón removido", {
@@ -344,24 +483,75 @@ export default function Step7({ onBack }: Step7Props) {
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Dirección cambiada desde header en Step7, redirigiendo a Step3...');
-        router.push('/carrito/step3');
+        console.log(
+          "🔄 Dirección cambiada desde header en Step7, redirigiendo a Step3..."
+        );
+        router.push("/carrito/step3");
+      } else {
+        // Si cambia la dirección (pero no desde header), actualizar el estado
+        try {
+          const addressStr = localStorage.getItem('checkout-address');
+          if (addressStr) {
+            const parsed = JSON.parse(addressStr);
+            console.log("🔄 [Step7] Dirección actualizada desde evento:", parsed);
+            setCheckoutAddress(parsed);
+          }
+        } catch (error) {
+          console.error("❌ [Step7] Error al actualizar dirección:", error);
+        }
       }
     };
 
-    window.addEventListener('address-changed', handleAddressChange as EventListener);
+    // Escuchar cambios en localStorage también
+    const handleStorageChange = (event: StorageEvent) => {
+      if (event.key === 'checkout-address' && event.newValue) {
+        try {
+          const parsed = JSON.parse(event.newValue);
+          console.log("🔄 [Step7] Dirección actualizada desde storage event:", parsed);
+          setCheckoutAddress(parsed);
+        } catch (error) {
+          console.error("❌ [Step7] Error al parsear dirección de storage:", error);
+        }
+      }
+    };
+
+    globalThis.window.addEventListener(
+      "address-changed",
+      handleAddressChange as EventListener
+    );
+    globalThis.window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      window.removeEventListener('address-changed', handleAddressChange as EventListener);
+      globalThis.window.removeEventListener(
+        "address-changed",
+        handleAddressChange as EventListener
+      );
+      globalThis.window.removeEventListener("storage", handleStorageChange);
     };
   }, [router]);
 
   // Verificar cobertura cuando los productos estén cargados
   useEffect(() => {
     const verifyWhenProductsReady = async () => {
-      // Solo ejecutar si hay productos y es envío a domicilio
-      if (products.length === 0 || shippingData?.type !== "delivery") {
+      // Solo ejecutar si hay productos
+      if (products.length === 0) {
+        setIsLoadingShippingMethod(false);
         return;
+      }
+
+      // CRÍTICO: Iniciar loading
+      // - isLoadingCanPickUp: Para el skeleton (espera solo canPickUp)
+      // - isCalculatingShipping: Para el botón (espera cálculo de envío completo)
+      setIsLoadingCanPickUp(true);
+      setIsLoadingShippingMethod(true);
+      setIsLoadingStoreValidation(true);
+
+      // Bandera para saber si es pickup (solo verificar canPickUp, no calcular envío)
+      const isPickupMethod = shippingData?.type === "pickup";
+
+      // Si NO es pickup, también activar el cálculo de envío
+      if (!isPickupMethod) {
+        setIsCalculatingShipping(true);
       }
 
       // PASO 1: Obtener canPickUp global del endpoint candidate-stores
@@ -373,12 +563,17 @@ export default function Step7({ onBack }: Step7Props) {
         const userId = user?.id || user?.user_id;
 
         if (!userId) {
-          console.log("🚛 No hay userId, usando Coordinadora");
-          setShippingVerification({
+          const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
             en_zona_cobertura: true,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo
+          localStorage.setItem("checkout-envio-imagiq", "false");
+          setIsLoadingCanPickUp(false);
+          setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
           return;
         }
 
@@ -388,43 +583,224 @@ export default function Step7({ onBack }: Step7Props) {
           quantity: p.quantity,
         }));
 
-        console.log("📦 Verificando canPickUp global...", { productsToCheck, userId });
-
-        // Llamar al endpoint con TODOS los productos agrupados
-        const response = await productEndpoints.getCandidateStores({
+        // Crear hash único de la petición (productos + userId)
+        const requestHash = JSON.stringify({
           products: productsToCheck,
-          user_id: userId,
+          userId,
         });
 
+        // PROTECCIÓN CRÍTICA: Si esta misma petición ya falló antes, NO reintentar
+        if (failedCandidateStoresRef.current === requestHash) {
+          console.error("🚫 Esta petición a candidate-stores ya falló anteriormente. NO se reintentará para evitar sobrecargar la base de datos.");
+          // Usar Coordinadora por defecto
+          setShippingVerification({
+            envio_imagiq: false,
+            todos_productos_im_it: false,
+            en_zona_cobertura: true,
+          });
+          setIsLoadingCanPickUp(false);
+          setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
+          return;
+        }
+
+        // Llamar al endpoint con TODOS los productos agrupados
+        const requestBody = {
+          products: productsToCheck,
+          user_id: userId,
+        };
+        console.log("📤 [Step7] Llamando getCandidateStores con TODO el carrito, body:", JSON.stringify(requestBody, null, 2));
+
+        // Llamar SOLO a candidate-stores (que analiza TODO el carrito completo)
+        const response = await productEndpoints.getCandidateStores(requestBody);
+
+        console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(response.data, null, 2));
+
         if (response.success && response.data) {
-          const responseData = response.data as { canPickUp?: boolean; canPickup?: boolean };
+          // Si la petición fue exitosa, limpiar el hash de fallo si existía
+          if (failedCandidateStoresRef.current === requestHash) {
+            failedCandidateStoresRef.current = null;
+          }
+
+          const responseData = response.data as {
+            canPickUp?: boolean;
+            canPickup?: boolean;
+            codeBodega?: string;
+            nearest?: {
+              codBodega?: string;
+            };
+          };
+
+          console.log("📥 [Step7] Respuesta de getCandidateStores:", JSON.stringify(responseData, null, 2));
+
+          // Obtener codBodega de candidate-stores (analiza TODO el carrito)
+          console.log("🔍 [Step7] responseData completo:", responseData);
+
+          let warehouseCode: string | undefined;
+
+          // candidate-stores devuelve la estructura con nearest que contiene la bodega más cercana
+          // que puede surtir TODO el pedido completo
+          if (responseData.nearest?.codBodega) {
+            warehouseCode = responseData.nearest.codBodega;
+            console.log("🔍 [Step7] codBodega tomado de responseData.nearest:", warehouseCode);
+          } else if (responseData.codeBodega) {
+            warehouseCode = responseData.codeBodega;
+            console.log("🔍 [Step7] codBodega tomado de responseData.codeBodega:", warehouseCode);
+          }
+
+          console.log("🏭 [Step7] codBodega final (de candidate-stores):", warehouseCode);
+
+          // Guardar en estado para usar al crear la orden
+          setCandidateWarehouseCode(warehouseCode);
+
           // Obtener canPickUp global de la respuesta
-          const globalCanPickUp = responseData.canPickUp ?? responseData.canPickup ?? false;
+          const globalCanPickUp =
+            responseData.canPickUp ?? responseData.canPickup ?? false;
 
-          console.log("📦 canPickUp global obtenido:", globalCanPickUp);
+          console.log(`🔍 [Step7] canPickUp global: ${globalCanPickUp}, isPickupMethod: ${isPickupMethod}`);
 
-          // PASO 2: Si canPickUp global es FALSE → Directamente Coordinadora
-          if (!globalCanPickUp) {
-            console.log("🚛 Envío Coordinadora (canPickUp global es false)");
-            setShippingVerification({
-              envio_imagiq: false,
-              todos_productos_im_it: false,
-              en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
-            });
+          // CRÍTICO: Ya tenemos canPickUp, ocultar skeleton INMEDIATAMENTE
+          setIsLoadingCanPickUp(false);
+          setIsLoadingShippingMethod(false);
+          console.log("✅ [Step7] canPickUp obtenido - Ocultando skeleton");
+
+          // IMPORTANTE: Si es método pickup, solo validamos canPickUp y terminamos (no calcular cobertura)
+          if (isPickupMethod) {
+            console.log("🏪 [Step7] Método pickup - Solo verificación de canPickUp, no calcular cobertura");
+            setIsCentroDistribucion(false);
+            setIsLoadingStoreValidation(false);
+            // No establecer shippingVerification porque no es necesario para pickup
             return;
           }
 
-          // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
-          console.log("✅ canPickUp global es true, verificando cobertura Imagiq...");
+          // Si llegamos aquí, es método "delivery" → Continuar calculando cobertura en segundo plano
+          console.log("📦 [Step7] Método delivery - Calculando cobertura en segundo plano");
+          // El skeleton ya está oculto, pero el botón seguirá en loading hasta terminar
 
+          // ---------------------------------------------------------------------------
+          // NUEVO: Cotización Multi-Origen (Solo para Domicilio)
+          try {
+            // 1. Obtener ciudades de origen únicas de candidate-stores response
+            const originCities = new Set<string>();
+
+            // Interfaz auxiliar para evitar el uso de any
+            interface StoreDataLike {
+              ciudad?: string;
+              city?: string;
+              nearest?: { ciudad?: string; city?: string };
+              stores?: StoreDataLike[];
+            }
+
+            // candidate-stores devuelve response.data que es CandidateStoresResponse
+            // Intentar obtener ciudad desde la respuesta
+            if (response.data) {
+              // response.data es CandidateStoresResponse, por lo que tiene la propiedad stores
+              // pero necesitamos asegurarnos de que TypeScript lo sepa
+              const storesMap = (response.data as unknown as { stores: Record<string, StoreDataLike[]> }).stores;
+              if (storesMap) {
+                Object.values(storesMap).forEach((storesList) => {
+                  if (Array.isArray(storesList)) {
+                    storesList.forEach((s) => {
+                      if (s.ciudad) originCities.add(s.ciudad);
+                    });
+                  }
+                });
+              }
+            }
+
+            console.log("🏙️ [Step7] Ciudades de origen encontradas:", Array.from(originCities));
+
+            // 2. Obtener ciudad de destino
+            const destinationCity = shippingData?.city ||
+              (checkoutAddress?.codigo_dane || checkoutAddress?.ciudad);
+
+            // 3. Llamar al endpoint si tenemos datos suficientes
+            if (originCities.size > 0 && destinationCity) {
+              console.log("🚚 [Step7] Iniciando cotización multi-origen...");
+
+              // Preparar detalle de productos (asumiendo 1kg por unidad como solicitado)
+              const quoteDetails = products.map(p => ({
+                ubl: 0, // Valor por defecto
+                alto: 10, // Valor por defecto
+                ancho: 10, // Valor por defecto
+                largo: 10, // Valor por defecto
+                peso: p.quantity, // 1kg por unidad * cantidad
+                unidades: p.quantity
+              }));
+
+              const quotePayload = {
+                ciudades_origen: Array.from(originCities),
+                ciudad_destino: destinationCity,
+                cuenta: "1", // Valor por defecto
+                producto: "0", // Valor por defecto
+                valoracion: String(calculations.total || 100000), // Valor del carrito o default
+                nivel_servicio: [1], // Valor por defecto
+                detalle: quoteDetails
+              };
+
+              // Llamada asíncrona (no bloquea el flujo principal)
+              deliveryEndpoints.quoteNationalMultiOrigin(quotePayload)
+                .then(quoteResponse => {
+                  if (quoteResponse.success) {
+                    console.log("✅ [Step7] Cotización Multi-Origen Exitosa:", quoteResponse.data);
+                    // Aquí se podría guardar en estado si se necesitara mostrar en UI
+                    // setMultiOriginQuote(quoteResponse.data);
+                  } else {
+                    console.warn("⚠️ [Step7] Falló cotización multi-origen:", quoteResponse.message);
+                  }
+                })
+                .catch(err => {
+                  console.error("❌ [Step7] Error en cotización multi-origen:", err);
+                });
+            } else {
+              console.log("⚠️ [Step7] No se pudo cotizar multi-origen: Faltan ciudades origen o destino", { originCities: Array.from(originCities), destinationCity });
+            }
+          } catch (quoteError) {
+            console.error("❌ [Step7] Error inesperado en lógica de cotización:", quoteError);
+          }
+          // ---------------------------------------------------------------------------
+
+          // PASO 2: Si canPickUp global es FALSE → Verificar si es Centro de Distribución
+          if (!globalCanPickUp) {
+            const esCentroDistribucion = warehouseCode === "001";
+            setIsCentroDistribucion(esCentroDistribucion);
+            setIsLoadingStoreValidation(false);
+
+            if (esCentroDistribucion) {
+              console.log("🏭 [Step7] Es Centro de Distribución (001) - Ejecutando validación de cobertura");
+              // Continuar con la validación de cobertura (PASO 3)
+              // No hacer return aquí, dejar que continúe al PASO 3
+            } else {
+              console.log("🏪 [Step7] NO es Centro de Distribución - Usar Coordinadora directamente");
+              const verification = {
+                envio_imagiq: false,
+                todos_productos_im_it: false,
+                en_zona_cobertura: true, // Coordinadora siempre tiene cobertura
+              };
+              setShippingVerification(verification);
+              // Guardar en localStorage como respaldo
+              localStorage.setItem("checkout-envio-imagiq", "false");
+              setIsCalculatingShipping(false);
+              return;
+            }
+          } else {
+            // Si canPickUp es true, no es Centro de Distribución
+            setIsCentroDistribucion(false);
+            setIsLoadingStoreValidation(false);
+          }
+
+          // PASO 3: Si canPickUp global es TRUE → Verificar cobertura Imagiq
           const shippingAddress = localStorage.getItem("checkout-address");
           if (!shippingAddress) {
-            console.log("🚛 No hay dirección, usando Coordinadora");
-            setShippingVerification({
+            const verification = {
               envio_imagiq: false,
               todos_productos_im_it: false,
               en_zona_cobertura: true,
-            });
+            };
+            setShippingVerification(verification);
+            // Guardar en localStorage como respaldo
+            localStorage.setItem("checkout-envio-imagiq", "false");
+            setIsLoadingShippingMethod(false);
             return;
           }
 
@@ -434,37 +810,76 @@ export default function Step7({ onBack }: Step7Props) {
             skus: products.map((p) => p.sku),
           };
 
-          console.log("🚚 Verificando cobertura de envío Imagiq:", requestBody);
-
           const data = await apiPost<ShippingVerification>(
             "/api/addresses/zonas-cobertura/verificar-por-id",
             requestBody
           );
 
-          console.log("✅ Respuesta de verificación (useEffect):", data);
-
-          setShippingVerification({
+          const verification = {
             envio_imagiq: data.envio_imagiq || false,
             todos_productos_im_it: data.todos_productos_im_it || false,
             en_zona_cobertura: data.en_zona_cobertura || false,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo para asegurar que esté disponible al crear la orden
+          localStorage.setItem("checkout-envio-imagiq", String(verification.envio_imagiq));
+          setIsCalculatingShipping(false);
+          console.log("✅ [Step7] Cálculo de envío completado - Habilitando botón");
         } else {
+          // Si falla la petición, marcar este hash como fallido
+          failedCandidateStoresRef.current = requestHash;
+          console.error(`🚫 Petición a candidate-stores falló. Hash bloqueado: ${requestHash.substring(0, 50)}...`);
+          console.error("🚫 Esta petición NO se reintentará automáticamente para proteger la base de datos.");
           // Si falla la petición de candidate-stores, usar Coordinadora
           console.log("🚛 Error en candidate-stores, usando Coordinadora");
-          setShippingVerification({
+          const verification = {
             envio_imagiq: false,
             todos_productos_im_it: false,
             en_zona_cobertura: true,
-          });
+          };
+          setShippingVerification(verification);
+          // Guardar en localStorage como respaldo
+          localStorage.setItem("checkout-envio-imagiq", "false");
+          setIsLoadingCanPickUp(false);
+          setIsLoadingShippingMethod(false);
+          setIsCalculatingShipping(false);
         }
       } catch (error) {
-        console.error("❌ Error verifying shipping coverage (useEffect):", error);
+        // Si hay un error en el catch, también marcar como fallido
+        const productsToCheck = products.map((p) => ({
+          sku: p.sku,
+          quantity: p.quantity,
+        }));
+        const user = safeGetLocalStorage<{ id?: string; user_id?: string }>(
+          "imagiq_user",
+          {}
+        );
+        const userId = user?.id || user?.user_id;
+        const requestHash = JSON.stringify({
+          products: productsToCheck,
+          userId,
+        });
+
+        failedCandidateStoresRef.current = requestHash;
+        console.error(
+          "🚫 Error verifying shipping coverage - Petición bloqueada para evitar sobrecargar BD:",
+          error
+        );
+        console.error(`🚫 Hash bloqueado: ${requestHash.substring(0, 50)}...`);
+        console.error("🚫 Esta petición NO se reintentará automáticamente.");
         // En caso de error, usar Coordinadora por defecto
-        setShippingVerification({
+        const verification = {
           envio_imagiq: false,
           todos_productos_im_it: false,
           en_zona_cobertura: true,
-        });
+        };
+        setShippingVerification(verification);
+        // Guardar en localStorage como respaldo
+        localStorage.setItem("checkout-envio-imagiq", "false");
+        setIsLoadingStoreValidation(false);
+        setIsLoadingCanPickUp(false);
+        setIsLoadingShippingMethod(false);
+        setIsCalculatingShipping(false);
       }
     };
 
@@ -488,8 +903,8 @@ export default function Step7({ onBack }: Step7Props) {
 
         // Determinar valor global 'aplica' (preferir datos ya cargados en zeroInterestData)
         const globalAplica =
-          typeof zeroInterestData?.aplica !== "undefined"
-            ? zeroInterestData?.aplica
+          zeroInterestData?.aplica !== undefined
+            ? zeroInterestData.aplica
             : storedObj?.aplica ?? false;
 
         // Obtener id de tarjeta seleccionada (preferir paymentData.savedCard)
@@ -502,13 +917,11 @@ export default function Step7({ onBack }: Step7Props) {
         const installmentsFromStorage = localStorage.getItem(
           "checkout-installments"
         );
-        const installments =
-          typeof installmentsFromState !== "undefined" &&
-          installmentsFromState !== null
-            ? Number(installmentsFromState)
-            : installmentsFromStorage
-            ? Number.parseInt(installmentsFromStorage)
-            : undefined;
+        const installments = (() => {
+          if (installmentsFromState !== null && installmentsFromState !== undefined) return Number(installmentsFromState);
+          if (installmentsFromStorage) return Number.parseInt(installmentsFromStorage, 10);
+          return undefined;
+        })();
 
         let aplica_zero_interes = false;
 
@@ -519,7 +932,7 @@ export default function Step7({ onBack }: Step7Props) {
           if (
             matched &&
             matched.eligibleForZeroInterest &&
-            typeof installments !== "undefined" &&
+            installments !== undefined &&
             matched.availableInstallments.includes(installments)
           ) {
             aplica_zero_interes = true;
@@ -551,6 +964,57 @@ export default function Step7({ onBack }: Step7Props) {
     }
   }, [paymentData, zeroInterestData]);
 
+  // Escuchar eventos de validación 3DS
+  useEffect(() => {
+    const handle3DSMessage = (event: MessageEvent) => {
+      console.log("📨 [Step7] ========== MENSAJE RECIBIDO ==========");
+      console.log("📨 [Step7] Origen:", event.origin);
+      console.log("📨 [Step7] Datos completos:", JSON.stringify(event.data, null, 2));
+      console.log("📨 [Step7] Tipo de datos:", typeof event.data);
+
+      // Verificar que el evento tenga los datos esperados
+      if (event.data && (event.data.success !== undefined || event.data.message)) {
+        console.log("✅ [Step7] Mensaje 3DS válido detectado");
+        console.log("🔐 [Step7] event.data.success:", event.data.success);
+        console.log("🔐 [Step7] event.data.message:", event.data.message);
+        console.log("🔐 [Step7] Proceso 3DS finalizado:", event.data);
+
+        // Obtener orderId guardado
+        const orderId = localStorage.getItem('pending_order_id');
+        console.log("🔐 [Step7] OrderId desde localStorage:", orderId);
+
+        if (event.data.success && orderId) {
+          console.log("✅ [Step7] 3DS exitoso, redirigiendo a verificación:", orderId);
+          // toast.success("Autenticación 3DS exitosa. Verificando pago...");
+          // Redirigir a página de verificación
+          router.push(`/verify-purchase/${orderId}`);
+        } else if (!orderId) {
+          console.error("❌ [Step7] No se encontró orderId en localStorage");
+          // toast.error("Error: No se pudo verificar el pago");
+          setIsProcessing(false);
+        } else if (event.data.success === false) {
+          console.error("❌ [Step7] 3DS rechazado explícitamente");
+          toast.error("La autenticación 3DS falló o fue cancelada.");
+          setIsProcessing(false);
+        } else {
+          console.warn("⚠️ [Step7] 3DS completado pero sin éxito claro:", event.data);
+          toast.error("La autenticación 3DS falló o fue cancelada.");
+          setIsProcessing(false);
+        }
+      } else {
+        console.log("ℹ️ [Step7] Mensaje ignorado (no es de 3DS o no tiene estructura esperada)");
+      }
+      console.log("📨 [Step7] ========================================");
+    };
+
+    console.log("👂 [Step7] Listener de mensajes 3DS registrado");
+    window.addEventListener("message", handle3DSMessage);
+    return () => {
+      console.log("🔇 [Step7] Listener de mensajes 3DS removido");
+      window.removeEventListener("message", handle3DSMessage);
+    };
+  }, [router]);
+
   const handleConfirmOrder = async () => {
     // Validar Trade-In antes de confirmar
     const validation = validateTradeInProducts(products);
@@ -562,6 +1026,23 @@ export default function Step7({ onBack }: Step7Props) {
     if (!billingData) {
       console.error("No billing data available");
       return;
+    }
+
+    // CRÍTICO: Si todavía está calculando el envío, esperar
+    if (isCalculatingShippingRef.current) {
+      console.log("⏳ [Step7] Usuario hizo clic pero todavía calculando envío - Esperando...");
+      // El botón ya muestra "Calculando envío..." por el estado isCalculatingShipping
+      // Esperar en un loop hasta que termine
+      await new Promise<void>((resolve) => {
+        const checkInterval = setInterval(() => {
+          // Verificar el valor actual de la ref
+          if (!isCalculatingShippingRef.current) {
+            clearInterval(checkInterval);
+            console.log("✅ [Step7] Cálculo de envío completado - Procediendo con la orden");
+            resolve();
+          }
+        }, 100); // Verificar cada 100ms
+      });
     }
 
     setIsProcessing(true);
@@ -636,10 +1117,6 @@ export default function Step7({ onBack }: Step7Props) {
         if (beneficios.length === 0) return [{ type: "sin_beneficios" }];
         return beneficios;
       };
-      // Aquí irá la lógica para procesar el pago
-      // Por ahora solo simulamos un delay
-      console.log({ paymentData });
-
       // Determinar método de envío y código de bodega
       const deliveryMethod = (
         localStorage.getItem("checkout-delivery-method") || "domicilio"
@@ -647,21 +1124,56 @@ export default function Step7({ onBack }: Step7Props) {
 
       // Determinar metodo_envio: 1=Coordinadora, 2=Pickup, 3=Imagiq
       let metodo_envio = 1; // Por defecto Coordinadora
+
       if (deliveryMethod === "tienda") {
         metodo_envio = 2; // Pickup en tienda
-      } else if (deliveryMethod === "domicilio" && shippingVerification?.envio_imagiq === true) {
-        metodo_envio = 3; // Envío Imagiq
+      } else if (deliveryMethod === "domicilio") {
+        // Verificar si es envío Imagiq desde shippingVerification o localStorage
+        const envioImagiq =
+          shippingVerification?.envio_imagiq === true ||
+          localStorage.getItem("checkout-envio-imagiq") === "true";
+
+        if (envioImagiq) {
+          metodo_envio = 3; // Envío Imagiq
+        } else {
+          metodo_envio = 1; // Coordinadora
+        }
       }
 
-      console.log("📦 Método de envío a guardar:", {
+      // Log para debug - asegurar que el método de envío se está pasando correctamente
+      console.log("📦 [Step7] Método de envío determinado:", {
         deliveryMethod,
         metodo_envio,
         envio_imagiq: shippingVerification?.envio_imagiq,
-        shippingVerification
+        shippingVerification: shippingVerification
       });
+
+      // Validar que tenemos la dirección de envío
+      console.log("� [Step7 - Validación] ========== VALIDACIÓN DE DIRECCIÓN ==========");
+      console.log("🔍 [Step7 - Validación] checkoutAddress completo:", checkoutAddress);
+      console.log("🔍 [Step7 - Validación] checkoutAddress?.id:", checkoutAddress?.id);
+      console.log("🔍 [Step7 - Validación] Tipo de checkoutAddress?.id:", typeof checkoutAddress?.id);
+      console.log("🔍 [Step7 - Validación] ¿Es undefined?:", checkoutAddress?.id === undefined);
+      console.log("🔍 [Step7 - Validación] ¿Es null?:", checkoutAddress?.id === null);
+      console.log("🔍 [Step7 - Validación] ¿Es string vacío?:", checkoutAddress?.id === "");
+      console.log("🔍 [Step7 - Validación] Dirección de envío:", {
+        direccionId: checkoutAddress?.id,
+        linea_uno: checkoutAddress?.linea_uno,
+        ciudad: checkoutAddress?.ciudad,
+        codigo_dane: checkoutAddress?.codigo_dane
+      });
+      console.log("🔍 [Step7 - Validación] ============================================");
+
+      if (!checkoutAddress?.id) {
+        console.error("❌ [Step7 - Validación] ERROR: No se encontró el ID de la dirección");
+        throw new Error("No se encontró la dirección de envío. Por favor, agrega una dirección antes de continuar.");
+      }
+
+      console.log("✅ [Step7 - Validación] Dirección válida con ID:", checkoutAddress.id);
 
       let codigo_bodega: string | undefined = undefined;
       if (deliveryMethod === "tienda") {
+        // Para pickup: usar la tienda seleccionada
         try {
           const storeStr = localStorage.getItem("checkout-store");
           if (storeStr) {
@@ -672,10 +1184,48 @@ export default function Step7({ onBack }: Step7Props) {
         } catch {
           // ignore
         }
+      } else {
+        // Para delivery: usar la bodega de candidate-stores
+        // Esta bodega puede surtir TODO el pedido completo
+        codigo_bodega = candidateWarehouseCode;
+        console.log("🏭 [Step7] Usando bodega de candidate-stores para delivery:", codigo_bodega);
       }
+
+      // Log final antes de enviar al backend
+      console.log("📤 [Step7] Datos que se enviarán al backend:", {
+        direccionId: checkoutAddress?.id,
+        userId: authContext.user?.id || String(loggedUser?.id),
+        codigo_bodega,
+        metodo_envio,
+        totalAmount: calculations.total,
+        shippingAmount: calculations.shipping
+      });
+
+      // ========================================
+      // 🔍 LOGS DETALLADOS DE DIRECCIÓN
+      // ========================================
+      console.log("🏠 [Step7] ========== INFORMACIÓN DE DIRECCIÓN ==========");
+      console.log("🏠 [Step7] Dirección completa desde checkoutAddress:", checkoutAddress);
+      console.log("🏠 [Step7] UUID de dirección (userInfo.direccionId):", checkoutAddress?.id);
+      console.log("🏠 [Step7] UUID de dirección (informacion_facturacion.direccion_id):", informacion_facturacion.direccion_id);
+      console.log("🏠 [Step7] Línea uno:", checkoutAddress?.linea_uno);
+      console.log("🏠 [Step7] Ciudad:", checkoutAddress?.ciudad);
+      console.log("🏠 [Step7] Código DANE:", checkoutAddress?.codigo_dane);
+      console.log("🏠 [Step7] País:", checkoutAddress?.pais);
+      console.log("🏠 [Step7] Usuario ID (de la dirección):", checkoutAddress?.usuario_id);
+      console.log("🏠 [Step7] Usuario ID (del contexto):", authContext.user?.id || loggedUser?.id);
+      console.log("🏠 [Step7] =============================================");
 
       switch (paymentData?.method) {
         case "tarjeta": {
+          console.log("💳 [Step7] ========== PAGO CON TARJETA ==========");
+          console.log("💳 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("💳 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("💳 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("💳 [Step7] metodo_envio:", metodo_envio);
+          console.log("💳 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("💳 [Step7] ==========================================");
+
           const res = await payWithCard({
             currency: "COP",
             dues: String(paymentData.installments || "1"),
@@ -684,32 +1234,100 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback:
-                String(p.skuPostback) === ""
-                  ? String(p.sku)
-                  : String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             totalAmount: String(calculations.total),
             metodo_envio,
             codigo_bodega,
             shippingAmount: String(calculations.shipping),
             userInfo: {
-              direccionId: billingData.direccion?.id || "",
-              userId: authContext.user?.id || JSON.parse(localStorage.getItem("imagiq_user")!).id
+              direccionId: checkoutAddress?.id || "",
+              userId:
+                authContext.user?.id ||
+                String(loggedUser?.id),
             },
             cardTokenId: paymentData.savedCard?.id || "",
             informacion_facturacion,
             beneficios: buildBeneficios(),
           });
+
           if ("error" in res) {
+            setError(res.message);
             throw new Error(res.message);
           }
+
+          // Verificar si requiere 3DS
+          if (res.requires3DS && res.data3DS) {
+            console.log("🔐 [Step7] Requiere validación 3DS");
+            console.log("🔐 [Step7] Respuesta completa del backend:", JSON.stringify(res, null, 2));
+            console.log("🔐 [Step7] data3DS recibido:", JSON.stringify(res.data3DS, null, 2));
+
+            const data3DS = res.data3DS as { resultCode?: string; ref_payco?: number; franquicia?: string; '3DS'?: unknown };
+            console.log("🔐 [Step7] Result Code:", data3DS.resultCode);
+            console.log("🔐 [Step7] Franquicia:", data3DS.franquicia);
+            console.log("🔐 [Step7] ref_payco:", data3DS.ref_payco);
+            console.log("🔐 [Step7] Objeto 3DS:", data3DS['3DS']);
+
+            // Guardar orderId para verificación posterior
+            const orderId = res.orderId || "";
+            if (orderId) {
+              localStorage.setItem('pending_order_id', orderId);
+              console.log("🔐 [Step7] OrderId guardado:", orderId);
+            }
+
+            // Ejecutar validación 3DS con el script de ePayco
+            // Esto maneja tanto IdentifyShopper como ChallengeShopper automáticamente
+            if (typeof window !== 'undefined' && window.validate3ds) {
+              console.log("✅ [Step7] Script validate3ds encontrado en window");
+              console.log("🔐 [Step7] Ejecutando window.validate3ds() con el siguiente objeto:");
+              console.log(JSON.stringify(res.data3DS, null, 2));
+
+              try {
+                window.validate3ds(res.data3DS);
+                console.log("✅ [Step7] validate3ds() ejecutado exitosamente");
+                console.log("⏳ [Step7] Esperando respuesta del banco via postMessage...");
+                // No redirigir, el script de ePayco manejará el flujo
+                return;
+              } catch (error) {
+                console.error("❌ [Step7] Error ejecutando validate3ds:", error);
+                setError(`Error ejecutando validación 3DS: ${error}`);
+                setIsProcessing(false);
+                return;
+              }
+            } else {
+              console.error("❌ [Step7] Script de ePayco no cargado");
+              console.log("🔍 [Step7] window.validate3ds:", typeof window !== 'undefined' ? window.validate3ds : 'window is undefined');
+              setError("Error: Script de validación 3DS no disponible. Por favor recarga la página.");
+              setIsProcessing(false);
+              return;
+            }
+          }
+
           router.push(res.redirectionUrl);
           break;
         }
         case "pse": {
+          console.log("🏦 [Step7] ========== PAGO CON PSE ==========");
+          console.log("🏦 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("🏦 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("🏦 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("🏦 [Step7] metodo_envio:", metodo_envio);
+          console.log("🏦 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("🏦 [Step7] Banco seleccionado:", paymentData.bank, "-", paymentData.bankName);
+          console.log("🏦 [Step7] ==========================================");
+
           const res = await payWithPse({
             totalAmount: String(calculations.total),
             shippingAmount: String(calculations.shipping),
@@ -719,29 +1337,50 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             bank: paymentData.bank || "",
             description: "Pago de pedido en Imagiq",
             metodo_envio,
             codigo_bodega,
             userInfo: {
-              direccionId: billingData.direccion?.id || "",
-              userId: authContext.user?.id || JSON.parse(localStorage.getItem("imagiq_user")!).id,
+              direccionId: checkoutAddress?.id || "",
+              userId:
+                authContext.user?.id ||
+                String(loggedUser?.id),
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
             bankName: paymentData.bankName || "",
           });
           if ("error" in res) {
+            setError(res.message);
             throw new Error(res.message);
           }
           router.push(res.redirectUrl);
           break;
         }
         case "addi": {
+          console.log("💰 [Step7] ========== PAGO CON ADDI ==========");
+          console.log("💰 [Step7] userInfo.direccionId enviado:", checkoutAddress?.id || "");
+          console.log("💰 [Step7] userInfo.userId enviado:", authContext.user?.id || String(loggedUser?.id));
+          console.log("💰 [Step7] informacion_facturacion.direccion_id enviado:", informacion_facturacion.direccion_id);
+          console.log("💰 [Step7] metodo_envio:", metodo_envio);
+          console.log("💰 [Step7] codigo_bodega:", codigo_bodega);
+          console.log("💰 [Step7] ==========================================");
+
           const res = await payWithAddi({
             totalAmount: String(calculations.total),
             shippingAmount: String(calculations.shipping),
@@ -751,20 +1390,33 @@ export default function Step7({ onBack }: Step7Props) {
               name: String(p.name),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
-              ean: String(p.ean),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             metodo_envio,
             codigo_bodega,
             userInfo: {
-              direccionId: billingData.direccion?.id || "",
-              userId: authContext.user?.id || JSON.parse(localStorage.getItem("imagiq_user")!).id,
+              direccionId: checkoutAddress?.id || "",
+              userId:
+                authContext.user?.id ||
+                String(loggedUser?.id),
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
           });
           if ("error" in res) {
+            setError(res.message);
             throw new Error(res.message);
           }
           router.push(res.redirectUrl);
@@ -774,7 +1426,6 @@ export default function Step7({ onBack }: Step7Props) {
           throw new Error("Método de pago no soportado");
       }
       // Redirigir a página de éxito
-      /* router.push("/success-checkout/123456"); */
     } catch (error) {
       console.error("Error processing payment:", error);
       setIsProcessing(false);
@@ -808,446 +1459,810 @@ export default function Step7({ onBack }: Step7Props) {
   };
 
   return (
-    <div className="min-h-screen w-full">
+    <div className="min-h-screen w-full pb-40 md:pb-0">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Confirma tu pedido
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Revisa todos los detalles antes de confirmar tu compra
-          </p>
+          {isLoadingCanPickUp ? (
+            <div className="animate-pulse">
+              <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+              <div className="h-5 w-96 bg-gray-200 rounded"></div>
+            </div>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold text-gray-900">
+                Confirma tu pedido
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Revisa todos los detalles antes de confirmar tu compra
+              </p>
+            </>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sección de resumen */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Método de pago */}
-            {paymentData && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 text-gray-600" />
+            {isLoadingCanPickUp ? (
+              /* Skeleton de toda la sección mientras carga */
+              <>
+                {/* Skeleton Método de pago */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      </div>
                     </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Método de pago
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {getPaymentMethodLabel(paymentData.method)}
-                      </p>
-                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/carrito/step4")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {paymentData.method === "tarjeta" && (
-                    <>
-                      {/* Mostrar detalles de tarjeta guardada */}
-                      {paymentData.savedCard && (
-                        <>
-                          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <CardBrandLogo
-                              brand={paymentData.savedCard.marca}
-                              size="md"
-                            />
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900 tracking-wider">
-                                  •••• {paymentData.savedCard.ultimos_dijitos}
-                                </span>
-                                {paymentData.savedCard.tipo_tarjeta && (
-                                  <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.savedCard.tipo_tarjeta
-                                      .toUpperCase()
-                                      .includes("CREDIT")
-                                      ? "Crédito"
-                                      : "Débito"}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
-                                {paymentData.savedCard.nombre_titular && (
-                                  <span className="uppercase">
-                                    {paymentData.savedCard.nombre_titular}
-                                  </span>
-                                )}
-                                {paymentData.savedCard.banco && (
-                                  <span>{paymentData.savedCard.banco}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          {paymentData.installments && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Cuotas:</span>
-                              <span className="font-medium text-gray-900">
-                                {paymentData.installments}x
-                                {paymentData.savedCard &&
-                                  isInstallmentEligibleForZeroInterest(
-                                    paymentData.installments,
-                                    String(paymentData.savedCard.id)
-                                  ) && (
-                                    <span className="ml-2 text-green-600 font-semibold">
-                                      (sin interés)
-                                    </span>
-                                  )}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                      {/* Mostrar detalles de tarjeta nueva */}
-                      {paymentData.cardData && (
-                        <>
-                          <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            {paymentData.cardData.brand && (
-                              <CardBrandLogo
-                                brand={paymentData.cardData.brand}
-                                size="md"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-semibold text-gray-900 tracking-wider">
-                                  ••••{" "}
-                                  {paymentData.cardData.cardNumber.slice(-4)}
-                                </span>
-                                {paymentData.cardData.cardType && (
-                                  <span className="text-xs text-gray-500 uppercase">
-                                    {paymentData.cardData.cardType
-                                      .toUpperCase()
-                                      .includes("CREDIT")
-                                      ? "Crédito"
-                                      : "Débito"}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
-                                {paymentData.cardData.cardHolder && (
-                                  <span className="uppercase">
-                                    {paymentData.cardData.cardHolder}
-                                  </span>
-                                )}
-                                {paymentData.cardData.bank && (
-                                  <span>{paymentData.cardData.bank}</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          {paymentData.installments && (
-                            <div className="flex justify-between text-sm">
-                              <span className="text-gray-600">Cuotas:</span>
-                              <span className="font-medium text-gray-900">
-                                {paymentData.installments}x
-                                {(() => {
-                                  // Para tarjetas nuevas, intentar obtener el ID de localStorage
-                                  const savedCardId = localStorage.getItem(
-                                    "checkout-saved-card-id"
-                                  );
-                                  return (
-                                    savedCardId &&
-                                    isInstallmentEligibleForZeroInterest(
-                                      paymentData.installments,
-                                      savedCardId
-                                    ) && (
-                                      <span className="ml-2 text-green-600 font-semibold">
-                                        (sin interés)
-                                      </span>
-                                    )
-                                  );
-                                })()}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </>
-                  )}
-                  {paymentData.method === "pse" && paymentData.bank && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Banco:</span>
-                      <span className="font-medium text-gray-900">
-                        {paymentData.bankName || paymentData.bank}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Método de entrega */}
-            {shippingData && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      {shippingData.type === "delivery" ? (
-                        <Truck className="w-5 h-5 text-gray-600" />
-                      ) : (
-                        <Store className="w-5 h-5 text-gray-600" />
-                      )}
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Método de entrega
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {shippingData.type === "delivery"
-                          ? "Envío a domicilio"
-                          : "Recogida en tienda"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/carrito/step3")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
-                </div>
-
-                {shippingData.type === "delivery" && (
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        {shippingData.address}
-                      </p>
-                      {shippingData.city && (
-                        <p className="text-xs text-gray-600 mt-1">
-                          {shippingData.city}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {shippingData.type === "pickup" && (
                   <div className="space-y-3">
-                    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          {shippingData.store?.name || "Recoger en tienda"}
-                        </p>
-                        {shippingData.store?.address && (
-                          <p className="text-xs text-gray-600 mt-1">
-                            {shippingData.store.address}
-                          </p>
-                        )}
-                        {shippingData.store?.city && (
-                          <p className="text-xs text-gray-500">
-                            {shippingData.store.city}
-                          </p>
-                        )}
-                        {shippingData.store?.schedule && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Horario: {shippingData.store.schedule}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+                    <div className="h-20 bg-gray-100 rounded-lg"></div>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* Datos de facturación */}
-            {billingData && (
-              <div className="bg-white rounded-lg p-6 border border-gray-200">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <FileText className="w-5 h-5 text-gray-600" />
-                    </div>
-                    <div>
-                      <h2 className="text-lg font-bold text-gray-900">
-                        Datos de facturación
-                      </h2>
-                      <p className="text-sm text-gray-600">
-                        {billingData.type === "natural"
-                          ? "Persona Natural"
-                          : "Persona Jurídica"}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/carrito/step6")}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                    Editar
-                  </button>
                 </div>
 
-                <div className="space-y-4">
-                  {/* Razón Social (solo para jurídica) - ocupa todo el ancho */}
-                  {billingData.type === "juridica" &&
-                    billingData.razonSocial && (
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">
-                          Razón Social
-                        </p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {billingData.razonSocial}
-                        </p>
+                {/* Skeleton Método de entrega */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-40 bg-gray-200 rounded"></div>
                       </div>
-                    )}
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="h-16 bg-gray-100 rounded-lg"></div>
+                </div>
 
-                  {/* Grid de 2 columnas para los demás campos */}
+                {/* Skeleton Información del receptor */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-40 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-48 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+
+                {/* Skeleton Datos de facturación */}
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+                      <div className="space-y-2">
+                        <div className="h-5 w-32 bg-gray-200 rounded"></div>
+                        <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* NIT (solo para jurídica) */}
-                    {billingData.type === "juridica" && billingData.nit && (
-                      <div>
-                        <p className="text-xs text-gray-500 mb-1">NIT</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {billingData.nit}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Nombre */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Nombre</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.nombre}
-                      </p>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
                     </div>
-
-                    {/* Documento */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Documento</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.documento}
-                      </p>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
                     </div>
-
-                    {/* Email */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Email</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.email}
-                      </p>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
                     </div>
-
-                    {/* Teléfono */}
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">Teléfono</p>
-                      <p className="text-sm font-medium text-gray-900">
-                        {billingData.telefono}
-                      </p>
+                    <div className="space-y-2">
+                      <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-full bg-gray-200 rounded"></div>
                     </div>
                   </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Fila 1: Método de pago e Información del receptor */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Método de pago */}
+                  {paymentData && (
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <CreditCard className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900">
+                            Método de pago
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            {getPaymentMethodLabel(paymentData.method)}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/carrito/step4")}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
+                    </div>
 
-                  {/* Dirección de facturación - ocupa todo el ancho */}
-                  {billingData.direccion && (
-                    <div>
-                      <p className="text-xs text-gray-500 mb-1">
-                        Dirección de facturación
-                      </p>
-                      <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
-                        <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                    <div className="space-y-3">
+                      {paymentData.method === "tarjeta" && (
+                        <>
+                          {/* Mostrar detalles de tarjeta guardada */}
+                          {paymentData.savedCard && (
+                            <>
+                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                <CardBrandLogo
+                                  brand={paymentData.savedCard.marca}
+                                  size="md"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900 tracking-wider">
+                                      •••• {paymentData.savedCard.ultimos_dijitos}
+                                    </span>
+                                    {paymentData.savedCard.tipo_tarjeta && (
+                                      <span className="text-xs text-gray-500 uppercase">
+                                        {paymentData.savedCard.tipo_tarjeta
+                                          .toUpperCase()
+                                          .includes("CREDIT")
+                                          ? "Crédito"
+                                          : "Débito"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
+                                    {paymentData.savedCard.nombre_titular && (
+                                      <span className="uppercase">
+                                        {paymentData.savedCard.nombre_titular}
+                                      </span>
+                                    )}
+                                    {paymentData.savedCard.banco && (
+                                      <span>{paymentData.savedCard.banco}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {paymentData.installments && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Cuotas:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {paymentData.installments}x
+                                    {paymentData.savedCard &&
+                                      isInstallmentEligibleForZeroInterest(
+                                        paymentData.installments,
+                                        String(paymentData.savedCard.id)
+                                      ) && (
+                                        <span className="ml-2 text-green-600 font-semibold">
+                                          (sin interés)
+                                        </span>
+                                      )}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                          {/* Mostrar detalles de tarjeta nueva */}
+                          {paymentData.cardData && (
+                            <>
+                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                {paymentData.cardData.brand && (
+                                  <CardBrandLogo
+                                    brand={paymentData.cardData.brand}
+                                    size="md"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900 tracking-wider">
+                                      ••••{" "}
+                                      {paymentData.cardData.cardNumber.slice(-4)}
+                                    </span>
+                                    {paymentData.cardData.cardType && (
+                                      <span className="text-xs text-gray-500 uppercase">
+                                        {paymentData.cardData.cardType
+                                          .toUpperCase()
+                                          .includes("CREDIT")
+                                          ? "Crédito"
+                                          : "Débito"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
+                                    {paymentData.cardData.cardHolder && (
+                                      <span className="uppercase">
+                                        {paymentData.cardData.cardHolder}
+                                      </span>
+                                    )}
+                                    {paymentData.cardData.bank && (
+                                      <span>{paymentData.cardData.bank}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              {paymentData.installments && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Cuotas:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {paymentData.installments}x
+                                    {(() => {
+                                      // Para tarjetas nuevas, intentar obtener el ID de localStorage
+                                      const savedCardId = localStorage.getItem(
+                                        "checkout-saved-card-id"
+                                      );
+                                      return (
+                                        savedCardId &&
+                                        isInstallmentEligibleForZeroInterest(
+                                          paymentData.installments,
+                                          savedCardId
+                                        ) && (
+                                          <span className="ml-2 text-green-600 font-semibold">
+                                            (sin interés)
+                                          </span>
+                                        )
+                                      );
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                      {paymentData.method === "pse" && paymentData.bank && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">Banco:</span>
+                          <span className="font-medium text-gray-900">
+                            {paymentData.bankName || paymentData.bank}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    </div>
+                  )}
+
+                  {/* Información del receptor */}
+                  {recipientData && (
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                            <UserIcon className="w-5 h-5 text-gray-600" />
+                          </div>
+                          <div>
+                            <h2 className="text-lg font-bold text-gray-900">
+                              Información del receptor
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                              {recipientData.receivedByClient
+                                ? "Será recibido por el cliente"
+                                : "Será recibido por otra persona"}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => router.push("/carrito/step3")}
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Editar
+                        </button>
+                      </div>
+
+                      {!recipientData.receivedByClient && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Nombre */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.firstName}
+                            </p>
+                          </div>
+
+                          {/* Apellido */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Apellido</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.lastName}
+                            </p>
+                          </div>
+
+                          {/* Email */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Correo electrónico
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.email}
+                            </p>
+                          </div>
+
+                          {/* Teléfono */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Número de celular
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.phone}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Método de entrega */}
+                {shippingData && (
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          {shippingData.type === "delivery" ? (
+                            <Truck className="w-5 h-5 text-gray-600" />
+                          ) : (
+                            <Store className="w-5 h-5 text-gray-600" />
+                          )}
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900">
+                            Método de entrega
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            {shippingData.type === "delivery"
+                              ? "Envío a domicilio"
+                              : "Recogida en tienda"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/carrito/step3")}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
+                    </div>
+
+                    {shippingData.type === "delivery" && (
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                        <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {billingData.direccion.linea_uno}
+                            {shippingData.address}
                           </p>
-                          {billingData.direccion.ciudad && (
+                          {shippingData.city && (
                             <p className="text-xs text-gray-600 mt-1">
-                              {billingData.direccion.ciudad}
+                              {shippingData.city}
                             </p>
                           )}
                         </div>
                       </div>
+                    )}
+
+                    {shippingData.type === "pickup" && (
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {shippingData.store?.name || "Recoger en tienda"}
+                            </p>
+                            {shippingData.store?.address && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                {shippingData.store.address}
+                              </p>
+                            )}
+                            {shippingData.store?.city && (
+                              <p className="text-xs text-gray-500">
+                                {shippingData.store.city}
+                              </p>
+                            )}
+                            {shippingData.store?.schedule && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                Horario: {shippingData.store.schedule}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Datos de facturación */}
+                {billingData && (
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                          <FileText className="w-5 h-5 text-gray-600" />
+                        </div>
+                        <div>
+                          <h2 className="text-lg font-bold text-gray-900">
+                            Datos de facturación
+                          </h2>
+                          <p className="text-sm text-gray-600">
+                            {billingData.type === "natural"
+                              ? "Persona Natural"
+                              : "Persona Jurídica"}
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => router.push("/carrito/step6")}
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                        Editar
+                      </button>
                     </div>
-                  )}
-                </div>
-              </div>
+
+                    <div className="space-y-4">
+                      {/* Razón Social (solo para jurídica) - ocupa todo el ancho */}
+                      {billingData.type === "juridica" &&
+                        billingData.razonSocial && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Razón Social
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {billingData.razonSocial}
+                            </p>
+                          </div>
+                        )}
+
+                      {/* Grid de 2 columnas para los demás campos */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* NIT (solo para jurídica) */}
+                        {billingData.type === "juridica" && billingData.nit && (
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">NIT</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {billingData.nit}
+                            </p>
+                          </div>
+                        )}
+
+                        {/* Nombre */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.nombre}
+                          </p>
+                        </div>
+
+                        {/* Documento */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Documento</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.documento}
+                          </p>
+                        </div>
+
+                        {/* Email */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Email</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.email}
+                          </p>
+                        </div>
+
+                        {/* Teléfono */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Teléfono</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {billingData.telefono}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Dirección de facturación - ocupa todo el ancho */}
+                      {billingData.direccion && (
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Dirección de facturación
+                          </p>
+                          <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                            <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {billingData.direccion.linea_uno}
+                              </p>
+                              {billingData.direccion.ciudad && (
+                                <p className="text-xs text-gray-600 mt-1">
+                                  {billingData.direccion.ciudad}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          {/* Resumen de compra y Trade-In */}
-          <div className="lg:col-span-1 space-y-4">
-            <Step4OrderSummary
-              isProcessing={isProcessing}
-              onFinishPayment={handleConfirmOrder}
-              onBack={onBack}
-              buttonText="Confirmar y pagar"
-              disabled={isProcessing || !tradeInValidation.isValid}
-              shippingVerification={shippingVerification}
-              deliveryMethod={shippingData?.type}
-            />
+          {/* Resumen de compra y Trade-In - Hidden en mobile */}
+          <aside className="hidden md:block lg:col-span-1 space-y-4">
+            {isLoadingCanPickUp ? (
+              /* Skeleton del resumen mientras carga */
+              <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
+                <div className="space-y-4">
+                  {/* Título */}
+                  <div className="h-6 w-40 bg-gray-200 rounded"></div>
 
-            {/* Información del método de envío */}
-            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
-              <p className="text-sm font-bold text-blue-900 mb-3">
-                📦 Método de envío
-              </p>
-              <div className="space-y-2 text-sm text-blue-800">
-                {shippingData?.type === "pickup" ? (
-                  <>
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold">Método:</span>
-                      <span className="text-green-700 font-bold">🏪 Recoge en tienda</span>
+                  {/* Líneas de precios */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between">
+                      <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-24 bg-gray-200 rounded"></div>
                     </div>
-                    {shippingData.store?.name && (
-                      <div className="flex items-start gap-2">
-                        <span className="font-semibold">Tienda:</span>
-                        <span>{shippingData.store.name}</span>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-28 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                    </div>
+                    <div className="flex justify-between">
+                      <div className="h-4 w-36 bg-gray-200 rounded"></div>
+                      <div className="h-4 w-16 bg-gray-200 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Total */}
+                  <div className="pt-4">
+                    <div className="flex justify-between mb-4">
+                      <div className="h-5 w-16 bg-gray-300 rounded"></div>
+                      <div className="h-5 w-28 bg-gray-300 rounded"></div>
+                    </div>
+                  </div>
+
+                  {/* Mensaje T&C */}
+                  <div className="space-y-2">
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-3/4 bg-gray-200 rounded"></div>
+                  </div>
+
+                  {/* Botones */}
+                  <div className="h-12 w-full bg-gray-300 rounded-lg"></div>
+
+                  {/* Términos centrados */}
+                  <div className="mt-3 space-y-2">
+                    <div className="h-3 w-full bg-gray-200 rounded"></div>
+                    <div className="h-3 w-5/6 bg-gray-200 rounded mx-auto"></div>
+                    <div className="h-3 w-4/6 bg-gray-200 rounded mx-auto"></div>
+                  </div>
+
+                  {/* Información de financiamiento y envío */}
+                  <div className="mt-6 space-y-4">
+                    {/* Financiamiento */}
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded shrink-0"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-full bg-gray-200 rounded"></div>
+                        <div className="h-3 w-5/6 bg-gray-200 rounded"></div>
+                        <div className="h-3 w-4/6 bg-gray-200 rounded"></div>
                       </div>
-                    )}
-                  </>
+                    </div>
+
+                    {/* Envío */}
+                    <div className="flex gap-3">
+                      <div className="w-10 h-10 bg-gray-200 rounded shrink-0"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 w-full bg-gray-200 rounded"></div>
+                        <div className="h-3 w-5/6 bg-gray-200 rounded"></div>
+                        <div className="h-3 w-3/6 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Step4OrderSummary
+                isProcessing={isProcessing}
+                onFinishPayment={handleConfirmOrder}
+                onBack={onBack}
+                buttonText="Confirmar y pagar"
+                disabled={isProcessing || !tradeInValidation.isValid}
+                isSticky={false}
+                shippingVerification={shippingVerification}
+                deliveryMethod={shippingData?.type}
+                error={error}
+                shouldCalculateCanPickUp={false}
+              />
+            )}
+            {/* Información del método de envío - Solo se muestra cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}
+            {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === "true" && (
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+                {isLoadingCanPickUp ? (
+                  /* Skeleton mientras carga - incluye título */
+                  <div className="animate-pulse space-y-3">
+                    <div className="h-4 w-40 bg-blue-200 rounded mb-3"></div>
+                    <div className="flex items-start gap-2">
+                      <div className="h-4 w-16 bg-blue-200 rounded"></div>
+                      <div className="h-4 w-32 bg-blue-200 rounded"></div>
+                    </div>
+                    <div className="p-2 bg-white/50 rounded border border-blue-200">
+                      <div className="h-3 w-40 bg-blue-200 rounded mb-2"></div>
+                      <div className="space-y-1.5">
+                        <div className="h-3 w-full bg-blue-200 rounded"></div>
+                        <div className="h-3 w-full bg-blue-200 rounded"></div>
+                        <div className="h-3 w-full bg-blue-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
                 ) : (
                   <>
-                    <div className="flex items-start gap-2">
-                      <span className="font-semibold">Método:</span>
-                      {shippingVerification?.envio_imagiq === true ? (
-                        <span className="text-green-700 font-bold">🚚 Envío Imagiq</span>
+                    <p className="text-sm font-bold text-blue-900 mb-3">
+                      📦 Método de envío
+                    </p>
+                    <div className="space-y-2 text-sm text-blue-800">
+                      {shippingData?.type === "pickup" ? (
+                        <>
+                          <div className="flex items-start gap-2">
+                            <span className="font-semibold">Método:</span>
+                            <span className="text-green-700 font-bold">
+                              🏪 Recoge en tienda
+                            </span>
+                          </div>
+                          {shippingData.store?.name && (
+                            <div className="flex items-start gap-2">
+                              <span className="font-semibold">Tienda:</span>
+                              <span>{shippingData.store.name}</span>
+                            </div>
+                          )}
+                        </>
                       ) : (
-                        <span className="text-orange-700 font-bold">🚛 Envío Coordinadora</span>
+                        <>
+                          <div className="flex items-start gap-2">
+                            <span className="font-semibold">Método:</span>
+                            {shippingVerification?.envio_imagiq === true ? (
+                              <span className="text-green-700 font-bold">
+                                🚚 Envío Imagiq
+                              </span>
+                            ) : (
+                              <span className="text-orange-700 font-bold">
+                                🚛 Envío Coordinadora
+                              </span>
+                            )}
+                          </div>
+                          <div className="mt-2 p-2 bg-white/50 rounded border border-blue-200">
+                            <p className="text-xs font-semibold mb-1">
+                              Detalles de verificación:
+                            </p>
+                            <div className="text-xs space-y-1">
+                              <p>
+                                • envio_imagiq:{" "}
+                                {shippingVerification?.envio_imagiq ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • todos_productos_im_it:{" "}
+                                {shippingVerification?.todos_productos_im_it ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • en_zona_cobertura:{" "}
+                                {shippingVerification?.en_zona_cobertura ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                              <p>
+                                • es_centro_distribucion:{" "}
+                                {isLoadingStoreValidation ? (
+                                  <span className="text-yellow-600 italic">
+                                    verificando...
+                                  </span>
+                                ) : isCentroDistribucion === null ? (
+                                  <span className="text-gray-600 italic">
+                                    no verificado
+                                  </span>
+                                ) : isCentroDistribucion ? (
+                                  <span className="text-green-600 font-bold">
+                                    true
+                                  </span>
+                                ) : (
+                                  <span className="text-red-600 font-bold">
+                                    false
+                                  </span>
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                        </>
                       )}
-                    </div>
-                    <div className="mt-2 p-2 bg-white/50 rounded border border-blue-200">
-                      <p className="text-xs font-semibold mb-1">Detalles de verificación:</p>
-                      <div className="text-xs space-y-1">
-                        <p>• envio_imagiq: {shippingVerification?.envio_imagiq ? <span className="text-green-600 font-bold">true</span> : <span className="text-red-600 font-bold">false</span>}</p>
-                        <p>• todos_productos_im_it: {shippingVerification?.todos_productos_im_it ? <span className="text-green-600 font-bold">true</span> : <span className="text-red-600 font-bold">false</span>}</p>
-                        <p>• en_zona_cobertura: {shippingVerification?.en_zona_cobertura ? <span className="text-green-600 font-bold">true</span> : <span className="text-red-600 font-bold">false</span>}</p>
-                      </div>
                     </div>
                   </>
                 )}
               </div>
-            </div>
+            )}
 
-            {/* Banner de Trade-In - Debajo del resumen */}
+            {/* Banner de Trade-In - Debajo del resumen (baja con el scroll) */}
             {tradeInData?.completed && (
               <TradeInCompletedSummary
                 deviceName={tradeInData.deviceName}
                 tradeInValue={tradeInData.value}
                 onEdit={handleRemoveTradeIn}
                 validationError={
-                  !tradeInValidation.isValid
+                  tradeInValidation.isValid === false
                     ? getTradeInValidationMessage(tradeInValidation)
                     : undefined
                 }
               />
             )}
-          </div>
+          </aside>
         </div>
       </div>
+
+      {/* Sticky Bottom Bar - Solo Mobile */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+        <div className="p-4">
+          {/* Resumen compacto */}
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <p className="text-xs text-gray-500">
+                Total ({products.reduce((acc, p) => acc + p.quantity, 0)}{" "}
+                productos)
+              </p>
+              <p className="text-2xl font-bold text-gray-900">
+                $ {Number(calculations.total).toLocaleString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Botón confirmar */}
+          <button
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-2 ${isProcessing || !tradeInValidation.isValid
+              ? "bg-gray-400 cursor-not-allowed opacity-70"
+              : "bg-[#222] hover:bg-[#333] cursor-pointer"
+              }`}
+            onClick={handleConfirmOrder}
+            disabled={isProcessing || !tradeInValidation.isValid}
+          >
+            {(isProcessing || isCalculatingShipping) && (
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            )}
+            <span>Confirmar y pagar</span>
+          </button>
+        </div>
+      </div>
+
     </div>
   );
 }

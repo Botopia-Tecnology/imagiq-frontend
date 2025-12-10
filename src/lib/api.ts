@@ -146,12 +146,12 @@ export const productEndpoints = {
   getAll: () => apiClient.get<ProductApiResponse>("/api/products"),
   getFiltered: (() => {
     const inFlightByKey: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
-    
+
     // Función para normalizar parámetros y crear clave de deduplicación
     // Ignora parámetros no críticos que no afectan qué productos se obtienen
     const normalizeParams = (params: ProductFilterParams): string => {
       const critical: Record<string, string> = {};
-      
+
       // Solo incluir parámetros críticos que afectan qué productos se obtienen
       if (params.categoria) critical.categoria = String(params.categoria);
       if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
@@ -159,23 +159,130 @@ export const productEndpoints = {
       if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
       if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
       if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
-      
+
       // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
-      
+
       return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
     };
-    
+
     return (params: ProductFilterParams, init?: RequestInit) => {
       const normalizedKey = normalizeParams(params);
-      
+
       // Construir URL completa para la petición real (con todos los parámetros)
       const searchParams = new URLSearchParams();
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== "") {
-          searchParams.append(key, String(value));
+          // Detectar si el key tiene sintaxis extendida (column_operator o column_range_min/max)
+          // Patrón: column_operator o column_range_min/max
+          const hasExtendedSyntax = /^[a-zA-Z0-9]+_(equal|not_equal|in|not_in|contains|starts_with|ends_with|greater_than|less_than|greater_than_or_equal|less_than_or_equal|range_min|range_max)$/.test(key);
+
+          if (hasExtendedSyntax) {
+            // Sintaxis extendida: manejar arrays y valores simples
+            if (typeof value === "string" && value.includes(",")) {
+              // Si es string con comas, dividir y crear múltiples query params
+              const values = value.split(",").map(v => v.trim()).filter(v => v);
+              values.forEach(v => {
+                searchParams.append(key, v);
+              });
+            } else {
+              // Valor único con sintaxis extendida
+              searchParams.append(key, String(value));
+            }
+          } else {
+            // Formato antiguo (backward compatibility)
+            const stringValue = String(value);
+
+            // Campos que deben generar múltiples query params cuando tienen comas
+            const multiValueFields = [
+              "nombreColor",
+              "color",
+              "capacity",
+              "memoriaram",
+              "name",
+              "modelo",
+              "model",
+            ];
+
+            // Si el campo permite múltiples valores y el valor contiene comas, dividir
+            if (multiValueFields.includes(key) && stringValue.includes(",")) {
+              // Dividir por comas y crear múltiples query params
+              const values = stringValue.split(",").map(v => v.trim()).filter(v => v);
+              values.forEach(v => {
+                searchParams.append(key, v);
+              });
+            } else {
+              // Valor único, agregar normalmente
+              searchParams.append(key, stringValue);
+            }
+          }
         }
       });
       const url = `/api/products/filtered?${searchParams.toString()}`;
+
+      // Usar clave normalizada para deduplicación
+      if (inFlightByKey[normalizedKey]) {
+        return inFlightByKey[normalizedKey] as Promise<ApiResponse<ProductApiResponse>>;
+      }
+
+      const p = apiClient.get<ProductApiResponse>(url, init).finally(() => {
+        // liberar inmediatamente al resolver/rechazar para no cachear respuestas
+        delete inFlightByKey[normalizedKey];
+      });
+      inFlightByKey[normalizedKey] = p;
+      return p;
+    };
+  })(),
+  getFilteredV2: (() => {
+    const inFlightByKey: Record<string, Promise<ApiResponse<ProductApiResponse>> | undefined> = {};
+
+    // Función para normalizar parámetros y crear clave de deduplicación
+    // Ignora parámetros no críticos que no afectan qué productos se obtienen
+    const normalizeParams = (params: ProductFilterParams): string => {
+      const critical: Record<string, string> = {};
+
+      // Solo incluir parámetros críticos que afectan qué productos se obtienen
+      if (params.categoria) critical.categoria = String(params.categoria);
+      if (params.menuUuid) critical.menuUuid = String(params.menuUuid);
+      if (params.submenuUuid) critical.submenuUuid = String(params.submenuUuid);
+      if (params.precioMin !== undefined) critical.precioMin = String(params.precioMin);
+      if (params.lazyLimit !== undefined) critical.lazyLimit = String(params.lazyLimit);
+      if (params.lazyOffset !== undefined) critical.lazyOffset = String(params.lazyOffset);
+
+      // Ignorar: sortBy, sortOrder, page, limit (no afectan qué productos se obtienen)
+
+      return Object.keys(critical).sort().map(k => `${k}:${critical[k]}`).join('|');
+    };
+
+    return (params: ProductFilterParams, init?: RequestInit) => {
+      const normalizedKey = normalizeParams(params);
+
+      // Construir URL completa para la petición real (con todos los parámetros)
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          // Detectar si el key tiene sintaxis extendida (column_operator o column_range_min/max)
+          // Patrón: column_operator o column_range_min/max
+          const hasExtendedSyntax = /^[a-zA-Z0-9]+_(equal|not_equal|in|not_in|contains|starts_with|ends_with|greater_than|less_than|greater_than_or_equal|less_than_or_equal|range_min|range_max)$/.test(key);
+
+          if (hasExtendedSyntax) {
+            // Sintaxis extendida: manejar arrays y valores simples
+            if (typeof value === "string" && value.includes(",")) {
+              // Si es string con comas, dividir y crear múltiples query params
+              const values = value.split(",").map(v => v.trim()).filter(v => v);
+              values.forEach(v => {
+                searchParams.append(key, v);
+              });
+            } else {
+              // Valor único con sintaxis extendida
+              searchParams.append(key, String(value));
+            }
+          } else {
+            // Formato antiguo (backward compatibility)
+            searchParams.append(key, String(value));
+          }
+        }
+      });
+      const url = `/api/products/v2/filtered?${searchParams.toString()}`;
 
       // Usar clave normalizada para deduplicación
       if (inFlightByKey[normalizedKey]) {
@@ -264,8 +371,14 @@ export const productEndpoints = {
     apiClient.delete<void>(
       `/api/products/remove-from-favorites/${id}?productSKU=${productSKU}`
     ),
-  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string }) =>
+  getCandidateStores: (data: { products: { sku: string; quantity: number }[]; user_id: string; cities?: string[] }) =>
     apiClient.post<CandidateStoresResponse>('/api/products/candidate-stores', data),
+
+  // Bundle-specific endpoints
+  getBundleById: (baseCodigoMarket: string, codCampana: string, productSku: string) =>
+    apiClient.get<BundleDirectResponse>(
+      `/api/products/v2/bundles/${baseCodigoMarket}/${codCampana}/${productSku}`
+    ),
 };
 
 // Categories API endpoints
@@ -420,11 +533,11 @@ export const menusEndpoints = {
 
 // Trade-in (Entrego y Estreno) API endpoints
 export const tradeInEndpoints = {
-  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/trade-in/hierarchy'),
+  getHierarchy: () => apiClient.get<TradeInCategory[]>('/api/benefits/trade-in/hierarchy'),
   calculateValue: (data: TradeInValueRequest) =>
-    apiClient.post<TradeInValueResponse>('/api/trade-in/value', data),
+    apiClient.post<TradeInValueResponse>('/api/benefits/trade-in/value', data),
   checkSkuForTradeIn: (data: { sku: string }) =>
-    apiClient.post<TradeInCheckResult>('/api/trade-in/check-sku', data)
+    apiClient.post<TradeInCheckResult>('/api/benefits/trade-in/check-sku', data)
 };
 
 // Stores API endpoints
@@ -472,15 +585,73 @@ export interface FavoriteFilterParams {
 
 // API Response types
 export interface ProductApiResponse {
-  products: ProductApiData[];
+  products: ProductOrBundleApiData[]; // Ahora acepta tanto productos como bundles
   totalItems: number;
   totalPages: number;
   currentPage: number;
   hasNextPage: boolean;
   hasPreviousPage: boolean;
+  hasMoreInPage?: boolean; // Indica si hay más productos en la página actual (para lazy loading)
+  lazyOffset?: number; // Offset actual usado en la petición
+  lazyLimit?: number; // Límite de productos por carga lazy
+}
+
+// Producto individual dentro de un bundle
+export interface BundleProduct {
+  sku: string;
+  codigoMarket: string;
+  modelo: string;
+  imagePreviewUrl?: string;
+  imageDetailsUrls?: string[]; // Array de todas las imágenes del producto
+  product_original_price: number;
+  product_discount_price: number;
+  ean?: string;
+  color?: string;
+  nombreColor?: string;
+  capacidad?: string;
+  memoriaram?: string;
+  stockTotal?: number;
+  bundle_price: number;
+  bundle_discount: number;
+  categoria?: string;
+}
+
+// Opción individual dentro de un bundle (variante)
+export interface BundleOption {
+  product_sku: string; // SKU de esta variante del bundle
+  modelo: string; // Nombre del bundle con productos concatenados
+  bundle_price: number; // Precio normal del bundle
+  bundle_discount: number; // Precio con descuento del bundle
+  ind_entre_estre: number;
+  skus_bundle: string[]; // SKUs de los productos incluidos en el bundle
+  imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+  productos?: BundleProduct[]; // Array de productos del bundle con detalles completos
+  // Campos de variante del producto padre
+  colorProductSku?: string; // Color hex del producto (ej: "#3C5B8A")
+  nombreColorProductSku?: string; // Nombre del color (ej: "Azul Marino")
+  capacidadProductSku?: string; // Capacidad (ej: "256GB")
+  memoriaRamProductSku?: string; // RAM (ej: "12GB")
+  stockTotal?: number; // Stock disponible para esta variante
+}
+
+// Bundle agrupado con múltiples opciones/variantes
+export interface BundleApiData {
+  isBundle: true;
+  baseCodigoMarket: string; // Código base del producto principal
+  codCampana: string; // Código de la campaña (ej: "BF001")
+  categoria: string | string[]; // Puede venir como string o array
+  menu: string | string[]; // Puede venir como string o array
+  submenu: string | string[]; // Puede venir como string o array
+  fecha_inicio: string;
+  fecha_final: string;
+  hora_inicio: string;
+  hora_final: string;
+  opciones: BundleOption[]; // Array de variantes del bundle
+  imagePreviewUrl?: string | string[]; // Imagen preview del bundle (puede venir como string o array)
 }
 
 export interface ProductApiData {
+  isBundle?: false; // Indicador para distinguir de bundles
   codigoMarketBase: string;
   codigoMarket: string[];
   nombreMarket: string[];
@@ -494,7 +665,7 @@ export interface ProductApiData {
   memoriaram: string[];
   descGeneral: string[];
   sku: string[];
-  ean:string[];
+  ean: string[];
   desDetallada: string[];
   stockTotal: number[];
   cantidadTiendas: number[];
@@ -518,6 +689,20 @@ export interface ProductApiData {
   alto?: number[];
   largo?: number[];
   peso?: number[];
+  device?: string[]; // Dispositivo al que está dirigido el accesorio (ej: "Galaxy S24", "Galaxy Watch")
+  skuflixmedia?: string[]; // SKU para Flixmedia
+}
+
+// Tipo unión para productos y bundles
+export type ProductOrBundleApiData = ProductApiData | BundleApiData;
+
+// Respuesta directa del endpoint de bundle individual
+export interface BundleDirectResponse {
+  baseCodigoMarket: string;
+  codCampana: string;
+  product_sku: string;
+  productos: BundleProduct[];
+  isBlackFriday?: boolean;
 }
 
 export interface FavoriteApiResponse {
@@ -620,9 +805,10 @@ export interface TradeInCategory {
 }
 
 export interface TradeInValueRequest {
-  codMarca: string;
-  codModelo: string;
-  grado: 'A' | 'B' | 'C'; // A=Excelente, B=Buen estado, C=Estado regular
+  sku: string; // SKU del producto a comprar
+  codMarca: string; // Del dispositivo a entregar
+  codModelo: string; // Del dispositivo a entregar
+  grado: 'A' | 'B' | 'C'; // Estado del dispositivo a entregar
 }
 
 export interface TradeInValueResponse {
@@ -651,8 +837,11 @@ export interface CandidateStore {
   place_ID: string;
   distance: number;
   horario: string;
+  stock?: number;  // Stock disponible en esta tienda
   ciudad?: string;  // Ciudad de la tienda (puede venir en la respuesta)
   codDane?: string | number;  // Código DANE (puede venir en la respuesta)
+  telefono?: string;  // Teléfono de la tienda (puede venir en la respuesta)
+  extension?: string;  // Extensión del teléfono (puede venir en la respuesta)
 }
 
 export interface DefaultDirection {
@@ -666,4 +855,62 @@ export interface CandidateStoresResponse {
   stores: Record<string, CandidateStore[]>;
   canPickUp: boolean;
   default_direction: DefaultDirection;
+}
+
+// Delivery API endpoints
+export const deliveryEndpoints = {
+  quoteNationalMultiOrigin: (data: MultiOriginQuoteRequest) =>
+    apiClient.post<MultiOriginQuoteResponse[]>('/api/deliveries/coordinadora/cotizar-nacional-multi', data),
+};
+
+export interface MultiOriginQuoteRequest {
+  ciudades_origen: string[];
+  ciudad_destino: string;
+  cuenta: string;
+  producto: string;
+  valoracion: string;
+  nivel_servicio: number[];
+  detalle: {
+    ubl: number;
+    alto: number;
+    ancho: number;
+    largo: number;
+    peso: number;
+    unidades: number;
+  }[];
+}
+
+export interface MultiOriginQuoteResponse {
+  ciudad_origen: string;
+  nombre_ciudad: string;
+  flete_total: number;
+  dias_entrega: number;
+  detalles: {
+    peso_liquidado: number;
+    producto: number;
+    ubl: number;
+    volumen: number;
+    peso_real: number;
+  };
+}
+
+/**
+ * Helper function: Fetch product by codigoMarket
+ * Used by ChatProductCard to load full product data
+ */
+export async function fetchProductByCodigoMarket(codigoMarketBase: string): Promise<ProductOrBundleApiData | null> {
+  try {
+    const response = await productEndpoints.getByCodigoMarket(codigoMarketBase);
+
+    if (!response.success || !response.data?.products || response.data.products.length === 0) {
+      console.warn(`[fetchProductByCodigoMarket] No product found for: ${codigoMarketBase}`);
+      return null;
+    }
+
+    // Return first product (can be ProductApiData or BundleApiData)
+    return response.data.products[0];
+  } catch (error) {
+    console.error(`[fetchProductByCodigoMarket] Error fetching product:`, error);
+    return null;
+  }
 }

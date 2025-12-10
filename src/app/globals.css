@@ -2,7 +2,7 @@
 
 /* Animaciones de página */
 @keyframes fadeIn {
-  from {
+  from { 
     opacity: 0;
   }
   to {
@@ -114,6 +114,11 @@
   animation: logo-reload-bgMove 16s ease-in-out infinite alternate;
 }
 /* Samsung Sharp Sans font-face for web (variable weight) */
+
+html {
+  /* Reducir tamaño de fuente base de 16px a 14px (87.5%) */
+  font-size: 87.5% !important;
+}
 
 html,
 body,

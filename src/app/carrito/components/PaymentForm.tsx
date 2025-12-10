@@ -2,9 +2,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Plus, Check } from "lucide-react";
-import { SiVisa, SiMastercard, SiAmericanexpress } from "react-icons/si";
-import CreditCardForm, { CardData, CardErrors } from "./CreditCardForm";
-import SaveInfoCheckbox from "./SaveInfoCheckbox";
+import { CardData, CardErrors } from "./CreditCardForm";
 import { PaymentMethod, CheckZeroInterestResponse } from "../types";
 import { useAuthContext } from "@/features/auth/context";
 import CardBrandLogo from "@/components/ui/CardBrandLogo";
@@ -12,6 +10,8 @@ import pseLogo from "@/img/iconos/logo-pse.png";
 import addiLogo from "@/img/iconos/addi_negro.png";
 import { fetchBanks } from "../utils";
 import { useCardsCache } from "../hooks/useCardsCache";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 
 interface PaymentFormProps {
   paymentMethod: string;
@@ -61,11 +61,17 @@ export default function PaymentForm({
   const [banks, setBanks] = useState<{ bankCode: string; bankName: string }[]>(
     []
   );
+  const [isLoadingBanks, setIsLoadingBanks] = useState(true);
+  // Hook para obtener usuario del localStorage (para usuarios sin sesión activa pero con cuenta creada en Step2)
+  const [loggedUser] = useSecureStorage<User | null>("imagiq_user", null);
 
   // Helper para obtener el userId (autenticado o invitado)
   const getUserId = (): string | null => {
     if (authContext.user?.id) {
       return authContext.user.id;
+    }
+    if (loggedUser?.id) {
+      return loggedUser.id;
     }
 
     try {
@@ -93,19 +99,24 @@ export default function PaymentForm({
 
   // Cargar bancos para PSE
   useEffect(() => {
-    fetchBanks().then((res) => {
-      setBanks(res);
-    });
+    setIsLoadingBanks(true);
+    fetchBanks()
+      .then((res) => {
+        setBanks(res);
+      })
+      .finally(() => {
+        setIsLoadingBanks(false);
+      });
   }, []);
 
-  // Cargar tarjetas guardadas al montar
+  // Cargar tarjetas guardadas al montar o cuando cambia el usuario
   useEffect(() => {
     const userId = getUserId();
-    
+
     if (userId) {
       loadSavedCards();
     }
-  }, [authContext.user?.id, loadSavedCards]);
+  }, [authContext.user?.id, loggedUser?.id, loadSavedCards]);
 
   // Volver a cargar tarjetas si el contador cambia (se incrementa cuando se agrega una nueva tarjeta)
   useEffect(() => {
@@ -113,32 +124,57 @@ export default function PaymentForm({
     if (userId && savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0) {
       loadSavedCards(true); // true = forzar recarga
     }
-  }, [authContext.user?.id, savedCardsReloadCounter, loadSavedCards]);
+  }, [authContext.user?.id, loggedUser?.id, savedCardsReloadCounter, loadSavedCards]);
 
-  // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas
+  // Auto-seleccionar la tarjeta predeterminada cuando se cargan las tarjetas o después de agregar una nueva
   useEffect(() => {
-    
     if (
       savedCards.length > 0 &&
-      !selectedCardId &&
-      paymentMethod === "tarjeta"
+      !isLoadingCards
     ) {
-      const defaultCard =
-        savedCards.find((card) => card.es_predeterminada) || savedCards[0];
-      if (defaultCard) {
-        onCardSelect(String(defaultCard.id));
+      // Verificar el método de pago guardado en localStorage
+      const savedPaymentMethod = localStorage.getItem("checkout-payment-method");
+
+      // Solo procesar si el método de pago actual o guardado es "tarjeta"
+      if (paymentMethod === "tarjeta" || savedPaymentMethod === "tarjeta") {
+        // Solo auto-seleccionar si:
+        // 1. No hay tarjeta seleccionada actualmente Y no hay una guardada en localStorage Y el método actual es tarjeta
+        // 2. Se agregó una nueva tarjeta (savedCardsReloadCounter > 0)
+        const savedCardId = localStorage.getItem("checkout-saved-card-id");
+        const shouldSelectCard = (!selectedCardId && !savedCardId && paymentMethod === "tarjeta") || (savedCardsReloadCounter !== undefined && savedCardsReloadCounter > 0);
+
+        if (shouldSelectCard) {
+          const defaultCard =
+            savedCards.find((card) => card.es_predeterminada) || savedCards[0];
+          if (defaultCard) {
+            onCardSelect(String(defaultCard.id));
+            onUseNewCardChange(false);
+            // Cambiar método de pago a tarjeta si no está seleccionado
+            if (paymentMethod !== "tarjeta") {
+              onPaymentMethodChange("tarjeta");
+            }
+          }
+        } else if (savedCardId && !selectedCardId && paymentMethod === "tarjeta") {
+          // Si hay una tarjeta guardada en localStorage pero no está seleccionada en el estado, seleccionarla
+          // SOLO si el método de pago actual es tarjeta
+          onCardSelect(savedCardId);
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedCards.length, paymentMethod]);
+  }, [savedCards.length, paymentMethod, savedCardsReloadCounter, isLoadingCards]);
 
   // Llamar a fetchZeroInterestInfo cuando se cargan las tarjetas
   useEffect(() => {
     if (savedCards.length > 0 && onFetchZeroInterest) {
       const cardIds = savedCards.map((card) => String(card.id));
       onFetchZeroInterest(cardIds);
+
+      // Guardar tarjetas en localStorage para que step4/page.tsx pueda leer el tipo_tarjeta
+      localStorage.setItem("checkout-cards-cache", JSON.stringify(savedCards));
     }
   }, [savedCards, onFetchZeroInterest]);
+
 
   // Obtener tarjeta predeterminada
   const defaultCard =
@@ -163,17 +199,26 @@ export default function PaymentForm({
 
   // Mostrar skeleton completo cuando:
   // 1. Se están cargando las tarjetas inicialmente
-  // 2. Se está cargando zero interest PERO aún no tenemos tarjetas cargadas
-  // 3. Aún no se han cargado las tarjetas (primera vez que se monta el componente)
+  // 2. Se están cargando los bancos para PSE
+  // 3. Se está cargando zero interest (sin importar si hay tarjetas o no)
   const shouldShowFullSkeleton =
     isLoadingCards ||
-    (isLoadingZeroInterest && savedCards.length === 0) ||
-    (!isLoadingCards && savedCards.length === 0 && getUserId() !== null);
+    isLoadingBanks ||
+    isLoadingZeroInterest;
 
   if (shouldShowFullSkeleton) {
     return (
       <div>
-        <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+        <div className="flex items-center gap-5 mb-4">
+          <h2 className="text-[22px] font-bold">Elije como pagar</h2>
+          <Image
+            src="https://ics-networking.com/wp-content/uploads/2024/09/pci-dss-1.webp"
+            alt="Certificación PCI DSS"
+            width={45}
+            height={30}
+            className="object-contain"
+          />
+        </div>
 
         <div className="animate-pulse space-y-6">
           {/* Skeleton de Recomendados */}
@@ -207,7 +252,16 @@ export default function PaymentForm({
 
   return (
     <div>
-      <h2 className="text-[22px] font-bold mb-6">Elije como pagar</h2>
+      <div className="flex items-center gap-5 mb-4">
+        <h2 className="text-[22px] font-bold">Elije como pagar</h2>
+        <Image
+          src="https://ics-networking.com/wp-content/uploads/2024/09/pci-dss-1.webp"
+          alt="Certificación PCI DSS"
+          width={45}
+          height={30}
+          className="object-contain"
+        />
+      </div>
 
       {/* Sección de Recomendados */}
       <div className="mb-6">
@@ -337,27 +391,39 @@ export default function PaymentForm({
             )}
 
             {/* Addi */}
-            <label className="flex items-center gap-3 justify-between py-3 cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3 -mx-3">
-              <span className="flex items-center gap-3">
-                <input
-                  type="radio"
-                  name="payment"
-                  checked={paymentMethod === "addi"}
-                  onChange={() => onPaymentMethodChange("addi")}
-                  className="accent-black w-5 h-5 flex-shrink-0"
-                />
-                <span className="font-medium text-black">
-                  Addi - Paga después
+            <div className="-mx-3">
+              <label className="flex items-center gap-3 justify-between cursor-pointer hover:bg-gray-50 rounded-lg transition-colors px-3">
+                <span className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="payment"
+                    checked={paymentMethod === "addi"}
+                    onChange={() => onPaymentMethodChange("addi")}
+                    className="accent-black w-5 h-5 flex-shrink-0"
+                  />
+                  <span className="font-medium text-black">
+                    Addi - Paga después
+                  </span>
                 </span>
-              </span>
-              <Image
-                src={addiLogo}
-                alt="Addi"
-                width={35}
-                height={35}
-                className="object-contain"
-              />
-            </label>
+                <Image
+                  src="https://purrfecthire.com/carrousel-img/addi.png"
+                  alt="Addi"
+                  width={35}
+                  height={35}
+                  className="object-fit"
+                />
+              </label>
+              <div className="ml-8">
+                <a
+                  href="https://imagiq.com.co/terminos-condiciones"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[12px] text-blue-600 font-bold"
+                >
+                  3 cuotas sin interés. Aplican T&C
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -377,6 +443,39 @@ export default function PaymentForm({
               <Plus className="w-4 h-4" />
               Agregar
             </button>
+          </div>
+
+          {/* Términos y condiciones con logos de bancos */}
+          <div className="mb-4 flex justify-end">
+            <div className="text-center max-w-fit">
+              <a
+                href="/soporte/tyc-bancolombia"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-[10px] text-gray-900 hover:underline leading-tight mb-1"
+              >
+                Hasta 24 cuotas con <span className="font-bold">0% de interés</span>.
+              </a>
+              <p className="text-[6px] text-gray-900 leading-tight mb-2">
+                Aplican T&C
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Image
+                  src="https://www.bancolombia.com/wcm/connect/b8e4c3f2-36a9-497d-a125-ac04f83b0bf8/LogoBancolombia.png?MOD=AJPERES"
+                  alt="Bancolombia"
+                  width={28}
+                  height={10}
+                  className="object-contain"
+                />
+                <Image
+                  src="https://ribgo.davivienda.com/assets/images/logo/logo-davivienda.png"
+                  alt="Davivienda"
+                  width={40}
+                  height={14}
+                  className="object-contain"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-col gap-3">
@@ -409,11 +508,13 @@ export default function PaymentForm({
                       <div
                         className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${
                           isSelected
-                            ? "border-black bg-black"
+                            ? "border-black bg-white"
                             : "border-gray-300 bg-white"
                         }`}
                       >
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
+                        {isSelected && (
+                          <div className="w-3 h-3 rounded-full bg-black"></div>
+                        )}
                       </div>
                       <CardBrandLogo brand={card.marca} size="md" />
                       <div className="flex flex-col min-w-0 flex-1">
@@ -461,9 +562,11 @@ export default function PaymentForm({
               })}
           </div>
         </div>
-      ) : (<div className="flex items-center justify-between mb-3">
+      ) : (
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-gray-700">
-              Tarjetas guardadas
+              No tienes tarjetas guardadas
             </h3>
             <button
               type="button"
@@ -471,44 +574,49 @@ export default function PaymentForm({
               className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-black text-white hover:bg-gray-800 font-medium transition-colors rounded-lg"
             >
               <Plus className="w-4 h-4" />
-              Agregar
+              Agregar desde perfil
             </button>
-          </div>)}
-
-      {/* Formulario de nueva tarjeta (si el usuario elige agregar) */}
-      {paymentMethod === "tarjeta" && useNewCard && (
-        <div className="mb-6">
-          <h3 className="text-base font-semibold text-gray-700 mb-3">
-            Nueva tarjeta
-          </h3>
-          <div
-            className="rounded-xl overflow-hidden p-6"
-            style={{
-              boxShadow: "0 2px 8px #0001",
-              background: "#fff",
-              border: "1px solid #E5E5E5",
-            }}
-          >
-            <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200">
-              <SiVisa className="w-11 h-6 text-[#1A1F71]" />
-              <SiMastercard className="w-11 h-6 text-[#EB001B]" />
-              <SiAmericanexpress className="w-11 h-6 text-[#006FCF]" />
-            </div>
-            <CreditCardForm
-              card={card}
-              cardErrors={cardErrors}
-              onCardChange={onCardChange}
-              onErrorChange={onCardErrorChange}
-              isVisible={true}
-            />
           </div>
+
+          {/* Términos y condiciones con logos de bancos */}
+          <div className="mb-4 flex justify-end">
+            <div className="text-center max-w-fit">
+              <a
+                href="/soporte/tyc-bancolombia"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block text-[10px] text-gray-900 hover:underline leading-tight mb-1"
+              >
+                Hasta 24 cuotas con <span className="font-bold">0% de interés</span>.
+              </a>
+              <p className="text-[6px] text-gray-900 leading-tight mb-2">
+                Aplican T&C
+              </p>
+              <div className="flex items-center justify-center gap-2">
+                <Image
+                  src="https://www.bancolombia.com/wcm/connect/b8e4c3f2-36a9-497d-a125-ac04f83b0bf8/LogoBancolombia.png?MOD=AJPERES"
+                  alt="Bancolombia"
+                  width={28}
+                  height={10}
+                  className="object-contain"
+                />
+                <Image
+                  src="https://ribgo.davivienda.com/assets/images/logo/logo-davivienda.png"
+                  alt="Davivienda"
+                  width={40}
+                  height={14}
+                  className="object-contain"
+                />
+              </div>
+            </div>
+          </div>
+
+          <p className="text-sm text-gray-600 mb-4">
+            Agrega una tarjeta desde tu perfil para continuar con el pago
+          </p>
         </div>
       )}
 
-      {/* Save info checkbox - solo mostrar si usa nueva tarjeta */}
-      {paymentMethod === "tarjeta" && useNewCard && (
-        <SaveInfoCheckbox checked={saveInfo} onChange={onSaveInfoChange} />
-      )}
     </div>
   );
 }

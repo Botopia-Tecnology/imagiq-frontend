@@ -1,15 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import PickupMap from "./PickupMap";
+import { apiPost } from "@/lib/api-client";
 
 interface Product {
   id: string;
   nombre: string;
+  desdetallada?: string;
   imagen?: string;
   cantidad: number;
   precio?: number;
+}
+
+interface OrderData {
+  id?: string;
 }
 
 interface PickupShippingViewProps {
@@ -22,9 +28,11 @@ interface PickupShippingViewProps {
   ciudadTienda?: string;
   nombreTienda?: string;
   descripcionTienda?: string;
+  telefonoTienda?: string;
   latitudTienda?: string;
   longitudTienda?: string;
   products?: Product[];
+  orderData?: OrderData;
 }
 
 export function PickupShippingView({
@@ -37,11 +45,186 @@ export function PickupShippingView({
   ciudadTienda,
   nombreTienda,
   descripcionTienda,
+  telefonoTienda,
   latitudTienda,
   longitudTienda,
   products = [],
+  orderData,
 }: Readonly<PickupShippingViewProps>) {
   const [currentProductIndex, setCurrentProductIndex] = useState(0);
+  const [isResending, setIsResending] = useState(false);
+  const [resendStatus, setResendStatus] = useState<'idle' | 'success' | 'error' | 'limit-reached'>('idle');
+  const [attemptsLeft, setAttemptsLeft] = useState(5);
+
+  // Clave para localStorage basada en el orderNumber
+  const storageKey = `resend_attempts_${orderNumber}`;
+
+  // Formatear teléfono para llamadas (usar el de la tienda si está disponible)
+  const phoneForCall = telefonoTienda ? telefonoTienda.replaceAll(/[\s()-]/g, "") : "+573001234567";
+  
+  // WhatsApp siempre usa el número fijo
+  const whatsappPhoneNumber = "573228639389";
+  
+  // Mensaje predeterminado para WhatsApp
+  const whatsappMessage = encodeURIComponent("Hola tienda imagiq, me gustaría realizar una consulta acerca...");
+
+  // Verificar intentos restantes al cargar
+  const checkRemainingAttempts = useCallback(() => {
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        const now = Date.now();
+        const hoursPassed = (now - data.timestamp) / (1000 * 60 * 60);
+        
+        if (hoursPassed >= 1) {
+          // Ha pasado más de 1 hora, resetear intentos
+          localStorage.removeItem(storageKey);
+          setAttemptsLeft(5);
+        } else {
+          // Aún dentro del período de 1 hora
+          const remaining = Math.max(0, 5 - data.attempts);
+          setAttemptsLeft(remaining);
+          if (remaining === 0) {
+            setResendStatus('limit-reached');
+          }
+        }
+      } catch {
+        // Error al parsear, resetear
+        localStorage.removeItem(storageKey);
+        setAttemptsLeft(5);
+      }
+    }
+  }, [storageKey, setAttemptsLeft, setResendStatus]);
+
+  useEffect(() => {
+    checkRemainingAttempts();
+  }, [checkRemainingAttempts]);
+
+  // Función para reenviar credenciales
+  const handleResendCredentials = async () => {
+    if (attemptsLeft <= 0) {
+      setResendStatus('limit-reached');
+      return;
+    }
+
+    setIsResending(true);
+    setResendStatus('idle');
+
+    try {
+      // Obtener datos del usuario desde localStorage
+      const userData = localStorage.getItem("imagiq_user");
+      let userInfo = null;
+
+      if (userData) {
+        try {
+          userInfo = JSON.parse(userData);
+        } catch (e) {
+          console.error("Error al parsear datos del usuario:", e);
+        }
+      }
+
+      if (!userInfo || !userInfo.email || !userInfo.telefono) {
+        throw new Error("No se encontraron datos del usuario");
+      }
+
+      // Formatear teléfono
+      let telefono = userInfo.telefono.toString().replace(/[\s+\-()]/g, "");
+      if (!telefono.startsWith("57")) {
+        telefono = "57" + telefono;
+      }
+
+      // Mapear productos igual que en success checkout
+      const productosMapeados = products.map((p) => ({
+        name: p.desdetallada || p.nombre || "Producto",
+        quantity: p.cantidad || 1,
+        image: p.imagen || undefined
+      }));
+
+      // Construir dirección de la tienda igual que success checkout
+      const storeAddress = direccionTienda 
+        ? `${direccionTienda}, ${ciudadTienda || ""}`.trim()
+        : descripcionTienda || "";
+
+      // Payload para email - igual que success checkout
+      const emailPayload = {
+        to: userInfo.email,
+        orderId: orderNumber,
+        customerName: `${userInfo.nombre} ${userInfo.apellido || ""}`.trim(),
+        products: productosMapeados,
+        storeName: descripcionTienda || nombreTienda || "Tienda IMAGIQ",
+        storeAddress: storeAddress,
+        storeMapsUrl: `https://maps.google.com/?q=${encodeURIComponent(storeAddress)}`,
+        pickupToken: token,
+        qrCodeUrl: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(token)}`,
+        orderDate: new Date().toLocaleDateString('es-ES', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric'
+        }),
+        totalValue: 0 // No tenemos el valor total aquí
+      };
+
+      // Payload para WhatsApp - igual que success checkout
+      const whatsappPayload = {
+        to: telefono,
+        nombre: userInfo.nombre.charAt(0).toUpperCase() + userInfo.nombre.slice(1).toLowerCase(),
+        numeroPedido: orderNumber,
+        nombreTienda: descripcionTienda || nombreTienda || "Tienda IMAGIQ",
+        producto: "Token",
+        horarioRecogida: token,
+        resumen: "Token",
+        ordenId: orderData?.id || orderNumber // Usar el UUID real de la orden
+      };
+
+      // Enviar email
+      const emailResponse = await apiPost('/api/messaging/email/store-pickup', emailPayload) as { success: boolean };
+      
+      // Enviar WhatsApp
+      const whatsappResponse = await apiPost('/api/messaging/pickup', whatsappPayload) as { success: boolean };
+
+      if (emailResponse.success || whatsappResponse.success) {
+        setResendStatus('success');
+        
+        // Actualizar intentos en localStorage
+        const stored = localStorage.getItem(storageKey);
+        let attempts = 1;
+        
+        if (stored) {
+          try {
+            const data = JSON.parse(stored);
+            attempts = data.attempts + 1;
+          } catch {
+            attempts = 1;
+          }
+        }
+
+        localStorage.setItem(storageKey, JSON.stringify({
+          attempts,
+          timestamp: Date.now()
+        }));
+
+        setAttemptsLeft(Math.max(0, 5 - attempts));
+
+        // Ocultar mensaje de éxito después de 5 segundos
+        setTimeout(() => {
+          setResendStatus('idle');
+        }, 5000);
+      } else {
+        throw new Error("Error al enviar credenciales");
+      }
+    } catch (error) {
+      console.error("Error al reenviar credenciales:", error);
+      setResendStatus('error');
+      
+      // Ocultar mensaje de error después de 5 segundos
+      setTimeout(() => {
+        setResendStatus('idle');
+      }, 5000);
+    } finally {
+      setIsResending(false);
+    }
+  };
 
   useEffect(() => {
     setCurrentProductIndex(0);
@@ -94,13 +277,54 @@ export function PickupShippingView({
               <div className="text-center">
                 <p className="text-xs text-gray-300 mb-1 font-medium">Token personal</p>
                 <span className="text-lg font-bold text-white tracking-wider">
-                  {token}
+                  ******
                 </span>
               </div>
             </div>
             <p className="text-xs text-gray-600 text-right">
               Recibiste este token vía <strong>WhatsApp</strong> y <strong>correo</strong>
             </p>
+            
+            {/* Botón de reenviar credenciales */}
+            <div className="w-full max-w-xs mt-4">
+              <button
+                onClick={handleResendCredentials}
+                disabled={isResending || attemptsLeft <= 0}
+                className={`w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${
+                  isResending || attemptsLeft <= 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-black text-white hover:bg-gray-800'
+                }`}
+              >
+                {isResending ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Enviando...
+                  </div>
+                ) : (
+                  `Reenviar credenciales ${attemptsLeft > 0 ? `(${attemptsLeft})` : '(0)'}`
+                )}
+              </button>
+
+              {/* Mensajes de estado */}
+              {resendStatus === 'success' && (
+                <div className="mt-2 p-2 bg-gray-100 border border-gray-400 text-gray-700 rounded-lg text-xs">
+                  ✓ Credenciales enviadas por email y WhatsApp
+                </div>
+              )}
+              
+              {resendStatus === 'error' && (
+                <div className="mt-2 p-2 bg-red-100 border border-red-400 text-red-700 rounded-lg text-xs">
+                  ❌ Error al enviar. Inténtalo más tarde.
+                </div>
+              )}
+              
+              {resendStatus === 'limit-reached' && (
+                <div className="mt-2 p-2 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg text-xs">
+                  ⚠️ Límite alcanzado. Inténtalo en 1 hora.
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -148,7 +372,7 @@ export function PickupShippingView({
                           </svg>
                         </div>
                         <div>
-                          <h2 className="font-semibold text-black text-base">
+                          <h2 className="font-semibold text-black text-sm">
                             Productos en tu pedido
                           </h2>
                           <p className="text-sm text-gray-500">
@@ -160,11 +384,11 @@ export function PickupShippingView({
 
                       {/* Derecha: Nombre del producto y Precio */}
                       <div className="text-right">
-                        <h3 className="font-semibold text-gray-900 text-lg mb-1">
-                          {currentProduct?.nombre || "Producto sin nombre"}
+                        <h3 className="font-semibold text-gray-900 text-sm mb-1">
+                          {currentProduct?.desdetallada || currentProduct?.nombre || "Producto sin nombre"}
                         </h3>
                         {currentProduct?.precio && (
-                          <span className="text-2xl font-bold text-[#17407A]">
+                          <span className="text-lg font-bold text-[#17407A]">
                             ${currentProduct.precio.toLocaleString("es-CO")}
                           </span>
                         )}
@@ -301,12 +525,12 @@ export function PickupShippingView({
           ¿Necesitas ayuda?
         </h3>
         <p className="text-sm text-gray-600 mb-4">
-          Nuestro equipo está disponible para ayudarte.
+          Nuestro equipo está disponible para ayudarte en días hábiles y horas laborales.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 w-full">
           <a
-            href="tel:+573001234567"
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-[#17407A] text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
+            href={`tel:${phoneForCall}`}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-black text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"
           >
             <svg
               className="w-4 h-4"
@@ -324,7 +548,7 @@ export function PickupShippingView({
             Llamar ahora
           </a>
           <a
-            href="https://wa.me/573001234567"
+            href={`https://wa.me/${whatsappPhoneNumber}?text=${whatsappMessage}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:brightness-110 transition text-sm font-medium shadow-sm"

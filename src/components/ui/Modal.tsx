@@ -7,7 +7,7 @@ interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
-  size?: "sm" | "md" | "lg" | "xl";
+  size?: "sm" | "md" | "lg" | "xl" | "2xl";
   showCloseButton?: boolean;
 }
 
@@ -50,10 +50,11 @@ const Modal: React.FC<ModalProps> = ({
     md: "max-w-xl",
     lg: "max-w-3xl",
     xl: "max-w-5xl",
+    "2xl": "max-w-7xl",
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100000] flex items-center justify-center p-2 md:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -62,7 +63,7 @@ const Modal: React.FC<ModalProps> = ({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto`}
+        className={`relative w-full ${sizeClasses[size]} bg-white rounded-2xl shadow-2xl max-h-[50vh] overflow-y-auto`}
       >
         {/* Close button */}
         {showCloseButton && (

@@ -4,6 +4,7 @@ export { StoreSelector } from "./StoreSelector";
 export { DeliveryMethodSelector } from "./DeliveryMethodSelector";
 export { StorePickupSelector } from "./StorePickupSelector";
 export { OrderSummary } from "./OrderSummary";
+export { NearbyLocationButton } from "./NearbyLocationButton";
 
 // Step4 Payment Components
 export { default as PaymentForm } from "./PaymentForm";

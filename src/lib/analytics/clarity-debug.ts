@@ -75,9 +75,11 @@ export function getClarityDebugInfo(): ClarityDebugInfo {
 }
 
 /**
- * Imprime el estado de Clarity en la consola
+ * Imprime el estado de Clarity en la consola (solo en desarrollo)
  */
 export function logClarityStatus(): void {
+  if (process.env.NODE_ENV !== "development") return;
+
   const info = getClarityDebugInfo();
 
   console.group("🔍 Clarity Debug Info");
@@ -121,19 +123,20 @@ export function waitForClarity(
       attempts++;
 
       if (isClarityReady()) {
-        console.log(
-          "[Clarity Debug] ✅ Clarity ready after",
-          attempts,
-          "attempts"
-        );
         resolve();
         return;
       }
 
       if (attempts >= maxAttempts) {
         const error = `Clarity not ready after ${maxAttempts} attempts`;
-        console.error("[Clarity Debug] ❌", error);
-        reject(new Error(error));
+        // Solo mostrar error en producción
+        if (process.env.NODE_ENV === "production") {
+          console.error("[Clarity Debug] ❌", error);
+          reject(new Error(error));
+        } else {
+          // En desarrollo, resolver en lugar de rechazar para no romper la app
+          resolve();
+        }
         return;
       }
 
@@ -145,19 +148,14 @@ export function waitForClarity(
 }
 
 /**
- * Registra un evento de identificación exitosa
+ * Registra un evento de identificación exitosa (solo en desarrollo)
  */
 export function logIdentificationSuccess(
-  userId: string,
-  sessionId: string,
-  friendlyName: string
+  _userId: string,
+  _sessionId: string,
+  _friendlyName: string
 ): void {
-  console.group("🎯 Clarity User Identified");
-  console.log("📧 User ID:", userId);
-  console.log("🔑 Session ID:", sessionId);
-  console.log("👤 Friendly Name:", friendlyName);
-  console.log("⏰ Timestamp:", new Date().toISOString());
-  console.groupEnd();
+  // Logging disabled for production
 }
 
 /**
@@ -165,13 +163,12 @@ export function logIdentificationSuccess(
  */
 export function logIdentificationError(
   error: Error,
-  context: Record<string, string>
+  _context: Record<string, string>
 ): void {
-  console.group("❌ Clarity Identification Failed");
-  console.error("Error:", error.message);
-  console.log("Context:", context);
-  console.log("⏰ Timestamp:", new Date().toISOString());
-  console.groupEnd();
+  // Only log errors in production
+  if (process.env.NODE_ENV === "production") {
+    console.error("[Clarity] Identification failed:", error.message);
+  }
 }
 
 /**
@@ -179,6 +176,7 @@ export function logIdentificationError(
  */
 export function enableDebugMode(): void {
   if (typeof window === "undefined") return;
+  if (process.env.NODE_ENV !== "development") return;
 
   // Agregar utilidades de debug a window de forma segura
   (window as unknown as Record<string, unknown>).clarityDebug = {
@@ -187,6 +185,4 @@ export function enableDebugMode(): void {
     isReady: isClarityReady,
     waitForClarity,
   };
-
-  console.log("🔧 Clarity Debug Mode enabled. Use window.clarityDebug");
 }

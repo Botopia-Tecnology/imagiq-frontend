@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { Package } from "lucide-react";
 
 /**
  * Overlay de error de compra con animaciones premium, accesibilidad y microinteracciones.
@@ -39,6 +40,38 @@ function CheckoutErrorOverlay({
       ? message
       : DEFAULT_ERROR_MESSAGE[locale ?? "es"];
 
+  // Función para parsear enlaces en el mensaje
+  const parseMessage = (text: string) => {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, index) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a
+            key={part}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-black hover:text-gray-800"
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
+  // Determinar colores basados en si el mensaje contiene "pendiente"
+  const isPending = msg.toLowerCase().includes("pendiente");
+
+  // Clase de fondo dinámica
+  const expandedBg = isPending
+    ? "bg-yellow-400/90 backdrop-blur-sm"
+    : "bg-red-700/90 backdrop-blur-sm";
+  const collapsedBg = isPending ? "bg-yellow-400/0" : "bg-red-700/0";
+  const bgClass = expand ? expandedBg : collapsedBg;
+
   useEffect(() => {
     if (open) {
       setExpand(true);
@@ -65,9 +98,7 @@ function CheckoutErrorOverlay({
       aria-modal="true"
       aria-labelledby={headingId}
       tabIndex={-1}
-      className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-auto transition-all duration-1000 ${
-        expand ? "bg-[#d32f2f]/90 backdrop-blur-sm" : "bg-[#d32f2f]/0"
-      } ${className}`}
+      className={`fixed inset-0 z-50 flex items-center justify-center pointer-events-auto transition-all duration-1000 ${bgClass} ${className}`}
       data-testid={testId}
       style={{
         transitionProperty: "background-color,backdrop-filter",
@@ -76,7 +107,9 @@ function CheckoutErrorOverlay({
     >
       {/* Expansión radial premium desde el botón de finalizar pago */}
       <div
-        className={`absolute w-24 h-12 rounded-full bg-[#d32f2f] shadow-2xl ${
+        className={`absolute w-24 h-12 rounded-full ${
+          isPending ? "bg-yellow-400" : "bg-red-700"
+        } shadow-2xl ${
           expand
             ? "scale-[120] opacity-100 blur-lg"
             : "scale-0 opacity-60 blur-none"
@@ -87,7 +120,7 @@ function CheckoutErrorOverlay({
           bottom: triggerPosition ? "auto" : "6rem",
           transformOrigin: triggerPosition ? "center center" : "center bottom",
           transitionProperty: "transform,opacity,filter",
-          boxShadow: "0 8px 64px #d32f2f99",
+          boxShadow: `0 8px 64px ${isPending ? "#fbbf24" : "#d32f2f"}99`,
         }}
         aria-hidden="true"
       />
@@ -118,14 +151,14 @@ function CheckoutErrorOverlay({
             </svg>
           </div>
           {/* Mensaje de error */}
-          <h2
+          <div
             id={headingId}
             tabIndex={-1}
             className="text-white text-3xl md:text-4xl font-extrabold text-center outline-none animate-riseFade drop-shadow-lg"
             style={{ letterSpacing: "-1px" }}
           >
-            {msg}
-          </h2>
+            {parseMessage(msg)}
+          </div>
           {/* Botón continuar */}
           <button
             ref={closeBtnRef}

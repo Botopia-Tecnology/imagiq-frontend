@@ -19,6 +19,10 @@ import {
 import {
   mapApiProductsToFrontend,
   groupProductsByCategory,
+  mapApiProductsAndBundles,
+  mapDirectBundleResponseToFrontend,
+  BundleCardProps,
+  MixedProductItem,
 } from "@/lib/productMapper";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import type { FrontendFilterParams } from "@/lib/sharedInterfaces";
@@ -39,6 +43,8 @@ type UserInfo = {
 
 interface UseProductsReturn {
   products: ProductCardProps[];
+  bundles: BundleCardProps[]; // Nuevo: lista de bundles
+  orderedItems: MixedProductItem[]; // Nuevo: items en orden original del API
   groupedProducts: Record<string, ProductCardProps[]>;
   loading: boolean;
   isLoadingMore: boolean; // Estado de carga para lazy loading (append)
@@ -106,6 +112,8 @@ export const useProducts = (
   initialFilters?: ProductFilters | (() => ProductFilters) | null
 ): UseProductsReturn => {
   const [products, setProducts] = useState<ProductCardProps[]>([]);
+  const [bundles, setBundles] = useState<BundleCardProps[]>([]); // Nuevo: estado para bundles
+  const [orderedItems, setOrderedItems] = useState<MixedProductItem[]>([]); // Nuevo: items en orden original del API
   const [groupedProducts, setGroupedProducts] = useState<
     Record<string, ProductCardProps[]>
   >({});
@@ -123,9 +131,12 @@ export const useProducts = (
       : initialFilters || {}
   );
   const [currentSearchQuery, setCurrentSearchQuery] = useState<string | null>(null);
+  // requestId se usa internamente para invalidar peticiones anteriores
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [requestId, setRequestId] = useState(0);
   const [lazyOffset, setLazyOffset] = useState(0);
   const [hasMoreInCurrentPage, setHasMoreInCurrentPage] = useState(true);
+  const [hasMoreInPageFromApi, setHasMoreInPageFromApi] = useState<boolean | undefined>(undefined);
   const abortRef = useRef<AbortController | null>(null);
   const productsRef = useRef<ProductCardProps[]>([]); // Ref para acceder a productos actuales sin causar re-renders
   const previousMenuUuidRef = useRef<string | undefined>(undefined);
@@ -230,6 +241,28 @@ export const useProducts = (
       if (filters.sortBy) params.sortBy = filters.sortBy;
       if (filters.sortOrder) params.sortOrder = filters.sortOrder;
 
+      // CRÍTICO: Copiar todos los campos adicionales que no están mapeados explícitamente
+      // Esto incluye los nuevos filtros dinámicos con sintaxis extendida (nombrecolor_equal, etc.)
+      Object.keys(filters).forEach((key) => {
+        // Solo copiar campos que no hayan sido mapeados ya
+        if (
+          ![
+            'page', 'limit', 'lazyLimit', 'lazyOffset',
+            'category', 'subcategory', 'menuUuid', 'submenuUuid',
+            'precioMin', 'precioMax', 'color', 'nombreColor',
+            'capacity', 'memoriaram', 'name', 'withDiscount',
+            'minStock', 'descriptionKeyword', 'model', 'filterMode',
+            'sortBy', 'sortOrder'
+          ].includes(key)
+        ) {
+          // Copiar el campo directamente (incluye filtros dinámicos con sintaxis extendida)
+          const value = (filters as Record<string, string | number | boolean | undefined>)[key];
+          if (value !== undefined) {
+            (params as ProductFilterParams & Record<string, string | number | boolean>)[key] = value as string | number | boolean;
+          }
+        }
+      });
+
       return params;
     },
     [currentPage]
@@ -246,6 +279,7 @@ export const useProducts = (
       if (!append && customOffset === undefined) {
         setLazyOffset(0);
         setHasMoreInCurrentPage(true);
+        setHasMoreInPageFromApi(undefined); // Resetear el estado del API
       }
 
       const apiParams = convertFiltersToApiParams(filters, customOffset);
@@ -285,7 +319,8 @@ export const useProducts = (
       try {
         if (!append) {
           // Crear una clave única para los filtros (excluyendo page, limit, lazyLimit, lazyOffset)
-          const filterKey = JSON.stringify({
+          // Incluir todos los campos conocidos y también los filtros dinámicos con sintaxis extendida
+          const knownFields: Record<string, string | number | boolean | undefined> = {
             categoria: apiParams.categoria,
             menuUuid: apiParams.menuUuid,
             submenuUuid: apiParams.submenuUuid,
@@ -300,7 +335,35 @@ export const useProducts = (
             color: apiParams.color,
             conDescuento: apiParams.conDescuento,
             stockMinimo: apiParams.stockMinimo,
+          };
+
+          // CRÍTICO: Incluir todos los campos adicionales (filtros dinámicos con sintaxis extendida)
+          // Esto asegura que cambios en filtros dinámicos se detecten correctamente
+          Object.keys(apiParams).forEach((key) => {
+            if (![
+              'page', 'limit', 'lazyLimit', 'lazyOffset', 'sortBy', 'sortOrder',
+              'categoria', 'menuUuid', 'submenuUuid', 'precioMin', 'precioMax',
+              'nombreColor', 'capacidad', 'memoriaram', 'nombre', 'desDetallada',
+              'modelo', 'color', 'conDescuento', 'stockMinimo'
+            ].includes(key)) {
+              const value = (apiParams as Record<string, string | number | boolean | undefined>)[key];
+              if (value !== undefined) {
+                knownFields[key] = value;
+              }
+            }
           });
+
+          const filterKey = JSON.stringify(knownFields);
+          
+          // Debug: Log para verificar que los filtros de rango se incluyen en filterKey
+          const hasRangeFilters = Object.keys(knownFields).some(key => key.includes('_range_min') || key.includes('_range_max'));
+          if (hasRangeFilters) {
+            console.log('[useProducts] filterKey incluye filtros de rango:', {
+              filterKey,
+              rangeFields: Object.keys(knownFields).filter(key => key.includes('_range_min') || key.includes('_range_max')),
+              knownFields
+            });
+          }
           
           // Detectar cambio de página: comparar filters.page con currentPage
           const isPageChange = filters.page !== undefined && filters.page !== currentPage;
@@ -312,32 +375,109 @@ export const useProducts = (
           // Esto previene que se muestren productos de una sección cuando navegas a otra
           const menuSubmenuChanged = menuUuidChangedForCache || submenuUuidChangedForCache;
 
+          // OPTIMIZACIÓN: Verificar caché ANTES de limpiar productos
+          // Esto evita mostrar skeletons innecesariamente cuando hay datos en caché disponibles
+          const cachedResponse = productCache.get(apiParams);
+          const hasValidCache = cachedResponse && cachedResponse.success && cachedResponse.data;
+
           if (isPageChange || filtersChanged || menuSubmenuChanged) {
-            // Cambio de página o filtros: limpiar productos y mostrar skeletons inmediatamente
-            setProducts([]);
-            productsRef.current = [];
-            setLoading(true);
-            setError(null);
-            // NO usar caché en cambio de página/filtros para mostrar skeletons
-            hasCachedData = false;
-            // Actualizar referencia de filtros
-            previousFiltersRef.current = filterKey;
+            // Si cambian los filtros (no solo la página), siempre mostrar skeletons
+            // El caché solo se usa cuando solo cambia la página (sin cambiar filtros)
+            if (filtersChanged && !isPageChange) {
+              // Cambio de filtros: siempre limpiar productos y mostrar skeletons
+              setProducts([]);
+              setBundles([]);
+              setOrderedItems([]);
+              productsRef.current = [];
+              setLoading(true);
+              setError(null);
+              hasCachedData = false;
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
+            } else if (isPageChange && !filtersChanged) {
+              // Solo cambio de página (sin cambio de filtros): verificar caché
+              if (hasValidCache) {
+                // Hay caché disponible: usar datos del caché inmediatamente sin limpiar productos
+                hasCachedData = true;
+                const apiData = cachedResponse.data;
+                const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
+
+                // Establecer todos los estados de forma síncrona
+                setError(null);
+                setProducts(mappedProducts);
+                setBundles(mappedBundles);
+                setOrderedItems(mappedOrderedItems);
+                productsRef.current = mappedProducts;
+                setGroupedProducts(groupProductsByCategory(mappedProducts));
+                setTotalItems(apiData.totalItems);
+                setTotalPages(apiData.totalPages);
+                setCurrentPage(apiData.currentPage);
+                setHasNextPage(apiData.hasNextPage);
+                setHasPreviousPage(apiData.hasPreviousPage);
+                if (apiData.hasMoreInPage !== undefined) {
+                  setHasMoreInPageFromApi(apiData.hasMoreInPage);
+                }
+                
+                if (!filters.lazyOffset && customOffset === undefined) {
+                  setLazyOffset(0);
+                  setHasMoreInCurrentPage(true);
+                }
+                
+                setLoading(false);
+                // Actualizar referencia de filtros
+                previousFiltersRef.current = filterKey;
+              } else {
+                // No hay caché: limpiar productos, bundles, orderedItems y mostrar skeletons
+                setProducts([]);
+                setBundles([]);
+                setOrderedItems([]);
+                productsRef.current = [];
+                setLoading(true);
+                setError(null);
+                hasCachedData = false;
+                // Actualizar referencia de filtros
+                previousFiltersRef.current = filterKey;
+              }
+            } else if (menuSubmenuChanged) {
+              // Cambio de menú/submenú: siempre limpiar productos y mostrar skeletons
+              setProducts([]);
+              setBundles([]);
+              setOrderedItems([]);
+              productsRef.current = [];
+              setLoading(true);
+              setError(null);
+              hasCachedData = false;
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
+            } else {
+              // Caso combinado (página + filtros): siempre mostrar skeletons
+              setProducts([]);
+              setBundles([]);
+              setOrderedItems([]);
+              productsRef.current = [];
+              setLoading(true);
+              setError(null);
+              hasCachedData = false;
+              // Actualizar referencia de filtros
+              previousFiltersRef.current = filterKey;
+            }
           } else {
             // Primera carga: usar caché si existe
-            const cachedResponse = productCache.get(apiParams);
-            if (cachedResponse && cachedResponse.success && cachedResponse.data) {
+            if (hasValidCache) {
               hasCachedData = true;
               // Usar datos del caché inmediatamente para respuesta rápida (stale-while-revalidate)
               const apiData = cachedResponse.data;
-              const mappedProducts = mapApiProductsToFrontend(apiData.products);
-              
+              const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
+
               // IMPORTANTE: Establecer todos los estados de forma síncrona
               // React batch automáticamente los setState en el mismo render,
               // pero establecer loading en false primero asegura que no se muestren skeletons
               setError(null);
-              
-              // Establecer productos y metadatos de forma síncrona
+
+              // Establecer productos, bundles, orderedItems y metadatos de forma síncrona
               setProducts(mappedProducts);
+              setBundles(mappedBundles); // Nuevo: establecer bundles
+              setOrderedItems(mappedOrderedItems); // Nuevo: establecer orderedItems (orden original del API)
               productsRef.current = mappedProducts; // Actualizar ref
               setGroupedProducts(groupProductsByCategory(mappedProducts));
               setTotalItems(apiData.totalItems);
@@ -345,6 +485,10 @@ export const useProducts = (
               setCurrentPage(apiData.currentPage);
               setHasNextPage(apiData.hasNextPage);
               setHasPreviousPage(apiData.hasPreviousPage);
+              // Guardar hasMoreInPage del API si está disponible
+              if (apiData.hasMoreInPage !== undefined) {
+                setHasMoreInPageFromApi(apiData.hasMoreInPage);
+              }
               
               // Resetear estados
               if (!filters.lazyOffset && customOffset === undefined) {
@@ -361,10 +505,12 @@ export const useProducts = (
               // Pero NO limpiar productos ni mostrar loading
             } else {
               // No hay caché, mostrar loading normalmente
-              // Limpiar productos para mostrar skeletons
+              // Limpiar productos, bundles y orderedItems para mostrar skeletons
               setLoading(true);
               setError(null);
               setProducts([]);
+              setBundles([]); // Limpiar bundles también
+              setOrderedItems([]); // Limpiar orderedItems también
               productsRef.current = []; // Actualizar ref
               // Actualizar referencia de filtros
               previousFiltersRef.current = filterKey;
@@ -381,7 +527,7 @@ export const useProducts = (
         const controller = new AbortController();
         abortRef.current = controller;
 
-        const response = await productEndpoints.getFiltered(apiParams, { signal: controller.signal });
+        const response = await productEndpoints.getFilteredV2(apiParams, { signal: controller.signal });
 
         // Capturar el valor de hasCachedData para usar en el callback
         const wasCached = hasCachedData;
@@ -402,9 +548,10 @@ export const useProducts = (
             }
             
             const apiData = response.data;
-            const mappedProducts = mapApiProductsToFrontend(apiData.products);
+            const { products: mappedProducts, bundles: mappedBundles, orderedItems: mappedOrderedItems } = mapApiProductsAndBundles(apiData.products);
 
             if (append) {
+              // Append para lazy loading
               setProducts((prev) => {
                 // Crear un Set con los IDs existentes para evitar duplicados
                 const existingIds = new Set(prev.map(p => p.id));
@@ -412,25 +559,52 @@ export const useProducts = (
                 const newProducts = mappedProducts.filter(p => !existingIds.has(p.id));
                 const updatedProducts = [...prev, ...newProducts];
                 productsRef.current = updatedProducts; // Actualizar ref
-                
+
                 // Verificar si todavía hay más productos que cargar
                 const lazyLimit = filters.lazyLimit || 6;
-                const limit = filters.limit || 20;
+                const limit = filters.limit || 50; // Usar el limit real de los filtros (no fallback a 20)
                 const currentOffset = customOffset !== undefined ? customOffset : (filters.lazyOffset || 0);
                 const nextOffset = currentOffset + lazyLimit;
                 
-                // Si no hay productos nuevos o se alcanzó el límite, no hay más
-                if (newProducts.length === 0 || nextOffset >= limit || (apiData.totalItems > 0 && nextOffset >= apiData.totalItems)) {
+                // Calcular el total de productos cargados hasta ahora (incluyendo los nuevos)
+                const totalLoaded = updatedProducts.length;
+
+                // Usar hasMoreInPage del API como fuente principal de verdad
+                // Si está disponible, usarlo directamente; si no, usar la lógica de fallback
+                const shouldStop = apiData.hasMoreInPage !== undefined
+                  ? !apiData.hasMoreInPage // Si el API dice que no hay más, detener
+                  : (newProducts.length === 0 || 
+                     totalLoaded >= limit || 
+                     nextOffset >= limit || 
+                     (apiData.totalItems > 0 && nextOffset >= apiData.totalItems));
+
+                if (shouldStop) {
                   setHasMoreInCurrentPage(false);
                 }
-                
+
                 return updatedProducts;
+              });
+
+              // Append bundles también
+              setBundles((prev) => {
+                const existingIds = new Set(prev.map(b => b.id));
+                const newBundles = mappedBundles.filter(b => !existingIds.has(b.id));
+                return [...prev, ...newBundles];
+              });
+
+              // Append orderedItems también (preserva el orden del API)
+              setOrderedItems((prev) => {
+                const existingIds = new Set(prev.map(item => item.id));
+                const newItems = mappedOrderedItems.filter(item => !existingIds.has(item.id));
+                return [...prev, ...newItems];
               });
             } else {
               // Solo actualizar productos si no había datos del caché o si los datos son diferentes
               // Esto evita "parpadeo" cuando los datos del caché ya están mostrados
               if (!wasCached) {
                 setProducts(mappedProducts);
+                setBundles(mappedBundles); // Actualizar bundles también
+                setOrderedItems(mappedOrderedItems); // Actualizar orderedItems (orden original del API)
                 productsRef.current = mappedProducts; // Actualizar ref
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
                 // Resetear offset y estado cuando no es append
@@ -445,18 +619,42 @@ export const useProducts = (
                   // Si los productos son diferentes, actualizar
                   const prevIds = new Set(prev.map(p => p.id));
                   const newIds = new Set(mappedProducts.map(p => p.id));
-                  const areDifferent = 
+                  const areDifferent =
                     prev.length !== mappedProducts.length ||
                     !Array.from(prevIds).every(id => newIds.has(id)) ||
                     !Array.from(newIds).every(id => prevIds.has(id));
-                  
+
                   if (areDifferent) {
                     productsRef.current = mappedProducts; // Actualizar ref
                     return mappedProducts;
                   }
                   return prev; // Mantener productos actuales si son los mismos
                 });
-                
+
+                // Actualizar bundles también si son diferentes
+                setBundles((prev) => {
+                  const prevIds = new Set(prev.map(b => b.id));
+                  const newIds = new Set(mappedBundles.map(b => b.id));
+                  const areDifferent =
+                    prev.length !== mappedBundles.length ||
+                    !Array.from(prevIds).every(id => newIds.has(id)) ||
+                    !Array.from(newIds).every(id => prevIds.has(id));
+
+                  return areDifferent ? mappedBundles : prev;
+                });
+
+                // Actualizar orderedItems también si son diferentes
+                setOrderedItems((prev) => {
+                  const prevIds = new Set(prev.map(item => item.id));
+                  const newIds = new Set(mappedOrderedItems.map(item => item.id));
+                  const areDifferent =
+                    prev.length !== mappedOrderedItems.length ||
+                    !Array.from(prevIds).every(id => newIds.has(id)) ||
+                    !Array.from(newIds).every(id => prevIds.has(id));
+
+                  return areDifferent ? mappedOrderedItems : prev;
+                });
+
                 // Siempre actualizar metadatos (totalItems, paginación, etc.)
                 setGroupedProducts(groupProductsByCategory(mappedProducts));
                 if (!filters.lazyOffset && customOffset === undefined) {
@@ -471,6 +669,10 @@ export const useProducts = (
             setCurrentPage(apiData.currentPage);
             setHasNextPage(apiData.hasNextPage);
             setHasPreviousPage(apiData.hasPreviousPage);
+            // Guardar hasMoreInPage del API si está disponible
+            if (apiData.hasMoreInPage !== undefined) {
+              setHasMoreInPageFromApi(apiData.hasMoreInPage);
+            }
           } else {
             setError(response.message || "Error al cargar productos");
           }
@@ -491,6 +693,10 @@ export const useProducts = (
         // @ts-expect-error 'name' puede existir si es AbortError
         if (err?.name === 'AbortError' || (err instanceof Error && err.message.includes('aborted'))) {
           // Silenciar errores de abort - son esperados cuando el usuario cambia de filtros rápidamente
+          // Resetear isLoadingMore si estaba en true para evitar que los skeletons queden cargando
+          if (append) {
+            setIsLoadingMore(false);
+          }
           return;
         }
         console.error("Error fetching products:", err);
@@ -566,6 +772,7 @@ export const useProducts = (
       // Resetear offset y estado cuando se cambian filtros
       setLazyOffset(0);
       setHasMoreInCurrentPage(true);
+      setHasMoreInPageFromApi(undefined); // Resetear el estado del API
       await fetchProducts(filters, false, 0);
     },
     [fetchProducts]
@@ -583,25 +790,42 @@ export const useProducts = (
       } else {
         // Si usamos lazy loading dentro de la página actual
         const lazyLimit = currentFilters.lazyLimit || 6;
-        const limit = currentFilters.limit || 20;
+        const limit = currentFilters.limit; // Usar el limit real de los filtros (sin fallback a 20)
+
+        // Si no hay limit definido, no podemos hacer lazy loading
+        if (!limit) {
+          return;
+        }
 
         // Calcular el nuevo offset
         const newOffset = lazyOffset + lazyLimit;
+        
+        // Calcular cuántos productos ya están cargados
+        const currentProductsCount = productsRef.current.length;
 
-        // Verificar tanto el límite de la página como el total de items disponibles
-        // Si el nuevo offset alcanza el límite de la página actual O supera totalItems, DETENER
-        // El usuario debe usar los botones de paginación para ir a la siguiente página
-        if (newOffset < limit && (totalItems === 0 || newOffset < totalItems)) {
+        // Verificar si podemos cargar más productos:
+        // 1. El nuevo offset debe ser menor (estricto) al límite de la página
+        // 2. No debemos haber cargado ya todos los productos de la página (currentProductsCount < limit, estricto)
+        // 3. Si hay totalItems, el nuevo offset debe ser menor que totalItems
+        // 4. Si el API dice que hay más productos (hasMoreInPageFromApi), respetarlo
+        const canLoadMore = 
+          newOffset < limit && 
+          currentProductsCount < limit &&
+          (totalItems === 0 || newOffset < totalItems) &&
+          (hasMoreInPageFromApi === undefined || hasMoreInPageFromApi === true);
+
+        if (canLoadMore) {
           // Continuar en la misma página con nuevo offset
           setLazyOffset(newOffset);
           await fetchProducts(currentFilters, true, newOffset);
         } else {
           // Ya no hay más productos en la página actual
           setHasMoreInCurrentPage(false);
+          setIsLoadingMore(false); // Resetear el estado de carga para ocultar skeletons
         }
       }
     }
-  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, fetchProducts, searchProducts]);
+  }, [hasNextPage, loading, isLoadingMore, currentPage, currentSearchQuery, currentFilters, lazyOffset, totalItems, hasMoreInPageFromApi, fetchProducts, searchProducts]);
 
   // Función para ir a una página específica
   const goToPage = useCallback(
@@ -614,6 +838,8 @@ export const useProducts = (
           // Resetear offset y estado al cambiar de página manualmente
           setLazyOffset(0);
           setHasMoreInCurrentPage(true);
+          setHasMoreInPageFromApi(undefined); // Resetear el estado del API
+          setIsLoadingMore(false); // Resetear el estado de carga al cambiar de página
           const filtersWithPage = { ...currentFilters, page };
           setCurrentFilters(filtersWithPage);
           await fetchProducts(filtersWithPage, false, 0);
@@ -632,6 +858,8 @@ export const useProducts = (
       // Resetear offset y estado al refrescar
       setLazyOffset(0);
       setHasMoreInCurrentPage(true);
+      setHasMoreInPageFromApi(undefined); // Resetear el estado del API
+      setIsLoadingMore(false); // Resetear el estado de carga al refrescar
       const filtersToUse =
         typeof initialFilters === "function" ? initialFilters() : currentFilters;
       
@@ -758,6 +986,8 @@ export const useProducts = (
 
   return {
     products,
+    bundles, // Retornar bundles separados
+    orderedItems, // Retornar items en orden original del API
     groupedProducts,
     loading,
     isLoadingMore,
@@ -912,6 +1142,60 @@ export const useProduct = (productId: string) => {
     loading,
     error,
     relatedProducts,
+  };
+};
+
+/**
+ * Hook para obtener un bundle específico por sus 3 parámetros
+ * @param baseCodigoMarket - Código base del producto principal
+ * @param codCampana - Código de la campaña
+ * @param productSku - SKU de la opción del bundle
+ * @returns Bundle, loading state, y error state
+ */
+export const useBundle = (baseCodigoMarket: string, codCampana: string, productSku: string) => {
+  const [bundle, setBundle] = useState<BundleCardProps | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBundle = async () => {
+      // No hay cache, hacer petición normal con loading
+      setLoading(true);
+      setError(null);
+
+      try {
+        // Buscar el bundle por sus 3 parámetros
+        const response = await productEndpoints.getBundleById(baseCodigoMarket, codCampana, productSku);
+
+        if (response.success && response.data) {
+          const apiData = response.data;
+          const mappedBundle = mapDirectBundleResponseToFrontend(apiData);
+
+          setBundle(mappedBundle);
+          setError(null);
+        } else {
+          setError("Bundle no encontrado");
+        }
+      } catch (err) {
+        console.error("Error fetching bundle:", err);
+        setError("Error al cargar el bundle");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (baseCodigoMarket && codCampana && productSku) {
+      fetchBundle();
+    } else {
+      setLoading(false);
+      setError("Parámetros de bundle no válidos");
+    }
+  }, [baseCodigoMarket, codCampana, productSku]);
+
+  return {
+    bundle,
+    loading,
+    error,
   };
 };
 

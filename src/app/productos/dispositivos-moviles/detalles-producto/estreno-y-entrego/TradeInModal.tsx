@@ -10,6 +10,7 @@ import ModalStepContent from "./ModalStepContent";
 import { useTradeInForm } from "./hooks/useTradeInForm";
 import { useTradeInFlow } from "./hooks/useTradeInFlow";
 import { useTradeInData } from "./hooks/useTradeInData";
+import { useTradeInDataFromCache } from "@/hooks/useTradeInPrefetch";
 import { useTradeInValue } from "./hooks/useTradeInValue";
 import { useTradeInHandlers } from "./hooks/useTradeInHandlers";
 import { isStepValid } from "./utils/stepValidation";
@@ -20,6 +21,7 @@ interface TradeInModalProps {
   readonly onContinue?: () => void;
   readonly onCancelWithoutCompletion?: () => void;
   readonly onCompleteTradeIn?: (deviceName: string, value: number) => void;
+  readonly productSku?: string | null; // SKU del producto para el cual se está completando el trade-in
 }
 
 export default function TradeInModal({
@@ -28,10 +30,18 @@ export default function TradeInModal({
   onContinue,
   onCancelWithoutCompletion,
   onCompleteTradeIn,
+  productSku,
 }: TradeInModalProps) {
   const [mounted, setMounted] = useState(false);
 
-  const { tradeInData, loading: loadingData } = useTradeInData();
+  // Intentar obtener datos del cache primero, si no están usar el hook normal
+  const { tradeInData: cachedData, loading: cacheLoading } = useTradeInDataFromCache();
+  const { tradeInData: fallbackData, loading: fallbackLoading } = useTradeInData();
+
+  // Usar datos del cache si están disponibles, sino usar los del fallback
+  const tradeInData = cachedData || fallbackData;
+  // Si ya tenemos datos en cache, no mostramos loading, aunque el fallback esté inicializándose
+  const loadingData = cachedData ? false : (cacheLoading || fallbackLoading);
 
   // Datos por defecto mientras se carga la API
   const safeTradeInData = tradeInData || {
@@ -77,6 +87,7 @@ export default function TradeInModal({
     selectedBrand: formState.selectedBrand,
     selectedCapacity: formState.selectedCapacity,
     deviceState: flowState.deviceState,
+    productSku,
   });
 
   const { handleClose, getStepTitle, getContinueHandler, getBackHandler } =
@@ -102,6 +113,7 @@ export default function TradeInModal({
         damageFreeAnswer: flowState.damageFreeAnswer,
         goodConditionAnswer: flowState.goodConditionAnswer,
       },
+      productSku,
     });
 
   useEffect(() => {

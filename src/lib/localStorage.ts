@@ -5,10 +5,18 @@
  * contiene valores inválidos como "undefined", "null", o cadenas corruptas.
  *
  * Fixes IMAGIQ-8: SyntaxError: "undefined" is not valid JSON
+ * Fixes IMAGIQ-16: También lee de SecureStorage para usuarios invitados
  */
+
+import { getSecureStorage } from "@/lib/security/encryption/secureStorage";
 
 /**
  * Lee un valor del localStorage de forma segura
+ *
+ * IMPORTANTE: Primero intenta leer de SecureStorage (datos encriptados),
+ * y si no encuentra nada, intenta leer de localStorage plain (legacy).
+ * Esto es necesario para soportar usuarios invitados que guardan datos
+ * encriptados desde el checkout flow.
  *
  * @param key - Clave del localStorage
  * @param fallback - Valor por defecto si la clave no existe o contiene datos inválidos
@@ -16,7 +24,7 @@
  *
  * @example
  * ```ts
- * // ✅ Seguro - maneja todos los casos edge
+ * // ✅ Seguro - maneja todos los casos edge y lee de SecureStorage
  * const user = safeGetLocalStorage("imagiq_user", {});
  *
  * // ❌ Inseguro - puede lanzar error si contiene "undefined"
@@ -30,6 +38,26 @@ export function safeGetLocalStorage<T>(key: string, fallback: T): T {
   }
 
   try {
+    // 1. Primero intentar leer de SecureStorage (datos encriptados)
+    // Esto es necesario para usuarios invitados que guardan datos en Step2
+    try {
+      const secureStorage = getSecureStorage();
+      if (secureStorage) {
+        const secureValue = secureStorage.getDecrypted<T>(key, undefined as unknown as T);
+        if (secureValue !== null && secureValue !== undefined) {
+          // Verificar que no sea un objeto vacío si el fallback es un objeto vacío
+          if (typeof secureValue === "object" && Object.keys(secureValue as object).length > 0) {
+            return secureValue;
+          } else if (typeof secureValue !== "object") {
+            return secureValue;
+          }
+        }
+      }
+    } catch {
+      // SecureStorage no disponible o error, continuar con localStorage plain
+    }
+
+    // 2. Intentar leer de localStorage plain (legacy)
     const item = localStorage.getItem(key);
 
     // Casos edge: null, undefined, cadenas vacías o literales inválidos

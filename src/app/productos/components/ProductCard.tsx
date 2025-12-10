@@ -14,6 +14,7 @@
 import { useState, useMemo } from "react";
 import { useCartContext } from "@/features/cart/CartContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Image, { StaticImageData } from "next/image";
 import { Heart, Loader } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -34,7 +35,8 @@ import {
 } from "./utils/categoryColorConfig";
 import StockNotificationModal from "@/components/StockNotificationModal";
 import { useStockNotification } from "@/hooks/useStockNotification";
-import { motion } from "framer-motion";
+import { shouldRenderValue } from "./utils/shouldRenderValue";
+import { prefetchFlixmediaScript } from "@/lib/flixmedia";
 
 /**
  * Formatea la capacidad para mostrar correctamente GB, TB, litros o pulgadas
@@ -46,13 +48,18 @@ function formatCapacityLabel(capacity: string): string {
   if (!capacity) return capacity;
 
   // Si ya tiene GB, TB, o comillas, retornar tal cual
-  if (capacity.includes('GB') || capacity.includes('TB') || capacity.includes('"') || capacity.includes('pulgada')) {
+  if (
+    capacity.includes("GB") ||
+    capacity.includes("TB") ||
+    capacity.includes('"') ||
+    capacity.includes("pulgada")
+  ) {
     return capacity;
   }
 
   // Normalizar litros: asegurar espacio entre número y LT (859LT -> 859 LT)
-  if (capacity.toUpperCase().includes('LT')) {
-    return capacity.replace(/(\d+)(LT)/gi, '$1 $2').trim();
+  if (capacity.toUpperCase().includes("LT")) {
+    return capacity.replace(/(\d+)(LT)/gi, "$1 $2").trim();
   }
 
   // Si es solo un número (probablemente pulgadas de TV), agregar comillas
@@ -110,6 +117,8 @@ export interface ProductCardProps {
   apiProduct?: ProductApiData;
   acceptsTradeIn?: boolean;
   desDetallada?: string; // Indica si el producto acepta retoma (basado en indRetoma)
+  isInChat?: boolean; // Indica si está siendo renderizado en el chat (para ajustar estilos)
+  skuflixmedia?: string; // SKU específico para Flixmedia
 }
 
 export default function ProductCard({
@@ -129,11 +138,13 @@ export default function ProductCard({
   puntos_q = 4, // Valor fijo por defecto
   segmento, // Segmento del producto
   apiProduct, // Nuevo prop para el sistema de selección inteligente
+  isInChat = false, // Por defecto NO está en chat
+  acceptsTradeIn, // Indica si el producto acepta retoma
 }: ProductCardProps & { puntos_q?: number }) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [currentImageIndex] = useState(0);
-  const { trackViewItem } = useAnalytics();
+  useAnalytics();
 
   // Hook para notificaciones de stock
   const stockNotification = useStockNotification();
@@ -171,11 +182,6 @@ export default function ProductCard({
     }
   );
 
-  // Verificar si la VARIANTE SELECCIONADA está sin stock
-  // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
-  const isOutOfStock =
-    (productSelection.selectedVariant?.stockDisponible ?? 0) <= 0;
-
   // Determinar si debe mostrar selectores de color/capacidad basándose en la categoría
   const showColorSelector = shouldShowColorSelector(
     apiProduct?.categoria,
@@ -187,8 +193,11 @@ export default function ProductCard({
   );
 
   // DEBUG: Log para verificar capacidades en TV
-  if (apiProduct?.categoria === 'AV' && process.env.NODE_ENV === 'development') {
-    console.log('🔍 TV Product Debug:', {
+  if (
+    apiProduct?.categoria === "AV" &&
+    process.env.NODE_ENV === "development"
+  ) {
+    console.log("🔍 TV Product Debug:", {
       modelo: apiProduct?.modelo?.[0],
       categoria: apiProduct?.categoria,
       showCapacitySelector,
@@ -198,7 +207,7 @@ export default function ProductCard({
   }
 
   // Integración con el contexto del carrito
-  const { addProduct } = useCartContext();
+  const { addProduct, getQuantityBySku } = useCartContext();
 
   // Sistema de selección: usar el nuevo hook si está disponible, sino usar el sistema legacy
   const [selectedColorLocal, setSelectedColorLocal] =
@@ -220,13 +229,26 @@ export default function ProductCard({
   const currentOriginalPrice = productSelection.selectedOriginalPrice || null;
   const currentskuPostback = productSelection.selectedSkuPostback || null;
 
+  // Calcular stock real descontando lo que está en el carrito
+  const quantityInCart = currentSku ? getQuantityBySku(currentSku) : 0;
+  const realStock = Math.max(
+    0,
+    (productSelection.selectedVariant?.stockDisponible ?? 0) - quantityInCart
+  );
+
+  // Verificar si la VARIANTE SELECCIONADA está sin stock
+  // Si el usuario selecciona color + almacenamiento específico, verificar ESA combinación
+  const isOutOfStock = realStock <= 0;
+
   // Obtener el nombre del modelo basado en la variante seleccionada
   // Si hay una variante seleccionada, usar el modelo del índice correspondiente
   const currentProductName = useMemo(() => {
     if (apiProduct && productSelection.selectedVariant?.index !== undefined) {
       const variantIndex = productSelection.selectedVariant.index;
       // Usar modelo del índice de la variante seleccionada, o nombreMarket como fallback
-      const modelName = apiProduct.modelo?.[variantIndex] || apiProduct.nombreMarket?.[variantIndex];
+      const modelName =
+        apiProduct.modelo?.[variantIndex] ||
+        apiProduct.nombreMarket?.[variantIndex];
       if (modelName) {
         return modelName;
       }
@@ -367,8 +389,8 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? "",
+              ? image
+              : image.src ?? "",
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
@@ -376,27 +398,50 @@ export default function ProductCard({
         originalPrice:
           typeof finalCurrentOriginalPrice === "string"
             ? Number.parseInt(
-                finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
-              )
+              finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+            )
             : finalCurrentOriginalPrice,
         stock: productSelection.selectedVariant?.stockDisponible ?? 0,
         quantity: 1, // SIEMPRE agregar de 1 en 1
         sku: currentSku || "", // SKU del sistema seleccionado
         ean: eanToUse, // EAN del sistema seleccionado
         puntos_q,
-        color: displayedSelectedColor?.hex || undefined,
+        color:
+          displayedSelectedColor?.hex &&
+            shouldRenderValue(displayedSelectedColor.hex)
+            ? displayedSelectedColor.hex
+            : undefined,
         colorName:
-          displayedSelectedColor?.nombreColorDisplay ||
-          productSelection.selection.selectedColor ||
-          selectedColor?.label ||
-          undefined,
+          displayedSelectedColor?.nombreColorDisplay &&
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            ? displayedSelectedColor.nombreColorDisplay
+            : productSelection.selection.selectedColor &&
+              shouldRenderValue(productSelection.selection.selectedColor)
+              ? productSelection.selection.selectedColor
+              : selectedColor?.label && shouldRenderValue(selectedColor.label)
+                ? selectedColor.label
+                : undefined,
         capacity:
-          productSelection.selection.selectedCapacity ||
-          selectedCapacity?.label ||
-          undefined,
-        ram: productSelection.selection.selectedMemoriaram || undefined,
+          productSelection.selection.selectedCapacity &&
+            shouldRenderValue(productSelection.selection.selectedCapacity)
+            ? productSelection.selection.selectedCapacity
+            : selectedCapacity?.label &&
+              shouldRenderValue(selectedCapacity.label)
+              ? selectedCapacity.label
+              : undefined,
+        ram:
+          productSelection.selection.selectedMemoriaram &&
+            shouldRenderValue(productSelection.selection.selectedMemoriaram)
+            ? productSelection.selection.selectedMemoriaram
+            : undefined,
         skuPostback: productSelection.selectedSkuPostback || "",
         desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
+        indRetoma:
+          apiProduct?.indRetoma?.[
+          productSelection.selectedVariant?.index || 0
+          ] ?? (acceptsTradeIn ? 1 : 0),
       });
     } finally {
       // Restaurar el estado después de un delay para prevenir clics rápidos
@@ -436,6 +481,47 @@ export default function ProductCard({
   };
 
   const handleMoreInfo = () => {
+    // Guardar la selección actual del usuario en localStorage
+    const selectedProductData = {
+      productId: id,
+      productName: currentProductName,
+      price:
+        currentPrice ||
+        (typeof finalCurrentPrice === "string"
+          ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
+          : finalCurrentPrice),
+      originalPrice:
+        currentOriginalPrice ||
+        (typeof finalCurrentOriginalPrice === "string"
+          ? Number.parseInt(finalCurrentOriginalPrice.replaceAll(/[^\d]/g, ""))
+          : finalCurrentOriginalPrice),
+      color:
+        displayedSelectedColor?.nombreColorDisplay ||
+        productSelection.selection.selectedColor ||
+        selectedColor?.label,
+      colorHex: displayedSelectedColor?.hex || selectedColor?.hex,
+      capacity:
+        productSelection.selection.selectedCapacity || selectedCapacity?.label,
+      ram: productSelection.selection.selectedMemoriaram,
+      sku: currentSku,
+      ean: productSelection.selectedVariant?.ean || selectedColor?.ean,
+      image:
+        typeof currentImage === "string"
+          ? currentImage
+          : typeof image === "string"
+            ? image
+            : image.src,
+      indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
+      allPrices: apiProduct?.precioeccommerce || [],
+      skuflixmedia: productSelection.selectedSkuflixmedia,
+    };
+
+    // Guardar en localStorage con una clave única por producto
+    localStorage.setItem(
+      `product_selection_${id}`,
+      JSON.stringify(selectedProductData)
+    );
+
     // Navega a la página de multimedia con contenido Flixmedia
     router.push(`/productos/multimedia/${id}`);
     posthogUtils.capture("product_more_info_click", {
@@ -447,39 +533,115 @@ export default function ProductCard({
     });
   };
 
-  // Handler para el click en la card completa
-  // Navega a multimedia EXCEPTO si se hace click en botones interactivos
-  const handleCardClick = (e: React.MouseEvent | React.KeyboardEvent) => {
-    const target = e.target as HTMLElement;
+  const handleEntregoEstreno = async () => {
+    if (isLoading) {
+      return; // Prevenir múltiples clics mientras está cargando
+    }
 
-    // Verificar si el click fue en un botón o dentro de un botón
-    const isButton = target.closest("button") !== null;
-    const isCheckbox = target.closest('input[type="checkbox"]') !== null;
+    setIsLoading(true);
 
-    // Si NO es un botón ni checkbox, navegar a multimedia
-    if (!isButton && !isCheckbox) {
-      // 🔥 Track View Item Event para GA4
-      trackViewItem({
-        item_id: currentSku || id,
-        item_name: name,
-        item_brand: "Samsung",
-        item_category: apiProduct?.categoria || "Sin categoría",
+    try {
+      // Validación estricta: debe existir un SKU válido
+      const skuToUse = currentSku || selectedColor?.sku;
+      const eanToUse =
+        productSelection.selectedVariant?.ean || selectedColor?.ean || "";
+
+      if (!skuToUse) {
+        setIsLoading(false);
+        return;
+      }
+
+      posthogUtils.capture("entrego_estreno_button_click", {
+        product_id: id,
+        product_name: name,
+        selected_color:
+          selectedColor?.name || productSelection.selection.selectedColor,
+        selected_color_sku: currentSku || "",
+        source: "product_card",
+      });
+
+      // Agregar el producto al carrito
+      await addProduct({
+        id,
+        name,
+        image:
+          typeof currentImage === "string"
+            ? currentImage
+            : typeof image === "string"
+              ? image
+              : image.src ?? "",
         price:
           typeof finalCurrentPrice === "string"
             ? Number.parseInt(finalCurrentPrice.replaceAll(/[^\d]/g, ""))
             : finalCurrentPrice ?? 0,
-        currency: "COP",
+        originalPrice:
+          typeof finalCurrentOriginalPrice === "string"
+            ? Number.parseInt(
+              finalCurrentOriginalPrice.replaceAll(/[^\d]/g, "")
+            )
+            : finalCurrentOriginalPrice,
+        stock: productSelection.selectedVariant?.stockDisponible ?? 0,
+        quantity: 1,
+        sku: currentSku || "",
+        ean: eanToUse,
+        puntos_q,
+        color:
+          displayedSelectedColor?.hex &&
+            shouldRenderValue(displayedSelectedColor.hex)
+            ? displayedSelectedColor.hex
+            : undefined,
+        colorName:
+          displayedSelectedColor?.nombreColorDisplay &&
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            ? displayedSelectedColor.nombreColorDisplay
+            : productSelection.selection.selectedColor &&
+              shouldRenderValue(productSelection.selection.selectedColor)
+              ? productSelection.selection.selectedColor
+              : selectedColor?.label && shouldRenderValue(selectedColor.label)
+                ? selectedColor.label
+                : undefined,
+        capacity:
+          productSelection.selection.selectedCapacity &&
+            shouldRenderValue(productSelection.selection.selectedCapacity)
+            ? productSelection.selection.selectedCapacity
+            : selectedCapacity?.label &&
+              shouldRenderValue(selectedCapacity.label)
+              ? selectedCapacity.label
+              : undefined,
+        ram:
+          productSelection.selection.selectedMemoriaram &&
+            shouldRenderValue(productSelection.selection.selectedMemoriaram)
+            ? productSelection.selection.selectedMemoriaram
+            : undefined,
+        skuPostback: productSelection.selectedSkuPostback || "",
+        desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: apiProduct?.modelo?.[0] || "",
+        categoria: apiProduct?.categoria || "",
+        indRetoma:
+          apiProduct?.indRetoma?.[
+          productSelection.selectedVariant?.index || 0
+          ] ?? (acceptsTradeIn ? 1 : 0),
       });
 
-      handleMoreInfo();
-    }
-  };
+      // Marcar que debe abrirse el modal de Trade-In automáticamente para este SKU específico
+      // Guardar ANTES de navegar para asegurar que esté disponible
+      if (typeof window !== "undefined") {
+        // Guardar el SKU del producto para el cual se debe abrir el modal
+        window.localStorage.setItem(
+          "open_trade_in_modal_sku",
+          currentSku || ""
+        );
+      }
 
-  // Handler para navegación con teclado
-  const handleCardKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleCardClick(e);
+      // Pequeño delay para asegurar que el localStorage se guarde
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // Navegar al carrito
+      router.push("/carrito/step1");
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 300);
     }
   };
 
@@ -494,33 +656,36 @@ export default function ProductCard({
   const displayedSelectedColor = useMemo(() => {
     if (apiProduct) {
       // Obtener las opciones de color con nombreColorDisplay desde el hook
-      const colorOptions = productSelection.getColorOptions().map((colorOption) => ({
-        name: colorOption.color,
-        hex: colorOption.hex,
-        label: colorOption.nombreColorDisplay || colorOption.color,
-        nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
-        sku: colorOption.variants[0]?.sku || "",
-        ean: colorOption.variants[0]?.ean || "",
-      }));
+      const colorOptions = productSelection
+        .getColorOptions()
+        .map((colorOption) => ({
+          name: colorOption.color,
+          hex: colorOption.hex,
+          label: colorOption.nombreColorDisplay || colorOption.color,
+          nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
+          sku: colorOption.variants[0]?.sku || "",
+          ean: colorOption.variants[0]?.ean || "",
+        }));
 
       // Buscar por el valor de color (hex) ya que productSelection.selection.selectedColor contiene el hex
       return (
         colorOptions.find(
-          (c) => c.name === productSelection.selection.selectedColor ||
-                 c.hex === productSelection.selection.selectedColor
+          (c) =>
+            c.name === productSelection.selection.selectedColor ||
+            c.hex === productSelection.selection.selectedColor
         ) || null
       );
     }
     return selectedColor;
-  }, [
-    apiProduct,
-    productSelection,
-    selectedColor,
-  ]);
+  }, [apiProduct, productSelection, selectedColor]);
+
+  const handleMouseEnter = () => {
+    prefetchFlixmediaScript();
+  };
 
   return (
     <>
-        <StockNotificationModal
+      <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
         productName={currentProductName}
@@ -528,38 +693,50 @@ export default function ProductCard({
           typeof currentImage === "string"
             ? currentImage
             : typeof image === "string"
-            ? image
-            : image.src ?? ""
+              ? image
+              : image.src ?? ""
         }
         selectedColor={
-          displayedSelectedColor?.nombreColorDisplay ||
-          productSelection.selection.selectedColor ||
-          undefined
+          displayedSelectedColor?.nombreColorDisplay &&
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay)
+            ? displayedSelectedColor.nombreColorDisplay
+            : productSelection.selection.selectedColor &&
+              shouldRenderValue(productSelection.selection.selectedColor)
+              ? productSelection.selection.selectedColor
+              : undefined
         }
         selectedStorage={
-          productSelection.selection.selectedCapacity || undefined
+          productSelection.selection.selectedCapacity &&
+            shouldRenderValue(productSelection.selection.selectedCapacity)
+            ? productSelection.selection.selectedCapacity
+            : undefined
         }
         onNotificationRequest={handleRequestStockNotification}
       />
 
-      {/* eslint-disable-next-line jsx-a11y/prefer-tag-over-role */}
-      <motion.div
-        role="button"
-        onClick={handleCardClick}
-        onKeyDown={handleCardKeyDown}
-        tabIndex={0}
-        aria-label={`Ver detalles de ${currentProductName}`}
-        whileHover={{
-          scale: 1.02,
-          transition: { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] },
-        }}
+      <div
         className={cn(
-          "cursor-pointer transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg w-full max-w-[350px] mx-auto",
+          "rounded-lg w-full h-full flex flex-col mx-auto",
           className
         )}
+        onMouseEnter={handleMouseEnter}
       >
         {/* Sección de imagen con carrusel */}
         <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden">
+          {/* Etiqueta de Addi - Parte inferior izquierda */}
+          <div className="absolute bottom-3 left-3 z-10 flex items-center gap-1.5 py-1.5 px-2.5 bg-white/95 backdrop-blur-sm rounded-lg shadow-sm">
+            <Image
+              src="https://res.cloudinary.com/dzi2p0pqa/image/upload/v1764650798/acd66fce-b218-4a0d-95e9-559410496596.png"
+              alt="Addi"
+              width={14}
+              height={14}
+              className="object-contain flex-shrink-0"
+            />
+            <p className="text-[8px] text-gray-700 font-medium">
+              Paga con <span className="font-bold">addi</span>
+            </p>
+          </div>
+
           <button
             onClick={(e) => {
               e.stopPropagation(); // Prevenir que se active el click de la card
@@ -573,8 +750,14 @@ export default function ProductCard({
           >
             <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
           </button>
-          {/* Carrusel de imágenes */}
-          <div className="relative w-full h-full">
+          {/* Carrusel de imágenes - Clickable */}
+          <div
+            className="relative w-full h-full cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoreInfo();
+            }}
+          >
             {transformedImages.map((transformedSrc, index) => {
               return (
                 <div
@@ -590,6 +773,8 @@ export default function ProductCard({
                       src={transformedSrc}
                       alt={`${name} - imagen ${index + 1}`}
                       fill
+                      priority={index === 0}
+                      loading={index === 0 ? "eager" : "lazy"}
                       className="object-cover"
                       sizes={cloudinaryImage.imageProps.sizes}
                     />
@@ -600,19 +785,20 @@ export default function ProductCard({
           </div>
 
           {/* Etiqueta "Sin unidades" en la parte inferior de la imagen */}
-          {isOutOfStock && process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
-            <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
-              <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
-                <p className="text-xs text-gray-600 text-center font-medium">
-                  Sin unidades
-                </p>
+          {isOutOfStock &&
+            process.env.NEXT_PUBLIC_MAINTENANCE_MODE !== "true" && (
+              <div className="absolute bottom-0 left-0 right-0 mx-3 mb-3">
+                <div className="w-full py-1.5 px-3 rounded-md bg-white/95 backdrop-blur-sm border border-gray-200">
+                  <p className="text-xs text-gray-600 text-center font-medium">
+                    Sin unidades
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
 
         {/* Contenido del producto */}
-        <div className="py-2 space-y-2">
+        <div className="py-2 space-y-2 flex-1 flex flex-col">
           {/* Título del producto */}
           <div className="px-3 min-h-[48px]">
             <h3 className="text-base font-bold line-clamp-2 text-black">
@@ -622,7 +808,7 @@ export default function ProductCard({
                   event.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="w-full text-left bg-transparent p-0 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
+                className="w-full text-left bg-transparent p-0 cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black text-black"
               >
                 {currentProductName}
               </button>
@@ -657,13 +843,16 @@ export default function ProductCard({
                       <span
                         className={cn(
                           "ml-1 font-semibold",
-                          productSelection.selectedVariant.stockDisponible > 0
-                            ? "text-green-600"
-                            : "text-red-600"
+                          realStock > 0 ? "text-green-600" : "text-red-600"
                         )}
                       >
-                        {productSelection.selectedVariant.stockDisponible}
+                        {realStock}
                       </span>
+                      {quantityInCart > 0 && (
+                        <span className="text-xs text-blue-600 ml-1">
+                          ({quantityInCart} en carrito)
+                        </span>
+                      )}
                       <span className="text-xs text-gray-500 ml-1">
                         (Total: {productSelection.selectedVariant.stockTotal} en{" "}
                         {productSelection.selectedVariant.cantidadTiendas}{" "}
@@ -678,97 +867,152 @@ export default function ProductCard({
               )}
           </div>
 
-          {/* Nombre de color del API (antes del selector) - Mostrar siempre que haya nombreColorDisplay disponible */}
-          {displayedSelectedColor?.nombreColorDisplay && (
-            <div className="px-3 mb-1">
-              <p className="text-xs text-gray-600 font-medium">
-                {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
-              </p>
+          {/* Nombre de color del API (antes del selector) - Mostrar solo si es válido */}
+          {displayedSelectedColor?.nombreColorDisplay &&
+            shouldRenderValue(displayedSelectedColor.nombreColorDisplay) && (
+              <div className="px-3 mb-1">
+                <p className="text-xs text-gray-600 font-medium">
+                  {`Color: ${displayedSelectedColor.nombreColorDisplay}`}
+                </p>
+              </div>
+            )}
+
+          {/* Contenedor para selectores y botón de entrego y estreno */}
+          <div className="px-3 flex gap-2 items-start">
+            {/* Columna izquierda: Selectores */}
+            <div className="flex-1 space-y-2">
+              {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
+              {showColorSelector &&
+                (apiProduct
+                  ? productSelection.availableColors.length > 0
+                  : colors && colors.length > 0) && (
+                  <div className="min-h-[48px]">
+                    <ColorSelector
+                      colors={
+                        apiProduct
+                          ? productSelection
+                            .getColorOptions()
+                            .map((colorOption) => ({
+                              name: colorOption.color,
+                              hex: colorOption.hex,
+                              label:
+                                colorOption.nombreColorDisplay ||
+                                colorOption.color,
+                              nombreColorDisplay:
+                                colorOption.nombreColorDisplay || undefined,
+                              sku: colorOption.variants[0]?.sku || "",
+                              ean: colorOption.variants[0]?.ean || "",
+                            }))
+                          : colors
+                      }
+                      selectedColor={displayedSelectedColor}
+                      onColorSelect={handleColorSelect}
+                      onShowMore={handleMoreInfo}
+                    />
+                  </div>
+                )}
+
+              {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
+              {showCapacitySelector &&
+                (apiProduct
+                  ? productSelection.availableCapacities.length > 0
+                  : capacities && capacities.length > 0) && (
+                  <div className="min-h-[48px]">
+                    <CapacitySelector
+                      capacities={
+                        apiProduct
+                          ? productSelection.availableCapacities.map(
+                            (capacityName) => {
+                              // Crear un ProductCapacity basado en el nombre de la capacidad
+                              const formattedLabel =
+                                formatCapacityLabel(capacityName);
+                              const capacityInfo = capacities?.find(
+                                (c) => c.label === capacityName
+                              ) || {
+                                value: capacityName
+                                  .toLowerCase()
+                                  .replaceAll(/\s+/g, ""),
+                                label: formattedLabel,
+                                sku: "",
+                                ean: "",
+                              };
+                              return capacityInfo;
+                            }
+                          )
+                          : capacities || []
+                      }
+                      selectedCapacity={
+                        apiProduct
+                          ? productSelection.availableCapacities
+                            .map((capacityName) => {
+                              const formattedLabel =
+                                formatCapacityLabel(capacityName);
+                              const capacityInfo = capacities?.find(
+                                (c) => c.label === capacityName
+                              ) || {
+                                value: capacityName
+                                  .toLowerCase()
+                                  .replaceAll(/\s+/g, ""),
+                                label: formattedLabel,
+                              };
+                              return capacityInfo;
+                            })
+                            .find(
+                              (c) =>
+                                c.label ===
+                                formatCapacityLabel(
+                                  productSelection.selection
+                                    .selectedCapacity || ""
+                                )
+                            ) || null
+                          : selectedCapacity
+                      }
+                      onCapacitySelect={handleCapacitySelect}
+                    />
+                  </div>
+                )}
             </div>
-          )}
 
-          {/* Selector de colores - Solo para categorías específicas Y si hay colores disponibles */}
-          {showColorSelector &&
-            (apiProduct
-              ? productSelection.availableColors.length > 0
-              : colors && colors.length > 0) && (
-              <div className="min-h-[48px] px-3">
-                <ColorSelector
-                  colors={
-                    apiProduct
-                      ? productSelection.getColorOptions().map((colorOption) => ({
-                          name: colorOption.color,
-                          hex: colorOption.hex,
-                          label: colorOption.nombreColorDisplay || colorOption.color,
-                          nombreColorDisplay: colorOption.nombreColorDisplay || undefined,
-                          sku: colorOption.variants[0]?.sku || "",
-                          ean: colorOption.variants[0]?.ean || "",
-                        }))
-                      : colors
-                  }
-                  selectedColor={displayedSelectedColor}
-                  onColorSelect={handleColorSelect}
-                  onShowMore={handleCardClick}
-                />
+            {/* Columna derecha: Botón de Entrego y Estreno - Mostrar solo si indRetoma === 1 */}
+            {productSelection.selectedVariant?.indRetoma === 1 && (
+              <div className="flex-shrink-0 w-[120px] self-start -mt-4 relative z-10">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleEntregoEstreno();
+                  }}
+                  disabled={isLoading}
+                  className="bg-[#0099FF] text-white px-3 py-2 rounded-md text-center flex flex-col items-center justify-center w-full hover:bg-[#0088EE] active:bg-[#0077DD] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer relative z-10"
+                  style={{ pointerEvents: isLoading ? "none" : "auto" }}
+                >
+                  <svg
+                    className="w-4 h-4 md:w-5 md:h-5 text-white mb-1 pointer-events-none"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  <p className="text-[10px] font-bold mb-0 pointer-events-none">
+                    Entrego y Estreno
+                  </p>
+                  <p className="text-[9px] opacity-90 pointer-events-none">
+                    aplica ahora
+                  </p>
+                </button>
               </div>
             )}
-
-          {/* Selector de capacidad - Solo para categorías específicas Y si hay capacidades disponibles */}
-          {showCapacitySelector &&
-            (apiProduct
-              ? productSelection.availableCapacities.length > 0
-              : capacities && capacities.length > 0) && (
-              <div className="min-h-[48px] px-3">
-                <CapacitySelector
-                  capacities={
-                    apiProduct
-                      ? productSelection.availableCapacities.map(
-                          (capacityName) => {
-                            // Crear un ProductCapacity basado en el nombre de la capacidad
-                            const formattedLabel = formatCapacityLabel(capacityName);
-                            const capacityInfo = capacities?.find(
-                              (c) => c.label === capacityName
-                            ) || {
-                              value: capacityName
-                                .toLowerCase()
-                                .replaceAll(/\s+/g, ""),
-                              label: formattedLabel,
-                              sku: "",
-                              ean: "",
-                            };
-                            return capacityInfo;
-                          }
-                        )
-                      : capacities || []
-                  }
-                  selectedCapacity={
-                    apiProduct
-                      ? productSelection.availableCapacities
-                          .map((capacityName) => {
-                            const formattedLabel = formatCapacityLabel(capacityName);
-                            const capacityInfo = capacities?.find(
-                              (c) => c.label === capacityName
-                            ) || {
-                              value: capacityName
-                                .toLowerCase()
-                                .replaceAll(/\s+/g, ""),
-                              label: formattedLabel,
-                            };
-                            return capacityInfo;
-                          })
-                          .find(
-                            (c) =>
-                              c.label === formatCapacityLabel(productSelection.selection.selectedCapacity || "")
-                          ) || null
-                      : selectedCapacity
-                  }
-                  onCapacitySelect={handleCapacitySelect}
-                />
-              </div>
-            )}
+          </div>
 
           {/* Precio */}
-          <div className="px-3 space-y-3 mt-2">
+          <div className="px-3 space-y-3 mt-auto">
             {finalCurrentPrice && (
               <div className="space-y-1 min-h-[32px]">
                 {(() => {
@@ -815,7 +1059,10 @@ export default function ProductCard({
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" || isOutOfStock) {
+                  if (
+                    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true" ||
+                    isOutOfStock
+                  ) {
                     stockNotification.openModal();
                   } else {
                     handleAddToCart();
@@ -823,7 +1070,7 @@ export default function ProductCard({
                 }}
                 disabled={isLoading}
                 className={cn(
-                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold",
+                  "flex-1 bg-black text-white py-2 px-2 rounded-full text-xs lg:text-md font-semibold cursor-pointer",
                   "hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors",
                   isLoading && "animate-pulse"
                 )}
@@ -844,14 +1091,44 @@ export default function ProductCard({
                   e.stopPropagation();
                   handleMoreInfo();
                 }}
-                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap"
+                className="text-black text-sm font-medium hover:underline transition-all whitespace-nowrap cursor-pointer"
               >
                 Más información
               </button>
             </div>
+
+            {/* Mensaje de cuotas sin interés - Altura fija para mantener consistencia */}
+            <div className="mt-2 sm:mt-3 min-h-[32px] sm:min-h-[36px] flex items-center justify-center">
+              {apiProduct?.indcerointeres?.[0] === 1 && (
+                <div className="flex flex-col items-center gap-0.5 sm:gap-1 px-1">
+                  <Link href="/#footer">
+                    <p
+                      className={cn(
+                        "text-blue-600 font-bold text-center leading-tight cursor-pointer hover:opacity-80 transition-opacity",
+                        isInChat
+                          ? "text-[8px] sm:text-[9px]" // Mucho más pequeño en chat
+                          : "text-[8px] sm:text-[9px] md:text-xs lg:text-sm" // Tamaño normal en catálogo
+                      )}
+                    >
+                      Compra con 0% de interés con bancos aliados{" "}
+                      <span
+                        className={cn(
+                          "text-gray-500 block sm:inline",
+                          isInChat
+                            ? "text-[5px] sm:text-[6px]" // Mucho más pequeño en chat
+                            : "text-[6px] sm:text-[7px] md:text-[8px] lg:text-[9px]" // Tamaño normal en catálogo
+                        )}
+                      >
+                        Aplican T&C <span className="text-red-600">*</span>
+                      </span>
+                    </p>
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </>
   );
 }

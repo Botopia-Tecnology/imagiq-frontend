@@ -10,7 +10,7 @@ interface BannerMediaProps {
   videoUrl: string | null;
   imageUrl: string | null;
   videoEnded: boolean;
-  onVideoEnd: () => void;
+  onVideoEnd?: () => void;
 }
 
 export function BannerMedia({
@@ -56,7 +56,7 @@ export function BannerMedia({
           loop={false}
           playsInline
           preload="metadata"
-          onEnded={onVideoEnd}
+          onEnded={onVideoEnd || undefined}
           style={{
             opacity: videoOpacity,
             transition: "opacity 0.5s ease-in-out",

@@ -1,16 +1,21 @@
 "use client";
 
-import Step1 from "../Step1";
+import useSecureStorage from "@/hooks/useSecureStorage";
+import { User } from "@/types/user";
 import { useRouter } from "next/navigation";
-import { safeGetLocalStorage } from "@/lib/localStorage";
+import Step1 from "../Step1";
 
 export default function Step1Page() {
   const router = useRouter();
+  const [loggedUser, _setLoggedUser] = useSecureStorage<User | null>(
+    "imagiq_user",
+    null
+  );
+
+  console.log("🚀 [STEP1 PAGE] Usuario logueado:", loggedUser);
 
   const handleNext = () => {
-    const hasData = safeGetLocalStorage<{ email?: string }>("imagiq_user", {});
-    console.log({ hasData });
-    if (hasData.email) {
+    if (loggedUser?.email) {
       router.push("/carrito/step3");
     } else {
       router.push("/carrito/step2");

@@ -2,6 +2,25 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { toast } from "sonner";
 import { productEndpoints, type CandidateStoresResponse, type CandidateStore } from "@/lib/api";
+import { apiDelete, apiPost, apiPut } from "@/lib/api-client";
+
+// Interfaz para información del bundle
+export interface BundleInfo {
+  /** Código de la campaña del bundle */
+  codCampana: string;
+  /** SKU del producto principal del bundle */
+  productSku: string;
+  /** Array con todos los SKUs que componen el bundle */
+  skusBundle: string[];
+  /** Precio original del bundle (sin descuento) */
+  bundlePrice: number;
+  /** Precio con descuento del bundle */
+  bundleDiscount: number;
+  /** Fecha de expiración del bundle */
+  fechaFinal: Date;
+  /** Indica si el bundle aplica para entrega y estreno (1 = aplica, 0 = no aplica) */
+  ind_entre_estre?: number;
+}
 
 export interface CartProduct {
   id: string;
@@ -35,11 +54,17 @@ export interface CartProduct {
   /** Memoria RAM del producto (ej: "8GB", "12GB") */
   ram?: string;
   skuPostback?: string;
-  desDetallada?:string;
+  desDetallada?: string;
+  /** Modelo del producto (ej: "Galaxy S24", "Galaxy Watch") - usado para sugerencias relacionadas */
+  modelo?: string;
+  /** Categoría del producto (ej: "IT", "AV", "HA") */
+  categoria?: string;
   /** Indica si el producto puede ser recogido en tienda (canPickUp) */
   canPickUp?: boolean;
   /** Indica si el producto aplica para retoma (indRetoma: 1 = aplica, 0 = no aplica) */
   indRetoma?: number;
+  /** Información del bundle al que pertenece este producto (si aplica) */
+  bundleInfo?: BundleInfo;
 }
 
 interface CartCalculations {
@@ -71,6 +96,22 @@ interface UseCartReturn {
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   applyDiscount: (discount: number) => void;
+
+  // Acciones de Bundle
+  addBundleToCart: (
+    items: Omit<CartProduct, "quantity">[],
+    bundleInfo: BundleInfo,
+    userId?: string
+  ) => Promise<void>;
+  updateBundleQuantity: (
+    codCampana: string,
+    productSku: string,
+    quantity: number
+  ) => Promise<void>;
+  removeBundleProduct: (
+    sku: string,
+    keepOtherProducts: boolean
+  ) => Promise<void>;
 
   // Utilidades
   isEmpty: boolean;
@@ -142,8 +183,27 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
     const capacity = asString(p.capacity);
     const ram = asString(p.ram);
     const desDetallada = asString(p.desDetallada);
+    const modelo = asString(p.modelo);
+    const categoria = asString(p.categoria); // CRITICAL: Preserve category field
     const canPickUp = typeof p.canPickUp === "boolean" ? p.canPickUp : undefined;
     const indRetoma = typeof p.indRetoma === "number" ? p.indRetoma : undefined;
+
+    // Parsear bundleInfo si existe
+    let bundleInfo: BundleInfo | undefined = undefined;
+    if (p.bundleInfo && typeof p.bundleInfo === "object") {
+      const bi = p.bundleInfo as Record<string, unknown>;
+      if (bi.codCampana && bi.productSku && Array.isArray(bi.skusBundle)) {
+        bundleInfo = {
+          codCampana: String(bi.codCampana),
+          productSku: String(bi.productSku),
+          skusBundle: bi.skusBundle.map((s: unknown) => String(s)),
+          bundlePrice: Number(bi.bundlePrice) || 0,
+          bundleDiscount: Number(bi.bundleDiscount) || 0,
+          fechaFinal: new Date(bi.fechaFinal as string | number | Date),
+          ind_entre_estre: typeof bi.ind_entre_estre === "number" ? bi.ind_entre_estre : undefined,
+        };
+      }
+    }
 
     return {
       id,
@@ -165,8 +225,11 @@ function normalizeCartProducts(rawProducts: unknown[]): CartProduct[] {
       ram,
       skuPostback,
       desDetallada,
+      modelo,
+      categoria, // CRITICAL: Include category in return object
       canPickUp,
       indRetoma,
+      bundleInfo,
     };
   };
 
@@ -239,17 +302,34 @@ export function useCart(): UseCartReturn {
   // Función para cargar información de envío de un producto
   const loadShippingInfoForProduct = useCallback(async (sku: string, userId: string, quantity: number) => {
     setLoadingShippingInfo((prev) => ({ ...prev, [sku]: true }));
- 
+
     try {
+      // Obtener ciudad de la dirección predeterminada
+      let userCity: string | undefined = undefined;
+      try {
+        const savedAddress = localStorage.getItem("checkout-address");
+        if (savedAddress) {
+          const parsed = JSON.parse(savedAddress);
+          const city = parsed.ciudad?.toUpperCase();
+          // Solo incluir cities si ES Bogotá
+          if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
+            userCity = "BOGOTÁ";
+          }
+        }
+      } catch (error) {
+        console.error("Error al leer ciudad de dirección:", error);
+      }
+
       const response = await productEndpoints.getCandidateStores({
-        products: [{ sku, quantity }],
+        products: [{ sku: sku, quantity }],
         user_id: userId,
+        ...(userCity && { cities: [userCity] }),
       });
 
       if (response.success && response.data) {
         const { stores, default_direction, canPickUp } = response.data;
 
-        let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
+        let shippingCity = "BOGOTÁ"; // default_direction.ciudad ||
         let shippingStore = "";
 
         const storeEntries = Object.entries(stores);
@@ -260,6 +340,12 @@ export function useCart(): UseCartReturn {
             shippingStore = firstCityStores[0].nombre_tienda.trim();
           }
         }
+
+        console.log('✅ [loadShippingInfoForProduct] Resultado:', {
+          canPickUp,
+          shippingCity,
+          storesCount: Object.keys(stores || {}).length
+        });
 
         setProducts((currentProducts) => {
           const updatedProducts = currentProducts.map(p =>
@@ -394,6 +480,15 @@ export function useCart(): UseCartReturn {
       }
       addProductTimeoutRef.current[productId] = now;
 
+      // Limpiar caché de candidate-stores cuando se agrega un producto
+      try {
+        const { clearGlobalCanPickUpCache } = await import("@/app/carrito/utils/globalCanPickUpCache");
+        clearGlobalCanPickUpCache();
+        console.log('🗑️ [addProduct] Caché limpiado después de agregar producto');
+      } catch (error) {
+        console.error('Error al limpiar caché:', error);
+      }
+
       // Obtener userId automáticamente si no se proporciona
       const effectiveUserId = userId || getUserId();
 
@@ -402,8 +497,9 @@ export function useCart(): UseCartReturn {
 
       // Agregar producto inmediatamente sin bloquear
       setProducts((currentProducts) => {
+        // Solo buscar productos individuales (sin bundleInfo) para evitar mezclar con bundles
         const existingIndex = currentProducts.findIndex(
-          (p) => p.sku === product.sku
+          (p) => p.sku === product.sku && !p.bundleInfo
         );
         let newProducts: CartProduct[];
         let wasUpdated = false;
@@ -418,7 +514,7 @@ export function useCart(): UseCartReturn {
           };
           wasUpdated = true;
         } else {
-          newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom , }];
+          newProducts = [...currentProducts, { ...product, quantity, shippingFrom: product.shippingFrom, }];
           finalQuantity = quantity;
         }
 
@@ -431,15 +527,6 @@ export function useCart(): UseCartReturn {
             STORAGE_KEYS.CART_ITEMS,
             JSON.stringify(newProducts)
           );
-          // 🔍 DEBUG: Verificar que skuPostback se guarda correctamente
-          const productWithSkuPostback = newProducts.find(p => p.skuPostback);
-          if (productWithSkuPostback) {
-            console.log('✅ skuPostback guardado en localStorage:', {
-              sku: productWithSkuPostback.sku,
-              skuPostback: productWithSkuPostback.skuPostback,
-              fullProduct: productWithSkuPostback
-            });
-          }
         } catch (error) {
           console.error("Error saving products to localStorage:", error);
         }
@@ -468,32 +555,38 @@ export function useCart(): UseCartReturn {
       if (effectiveUserId) {
         // Marcar este SKU específico como cargando
         setLoadingShippingInfo((prev) => ({ ...prev, [product.sku]: true }));
-        
+
         setTimeout(async () => {
           try {
+            // Obtener ciudad de la dirección predeterminada
+            let userCity: string | undefined = undefined;
+            try {
+              const savedAddress = localStorage.getItem("checkout-address");
+              if (savedAddress) {
+                const parsed = JSON.parse(savedAddress);
+                const city = parsed.ciudad?.toUpperCase();
+                // Solo incluir cities si ES Bogotá
+                if (city && (city === "BOGOTÁ" || city === "BOGOTA")) {
+                  userCity = "BOGOTÁ";
+                }
+              }
+            } catch (error) {
+              console.error("Error al leer ciudad de dirección:", error);
+            }
+
             const response = await productEndpoints.getCandidateStores({
               products: [{ sku: product.sku, quantity: totalQuantityInCart }],
               user_id: effectiveUserId,
+              ...(userCity && { cities: [userCity] }),
             });
 
             if (response.success && response.data) {
-              // 🔍 DEBUG: Mostrar respuesta completa del endpoint en consola
               const responseData = response.data as CandidateStoresResponse & { canPickup?: boolean };
-              console.log(`📦 Respuesta completa de candidate-stores para SKU ${product.sku} (useCart):`, {
-                fullResponse: responseData,
-                stores: responseData.stores,
-                canPickUp: responseData.canPickUp,
-                canPickup: responseData.canPickup,
-                default_direction: responseData.default_direction,
-                storesKeys: Object.keys(responseData.stores || {}),
-                storesCount: Object.values(responseData.stores || {}).reduce((acc: number, arr: CandidateStore[]) => acc + arr.length, 0),
-              });
-              
               const { stores } = responseData;
               // Manejar ambos casos: canPickUp (mayúscula) y canPickup (minúscula)
-              const canPickUp = responseData.canPickUp ?? 
-                                responseData.canPickup ?? 
-                                false;
+              const canPickUp = responseData.canPickUp ??
+                responseData.canPickup ??
+                false;
 
               // Obtener la primera ciudad y tienda disponible
               let shippingCity = "BOGOTÁ"; // default_direction.ciudad || 
@@ -569,6 +662,35 @@ export function useCart(): UseCartReturn {
 
       const productName = productToRemove.name;
 
+      // Limpiar caché de candidate-stores cuando se elimina un producto
+      import("@/app/carrito/utils/globalCanPickUpCache").then(({ clearGlobalCanPickUpCache }) => {
+        clearGlobalCanPickUpCache();
+        console.log('🗑️ [removeProduct] Caché limpiado después de eliminar producto');
+      }).catch((error) => {
+        console.error('Error al limpiar caché:', error);
+      });
+
+      // ✅ Eliminar trade-in del cache si existe para este SKU
+      try {
+        const stored = localStorage.getItem("imagiq_trade_in");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') {
+            const newStored = { ...parsed };
+            delete newStored[productId];
+            if (Object.keys(newStored).length === 0) {
+              localStorage.removeItem("imagiq_trade_in");
+            } else {
+              localStorage.setItem("imagiq_trade_in", JSON.stringify(newStored));
+            }
+            // Disparar evento para que Step1 actualice el estado
+            window.dispatchEvent(new CustomEvent("trade-in-removed", { detail: { sku: productId } }));
+          }
+        }
+      } catch (e) {
+        console.error("Error removing trade-in from storage", e);
+      }
+
       // Actualizar productos localmente
       const newProducts = products.filter((p) => p.sku !== productId);
 
@@ -581,6 +703,7 @@ export function useCart(): UseCartReturn {
           if (newProducts.length === 0) {
             localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
           } else {
+            apiDelete(`/api/cart/items/${productId}`);
             localStorage.setItem(
               STORAGE_KEYS.CART_ITEMS,
               JSON.stringify(newProducts)
@@ -631,6 +754,14 @@ export function useCart(): UseCartReturn {
         removeProduct(productId);
         return;
       }
+
+      // Limpiar caché de candidate-stores cuando se actualiza cantidad
+      import("@/app/carrito/utils/globalCanPickUpCache").then(({ clearGlobalCanPickUpCache }) => {
+        clearGlobalCanPickUpCache();
+        console.log('🗑️ [updateQuantity] Caché limpiado después de actualizar cantidad');
+      }).catch((error) => {
+        console.error('Error al limpiar caché:', error);
+      });
 
       // Actualizar productos localmente
       const newProducts = products.map((p) =>
@@ -689,6 +820,7 @@ export function useCart(): UseCartReturn {
 
       // Guardar en localStorage sin disparar eventos storage
       setTimeout(() => {
+        apiDelete(`/api/cart/items/clear`);
         localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
 
         // Disparar evento de storage para sincronizar entre pestañas
@@ -733,6 +865,367 @@ export function useCart(): UseCartReturn {
     [saveDiscount]
   );
 
+  // ==================== MÉTODOS DE BUNDLE ====================
+
+  /**
+   * Añade un bundle al carrito.
+   * Guarda los productos individuales pero usa el SKU del bundle como identificador principal.
+   * Cada producto individual se guarda con su SKU original pero con bundleInfo que incluye el productSku del bundle.
+   */
+  const addBundleToCart = useCallback(
+    async (
+      items: Omit<CartProduct, "quantity">[],
+      bundleInfo: BundleInfo,
+      userId?: string
+    ) => {
+      const effectiveUserId = userId || getUserId();
+
+      // Preparar items con bundleInfo y quantity = 1
+      // IMPORTANTE: Usar los SKUs del bundle (skusBundle) en lugar de los SKUs individuales de los items
+      console.log("Adding bundle to cart:", items, bundleInfo);
+
+      // Mapear cada item con el SKU correspondiente de skusBundle
+      // El orden de los items debe coincidir con el orden de los SKUs en skusBundle
+      const itemsWithBundle: CartProduct[] = items.map((item, index) => {
+        // Obtener el SKU del bundle correspondiente por índice
+        const bundleSku = bundleInfo.skusBundle[index] || item.sku;
+
+        // Crear un ID único: usar el índice si el bundleSku es igual a productSku para evitar duplicados
+        const uniqueId = bundleSku === bundleInfo.productSku
+          ? `${bundleInfo.productSku}-${index}-${item.sku}`
+          : `${bundleInfo.productSku}-${bundleSku}`;
+
+        return {
+          ...item,
+          quantity: 1,
+          bundleInfo,
+          // SIEMPRE usar el SKU del bundle como sku principal
+          sku: bundleSku, // SKU del bundle (F-SM-F966BDBJA, SM-L320NDAAOBQ, etc.)
+          // ID único para identificar cada producto del bundle
+          id: uniqueId,
+        };
+      });
+
+      // Actualizar estado local
+      setProducts((currentProducts) => {
+        const newProducts = [...currentProducts];
+
+        for (const item of itemsWithBundle) {
+          // Buscar productos que pertenezcan al MISMO bundle (mismo codCampana y productSku)
+          // Usar el ID compuesto para identificar productos del mismo bundle
+          const existingIndex = newProducts.findIndex(
+            (p) =>
+              p.id === item.id &&
+              p.bundleInfo?.codCampana === bundleInfo.codCampana &&
+              p.bundleInfo?.productSku === bundleInfo.productSku
+          );
+
+          if (existingIndex >= 0) {
+            console.log("Product already in bundle, updating quantity:", item.sku);
+            // Si el producto ya existe en el mismo bundle, actualizar cantidad
+            newProducts[existingIndex] = {
+              ...newProducts[existingIndex],
+              quantity: newProducts[existingIndex].quantity + 1,
+            };
+          } else {
+            // Si no existe o es un producto individual/de otro bundle, agregar como nuevo
+            newProducts.push(item);
+          }
+        }
+
+        // Guardar en localStorage
+        try {
+          localStorage.setItem(
+            STORAGE_KEYS.CART_ITEMS,
+            JSON.stringify(newProducts)
+          );
+        } catch (error) {
+          console.error("Error saving bundle to localStorage:", error);
+        }
+
+        return newProducts;
+      });
+
+      // Mostrar toast
+      toast.success("Bundle añadido al carrito", {
+        description: `${items.length} productos del bundle añadidos`,
+        duration: 3000,
+      });
+
+      // Llamar al backend
+      try {
+        await apiPost("/api/cart/bundle/add", {
+          items: itemsWithBundle,
+          bundleInfo,
+        });
+      } catch (error) {
+        console.error("Error adding bundle to cart:", error);
+      }
+
+      // Disparar evento de storage
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
+    },
+    [getUserId]
+  );
+
+  /**
+   * Actualiza la cantidad de todos los productos de un bundle.
+   */
+  const updateBundleQuantity = useCallback(
+    async (codCampana: string, productSku: string, quantity: number) => {
+      if (quantity <= 0) {
+        // Eliminar todo el bundle
+        setProducts((currentProducts) => {
+          const newProducts = currentProducts.filter(
+            (p) =>
+              !(
+                p.bundleInfo?.codCampana === codCampana &&
+                p.bundleInfo?.productSku === productSku
+              )
+          );
+
+          try {
+            if (newProducts.length === 0) {
+              localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+            } else {
+              localStorage.setItem(
+                STORAGE_KEYS.CART_ITEMS,
+                JSON.stringify(newProducts)
+              );
+            }
+          } catch (error) {
+            console.error("Error removing bundle from localStorage:", error);
+          }
+
+          return newProducts;
+        });
+
+        toast.info("Bundle eliminado del carrito", {
+          duration: 2500,
+        });
+      } else {
+        // Actualizar cantidad de todos los productos del bundle
+        setProducts((currentProducts) => {
+          const newProducts = currentProducts.map((p) => {
+            if (
+              p.bundleInfo?.codCampana === codCampana &&
+              p.bundleInfo?.productSku === productSku
+            ) {
+              return { ...p, quantity };
+            }
+            return p;
+          });
+
+          try {
+            localStorage.setItem(
+              STORAGE_KEYS.CART_ITEMS,
+              JSON.stringify(newProducts)
+            );
+          } catch (error) {
+            console.error("Error updating bundle quantity:", error);
+          }
+
+          return newProducts;
+        });
+      }
+
+      // Llamar al backend
+      try {
+        await apiPut("/api/cart/bundle/quantity", {
+          codCampana,
+          productSku,
+          quantity,
+        });
+      } catch (error) {
+        console.error("Error updating bundle quantity:", error);
+      }
+
+      // Disparar evento de storage
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
+    },
+    []
+  );
+
+  /**
+   * Elimina un producto de un bundle.
+   * El parámetro sku puede ser el SKU del bundle o cualquier SKU individual del bundle.
+   * Si keepOtherProducts es true, los demás productos pierden el bundleInfo y vuelven a precio original.
+   * Si keepOtherProducts es false, se eliminan todos los productos del bundle.
+   */
+  const removeBundleProduct = useCallback(
+    async (sku: string, keepOtherProducts: boolean) => {
+      // Variables para el toast (fuera de setProducts para evitar duplicados)
+      let shouldShowBundleLostToast = false;
+      let shouldShowBundleRemovedToast = false;
+
+      setProducts((currentProducts) => {
+        // Buscar el producto por SKU (puede ser el SKU del bundle o un SKU individual)
+        let productToRemove = currentProducts.find((p) => p.sku === sku || p.id.includes(sku));
+
+        // Si no se encuentra por SKU directo, buscar si el SKU está en algún bundle
+        if (!productToRemove) {
+          productToRemove = currentProducts.find(
+            (p) => p.bundleInfo?.skusBundle?.includes(sku) || p.bundleInfo?.productSku === sku
+          );
+        }
+
+        if (!productToRemove?.bundleInfo) {
+          // No tiene bundleInfo, eliminar normalmente
+          return currentProducts.filter((p) => p.sku !== sku && !p.id.includes(sku));
+        }
+
+        const { codCampana, productSku } = productToRemove.bundleInfo;
+
+        let newProducts: CartProduct[];
+
+        if (keepOtherProducts) {
+          // Eliminar el producto específico y quitar bundleInfo de los demás
+          newProducts = currentProducts
+            .filter((p) => p.id !== productToRemove!.id)
+            .map((p) => {
+              if (
+                p.bundleInfo?.codCampana === codCampana &&
+                p.bundleInfo?.productSku === productSku
+              ) {
+                // Volver al precio original y quitar bundleInfo
+                return {
+                  ...p,
+                  price: p.originalPrice ?? p.price,
+                  bundleInfo: undefined,
+                };
+              }
+              return p;
+            });
+
+          // ✅ Verificar si aún quedan productos con este productSku del bundle
+          const remainingBundleProducts = newProducts.filter(
+            (p) => p.bundleInfo?.productSku === productSku
+          );
+
+          // Si no quedan productos con este productSku, eliminar el trade-in asociado
+          if (remainingBundleProducts.length === 0) {
+            try {
+              const stored = localStorage.getItem("imagiq_trade_in");
+              if (stored) {
+                const parsed = JSON.parse(stored);
+                if (parsed && typeof parsed === 'object') {
+                  const newStored = { ...parsed };
+                  delete newStored[productSku];
+                  if (Object.keys(newStored).length === 0) {
+                    localStorage.removeItem("imagiq_trade_in");
+                  } else {
+                    localStorage.setItem("imagiq_trade_in", JSON.stringify(newStored));
+                  }
+                  // Disparar evento para que Step1 actualice el estado
+                  window.dispatchEvent(new CustomEvent("trade-in-removed", { detail: { sku: productSku } }));
+                }
+              }
+            } catch (e) {
+              console.error("Error removing trade-in from storage", e);
+            }
+          }
+
+          // Marcar para mostrar toast DESPUÉS de actualizar el estado
+          shouldShowBundleLostToast = true;
+        } else {
+          // Eliminar todos los productos del bundle
+          newProducts = currentProducts.filter(
+            (p) =>
+              !(
+                p.bundleInfo?.codCampana === codCampana &&
+                p.bundleInfo?.productSku === productSku
+              )
+          );
+
+          // ✅ Eliminar el trade-in asociado al productSku del bundle
+          try {
+            const stored = localStorage.getItem("imagiq_trade_in");
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (parsed && typeof parsed === 'object') {
+                const newStored = { ...parsed };
+                delete newStored[productSku];
+                if (Object.keys(newStored).length === 0) {
+                  localStorage.removeItem("imagiq_trade_in");
+                } else {
+                  localStorage.setItem("imagiq_trade_in", JSON.stringify(newStored));
+                }
+                // Disparar evento para que Step1 actualice el estado
+                window.dispatchEvent(new CustomEvent("trade-in-removed", { detail: { sku: productSku } }));
+              }
+            }
+          } catch (e) {
+            console.error("Error removing trade-in from storage", e);
+          }
+
+          // Marcar para mostrar toast DESPUÉS de actualizar el estado
+          shouldShowBundleRemovedToast = true;
+        }
+
+        try {
+          if (newProducts.length === 0) {
+            localStorage.removeItem(STORAGE_KEYS.CART_ITEMS);
+          } else {
+            localStorage.setItem(
+              STORAGE_KEYS.CART_ITEMS,
+              JSON.stringify(newProducts)
+            );
+          }
+        } catch (error) {
+          console.error("Error removing bundle product:", error);
+        }
+
+        return newProducts;
+      });
+
+      // Mostrar toasts DESPUÉS de actualizar el estado (solo una vez)
+      // Usar ref para evitar duplicados si hay re-renders
+      const toastKey = keepOtherProducts ? "bundle-lost" : "bundle-removed";
+
+      if (shouldShowBundleLostToast && !toastActiveRef.current[toastKey]) {
+        toastActiveRef.current[toastKey] = true;
+        toast.warning("Descuento de bundle perdido", {
+          description:
+            "Al eliminar un producto del bundle, los demás productos vuelven a su precio original.",
+          duration: 4000,
+          onDismiss: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+          onAutoClose: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+        });
+      } else if (shouldShowBundleRemovedToast && !toastActiveRef.current[toastKey]) {
+        toastActiveRef.current[toastKey] = true;
+        toast.info("Bundle eliminado del carrito", {
+          duration: 2500,
+          onDismiss: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+          onAutoClose: () => {
+            delete toastActiveRef.current[toastKey];
+          },
+        });
+      }
+
+      // Llamar al backend
+      try {
+        await apiDelete(`/api/cart/bundle/product?sku=${encodeURIComponent(sku)}&keepOtherProducts=${keepOtherProducts}`);
+      } catch (error) {
+        console.error("Error removing bundle product:", error);
+      }
+
+      // Disparar evento de storage
+      setTimeout(() => {
+        window.dispatchEvent(new Event("storage"));
+      }, 0);
+    },
+    []
+  );
 
   // Cálculos derivados
   const calculations: CartCalculations = {
@@ -775,6 +1268,11 @@ export function useCart(): UseCartReturn {
     updateQuantity,
     clearCart,
     applyDiscount,
+
+    // Acciones de Bundle
+    addBundleToCart,
+    updateBundleQuantity,
+    removeBundleProduct,
 
     // Utilidades
     isEmpty,

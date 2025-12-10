@@ -1,22 +1,30 @@
 // filepath: src/app/chatbot/ChatbotPanel.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import Step1 from "./step1";
 import Step2 from "./step2";
 import Step3 from "./step3";
 import Step4 from "./step4";
-import { Bot, X } from "lucide-react";
+import { X } from "lucide-react";
 
 // Importa el servicio del agente conversacional
-import { sendMessageToAgent } from "@/services/chatbot.service";
+import { sendMessageToAgent, AgentProduct } from "@/services/chatbot.service";
 // Importa el componente de mensaje formateado
 import { FormattedMessage } from "@/components/chatbot/FormattedMessage";
+// Importa el componente de ProductCard para el chat
+import ChatProductCard from "./ChatProductCard";
+
+// Tipo de mensaje extendido que puede incluir productos
+interface ChatMessage {
+  from: "user" | "bot";
+  text: string;
+  products?: AgentProduct[]; // Productos del agente (si los hay)
+}
 
 export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void }>) {
   const [step, setStep] = useState(0);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<
-    { from: "user" | "bot"; text: string }[]
-  >([
+  const [messages, setMessages] = useState<ChatMessage[]>([
     {
       from: "bot",
       text: "Hola, soy tu asistente virtual de Samsung Store. ¿En qué puedo ayudarte?",
@@ -24,6 +32,14 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
   ]);
   const [loading, setLoading] = useState(false);
   const [sessionId, setSessionId] = useState<string | undefined>(undefined);
+
+  // Ref para el contenedor de mensajes (auto-scroll)
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll cuando cambian los mensajes o el estado de loading
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, loading]);
 
   const handleNext = () => setStep((prev) => prev + 1);
   const handleReset = () => setStep(0);
@@ -43,14 +59,18 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
 
     try {
       const response = await sendMessageToAgent(userMessage, sessionId);
-      
+
       // Guardar session_id para mantener el contexto
       if (response.session_id) {
         setSessionId(response.session_id);
       }
-      
-      // Mostrar el campo answer al usuario
-      setMessages((prev) => [...prev, { from: "bot", text: response.answer }]);
+
+      // Mostrar el campo answer al usuario + productos si los hay
+      setMessages((prev) => [...prev, {
+        from: "bot",
+        text: response.answer,
+        products: response.products && response.products.length > 0 ? response.products : undefined
+      }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -68,14 +88,18 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
 
     try {
       const response = await sendMessageToAgent(optionText, sessionId);
-      
+
       // Guardar session_id para mantener el contexto
       if (response.session_id) {
         setSessionId(response.session_id);
       }
-      
-      // Mostrar el campo answer al usuario
-      setMessages((prev) => [...prev, { from: "bot", text: response.answer }]);
+
+      // Mostrar el campo answer al usuario + productos si los hay
+      setMessages((prev) => [...prev, {
+        from: "bot",
+        text: response.answer,
+        products: response.products && response.products.length > 0 ? response.products : undefined
+      }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -88,19 +112,29 @@ export default function ChatbotPanel({ onClose }: Readonly<{ onClose: () => void
 
   return (
     <div
-      className="fixed top-0 right-0 flex flex-col h-full chatbot-panel shadow-2xl"
+      className="fixed top-0 right-0 flex flex-col chatbot-panel shadow-2xl"
+      style={{
+        height: '100dvh', // Dynamic viewport height para móviles
+        maxHeight: '100vh',
+      }}
     >
       {/* Header mejorado */}
-      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 border-b border-blue-800">
+      <div className="flex items-center justify-between px-6 py-4 bg-gradient-to-r from-gray-900 to-black border-b border-gray-800">
         <div className="flex items-center gap-3">
-          <div className="flex items-center justify-center w-9 h-9 bg-white bg-opacity-20 rounded-full backdrop-blur-sm">
-            <Bot className="w-5 h-5 text-white" />
+          <div className="relative flex items-center justify-center w-9 h-9 rounded-full overflow-hidden">
+            <Image
+              src="/images/support-agent.png"
+              alt="Agente de soporte"
+              width={36}
+              height={36}
+              className="rounded-full object-cover"
+            />
           </div>
           <div>
             <span className="font-bold text-lg text-white block">
               Samsung Asistente
             </span>
-            <span className="text-xs text-blue-100 flex items-center gap-1">
+            <span className="text-xs text-gray-300 flex items-center gap-1">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               {' '}En línea
             </span>
@@ -125,25 +159,44 @@ style={{
             {messages.map((msg, idx) => (
               <div
                 key={`${msg.from}-${idx}`}
-                className={`rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] shadow-sm ${
-                  msg.from === "bot"
-                    ? "bg-gradient-to-br from-blue-50 to-blue-100 text-gray-800 border border-blue-200"
-                    : "bg-gradient-to-br from-gray-700 to-gray-800 text-white self-end ml-auto"
-                }`}
+                className="flex flex-col gap-3"
               >
-                <FormattedMessage text={msg.text} />
+                {/* Mensaje de texto */}
+                <div
+                  className={`rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] shadow-sm ${
+                    msg.from === "bot"
+                      ? "bg-gray-100 text-gray-800 border border-gray-200"
+                      : "bg-white text-gray-900 border border-black self-end ml-auto"
+                  }`}
+                >
+                  <FormattedMessage text={msg.text} />
+                </div>
+
+                {/* ProductCards si hay productos */}
+                {msg.products && msg.products.length > 0 && (
+                  <div className="flex flex-col gap-3 mt-2">
+                    {msg.products.map((product) => (
+                      <ChatProductCard
+                        key={product.id}
+                        codigoMarketBase={product.id}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
             {loading && (
-              <div className="rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] bg-blue-50 text-gray-500 flex items-center gap-2 border border-blue-200">
+              <div className="rounded-2xl px-4 py-3 text-sm w-fit max-w-[85%] bg-gray-100 text-gray-500 flex items-center gap-2 border border-gray-200">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce"></span>
-                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
-                  <span className="w-2 h-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></span>
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></span>
                 </div>
                 <span>Samsung IA está escribiendo...</span>
               </div>
             )}
+            {/* Elemento invisible para hacer scroll automático */}
+            <div ref={messagesEndRef} />
           </div>
         )}
         {step === 1 && <Step1 onContinue={handleNext} />}
@@ -200,7 +253,7 @@ style={{
           />
           <button
             type="submit"
-            className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full px-6 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:from-blue-700 hover:to-blue-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gradient-to-r from-gray-900 to-black text-white rounded-full px-6 py-2.5 text-sm font-semibold shadow-md hover:shadow-lg hover:from-black hover:to-gray-900 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading || !input.trim()}
           >
             Enviar
@@ -211,7 +264,7 @@ style={{
       {step > 0 && (
         <div className="p-4 border-t border-gray-100 bg-transparent flex justify-end">
           <button
-            className="text-sm text-blue-600 hover:underline"
+            className="text-sm text-gray-900 hover:underline"
             type="button"
             onClick={handleReset}
           >

@@ -1,15 +1,61 @@
 /**
  * Product Mapper - Convierte datos de API a formato del frontend
  * - Mapea ProductApiData a ProductCardProps
+ * - Mapea BundleApiData a BundleCardProps
  * - Usa imágenes mock mientras se implementan
  */
 
-import { ProductApiData } from './api';
+import { ProductApiData, BundleApiData, BundleOption, ProductOrBundleApiData, BundleDirectResponse } from './api';
 import { ProductCardProps, ProductColor, ProductCapacity } from '@/app/productos/components/ProductCard';
 import { StaticImageData } from 'next/image';
 
 // Importar imágenes mock para usar temporalmente
 import emptyImg from '@/img/empty.jpeg';
+
+import type { BundleProduct } from './api';
+
+/**
+ * Opción de bundle mapeada para el frontend
+ */
+export interface BundleOptionProps {
+  product_sku: string;
+  modelo: string;
+  price: string; // bundle_discount formateado
+  originalPrice?: string; // bundle_price formateado
+  discount?: string;
+  skus_bundle: string[];
+  ind_entre_estre: number;
+  imagePreviewUrl?: string[]; // URLs de las imágenes de preview de los productos del bundle
+  productos?: BundleProduct[]; // Array de productos del bundle con detalles completos
+  // Campos de variante del producto padre
+  colorProductSku?: string; // Color hex del producto (ej: "#3C5B8A")
+  nombreColorProductSku?: string; // Nombre del color (ej: "Azul Marino")
+  capacidadProductSku?: string; // Capacidad (ej: "256GB")
+  memoriaRamProductSku?: string; // RAM (ej: "12GB")
+  stockTotal?: number; // Stock disponible para esta variante
+}
+
+/**
+ * Props para BundleCard (componente de bundles)
+ * Nueva estructura con múltiples opciones/variantes
+ */
+export interface BundleCardProps {
+  id: string; // baseCodigoMarket + codCampana
+  baseCodigoMarket: string;
+  codCampana: string;
+  name: string; // modelo de la primera opción (para mostrar título)
+  image: string | StaticImageData; // imagePreviewUrl o imagen por defecto
+  price: string; // precio de la primera opción (o más bajo)
+  originalPrice?: string;
+  discount?: string;
+  opciones: BundleOptionProps[]; // Array de variantes del bundle
+  categoria: string;
+  menu: string;
+  submenu: string;
+  fecha_inicio: string;
+  fecha_final: string;
+  isBundle: true; // Indicador para distinguir de productos normales
+}
 
 
 // Mapeo de colores robusto basado en colores reales de Samsung y otros fabricantes
@@ -68,6 +114,7 @@ export function mapApiProductToFrontend(apiProduct: ProductApiData): ProductCard
     segmento: apiProduct.segmento?.[0], // Tomar el primer elemento del array de segmento
     apiProduct: apiProduct, // Incluir el producto original de la API para acceso a campos adicionales
     acceptsTradeIn, // Indicador de si acepta retoma
+    skuflixmedia: apiProduct.skuflixmedia?.[0], // Mapear skuflixmedia (tomar el primero si existe)
   };
 }
 
@@ -375,14 +422,17 @@ function calculatePricingFromArray(apiProduct: ProductApiData) {
 /**
  * Convierte múltiples productos de la API
  * Filtra productos sin precios válidos
+ * NOTA: Esta función ahora acepta ProductOrBundleApiData[] pero solo procesa productos (ignora bundles)
+ * Para procesar bundles, usar mapApiProductsAndBundles
  */
-export function mapApiProductsToFrontend(apiProducts: ProductApiData[]): ProductCardProps[] {
+export function mapApiProductsToFrontend(apiProducts: ProductOrBundleApiData[]): ProductCardProps[] {
   return apiProducts
+    .filter((item): item is ProductApiData => !isBundle(item))
     .map(mapApiProductToFrontend);
 }
 
 /**
- * Agrupa productos por categoría 
+ * Agrupa productos por categoría
  */
 export function groupProductsByCategory(products: ProductCardProps[]): Record<string, ProductCardProps[]> {
   const grouped: Record<string, ProductCardProps[]> = {
@@ -417,4 +467,252 @@ export function groupProductsByCategory(products: ProductCardProps[]): Record<st
   });
 
   return grouped;
+}
+
+/**
+ * Type guard para verificar si es un bundle
+ */
+export function isBundle(item: ProductOrBundleApiData): item is BundleApiData {
+  return item.isBundle === true;
+}
+
+/**
+ * Convierte un bundle de la API al formato del frontend
+ * Nueva estructura: bundles agrupados con array de opciones
+ */
+export function mapApiBundleToFrontend(apiBundle: BundleApiData): BundleCardProps {
+  // Formatear precios
+  const formatPrice = (price: number) => {
+    if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
+    return `$ ${Math.round(price).toLocaleString('es-CO')}`;
+  };
+
+  // Calcular descuento para una opción
+  const calculateDiscount = (bundlePrice: number, bundleDiscount: number): string | undefined => {
+    if (bundlePrice > 0 && bundleDiscount > 0 && bundleDiscount < bundlePrice) {
+      const discountPercent = Math.round(((bundlePrice - bundleDiscount) / bundlePrice) * 100);
+      return `-${discountPercent}%`;
+    }
+    return undefined;
+  };
+
+  // Mapear todas las opciones del bundle
+  const opciones: BundleOptionProps[] = (apiBundle.opciones || []).map((opcion: BundleOption) => ({
+    product_sku: opcion.product_sku,
+    modelo: opcion.modelo,
+    price: formatPrice(opcion.bundle_discount),
+    originalPrice: opcion.bundle_price > 0 ? formatPrice(opcion.bundle_price) : undefined,
+    discount: calculateDiscount(opcion.bundle_price, opcion.bundle_discount),
+    skus_bundle: opcion.skus_bundle,
+    ind_entre_estre: opcion.ind_entre_estre,
+    imagePreviewUrl: opcion.imagePreviewUrl,
+    productos: opcion.productos, // Propagar el array de productos del backend
+    // Nuevos campos de variante del producto padre
+    colorProductSku: opcion.colorProductSku,
+    nombreColorProductSku: opcion.nombreColorProductSku,
+    capacidadProductSku: opcion.capacidadProductSku,
+    memoriaRamProductSku: opcion.memoriaRamProductSku,
+    stockTotal: opcion.stockTotal,
+  }));
+
+  // Usar la primera opción para mostrar datos principales
+  const firstOption = apiBundle.opciones?.[0];
+  const price = firstOption ? formatPrice(firstOption.bundle_discount) : "Precio no disponible";
+  const originalPrice = firstOption && firstOption.bundle_price > 0
+    ? formatPrice(firstOption.bundle_price)
+    : undefined;
+  const discount = firstOption
+    ? calculateDiscount(firstOption.bundle_price, firstOption.bundle_discount)
+    : undefined;
+  const name = firstOption?.modelo || 'Bundle';
+
+  // Obtener imagen: manejar tanto string como array
+  let image: string | StaticImageData = emptyImg;
+  if (apiBundle.imagePreviewUrl) {
+    if (Array.isArray(apiBundle.imagePreviewUrl)) {
+      const firstPreviewUrl = apiBundle.imagePreviewUrl.find(url => url && typeof url === 'string' && url.trim() !== '');
+      if (firstPreviewUrl) {
+        image = firstPreviewUrl;
+      }
+    } else if (typeof apiBundle.imagePreviewUrl === 'string' && apiBundle.imagePreviewUrl.trim() !== '') {
+      image = apiBundle.imagePreviewUrl;
+    }
+  }
+
+  // Normalizar categoria, menu y submenu (pueden venir como string o array)
+  const normalizeStringOrArray = (value: string | string[] | undefined): string => {
+    if (!value) return '';
+    if (Array.isArray(value)) {
+      // Si es array, tomar el primer elemento o unir con coma
+      return value.length > 0 ? value[0] : '';
+    }
+    return value;
+  };
+
+  return {
+    id: `${apiBundle.baseCodigoMarket}-${apiBundle.codCampana}`,
+    baseCodigoMarket: apiBundle.baseCodigoMarket,
+    codCampana: apiBundle.codCampana,
+    name,
+    image,
+    price,
+    originalPrice,
+    discount,
+    opciones,
+    categoria: normalizeStringOrArray(apiBundle.categoria),
+    menu: normalizeStringOrArray(apiBundle.menu),
+    submenu: normalizeStringOrArray(apiBundle.submenu),
+    fecha_inicio: apiBundle.fecha_inicio,
+    fecha_final: apiBundle.fecha_final,
+    isBundle: true,
+  };
+}
+
+/**
+ * Mapea la respuesta directa del endpoint de bundle individual a BundleCardProps
+ * Este mapper se usa para el endpoint /api/products/v2/bundles/:baseCodigoMarket/:codCampana/:product_sku
+ */
+export function mapDirectBundleResponseToFrontend(
+  bundleResponse: BundleDirectResponse
+): BundleCardProps {
+  // Formatear precios
+  const formatPrice = (price: number) => {
+    if (!price || isNaN(price) || price <= 0) return "Precio no disponible";
+    return `$ ${Math.round(price).toLocaleString('es-CO')}`;
+  };
+
+  // Calcular descuento
+  const calculateDiscount = (bundlePrice: number, bundleDiscount: number): string | undefined => {
+    if (bundlePrice > 0 && bundleDiscount > 0 && bundleDiscount < bundlePrice) {
+      const discountPercent = Math.round(((bundlePrice - bundleDiscount) / bundlePrice) * 100);
+      return `-${discountPercent}%`;
+    }
+    return undefined;
+  };
+
+  // El endpoint directo solo devuelve UNA opción del bundle (la especificada por product_sku)
+  // Crear la opción única a partir de los productos
+  const productos = bundleResponse.productos || [];
+
+  // Calcular precios del bundle sumando los precios de los productos
+  const bundlePrice = productos.reduce((sum, p) => sum + (p.product_original_price || 0), 0);
+  const bundleDiscount = productos.reduce((sum, p) => sum + (p.product_discount_price || 0), 0);
+
+  // Crear nombre del bundle concatenando modelos
+  const modelo = productos.map(p => p.modelo).join(' + ') || 'Bundle';
+
+  // Obtener SKUs de los productos
+  const skus_bundle = productos.map(p => p.sku);
+
+  // Obtener imágenes preview de los productos
+  const imagePreviewUrl = productos
+    .map(p => p.imagePreviewUrl)
+    .filter((url): url is string => !!url);
+
+  // Extraer datos del primer producto (producto padre)
+  const mainProduct = productos[0];
+
+  const opcion: BundleOptionProps = {
+    product_sku: bundleResponse.product_sku,
+    modelo,
+    price: formatPrice(bundleDiscount),
+    originalPrice: bundlePrice > 0 ? formatPrice(bundlePrice) : undefined,
+    discount: calculateDiscount(bundlePrice, bundleDiscount),
+    skus_bundle,
+    ind_entre_estre: 0, // Este campo no viene en la respuesta directa
+    imagePreviewUrl,
+    productos,
+    // Datos de variante del producto padre (primer producto)
+    colorProductSku: mainProduct?.color,
+    nombreColorProductSku: mainProduct?.nombreColor,
+    capacidadProductSku: mainProduct?.capacidad,
+    memoriaRamProductSku: mainProduct?.memoriaram,
+    stockTotal: mainProduct?.stockTotal,
+  };
+
+  // Obtener imagen del bundle (usar imagen del primer producto o placeholder)
+  const image: string | StaticImageData = mainProduct?.imagePreviewUrl || emptyImg;
+
+  return {
+    id: `${bundleResponse.baseCodigoMarket}-${bundleResponse.codCampana}`,
+    baseCodigoMarket: bundleResponse.baseCodigoMarket,
+    codCampana: bundleResponse.codCampana,
+    name: modelo,
+    image,
+    price: formatPrice(bundleDiscount),
+    originalPrice: bundlePrice > 0 ? formatPrice(bundlePrice) : undefined,
+    discount: calculateDiscount(bundlePrice, bundleDiscount),
+    opciones: [opcion], // Solo una opción en la respuesta directa
+    categoria: mainProduct?.categoria || '',
+    menu: '',
+    submenu: '',
+    fecha_inicio: '',
+    fecha_final: '',
+    isBundle: true,
+  };
+}
+
+/**
+ * Tipo unión para items mezclados (productos y bundles)
+ */
+export type MixedProductItem =
+  | (ProductCardProps & { itemType: 'product' })
+  | (BundleCardProps & { itemType: 'bundle' });
+
+/**
+ * Convierte múltiples items (productos y bundles) de la API
+ * Retorna un objeto con productos y bundles separados, más orderedItems que preserva el orden original del API
+ */
+export function mapApiProductsAndBundles(apiItems: ProductOrBundleApiData[]): {
+  products: ProductCardProps[];
+  bundles: BundleCardProps[];
+  orderedItems: MixedProductItem[];
+} {
+  const products: ProductCardProps[] = [];
+  const bundles: BundleCardProps[] = [];
+  const orderedItems: MixedProductItem[] = [];
+
+  apiItems.forEach(item => {
+    if (isBundle(item)) {
+      const mappedBundle = mapApiBundleToFrontend(item);
+      bundles.push(mappedBundle);
+      orderedItems.push({ ...mappedBundle, itemType: 'bundle' as const });
+    } else {
+      const mappedProduct = mapApiProductToFrontend(item);
+      products.push(mappedProduct);
+      orderedItems.push({ ...mappedProduct, itemType: 'product' as const });
+    }
+  });
+
+  return { products, bundles, orderedItems };
+}
+
+/**
+ * Combina productos y bundles en una sola lista
+ * Útil para mostrarlos mezclados en el mismo grid
+ *
+ * @param products - Array de productos
+ * @param bundles - Array de bundles
+ * @param bundlesFirst - Si true, coloca bundles al inicio (default: true)
+ * @returns Array mixto con productos y bundles
+ */
+export function combineProductsAndBundles(
+  products: ProductCardProps[],
+  bundles: BundleCardProps[],
+  bundlesFirst: boolean = true
+): MixedProductItem[] {
+  const bundleItems: MixedProductItem[] = bundles.map(bundle => ({
+    ...bundle,
+    itemType: 'bundle' as const,
+  }));
+
+  const productItems: MixedProductItem[] = products.map(product => ({
+    ...product,
+    itemType: 'product' as const,
+  }));
+
+  // Si bundlesFirst es true, bundles van primero
+  return bundlesFirst
+    ? [...bundleItems, ...productItems]
+    : [...productItems, ...bundleItems];
 }

@@ -93,6 +93,7 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
     formState.selectedCapacity
   );
 
+  // Auto-abrir dropdown de marca cuando se selecciona categoría
   useEffect(() => {
     setFormState((prev) => ({
       ...prev,
@@ -100,30 +101,52 @@ export function useTradeInForm({ tradeInData, isOpen }: UseTradeInFormProps): Us
       selectedModel: null,
       selectedCapacity: null,
     }));
+    // Auto-abrir marca si hay opciones disponibles
     setDropdownState({
-      isBrandDropdownOpen: false,
+      isBrandDropdownOpen: availableBrands.length > 0,
       isModelDropdownOpen: false,
       isCapacityDropdownOpen: false,
     });
-  }, [formState.selectedCategory]);
+  }, [formState.selectedCategory, availableBrands.length]);
 
+  // Auto-abrir dropdown de modelo cuando se selecciona marca
   useEffect(() => {
     setFormState((prev) => ({
       ...prev,
       selectedModel: null,
       selectedCapacity: null,
     }));
-    setDropdownState((prev) => ({
-      ...prev,
-      isModelDropdownOpen: false,
-      isCapacityDropdownOpen: false,
-    }));
-  }, [formState.selectedBrand]);
+    // Auto-abrir modelo si se seleccionó marca y hay opciones
+    if (formState.selectedBrand && availableModels.length > 0) {
+      setDropdownState((prev) => ({
+        ...prev,
+        isBrandDropdownOpen: false,
+        isModelDropdownOpen: true,
+        isCapacityDropdownOpen: false,
+      }));
+    } else {
+      setDropdownState((prev) => ({
+        ...prev,
+        isModelDropdownOpen: false,
+        isCapacityDropdownOpen: false,
+      }));
+    }
+  }, [formState.selectedBrand, availableModels.length]);
 
+  // Auto-abrir dropdown de capacidad cuando se selecciona modelo
   useEffect(() => {
     setFormState((prev) => ({ ...prev, selectedCapacity: null }));
-    setDropdownState((prev) => ({ ...prev, isCapacityDropdownOpen: false }));
-  }, [formState.selectedModel]);
+    // Auto-abrir capacidad si se seleccionó modelo y hay opciones
+    if (formState.selectedModel && availableCapacities.length > 0) {
+      setDropdownState((prev) => ({
+        ...prev,
+        isModelDropdownOpen: false,
+        isCapacityDropdownOpen: true,
+      }));
+    } else {
+      setDropdownState((prev) => ({ ...prev, isCapacityDropdownOpen: false }));
+    }
+  }, [formState.selectedModel, availableCapacities.length]);
 
   useEffect(() => {
     document.body.style.overflow = isOpen ? "hidden" : "unset";

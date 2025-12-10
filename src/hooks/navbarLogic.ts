@@ -209,34 +209,42 @@ export function useNavbarLogic() {
   // Handlers para hover de dropdowns (animación y posición)
   const handleDropdownEnter = (dropdownName: string) => {
     if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
-    setActiveDropdown(dropdownName);
-    const navItem = navItemRefs.current[dropdownName];
-    if (navItem) {
-      const rect = navItem.getBoundingClientRect();
-      setDropdownCoords({
-        top: rect.bottom,
-        left: rect.left + window.scrollX,
-        width: rect.width,
-      });
-    }
+
+    // Delay de 200ms para apertura (consistente con carrito)
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setActiveDropdown(dropdownName);
+      const navItem = navItemRefs.current[dropdownName];
+      if (navItem) {
+        const rect = navItem.getBoundingClientRect();
+        setDropdownCoords({
+          top: rect.bottom,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    }, 200);
   };
-  // Handler para salir del dropdown (con timeout para animación)
+  // Handler para salir del dropdown (con delay de 150ms)
   const handleDropdownLeave = () => {
+    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
       setDropdownCoords(null);
-    }, 350);
+    }, 150);
   };
   // Handler para entrar al contenedor del dropdown (cancela timeout)
   const handleDropdownContainerEnter = () => {
     if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
   };
-  // Handler para salir del contenedor del dropdown (inicia timeout)
+  // Handler para salir del contenedor del dropdown (con delay de 150ms)
   const handleDropdownContainerLeave = () => {
+    if (dropdownTimeoutRef.current) clearTimeout(dropdownTimeoutRef.current);
+
     dropdownTimeoutRef.current = setTimeout(() => {
       setActiveDropdown(null);
       setDropdownCoords(null);
-    }, 350);
+    }, 150);
   };
   // Ref callback para asociar refs a items del navbar
   const setNavItemRef: RefCallback<HTMLDivElement> = (el) => {

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Brand } from "./types";
@@ -7,6 +7,7 @@ interface BrandDropdownProps {
   brands: Brand[];
   selectedBrand: Brand | null;
   isOpen: boolean;
+  isDisabled?: boolean;
   onToggle: () => void;
   onSelectBrand: (brand: Brand) => void;
 }
@@ -15,12 +16,45 @@ export default function BrandDropdown({
   brands,
   selectedBrand,
   isOpen,
+  isDisabled = false,
   onToggle,
   onSelectBrand,
 }: Readonly<BrandDropdownProps>) {
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to dropdown when it opens
+  useEffect(() => {
+    if (isOpen && !isDisabled) {
+      setTimeout(() => {
+        dropdownRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, [isOpen, isDisabled]);
+
+  const getButtonClasses = () => {
+    if (isDisabled) return "bg-gray-100 cursor-not-allowed border-0 opacity-60";
+    if (isOpen) return "border-0 bg-white ring-2 ring-[#0099FF]";
+    if (selectedBrand) return "border border-[#0099FF] bg-white hover:bg-gray-50";
+    return "border border-gray-200 bg-white hover:bg-gray-50";
+  };
+
+  const getTextClasses = () => {
+    if (isDisabled) return "text-gray-400";
+    return "text-[#222]";
+  };
+
+  const getLabelClasses = () => {
+    if (isDisabled) return "text-gray-300";
+    if (isOpen || selectedBrand) return "text-[#0099FF] font-medium";
+    return "text-gray-400";
+  };
+
   return (
-    <div className="mb-6 max-w-2xl mx-auto">
-      <span className="block text-xs font-semibold text-[#222] mb-3">
+    <div ref={dropdownRef} className="mb-6 max-w-2xl mx-auto">
+      <span className={`block text-xs mb-3 transition-colors ${getLabelClasses()}`}>
         Marca
       </span>
       <div
@@ -39,19 +73,18 @@ export default function BrandDropdown({
       >
         <button
           onClick={onToggle}
-          className={`w-full px-4 py-4 text-left rounded-md bg-white flex items-center justify-between transition-colors ${
-            isOpen ? "border-0" : "border-2 border-[#0099FF] hover:bg-gray-50"
-          }`}
+          disabled={isDisabled}
+          className={`w-full px-4 py-4 text-left rounded-md flex items-center justify-between transition-all ${getButtonClasses()}`}
         >
-          <span className="text-sm text-[#222]">
+          <span className={`text-sm ${getTextClasses()}`}>
             {selectedBrand
               ? selectedBrand.name
               : "Selecciona la marca de tu dispositivo"}
           </span>
           {isOpen ? (
-            <ChevronUp className="w-4 h-4 text-[#222]" />
+            <ChevronUp className={`w-4 h-4 ${isDisabled ? "text-gray-400" : "text-[#0099FF]"}`} />
           ) : (
-            <ChevronDown className="w-4 h-4 text-[#222]" />
+            <ChevronDown className={`w-4 h-4 ${getTextClasses()}`} />
           )}
         </button>
 

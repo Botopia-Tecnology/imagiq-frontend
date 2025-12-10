@@ -23,21 +23,21 @@ export function TrackingTimeline({ events }: Readonly<TrackingTimelineProps>) {
               {/* Timeline dot */}
               <span
                 className={`absolute left-0 top-2 w-3 h-3 rounded-full ${
-                  isLast ? "bg-blue-600" : "bg-yellow-400"
+                  isLast ? "bg-black" : "bg-yellow-400"
                 } border-2 border-white shadow`}
                 style={{ zIndex: 1 }}
               />
               <div
                 className={`ml-7 flex-1 ${
                   isLast
-                    ? "bg-blue-50 border-blue-600 border-l-4 pl-4 py-3 rounded-xl"
+                    ? "bg-gray-50 border-black border-l-4 pl-4 py-3 rounded-xl"
                     : ""
                 }`}
               >
                 <div
                   className={`font-bold ${
                     isLast
-                      ? "text-blue-700 text-lg"
+                      ? "text-black text-lg"
                       : "text-yellow-700 text-base"
                   }`}
                 >
@@ -45,7 +45,7 @@ export function TrackingTimeline({ events }: Readonly<TrackingTimelineProps>) {
                 </div>
                 <div
                   className={`text-sm ${
-                    isLast ? "text-blue-500 font-semibold" : "text-gray-600"
+                    isLast ? "text-gray-600 font-semibold" : "text-gray-600"
                   } mt-1`}
                 >
                   {new Date(step.time_stamp).toLocaleString("es-ES", {

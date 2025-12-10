@@ -28,13 +28,15 @@ export interface FooterSection {
  * Función para obtener las secciones del footer
  * Si se pasa navbarRoutes, la sección "Tienda" se generará dinámicamente
  */
-export const getFooterSections = (navbarRoutes?: Array<{ name: string; href: string }>): FooterSection[] => {
+export const getFooterSections = (
+  navbarRoutes?: Array<{ name: string; href: string }>
+): FooterSection[] => {
   // Si tenemos rutas del navbar, generar sección Tienda dinámicamente
   const tiendaSection: FooterSection = navbarRoutes
     ? {
         title: "Tienda",
         dynamic: true,
-        links: navbarRoutes.map(route => ({
+        links: navbarRoutes.map((route) => ({
           name: route.name,
           href: route.href,
         })),
@@ -44,7 +46,10 @@ export const getFooterSections = (navbarRoutes?: Array<{ name: string; href: str
         title: "Tienda",
         links: [
           { name: "Ofertas", href: "/ofertas" },
-          { name: "Dispositivos móviles", href: "/productos/dispositivos-moviles" },
+          {
+            name: "Dispositivos móviles",
+            href: "/productos/dispositivos-moviles",
+          },
           { name: "TV y audio", href: "/productos/tv-y-audio" },
           { name: "Electrodomésticos", href: "/productos/electrodomesticos" },
           { name: "Ofertas para empresas", href: "/ventas-corporativas" },
@@ -53,116 +58,128 @@ export const getFooterSections = (navbarRoutes?: Array<{ name: string; href: str
 
   return [
     tiendaSection,
-  {
-    title: "Productos",
-    links: [
-      {
-        name: "Smartphones Galaxy",
-        href: "/productos/dispositivos-moviles?seccion=smartphones-galaxy",
-      },
-      {
-        name: "Galaxy Tab",
-        href: "/productos/dispositivos-moviles?seccion=galaxy-tab",
-      },
-      {
-        name: "Galaxy Watch",
-        href: "/productos/dispositivos-moviles?seccion=galaxy-watch",
-      },
-      {
-        name: "Galaxy Buds",
-        href: "/productos/dispositivos-moviles?seccion=galaxy-buds",
-      },
-      { name: "TVs", href: "/productos/tv-y-audio" },
-      {
-        name: "Dispositivos de audio",
-        href: "/productos/tv-y-audio?seccion=dispositivo-de-audio",
-      },
-      { name: "Neveras", href: "/productos/electrodomesticos?seccion=neveras" },
-      {
-        name: "Lavavajillas",
-        href: "/productos/electrodomesticos?seccion=lavajillas",
-      },
-      {
-        name: "Lavadoras y Secadoras",
-        href: "/productos/electrodomesticos?seccion=lavadoreas-y-secadoras",
-      },
-      {
-        name: "Aspiradoras",
-        href: "/productos/electrodomesticos?seccion=aspiradoras",
-      },
-      { name: "Monitores", href: "/productos/monitores" },
-      {
-        name: "Accesorios",
-        href: "/productos/dispositivos-moviles?seccion=accesorios-para-galaxy",
-      },
-    ],
-  },
-  {
-    title: "Soporte",
-    links: [
-      { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
-      {
-        name: "T&C 0% de interés Bancolombia",
-        href: "/soporte/tyc-bancolombia",
-      },
-      {
-        name: "T&C 0% de interés Davivienda",
-        href: "/soporte/tyc-davivienda",
-      },
-      {
-        name: "Políticas generales",
-        href: "/soporte/politicas-generales",
-      },
-      {
-        name: "Políticas de uso de cookies",
-        href: "/soporte/politica-cookies",
-      },
-      {
-        name: "Tratamiento de datos personales",
-        href: "/soporte/tratamiento-datos-personales",
-      },
-      {
-        name: "Política anticorrupción y soborno",
-        href: "/soporte/politica-anticorrupcion",
-      },
-      {
-        name: "Aviso legal",
-        href: "/soporte/aviso-legal",
-      },
-    ],
-  },
-  {
-    title: "Account",
-    links: [
-      { name: "Iniciar sesión", href: "/login" },
-      { name: "Pedidos", href: "/carrito/step1" },
-    ],
-  },
-  // {
-  //   title: "Sustentabilidad",
-  //   links: [
-  //     { name: "Medioambiente", href: "/sostenibilidad/ambiente" },
-  //     { name: "Seguridad y privacidad", href: "/privacidad" },
-  //     { name: "Accesibilidad", href: "/accesibilidad" },
-  //     { name: "Diversidad · Igualdad · Inclusión", href: "/diversidad" },
-  //     { name: "Ciudadanía corporativa", href: "/ciudadania", external: true },
-  //     { name: "Sustentabilidad corporativa", href: "/sostenibilidad", external: true },
-  //   ],
-  // },
-  // {
-  //   title: "Sobre nosotros",
-  //   links: [
-  //     { name: "Información de la compañía", href: "/compania" },
-  //     { name: "Área de negocios", href: "/negocios" },
-  //     { name: "Identidad de la marca", href: "/marca" },
-  //     { name: "Oportunidades laborales", href: "/empleos" },
-  //     { name: "Relaciones con inversores", href: "/inversores", external: true },
-  //     { name: "Noticias", href: "/noticias", external: true },
-  //     { name: "Ética", href: "/etica" },
-  //     { name: "Diseño de Samsung", href: "/diseno", external: true },
-  //     { name: "Productos Electrónicos de consumo", href: "/electronica" },
-  //   ],
-  // },
+    {
+      title: "Productos",
+      links: [
+        {
+          name: "Smartphones Galaxy",
+          href: "/productos/dispositivos-moviles?seccion=smartphones-galaxy",
+        },
+        {
+          name: "Galaxy Tab",
+          href: "/productos/dispositivos-moviles?seccion=galaxy-tab",
+        },
+        {
+          name: "Galaxy Watch",
+          href: "/productos/dispositivos-moviles?seccion=galaxy-watch",
+        },
+        {
+          name: "Galaxy Buds",
+          href: "/productos/dispositivos-moviles?seccion=galaxy-buds",
+        },
+        { name: "TVs", href: "/productos/tv-y-audio" },
+        {
+          name: "Dispositivos de audio",
+          href: "/productos/tv-y-audio?seccion=dispositivo-de-audio",
+        },
+        {
+          name: "Neveras",
+          href: "/productos/electrodomesticos?seccion=neveras",
+        },
+        {
+          name: "Lavavajillas",
+          href: "/productos/electrodomesticos?seccion=lavajillas",
+        },
+        {
+          name: "Lavadoras y Secadoras",
+          href: "/productos/electrodomesticos?seccion=lavadoreas-y-secadoras",
+        },
+        {
+          name: "Aspiradoras",
+          href: "/productos/electrodomesticos?seccion=aspiradoras",
+        },
+        { name: "Monitores", href: "/productos/monitores" },
+        {
+          name: "Accesorios",
+          href: "/productos/dispositivos-moviles?seccion=accesorios-para-galaxy",
+        },
+      ],
+    },
+    {
+      title: "Soporte",
+      links: [
+        { name: "Inicio de soporte", href: "/soporte/inicio_de_soporte" },
+        {
+          name: "T&C 0% de interés Bancolombia",
+          href: "/soporte/tyc-bancolombia",
+        },
+        {
+          name: "T&C 0% de interés Davivienda",
+          href: "/soporte/tyc-davivienda",
+        },
+        {
+          name: "T&C 0% de interés Addi",
+          href: "https://co.addi.com/tyc-0-interes",
+          external: true,
+        },
+        {
+          name: "T&C Entrego y Estreno",
+          href: "/soporte/tyc-entrego-estreno",
+        },
+        {
+          name: "Políticas generales",
+          href: "/soporte/politicas-generales",
+        },
+        {
+          name: "Políticas de uso de cookies",
+          href: "/soporte/politica-cookies",
+        },
+        {
+          name: "Tratamiento de datos personales",
+          href: "/soporte/tratamiento-datos-personales",
+        },
+        {
+          name: "Política anticorrupción y soborno",
+          href: "/soporte/politica-anticorrupcion",
+        },
+        {
+          name: "Aviso legal",
+          href: "/soporte/aviso-legal",
+        },
+      ],
+    },
+    {
+      title: "Cuenta",
+      links: [
+        { name: "Iniciar sesión", href: "/login" },
+        { name: "Pedidos", href: "/carrito/step1" },
+      ],
+    },
+    // {
+    //   title: "Sustentabilidad",
+    //   links: [
+    //     { name: "Medioambiente", href: "/sostenibilidad/ambiente" },
+    //     { name: "Seguridad y privacidad", href: "/privacidad" },
+    //     { name: "Accesibilidad", href: "/accesibilidad" },
+    //     { name: "Diversidad · Igualdad · Inclusión", href: "/diversidad" },
+    //     { name: "Ciudadanía corporativa", href: "/ciudadania", external: true },
+    //     { name: "Sustentabilidad corporativa", href: "/sostenibilidad", external: true },
+    //   ],
+    // },
+    // {
+    //   title: "Sobre nosotros",
+    //   links: [
+    //     { name: "Información de la compañía", href: "/compania" },
+    //     { name: "Área de negocios", href: "/negocios" },
+    //     { name: "Identidad de la marca", href: "/marca" },
+    //     { name: "Oportunidades laborales", href: "/empleos" },
+    //     { name: "Relaciones con inversores", href: "/inversores", external: true },
+    //     { name: "Noticias", href: "/noticias", external: true },
+    //     { name: "Ética", href: "/etica" },
+    //     { name: "Diseño de Samsung", href: "/diseno", external: true },
+    //     { name: "Productos Electrónicos de consumo", href: "/electronica" },
+    //   ],
+    // },
   ];
 };
 
@@ -170,7 +187,10 @@ export const getFooterSections = (navbarRoutes?: Array<{ name: string; href: str
 export const footerSections: FooterSection[] = getFooterSections();
 
 export const legalLinks: FooterLink[] = [
-  { name: "Tratamiento de datos", href: "/soporte/tratamiento-datos-personales" },
+  {
+    name: "Tratamiento de datos",
+    href: "/soporte/tratamiento-datos-personales",
+  },
   { name: "Aviso legal", href: "/soporte/aviso-legal" },
   { name: "Cookies", href: "/soporte/politica-cookies" },
   { name: "Políticas generales", href: "/soporte/politicas-generales" },

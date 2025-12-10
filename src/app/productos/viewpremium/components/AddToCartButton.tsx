@@ -8,6 +8,7 @@ import { usePointsContext } from "@/contexts/PointsContext";
 import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
 import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
+import { shouldRenderValue } from "@/app/productos/components/utils/shouldRenderValue";
 
 // Type for the product selection data - subset of UseProductSelectionReturn
 type ProductSelectionData = {
@@ -38,8 +39,8 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
 
   // Verificar si hay stock (con null check para productSelection)
   const hasStock = productSelection?.selectedStockTotal !== null &&
-                   productSelection?.selectedStockTotal !== undefined &&
-                   productSelection?.selectedStockTotal > 0;
+    productSelection?.selectedStockTotal !== undefined &&
+    productSelection?.selectedStockTotal > 0;
 
   const handleAddToCart = async () => {
     if (!productSelection || !productSelection.selectedSku) {
@@ -64,17 +65,31 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
         sku: productSelection.selectedSku,
         ean: productSelection.selectedVariant?.ean || "",
         puntos_q: product.puntos_q ?? 4,
-        color: productSelection.getSelectedColorOption()?.hex || undefined,
-        colorName: productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined,
-        capacity: productSelection.selection.selectedCapacity || undefined,
-        ram: productSelection.selection.selectedMemoriaram || undefined,
+        color: (productSelection.getSelectedColorOption()?.hex && shouldRenderValue(productSelection.getSelectedColorOption()?.hex)) ? productSelection.getSelectedColorOption()?.hex : undefined,
+        colorName: (() => {
+          const colorDisplay = productSelection.getSelectedColorOption()?.nombreColorDisplay;
+          if (colorDisplay && shouldRenderValue(colorDisplay)) return colorDisplay;
+          const selectedColor = productSelection.selection.selectedColor;
+          if (selectedColor && shouldRenderValue(selectedColor)) return selectedColor;
+          return undefined;
+        })(),
+        capacity: (() => {
+          const cap = productSelection.selection.selectedCapacity;
+          return cap && shouldRenderValue(cap) ? cap : undefined;
+        })(),
+        ram: (() => {
+          const ramValue = productSelection.selection.selectedMemoriaram;
+          return ramValue && shouldRenderValue(ramValue) ? ramValue : undefined;
+        })(),
         skuPostback: productSelection.selectedSkuPostback || '',
-        desDetallada: productSelection.selectedVariant?.desDetallada
+        desDetallada: productSelection.selectedVariant?.desDetallada,
+        modelo: product.apiProduct?.modelo?.[0] || "",
+        categoria: product.apiProduct?.categoria || "",
       });
       recalculatePoints();
-      
+
     } catch (error) {
-      
+
     } finally {
       setLoading(false);
     }
@@ -149,17 +164,17 @@ const AddToCartButton: React.FC<AddToCartButtonProps> = ({ product, productSelec
 
         {productSelection.selectedVariant && (
           <div className="text-center text-sm text-gray-600">
-            {productSelection.selection.selectedColor && (
+            {productSelection.selection.selectedColor && shouldRenderValue(productSelection.selection.selectedColor) && (
               <span className="mr-2">
-                Color: {productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor}
+                Color: {shouldRenderValue(productSelection.getSelectedColorOption()?.nombreColorDisplay) ? productSelection.getSelectedColorOption()?.nombreColorDisplay : productSelection.selection.selectedColor}
               </span>
             )}
-            {productSelection.selection.selectedCapacity && (
+            {productSelection.selection.selectedCapacity && shouldRenderValue(productSelection.selection.selectedCapacity) && (
               <span className="mr-2">
                 | Almacenamiento: {productSelection.selection.selectedCapacity}
               </span>
             )}
-            {productSelection.selection.selectedMemoriaram && (
+            {productSelection.selection.selectedMemoriaram && shouldRenderValue(productSelection.selection.selectedMemoriaram) && (
               <span>| RAM: {productSelection.selection.selectedMemoriaram}</span>
             )}
           </div>

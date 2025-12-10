@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { usePurchaseFlow } from "@/hooks/usePurchaseFlow";
@@ -19,11 +19,13 @@ import {
 import { validateCardFields } from "../utils/cardValidation";
 import { safeGetLocalStorage, safeSetLocalStorage } from "@/lib/localStorage";
 import { useCardsCache } from "./useCardsCache";
+import useSecureStorage from "@/hooks/useSecureStorage";
 
 export function useCheckoutLogic() {
   const { redirectToError } = usePurchaseFlow();
   const router = useRouter();
   const { products: cartProducts, appliedDiscount, calculations } = useCart();
+  const [checkoutAddress, _] = useSecureStorage<{ id: string } | null>("checkout-address", null);
 
   // Hook de caché para zero interest
   const {
@@ -126,9 +128,13 @@ export function useCheckoutLogic() {
   };
 
   // Cerrar modal después de agregar tarjeta y solicitar recarga de tarjetas
-  const handleAddCardSuccess = (newCardId?: string) => {
+  const handleAddCardSuccess = async (newCardId?: string) => {
     setIsAddCardModalOpen(false);
+
+    // Forzar recarga de tarjetas - la tarjeta se seleccionará automáticamente en PaymentForm después de recargar
     setSavedCardsReloadCounter((c) => c + 1);
+    setPaymentMethod("tarjeta");
+    setUseNewCard(false);
 
     // Si se proporcionó el ID de la nueva tarjeta, consultar cuotas sin interés
     if (newCardId) {
@@ -160,6 +166,25 @@ export function useCheckoutLogic() {
 
   // Effects para sincronizar carrito y descuento - Ya no necesarios con useCart
 
+  // Cargar método de pago guardado de localStorage al montar
+  useEffect(() => {
+    const savedPaymentMethod = localStorage.getItem("checkout-payment-method");
+    if (savedPaymentMethod) {
+      setPaymentMethod(savedPaymentMethod as PaymentMethod);
+    }
+
+    const savedBankData = localStorage.getItem("checkout-selected-bank");
+    if (savedBankData) {
+      try {
+        const { code, name } = JSON.parse(savedBankData);
+        setSelectedBank(code);
+        setSelectedBankName(name);
+      } catch (error) {
+        console.error("Error parsing saved bank data:", error);
+      }
+    }
+  }, []);
+
   // Función para validar y guardar datos de pago (sin procesar aún)
   const handleSavePaymentData = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,15 +199,9 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      // Si usa una tarjeta guardada, no validar campos
-      if (!selectedCardId || useNewCard) {
-        const validation = validateCardFields(card, isAmex);
-        setCardErrors(validation.errors);
-        valid = !validation.hasError && valid;
-      }
-      // Si usa tarjeta guardada, verificar que haya seleccionado una
-      else if (!selectedCardId) {
-        setError("Debes seleccionar una tarjeta o agregar una nueva");
+      // Verificar que haya seleccionado una tarjeta guardada
+      if (!selectedCardId) {
+        setError("Debes seleccionar una tarjeta. Si no tienes tarjetas guardadas, agrega una desde tu perfil.");
         valid = false;
       }
     }
@@ -202,7 +221,8 @@ export function useCheckoutLogic() {
     localStorage.setItem("checkout-payment-method", paymentMethod);
 
     if (paymentMethod === "tarjeta") {
-      if (selectedCardId && !useNewCard) {
+      // Solo guardar tarjetas guardadas (ya no se permiten nuevas tarjetas en step 4)
+      if (selectedCardId) {
         localStorage.setItem("checkout-saved-card-id", selectedCardId);
         localStorage.setItem(
           "checkout-card-installments",
@@ -213,8 +233,6 @@ export function useCheckoutLogic() {
         if (zeroInterestData) {
           safeSetLocalStorage("checkout-zero-interest", zeroInterestData);
         }
-      } else {
-        localStorage.setItem("checkout-card-data", JSON.stringify(card));
       }
     } else if (paymentMethod === "pse") {
       // Guardar tanto código como nombre del banco para uso en resumen
@@ -240,15 +258,9 @@ export function useCheckoutLogic() {
 
     // Validar campos de tarjeta si corresponde
     if (paymentMethod === "tarjeta") {
-      // Si usa una tarjeta guardada, no validar campos
-      if (!selectedCardId || useNewCard) {
-        const validation = validateCardFields(card, isAmex);
-        setCardErrors(validation.errors);
-        valid = !validation.hasError && valid;
-      }
-      // Si usa tarjeta guardada, verificar que haya seleccionado una
-      else if (!selectedCardId) {
-        setError("Debes seleccionar una tarjeta o agregar una nueva");
+      // Verificar que haya seleccionado una tarjeta guardada
+      if (!selectedCardId) {
+        setError("Debes seleccionar una tarjeta. Si no tienes tarjetas guardadas, agrega una desde tu perfil.");
         valid = false;
       }
     }
@@ -360,18 +372,30 @@ export function useCheckoutLogic() {
             items: cartProducts.map((p) => ({
               name: String(p.name),
               sku: String(p.sku),
-              ean: String(p.ean || "").trim(),
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              categoria: p.categoria || "",
+              // Incluir bundleInfo si el producto es parte de un bundle
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             metodo_envio: 1,
             shippingAmount: String(envio),
             totalAmount: String(total),
             userInfo: {
               userId: userInfo.id || "",
-              direccionId: direction.id || "",
+              direccionId: checkoutAddress?.id || "",
             },
             informacion_facturacion,
             beneficios: buildBeneficios(),
@@ -399,8 +423,8 @@ export function useCheckoutLogic() {
         }
 
         case "tarjeta": {
-          // Verificar si usa tarjeta guardada o nueva
-          if (selectedCardId && !useNewCard) {
+          // Solo se permite pago con tarjeta guardada (ya no se permiten nuevas tarjetas en step 4)
+          if (selectedCardId) {
             // Pago con tarjeta guardada
             res = await payWithSavedCard({
               cardId: selectedCardId,
@@ -408,11 +432,22 @@ export function useCheckoutLogic() {
               items: cartProducts.map((p) => ({
                 name: String(p.name),
                 sku: String(p.sku),
-                ean: String(p.ean || "").trim(),
+                ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
                 quantity: String(p.quantity),
                 unitPrice: String(p.price),
-                skupostback: String(p.skuPostback),
-                desDetallada: String(p.desDetallada),
+                skupostback: p.skuPostback || p.sku || "",
+                desDetallada: p.desDetallada || p.name || "",
+                categoria: p.categoria || "",
+                ...(p.bundleInfo && {
+                  bundleInfo: {
+                    codCampana: p.bundleInfo.codCampana,
+                    productSku: p.bundleInfo.productSku,
+                    skusBundle: p.bundleInfo.skusBundle,
+                    bundlePrice: p.bundleInfo.bundlePrice,
+                    bundleDiscount: p.bundleInfo.bundleDiscount,
+                    fechaFinal: p.bundleInfo.fechaFinal,
+                  },
+                }),
               })),
               metodo_envio: 1,
               shippingAmount: String(envio),
@@ -420,7 +455,7 @@ export function useCheckoutLogic() {
               currency: "COP",
               userInfo: {
                 userId: userInfo.id || "",
-                direccionId: direction.id || "",
+                direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
               beneficios: (() => {
@@ -485,11 +520,22 @@ export function useCheckoutLogic() {
               items: cartProducts.map((p) => ({
                 name: String(p.name),
                 sku: String(p.sku),
-                ean: String(p.ean || "").trim(),
+                ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
                 quantity: String(p.quantity),
                 unitPrice: String(p.price),
-                skupostback: String(p.skuPostback),
-                desDetallada: String(p.desDetallada),
+                skupostback: p.skuPostback || p.sku || "",
+                desDetallada: p.desDetallada || p.name || "",
+                categoria: p.categoria || "",
+                ...(p.bundleInfo && {
+                  bundleInfo: {
+                    codCampana: p.bundleInfo.codCampana,
+                    productSku: p.bundleInfo.productSku,
+                    skusBundle: p.bundleInfo.skusBundle,
+                    bundlePrice: p.bundleInfo.bundlePrice,
+                    bundleDiscount: p.bundleInfo.bundleDiscount,
+                    fechaFinal: p.bundleInfo.fechaFinal,
+                  },
+                }),
               })),
               metodo_envio: 1,
               shippingAmount: String(envio),
@@ -497,7 +543,7 @@ export function useCheckoutLogic() {
               currency: "COP",
               userInfo: {
                 userId: userInfo.id || "",
-                direccionId: direction.id || "",
+                direccionId: checkoutAddress?.id || "",
               },
               informacion_facturacion,
               beneficios: (() => {
@@ -558,11 +604,22 @@ export function useCheckoutLogic() {
             items: cartProducts.map((p) => ({
               name: String(p.name),
               sku: String(p.sku),
-              ean: String(p.ean || "").trim(),
+              ean: p.ean && p.ean !== "" ? String(p.ean) : String(p.sku),
               quantity: String(p.quantity),
               unitPrice: String(p.price),
-              skupostback: String(p.skuPostback),
-              desDetallada: String(p.desDetallada),
+              skupostback: p.skuPostback || p.sku || "",
+              desDetallada: p.desDetallada || p.name || "",
+              categoria: p.categoria || "",
+              ...(p.bundleInfo && {
+                bundleInfo: {
+                  codCampana: p.bundleInfo.codCampana,
+                  productSku: p.bundleInfo.productSku,
+                  skusBundle: p.bundleInfo.skusBundle,
+                  bundlePrice: p.bundleInfo.bundlePrice,
+                  bundleDiscount: p.bundleInfo.bundleDiscount,
+                  fechaFinal: p.bundleInfo.fechaFinal,
+                },
+              }),
             })),
             metodo_envio: 1,
             shippingAmount: String(envio),

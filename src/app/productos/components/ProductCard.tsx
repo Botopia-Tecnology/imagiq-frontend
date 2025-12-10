@@ -511,6 +511,7 @@ export default function ProductCard({
             : image.src,
       indcerointeres: apiProduct?.indcerointeres?.[0] ?? 0,
       allPrices: apiProduct?.precioeccommerce || [],
+      skuflixmedia: productSelection.selectedSkuflixmedia,
     };
 
     // Guardar en localStorage con una clave única por producto

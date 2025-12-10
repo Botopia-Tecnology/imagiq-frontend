@@ -207,17 +207,14 @@ export default function MultimediaPage({
     });
   }
 
-  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaPlayer)
-  // SI existe un skuflixmedia seleccionado, usar SOLO ese para optimizar la carga
-  // SI NO, verificar si el producto tiene skuflixmedia (del API)
-  // SI NO, usar el primer SKU disponible (evitar listas largas para mejorar rendimiento)
+  // SOLO usar el campo skuflixmedia - NO usar otros SKUs
+  // Si no hay skuflixmedia, no mostrar contenido de Flixmedia
   const productSku = selectedProductData?.skuflixmedia
     ? selectedProductData.skuflixmedia
-    : (product?.skuflixmedia // Priorizar skuflixmedia del API si existe
-      ? product.skuflixmedia
-      : (allSkus.length > 0 ? allSkus[0] : null));
+    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || null);
 
-  const productEan = allEans.length > 0 ? allEans[0] : null;
+  // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
+  const productEan = productSku ? (allEans.length > 0 ? allEans[0] : null) : null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {
@@ -310,6 +307,7 @@ export default function MultimediaPage({
         className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
       >
         <FlixmediaPlayer
+          key={`flix-${productSku || id}`}
           mpn={productSku}
           ean={productEan}
           productName={displayProductName}

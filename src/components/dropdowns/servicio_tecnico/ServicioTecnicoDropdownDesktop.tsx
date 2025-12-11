@@ -1,20 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SERVICIO_TECNICO_MENU_ITEMS } from "./constants";
 
-export default function ServicioTecnicoDropdownDesktop() {
-  const router = useRouter();
+type Props = {
+  onItemClick: (label: string, href: string) => void;
+};
 
-  const handleClick = (href: string) => {
-    // Cerrar el dropdown primero
-    window.dispatchEvent(new Event("close-dropdown"));
-    // Navegar después de un pequeño delay para asegurar que el dropdown se cierra
-    setTimeout(() => {
-      router.push(href);
-    }, 100);
-  };
-
+export default function ServicioTecnicoDropdownDesktop({ onItemClick }: Props) {
   return (
     <div className="bg-white shadow-lg rounded-b-lg border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-8 py-6">
@@ -23,9 +16,10 @@ export default function ServicioTecnicoDropdownDesktop() {
             const IconComponent = item.icon;
 
             return (
-              <button
+              <Link
                 key={item.title}
-                onClick={() => handleClick(item.href)}
+                href={item.href}
+                onClick={() => onItemClick(item.title, item.href)}
                 className="block text-left w-full"
               >
                 <div className="flex items-start gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors group">
@@ -41,7 +35,7 @@ export default function ServicioTecnicoDropdownDesktop() {
                     </p>
                   </div>
                 </div>
-              </button>
+              </Link>
             );
           })}
         </div>

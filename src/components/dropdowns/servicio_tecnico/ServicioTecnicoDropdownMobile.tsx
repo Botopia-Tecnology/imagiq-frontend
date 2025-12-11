@@ -1,26 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { SERVICIO_TECNICO_MENU_ITEMS } from "./constants";
 
-interface ServicioTecnicoDropdownMobileProps {
-  onItemClick?: () => void;
-}
+type Props = {
+  onItemClick: (label: string, href: string) => void;
+};
 
-export default function ServicioTecnicoDropdownMobile({
-  onItemClick,
-}: ServicioTecnicoDropdownMobileProps) {
-  const router = useRouter();
-
-  const handleClick = (href: string) => {
-    // Llamar al callback para cerrar el menú móvil si existe
-    onItemClick?.();
-    // Navegar después de un pequeño delay
-    setTimeout(() => {
-      router.push(href);
-    }, 100);
-  };
-
+export default function ServicioTecnicoDropdownMobile({ onItemClick }: Props) {
   return (
     <div className="bg-gray-50 px-4 py-3">
       <div className="space-y-2">
@@ -28,9 +15,10 @@ export default function ServicioTecnicoDropdownMobile({
           const IconComponent = item.icon;
 
           return (
-            <button
+            <Link
               key={item.title}
-              onClick={() => handleClick(item.href)}
+              href={item.href}
+              onClick={() => onItemClick(item.title, item.href)}
               className="block text-left w-full"
             >
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg hover:bg-gray-100 transition-colors active:bg-gray-200">
@@ -46,7 +34,7 @@ export default function ServicioTecnicoDropdownMobile({
                   </p>
                 </div>
               </div>
-            </button>
+            </Link>
           );
         })}
       </div>

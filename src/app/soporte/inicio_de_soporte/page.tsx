@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Button } from "@/components/ui/button";
 import Modal from "@/components/ui/Modal";
@@ -6,7 +6,105 @@ import { apiClient } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { Documento, SupportOrderResponse } from "@/types/support";
 import Link from "next/link";
-import { useState } from "react";
+import Image from "next/image";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
+import usePaySupportTicket from "@/hooks/usePaySupportTicket";
+import { getDocumentAbbreviation } from "@/lib/document-type";
+import { ArrowLeft, CreditCard, Building2, ChevronDown } from "lucide-react";
+import pseLogo from "@/img/iconos/logo-pse.png";
+import cardValidator from "card-validator";
+import AnimatedCard from "@/components/ui/AnimatedCard";
+
+type DocumentoWithRegistro = Documento & { registro?: string };
+
+type PaySupportResult = {
+  redirect_url?: string;
+  message?: string;
+  [key: string]: unknown;
+};
+
+// Normalize and map document type inputs (accepts abbrev. or full names, with/without accents)
+function normalizeTipoDocumento(input?: string) {
+  if (!input) return "Cédula de Ciudadania";
+  const key = input
+    .toString()
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .trim();
+
+  const map: Record<string, string> = {
+    cc: "Cédula de Ciudadania",
+    cedula: "Cédula de Ciudadania",
+    "cedula de ciudadania": "Cédula de Ciudadania",
+    ce: "Cédula de Extranjería",
+    "cedula de extranjeria": "Cédula de Extranjería",
+    te: "Tarjeta de Extranjería",
+    "tarjeta de extranjeria": "Tarjeta de Extranjería",
+    ti: "Tarjeta de Identidad",
+    "tarjeta de identidad": "Tarjeta de Identidad",
+    nuip: "Número Unico de Identificación Personal",
+    "numero unico de identificacion personal":
+      "Número Unico de Identificación Personal",
+    rc: "Registro Civil",
+    "registro civil": "Registro Civil",
+    pa: "Pasaporte",
+    pasaporte: "Pasaporte",
+    pet: "Permiso Especial de Trabajo",
+    ppt: "Permiso de Protección Temporal",
+    nit: "Número de Identificación Tributaria",
+    crs: "Cert Regis suces iliq pers nat no doc id",
+    sil: "Sucesión ilíquida,exp. por notaria",
+    dx: "Documento definido información exogena",
+    nitext: "ID de extranjeros diferente al NIT",
+    die: "Documento de identificación extranjero",
+    pjex: "Doc Identificación Ext Persona Jurídica",
+    cd: "Carné Diplomático",
+  };
+
+  return (
+    map[key] ??
+    map[
+      input
+        .toString()
+        .toLowerCase()
+        .replace(/[^a-z0-9 ]/g, "")
+    ] ??
+    input
+  );
+}
+
+// Tipo para bancos PSE
+interface Bank {
+  bankCode: string;
+  bankName: string;
+}
+
+// Interfaz para datos de tarjeta
+interface CardData {
+  number: string;
+  holder: string;
+  expiryMonth: string;
+  expiryYear: string;
+  cvv: string;
+  installments: string;
+}
+
+// Función para obtener bancos
+async function fetchBanks(): Promise<Bank[]> {
+  try {
+    const response = await apiClient.get<Bank[]>("/api/payments/epayco/banks");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching banks:", error);
+    return [];
+  }
+}
+
+type PaymentMethod = "tarjeta" | "pse";
+type ModalStep = "resumen" | "pago";
 
 export default function InicioDeSoportePage() {
   const [cedula, setCedula] = useState("");
@@ -15,7 +113,173 @@ export default function InicioDeSoportePage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [result, setResult] = useState<SupportOrderResponse | null>(null);
+  const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
+  const [isCardFlipped, setIsCardFlipped] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Estados para el paso de pago
+  const [modalStep, setModalStep] = useState<ModalStep>("resumen");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("tarjeta");
+  const [selectedBank, setSelectedBank] = useState("");
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [isLoadingBanks, setIsLoadingBanks] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [submittedCedula, setSubmittedCedula] = useState<string | null>(null);
+  const [submittedOrder, setSubmittedOrder] = useState<string | null>(null);
+  const { pay } = usePaySupportTicket();
+
+  // Read support verification results from query params (status, orderId)
+  const searchParams = useSearchParams();
+  const [supportStatus, setSupportStatus] = useState<string | null>(null);
+  const [supportOrderId, setSupportOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const s = searchParams?.get("status");
+    const o = searchParams?.get("orderId");
+    if (s) setSupportStatus(s);
+    if (o) setSupportOrderId(o);
+  }, [searchParams]);
+
+  // Estados para el formulario de tarjeta
+  const [cardData, setCardData] = useState<CardData>({
+    number: "",
+    holder: "",
+    expiryMonth: "",
+    expiryYear: "",
+    cvv: "",
+    installments: "1",
+  });
+
+  // Cargar bancos cuando se selecciona PSE
+  useEffect(() => {
+    if (paymentMethod === "pse" && banks.length === 0) {
+      setIsLoadingBanks(true);
+      fetchBanks()
+        .then(setBanks)
+        .finally(() => setIsLoadingBanks(false));
+    }
+  }, [paymentMethod, banks.length]);
+
+  // Funciones de validación de tarjeta
+  const validateCardNumber = (number: string) => {
+    const validation = cardValidator.number(number);
+    return validation.isValid;
+  };
+
+  const getCardBrand = (number: string) => {
+    const validation = cardValidator.number(number);
+    return validation.card?.type || "";
+  };
+
+  const validateCVV = (cvvValue: string) => {
+    if (!cvvValue) return false;
+    const brand = getCardBrand(cardData.number);
+    const isAmex =
+      brand?.toLowerCase().includes("american") ||
+      brand?.toLowerCase().includes("amex");
+    const expectedLength = isAmex ? 4 : 3;
+    return cvvValue.length === expectedLength && /^\d+$/.test(cvvValue);
+  };
+
+  // Formatear número de tarjeta
+  const formatCardNumber = (value: string) => {
+    const cleaned = value.replaceAll(/\s/g, "");
+    const groups = cleaned.match(/.{1,4}/g) || [];
+    return groups.join(" ").substring(0, 19);
+  };
+
+  // Formatear fecha de expiración
+  const formatExpiryDate = () => {
+    if (!cardData.expiryMonth || !cardData.expiryYear) return "MM/AA";
+    return `${cardData.expiryMonth}/${cardData.expiryYear.slice(-2)}`;
+  };
+
+  // Generar arrays para los dropdowns
+  const months = [
+    { value: "01", label: "01 - Enero" },
+    { value: "02", label: "02 - Febrero" },
+    { value: "03", label: "03 - Marzo" },
+    { value: "04", label: "04 - Abril" },
+    { value: "05", label: "05 - Mayo" },
+    { value: "06", label: "06 - Junio" },
+    { value: "07", label: "07 - Julio" },
+    { value: "08", label: "08 - Agosto" },
+    { value: "09", label: "09 - Septiembre" },
+    { value: "10", label: "10 - Octubre" },
+    { value: "11", label: "11 - Noviembre" },
+    { value: "12", label: "12 - Diciembre" },
+  ];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 15 }, (_, i) => {
+    const year = currentYear + i;
+    return { value: year.toString(), label: year.toString() };
+  });
+
+  const installmentOptions = [
+    { value: "1", label: "1 cuota" },
+    { value: "2", label: "2 cuotas" },
+    { value: "3", label: "3 cuotas" },
+    { value: "6", label: "6 cuotas" },
+    { value: "12", label: "12 cuotas" },
+    { value: "24", label: "24 cuotas" },
+    { value: "36", label: "36 cuotas" },
+  ];
+
+  // Handlers de inputs de tarjeta
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replaceAll(/\s/g, "");
+    if (value.length <= 16) {
+      setCardData((prev) => ({ ...prev, number: value }));
+      if (cardErrors.number) {
+        setCardErrors((prev) => ({ ...prev, number: "" }));
+      }
+    }
+  };
+
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replaceAll(/\D/g, "");
+    const brand = getCardBrand(cardData.number);
+    const isAmex =
+      brand?.toLowerCase().includes("american") ||
+      brand?.toLowerCase().includes("amex");
+    const maxLength = isAmex ? 4 : 3;
+
+    if (value.length <= maxLength) {
+      setCardData((prev) => ({ ...prev, cvv: value }));
+      if (cardErrors.cvv) {
+        setCardErrors((prev) => ({ ...prev, cvv: "" }));
+      }
+    }
+  };
+
+  // Validar formulario de tarjeta
+  const validateCardForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!cardData.number || !validateCardNumber(cardData.number)) {
+      newErrors.number = "Número de tarjeta inválido";
+    }
+
+    if (!cardData.holder.trim()) {
+      newErrors.holder = "El nombre del titular es requerido";
+    }
+
+    if (!cardData.expiryMonth) {
+      newErrors.expiryMonth = "Selecciona el mes";
+    }
+
+    if (!cardData.expiryYear) {
+      newErrors.expiryYear = "Selecciona el año";
+    }
+
+    if (!cardData.cvv || !validateCVV(cardData.cvv)) {
+      newErrors.cvv = "CVV inválido";
+    }
+
+    setCardErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const validate = () => {
     const e: { cedula?: string; orden?: string } = {};
@@ -30,27 +294,170 @@ export default function InicioDeSoportePage() {
     return Object.keys(e).length === 0;
   };
 
-  const handlePaySubmit = async (doc: Documento) => {
-    const cartItem = {
-      id: doc.documento || "0",
-      name: "0",
-      image: "0",
-      price: 0,
-      originalPrice: 0,
-      stock: 0,
-      sku: "0",
-      ean: "0",
-      puntos_q: 0,
-      color: "0",
-      colorName: "0",
-      capacity: "0",
-      ram: "0",
-      skuPostback: "0",
-      desDetallada: "0",
-      quantity: 1,
-    };
-    console.log("Agregando al carrito:", cartItem);
+  const handleGoToPayment = () => {
+    setModalStep("pago");
   };
+
+  const handleBackToResumen = () => {
+    setModalStep("resumen");
+  };
+
+  const handleProcessPayment = async (doc: Documento) => {
+    // Validar según el método de pago
+    if (paymentMethod === "tarjeta" && !validateCardForm()) {
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      // Construir payload base
+      const raw = (doc.valor || "0").toString();
+
+      // Normalize monetary string to backend-expected integer string.
+      // Handles values like:
+      // - "6.384,11"  -> "638411" (cents)
+      // - "638,411.0000" -> "638411" (already whole units with 4-decimals zeroed)
+      // - "1000" -> "1000"
+      const normalizeMonetaryAmount = (value: string) => {
+        const v = value.trim();
+        if (!v) return "0";
+
+        // Find last separator (dot or comma) to determine decimal separator
+        const lastDot = v.lastIndexOf(".");
+        const lastComma = v.lastIndexOf(",");
+        let intPart = v;
+        let decPart = "";
+
+        if (lastDot > -1 || lastComma > -1) {
+          if (lastDot > lastComma) {
+            intPart = v.slice(0, lastDot);
+            decPart = v.slice(lastDot + 1);
+          } else if (lastComma > lastDot) {
+            intPart = v.slice(0, lastComma);
+            decPart = v.slice(lastComma + 1);
+          }
+        }
+
+        // Keep only digits
+        const intDigits = intPart.replace(/[^0-9]/g, "") || "0";
+        const decDigits = decPart.replace(/[^0-9]/g, "");
+
+        // If decimal part is exactly 4 digits and all zeros, treat as whole units
+        if (decDigits.length === 4 && /^0{4}$/.test(decDigits)) {
+          return intDigits;
+        }
+
+        // Otherwise convert to cents (2 digits). Take first two digits of decimal, pad if needed.
+        const cents = (decDigits + "00").slice(0, 2);
+        return `${intDigits}${cents}`;
+      };
+
+      const normalizedValor = normalizeMonetaryAmount(raw);
+
+      // Use the order number the user entered when creating the support request.
+      // Prefer the submitted order (saved after form submit); fall back to the current input.
+      const numeroOrden =
+        submittedOrder ??
+        orden ??
+        (doc as DocumentoWithRegistro).registro ??
+        doc.documento ??
+        "";
+
+      // Use the cedula that was submitted with the support-order (digits only).
+      // Fall back to current input only if submitted value is not available.
+      const cedulaSource = submittedCedula ?? cedula;
+      const cedulaDigits = cedulaSource ? cedulaSource.replace(/\D/g, "") : "";
+
+      const tipoDocRaw = (doc.tipoDocumento || "CC") as string;
+      // Preferir la abreviación (CC, CE, etc.) cuando sea posible, sino enviar nombre normalizado
+      const tipoAbbr = getDocumentAbbreviation(tipoDocRaw);
+      const tipo_documento = tipoAbbr ?? normalizeTipoDocumento(tipoDocRaw);
+
+      const payloadBase: Record<string, unknown> = {
+        numero_orden: numeroOrden,
+        usuario_email: (doc.email || "").toLowerCase().trim(),
+        nombre_cliente: doc.cliente || "",
+        concepto: doc.concepto || "Pago soporte",
+        movil_usuario: doc.movil || "",
+        medio_pago: paymentMethod === "tarjeta" ? 2 : 3,
+        // Always send the user's entered cédula number (digits only). Do not fall back
+        // to the document from the backend response to ensure the payment is tied
+        // to the user-entered identity.
+        documento_usuario: cedulaDigits,
+        tipo_documento: tipo_documento,
+        // estado: usar el código de estado del documento para que el backend lo relacione
+        estado: doc.estadoCodigo ?? "",
+        valor: normalizedValor,
+      };
+
+      // Campos específicos según medio de pago
+      if (paymentMethod === "tarjeta") {
+        Object.assign(payloadBase, {
+          card_number: cardData.number.replace(/\s/g, ""),
+          card_holder: cardData.holder.trim(),
+          exp_month: cardData.expiryMonth,
+          exp_year: cardData.expiryYear,
+          cvv: cardData.cvv,
+          cuotas: Number(cardData.installments) || 1,
+        });
+      }
+
+      if (paymentMethod === "pse") {
+        const found = banks.find((b) => b.bankCode === selectedBank);
+        Object.assign(payloadBase, {
+          banco_id: selectedBank,
+          banco_nombre: found?.bankName || selectedBank || "",
+        });
+      }
+
+      // Llamar al hook para pagar
+      const result = (await pay(payloadBase)) as PaySupportResult;
+      if (result?.redirect_url) {
+        try {
+          new URL(result.redirect_url);
+          if (/^https?:\/\//.test(result.redirect_url)) {
+            globalThis.location.href = result.redirect_url;
+            return;
+          }
+        } catch (err) {
+          console.warn("URL de redirección inválida:", err);
+        }
+      }
+      setIsModalOpen(false);
+      setModalStep("resumen");
+      resetCardForm();
+    } catch (error) {
+      console.error("Error procesando pago:", error);
+      const msg =
+        error instanceof Error ? error.message : "Error procesando pago";
+      alert(msg);
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const resetCardForm = () => {
+    setCardData({
+      number: "",
+      holder: "",
+      expiryMonth: "",
+      expiryYear: "",
+      cvv: "",
+      installments: "1",
+    });
+    setCardErrors({});
+    setIsCardFlipped(false);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setModalStep("resumen");
+    setPaymentMethod("tarjeta");
+    setSelectedBank("");
+    resetCardForm();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuccess("");
@@ -58,12 +465,10 @@ export default function InicioDeSoportePage() {
     setLoading(true);
 
     try {
-      // Simular retardo
       await new Promise((r) => setTimeout(r, 900));
 
       console.log("Enviando solicitud de soporte:", { cedula, orden });
 
-      // Esperar la respuesta real de la API
       const response = await apiClient.post<SupportOrderResponse>(
         "/api/orders/support-order",
         {
@@ -73,6 +478,9 @@ export default function InicioDeSoportePage() {
       );
 
       setResult(response.data);
+      // Store cedula and order sent with the support-order so payments use the same identifiers
+      setSubmittedCedula(cedula.replace(/\D/g, ""));
+      setSubmittedOrder(orden.trim() || null);
       setCedula("");
       setOrden("");
       setErrors({});
@@ -84,6 +492,46 @@ export default function InicioDeSoportePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Obtener el documento con valor a pagar
+  const getDocumentoConValor = () => {
+    return result?.obtenerDocumentosResult?.documentos?.find(
+      (d) => d?.valor && d.valor !== "0,0000"
+    );
+  };
+
+  // Formatear valor monetario
+  const formatCurrency = (raw: string) => {
+    const normalized = raw.replaceAll(".", "").replaceAll(",", ".");
+    const value = Number(normalized);
+    if (Number.isNaN(value)) return raw;
+    return value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  };
+
+  // Verificar si el pago está habilitado
+  const isPaymentEnabled = () => {
+    // Require that a cedula was submitted with the support-order before allowing payment
+    if (!submittedCedula) return false;
+    // Also require that a orden was submitted
+    if (!submittedOrder) return false;
+    if (paymentMethod === "pse" && !selectedBank) return false;
+    if (paymentMethod === "tarjeta") {
+      // Verificar que todos los campos de tarjeta estén completos
+      if (
+        !cardData.number ||
+        !cardData.holder ||
+        !cardData.expiryMonth ||
+        !cardData.expiryYear ||
+        !cardData.cvv
+      ) {
+        return false;
+      }
+    }
+    return true;
   };
 
   return (
@@ -103,6 +551,53 @@ export default function InicioDeSoportePage() {
               soporte. Responderemos a la mayor brevedad.
             </p>
 
+            {supportStatus && (
+              <div
+                className={`mb-6 w-full text-xs rounded-md p-3 block ${
+                  supportStatus === "APPROVED"
+                    ? "bg-emerald-50 border border-emerald-100 text-emerald-800"
+                    : supportStatus === "PENDING"
+                    ? "bg-yellow-50 border border-yellow-100 text-yellow-800"
+                    : "bg-rose-50 border border-rose-100 text-rose-800"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-semibold">
+                      {supportStatus === "APPROVED"
+                        ? "Pago aprobado"
+                        : supportStatus === "PENDING"
+                        ? "Pago pendiente"
+                        : "Pago rechazado"}
+                    </div>
+                    {supportOrderId && (
+                      <div className="mt-1">
+                        Número de orden: <strong>{supportOrderId}</strong>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => {
+                      setSupportStatus(null);
+                      setSupportOrderId(null);
+                      try {
+                        // remove query params from URL
+                        const url = new URL(window.location.href);
+                        url.searchParams.delete("status");
+                        url.searchParams.delete("orderId");
+                        window.history.replaceState({}, "", url.toString());
+                      } catch {
+                        /* ignore */
+                      }
+                    }}
+                    className="ml-4 text-sm opacity-80"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            )}
+
             {success && (
               <span className="mb-6 w-full text-xs rounded-md bg-emerald-50 border border-emerald-100 p-3 text-emerald-800 block">
                 {success}
@@ -110,7 +605,7 @@ export default function InicioDeSoportePage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-              {/* Campo Cédula */}
+              {/* Campo C�dula */}
               <div>
                 <label htmlFor="cedula" className="block text-sm font-medium">
                   Número de cédula
@@ -295,100 +790,565 @@ export default function InicioDeSoportePage() {
       </div>
 
       {/* Modal de Resultado */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        size="lg"
-      >
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} size="lg">
         <div className="p-4 md:p-8">
-          <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">
-            Resumen de tu consulta
-          </h2>
+          {/* PASO 1: Resumen */}
+          {modalStep === "resumen" && (
+            <>
+              <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">
+                Resumen de tu consulta
+              </h2>
 
-          {result && (
-            <div className="space-y-4 md:space-y-6">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
-                <p className="text-xs md:text-sm text-blue-900 mb-2">
-                  Monto a pagar:
-                </p>
-                <p
-                  className={cn(
-                    "font-bold text-blue-900 overflow-wrap-break-word",
-                    result.obtenerDocumentosResult.documentos.every(
-                      (r) => r.valor === "0,0000"
-                    ) === true
-                      ? "text-2xl md:text-3xl"
-                      : "text-3xl md:text-5xl"
+              {result && (
+                <div className="space-y-4 md:space-y-6">
+                  {/* Info del cliente */}
+                  {result.obtenerDocumentosResult.documentos[0] && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <p className="text-sm font-medium text-gray-900">
+                        {result.obtenerDocumentosResult.documentos[0].cliente}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {
+                          result.obtenerDocumentosResult.documentos[0]
+                            .tipoDocumento
+                        }{" "}
+                        • {result.obtenerDocumentosResult.documentos[0].email}
+                      </p>
+                    </div>
                   )}
-                >
-                  {(() => {
-                    const documentos =
-                      result?.obtenerDocumentosResult?.documentos;
-                    const doc = documentos?.find(
-                      (d) => d?.valor && d.valor !== "0,0000"
-                    );
-                    const raw = doc?.valor;
-                    if (!raw)
-                      return (
-                        documentos.findLast((p) => p.valor === "0,0000")
-                          ?.estadoNombre || "Pronto tendremos tu información!"
-                      );
 
-                    const normalized = raw
-                      .replaceAll(".", "")
-                      .replaceAll(",", ".");
-                    const value = Number(normalized);
-                    if (Number.isNaN(value)) return raw;
+                  {/* Monto a pagar */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 md:p-6">
+                    <p className="text-xs md:text-sm text-blue-900 mb-2">
+                      Monto a pagar:
+                    </p>
+                    <p
+                      className={cn(
+                        "font-bold text-blue-900 overflow-wrap-break-word",
+                        result.obtenerDocumentosResult.documentos.every(
+                          (r) => r.valor === "0,0000"
+                        ) === true
+                          ? "text-2xl md:text-3xl"
+                          : "text-3xl md:text-5xl"
+                      )}
+                    >
+                      {(() => {
+                        const doc = getDocumentoConValor();
+                        const raw = doc?.valor;
+                        if (!raw)
+                          return (
+                            result.obtenerDocumentosResult.documentos.findLast(
+                              (p) => p.valor === "0,0000"
+                            )?.estadoNombre ||
+                            "Pronto tendremos tu información!"
+                          );
+                        return `$${formatCurrency(raw)}`;
+                      })()}
+                    </p>
+                    {getDocumentoConValor() && (
+                      <p className="text-xs text-blue-700 mt-2">
+                        {getDocumentoConValor()?.tipo} -{" "}
+                        {getDocumentoConValor()?.concepto}
+                      </p>
+                    )}
+                  </div>
 
-                    const formatted = value.toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    });
+                  {/* Lista de documentos */}
+                  {result.obtenerDocumentosResult.documentos.length > 1 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-gray-700">
+                        Historial de documentos:
+                      </p>
+                      <div className="space-y-2 max-h-40 overflow-y-auto">
+                        {result.obtenerDocumentosResult.documentos.map(
+                          (doc, index) => (
+                            <div
+                              key={doc.diffgrId || index}
+                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg text-sm"
+                            >
+                              <div>
+                                <p className="font-medium text-gray-900">
+                                  {doc.tipo}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {doc.estadoNombre} • {doc.fecha.split(" ")[0]}
+                                </p>
+                              </div>
+                              <span
+                                className={cn(
+                                  "text-sm font-semibold",
+                                  doc.valor === "0,0000"
+                                    ? "text-gray-400"
+                                    : "text-blue-600"
+                                )}
+                              >
+                                {doc.valor === "0,0000"
+                                  ? "-"
+                                  : `$${formatCurrency(doc.valor)}`}
+                              </span>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
 
-                    return `$${formatted}`;
-                  })()}
-                </p>
-              </div>
+                  {result.obtenerDocumentosResult.documentos.some(
+                    (r) => r.valor !== "0,0000"
+                  ) && (
+                    <div className="w-full flex flex-col gap-2 md:gap-3">
+                      <Link
+                        href={getDocumentoConValor()?.url || "#"}
+                        target="_blank"
+                        className="w-full rounded-lg inline-flex items-center justify-center px-3 md:px-4 py-2 md:py-3 bg-white text-gray-900 border border-gray-950 font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
+                      >
+                        Descargar factura
+                      </Link>
 
-              {result.obtenerDocumentosResult.documentos.every(
-                (r) => r.valor === "0,0000"
-              ) !== true && (
-                <div className="w-full flex flex-col gap-2 md:gap-3">
-                  <Link
-                    href={
-                      result.obtenerDocumentosResult.documentos.find(
-                        (r) => r.valor !== "0,0000"
-                      )?.url || "#"
-                    }
-                    className="w-full rounded-lg inline-flex items-center justify-center px-3 md:px-4 py-2 md:py-3 bg-white text-gray-900 border border-gray-950 font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
-                  >
-                    Descargar factura
-                  </Link>
+                      <Button
+                        onClick={handleGoToPayment}
+                        type="button"
+                        className="w-full px-4 md:px-6 py-2 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
+                      >
+                        Ir a pagar
+                      </Button>
+                    </div>
+                  )}
 
                   <Button
-                    onClick={() =>
-                      handlePaySubmit(
-                        result.obtenerDocumentosResult.documentos.find(
-                          (r) => r.valor !== "0,0000"
-                        )!
-                      )
-                    }
-                    type="button"
-                    className="w-full px-4 md:px-6 py-2 md:py-3 bg-black text-white rounded-lg font-bold text-sm md:text-base shadow-md transition transform hover:scale-105"
+                    onClick={handleCloseModal}
+                    variant="outline"
+                    className="w-full text-sm md:text-base"
                   >
-                    Ir a pagar
+                    Cerrar
                   </Button>
                 </div>
               )}
+            </>
+          )}
 
-              <Button
-                onClick={() => setIsModalOpen(false)}
-                variant="outline"
-                className="w-full text-sm md:text-base"
-              >
-                Cerrar
-              </Button>
-            </div>
+          {/* PASO 2: Selección de método de pago */}
+          {modalStep === "pago" && result && (
+            <>
+              <div className="flex items-center gap-3 mb-6">
+                <button
+                  onClick={handleBackToResumen}
+                  className="p-2 hover:bg-gray-100 rounded-full transition"
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-xl md:text-2xl font-bold">
+                  Elige cómo pagar
+                </h2>
+              </div>
+
+              {/* Resumen del monto */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-blue-900">Total a pagar:</span>
+                  <span className="text-2xl font-bold text-blue-900">
+                    ${formatCurrency(getDocumentoConValor()?.valor || "0")}
+                  </span>
+                </div>
+              </div>
+
+              {/* Opciones de pago */}
+              <div className="space-y-3 mb-6">
+                {/* Tarjeta de crédito/débito */}
+                <div>
+                  <label
+                    className={cn(
+                      "flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                      paymentMethod === "tarjeta"
+                        ? "border-black bg-gray-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      checked={paymentMethod === "tarjeta"}
+                      onChange={() => setPaymentMethod("tarjeta")}
+                      className="accent-black w-5 h-5"
+                    />
+                    <CreditCard className="w-6 h-6 text-gray-700" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">
+                        Tarjeta de crédito o débito
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Visa, Mastercard, American Express
+                      </p>
+                    </div>
+                    <div className="flex gap-1">
+                      <Image
+                        src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg"
+                        alt="Visa"
+                        width={32}
+                        height={20}
+                        className="object-contain"
+                      />
+                      <Image
+                        src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg"
+                        alt="Mastercard"
+                        width={32}
+                        height={20}
+                        className="object-contain"
+                      />
+                    </div>
+                  </label>
+
+                  {/* Formulario de tarjeta */}
+                  {paymentMethod === "tarjeta" && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                      {/* Vista previa de la tarjeta */}
+                      <div className="flex justify-center mb-4">
+                        <div className="w-full max-w-[300px] scale-90">
+                          <AnimatedCard
+                            cardNumber={cardData.number}
+                            cardHolder={cardData.holder}
+                            expiryDate={formatExpiryDate()}
+                            cvv={cardData.cvv}
+                            brand={getCardBrand(cardData.number)}
+                            isFlipped={isCardFlipped}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Número de tarjeta */}
+                      <div>
+                        <label
+                          htmlFor="card-number"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Número de tarjeta
+                        </label>
+                        <div className="relative">
+                          <input
+                            id="card-number"
+                            type="text"
+                            value={formatCardNumber(cardData.number)}
+                            onChange={handleCardNumberChange}
+                            placeholder="1234 5678 9012 3456"
+                            className={cn(
+                              "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              cardErrors.number
+                                ? "border-red-500"
+                                : "border-gray-300"
+                            )}
+                          />
+                        </div>
+                        {cardErrors.number && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {cardErrors.number}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Nombre del titular */}
+                      <div>
+                        <label
+                          htmlFor="card-holder"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Nombre del titular
+                        </label>
+                        <input
+                          id="card-holder"
+                          type="text"
+                          value={cardData.holder}
+                          onChange={(e) => {
+                            setCardData((prev) => ({
+                              ...prev,
+                              holder: e.target.value.toUpperCase(),
+                            }));
+                            if (cardErrors.holder) {
+                              setCardErrors((prev) => ({
+                                ...prev,
+                                holder: "",
+                              }));
+                            }
+                          }}
+                          placeholder="JUAN PÉREZ"
+                          className={cn(
+                            "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm uppercase",
+                            cardErrors.holder
+                              ? "border-red-500"
+                              : "border-gray-300"
+                          )}
+                        />
+                        {cardErrors.holder && (
+                          <p className="text-red-500 text-xs mt-1">
+                            {cardErrors.holder}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Fecha de expiración y CVV */}
+                      <div className="grid grid-cols-3 gap-3">
+                        {/* Mes */}
+                        <div>
+                          <label
+                            htmlFor="expiry-month"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            Mes
+                          </label>
+                          <select
+                            id="expiry-month"
+                            value={cardData.expiryMonth}
+                            onChange={(e) => {
+                              setCardData((prev) => ({
+                                ...prev,
+                                expiryMonth: e.target.value,
+                              }));
+                              if (cardErrors.expiryMonth) {
+                                setCardErrors((prev) => ({
+                                  ...prev,
+                                  expiryMonth: "",
+                                }));
+                              }
+                            }}
+                            className={cn(
+                              "w-full px-2 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              cardErrors.expiryMonth
+                                ? "border-red-500"
+                                : "border-gray-300"
+                            )}
+                          >
+                            <option value="">MM</option>
+                            {months.map((month) => (
+                              <option key={month.value} value={month.value}>
+                                {month.value}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Año */}
+                        <div>
+                          <label
+                            htmlFor="expiry-year"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            Año
+                          </label>
+                          <select
+                            id="expiry-year"
+                            value={cardData.expiryYear}
+                            onChange={(e) => {
+                              setCardData((prev) => ({
+                                ...prev,
+                                expiryYear: e.target.value,
+                              }));
+                              if (cardErrors.expiryYear) {
+                                setCardErrors((prev) => ({
+                                  ...prev,
+                                  expiryYear: "",
+                                }));
+                              }
+                            }}
+                            className={cn(
+                              "w-full px-2 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              cardErrors.expiryYear
+                                ? "border-red-500"
+                                : "border-gray-300"
+                            )}
+                          >
+                            <option value="">AAAA</option>
+                            {years.map((year) => (
+                              <option key={year.value} value={year.value}>
+                                {year.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* CVV */}
+                        <div>
+                          <label
+                            htmlFor="card-cvv"
+                            className="block text-sm font-medium text-gray-700 mb-1"
+                          >
+                            CVV
+                          </label>
+                          <input
+                            id="card-cvv"
+                            type="text"
+                            value={cardData.cvv}
+                            onChange={handleCvvChange}
+                            onFocus={() => setIsCardFlipped(true)}
+                            onBlur={() => setIsCardFlipped(false)}
+                            placeholder={(() => {
+                              const brand = getCardBrand(cardData.number);
+                              const isAmex =
+                                brand?.toLowerCase().includes("american") ||
+                                brand?.toLowerCase().includes("amex");
+                              return isAmex ? "1234" : "123";
+                            })()}
+                            className={cn(
+                              "w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm",
+                              cardErrors.cvv
+                                ? "border-red-500"
+                                : "border-gray-300"
+                            )}
+                          />
+                          {cardErrors.cvv && (
+                            <p className="text-red-500 text-xs mt-1">
+                              {cardErrors.cvv}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Número de cuotas */}
+                      <div>
+                        <label
+                          htmlFor="installments"
+                          className="block text-sm font-medium text-gray-700 mb-1"
+                        >
+                          Número de cuotas
+                        </label>
+                        <select
+                          id="installments"
+                          value={cardData.installments}
+                          onChange={(e) =>
+                            setCardData((prev) => ({
+                              ...prev,
+                              installments: e.target.value,
+                            }))
+                          }
+                          className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                        >
+                          {installmentOptions.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Mensaje de seguridad */}
+                      <p className="text-center text-gray-500 text-xs">
+                        Tu tarjeta está protegida con encriptación SSL
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* PSE */}
+                <div>
+                  <label
+                    className={cn(
+                      "flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all",
+                      paymentMethod === "pse"
+                        ? "border-black bg-gray-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="payment-method"
+                      checked={paymentMethod === "pse"}
+                      onChange={() => setPaymentMethod("pse")}
+                      className="accent-black w-5 h-5"
+                    />
+                    <Building2 className="w-6 h-6 text-gray-700" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">
+                        PSE - Débito bancario
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Pago directo desde tu cuenta bancaria
+                      </p>
+                    </div>
+                    <Image
+                      src={pseLogo}
+                      alt="PSE"
+                      width={40}
+                      height={40}
+                      className="object-contain"
+                    />
+                  </label>
+
+                  {/* Selector de banco */}
+                  {paymentMethod === "pse" && (
+                    <div className="mt-3 ml-9 mr-4">
+                      <label
+                        htmlFor="bank-select"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Selecciona tu banco
+                      </label>
+                      <div className="relative">
+                        <select
+                          id="bank-select"
+                          value={selectedBank}
+                          onChange={(e) => setSelectedBank(e.target.value)}
+                          disabled={isLoadingBanks}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-black focus:border-black bg-white appearance-none cursor-pointer"
+                        >
+                          <option value="">
+                            {isLoadingBanks
+                              ? "Cargando bancos..."
+                              : "Elige tu banco..."}
+                          </option>
+                          {banks.map((bank) => (
+                            <option key={bank.bankCode} value={bank.bankCode}>
+                              {bank.bankName}
+                            </option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Botones */}
+              <div className="flex flex-col gap-3">
+                <Button
+                  onClick={() => handleProcessPayment(getDocumentoConValor()!)}
+                  disabled={!isPaymentEnabled() || isProcessingPayment}
+                  className="w-full px-6 py-3 bg-black text-white rounded-lg font-bold text-base shadow-md transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  {isProcessingPayment ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          fill="none"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                        ></path>
+                      </svg>
+                      Procesando...
+                    </span>
+                  ) : (
+                    `Pagar $${formatCurrency(
+                      getDocumentoConValor()?.valor || "0"
+                    )}`
+                  )}
+                </Button>
+
+                <Button
+                  onClick={handleBackToResumen}
+                  variant="outline"
+                  className="w-full text-sm md:text-base"
+                >
+                  Volver
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </Modal>

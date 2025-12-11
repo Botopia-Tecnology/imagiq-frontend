@@ -312,15 +312,11 @@ export default function ProductViewPage({ params }) {
     );
   }
 
-  // Consideramos cargado si tenemos producto (sea local o API)
-  // Si es local, variantsReady podría ser false inicialmente, pero queremos mostrar contenido
-  const isFullyLoaded = !!product;
+  // En este punto, tenemos producto (ya sea del API o de localStorage)
+  // El skeleton se muestra en la línea 295 cuando loading=true y no hay product
 
   return (
     <>
-      {/* Mostrar skeleton solo si no hay producto en absoluto */}
-      {!isFullyLoaded && <ProductDetailSkeleton />}
-
       {/* Modal de notificación de stock */}
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
@@ -343,16 +339,14 @@ export default function ProductViewPage({ params }) {
         onNotificationRequest={handleRequestStockNotification}
       />
 
-      {/* Renderizar contenido inmediatamente si tenemos producto */}
-      <div style={{ display: isFullyLoaded ? "block" : "none" }}>
-        <ProductContentWithVariants
-          product={product}
-          onVariantsReady={setVariantsReady}
-          onProductSelectionChange={handleProductSelectionChange}
-          productSelection={productSelection}
-          onNotifyStock={stockNotification.openModal}
-        />
-      </div>
+      {/* Renderizar contenido del producto */}
+      <ProductContentWithVariants
+        product={product}
+        onVariantsReady={setVariantsReady}
+        onProductSelectionChange={handleProductSelectionChange}
+        productSelection={productSelection}
+        onNotifyStock={stockNotification.openModal}
+      />
     </>
   );
 }

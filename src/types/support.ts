@@ -21,4 +21,7 @@ export interface Documento {
   concepto: string;
   valor: string;
   url: string;
+  tipoDocumento: string;
+  email: string;
+  movil: string;
 }

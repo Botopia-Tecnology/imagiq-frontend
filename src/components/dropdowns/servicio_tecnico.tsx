@@ -1,20 +1,5 @@
-"use client";
-
-import ServicioTecnicoDropdownDesktop from "./servicio_tecnico/ServicioTecnicoDropdownDesktop";
-import ServicioTecnicoDropdownMobile from "./servicio_tecnico/ServicioTecnicoDropdownMobile";
-
-interface ServicioTecnicoDropdownProps {
-  isMobile?: boolean;
-  onItemClick?: () => void;
-}
-
-export default function ServicioTecnicoDropdown({
-  isMobile = false,
-  onItemClick,
-}: ServicioTecnicoDropdownProps) {
-  return isMobile ? (
-    <ServicioTecnicoDropdownMobile onItemClick={onItemClick} />
-  ) : (
-    <ServicioTecnicoDropdownDesktop />
-  );
+// This file exists to satisfy TypeScript compilation but is not used
+// Dropdowns are only available for: Dispositivos móviles, Televisores y AV, Electrodomésticos
+export default function ServicioTecnicoDropdown() {
+  return null;
 }

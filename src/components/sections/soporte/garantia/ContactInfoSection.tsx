@@ -61,7 +61,7 @@ export function ContactInfoSection() {
                 <div className="flex justify-center mb-4">
                   <div className="w-32 h-32 rounded-lg overflow-hidden">
                     <Image
-                      src="https://res.cloudinary.com/dbqgbemui/image/upload/v1765474064/Generated_Image_December_11_2025_-_12_27PM_rm79sv.jpg"
+                      src="https://res.cloudinary.com/dcljjtnxr/image/upload/v1759841463/Whatsapp_Contact_Info_nvowjp.png"
                       alt="WhatsApp QR Code"
                       width={128}
                       height={128}

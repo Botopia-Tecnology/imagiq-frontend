@@ -265,7 +265,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       // IMPORTANTE: Verificar que haya dirección guardada antes de intentar leer del cache
       // Esto evita intentar leer del cache cuando el usuario se registra como invitado pero aún no ha agregado dirección
       let hasAddress = false;
-      const addressCheckDetails: { savedAddressExists: boolean; hasCiudad: boolean; hasLineaUno: boolean } = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
+      let addressCheckDetails = { savedAddressExists: false, hasCiudad: false, hasLineaUno: false };
       try {
         if (savedAddress && savedAddress !== 'null' && savedAddress !== 'undefined') {
           addressCheckDetails.savedAddressExists = true;
@@ -281,7 +281,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             hasAddress = true;
           }
         }
-      } catch (error: unknown) {
+      } catch (error) {
         console.error('Error al verificar dirección en onlyReadCache:', error);
       }
 

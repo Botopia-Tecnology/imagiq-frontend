@@ -13,7 +13,6 @@ import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import type { Menu } from "@/lib/api";
 import { isStaticCategoryUuid } from "@/constants/staticCategories";
 import OfertasDropdown from "@/components/dropdowns/ofertas";
-import ServicioTecnicoDropdown from "@/components/dropdowns/servicio_tecnico";
 import type { DropdownName } from "../types";
 
 type Props = {
@@ -116,19 +115,13 @@ export const MobileMenu: FC<Props> = ({
   const getSubmenuComponent = (): ReactNode | null => {
     if (!activeSubmenu) return null;
 
-    // Si es un dropdown estático (Ofertas, Servicio Técnico)
+    // Si es un dropdown estático (Ofertas)
     if (activeDropdownName) {
       switch (activeDropdownName) {
         case "Ofertas":
           return (
             <div className="flex-1 overflow-y-auto">
               <OfertasDropdown isMobile={true} onItemClick={() => onClose()} />
-            </div>
-          );
-        case "Servicio Técnico":
-          return (
-            <div className="flex-1 overflow-y-auto">
-              <ServicioTecnicoDropdown isMobile={true} onItemClick={() => onClose()} />
             </div>
           );
         default:

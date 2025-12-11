@@ -20,7 +20,6 @@ import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
 import { usePrefetchOfertas } from "@/hooks/usePrefetchOfertas";
 import { useHeroContext } from "@/contexts/HeroContext";
 import OfertasDropdown from "./dropdowns/ofertas";
-import ServicioTecnicoDropdown from "./dropdowns/servicio_tecnico";
 import DynamicDropdown from "./dropdowns/dynamic";
 import UserOptionsDropdown from "@/components/dropdowns/user_options";
 import { useAuthContext } from "@/features/auth/context";
@@ -143,8 +142,6 @@ export default function Navbar() {
     switch (name) {
       case "Ofertas":
         return <OfertasDropdown {...props} />;
-      case "Servicio Técnico":
-        return <ServicioTecnicoDropdown {...props} />;
       default:
         return null;
     }

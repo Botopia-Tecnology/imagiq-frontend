@@ -13,7 +13,6 @@ import { useNavbarVisibility } from "@/features/layout/NavbarVisibilityContext";
 import { usePreloadAllProducts } from "@/hooks/usePreloadAllProducts";
 import { useClarityIdentity } from "@/hooks/useClarityIdentity";
 import { useInWebCampaign } from "@/hooks/useInWebCampaign";
-import { useFavicon } from "@/hooks/useFavicon";
 import VersionManager from "@/components/VersionManager";
 import { InWebCampaignDisplay } from "@/components/InWebCampaign/InWebCampaignDisplay";
 
@@ -49,9 +48,6 @@ export default function ClientLayout({
 
   // Precargar productos de todas las combinaciones posibles en background
   usePreloadAllProducts();
-
-  // Actualizar el favicon dinámicamente desde la base de datos
-  useFavicon();
 
   // Validar children para evitar NaN
   const safeChildren =

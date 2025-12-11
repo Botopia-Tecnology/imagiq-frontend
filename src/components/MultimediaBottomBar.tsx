@@ -61,28 +61,28 @@ export default function MultimediaBottomBar({
       // Desktop: layout horizontal
       return (
         <>
-          {/* Móvil: Layout de 3 filas */}
+          {/* Móvil: Layout de 3 filas a la izquierda */}
           <div className="flex flex-col items-start gap-0.5 md:hidden">
-            {/* Fila 1: Precio actual + precio tachado */}
-            <div className="flex items-baseline gap-2">
-              <span className="text-lg font-bold text-[#222]">
-                {formatPrice(price)}
-              </span>
-              {originalPrice && originalPrice > price && (
-                <span className="text-sm text-gray-400 line-through">
-                  {formatPrice(originalPrice)}
-                </span>
-              )}
-            </div>
-            {/* Fila 2: Nombre del producto */}
-            <span className="text-xs text-[#222] font-medium line-clamp-1">
+            {/* Fila 1: Nombre del producto (Grande) */}
+            <span className="text-base font-bold text-[#222] line-clamp-1">
               {productName}
             </span>
-            {/* Fila 3: Ahorra X */}
+
+            {/* Fila 2: Precio actual */}
+            <span className="text-sm font-bold text-[#222]">
+              {formatPrice(price)}
+            </span>
+
+            {/* Fila 3: Precio tachado + Ahorro */}
             {originalPrice && originalPrice > price && (
-              <span className="text-xs text-green-600 font-semibold">
-                Ahorra {formatPrice(savings)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400 line-through">
+                  {formatPrice(originalPrice)}
+                </span>
+                <span className="text-xs text-green-600 font-semibold">
+                  Ahorra {formatPrice(savings)}
+                </span>
+              </div>
             )}
           </div>
 
@@ -126,14 +126,16 @@ export default function MultimediaBottomBar({
         <>
           {/* Móvil: Layout de 3 filas a la izquierda */}
           <div className="flex flex-col items-start gap-0.5 md:hidden">
-            {/* Fila 1: Cuota mensual */}
+            {/* Fila 1: Nombre del producto (Grande) */}
+            <span className="text-base font-bold text-[#222] line-clamp-1">
+              {productName}
+            </span>
+
+            {/* Fila 2: Cuota mensual */}
             <span className="text-sm font-bold text-[#222]">
               {textoSimpleFinal}
             </span>
-            {/* Fila 2: Nombre del producto */}
-            <span className="text-xs text-[#222] font-medium line-clamp-1">
-              {productName}
-            </span>
+
             {/* Fila 3: Precio de contado */}
             <span className="text-xs text-gray-500">
               o {formatPrice(price)}

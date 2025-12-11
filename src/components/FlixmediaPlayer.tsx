@@ -8,7 +8,8 @@
 "use client";
 
 import { useEffect, useRef, memo, useCallback, useState } from "react";
-import { parseSkuString } from "@/lib/flixmedia";
+import { parseSkuString, findAvailableSku, findAvailableEan } from "@/lib/flixmedia";
+import { useRouter } from "next/navigation";
 
 declare global {
   interface Window {
@@ -32,12 +33,53 @@ function FlixmediaPlayerComponent({
   mpn,
   ean,
   className = "",
-  productId
+  productId,
+  segmento
 }: FlixmediaPlayerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
   // Generar ID único para este montaje del componente
   const [uniqueId] = useState(() => `flix-inpage-${Math.random().toString(36).substr(2, 9)}`);
   const currentMpnRef = useRef<string | null>(null);
+
+  // Validación de contenido disponible
+  useEffect(() => {
+    async function validateContent() {
+      if (!mpn && !ean) return;
+
+      let hasContent = false;
+
+      // Validar SKU
+      if (mpn) {
+        const skus = parseSkuString(mpn);
+        if (skus.length > 0) {
+          const availableSku = await findAvailableSku(skus);
+          if (availableSku) hasContent = true;
+        }
+      }
+
+      // Validar EAN si no encontramos SKU
+      if (!hasContent && ean) {
+        const eans = parseSkuString(ean);
+        if (eans.length > 0) {
+          const availableEan = await findAvailableEan(eans);
+          if (availableEan) hasContent = true;
+        }
+      }
+
+      // Redirigir si no hay contenido
+      if (!hasContent) {
+        console.log('[FLIXMEDIA] ❌ No hay contenido disponible - Redirigiendo');
+        const isPremium = segmento && (Array.isArray(segmento) ? segmento[0] : segmento)?.toLowerCase() === 'premium';
+        const route = isPremium
+          ? `/productos/viewpremium/${productId}`
+          : `/productos/view/${productId}`;
+        router.replace(route);
+      }
+    }
+
+    validateContent();
+  }, [mpn, ean, productId, segmento, router]);
 
   const applyStyles = useCallback(() => {
     if (document.getElementById("flixmedia-player-styles")) return;

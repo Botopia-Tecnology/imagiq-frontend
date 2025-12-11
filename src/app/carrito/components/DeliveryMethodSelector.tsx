@@ -160,10 +160,10 @@ export const DeliveryMethodSelector: React.FC<DeliveryMethodSelectorProps> = ({
                       {address
                         ? (() => {
                             // El backend usa snake_case, necesitamos acceder a linea_uno
-                            const addressObj = address as any;
+                            const addressWithSnakeCase = address as Address & { linea_uno?: string };
                             const displayAddress =
                               address.direccionFormateada ||
-                              addressObj.linea_uno ||
+                              addressWithSnakeCase.linea_uno ||
                               address.lineaUno ||
                               address.nombreDireccion ||
                               'Dirección';

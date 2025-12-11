@@ -1,6 +1,6 @@
 import type { DropdownName, NavItem } from "../types";
 
-const STATIC_DROPDOWNS: readonly DropdownName[] = ["Ofertas"] as const;
+const STATIC_DROPDOWNS: readonly DropdownName[] = ["Ofertas", "Servicio Técnico"] as const;
 
 /**
  * Determina si una categoría debe mostrar dropdown
@@ -11,8 +11,8 @@ export const hasDropdownMenu = (
   name: string,
   item?: NavItem
 ): name is DropdownName => {
-  // Si la categoría tiene UUID y no es estática (ofertas, tiendas, soporte), tiene dropdown
-  if (item?.uuid && !["ofertas", "tiendas", "soporte"].includes(item.uuid)) {
+  // Si la categoría tiene UUID y no es estática (ofertas, tiendas), tiene dropdown
+  if (item?.uuid && !["ofertas", "tiendas"].includes(item.uuid)) {
     return true;
   }
 

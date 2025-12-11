@@ -5,6 +5,7 @@ import { ProductCardProps } from "@/app/productos/components/ProductCard";
 import ARExperienceHandler from "../../electrodomesticos/components/ARExperienceHandler";
 import { useCeroInteres } from "@/hooks/useCeroInteres";
 import { useProductSelection } from "@/hooks/useProductSelection";
+import { cleanProductName } from "@/lib/utils";
 
 interface ProductInfoProps {
   product: ProductCardProps;
@@ -158,7 +159,7 @@ const ProductInfo = forwardRef<HTMLDivElement, ProductInfoProps>(({
 
           <div className="border-2 border-blue-600 rounded-md p-3 bg-blue-50/30">
             <div className="flex items-center justify-between gap-2">
-              <div className="font-bold text-black text-sm flex-1 self-center">{product.name}</div>
+              <div className="font-bold text-black text-sm flex-1 self-center">{cleanProductName(productSelection.selectedModelo || product.name)}</div>
               <div className="text-right self-center">
                 {(() => {
                   // Usar precio del sistema de selección si está disponible

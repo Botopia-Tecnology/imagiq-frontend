@@ -4,6 +4,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FiShoppingCart } from "react-icons/fi";
 import { useCeroInteres } from "@/hooks/useCeroInteres";
+import { cleanProductName } from "@/lib/utils";
 
 interface StickyPriceBarProps {
   deviceName: string;
@@ -63,8 +64,10 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
     }).format(price);
   };
 
-  // Nombre completo con configuración
-  const fullDeviceName = `${deviceName}${selectedStorage ? ` ${selectedStorage}` : ""}${selectedColor ? ` - ${selectedColor}` : ""}`;
+  // Nombre completo con configuración (limpiando "No aplica")
+  const fullDeviceName = cleanProductName(
+    `${deviceName}${selectedStorage ? ` ${selectedStorage}` : ""}${selectedColor ? ` - ${selectedColor}` : ""}`
+  );
 
   // Renderizar información de precio según indcerointeres (SOLO PARA DESKTOP)
   const renderPriceInfoDesktop = () => {

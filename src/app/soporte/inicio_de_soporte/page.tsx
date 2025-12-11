@@ -571,7 +571,9 @@ export default function InicioDeSoportePage() {
                         : "Pago rechazado"}
                     </div>
                     {supportOrderId && (
-                      <div className="mt-1">Número de orden: <strong>{supportOrderId}</strong></div>
+                      <div className="mt-1">
+                        Número de orden: <strong>{supportOrderId}</strong>
+                      </div>
                     )}
                   </div>
                   <button

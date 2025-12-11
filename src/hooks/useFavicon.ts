@@ -19,7 +19,13 @@ export function useFavicon() {
     // ELIMINAR todos los favicons existentes (incluyendo el de Next.js)
     const existingLinks = document.querySelectorAll("link[rel*='icon']")
     console.log(`🗑️ [useFavicon] Eliminando ${existingLinks.length} favicon(s) existente(s)`)
-    existingLinks.forEach((link) => link.remove())
+    existingLinks.forEach((link) => {
+      // Verificar que el parentNode existe antes de remover
+      // Esto previene el error "Cannot read properties of null (reading 'removeChild')"
+      if (link.parentNode) {
+        link.parentNode.removeChild(link)
+      }
+    })
 
     // Crear un NUEVO favicon con el URL dinámico
     const newLink = document.createElement('link')

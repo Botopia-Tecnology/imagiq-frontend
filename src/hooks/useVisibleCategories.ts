@@ -143,7 +143,7 @@ export function useVisibleCategories() {
       href: "/soporte/inicio_de_soporte",
       category: "soporte",
       categoryCode: "soporte",
-      dropdownName: undefined, // Sin dropdown, redirige directamente
+      dropdownName: "Servicio Técnico", // Dropdown con opciones de soporte
       uuid: "soporte",
       totalProducts: 0,
       orden: 1001,

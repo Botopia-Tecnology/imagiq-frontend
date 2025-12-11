@@ -52,13 +52,13 @@ export default function MultimediaBannerSlide({
   };
 
   return (
-    <div className="relative w-full" style={{ maxHeight: '310px', overflow: 'hidden' }}>
+    <div className="relative w-full" style={{ maxHeight: isMobile ? '310px' : undefined, overflow: 'hidden' }}>
       {/* Fondo - Imagen o Video */}
       {videoUrl && !hasPlayedVideo ? (
         <video
           ref={videoRef}
           className="w-full h-auto"
-          style={{ maxHeight: '310px', objectFit: 'cover' }}
+          style={{ maxHeight: isMobile ? '310px' : undefined, objectFit: 'cover' }}
           muted
           playsInline
           onEnded={handleVideoEnd}
@@ -69,10 +69,10 @@ export default function MultimediaBannerSlide({
         <Image
           src={imageUrl}
           alt={banner.title || banner.name}
-          width={1260}
-          height={621}
+          width={isMobile ? 414 : 1260}
+          height={isMobile ? 310 : 621}
           className="w-full h-auto"
-          style={{ maxHeight: '310px', objectFit: 'cover' }}
+          style={{ maxHeight: isMobile ? '310px' : undefined, objectFit: 'cover' }}
           priority={isActive}
         />
       ) : null}
@@ -82,14 +82,14 @@ export default function MultimediaBannerSlide({
         className="absolute pointer-events-auto max-w-2xl"
         style={{
           color: banner.color_font,
-          left: `${position.x}%`,
-          top: `${position.y}%`,
-          transform: 'translate(-50%, -50%)',
-          textAlign: position.x <= 33 ? 'left' : position.x >= 66 ? 'right' : 'center',
+          left: isMobile ? '50%' : `${position.x}%`,
+          top: isMobile ? '40%' : `${position.y}%`,
+          transform: isMobile ? 'translate(-50%, -50%)' : 'translate(-50%, -50%)',
+          textAlign: isMobile ? 'center' : (position.x <= 33 ? 'left' : position.x >= 66 ? 'right' : 'center'),
         }}
       >
         {banner.title && (
-          <h2 
+          <h2
             className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4"
             style={{
               color: banner.color_font,
@@ -99,9 +99,9 @@ export default function MultimediaBannerSlide({
             {banner.title}
           </h2>
         )}
-        
+
         {banner.description && (
-          <p 
+          <p
             className="text-base md:text-xl lg:text-2xl mb-6"
             style={{
               color: banner.color_font,
@@ -115,7 +115,7 @@ export default function MultimediaBannerSlide({
         {banner.cta && banner.link_url && (
           <Link
             href={banner.link_url}
-            className="inline-block px-8 py-3 rounded-full font-semibold text-base md:text-lg transition-transform hover:scale-105 active:scale-95"
+            className="inline-block px-6 py-2 md:px-8 md:py-3 rounded-full font-semibold text-sm md:text-base transition-transform hover:scale-105 active:scale-95"
             style={{
               backgroundColor: banner.color_font,
               color: '#000000',

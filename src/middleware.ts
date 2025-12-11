@@ -20,6 +20,7 @@ const KNOWN_ROUTES = new Set([
   'tiendas',
   'favoritos',
   'soporte',
+  'support',
   'ventas-corporativas',
   
   // Rutas de seguimiento y compras

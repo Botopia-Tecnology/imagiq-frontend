@@ -285,17 +285,19 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
 
-  // Solo mostrar error si no tenemos ni producto API ni producto inicial
-  if (error && !product) {
-    return notFound();
-  }
-
-  // Solo mostrar skeleton si no tenemos ningún producto
-  if (!product && loading) {
+  // SIEMPRE mostrar skeleton mientras está cargando el producto desde el API
+  // Esto evita el flash de contenido incompleto
+  if (loading) {
     return <ProductDetailSkeleton />;
   }
 
-  if (!product) {
+  // Si hubo error y no hay producto del API, mostrar not found
+  if (error && !apiProduct) {
+    return notFound();
+  }
+
+  // Si no hay producto del API después de cargar, mostrar not found
+  if (!apiProduct) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-center items-center min-h-[400px]">
@@ -312,8 +314,8 @@ export default function ProductViewPage({ params }) {
     );
   }
 
-  // En este punto, tenemos producto (ya sea del API o de localStorage)
-  // El skeleton se muestra en la línea 295 cuando loading=true y no hay product
+  // En este punto, apiProduct está garantizado que existe
+  const productToUse = apiProduct;
 
   return (
     <>
@@ -321,11 +323,11 @@ export default function ProductViewPage({ params }) {
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
-        productName={product.name}
+        productName={productToUse.name}
         productImage={
           productSelection?.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
+          (typeof productToUse.image === "string"
+            ? productToUse.image
             : smartphonesImg.src)
         }
         selectedColor={
@@ -341,7 +343,7 @@ export default function ProductViewPage({ params }) {
 
       {/* Renderizar contenido del producto */}
       <ProductContentWithVariants
-        product={product}
+        product={productToUse}
         onVariantsReady={setVariantsReady}
         onProductSelectionChange={handleProductSelectionChange}
         productSelection={productSelection}

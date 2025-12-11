@@ -289,23 +289,19 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
 
-  // Mostrar skeleton solo si no hay producto Y está cargando
-  if (!product && loading) {
+  // SIEMPRE mostrar skeleton mientras está cargando el producto desde el API
+  // Esto evita el flash de contenido incompleto
+  if (loading) {
     return <ViewPremiumSkeleton />;
   }
 
-  // Si tenemos producto pero showContent es false (el breve delay), mostrar skeleton
-  // OJO: Si es Optimistic UI, queremos evitar esto si es posible, pero el delay de 50ms es imperceptible
-  if (product && !showContent) {
-    // Podríamos retornar null o el skeleton. El skeleton evita saltos de layout.
-    return <ViewPremiumSkeleton />;
-  }
-
-  if (error && !product) {
+  // Si hubo error y no hay producto del API, mostrar not found
+  if (error && !apiProduct) {
     return notFound();
   }
 
-  if (!product) {
+  // Si no hay producto del API después de cargar, mostrar not found
+  if (!apiProduct) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-center items-center min-h-[400px]">
@@ -322,8 +318,12 @@ export default function ProductViewPage({ params }) {
     );
   }
 
+  // En este punto, apiProduct está garantizado que existe
+  // Usamos apiProduct directamente para evitar errores de null
+  const productToUse = apiProduct;
+
   // Validar que el producto tenga segmento PREMIUM
-  const isPremiumProduct = product.apiProduct?.segmento?.some(
+  const isPremiumProduct = productToUse.apiProduct?.segmento?.some(
     (seg) => seg?.toUpperCase() === "PREMIUM"
   );
 
@@ -340,13 +340,13 @@ export default function ProductViewPage({ params }) {
 
   const hasPremiumContent = 
     // Verificar en apiProduct (imagenPremium/videoPremium o sus alias)
-    checkArrayOfArrays(product.apiProduct?.imagenPremium) ||
-    checkArrayOfArrays(product.apiProduct?.videoPremium) ||
-    checkArrayOfArrays(product.apiProduct?.imagen_premium) ||
-    checkArrayOfArrays(product.apiProduct?.video_premium) ||
+    checkArrayOfArrays(productToUse.apiProduct?.imagenPremium) ||
+    checkArrayOfArrays(productToUse.apiProduct?.videoPremium) ||
+    checkArrayOfArrays(productToUse.apiProduct?.imagen_premium) ||
+    checkArrayOfArrays(productToUse.apiProduct?.video_premium) ||
     // Verificar en los colores del producto (imagen_premium/video_premium)
     // En los colores vienen como string[] (array simple)
-    product.colors?.some(color => {
+    productToUse.colors?.some(color => {
       const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) && 
         color.imagen_premium.length > 0 && 
         color.imagen_premium.some(img => img && typeof img === 'string' && img.trim() !== '');
@@ -365,8 +365,8 @@ export default function ProductViewPage({ params }) {
   // Obtener indcerointeres del producto (puede venir como array del API)
   const getIndcerointeres = (): number => {
     // Si el producto tiene apiProduct (datos del API)
-    if (product.apiProduct?.indcerointeres) {
-      const indcerointeresArray = product.apiProduct.indcerointeres;
+    if (productToUse.apiProduct?.indcerointeres) {
+      const indcerointeresArray = productToUse.apiProduct.indcerointeres;
       // Tomar el primer valor del array, si no existe usar 0
       return indcerointeresArray[0] ?? 0;
     }
@@ -380,10 +380,10 @@ export default function ProductViewPage({ params }) {
     <>
       {/* StickyPriceBar exacto de la página view normal */}
       <StickyPriceBar
-        deviceName={product.name}
+        deviceName={productToUse.name}
         basePrice={productSelection.selectedPrice || (() => {
-          const selectedCapacity = product.capacities?.find(c => c.value === selectedStorage);
-          const priceStr = selectedCapacity?.price || product.price || "0";
+          const selectedCapacity = productToUse.capacities?.find(c => c.value === selectedStorage);
+          const priceStr = selectedCapacity?.price || productToUse.price || "0";
           return Number.parseInt(String(priceStr).replaceAll(/\D/g, ''), 10);
         })()}
         selectedStorage={productSelection.selection.selectedCapacity || ((selectedStorage || undefined) && String(selectedStorage).replace(/(\d+)\s*gb\b/i, '$1 GB'))}
@@ -391,12 +391,12 @@ export default function ProductViewPage({ params }) {
           productSelection.getSelectedColorOption()?.nombreColorDisplay ||
           productSelection.selection.selectedColor ||
           (() => {
-            const colorObj = product.colors?.find(c => c.name === selectedColor);
+            const colorObj = productToUse.colors?.find(c => c.name === selectedColor);
             return colorObj?.nombreColorDisplay || colorObj?.label || selectedColor || undefined;
           })()
         }
         indcerointeres={indcerointeres}
-        allPrices={product.apiProduct?.precioeccommerce || []}
+        allPrices={productToUse.apiProduct?.precioeccommerce || []}
         isVisible={showStickyBar}
         onBuyClick={handleBuyNow}
         hasStock={hasStock()}
@@ -416,7 +416,7 @@ export default function ProductViewPage({ params }) {
           <div className="lg:col-span-9 lg:sticky lg:top-24 self-start overflow-hidden lg:-mt-8">
             <ProductCarousel
               ref={carouselRef}
-              product={product}
+              product={productToUse}
               selectedColor={selectedColor}
               currentImageIndex={currentImageIndex}
               setCurrentImageIndex={setCurrentImageIndex}
@@ -433,7 +433,7 @@ export default function ProductViewPage({ params }) {
             <div className="max-w-7xl mx-auto">
               <ProductInfo
                 ref={specsRef}
-                product={product}
+                product={productToUse}
                 selectedColor={selectedColor}
                 selectedStorage={selectedStorage}
                 selectedRam={selectedRam}
@@ -473,8 +473,8 @@ export default function ProductViewPage({ params }) {
       {/* Especificaciones y Flix Media */}
       <div className="relative flex items-center justify-center w-full min-h-[100px] py-0 -mt-8">
         <Specifications
-          product={product}
-          flix={product}
+          product={productToUse}
+          flix={productToUse}
           selectedSku={productSelection.selectedSku || undefined}
           selectedEan={productSelection.selectedVariant?.ean || undefined}
         />
@@ -482,7 +482,7 @@ export default function ProductViewPage({ params }) {
 
       {/* Botón de añadir al carrito al final de la página */}
       <AddToCartButton
-        product={product}
+        product={productToUse}
         productSelection={productSelection}
         onNotifyStock={stockNotification.openModal}
       />
@@ -491,11 +491,11 @@ export default function ProductViewPage({ params }) {
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
-        productName={product.name}
+        productName={productToUse.name}
         productImage={
           productSelection.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
+          (typeof productToUse.image === "string"
+            ? productToUse.image
             : fallbackImage.src)
         }
         selectedColor={productSelection.getSelectedColorOption()?.nombreColorDisplay || productSelection.selection.selectedColor || undefined}
@@ -509,7 +509,7 @@ export default function ProductViewPage({ params }) {
         productImages={detailImages}
         modalImageIndex={modalImageIndex}
         slideDirection={slideDirection}
-        product={product}
+        product={productToUse}
         selectedColor={selectedColor}
         onClose={closeModal}
         onNextImage={goToNextImage}

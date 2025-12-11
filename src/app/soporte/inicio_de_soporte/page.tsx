@@ -496,7 +496,7 @@ export default function InicioDeSoportePage() {
 
   // Obtener el documento con valor a pagar
   const getDocumentoConValor = () => {
-    return result?.obtenerDocumentosResult?.documentos?.find(
+    return result?.obtenerDocumentosResult?.documentos?.findLast(
       (d) => d?.valor && d.valor !== "0,0000" && d.estadoNombre === "En Cotización"
     );
   };

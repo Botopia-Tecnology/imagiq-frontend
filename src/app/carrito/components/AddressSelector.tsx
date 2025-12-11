@@ -197,7 +197,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
             {addresses.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <p className="mb-4">No tienes direcciones guardadas</p>
-                <p className="text-sm">Haz click en "Añadir nueva" para crear tu primera dirección</p>
+                <p className="text-sm">Haz click en &quot;Añadir nueva&quot; para crear tu primera dirección</p>
               </div>
             )}
           </>

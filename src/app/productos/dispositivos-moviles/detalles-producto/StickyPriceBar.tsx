@@ -66,104 +66,68 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
   // Nombre completo con configuración
   const fullDeviceName = `${deviceName}${selectedStorage ? ` ${selectedStorage}` : ""}${selectedColor ? ` - ${selectedColor}` : ""}`;
 
-  // Renderizar información de precio según indcerointeres
-  const renderPriceInfo = () => {
+  // Renderizar información de precio según indcerointeres (SOLO PARA DESKTOP)
+  const renderPriceInfoDesktop = () => {
     if (indcerointeres === 0) {
-      // CASO 0: Solo precio de contado (SIN cuotas)
       return (
-        <div className="flex-1 flex justify-center items-center min-w-0">
-          <div className="flex items-baseline gap-2 flex-wrap justify-center">
-            <span className="text-xl md:text-2xl font-bold text-[#222]">
-              {formatPrice(basePrice)}
-            </span>
-            {originalPrice && originalPrice > basePrice && (
-              <>
-                <span className="text-base text-gray-400 line-through">
-                  {formatPrice(originalPrice)}
-                </span>
-                <span className="text-green-600 font-semibold text-sm">
-                  Ahorra {formatPrice(savings)}
-                </span>
-              </>
-            )}
-          </div>
+        <div className="flex items-baseline gap-2 flex-wrap justify-center">
+          <span className="text-xl md:text-2xl font-bold text-[#222]">
+            {formatPrice(basePrice)}
+          </span>
+          {originalPrice && originalPrice > basePrice && (
+            <>
+              <span className="text-base text-gray-400 line-through">
+                {formatPrice(originalPrice)}
+              </span>
+              <span className="text-green-600 font-semibold text-sm">
+                Ahorra {formatPrice(savings)}
+              </span>
+            </>
+          )}
         </div>
       );
     }
 
     if (indcerointeres === 1) {
-      // CASO 1: Cuotas sin interés (0%)
       const textoInteresCompleto = ceroInteres.formatText();
-      const textoInteresSimple = ceroInteres.formatTextSimple();
-      
-      // Si hay error o está cargando, solo mostrar precio
-      if (ceroInteres.error || !textoInteresCompleto || !textoInteresSimple) {
-        return (
-          <div className="flex-1 flex justify-center items-center min-w-0">
-            <div className="flex items-baseline gap-2 flex-wrap justify-center">
-              <span className="text-xl md:text-2xl font-bold text-[#222]">
-                {formatPrice(basePrice)}
-              </span>
-            </div>
-          </div>
-        );
-      }
+      const cuotaMensualCalculada = ceroInteres.cuotaMensual || Math.round(basePrice / 24);
+      const plazoMeses = ceroInteres.plazoMaximo || 24;
+      const cuotaFormateada = formatPrice(cuotaMensualCalculada);
+      const textoCompletoFinal = textoInteresCompleto || `Desde ${cuotaFormateada} al mes en ${plazoMeses} cuotas sin interés`;
 
       return (
-        <div className="flex-1 flex justify-center items-center min-w-0 px-2">
-          <div className="text-center w-full">
-            {/* Layout limpio y espaciado */}
-            <div className="flex flex-col items-center gap-1">
-              {/* Móvil: Texto simplificado - Desktop: Texto completo */}
-              <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-[#222] leading-tight">
-                <span className="md:hidden">{textoInteresSimple}</span>
-                <span className="hidden md:inline">{textoInteresCompleto}</span>
-              </div>
-              {/* Separador "o" solo en móvil */}
-              <div className="text-[10px] text-gray-500 md:hidden">o</div>
-              {/* Precio de contado */}
-              <div className="text-[13px] sm:text-sm md:text-base font-bold text-[#222]">
-                {formatPrice(basePrice)}
-              </div>
+        <div className="text-center w-full">
+          <div className="flex flex-col items-center gap-1">
+            <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-[#222] leading-tight">
+              {textoCompletoFinal}
+            </div>
+            <div className="text-[10px] text-gray-500">o</div>
+            <div className="text-[13px] sm:text-sm md:text-base font-bold text-[#222]">
+              {formatPrice(basePrice)}
             </div>
           </div>
         </div>
       );
     }
 
-    // DEFAULT: Con financiación Addi (para otros valores)
+    // DEFAULT: Addi
     return (
-      <div className="flex-1 flex justify-center items-center min-w-0">
-        <div className="text-center">
-          {/* Móvil: Solo precio de contado */}
-          <div className="md:hidden">
-            <span className="text-base font-bold text-[#222]">
-              {formatPrice(basePrice)}
-            </span>
-          </div>
-
-          {/* Desktop: Información completa */}
-          <div className="hidden md:block">
-            {/* Primera línea: Precio mensual con cuotas */}
-            <div className="flex items-baseline justify-center gap-1 flex-wrap text-xs">
-              <span className="text-gray-600">Desde</span>
-              <span className="text-base md:text-lg font-bold text-[#222]">
-                {formatPrice(monthlyPayment)}
-              </span>
-              <span className="text-gray-600">al mes en 12 cuotas sin intereses*</span>
-            </div>
-
-            {/* Segunda línea: Precio de contado y condiciones */}
-            <div className="flex items-center justify-center gap-1 flex-wrap text-xs">
-              <span className="text-gray-600">o</span>
-              <span className="font-semibold text-[#222]">
-                {formatPrice(basePrice)}
-              </span>
-              <span className="text-gray-500">
-                *Aplican condiciones. Sujeto a aprobación crediticia.
-              </span>
-            </div>
-          </div>
+      <div className="text-center">
+        <div className="flex items-baseline justify-center gap-1 flex-wrap text-xs">
+          <span className="text-gray-600">Desde</span>
+          <span className="text-base md:text-lg font-bold text-[#222]">
+            {formatPrice(monthlyPayment)}
+          </span>
+          <span className="text-gray-600">al mes en 12 cuotas sin intereses*</span>
+        </div>
+        <div className="flex items-center justify-center gap-1 flex-wrap text-xs">
+          <span className="text-gray-600">o</span>
+          <span className="font-semibold text-[#222]">
+            {formatPrice(basePrice)}
+          </span>
+          <span className="text-gray-500">
+            *Aplican condiciones. Sujeto a aprobación crediticia.
+          </span>
         </div>
       </div>
     );
@@ -174,17 +138,72 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
     <>
       <div className="mx-auto px-4 lg:px-8">
         <div className="flex items-center justify-between gap-2 md:gap-4 py-2.5">
-          {/* IZQUIERDA: Nombre del dispositivo */}
-          <div className="flex-shrink-0 max-w-[140px] md:max-w-[240px]">
+          {/* MÓVIL: Layout agrupado a la izquierda (Nombre + Precio + Ahorro) */}
+          <div className="flex-1 flex md:hidden items-center min-w-0">
+            <div className="flex flex-col items-start gap-0.5 min-w-0">
+              {/* Fila 1: Nombre */}
+              <h3 className="text-xs font-bold text-[#222] line-clamp-1">
+                {fullDeviceName}
+              </h3>
+
+              {/* Filas 2 y 3: Precio según indcerointeres */}
+              {indcerointeres === 0 ? (
+                <>
+                  <span className="text-sm font-bold text-[#222]">
+                    {formatPrice(basePrice)}
+                  </span>
+                  {originalPrice && originalPrice > basePrice && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 line-through">
+                        {formatPrice(originalPrice)}
+                      </span>
+                      <span className="text-xs text-green-600 font-semibold">
+                        Ahorra {formatPrice(savings)}
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : indcerointeres === 1 ? (
+                <>
+                  {(() => {
+                    const textoInteresSimple = ceroInteres.formatTextSimple();
+                    const cuotaMensualCalculada = ceroInteres.cuotaMensual || Math.round(basePrice / 24);
+                    const plazoMeses = ceroInteres.plazoMaximo || 24;
+                    const cuotaFormateada = formatPrice(cuotaMensualCalculada);
+                    const textoSimpleFinal = textoInteresSimple || `${cuotaFormateada} en ${plazoMeses} meses`;
+
+                    return (
+                      <>
+                        <span className="text-sm font-bold text-[#222]">
+                          {textoSimpleFinal}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          o {formatPrice(basePrice)}
+                        </span>
+                      </>
+                    );
+                  })()}
+                </>
+              ) : (
+                <span className="text-sm font-bold text-[#222]">
+                  {formatPrice(basePrice)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* DESKTOP: Layout original (Nombre izquierda, Precio centro) */}
+          <div className="hidden md:flex flex-shrink-0 max-w-[240px]">
             <h3 className="text-xs md:text-sm font-semibold text-[#222] leading-snug line-clamp-2">
               {fullDeviceName}
             </h3>
           </div>
 
-          {/* CENTRO: Información de precio */}
-          {renderPriceInfo()}
+          <div className="hidden md:flex flex-1 justify-center items-center min-w-0">
+            {renderPriceInfoDesktop()}
+          </div>
 
-          {/* DERECHA: CTA */}
+          {/* DERECHA: CTA (mismo para móvil y desktop) */}
           <div className="flex-shrink-0">
             {hasStock ? (
               <motion.button
@@ -246,7 +265,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       {/* Versión inicial: siempre visible debajo del navbar principal */}
       {!isVisible && (
         <div
-          className="fixed top-[70px] xl:top-[95px] left-0 right-0 z-[1500] bg-white border-b border-gray-200 shadow-sm"
+          className="fixed top-[50px] md:top-[70px] xl:top-[95px] left-0 right-0 z-[1500] bg-white border-b border-gray-200 shadow-sm"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           <BarContent />

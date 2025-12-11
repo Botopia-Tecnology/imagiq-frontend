@@ -70,6 +70,8 @@ export interface UseProductSelectionReturn {
   selectedDiscount: number | null;
   selectedStockTotal: number | null;
   selectedVariant: ProductVariant | null;
+  selectedModelo: string | null;
+  selectedNombreMarket: string | null;
 
   // Funciones de selección
   selectColor: (color: string) => void;
@@ -590,6 +592,8 @@ export function useProductSelection(apiProduct: ProductApiData, productColors?: 
     selectedDiscount,
     selectedStockTotal,
     selectedVariant,
+    selectedModelo: selectedVariant ? apiProduct.modelo[selectedVariant.index] : (apiProduct.modelo[0] || null),
+    selectedNombreMarket: selectedVariant ? apiProduct.nombreMarket[selectedVariant.index] : (apiProduct.nombreMarket[0] || null),
     selectColor,
     selectCapacity,
     selectMemoriaram,

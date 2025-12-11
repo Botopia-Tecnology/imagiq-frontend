@@ -1,5 +1,6 @@
 import React from "react";
 import { Heart } from "lucide-react";
+import { cleanProductName } from "@/lib/utils";
 
 interface ProductHeaderProps {
   readonly name: string;
@@ -40,7 +41,7 @@ export default function ProductHeader({
           className="text-[2rem] leading-tight font-bold text-[#222] flex-1"
           style={{ letterSpacing: "-0.5px" }}
         >
-          {name}
+          {cleanProductName(name)}
         </h1>
         {/* Botón de favoritos */}
         <button
@@ -59,14 +60,14 @@ export default function ProductHeader({
       </div>
 
       {/* Información del producto */}
-      {((process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (sku || codigoMarket)) || stock !== undefined || stockTotal !== undefined) && (
+      {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && (sku || codigoMarket || stock !== undefined || stockTotal !== undefined) && (
         <div className="text-sm text-gray-500 mb-3 space-y-1">
-          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && sku && (
+          {sku && (
             <div>
               <span className="font-medium">SKU:</span> {sku}
             </div>
           )}
-          {process.env.NEXT_PUBLIC_SHOW_PRODUCT_CODES === 'true' && codigoMarket && (
+          {codigoMarket && (
             <div>
               <span className="font-medium">Código:</span> {codigoMarket}
             </div>

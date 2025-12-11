@@ -4,13 +4,20 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/api-client";
 
+interface SupportVerifyResult {
+  status?: number | string;
+  requiresAction?: boolean;
+  message?: string;
+  [key: string]: unknown;
+}
+
 export default function VerifySupportPurchase(
   props: Readonly<{ params: Readonly<Promise<{ id: string }>> }>
 ) {
   const { params } = props;
   const [orderId, setOrderId] = useState<string | null>(null);
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading] = useState(true);
 
   useEffect(() => {
     params.then(({ id }) => {
@@ -27,14 +34,16 @@ export default function VerifySupportPurchase(
     );
 
     try {
-      const data = await apiGet(`/api/orders/support/verify/${orderId}`);
+      const data = await apiGet<SupportVerifyResult>(
+        `/api/orders/support/verify/${orderId}`
+      );
       console.log(
         "📦 [VERIFY-SUPPORT] Response data completo:",
         JSON.stringify(data, null, 2)
       );
 
       // Handle pending with additional action (if payments-ms returns such field)
-      if (data.status === "PENDING" && data.requiresAction) {
+      if (data?.status === "PENDING" && data.requiresAction) {
         console.log(
           "⏳ [VERIFY-SUPPORT] Transacción pendiente de validación. Reintentando en 5s..."
         );
@@ -50,12 +59,12 @@ export default function VerifySupportPurchase(
           s
         )}&orderId=${encodeURIComponent(orderId)}`;
 
-      if (data.status === 200 || data.status === "APPROVED") {
+      if (data?.status === 200 || data?.status === "APPROVED") {
         console.log(
           "✅ [VERIFY-SUPPORT] Pago aprobado, redirigiendo a soporte..."
         );
         router.push(target("APPROVED"));
-      } else if (data.status === "PENDING") {
+      } else if (data?.status === "PENDING") {
         console.log(
           "⏳ [VERIFY-SUPPORT] Pago pendiente. Redirigiendo a soporte para estado pendiente..."
         );
@@ -69,7 +78,12 @@ export default function VerifySupportPurchase(
         "💥 [VERIFY-SUPPORT] Error verificando orden de soporte:",
         error
       );
-      router.push("/error-checkout");
+      // If verification fails unexpectedly, show the support-specific error screen
+      router.push(
+        `/support/error-checkout?orderId=${encodeURIComponent(
+          orderId ?? ""
+        )}&status=REJECTED`
+      );
     }
   }, [orderId, router]);
 

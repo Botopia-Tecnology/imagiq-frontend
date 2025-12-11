@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useEffect } from "react";
 
@@ -39,15 +40,15 @@ export default function SupportSuccessPage() {
         </p>
 
         <div className="flex justify-center gap-3">
-          <a
+          <Link
             href="/soporte/inicio_de_soporte"
             className="px-4 py-2 bg-emerald-600 text-white rounded"
           >
             Volver a soporte
-          </a>
-          <a href="/" className="px-4 py-2 border rounded">
+          </Link>
+          <Link href="/" className="px-4 py-2 border rounded">
             Ir al inicio
-          </a>
+          </Link>
         </div>
 
         <p className="mt-6 text-xs text-gray-400">

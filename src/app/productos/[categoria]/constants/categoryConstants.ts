@@ -88,7 +88,7 @@ export function getCategoryFilters(
 
   // Convertir FilterConfig a FilterState inicial (arrays vacíos)
   Object.keys(filterConfig).forEach((key) => {
-    initialState[key] = [];
+    initialState[key as keyof FilterState] = [];
   });
 
   return initialState;

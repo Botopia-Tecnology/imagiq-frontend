@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
 
 type Props = Readonly<{
@@ -11,7 +10,6 @@ type Props = Readonly<{
 
 export function MobileView({ onItemClick }: Props) {
   const { ofertas, loading } = useOfertasDirectas();
-  const router = useRouter();
 
   if (loading) {
     return (
@@ -73,14 +71,12 @@ export function MobileView({ onItemClick }: Props) {
                 <Link
                   key={oferta.uuid}
                   href={href}
-                  onClick={(e) => {
-                    e.preventDefault();
+                  onClick={() =>
                     onItemClick(
                       oferta.producto.nombreMarket || oferta.nombre,
                       href
-                    );
-                    router.push(href);
-                  }}
+                    )
+                  }
                   className="flex flex-col items-center text-center"
                 >
                   <div className="relative w-16 h-16 mb-2">

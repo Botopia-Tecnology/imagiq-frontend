@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { SERVICIO_TECNICO_MENU_ITEMS } from "./constants";
 
 type Props = {
@@ -9,8 +8,6 @@ type Props = {
 };
 
 export default function ServicioTecnicoDropdownDesktop({ onItemClick }: Props) {
-  const router = useRouter();
-
   return (
     <div className="bg-white shadow-lg rounded-b-lg border-t border-gray-200">
       <div className="max-w-7xl mx-auto px-8 py-6">
@@ -22,11 +19,7 @@ export default function ServicioTecnicoDropdownDesktop({ onItemClick }: Props) {
               <Link
                 key={item.title}
                 href={item.href}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onItemClick(item.title, item.href);
-                  router.push(item.href);
-                }}
+                onClick={() => onItemClick(item.title, item.href)}
                 className="block text-left w-full"
               >
                 <div className="flex items-start gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors group">

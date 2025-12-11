@@ -127,8 +127,8 @@ function FlixmediaPlayerComponent({
     // Verificar contenido premium
     const hasPremium = hasPremiumContent();
 
-    // Solo usar viewpremium si tiene segmento premium Y contenido premium
-    const route = (isPremiumSegment && hasPremium)
+    // Usar viewpremium si tiene segmento premium O contenido premium
+    const route = (isPremiumSegment || hasPremium)
       ? `/productos/viewpremium/${currentProductId}`
       : `/productos/view/${currentProductId}`;
 
@@ -220,8 +220,8 @@ function FlixmediaPlayerComponent({
           const isPremiumSegment = currentSegmento && (Array.isArray(currentSegmento) ? currentSegmento[0] : currentSegmento)?.toUpperCase() === 'PREMIUM';
           // Verificar contenido premium
           const hasPremium = hasPremiumContent();
-          // Solo usar viewpremium si tiene segmento premium Y contenido premium
-          const route = (isPremiumSegment && hasPremium)
+          // Usar viewpremium si tiene segmento premium O contenido premium
+          const route = (isPremiumSegment || hasPremium)
             ? `/productos/viewpremium/${currentProductId}`
             : `/productos/view/${currentProductId}`;
           console.log(`[FLIXMEDIA] ➡️ Redirigiendo a: ${route} (segmento: ${isPremiumSegment}, contenido: ${hasPremium})`);

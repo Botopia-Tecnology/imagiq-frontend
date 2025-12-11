@@ -7,7 +7,8 @@ export type DropdownName =
   | "Electrodomésticos"
   | "Monitores"
   | "Accesorios"
-  | "Soporte";
+  | "Soporte"
+  | "Servicio Técnico";
 
 export type NavItem = {
   name: string;

@@ -1,69 +1,35 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Direccion } from "@/types/user";
 import Step4OrderSummary from "./components/Step4OrderSummary";
 import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInCompletedSummary";
-import { useAuthContext } from "@/features/auth/context";
-import { addressesService } from "@/services/addresses.service";
-import type { Address } from "@/types/address";
-import Modal from "@/components/ui/Modal";
-import AddNewAddressForm from "./components/AddNewAddressForm";
-import { MapPin, Plus, Check } from "lucide-react";
-import { safeGetLocalStorage } from "@/lib/localStorage";
 import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 import { toast } from "sonner";
+import { CheckZeroInterestResponse } from "./types";
+import { DBCard } from "@/features/profile/types";
+import CardBrandLogo from "@/components/ui/CardBrandLogo";
 
-interface Step6Props {
-  readonly onBack?: () => void;
-  readonly onContinue?: () => void;
+interface Step5Props {
+  onBack?: () => void;
+  onContinue?: () => void;
 }
 
-type BillingType = "natural" | "juridica";
-
-interface BillingData {
-  type: BillingType;
-  // Campos comunes
-  nombre: string;
-  documento: string;
-  tipoDocumento?: string;
-  email: string;
-  telefono: string;
-  direccion: Direccion | null;
-
-  // Campos específicos de persona jurídica
-  razonSocial?: string;
-  nit?: string;
-  nombreRepresentante?: string;
+interface InstallmentOption {
+  installments: number;
+  installmentAmount: number;
+  totalAmount: number;
+  interestRate: number;
+  hasInterest: boolean;
 }
 
-export default function Step6({ onBack, onContinue }: Step6Props) {
+export default function Step5({ onBack, onContinue }: Step5Props) {
   const router = useRouter();
-  const { user } = useAuthContext();
-  const { products } = useCart();
-
-  const [billingType, setBillingType] = useState<BillingType>("natural");
-  const [useShippingData, setUseShippingData] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  // Estados para direcciones
-  const [addresses, setAddresses] = useState<Address[]>([]);
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
-    null
-  );
-  const [isAddAddressModalOpen, setIsAddAddressModalOpen] = useState(false);
-  const [isLoadingAddresses, setIsLoadingAddresses] = useState(false);
-
-  const [billingData, setBillingData] = useState<BillingData>({
-    type: "natural",
-    nombre: "",
-    documento: "",
-    tipoDocumento: "C.C.", // Valor por defecto
-    email: "",
-    telefono: "",
-    direccion: null,
-  });
+  const { calculations, products } = useCart();
+  const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
+  const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [selectedCard, setSelectedCard] = useState<DBCard | null>(null);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -71,6 +37,76 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     deviceName: string;
     value: number;
   } | null>(null);
+
+  // Cargar cuotas guardadas de localStorage
+  useEffect(() => {
+    const savedInstallments = localStorage.getItem("checkout-installments");
+    if (savedInstallments) {
+      setSelectedInstallments(parseInt(savedInstallments));
+    }
+
+    // Cargar datos de cuotas sin interés
+    try {
+      const stored = localStorage.getItem("checkout-zero-interest");
+      if (stored) {
+        const parsed = JSON.parse(stored) as CheckZeroInterestResponse;
+        setZeroInterestData(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading zero interest data:", error);
+    }
+
+    // Cargar ID de tarjeta seleccionada
+    const cardId = localStorage.getItem("checkout-saved-card-id");
+    setSelectedCardId(cardId);
+
+    // Cargar datos completos de la tarjeta seleccionada
+    if (cardId) {
+      try {
+        const cardsCache = localStorage.getItem("checkout-cards-cache");
+        if (cardsCache) {
+          const cards = JSON.parse(cardsCache) as DBCard[];
+          const card = cards.find((c) => String(c.id) === cardId);
+          if (card) {
+            setSelectedCard(card);
+          }
+        }
+      } catch (error) {
+        console.error("Error loading selected card data:", error);
+      }
+    }
+
+    // Load Trade-In data
+    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
+    if (storedTradeIn) {
+      try {
+        const parsed = JSON.parse(storedTradeIn);
+        if (parsed.completed) {
+          setTradeInData(parsed);
+        }
+      } catch (error) {
+        console.error("Error parsing Trade-In data:", error);
+      }
+    }
+  }, []);
+
+  // Handle Trade-In removal
+  const handleRemoveTradeIn = () => {
+    localStorage.removeItem("imagiq_trade_in");
+    setTradeInData(null);
+    
+    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
+    if (typeof globalThis.window !== "undefined") {
+      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
+      if (currentMethod === "tienda") {
+        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
+        globalThis.window.dispatchEvent(
+          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
+        );
+        globalThis.window.dispatchEvent(new Event("storage"));
+      }
+    }
+  };
 
   // Estado para validación de Trade-In
   const [tradeInValidation, setTradeInValidation] = useState<{
@@ -108,7 +144,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       const fromHeader = customEvent.detail?.fromHeader;
 
       if (fromHeader) {
-        console.log('🔄 Dirección cambiada desde header en Step6, redirigiendo a Step3...');
+        console.log('🔄 Dirección cambiada desde header en Step5, redirigiendo a Step3...');
         router.push('/carrito/step3');
       }
     };
@@ -120,239 +156,74 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     };
   }, [router]);
 
-  // Convertir Address a Direccion
-  const addressToDireccion = (address: Address): Direccion => {
-    return {
-      id: address.id,
-      usuario_id: address.usuarioId,
-      email: user?.email || "",
-      linea_uno: address.direccionFormateada,
-      codigo_dane: "",
-      ciudad: address.ciudad || "",
-      pais: address.pais,
-      esPredeterminada: address.esPredeterminada,
-    };
+  // Calcular opciones de cuotas basadas en el total del carrito
+  const calculateInstallments = (): InstallmentOption[] => {
+    const total = calculations.total;
+
+    return [
+      {
+        installments: 1,
+        installmentAmount: total,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 2,
+        installmentAmount: total / 2,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 3,
+        installmentAmount: total / 3,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 6,
+        installmentAmount: total / 6,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 9,
+        installmentAmount: total / 9,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 12,
+        installmentAmount: total / 12,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 15,
+        installmentAmount: total / 15,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+      {
+        installments: 24,
+        installmentAmount: total / 24,
+        totalAmount: total,
+        interestRate: 0,
+        hasInterest: false,
+      },
+    ];
   };
 
-  const handleAddressSelect = (address: Address) => {
-    setSelectedAddressId(address.id);
-    const direccion = addressToDireccion(address);
-    setBillingData((prev) => ({
-      ...prev,
-      direccion,
-    }));
-  };
+  const installmentOptions = calculateInstallments();
 
-  // Cargar direcciones del usuario
-  useEffect(() => {
-    const loadAddresses = async () => {
-      if (!user) return;
-
-      setIsLoadingAddresses(true);
-      try {
-        const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-        const userAddresses = await addressesService.getUserAddressesByType(
-          "FACTURACION",
-          user?.id || ""
-        );
-        setAddresses(userAddresses);
-
-        // Auto-seleccionar dirección predeterminada
-        const defaultAddress = userAddresses.find(
-          (addr) => addr.esPredeterminada
-        );
-        if (defaultAddress) {
-          setSelectedAddressId(defaultAddress.id);
-          handleAddressSelect(defaultAddress);
-        }
-      } catch (error) {
-        console.error("Error loading addresses:", error);
-      } finally {
-        setIsLoadingAddresses(false);
-      }
-    };
-
-    loadAddresses();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  // Cargar datos del usuario autenticado o de localStorage
-  useEffect(() => {
-    const savedData = localStorage.getItem("checkout-billing-data");
-
-    if (savedData) {
-      // Si hay datos guardados en localStorage, usarlos
-      try {
-        const parsed = JSON.parse(savedData);
-        setBillingData({
-          ...parsed,
-          // Asegurar que tipoDocumento siempre tenga un valor por defecto
-          tipoDocumento: parsed.tipoDocumento || "C.C.",
-        });
-        setBillingType(parsed.type || "natural");
-
-        // Si hay una dirección guardada, intentar seleccionarla
-        if (parsed.direccion?.id) {
-          setSelectedAddressId(parsed.direccion.id);
-        }
-      } catch (error) {
-        console.error("Error parsing billing data:", error);
-      }
-    } else if (user) {
-      // Si no hay datos guardados, auto-completar con datos del usuario
-      setBillingData({
-        type: "natural",
-        nombre: `${user.nombre} ${user.apellido}`.trim(),
-        documento: user.numero_documento || "",
-        tipoDocumento: "C.C.", // Valor por defecto
-        email: user.email || "",
-        telefono: user.telefono || "",
-        direccion: null,
-      });
-    }
-  }, [user]);
-
-  // Cargar dirección de envío si el usuario marca el checkbox
-  useEffect(() => {
-    if (useShippingData) {
-      const shippingAddress = localStorage.getItem("checkout-address");
-      if (shippingAddress) {
-        try {
-          const parsed = JSON.parse(shippingAddress);
-          setBillingData((prev) => ({
-            ...prev,
-            direccion: parsed,
-          }));
-        } catch (error) {
-          console.error("Error parsing shipping address:", error);
-        }
-      }
-    }
-  }, [useShippingData]);
-
-  // Load Trade-In data from localStorage
-  useEffect(() => {
-    const storedTradeIn = localStorage.getItem("imagiq_trade_in");
-    if (storedTradeIn) {
-      try {
-        const parsed = JSON.parse(storedTradeIn);
-        if (parsed.completed) {
-          setTradeInData(parsed);
-        }
-      } catch (error) {
-        console.error("Error parsing Trade-In data:", error);
-      }
-    }
-  }, []);
-
-  // Handle Trade-In removal
-  const handleRemoveTradeIn = () => {
-    localStorage.removeItem("imagiq_trade_in");
-    setTradeInData(null);
-    
-    // Si se elimina el trade-in y el método está en "tienda", cambiar a "domicilio"
-    if (typeof globalThis.window !== "undefined") {
-      const currentMethod = globalThis.window.localStorage.getItem("checkout-delivery-method");
-      if (currentMethod === "tienda") {
-        globalThis.window.localStorage.setItem("checkout-delivery-method", "domicilio");
-        globalThis.window.dispatchEvent(
-          new CustomEvent("delivery-method-changed", { detail: { method: "domicilio" } })
-        );
-        globalThis.window.dispatchEvent(new Event("storage"));
-      }
-    }
-  };
-
-  const handleTypeChange = (type: BillingType) => {
-    setBillingType(type);
-    setBillingData((prev) => ({
-      ...prev,
-      type,
-    }));
-  };
-
-  const handleInputChange = (field: keyof BillingData, value: string) => {
-    setBillingData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-    // Limpiar error del campo cuando el usuario empieza a escribir
-    if (errors[field]) {
-      setErrors((prev) => {
-        const newErrors = { ...prev };
-        delete newErrors[field];
-        return newErrors;
-      });
-    }
-  };
-
-  const handleOpenAddAddressModal = () => {
-    setIsAddAddressModalOpen(true);
-  };
-
-  const handleCloseAddAddressModal = () => {
-    setIsAddAddressModalOpen(false);
-  };
-
-  const handleAddressAdded = async (newAddress: Address) => {
-    // Recargar direcciones
-    try {
-      const user = safeGetLocalStorage<{ id?: string }>("imagiq_user", {});
-      const userAddresses = await addressesService.getUserAddressesByType(
-        "FACTURACION",
-        user?.id || ""
-      );
-      setAddresses(userAddresses);
-
-      // Seleccionar la nueva dirección
-      handleAddressSelect(newAddress);
-      handleCloseAddAddressModal();
-    } catch (error) {
-      console.error("Error reloading addresses:", error);
-    }
-  };
-
-  const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    // Validaciones comunes
-    if (!billingData.nombre.trim()) {
-      newErrors.nombre = "El nombre es requerido";
-    }
-    if (!billingData.documento.trim()) {
-      newErrors.documento = "El documento es requerido";
-    }
-    if (!billingData.email.trim()) {
-      newErrors.email = "El email es requerido";
-    } else if (!/\S+@\S+\.\S+/.test(billingData.email)) {
-      newErrors.email = "El email no es válido";
-    }
-    if (!billingData.tipoDocumento?.trim()) {
-      newErrors.tipoDocumento = "El tipo de documento es requerido";
-    }
-    if (!billingData.telefono.trim()) {
-      newErrors.telefono = "El teléfono es requerido";
-    }
-    if (!billingData.direccion) {
-      newErrors.direccion = "La dirección es requerida";
-    }
-
-    // Validaciones específicas de persona jurídica
-    if (billingType === "juridica") {
-      if (!billingData.razonSocial?.trim()) {
-        newErrors.razonSocial = "La razón social es requerida";
-      }
-      if (!billingData.nit?.trim()) {
-        newErrors.nit = "El NIT es requerido";
-      }
-      if (!billingData.nombreRepresentante?.trim()) {
-        newErrors.nombreRepresentante =
-          "El nombre del representante es requerido";
-      }
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleInstallmentSelect = (installments: number) => {
+    setSelectedInstallments(installments);
   };
 
   const handleContinue = () => {
@@ -363,503 +234,133 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       return;
     }
 
-    // Siempre validar el formulario para mostrar errores
-    if (!validateForm()) {
-      // Hacer scroll al primer error
-      const firstErrorElement = document.querySelector('.border-red-500');
-      if (firstErrorElement) {
-        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+    if (selectedInstallments === null) {
       return;
     }
 
-    // Preparar datos a guardar; si se usa la dirección de envío, asegurar que guardamos su `id`
-    let billingToSave: BillingData = { ...billingData };
-    if (useShippingData) {
-      const shippingAddressStr = localStorage.getItem("checkout-address");
-      if (shippingAddressStr) {
-        try {
-          const parsed = JSON.parse(shippingAddressStr);
-          if (parsed && typeof parsed === "object") {
-            // Asegurar que la dirección en el billing incluye el id del checkout-address
-            billingToSave = {
-              ...billingToSave,
-              direccion: {
-                ...(billingToSave.direccion || {}),
-                ...parsed,
-              },
-            };
-          }
-        } catch (err) {
-          // Si falla el parseo, no interrumpir el guardado; seguimos con billingData actual
-          console.error("Error parsing checkout-address for billing id:", err);
-        }
-      }
-    }
-
-    // Guardar datos en localStorage
-    localStorage.setItem(
-      "checkout-billing-data",
-      JSON.stringify(billingToSave)
-    );
+    // Guardar cuotas seleccionadas en localStorage
+    localStorage.setItem("checkout-installments", selectedInstallments.toString());
 
     if (onContinue) {
       onContinue();
     }
   };
 
-
-  // Ordenador para direcciones: predeterminadas primero
-  const sortAddressesByDefault = (a: Address, b: Address) => {
-    if (a.esPredeterminada === b.esPredeterminada) return 0;
-    return a.esPredeterminada ? -1 : 1;
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat("es-CO", {
+      style: "currency",
+      currency: "COP",
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(price);
   };
 
-  // Renderiza la sección de direcciones (evita ternarios anidados en JSX)
-  const renderAddressSection = () => {
-    if (useShippingData) {
-      return (
-        billingData.direccion && (
-          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm font-medium text-gray-700">
-              {billingData.direccion.linea_uno}
-            </p>
-            {billingData.direccion.ciudad && (
-              <p className="text-sm text-gray-600 mt-1">
-                {billingData.direccion.ciudad}
-              </p>
-            )}
-          </div>
-        )
-      );
-    }
+  // Verificar si una cuota es elegible para cero interés
+  const isInstallmentEligibleForZeroInterest = (installments: number): boolean => {
+    if (!zeroInterestData?.cards || !selectedCardId) return false;
 
-    if (isLoadingAddresses) {
-      return (
-        <div className="animate-pulse space-y-3">
-          <div className="h-16 bg-gray-200 rounded-lg"></div>
-          <div className="h-16 bg-gray-200 rounded-lg"></div>
-        </div>
-      );
-    }
+    const cardInfo = zeroInterestData.cards.find(c => c.id === selectedCardId);
+    if (!cardInfo?.eligibleForZeroInterest) return false;
 
-    if (addresses.length > 0) {
-      return (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-sm text-gray-600">
-              Selecciona una dirección de facturación
-            </p>
-            <button
-              type="button"
-              onClick={handleOpenAddAddressModal}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
-            >
-              <Plus className="w-4 h-4" />
-              Nueva dirección
-            </button>
-          </div>
-
-          {addresses.toSorted(sortAddressesByDefault).map((address) => (
-            <button
-              key={address.id}
-              type="button"
-              onClick={() => handleAddressSelect(address)}
-              className={`w-full text-left p-4 rounded-lg border-2 transition-all ${
-                selectedAddressId === address.id
-                  ? "border-black bg-gray-50"
-                  : "border-gray-200 hover:border-gray-300 bg-white"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div
-                  className={`flex-shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all mt-0.5 ${
-                    selectedAddressId === address.id
-                      ? "border-black bg-black"
-                      : "border-gray-300 bg-white"
-                  }`}
-                >
-                  {selectedAddressId === address.id && (
-                    <Check className="w-3 h-3 text-white" />
-                  )}
-                </div>
-
-                <div className="flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-gray-400" />
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <p className="font-semibold text-gray-900">
-                      {address.nombreDireccion}
-                    </p>
-                    {address.esPredeterminada && (
-                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
-                        Predeterminada
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600">
-                    {address.direccionFormateada}
-                  </p>
-                  {address.ciudad && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      {address.ciudad}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      );
-    }
-
-    return (
-      <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-        <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-        <p className="text-gray-600 text-sm mb-4">
-          No tienes direcciones de facturación guardadas
-        </p>
-        <button
-          type="button"
-          onClick={handleOpenAddAddressModal}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-semibold text-sm"
-        >
-          <Plus className="w-4 h-4" />
-          Agregar dirección
-        </button>
-      </div>
-    );
+    return cardInfo.availableInstallments.includes(installments);
   };
 
   return (
     <div className="min-h-screen w-full pb-40 md:pb-0">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Formulario de facturación */}
+          {/* Formulario de selección de cuotas */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              {/* Header con título y selector de tipo de persona */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                <h2 className="text-[22px] font-bold">
-                  Datos de facturación
-                </h2>
-
-                {/* Selector de tipo de persona */}
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleTypeChange("natural")}
-                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
-                      billingType === "natural"
-                        ? "border-black bg-gray-50 text-black"
-                        : "border-gray-300 text-gray-600 hover:border-gray-400"
-                    }`}
-                  >
-                    Persona Natural
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTypeChange("juridica")}
-                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
-                      billingType === "juridica"
-                        ? "border-black bg-gray-50 text-black"
-                        : "border-gray-300 text-gray-600 hover:border-gray-400"
-                    }`}
-                  >
-                    Persona Jurídica
-                  </button>
-                </div>
-              </div>
-
-              {/* Checkbox: Usar mismos datos de envío */}
-              <div className="mb-6">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={useShippingData}
-                    onChange={(e) => setUseShippingData(e.target.checked)}
-                    className="w-4 h-4 accent-black"
-                  />
-                  <span className="text-sm text-gray-700">
-                    Usar los mismos datos de envío
-                  </span>
-                </label>
-              </div>
-
-              {/* Formulario según tipo de persona */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {billingType === "juridica" && (
-                  <>
-                    {/* Razón Social - ocupa 2 columnas */}
-                    <div className="md:col-span-2">
-                      <label
-                        htmlFor="razonSocial"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Razón Social <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="razonSocial"
-                        type="text"
-                        value={billingData.razonSocial || ""}
-                        onChange={(e) =>
-                          handleInputChange("razonSocial", e.target.value)
-                        }
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                          errors.razonSocial
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        placeholder="Empresa S.A.S."
-                      />
-                      {errors.razonSocial && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.razonSocial}
-                        </p>
-                      )}
+              {/* Título y tarjeta seleccionada */}
+              <div className="flex items-start justify-between mb-6 gap-4">
+                <h2 className="text-[22px] font-bold">Elige las cuotas</h2>
+                {selectedCard && (
+                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200 flex-shrink-0">
+                    {/* Logo de marca */}
+                    <div className="flex-shrink-0">
+                      <CardBrandLogo brand={selectedCard.marca} size="md" />
                     </div>
 
-                    {/* NIT */}
-                    <div>
-                      <label
-                        htmlFor="nit"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        NIT <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="nit"
-                        type="text"
-                        value={billingData.nit || ""}
-                        onChange={(e) =>
-                          handleInputChange("nit", e.target.value)
-                        }
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                          errors.nit ? "border-red-500" : "border-gray-300"
-                        }`}
-                        placeholder="900123456-7"
-                      />
-                      {errors.nit && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.nit}
+                    {/* Información de la tarjeta */}
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <p className="font-bold text-gray-900 tracking-wider text-sm">
+                          •••• {selectedCard.ultimos_dijitos}
                         </p>
-                      )}
+                        {selectedCard.es_predeterminada && (
+                          <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-semibold">
+                            Predeterminada
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-[11px] text-gray-600">
+                        {selectedCard.banco && (
+                          <span className="font-medium">{selectedCard.banco}</span>
+                        )}
+                        {selectedCard.tipo_tarjeta && selectedCard.banco && (
+                          <span className="text-gray-400">•</span>
+                        )}
+                        {selectedCard.tipo_tarjeta && (
+                          <span className="uppercase">
+                            {selectedCard.tipo_tarjeta.includes("credit") ? "Crédito" : "Débito"}
+                          </span>
+                        )}
+                      </div>
                     </div>
-
-                    {/* Nombre del Representante Legal */}
-                    <div>
-                      <label
-                        htmlFor="nombreRepresentante"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Nombre del Representante Legal{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="nombreRepresentante"
-                        type="text"
-                        value={billingData.nombreRepresentante || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "nombreRepresentante",
-                            e.target.value
-                          )
-                        }
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                          errors.nombreRepresentante
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        placeholder="Juan Pérez"
-                      />
-                      {errors.nombreRepresentante && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.nombreRepresentante}
-                        </p>
-                      )}
-                    </div>
-                  </>
+                  </div>
                 )}
-
-                {/* Nombre (o nombre del contacto para jurídica) */}
-                <div className="md:col-span-2">
-                  <label
-                    htmlFor="nombre"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    {billingType === "juridica"
-                      ? "Nombre de contacto"
-                      : "Nombre completo"}{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="nombre"
-                    type="text"
-                    value={billingData.nombre}
-                    onChange={(e) =>
-                      handleInputChange("nombre", e.target.value)
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                      errors.nombre ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="Juan Pérez"
-                  />
-                  {errors.nombre && (
-                    <p className="text-red-500 text-xs mt-1">{errors.nombre}</p>
-                  )}
-                </div>
-
-                {/* Tipo de documento */}
-                <div className="md:col-span-1">
-                  <label
-                    htmlFor="tipoDocumento"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Tipo de documento <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="tipoDocumento"
-                    name="tipoDocumento"
-                    value={billingData.tipoDocumento || ""}
-                    onChange={(e) =>
-                      handleInputChange(
-                        "tipoDocumento" as keyof BillingData,
-                        e.target.value
-                      )
-                    }
-                    aria-invalid={Boolean(errors.tipoDocumento)}
-                    required
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                      errors.tipoDocumento
-                        ? "border-red-500"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <option value="">Selecciona el tipo de documento</option>
-                    <option value="C.C.">C.C.</option>
-                    <option value="C.E.">C.E.</option>
-                    <option value="NIT">NIT</option>
-                    <option value="PASAPORTE">Pasaporte</option>
-                  </select>
-                  {errors.tipoDocumento && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.tipoDocumento}
-                    </p>
-                  )}
-                </div>
-
-                {/* Documento */}
-                <div className="md:col-span-1">
-                  <label
-                    htmlFor="documento"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    {billingType === "juridica"
-                      ? "Cédula del contacto"
-                      : "Documento de identidad"}{" "}
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="documento"
-                    name="documento"
-                    type="text"
-                    value={billingData.documento}
-                    onChange={(e) =>
-                      handleInputChange("documento", e.target.value)
-                    }
-                    aria-invalid={Boolean(errors.documento)}
-                    required
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                      errors.documento ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="1234567890"
-                  />
-                  {errors.documento && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.documento}
-                    </p>
-                  )}
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Email <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="email"
-                    type="email"
-                    value={billingData.email}
-                    onChange={(e) => handleInputChange("email", e.target.value)}
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                      errors.email ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="correo@ejemplo.com"
-                  />
-                  {errors.email && (
-                    <p className="text-red-500 text-xs mt-1">{errors.email}</p>
-                  )}
-                </div>
-
-                {/* Teléfono */}
-                <div>
-                  <label
-                    htmlFor="telefono"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Teléfono <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    id="telefono"
-                    type="tel"
-                    value={billingData.telefono}
-                    onChange={(e) =>
-                      handleInputChange("telefono", e.target.value)
-                    }
-                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                      errors.telefono ? "border-red-500" : "border-gray-300"
-                    }`}
-                    placeholder="3001234567"
-                  />
-                  {errors.telefono && (
-                    <p className="text-red-500 text-xs mt-1">
-                      {errors.telefono}
-                    </p>
-                  )}
-                </div>
               </div>
 
-              {/* Dirección de facturación */}
-              <div className="mt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Dirección de facturación
-                </h3>
+              {/* Nota sobre intereses */}
+              <p className="text-sm text-gray-600 mb-6">
+                * Los intereses serán manejados por tu entidad bancaria.
+              </p>
 
-                <Modal
-                  isOpen={isAddAddressModalOpen}
-                  onClose={handleCloseAddAddressModal}
-                  size="lg"
-                  showCloseButton={false}
-                >
-                  <AddNewAddressForm
-                    onAddressAdded={handleAddressAdded}
-                    onCancel={handleCloseAddAddressModal}
-                    withContainer={false}
-                  />
-                </Modal>
+              {/* Opciones de cuotas */}
+              <div className="space-y-3">
+                {installmentOptions.map((option) => {
+                  const isZeroInterest = isInstallmentEligibleForZeroInterest(option.installments);
 
-                {renderAddressSection()}
+                  return (
+                    <label
+                      key={option.installments}
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                        selectedInstallments === option.installments
+                          ? "border-black bg-gray-50"
+                          : "border-gray-200 hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="installments"
+                          value={option.installments}
+                          checked={selectedInstallments === option.installments}
+                          onChange={() => handleInstallmentSelect(option.installments)}
+                          className="w-4 h-4 accent-black"
+                        />
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {option.installments}x {formatPrice(option.installmentAmount)}
+                          </p>
+                        </div>
+                      </div>
 
-                {errors.direccion && (
-                  <p className="text-red-500 text-xs mt-2">
-                    {errors.direccion}
-                  </p>
-                )}
+                      <div className="text-right">
+                        {isZeroInterest ? (
+                          <p className="text-sm font-semibold text-green-600">
+                            0% de interés
+                          </p>
+                        ) : (
+                          <p className="text-sm text-gray-600">
+                            {formatPrice(option.totalAmount)} *
+                          </p>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -870,8 +371,9 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={!tradeInValidation.isValid}
+              disabled={selectedInstallments === null || !tradeInValidation.isValid}
               isSticky={false}
+              shouldCalculateCanPickUp={false}
               deliveryMethod={
                 typeof window !== "undefined"
                   ? (() => {
@@ -909,7 +411,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                 productos)
               </p>
               <p className="text-2xl font-bold text-gray-900">
-                $ {Number(products.reduce((acc, p) => acc + p.price * p.quantity, 0)).toLocaleString()}
+                $ {Number(calculations.total).toLocaleString()}
               </p>
             </div>
           </div>
@@ -917,12 +419,12 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Botón continuar */}
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              !tradeInValidation.isValid
+              selectedInstallments === null || !tradeInValidation.isValid
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
             }`}
             onClick={handleContinue}
-            disabled={!tradeInValidation.isValid}
+            disabled={selectedInstallments === null || !tradeInValidation.isValid}
           >
             Continuar
           </button>

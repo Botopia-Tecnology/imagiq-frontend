@@ -64,7 +64,7 @@ function ModalDisplay({
       >
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 rounded-full p-2 hover:bg-white/10 transition-colors"
+          className="absolute -top-10 right-0 rounded-full p-2 hover:bg-white/10 transition-colors border-2 border-white/50 hover:border-white"
           aria-label="Cerrar"
         >
           <X className="h-6 w-6 text-white" />
@@ -89,14 +89,33 @@ function SliderDisplay({
   onClick: () => void;
 }) {
   return (
-    <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[999999] max-w-sm w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500">
+    <div className="fixed top-12 md:top-32 left-1/2 -translate-x-1/2 z-[999999] max-w-sm w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500">
       <div className="relative z-10 max-w-md w-full">
         <button
           onClick={onClose}
-          className="absolute -top-10 right-0 rounded-full p-2 hover:bg-white/10 transition-colors z-20"
+          className="absolute -top-10 right-0 rounded-full p-2 hover:bg-white/10 transition-colors z-20 cursor-pointer"
           aria-label="Cerrar"
         >
-          <X className="h-6 w-6 text-white" />
+          <div className="relative">
+            <X 
+              className="h-6 w-6 absolute" 
+              stroke="black"
+              strokeWidth={5}
+              style={{ 
+                strokeLinecap: 'round',
+                strokeLinejoin: 'round'
+              }}
+            />
+            <X 
+              className="h-6 w-6 relative text-white" 
+              stroke="white"
+              strokeWidth={2}
+              style={{ 
+                strokeLinecap: 'round',
+                strokeLinejoin: 'round'
+              }}
+            />
+          </div>
         </button>
 
         <div className="rounded-lg overflow-hidden shadow-lg max-h-40 animate-in zoom-in-95 duration-300">

@@ -1,14 +1,28 @@
 /**
- * FlixmediaPlayer Component - VERSIÓN ULTRA-SIMPLE
+ * FlixmediaPlayer Component
  * 
- * Este componente inyecta el script de Flixmedia directamente.
- * Sin timeouts, sin spinners, sin lógica compleja.
+ * Carga contenido multimedia de Flixmedia.
+ * Usa IDs dinámicos para evitar conflictos en el DOM durante navegación SPA.
+ * Usa callback 'noshow' oficial de Flixmedia para detectar contenido no disponible.
  */
 
 "use client";
 
-import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef, memo, useCallback, useState } from "react";
 import { parseSkuString } from "@/lib/flixmedia";
+import { useRouter } from "next/navigation";
+
+// Variable GLOBAL para trackear productos ya cargados (persiste entre remontajes)
+const loadedProducts = new Set<string>();
+
+declare global {
+  interface Window {
+    flixJsCallbacks?: {
+      setLoadCallback: (fn: () => void, type?: string) => void;
+      loadService: (type: string) => void;
+    };
+  }
+}
 
 interface FlixmediaPlayerProps {
   mpn?: string | null;
@@ -19,62 +33,180 @@ interface FlixmediaPlayerProps {
   segmento?: string | string[];
 }
 
-// Contador global para IDs únicos
-let instanceCounter = 0;
-
-export default function FlixmediaPlayer({
+function FlixmediaPlayerComponent({
   mpn,
   ean,
   className = "",
+  productId,
+  segmento
 }: FlixmediaPlayerProps) {
-  const instanceId = useMemo(() => ++instanceCounter, []);
   const containerRef = useRef<HTMLDivElement>(null);
-  const hasLoadedRef = useRef(false);
+  const router = useRouter();
+  // Generar ID único para este montaje del componente
+  const [uniqueId] = useState(() => `flix-inpage-${Math.random().toString(36).substr(2, 9)}`);
+  const currentMpnRef = useRef<string | null>(null);
 
-  const targetMpn = mpn ? parseSkuString(mpn)[0] || null : null;
-  const targetEan = !targetMpn && ean ? parseSkuString(ean)[0] || null : null;
+  const applyStyles = useCallback(() => {
+    if (document.getElementById("flixmedia-player-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "flixmedia-player-styles";
+    style.textContent = `
+      [class*="flix_hotspot"], [id*="flix_hotspot"], div[class*="hotspot"] {
+        display: none !important;
+        visibility: hidden !important;
+      }
+      [id^="flix-inpage-"] { width: 100%; min-height: 200px; }
+    `;
+    document.head.appendChild(style);
+  }, []);
 
   useEffect(() => {
-    if (!targetMpn && !targetEan) return;
-    if (hasLoadedRef.current) return;
-    if (!containerRef.current) return;
+    let targetMpn: string | null = null;
+    let targetEan: string | null = null;
 
-    hasLoadedRef.current = true;
-    const containerId = `flix-inpage-${instanceId}`;
+    if (mpn) {
+      const skus = parseSkuString(mpn);
+      if (skus.length > 0) targetMpn = skus[0];
+    }
+    if (!targetMpn && ean) {
+      const eans = parseSkuString(ean);
+      if (eans.length > 0) targetEan = eans[0];
+    }
 
-    // Crear el script con los atributos de Flixmedia
-    const script = document.createElement("script");
-    script.src = "//media.flixfacts.com/js/loader.js";
-    script.async = true;
-    script.setAttribute("data-flix-distributor", "17257");
-    script.setAttribute("data-flix-language", "f5");
-    script.setAttribute("data-flix-brand", "Samsung");
-    script.setAttribute("data-flix-mpn", targetMpn || "");
-    script.setAttribute("data-flix-ean", targetEan || "");
-    script.setAttribute("data-flix-sku", "");
-    script.setAttribute("data-flix-inpage", containerId);
-    script.setAttribute("data-flix-button-image", "");
-    script.setAttribute("data-flix-price", "");
-    script.setAttribute("data-flix-fallback-language", "");
-    script.setAttribute("data-flix-hotspot", "false");
+    if (!targetMpn && !targetEan) {
+      console.warn('[FLIXMEDIA] ⚠️ No MPN o EAN disponible');
+      return;
+    }
 
-    // Agregar al contenedor
-    containerRef.current.appendChild(script);
+    const productKey = targetMpn || targetEan || '';
+
+    // Verificar si ya se cargó este producto GLOBALMENTE
+    if (loadedProducts.has(productKey)) {
+      console.log(`[FLIXMEDIA] ⏩ Producto ${productKey} ya cargado globalmente, saltando`);
+      return;
+    }
+
+    // Marcar como cargado ANTES de iniciar
+    loadedProducts.add(productKey);
+    currentMpnRef.current = productKey;
+    console.log(`[FLIXMEDIA] 🎬 Iniciando para: ${productKey} en contenedor: ${uniqueId}`);
+
+    // Función para verificar si el contenedor está listo
+    const waitForContainer = (): Promise<HTMLElement> => {
+      return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const maxAttempts = 50; // 5 segundos
+
+        const checkContainer = () => {
+          attempts++;
+          const container = document.getElementById(uniqueId);
+
+          if (container) {
+            resolve(container);
+          } else if (attempts >= maxAttempts) {
+            console.error(`[FLIXMEDIA] ❌ Timeout esperando contenedor ${uniqueId}`);
+            reject(new Error('Container timeout'));
+          } else {
+            setTimeout(checkContainer, 100);
+          }
+        };
+
+        checkContainer();
+      });
+    };
+
+    // Función para cargar el script de Flixmedia
+    const loadFlixmediaScript = (container: HTMLElement) => {
+      // Limpiar contenedor
+      container.innerHTML = "";
+
+      // Limpiar scripts anteriores que apunten a este contenedor específico
+      const oldScripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
+      oldScripts.forEach(s => s.remove());
+
+      console.log(`[FLIXMEDIA] 📦 Creando script para ${uniqueId}`);
+
+      const headID = document.getElementsByTagName("head")[0];
+      const flixScript = document.createElement("script");
+      flixScript.type = "text/javascript";
+      flixScript.async = true;
+
+      flixScript.setAttribute("data-flix-distributor", "17257");
+      flixScript.setAttribute("data-flix-language", "f5");
+      flixScript.setAttribute("data-flix-brand", "Samsung");
+      flixScript.setAttribute("data-flix-mpn", targetMpn || "");
+      flixScript.setAttribute("data-flix-ean", targetEan || "");
+      // IMPORTANTE: Usar el ID único del contenedor
+      flixScript.setAttribute("data-flix-inpage", uniqueId);
+      flixScript.setAttribute("data-flix-button", "");
+      flixScript.setAttribute("data-flix-price", "");
+      flixScript.setAttribute("data-flix-hotspot", "false");
+
+      const startTime = performance.now();
+
+      flixScript.onload = function () {
+        const loadTime = (performance.now() - startTime).toFixed(2);
+        console.log(`[FLIXMEDIA] ✅ Script cargado en ${loadTime}ms para ${uniqueId}`);
+
+        applyStyles();
+
+        if (typeof window.flixJsCallbacks === "object") {
+          // Callback cuando hay contenido
+          window.flixJsCallbacks.setLoadCallback(function () {
+            console.log(`[FLIXMEDIA] ✅✅✅ Contenido renderizado en ${uniqueId}`);
+            applyStyles();
+          }, "inpage");
+
+          // Callback cuando NO hay contenido (noshow)
+          window.flixJsCallbacks.setLoadCallback(function () {
+            console.log('[FLIXMEDIA] ❌ No hay contenido disponible (noshow) - Redirigiendo');
+            const isPremium = segmento && (Array.isArray(segmento) ? segmento[0] : segmento)?.toLowerCase() === 'premium';
+            const route = isPremium
+              ? `/productos/viewpremium/${productId}`
+              : `/productos/view/${productId}`;
+            router.replace(route);
+          }, 'noshow');
+        }
+      };
+
+      flixScript.onerror = function (e) {
+        console.error('[FLIXMEDIA] ❌ Error cargando script:', e);
+      };
+
+      headID.appendChild(flixScript);
+      flixScript.src = "//media.flixfacts.com/js/loader.js";
+    };
+
+    // Iniciar el proceso
+    waitForContainer()
+      .then(loadFlixmediaScript)
+      .catch(err => console.error('[FLIXMEDIA] Error:', err));
 
     return () => {
-      // Limpieza al desmontar
-      hasLoadedRef.current = false;
-      if (script.parentNode) {
-        script.parentNode.removeChild(script);
-      }
+      // Cleanup: remover el script asociado a este contenedor cuando se desmonte
+      const scripts = document.querySelectorAll(`script[data-flix-inpage="${uniqueId}"]`);
+      scripts.forEach(s => s.remove());
+      currentMpnRef.current = null;
+      // NO removemos del Set global para evitar cargas duplicadas en remontajes
     };
-  }, [targetMpn, targetEan, instanceId]);
+  }, [mpn, ean]); // Solo depende de mpn y ean
 
-  if (!targetMpn && !targetEan) return null;
+  if (!mpn && !ean) return null;
 
   return (
-    <div ref={containerRef} className={`${className} w-full px-4 md:px-6 lg:px-8`}>
-      <div id={`flix-inpage-${instanceId}`} />
+    <div
+      ref={containerRef}
+      className={`${className} w-full min-h-[200px] relative px-4 md:px-6 lg:px-8`}
+    >
+      <div id={uniqueId} className="w-full" />
     </div>
   );
 }
+
+const FlixmediaPlayer = memo(FlixmediaPlayerComponent, (prevProps, nextProps) => {
+  return prevProps.mpn === nextProps.mpn && prevProps.ean === nextProps.ean;
+});
+
+FlixmediaPlayer.displayName = "FlixmediaPlayer";
+export default FlixmediaPlayer;

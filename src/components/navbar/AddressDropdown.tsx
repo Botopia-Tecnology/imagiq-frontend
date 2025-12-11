@@ -354,7 +354,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           {/* Botón para Desktop (>= 1280px) - Una línea */}
           <button
             className={cn(
-              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] lg:text-[11px] xl:text-[11.5px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
               showWhiteItems ? "text-white/90" : "text-black/80"
             )}
             onClick={handleToggle}
@@ -364,9 +364,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           >
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
             <span
-              className="truncate block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+              className="truncate block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap lg:leading-[1.3]"
               style={{
-                lineHeight: "1.4",
                 maxWidth: "calc(100% - 60px)"
               }}
               title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}
@@ -644,7 +643,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           {/* Botón para Desktop (>= 1280px) */}
           <button
             className={cn(
-              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] lg:text-[11px] xl:text-[11.5px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
               showWhiteItems ? "text-white/90" : "text-black/80"
             )}
             onClick={handleAddNewAddress}
@@ -653,7 +652,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
             type="button"
           >
             <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
-            <span className="truncate block" style={{ lineHeight: "1.4" }}>
+            <span className="truncate block lg:leading-[1.3]">
               Agregar dirección
             </span>
             <Plus className="w-3.5 h-3.5 flex-shrink-0 ml-1" />
@@ -695,7 +694,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         {/* Botón para Desktop (>= 1280px) - Una línea */}
         <button
           className={cn(
-            "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium w-full hover:opacity-80 transition-opacity cursor-pointer",
+            "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] lg:text-[11px] xl:text-[11.5px] font-medium w-full hover:opacity-80 transition-opacity cursor-pointer",
             showWhiteItems ? "text-white/90" : "text-black/80"
           )}
           onClick={handleToggle}
@@ -705,9 +704,8 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
         >
           <MapPin className="w-3.5 h-3.5 flex-shrink-0" />
           <span
-            className="truncate block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap"
+            className="truncate block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap lg:leading-[1.3]"
             style={{
-              lineHeight: "1.4",
               maxWidth: "calc(100% - 60px)" // Dejar espacio para iconos y "Para Empresas"
             }}
             title={displayAddress.direccionFormateada || displayAddress.lineaUno || 'Dirección'}

@@ -207,17 +207,14 @@ export default function MultimediaPage({
     });
   }
 
-  // Unir todos los SKUs y EANs en un string separado por comas (formato esperado por FlixmediaPlayer)
-  // SI existe un skuflixmedia seleccionado, usar SOLO ese para optimizar la carga
-  // SI NO, verificar si el producto tiene skuflixmedia (del API)
-  // SI NO, usar el primer SKU disponible (evitar listas largas para mejorar rendimiento)
+  // SOLO usar el campo skuflixmedia - NO usar otros SKUs
+  // Si no hay skuflixmedia, no mostrar contenido de Flixmedia
   const productSku = selectedProductData?.skuflixmedia
     ? selectedProductData.skuflixmedia
-    : (product?.skuflixmedia // Priorizar skuflixmedia del API si existe
-      ? product.skuflixmedia
-      : (allSkus.length > 0 ? allSkus[0] : null));
+    : (product?.skuflixmedia || product?.apiProduct?.skuflixmedia?.[0] || null);
 
-  const productEan = allEans.length > 0 ? allEans[0] : null;
+  // EAN solo como respaldo si hay skuflixmedia pero se necesita EAN
+  const productEan = productSku ? (allEans.length > 0 ? allEans[0] : null) : null;
 
   // Parsear precios a números
   const parsePrice = (price: string | number | undefined): number => {
@@ -228,8 +225,28 @@ export default function MultimediaPage({
 
   // Usar datos de localStorage si existen, sino usar los del producto general
   const numericPrice = selectedProductData?.price ?? parsePrice(product?.price);
-  const numericOriginalPrice = selectedProductData?.originalPrice ??
-    (product?.originalPrice ? parsePrice(product.originalPrice) : undefined);
+
+  // Para originalPrice: usar localStorage, o product.originalPrice, o precioNormal del apiProduct
+  const getOriginalPrice = (): number | undefined => {
+    // 1. Primero verificar localStorage
+    if (selectedProductData?.originalPrice) {
+      return selectedProductData.originalPrice;
+    }
+    // 2. Luego verificar product.originalPrice directo
+    if (product?.originalPrice) {
+      return parsePrice(product.originalPrice);
+    }
+    // 3. Finalmente, verificar apiProduct.precioNormal (viene como array)
+    if (product?.apiProduct?.precioNormal && product.apiProduct.precioNormal.length > 0) {
+      const precioNormal = product.apiProduct.precioNormal[0];
+      if (precioNormal && precioNormal > 0) {
+        return precioNormal;
+      }
+    }
+    return undefined;
+  };
+
+  const numericOriginalPrice = getOriginalPrice();
 
   // Obtener indcerointeres del producto (puede venir como array del API)
   const getIndcerointeres = (): number => {
@@ -249,8 +266,10 @@ export default function MultimediaPage({
 
   const indcerointeres = getIndcerointeres();
 
-  // Obtener allPrices: usar de localStorage si existe, sino del producto
-  const allPrices = selectedProductData?.allPrices ?? product?.apiProduct?.precioeccommerce ?? [];
+  // Obtener allPrices: usar de localStorage si existe, sino del producto, sino usar el precio actual
+  const rawAllPrices = selectedProductData?.allPrices ?? product?.apiProduct?.precioeccommerce ?? [];
+  // Asegurar que allPrices tenga al menos el precio actual para el cálculo de cuotas
+  const allPrices = rawAllPrices.length > 0 ? rawAllPrices : (numericPrice > 0 ? [numericPrice] : []);
 
   // Obtener nombre del producto: usar de localStorage si existe, sino del producto
   const displayProductName = selectedProductData?.productName ?? product?.name;
@@ -285,7 +304,7 @@ export default function MultimediaPage({
 
       {/* Contenido principal - Flixmedia Player con padding para el navbar y el bar fijo */}
       <div
-        className="flex-1 pt-[70px] xl:pt-[50px]"
+        className="flex-1 pt-[70px] xl:pt-[50px] bg-white"
       >
         <FlixmediaPlayer
           mpn={productSku}

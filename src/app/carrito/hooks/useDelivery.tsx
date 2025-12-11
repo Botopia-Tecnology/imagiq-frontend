@@ -1380,6 +1380,22 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     }
   }, [stores, selectedStore]);
 
+  // Auto-seleccionar la primera tienda disponible cuando el método es "tienda" y no hay tienda seleccionada
+  useEffect(() => {
+    if (deliveryMethod === "tienda" && selectedStore === null && availableStoresWhenCanPickUpFalse.length > 0) {
+      const firstStore = availableStoresWhenCanPickUpFalse[0];
+      console.log('🏪 Auto-seleccionando primera tienda disponible:', firstStore.descripcion);
+      setSelectedStore(firstStore);
+      // Guardar en localStorage
+      if (globalThis.window) {
+        globalThis.window.localStorage.setItem("checkout-store", JSON.stringify(firstStore));
+        if (lastAddressIdRef.current) {
+          globalThis.window.localStorage.setItem("checkout-store-address-id", lastAddressIdRef.current);
+        }
+      }
+    }
+  }, [deliveryMethod, selectedStore, availableStoresWhenCanPickUpFalse]);
+
   // Validar si se puede continuar
   const canContinue =
     (deliveryMethod === "domicilio" && address !== null) ||

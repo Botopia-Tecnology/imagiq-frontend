@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { X } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { SIZES } from "./constants";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
 
@@ -12,6 +13,7 @@ type Props = Readonly<{
 
 export function DesktopView({ onItemClick }: Props) {
   const { ofertas, loading } = useOfertasDirectas();
+  const router = useRouter();
 
   const handleCloseDropdown = () => {
     globalThis.dispatchEvent(new CustomEvent("close-dropdown"));
@@ -111,12 +113,14 @@ export function DesktopView({ onItemClick }: Props) {
                       <Link
                         key={oferta.uuid}
                         href={href}
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.preventDefault();
                           onItemClick(
                             oferta.producto.nombreMarket || oferta.nombre,
                             href
-                          )
-                        }
+                          );
+                          router.push(href);
+                        }}
                         className="flex flex-row items-center gap-3 group"
                         style={{
                           width: `${SIZES.product.container + 100}px`,

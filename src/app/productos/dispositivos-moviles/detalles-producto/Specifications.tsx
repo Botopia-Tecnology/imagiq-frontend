@@ -67,8 +67,19 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
     const allEans: string[] = [];
 
     // 0. Si hay skuflixmedia (del backend o localStorage), usarlo DIRECTAMENTE y EXCLUSIVAMENTE
-    // Prioridad: flix.skuflixmedia > flix.apiProduct.skuflixmedia > product.skuflixmedia
-    const flixSkuMedia = flix?.skuflixmedia || flix?.apiProduct?.skuflixmedia?.[0] || product.skuflixmedia;
+    // Prioridad: flix.skuflixmedia > flix.apiProduct.skuflixmedia > product.skuflixmedia > product.apiProduct.skuflixmedia
+    const flixSkuMedia = flix?.skuflixmedia || 
+                          flix?.apiProduct?.skuflixmedia?.[0] || 
+                          product.skuflixmedia ||
+                          product.apiProduct?.skuflixmedia?.[0];
+
+    console.log('🎬 Specifications - Buscando skuflixmedia:', {
+      'flix.skuflixmedia': flix?.skuflixmedia,
+      'flix.apiProduct.skuflixmedia': flix?.apiProduct?.skuflixmedia,
+      'product.skuflixmedia': product.skuflixmedia,
+      'product.apiProduct.skuflixmedia': product.apiProduct?.skuflixmedia,
+      'resultado': flixSkuMedia
+    });
 
     if (flixSkuMedia && flixSkuMedia.trim()) {
       allSkus.push(flixSkuMedia.trim());
@@ -135,12 +146,16 @@ const Specifications: React.FC<SpecificationsProps> = ({ product, flix, selected
       className="w-full max-w-5xl mx-auto px-2 sm:px-4 md:px-8 py-4 md:py-6 mt-2 md:mt-4"
       aria-label="Especificaciones técnicas"
     >
-      <FlixmediaDetails
-        mpn={productSku}
-        ean={productEan}
-        productName={product.name}
-        className="w-full"
-      />
+      {/* key fuerza re-mount cuando cambia el SKU, asegurando que Flixmedia se recargue */}
+      {productSku && (
+        <FlixmediaDetails
+          key={`flixmedia-${productSku}`}
+          mpn={productSku}
+          ean={productEan}
+          productName={product.name}
+          className="w-full"
+        />
+      )}
     </section>
   );
 };

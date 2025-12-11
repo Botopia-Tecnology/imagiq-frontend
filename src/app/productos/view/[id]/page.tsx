@@ -1,6 +1,7 @@
 "use client";
 
 import React, { use } from "react";
+import { useRouter } from "next/navigation";
 import ViewProduct from "../../dispositivos-moviles/ViewProductMobile";
 import { useProduct } from "@/features/products/useProducts";
 import { notFound } from "next/navigation";
@@ -100,6 +101,46 @@ function convertProductForView(product: ProductCardProps) {
       },
     ],
   };
+}
+
+// Helper: Verificar si el producto tiene contenido premium (imágenes/videos)
+function hasPremiumContent(prod: ProductCardProps): boolean {
+  // Verificar en apiProduct (imagenPremium/videoPremium)
+  const checkArrayOfArrays = (arr?: string[][]): boolean => {
+    if (!arr || !Array.isArray(arr)) return false;
+    return arr.some((innerArray: string[]) => {
+      if (!Array.isArray(innerArray) || innerArray.length === 0) return false;
+      return innerArray.some(item => item && typeof item === 'string' && item.trim() !== '');
+    });
+  };
+
+  const hasApiPremiumContent = 
+    checkArrayOfArrays(prod.apiProduct?.imagenPremium) ||
+    checkArrayOfArrays(prod.apiProduct?.videoPremium) ||
+    checkArrayOfArrays(prod.apiProduct?.imagen_premium) ||
+    checkArrayOfArrays(prod.apiProduct?.video_premium);
+
+  // Verificar en los colores del producto
+  const hasColorPremiumContent = prod.colors?.some(color => {
+    const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) && 
+      color.imagen_premium.length > 0 && 
+      color.imagen_premium.some((img: string) => img && typeof img === 'string' && img.trim() !== '');
+    const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) && 
+      color.video_premium.length > 0 && 
+      color.video_premium.some((vid: string) => vid && typeof vid === 'string' && vid.trim() !== '');
+    return hasColorImages || hasColorVideos;
+  }) || false;
+
+  return hasApiPremiumContent || hasColorPremiumContent;
+}
+
+// Helper: Verificar si el segmento es premium
+function isPremiumSegment(prod: ProductCardProps): boolean {
+  const segmento = prod.segmento || 
+    (prod.apiProduct?.segmento && Array.isArray(prod.apiProduct.segmento) ? prod.apiProduct.segmento[0] : undefined);
+  if (!segmento) return false;
+  const segmentoValue = Array.isArray(segmento) ? segmento[0] : segmento;
+  return segmentoValue?.toUpperCase() === 'PREMIUM';
 }
 
 // Wrapper para manejar el estado de carga de variantes
@@ -213,6 +254,7 @@ export default function ProductViewPage({ params }) {
   });
 
   const { product: apiProduct, loading, error } = useProduct(id ?? "");
+  const router = useRouter();
 
   // Usar producto del API si está listo, sino usar el inicial de localStorage
   const product = apiProduct || initialProduct;
@@ -220,11 +262,43 @@ export default function ProductViewPage({ params }) {
   const [variantsReady, setVariantsReady] = React.useState(false);
   const [productSelection, setProductSelection] =
     React.useState<ProductSelectionData | null>(null);
+  const [shouldRedirectToPremium, setShouldRedirectToPremium] = React.useState(false);
+  const [premiumCheckDone, setPremiumCheckDone] = React.useState(false);
   const stockNotification = useStockNotification();
   const { trackViewItem } = useAnalytics();
 
   // 🚀 Prefetch automático de datos de Trade-In
   useTradeInPrefetch();
+
+  // 🔄 Verificar si el producto tiene contenido premium y debe redirigir a viewpremium
+  // IMPORTANTE: Solo redirigir si tiene AMBOS: segmento premium Y contenido premium
+  // Esto evita loops infinitos con viewpremium
+  React.useEffect(() => {
+    if (apiProduct && !loading && id) {
+      const hasPremium = hasPremiumContent(apiProduct);
+      const isPremium = isPremiumSegment(apiProduct);
+      
+      console.log('[VIEW] 🔍 Verificando contenido premium:', {
+        id,
+        hasPremium,
+        isPremium,
+        apiProductSegmento: apiProduct.apiProduct?.segmento,
+        hasImagenPremium: !!apiProduct.apiProduct?.imagenPremium?.length,
+        hasVideoPremium: !!apiProduct.apiProduct?.videoPremium?.length,
+      });
+      
+      // Solo redirigir si tiene segmento PREMIUM Y contenido premium
+      // Esto es consistente con viewpremium que requiere ambos
+      if (hasPremium && isPremium) {
+        console.log('[VIEW] ➡️ Redirigiendo a viewpremium (tiene segmento Y contenido premium)');
+        setShouldRedirectToPremium(true);
+        router.replace(`/productos/viewpremium/${id}`);
+      } else {
+        // No es premium, marcar verificación como completa
+        setPremiumCheckDone(true);
+      }
+    }
+  }, [apiProduct, loading, id, router]);
 
   // Reset variants ready cuando cambia el producto
   React.useEffect(() => {
@@ -285,17 +359,21 @@ export default function ProductViewPage({ params }) {
     return notFound();
   }
 
-  // Solo mostrar error si no tenemos ni producto API ni producto inicial
-  if (error && !product) {
-    return notFound();
-  }
-
-  // Solo mostrar skeleton si no tenemos ningún producto
-  if (!product && loading) {
+  // SIEMPRE mostrar skeleton mientras:
+  // 1. Está cargando el producto desde el API
+  // 2. Ya determinamos que debe redirigir a viewpremium (evita flash)
+  // 3. El producto cargó pero aún no se verificó si es premium
+  if (loading || shouldRedirectToPremium || (apiProduct && !premiumCheckDone)) {
     return <ProductDetailSkeleton />;
   }
 
-  if (!product) {
+  // Si hubo error y no hay producto del API, mostrar not found
+  if (error && !apiProduct) {
+    return notFound();
+  }
+
+  // Si no hay producto del API después de cargar, mostrar not found
+  if (!apiProduct) {
     return (
       <div className="container mx-auto px-6 py-8">
         <div className="flex justify-center items-center min-h-[400px]">
@@ -312,8 +390,8 @@ export default function ProductViewPage({ params }) {
     );
   }
 
-  // En este punto, tenemos producto (ya sea del API o de localStorage)
-  // El skeleton se muestra en la línea 295 cuando loading=true y no hay product
+  // En este punto, apiProduct está garantizado que existe
+  const productToUse = apiProduct;
 
   return (
     <>
@@ -321,11 +399,11 @@ export default function ProductViewPage({ params }) {
       <StockNotificationModal
         isOpen={stockNotification.isModalOpen}
         onClose={stockNotification.closeModal}
-        productName={product.name}
+        productName={productToUse.name}
         productImage={
           productSelection?.selectedVariant?.imagePreviewUrl ||
-          (typeof product.image === "string"
-            ? product.image
+          (typeof productToUse.image === "string"
+            ? productToUse.image
             : smartphonesImg.src)
         }
         selectedColor={
@@ -341,7 +419,7 @@ export default function ProductViewPage({ params }) {
 
       {/* Renderizar contenido del producto */}
       <ProductContentWithVariants
-        product={product}
+        product={productToUse}
         onVariantsReady={setVariantsReady}
         onProductSelectionChange={handleProductSelectionChange}
         productSelection={productSelection}

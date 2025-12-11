@@ -328,11 +328,33 @@ export default function ProductViewPage({ params }) {
   );
 
   // Validar que tenga contenido premium (imagenPremium o videoPremium)
-  const hasPremiumContent = product.apiProduct?.imagenPremium?.some(
-    (imgs: string[]) => Array.isArray(imgs) && imgs.length > 0 && imgs.some(img => img && img.trim() !== '')
-  ) || product.apiProduct?.videoPremium?.some(
-    (vids: string[]) => Array.isArray(vids) && vids.length > 0 && vids.some(vid => vid && vid.trim() !== '')
-  );
+  // Verificar tanto en apiProduct como en los colores del producto
+  // imagenPremium/videoPremium vienen como string[][] (array de arrays)
+  const checkArrayOfArrays = (arr?: string[][]): boolean => {
+    if (!arr || !Array.isArray(arr)) return false;
+    return arr.some((innerArray: string[]) => {
+      if (!Array.isArray(innerArray) || innerArray.length === 0) return false;
+      return innerArray.some(item => item && typeof item === 'string' && item.trim() !== '');
+    });
+  };
+
+  const hasPremiumContent = 
+    // Verificar en apiProduct (imagenPremium/videoPremium o sus alias)
+    checkArrayOfArrays(product.apiProduct?.imagenPremium) ||
+    checkArrayOfArrays(product.apiProduct?.videoPremium) ||
+    checkArrayOfArrays(product.apiProduct?.imagen_premium) ||
+    checkArrayOfArrays(product.apiProduct?.video_premium) ||
+    // Verificar en los colores del producto (imagen_premium/video_premium)
+    // En los colores vienen como string[] (array simple)
+    product.colors?.some(color => {
+      const hasColorImages = color.imagen_premium && Array.isArray(color.imagen_premium) && 
+        color.imagen_premium.length > 0 && 
+        color.imagen_premium.some(img => img && typeof img === 'string' && img.trim() !== '');
+      const hasColorVideos = color.video_premium && Array.isArray(color.video_premium) && 
+        color.video_premium.length > 0 && 
+        color.video_premium.some(vid => vid && typeof vid === 'string' && vid.trim() !== '');
+      return hasColorImages || hasColorVideos;
+    }) || false;
 
   // Si NO es PREMIUM o NO tiene contenido premium, redirigir a la vista normal
   if (!isPremiumProduct || !hasPremiumContent) {

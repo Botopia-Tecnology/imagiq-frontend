@@ -10,6 +10,7 @@ import type { StaticImageData } from "next/image";
 import type { ProductVariant, ColorOption } from "@/hooks/useProductSelection";
 import fallbackImage from "@/img/dispositivosmoviles/cel1.png";
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { cleanProductName } from "@/lib/utils";
 
 // Components
 import StickyPriceBar from "./StickyPriceBar";
@@ -338,7 +339,7 @@ const DetailsProductSection: React.FC<{
   return (
     <>
       <StickyPriceBar
-        deviceName={product.name}
+        deviceName={cleanProductName(productSelection.selectedModelo || product.name)}
         basePrice={getCurrentPrice()}
         originalPrice={originalPrice}
         selectedColor={
@@ -426,7 +427,7 @@ const DetailsProductSection: React.FC<{
               <div className="col-span-6 flex flex-col justify-start gap-4 min-h-full pb-12 pt-4">
                 <header className="">
                   <ProductHeader
-                    name={product.name}
+                    name={cleanProductName(productSelection.selectedModelo || product.name)}
                     sku={productSelection.selectedSku ?? undefined}
                     codigoMarket={
                       productSelection.selectedCodigoMarket ?? undefined
@@ -519,7 +520,7 @@ const DetailsProductSection: React.FC<{
             />
             <header className="mb-4 text-center mt-6">
               <h1 className="text-2xl font-bold text-[#222] mb-2">
-                {product.name}
+                {cleanProductName(productSelection.selectedModelo || product.name)}
               </h1>
               <p className="text-base text-[#222] mb-4 font-light leading-snug">
                 {/* Description removed from ProductCardProps */}

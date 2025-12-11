@@ -1,5 +1,6 @@
 import React from "react";
 import { Heart } from "lucide-react";
+import { cleanProductName } from "@/lib/utils";
 
 interface ProductHeaderProps {
   readonly name: string;
@@ -40,7 +41,7 @@ export default function ProductHeader({
           className="text-[2rem] leading-tight font-bold text-[#222] flex-1"
           style={{ letterSpacing: "-0.5px" }}
         >
-          {name}
+          {cleanProductName(name)}
         </h1>
         {/* Botón de favoritos */}
         <button

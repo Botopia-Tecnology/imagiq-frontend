@@ -11,7 +11,6 @@ import {
   Store,
   Edit2,
   User as UserIcon,
-  Clock,
 } from "lucide-react";
 import { useAuthContext } from "@/features/auth/context";
 import { profileService } from "@/services/profile.service";
@@ -1473,21 +1472,21 @@ export default function Step7({ onBack }: Step7Props) {
               <h1 className="text-2xl font-bold text-gray-900">
                 Confirma tu pedido
               </h1>
-              <p className="mt-1">
+              <p className="text-gray-600 mt-1">
                 Revisa todos los detalles antes de confirmar tu compra
               </p>
             </>
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Sección de resumen */}
-          <div className="lg:col-span-3 space-y-4">
+          <div className="lg:col-span-2 space-y-4">
             {isLoadingCanPickUp ? (
               /* Skeleton de toda la sección mientras carga */
               <>
                 {/* Skeleton Método de pago */}
-                <div className="bg-white rounded-lg p-6 border border-gray-500 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1504,7 +1503,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Método de entrega */}
-                <div className="bg-white rounded-lg p-6 border border-gray-500 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1519,7 +1518,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Información del receptor */}
-                <div className="bg-white rounded-lg p-6 border border-gray-500 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1533,7 +1532,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Datos de facturación */}
-                <div className="bg-white rounded-lg p-6 border border-gray-500 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1570,7 +1569,7 @@ export default function Step7({ onBack }: Step7Props) {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Método de pago */}
                   {paymentData && (
-                    <div className="bg-white rounded-lg p-6 border border-gray-500">
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1588,7 +1587,7 @@ export default function Step7({ onBack }: Step7Props) {
                       <button
                         type="button"
                         onClick={() => router.push("/carrito/step4")}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 cursor-pointer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
                       >
                         <Edit2 className="w-4 h-4" />
                         Editar
@@ -1600,130 +1599,122 @@ export default function Step7({ onBack }: Step7Props) {
                         <>
                           {/* Mostrar detalles de tarjeta guardada */}
                           {paymentData.savedCard && (
-                            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                              <CardBrandLogo
-                                brand={paymentData.savedCard.marca}
-                                size="md"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-900 tracking-wider">
-                                    •••• {paymentData.savedCard.ultimos_dijitos}
-                                  </span>
-                                  {paymentData.savedCard.tipo_tarjeta && (
-                                    <span className="text-xs text-gray-500 uppercase">
-                                      {paymentData.savedCard.tipo_tarjeta
-                                        .toUpperCase()
-                                        .includes("CREDIT")
-                                        ? "Crédito"
-                                        : "Débito"}
+                            <>
+                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                <CardBrandLogo
+                                  brand={paymentData.savedCard.marca}
+                                  size="md"
+                                />
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900 tracking-wider">
+                                      •••• {paymentData.savedCard.ultimos_dijitos}
                                     </span>
-                                  )}
-                                </div>
-
-                                {/* Fila con titular y banco a la izquierda, cuotas a la derecha */}
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="flex flex-col gap-0.5 text-xs text-gray-600 min-w-0">
+                                    {paymentData.savedCard.tipo_tarjeta && (
+                                      <span className="text-xs text-gray-500 uppercase">
+                                        {paymentData.savedCard.tipo_tarjeta
+                                          .toUpperCase()
+                                          .includes("CREDIT")
+                                          ? "Crédito"
+                                          : "Débito"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
                                     {paymentData.savedCard.nombre_titular && (
-                                      <span className="uppercase truncate">
+                                      <span className="uppercase">
                                         {paymentData.savedCard.nombre_titular}
                                       </span>
                                     )}
                                     {paymentData.savedCard.banco && (
-                                      <span className="truncate">{paymentData.savedCard.banco}</span>
+                                      <span>{paymentData.savedCard.banco}</span>
                                     )}
                                   </div>
-
-                                  {/* Cuotas al lado derecho */}
-                                  {paymentData.installments && (
-                                    <div className="flex-shrink-0 text-right">
-                                      <span className="text-xs text-gray-500 block mb-0.5">Cuotas</span>
-                                      <span className="font-semibold text-sm text-gray-900">
-                                        {paymentData.installments}x
-                                        {paymentData.savedCard &&
-                                          isInstallmentEligibleForZeroInterest(
-                                            paymentData.installments,
-                                            String(paymentData.savedCard.id)
-                                          ) && (
-                                            <span className="ml-1 text-green-600 text-xs">
-                                              sin interés
-                                            </span>
-                                          )}
-                                      </span>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
-                            </div>
+                              {paymentData.installments && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Cuotas:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {paymentData.installments}x
+                                    {paymentData.savedCard &&
+                                      isInstallmentEligibleForZeroInterest(
+                                        paymentData.installments,
+                                        String(paymentData.savedCard.id)
+                                      ) && (
+                                        <span className="ml-2 text-green-600 font-semibold">
+                                          (sin interés)
+                                        </span>
+                                      )}
+                                  </span>
+                                </div>
+                              )}
+                            </>
                           )}
                           {/* Mostrar detalles de tarjeta nueva */}
                           {paymentData.cardData && (
-                            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                              {paymentData.cardData.brand && (
-                                <CardBrandLogo
-                                  brand={paymentData.cardData.brand}
-                                  size="md"
-                                />
-                              )}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="font-semibold text-gray-900 tracking-wider">
-                                    ••••{" "}
-                                    {paymentData.cardData.cardNumber.slice(-4)}
-                                  </span>
-                                  {paymentData.cardData.cardType && (
-                                    <span className="text-xs text-gray-500 uppercase">
-                                      {paymentData.cardData.cardType
-                                        .toUpperCase()
-                                        .includes("CREDIT")
-                                        ? "Crédito"
-                                        : "Débito"}
+                            <>
+                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                                {paymentData.cardData.brand && (
+                                  <CardBrandLogo
+                                    brand={paymentData.cardData.brand}
+                                    size="md"
+                                  />
+                                )}
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900 tracking-wider">
+                                      ••••{" "}
+                                      {paymentData.cardData.cardNumber.slice(-4)}
                                     </span>
-                                  )}
-                                </div>
-
-                                {/* Fila con titular y banco a la izquierda, cuotas a la derecha */}
-                                <div className="flex items-center justify-between gap-4">
-                                  <div className="flex flex-col gap-0.5 text-xs text-gray-600 min-w-0">
+                                    {paymentData.cardData.cardType && (
+                                      <span className="text-xs text-gray-500 uppercase">
+                                        {paymentData.cardData.cardType
+                                          .toUpperCase()
+                                          .includes("CREDIT")
+                                          ? "Crédito"
+                                          : "Débito"}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
                                     {paymentData.cardData.cardHolder && (
-                                      <span className="uppercase truncate">
+                                      <span className="uppercase">
                                         {paymentData.cardData.cardHolder}
                                       </span>
                                     )}
                                     {paymentData.cardData.bank && (
-                                      <span className="truncate">{paymentData.cardData.bank}</span>
+                                      <span>{paymentData.cardData.bank}</span>
                                     )}
                                   </div>
-
-                                  {/* Cuotas al lado derecho */}
-                                  {paymentData.installments && (
-                                    <div className="flex-shrink-0 text-right">
-                                      <span className="text-xs text-gray-500 block mb-0.5">Cuotas</span>
-                                      <span className="font-semibold text-sm text-gray-900">
-                                        {paymentData.installments}x
-                                        {(() => {
-                                          // Para tarjetas nuevas, intentar obtener el ID de localStorage
-                                          const savedCardId = localStorage.getItem(
-                                            "checkout-saved-card-id"
-                                          );
-                                          return (
-                                            savedCardId &&
-                                            isInstallmentEligibleForZeroInterest(
-                                              paymentData.installments,
-                                              savedCardId
-                                            ) && (
-                                              <span className="ml-1 text-green-600 text-xs">
-                                                sin interés
-                                              </span>
-                                            )
-                                          );
-                                        })()}
-                                      </span>
-                                    </div>
-                                  )}
                                 </div>
                               </div>
-                            </div>
+                              {paymentData.installments && (
+                                <div className="flex justify-between text-sm">
+                                  <span className="text-gray-600">Cuotas:</span>
+                                  <span className="font-medium text-gray-900">
+                                    {paymentData.installments}x
+                                    {(() => {
+                                      // Para tarjetas nuevas, intentar obtener el ID de localStorage
+                                      const savedCardId = localStorage.getItem(
+                                        "checkout-saved-card-id"
+                                      );
+                                      return (
+                                        savedCardId &&
+                                        isInstallmentEligibleForZeroInterest(
+                                          paymentData.installments,
+                                          savedCardId
+                                        ) && (
+                                          <span className="ml-2 text-green-600 font-semibold">
+                                            (sin interés)
+                                          </span>
+                                        )
+                                      );
+                                    })()}
+                                  </span>
+                                </div>
+                              )}
+                            </>
                           )}
                         </>
                       )}
@@ -1741,7 +1732,7 @@ export default function Step7({ onBack }: Step7Props) {
 
                   {/* Información del receptor */}
                   {recipientData && (
-                    <div className="bg-white rounded-lg p-6 border border-gray-500">
+                    <div className="bg-white rounded-lg p-6 border border-gray-200">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1761,99 +1752,59 @@ export default function Step7({ onBack }: Step7Props) {
                         <button
                           type="button"
                           onClick={() => router.push("/carrito/step3")}
-                          className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 cursor-pointer"
+                          className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
                         >
                           <Edit2 className="w-4 h-4" />
                           Editar
                         </button>
                       </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {recipientData.receivedByClient && loggedUser ? (
-                          <>
-                            {/* Nombre del cliente */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Nombre</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {loggedUser.nombre || "N/A"}
-                              </p>
-                            </div>
+                      {!recipientData.receivedByClient && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {/* Nombre */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.firstName}
+                            </p>
+                          </div>
 
-                            {/* Apellido del cliente */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Apellido</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {loggedUser.apellido || "N/A"}
-                              </p>
-                            </div>
+                          {/* Apellido */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">Apellido</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.lastName}
+                            </p>
+                          </div>
 
-                            {/* Email del cliente */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">
-                                Correo electrónico
-                              </p>
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {loggedUser.email || checkoutAddress?.email || "N/A"}
-                              </p>
-                            </div>
+                          {/* Email */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Correo electrónico
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.email}
+                            </p>
+                          </div>
 
-                            {/* Teléfono del cliente */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">
-                                Número de celular
-                              </p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {loggedUser.telefono || "N/A"}
-                              </p>
-                            </div>
-                          </>
-                        ) : !recipientData.receivedByClient ? (
-                          <>
-                            {/* Nombre */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Nombre</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {recipientData.firstName}
-                              </p>
-                            </div>
-
-                            {/* Apellido */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">Apellido</p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {recipientData.lastName}
-                              </p>
-                            </div>
-
-                            {/* Email */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">
-                                Correo electrónico
-                              </p>
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {recipientData.email}
-                              </p>
-                            </div>
-
-                            {/* Teléfono */}
-                            <div>
-                              <p className="text-xs text-gray-500 mb-1">
-                                Número de celular
-                              </p>
-                              <p className="text-sm font-medium text-gray-900">
-                                {recipientData.phone}
-                              </p>
-                            </div>
-                          </>
-                        ) : null}
-                      </div>
+                          {/* Teléfono */}
+                          <div>
+                            <p className="text-xs text-gray-500 mb-1">
+                              Número de celular
+                            </p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {recipientData.phone}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
 
                 {/* Método de entrega */}
                 {shippingData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-500">
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1877,7 +1828,7 @@ export default function Step7({ onBack }: Step7Props) {
                       <button
                         type="button"
                         onClick={() => router.push("/carrito/step3")}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 cursor-pointer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
                       >
                         <Edit2 className="w-4 h-4" />
                         Editar
@@ -1902,41 +1853,26 @@ export default function Step7({ onBack }: Step7Props) {
 
                     {shippingData.type === "pickup" && (
                       <div className="space-y-3">
-                        <div className="p-3 bg-gray-50 rounded-lg">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {/* Columna izquierda: Tienda y dirección */}
-                            <div className="flex items-start gap-3">
-                              <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-gray-900 mb-1">
-                                  {shippingData.store?.name || "Recoger en tienda"}
-                                </p>
-                                {shippingData.store?.address && (
-                                  <p className="text-xs text-gray-600">
-                                    {shippingData.store.address}
-                                  </p>
-                                )}
-                                {shippingData.store?.city && (
-                                  <p className="text-xs text-gray-500 mt-0.5">
-                                    {shippingData.store.city}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            {/* Columna derecha: Horario */}
+                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                          <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">
+                              {shippingData.store?.name || "Recoger en tienda"}
+                            </p>
+                            {shippingData.store?.address && (
+                              <p className="text-xs text-gray-600 mt-1">
+                                {shippingData.store.address}
+                              </p>
+                            )}
+                            {shippingData.store?.city && (
+                              <p className="text-xs text-gray-500">
+                                {shippingData.store.city}
+                              </p>
+                            )}
                             {shippingData.store?.schedule && (
-                              <div className="flex items-start gap-3">
-                                <Clock className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                                <div>
-                                  <p className="text-xs text-gray-500 font-semibold mb-1">
-                                    Horario de atención
-                                  </p>
-                                  <p className="text-xs text-gray-600">
-                                    {shippingData.store.schedule}
-                                  </p>
-                                </div>
-                              </div>
+                              <p className="text-xs text-gray-500 mt-1">
+                                Horario: {shippingData.store.schedule}
+                              </p>
                             )}
                           </div>
                         </div>
@@ -1947,7 +1883,7 @@ export default function Step7({ onBack }: Step7Props) {
 
                 {/* Datos de facturación */}
                 {billingData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-500">
+                  <div className="bg-white rounded-lg p-6 border border-gray-200">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1967,7 +1903,7 @@ export default function Step7({ onBack }: Step7Props) {
                       <button
                         type="button"
                         onClick={() => router.push("/carrito/step6")}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 cursor-pointer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
                       >
                         <Edit2 className="w-4 h-4" />
                         Editar
@@ -2062,7 +1998,7 @@ export default function Step7({ onBack }: Step7Props) {
           </div>
 
           {/* Resumen de compra y Trade-In - Hidden en mobile */}
-          <aside className="hidden md:block lg:col-span-2 space-y-4">
+          <aside className="hidden md:block lg:col-span-1 space-y-4">
             {isLoadingCanPickUp ? (
               /* Skeleton del resumen mientras carga */
               <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
@@ -2292,7 +2228,7 @@ export default function Step7({ onBack }: Step7Props) {
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-500 shadow-lg z-50">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
         <div className="p-4">
           {/* Resumen compacto */}
           <div className="flex items-center justify-between mb-3">

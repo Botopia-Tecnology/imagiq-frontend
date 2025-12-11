@@ -316,19 +316,48 @@ export default function MultimediaPage({
     return hasApiPremiumContent || hasColorPremiumContent;
   };
 
-  // Determinar la ruta según el segmento Y el contenido premium del producto
-  // IMPORTANTE: Solo enviar a viewpremium si tiene segmento premium Y contenido premium
+  // Determinar la ruta según el segmento O el contenido premium del producto
+  // Enviar a viewpremium si tiene segmento premium O tiene contenido premium
   // Verificar segmento en: localStorage, product.segmento, o product.apiProduct.segmento
-  const segmento = selectedProductData?.segmento ?? 
-                   product?.segmento ?? 
-                   (product?.apiProduct?.segmento ? product.apiProduct.segmento[0] : undefined);
+  const getSegmento = (): string | undefined => {
+    // 1. Primero de localStorage
+    if (selectedProductData?.segmento) {
+      const seg = selectedProductData.segmento;
+      return Array.isArray(seg) ? seg[0] : seg;
+    }
+    // 2. Luego de product.segmento directo
+    if (product?.segmento) {
+      const seg = product.segmento;
+      return Array.isArray(seg) ? seg[0] : seg;
+    }
+    // 3. Finalmente de apiProduct.segmento (viene como array del backend)
+    if (product?.apiProduct?.segmento && Array.isArray(product.apiProduct.segmento) && product.apiProduct.segmento.length > 0) {
+      return product.apiProduct.segmento[0];
+    }
+    return undefined;
+  };
+  
+  const segmento = getSegmento();
   const isPremium = isPremiumProduct(segmento);
   const hasPremium = hasPremiumContent();
   
-  // Solo usar viewpremium si es premium Y tiene contenido premium
-  const viewRoute = (isPremium && hasPremium)
+  // DEBUG: Log para verificar valores
+  console.log('[MULTIMEDIA] 🔍 Verificando ruta:', {
+    segmento,
+    isPremium,
+    hasPremium,
+    productSegmento: product?.segmento,
+    apiProductSegmento: product?.apiProduct?.segmento,
+    hasApiPremiumImages: !!product?.apiProduct?.imagenPremium?.length,
+    hasApiPremiumVideos: !!product?.apiProduct?.videoPremium?.length,
+  });
+  
+  // Usar viewpremium si es premium O tiene contenido premium
+  const viewRoute = (isPremium || hasPremium)
     ? `/productos/viewpremium/${id}`
     : `/productos/view/${id}`;
+    
+  console.log('[MULTIMEDIA] ➡️ Ruta seleccionada:', viewRoute);
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

@@ -760,7 +760,7 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[280px] xl:min-w-[300px] 2xl:min-w-[340px]">
+          <div className="hidden lg:flex flex-col items-start justify-between flex-none min-w-[320px] xl:min-w-[340px] 2xl:min-w-[380px]">
             <div className="w-full flex items-center justify-end gap-4">
               {/* Dirección predeterminada del usuario con dropdown */}
               {/* Se muestra siempre: si no está logueado, muestra "Agregar dirección" y redirige a login */}

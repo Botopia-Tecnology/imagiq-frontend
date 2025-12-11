@@ -16,10 +16,10 @@ export const SearchBar: FC<Props> = ({ value, onChange, onSubmit }) => (
       boxShadow: "0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.06)"
     }}
   >
-    <Search className="w-5 h-5 lg:w-4 lg:h-4 mr-3 lg:mr-2.5 text-gray-500" />
+    <Search className="w-5 h-5 mr-3 text-gray-500" />
     <input
       type="text"
-      className="w-full bg-transparent border-none focus:outline-none text-[15px] lg:text-[14px] text-gray-900 placeholder-gray-400 font-medium"
+      className="w-full bg-transparent border-none focus:outline-none text-[15px] text-gray-900 placeholder-gray-400 font-medium"
       placeholder="Búsqueda"
       value={value}
       onChange={(e) => onChange(e.target.value)}

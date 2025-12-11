@@ -353,6 +353,8 @@ export default function MultimediaPage({
           productName={displayProductName}
           productId={id}
           segmento={segmento}
+          apiProduct={product?.apiProduct}
+          productColors={product?.colors}
           className=""
         />
       </div>

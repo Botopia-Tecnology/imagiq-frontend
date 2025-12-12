@@ -10,6 +10,7 @@ export interface ProductoDetalle {
   imagen?: string;
   cantidad: number;
   precio?: number;
+  numero_guia?: string;
 }
 
 export interface TiendaInfo {
@@ -54,7 +55,7 @@ export interface DetalleRecogida {
 // Interfaz unificada para el componente de tracking
 export interface OrderDetails
   extends Partial<DetalleEnvio>,
-    Partial<DetalleRecogida> {
+  Partial<DetalleRecogida> {
   // Propiedades comunes
   orden_id: string;
   fecha_creacion: string;

@@ -8,9 +8,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useHeroBanner } from "@/hooks/useHeroBanner";
 import { useHeroContext } from "@/contexts/HeroContext";
-import { positionToCSS } from "@/utils/bannerCoordinates";
+import { positionToCSS, parseTextStyles } from "@/utils/bannerCoordinates";
 import Link from "next/link";
-import type { HeroBannerConfig } from "@/types/banner";
+import type { HeroBannerConfig, ContentBlock } from "@/types/banner";
 
 /**
  * Componente de contenido del Hero (reutilizable para desktop y mobile)
@@ -49,7 +49,7 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
         <h1
           className={`${textSize} font-bold mb-3 tracking-tight`}
           style={{
-            color: config.textColor,
+            color: "#ffffff",
             ...(config.textStyles?.title || {}),
           }}
         >
@@ -60,7 +60,7 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
         <p
           className={subSize}
           style={{
-            color: config.textColor,
+            color: "#ffffff",
             ...(config.textStyles?.description || {}),
           }}
         >
@@ -72,9 +72,9 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
           href={config.ctaLink || "#"}
           className={`bg-transparent hover:opacity-80 ${buttonSize} rounded-full font-semibold transition-all duration-300 transform hover:scale-105`}
           style={{
-            color: config.textColor,
+            color: "#ffffff",
             borderWidth: '2px',
-            borderColor: config.textColor,
+            borderColor: "#ffffff",
             ...(config.textStyles?.cta || {}),
           }}
         >
@@ -82,6 +82,159 @@ function HeroContent({ config, videoEnded, positionStyle, isMobile }: Readonly<H
         </Link>
       )}
     </div>
+  );
+}
+
+/**
+ * Componente para renderizar bloques de contenido con configuración desktop/mobile
+ */
+function ContentBlocksOverlay({
+  blocks,
+  isMobile,
+  videoEnded,
+}: Readonly<{
+  blocks: ContentBlock[];
+  isMobile?: boolean;
+  videoEnded: boolean;
+}>) {
+  const visibilityClass = isMobile ? 'md:hidden' : 'hidden md:block';
+
+  return (
+    <>
+      {blocks.map((block) => {
+        const position = isMobile ? block.position_mobile : block.position_desktop;
+        
+        // Configuración del contenedor
+        const textAlign = isMobile && block.textAlign_mobile 
+          ? block.textAlign_mobile 
+          : block.textAlign || 'left';
+        const gap = isMobile && block.gap_mobile 
+          ? block.gap_mobile 
+          : block.gap || '12px';
+
+        return (
+          <div
+            key={block.id}
+            className={`absolute z-10 ${visibilityClass}`}
+            style={{
+              left: `${position.x}%`,
+              top: `${position.y}%`,
+              transform: 'translate(-50%, -50%)',
+              opacity: videoEnded ? 1 : 0,
+              transition: "all 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s",
+              pointerEvents: videoEnded ? "auto" : "none",
+            }}
+          >
+            <div
+              className="flex flex-col"
+              style={{ gap }}
+            >
+              {/* Título */}
+              {block.title && (() => {
+                const titleStyles = {
+                  fontSize: (isMobile && block.title_mobile?.fontSize) || block.title.fontSize || '2rem',
+                  fontWeight: (isMobile && block.title_mobile?.fontWeight) || block.title.fontWeight || '700',
+                  color: (isMobile && block.title_mobile?.color) || block.title.color || '#ffffff',
+                  lineHeight: (isMobile && block.title_mobile?.lineHeight) || block.title.lineHeight || '1.2',
+                  textTransform: (isMobile && block.title_mobile?.textTransform) || block.title.textTransform || 'none',
+                  letterSpacing: (isMobile && block.title_mobile?.letterSpacing) || block.title.letterSpacing || 'normal',
+                  textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
+                };
+                return (
+                  <h2
+                    style={{
+                      ...titleStyles,
+                      margin: 0,
+                      whiteSpace: 'pre-line',
+                      textAlign,
+                    }}
+                  >
+                    {block.title.text}
+                  </h2>
+                );
+              })()}
+
+              {/* Subtítulo */}
+              {block.subtitle && (() => {
+                const subtitleStyles = {
+                  fontSize: (isMobile && block.subtitle_mobile?.fontSize) || block.subtitle.fontSize || '1.5rem',
+                  fontWeight: (isMobile && block.subtitle_mobile?.fontWeight) || block.subtitle.fontWeight || '600',
+                  color: (isMobile && block.subtitle_mobile?.color) || block.subtitle.color || '#ffffff',
+                  lineHeight: (isMobile && block.subtitle_mobile?.lineHeight) || block.subtitle.lineHeight || '1.3',
+                  textTransform: (isMobile && block.subtitle_mobile?.textTransform) || block.subtitle.textTransform || 'none',
+                };
+                return (
+                  <h3
+                    style={{
+                      ...subtitleStyles,
+                      margin: 0,
+                      whiteSpace: 'pre-line',
+                      textAlign,
+                    }}
+                  >
+                    {block.subtitle.text}
+                  </h3>
+                );
+              })()}
+
+              {/* Descripción */}
+              {block.description && (() => {
+                const descriptionStyles = {
+                  fontSize: (isMobile && block.description_mobile?.fontSize) || block.description.fontSize || '1rem',
+                  fontWeight: (isMobile && block.description_mobile?.fontWeight) || block.description.fontWeight || '400',
+                  color: (isMobile && block.description_mobile?.color) || block.description.color || '#ffffff',
+                  lineHeight: (isMobile && block.description_mobile?.lineHeight) || block.description.lineHeight || '1.5',
+                };
+                return (
+                  <p
+                    style={{
+                      ...descriptionStyles,
+                      margin: 0,
+                      whiteSpace: 'pre-line',
+                      textAlign,
+                    }}
+                  >
+                    {block.description.text}
+                  </p>
+                );
+              })()}
+
+              {/* CTA */}
+              {block.cta && (() => {
+                const ctaStyles = {
+                  fontSize: (isMobile && block.cta_mobile?.fontSize) || block.cta.fontSize || '1rem',
+                  fontWeight: (isMobile && block.cta_mobile?.fontWeight) || block.cta.fontWeight || '600',
+                  backgroundColor: (isMobile && block.cta_mobile?.backgroundColor) || block.cta.backgroundColor || '#ffffff',
+                  color: (isMobile && block.cta_mobile?.color) || block.cta.color || '#000000',
+                  padding: (isMobile && block.cta_mobile?.padding) || block.cta.padding || '12px 24px',
+                  borderRadius: (isMobile && block.cta_mobile?.borderRadius) || block.cta.borderRadius || '8px',
+                  border: (isMobile && block.cta_mobile?.border) || block.cta.border || 'none',
+                  // Efecto glassmorphism
+                  backdropFilter: (isMobile && block.cta_mobile?.backdropFilter) || block.cta.backdropFilter,
+                  boxShadow: (isMobile && block.cta_mobile?.boxShadow) || block.cta.boxShadow,
+                };
+                return (
+                  <div style={{ textAlign }}>
+                    <a
+                      href={block.cta.link_url || '#'}
+                      className="inline-block transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      style={{
+                        ...ctaStyles,
+                        textDecoration: 'none',
+                        textAlign: 'center',
+                        whiteSpace: 'pre-line',
+                      }}
+                    >
+                      {block.cta.text}
+                    </a>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        );
+      })}
+    </>
   );
 }
 
@@ -127,6 +280,13 @@ export default function HeroSection() {
     setVideoEnded(false);
   }, [currentBannerIndex]);
 
+  // Sincronizar color del header con el banner actual
+  useEffect(() => {
+    if (currentConfig?.colorFont) {
+      setTextColor(currentConfig.colorFont);
+    }
+  }, [currentConfig?.colorFont, setTextColor]);
+
   // NUEVO: Efecto para gestionar el carrusel automático
   useEffect(() => {
     if (configs.length <= 1) {
@@ -162,13 +322,6 @@ export default function HeroSection() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentBannerIndex, configs.length]);
-
-  // Sincronizar color del Hero con el Navbar
-  useEffect(() => {
-    if (currentConfig.textColor) {
-      setTextColor(currentConfig.textColor);
-    }
-  }, [currentConfig.textColor, setTextColor]);
 
   // Efecto de scroll para reducir el video
   useEffect(() => {
@@ -254,6 +407,19 @@ export default function HeroSection() {
         // Si el video ya se reprodujo, mostrar solo la imagen
         const shouldShowVideoDesktop = config.videoSrc && !videoAlreadyPlayed && isActive;
         const shouldShowVideoMobile = config.mobileVideoSrc && !videoAlreadyPlayed && isActive;
+
+        // Parsear content_blocks si existe
+        let contentBlocks: ContentBlock[] = [];
+        if (config.content_blocks) {
+          try {
+            contentBlocks = typeof config.content_blocks === 'string' 
+              ? JSON.parse(config.content_blocks) 
+              : config.content_blocks;
+          } catch (e) {
+            console.error('Error parsing content_blocks:', e);
+          }
+        }
+        const hasContentBlocks = contentBlocks.length > 0;
 
         return (
           <div
@@ -383,21 +549,36 @@ export default function HeroSection() {
             </div>
 
             {/* Contenido específico de este banner */}
-            {canShowBanner || videoAlreadyPlayed ? (
-              <>
-                <HeroContent
-                  config={config}
-                  videoEnded={effectiveVideoEndedBanner}
-                  positionStyle={desktopPositionStyleBanner}
-                />
-                <HeroContent
-                  config={config}
-                  videoEnded={effectiveVideoEndedBanner}
-                  positionStyle={mobilePositionStyleBanner}
-                  isMobile
-                />
-              </>
-            ) : null}
+            {(canShowBanner || videoAlreadyPlayed) && (
+              hasContentBlocks ? (
+                <>
+                  <ContentBlocksOverlay
+                    blocks={contentBlocks}
+                    isMobile={false}
+                    videoEnded={effectiveVideoEndedBanner}
+                  />
+                  <ContentBlocksOverlay
+                    blocks={contentBlocks}
+                    isMobile={true}
+                    videoEnded={effectiveVideoEndedBanner}
+                  />
+                </>
+              ) : (
+                <>
+                  <HeroContent
+                    config={config}
+                    videoEnded={effectiveVideoEndedBanner}
+                    positionStyle={desktopPositionStyleBanner}
+                  />
+                  <HeroContent
+                    config={config}
+                    videoEnded={effectiveVideoEndedBanner}
+                    positionStyle={mobilePositionStyleBanner}
+                    isMobile
+                  />
+                </>
+              )
+            )}
           </div>
         );
       })}

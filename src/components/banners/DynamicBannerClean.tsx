@@ -16,7 +16,7 @@ import Link from "next/link";
 import { useDynamicBanner } from "@/hooks/useDynamicBanner";
 import { useCarouselController } from "@/hooks/useCarouselController";
 import { parsePosition, parseTextStyles } from "@/utils/bannerCoordinates";
-import type { Banner, BannerPosition, BannerTextStyles } from "@/types/banner";
+import type { Banner, BannerPosition, BannerTextStyles, ContentBlock } from "@/types/banner";
 
 type CSS = React.CSSProperties;
 
@@ -24,12 +24,14 @@ type CSS = React.CSSProperties;
  * Props del componente principal
  */
 interface DynamicBannerProps {
-  placement: string;
+  placement?: string;
   className?: string;
   showOverlay?: boolean;
   children?: React.ReactNode;
   displayDuration?: number;
   trackPlayedVideos?: boolean;
+  mockBanner?: Banner | null; // Datos mock para pruebas sin API
+  isMobile?: boolean; // Forzar vista mobile para testing
 }
 
 /**
@@ -184,6 +186,164 @@ function BannerContent({
 }
 
 /**
+ * Componente para renderizar bloques de contenido
+ */
+function ContentBlocksOverlay({
+  blocks,
+  isMobile,
+  forceShow,
+}: Readonly<{
+  blocks: ContentBlock[];
+  isMobile?: boolean;
+  forceShow?: boolean; // Forzar mostrar sin clases responsive
+}>) {
+  return (
+    <>
+      {blocks.map((block) => {
+        const position = isMobile ? block.position_mobile : block.position_desktop;
+        
+        // Configuración del contenedor: usar mobile si existe, sino desktop
+        const textAlign = isMobile && block.textAlign_mobile 
+          ? block.textAlign_mobile 
+          : block.textAlign || 'left';
+        const maxWidth = isMobile && block.maxWidth_mobile 
+          ? block.maxWidth_mobile 
+          : block.maxWidth || '600px';
+        const gap = isMobile && block.gap_mobile 
+          ? block.gap_mobile 
+          : block.gap || '12px';
+
+        // Si forceShow está activo, no usar clases responsive
+        const visibilityClass = forceShow 
+          ? 'absolute' 
+          : `absolute ${isMobile ? 'md:hidden' : 'hidden md:block'}`;
+
+        // Estilos del título: usar mobile si existe, sino desktop
+        const titleStyles = block.title && {
+          fontSize: (isMobile && block.title_mobile?.fontSize) || block.title.fontSize || '2rem',
+          fontWeight: (isMobile && block.title_mobile?.fontWeight) || block.title.fontWeight || '700',
+          color: (isMobile && block.title_mobile?.color) || block.title.color || '#ffffff',
+          lineHeight: (isMobile && block.title_mobile?.lineHeight) || block.title.lineHeight || '1.2',
+          textTransform: (isMobile && block.title_mobile?.textTransform) || block.title.textTransform || 'none',
+          letterSpacing: (isMobile && block.title_mobile?.letterSpacing) || block.title.letterSpacing || 'normal',
+          textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
+        };
+
+        return (
+          <div
+            key={block.id}
+            className={visibilityClass}
+            style={{
+              left: `${position.x}%`,
+              top: `${position.y}%`,
+              transform: 'translate(0, 0)',
+              maxWidth,
+            }}
+          >
+            <div
+              className="flex flex-col"
+              style={{
+                gap,
+              }}
+            >
+              {/* Título */}
+              {block.title && (
+                <h2
+                  style={{
+                    ...titleStyles,
+                    margin: 0,
+                    whiteSpace: 'pre-line',
+                    textAlign,
+                  }}
+                >
+                  {block.title.text}
+                </h2>
+              )}
+
+              {/* Subtítulo */}
+              {block.subtitle && (() => {
+                const subtitleStyles = {
+                  fontSize: (isMobile && block.subtitle_mobile?.fontSize) || block.subtitle.fontSize || '1.5rem',
+                  fontWeight: (isMobile && block.subtitle_mobile?.fontWeight) || block.subtitle.fontWeight || '600',
+                  color: (isMobile && block.subtitle_mobile?.color) || block.subtitle.color || '#ffffff',
+                  lineHeight: (isMobile && block.subtitle_mobile?.lineHeight) || block.subtitle.lineHeight || '1.3',
+                  textTransform: (isMobile && block.subtitle_mobile?.textTransform) || block.subtitle.textTransform || 'none',
+                };
+                return (
+                  <h3
+                    style={{
+                      ...subtitleStyles,
+                      margin: 0,
+                      whiteSpace: 'pre-line',
+                      textAlign,
+                    }}
+                  >
+                    {block.subtitle.text}
+                  </h3>
+                );
+              })()}
+
+              {/* Descripción */}
+              {block.description && (() => {
+                const descriptionStyles = {
+                  fontSize: (isMobile && block.description_mobile?.fontSize) || block.description.fontSize || '1rem',
+                  fontWeight: (isMobile && block.description_mobile?.fontWeight) || block.description.fontWeight || '400',
+                  color: (isMobile && block.description_mobile?.color) || block.description.color || '#ffffff',
+                  lineHeight: (isMobile && block.description_mobile?.lineHeight) || block.description.lineHeight || '1.5',
+                  textTransform: (isMobile && block.description_mobile?.textTransform) || block.description.textTransform || 'none',
+                };
+                return (
+                  <p
+                    style={{
+                      ...descriptionStyles,
+                      margin: 0,
+                      whiteSpace: 'pre-line',
+                      textAlign,
+                    }}
+                  >
+                    {block.description.text}
+                  </p>
+                );
+              })()}
+
+              {/* CTA */}
+              {block.cta && (() => {
+                const ctaStyles = {
+                  fontSize: (isMobile && block.cta_mobile?.fontSize) || block.cta.fontSize || '1rem',
+                  fontWeight: (isMobile && block.cta_mobile?.fontWeight) || block.cta.fontWeight || '600',
+                  backgroundColor: (isMobile && block.cta_mobile?.backgroundColor) || block.cta.backgroundColor || '#ffffff',
+                  color: (isMobile && block.cta_mobile?.color) || block.cta.color || '#000000',
+                  padding: (isMobile && block.cta_mobile?.padding) || block.cta.padding || '12px 24px',
+                  borderRadius: (isMobile && block.cta_mobile?.borderRadius) || block.cta.borderRadius || '8px',
+                  border: (isMobile && block.cta_mobile?.border) || block.cta.border || 'none',
+                  textTransform: (isMobile && block.cta_mobile?.textTransform) || block.cta.textTransform || 'none',
+                };
+                return (
+                  <div style={{ textAlign }}>
+                    <a
+                      href={block.cta.link_url || '#'}
+                      className="inline-block transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      style={{
+                        ...ctaStyles,
+                        textDecoration: 'none',
+                        textAlign: 'center',
+                        whiteSpace: 'pre-line',
+                      }}
+                    >
+                      {block.cta.text}
+                    </a>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/**
  * Componente principal de banner dinámico con carrusel
  */
 export default function DynamicBannerClean({
@@ -193,8 +353,16 @@ export default function DynamicBannerClean({
   children,
   displayDuration = 5000,
   trackPlayedVideos = false,
+  mockBanner,
+  isMobile: forceMobileView,
 }: Readonly<DynamicBannerProps>) {
-  const { banners, loading } = useDynamicBanner(placement);
+  // Si hay mockBanner, usarlo en lugar del API
+  const { banners: apiBanners, loading } = useDynamicBanner(placement || '');
+  const banners = React.useMemo(() => 
+    mockBanner ? [mockBanner] : apiBanners,
+    [mockBanner, apiBanners]
+  );
+  
   const controller = useCarouselController({
     itemsCount: banners.length,
     displayDuration,
@@ -338,7 +506,7 @@ export default function DynamicBannerClean({
 
   const content = (
     <div className={`relative w-full overflow-hidden ${className}`}>
-      <div className="relative max-w-[1440px] mx-auto min-h-[700px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
+      <div className="relative w-full min-h-[700px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
         {showOverlay && <div className="absolute inset-0 bg-black/30 z-10" />}
 
         {/* Todos los banners en posición absoluta con transición fade + slide */}
@@ -347,6 +515,21 @@ export default function DynamicBannerClean({
           const desktopPosition = parsePosition(banner.position_desktop);
           const mobilePosition = parsePosition(banner.position_mobile);
           const bannerTextStyles = parseTextStyles(banner.text_styles);
+
+          // Parsear content_blocks si existe
+          let contentBlocks: ContentBlock[] = [];
+          if (banner.content_blocks) {
+            try {
+              contentBlocks = typeof banner.content_blocks === 'string' 
+                ? JSON.parse(banner.content_blocks) 
+                : banner.content_blocks;
+            } catch (e) {
+              console.error('Error parsing content_blocks:', e);
+            }
+          }
+
+          // Si hay content_blocks, usarlos en lugar del contenido legacy
+          const hasContentBlocks = contentBlocks.length > 0;
 
           // Renderizar media desktop
           let bannerDesktopMedia: React.ReactNode = null;
@@ -414,52 +597,67 @@ export default function DynamicBannerClean({
                 willChange: "opacity, transform",
               }}
             >
-              <div
-                ref={isActive ? desktopRef : null}
-                className="hidden md:block absolute inset-0"
-              >
-                {bannerDesktopMedia}
-              </div>
+              {/* Vista Desktop - oculta si forceMobileView está activo */}
+              {!forceMobileView && (
+                <div
+                  ref={isActive ? desktopRef : null}
+                  className="hidden md:block absolute inset-0"
+                >
+                  {bannerDesktopMedia}
+                </div>
+              )}
 
+              {/* Vista Mobile - siempre visible si forceMobileView está activo */}
               <div
                 ref={isActive ? mobileRef : null}
-                className="block md:hidden absolute inset-0"
+                className={forceMobileView ? "absolute inset-0" : "block md:hidden absolute inset-0"}
               >
                 {bannerMobileMedia}
               </div>
 
               <div className="absolute inset-0 z-20">
-                <BannerContent
-                  title={banner.title}
-                  description={banner.description}
-                  cta={banner.cta}
-                  color={banner.color_font}
-                  positionStyle={
-                    isActive && deskStyle
-                      ? deskStyle
-                      : positionToPercentCSS(desktopPosition)
-                  }
-                  textStyles={bannerTextStyles}
-                  videoEnded={true}
-                  linkUrl={banner.link_url}
-                  isWrappedInLink={Boolean(banner.link_url)}
-                />
-                <BannerContent
-                  title={banner.title}
-                  description={banner.description}
-                  cta={banner.cta}
-                  color={banner.color_font}
-                  positionStyle={
-                    isActive && mobStyle
-                      ? mobStyle
-                      : positionToPercentCSS(mobilePosition)
-                  }
-                  isMobile
-                  textStyles={bannerTextStyles}
-                  videoEnded={true}
-                  linkUrl={banner.link_url}
-                  isWrappedInLink={Boolean(banner.link_url)}
-                />
+                {hasContentBlocks ? (
+                  <>
+                    {!forceMobileView && <ContentBlocksOverlay blocks={contentBlocks} isMobile={false} />}
+                    <ContentBlocksOverlay blocks={contentBlocks} isMobile={true} forceShow={forceMobileView} />
+                  </>
+                ) : (
+                  <>
+                    {!forceMobileView && (
+                      <BannerContent
+                        title={banner.title ?? null}
+                        description={banner.description ?? null}
+                        cta={banner.cta ?? null}
+                        color={banner.color_font ?? "#ffffff"}
+                        positionStyle={
+                          isActive && deskStyle
+                            ? deskStyle
+                            : positionToPercentCSS(desktopPosition)
+                        }
+                        textStyles={bannerTextStyles}
+                        videoEnded={true}
+                        linkUrl={banner.link_url ?? null}
+                        isWrappedInLink={Boolean(banner.link_url)}
+                      />
+                    )}
+                    <BannerContent
+                      title={banner.title ?? null}
+                      description={banner.description ?? null}
+                      cta={banner.cta ?? null}
+                      color={banner.color_font ?? "#ffffff"}
+                      positionStyle={
+                        isActive && mobStyle
+                          ? mobStyle
+                          : positionToPercentCSS(mobilePosition)
+                      }
+                      isMobile
+                      textStyles={bannerTextStyles}
+                      videoEnded={true}
+                      linkUrl={banner.link_url ?? null}
+                      isWrappedInLink={Boolean(banner.link_url)}
+                    />
+                  </>
+                )}
               </div>
             </div>
           );

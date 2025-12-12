@@ -898,8 +898,46 @@ body.extreme-zoom .zoom-safe-spacing {
   }
 }
 
-/* 
+/*
 =================================================================
 END ZOOM-SAFE UTILITIES
+=================================================================
+*/
+
+/*
+=================================================================
+STRETCHED LINK UTILITY
+=================================================================
+Purpose: Make entire container clickable while preserving semantic HTML
+Effects: DynamicBannerClean CTA buttons - expands clickable area to parent
+Prevents: Nested anchor tag hydration errors
+*/
+
+.stretched-link::after {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  content: "";
+  pointer-events: auto;
+}
+
+/* Ensure stretched link has proper stacking context */
+.stretched-link {
+  position: relative;
+  z-index: 2;
+}
+
+/* Focus styles for accessibility */
+.stretched-link:focus-visible::after {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/*
+=================================================================
+END STRETCHED LINK UTILITY
 =================================================================
 */

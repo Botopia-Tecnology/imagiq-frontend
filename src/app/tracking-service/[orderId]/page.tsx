@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 
 // Importación de iconos
 import { apiClient } from "@/lib/api";
-import { OrderDetails, EnvioEvento, ProductoDetalle, TiendaInfo } from "../interfaces/types.d";
+import { OrderDetails, EnvioEvento, ProductoDetalle, TiendaInfo, DetalleEnvio } from "../interfaces/types.d";
 import {
   LoadingSpinner,
   ErrorView,
@@ -27,7 +27,13 @@ export default function TrackingService({
   const [medioPago, setMedioPago] = useState<number | undefined>(undefined);
   const [horaRecogida, setHoraRecogida] = useState<string>("");
   const [token, setToken] = useState<string>("");
+
   const [fechaCreacion, setFechaCreacion] = useState<string>("");
+  // Estado para manejar múltiples envíos (Coordinadora)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [envios, setEnvios] = useState<any[]>([]);
+  const [selectedEnvioIndex, setSelectedEnvioIndex] = useState(0);
+
   const [productos, setProductos] = useState<ProductoDetalle[]>([]);
   const [tiendaInfo, setTiendaInfo] = useState<TiendaInfo | undefined>(undefined);
   const [direccionEntrega, setDireccionEntrega] = useState<string>("");
@@ -55,6 +61,38 @@ export default function TrackingService({
       return dateString;
     }
   };
+
+  const updateCoordinadoraView = (envio: any, fechaBase: string) => {
+    if (!envio) return;
+
+    // Usar número de guía si existe, si no fallback
+    const guia = envio.numero_guia || "...";
+    // Actualizamos orderNumber para que el header muestre la guía si así se desea
+    setOrderNumber(guia);
+
+    // Logic de fechas
+    if (envio.tiempo_entrega_estimado && fechaBase) {
+      const f = new Date(fechaBase);
+      const dias = Number.parseInt(String(envio.tiempo_entrega_estimado));
+
+      f.setDate(f.getDate() + dias);
+      setEstimatedInitDate(formatDate(f.toISOString()));
+
+      f.setDate(f.getDate() + dias + 2);
+      setEstimatedFinalDate(formatDate(f.toISOString()));
+    }
+
+    setTrackingSteps(envio.eventos || []);
+    setPdfBase64(envio.pdf_base64 || "");
+  };
+
+  // Efecto para actualizar la vista cuando cambia la selección de envío
+  useEffect(() => {
+    if (envios.length > 0 && fechaCreacion) {
+      // Solo si es modo coordinadora (envios populated)
+      updateCoordinadoraView(envios[selectedEnvioIndex], fechaCreacion);
+    }
+  }, [selectedEnvioIndex, envios, fechaCreacion]);
 
 
   // Determinar el tipo de envío basado en medio_pago o fallback a metodo_envio
@@ -225,28 +263,26 @@ export default function TrackingService({
 
         } else {
           // COORDINADORA - estructura con data.envios
-          const envioData = data.envios && data.envios.length > 0 ? data.envios[0] : data;
+          // Normalizar a array de envios
+          const enviosList = data.envios && data.envios.length > 0 ? data.envios : [data];
+          setEnvios(enviosList);
+          setSelectedEnvioIndex(0);
+
           productosData = data.productos || [];
           tiendaData = data.tienda || null;
           direccionEntrega = data.direccion_entrega || "";
           ciudadEntrega = data.ciudad_entrega || "";
 
-          numeroGuia = envioData.numero_guia || data.orden_id || "...";
+          // Inicializar vista con el primer envío
+          // Nota: El orderNumber se sobrescribirá con la guía en updateCoordinadoraView
+          updateCoordinadoraView(enviosList[0], data.fecha_creacion);
 
-          // Handle shipping-specific data
-          if (envioData.tiempo_entrega_estimado && data.fecha_creacion) {
-            const fechaCreacion = new Date(data.fecha_creacion);
-            const dias = Number.parseInt(String(envioData.tiempo_entrega_estimado));
-
-            fechaCreacion.setDate(fechaCreacion.getDate() + dias);
-            setEstimatedInitDate(formatDate(fechaCreacion.toISOString()));
-
-            fechaCreacion.setDate(fechaCreacion.getDate() + dias + 2);
-            setEstimatedFinalDate(formatDate(fechaCreacion.toISOString()));
+          // Fallback initial values if updateCoordinadoraView hasn't run or failed
+          if (!enviosList[0].numero_guia) {
+            numeroGuia = data.orden_id || "...";
+          } else {
+            numeroGuia = enviosList[0].numero_guia;
           }
-
-          setTrackingSteps(envioData.eventos || []);
-          setPdfBase64(envioData.pdf_base64 || "");
         }
 
         // Set common data
@@ -382,6 +418,9 @@ export default function TrackingService({
               estimatedFinalDate={estimatedFinalDate}
               trackingSteps={trackingSteps}
               pdfBase64={pdfBase64}
+              shipments={envios}
+              selectedShipmentIndex={selectedEnvioIndex}
+              onSelectShipment={setSelectedEnvioIndex}
             />
           )}
         </div>

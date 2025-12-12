@@ -1,254 +1,206 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import type { PDFDocumentProxy } from "pdfjs-dist";
+import { useState, useEffect, useMemo } from "react";
+import { Document, Page, pdfjs } from "react-pdf";
+
+// Configure worker using local file to ensure compatibility with Next.js 15+
+if (typeof window !== "undefined") {
+  pdfjs.GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
+}
 
 interface PDFViewerProps {
   pdfBase64: string;
   onDownload: () => void;
   orderNumber: string;
+  shipments?: Array<{ numero_guia: string }>;
+  selectedShipmentIndex?: number;
+  onSelectShipment?: (index: number) => void;
 }
 
 export function PDFViewer({
   pdfBase64,
   onDownload,
+  shipments = [],
+  selectedShipmentIndex = 0,
+  onSelectShipment,
 }: Readonly<PDFViewerProps>) {
+  const [numPages, setNumPages] = useState<number>(0);
+  const [pageNumber, setPageNumber] = useState<number>(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [numPages, setNumPages] = useState(0);
-  const [pdfDoc, setPdfDoc] = useState<PDFDocumentProxy | null>(null);
-  const [pageRendering, setPageRendering] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(600); // Default width
 
-  useEffect(() => {
-    const loadPDF = async () => {
-      try {
-        setLoading(true);
-        setError(false);
+  // Convert base64 to File object/BlobUrl for react-pdf
+  // react-pdf can handle base64 data URI directly: "data:application/pdf;base64,..."
+  // or a file object. Let's use the full data URI.
+  const file = `data:application/pdf;base64,${pdfBase64}`;
 
-        // Dynamically import pdfjs-dist only on client side
-        const pdfjsLib = await import("pdfjs-dist");
-
-        // Set worker source from local public folder
-        pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf-worker/pdf.worker.min.mjs";
-
-        // Convert base64 to Uint8Array
-        const binaryString = atob(pdfBase64);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-
-        // Load PDF document
-        const loadingTask = pdfjsLib.getDocument({ data: bytes });
-        const pdf = await loadingTask.promise;
-
-        setPdfDoc(pdf);
-        setNumPages(pdf.numPages);
-        setLoading(false);
-      } catch (err) {
-        console.error("Error loading PDF:", err);
-        setError(true);
-        setLoading(false);
-      }
-    };
-
-    if (pdfBase64) {
-      loadPDF();
-    }
-  }, [pdfBase64]);
-
-  useEffect(() => {
-    if (!pdfDoc || !canvasRef.current || pageRendering) return;
-
-    const renderPage = async () => {
-      setPageRendering(true);
-      try {
-        const page = await pdfDoc.getPage(currentPage);
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const context = canvas.getContext("2d");
-        if (!context) return;
-
-        // Get container width for responsive sizing
-        const container = canvas.parentElement;
-        const containerWidth = container?.offsetWidth || 800;
-
-        // Calculate scale to fit container
-        const viewport = page.getViewport({ scale: 1 });
-        const scale = Math.min(containerWidth / viewport.width, 2);
-        const scaledViewport = page.getViewport({ scale });
-
-        canvas.height = scaledViewport.height;
-        canvas.width = scaledViewport.width;
-
-        const renderContext = {
-          canvasContext: context,
-          viewport: scaledViewport,
-          canvas: canvas,
-        };
-
-        await page.render(renderContext).promise;
-      } catch (err) {
-        console.error("Error rendering page:", err);
-      } finally {
-        setPageRendering(false);
-      }
-    };
-
-    renderPage();
-  }, [pdfDoc, currentPage, pageRendering]);
-
-  const goToPrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < numPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="w-full rounded-xl bg-white overflow-hidden">
-        <div className="px-5 pt-5">
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
-            Guía de envío
-          </h3>
-          <p className="text-sm text-gray-700 mb-3">Vista previa del documento.</p>
-        </div>
-        <div className="w-full h-[380px] sm:h-[480px] md:h-[600px] bg-gray-50 flex items-center justify-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full border-4 border-gray-200 border-t-black animate-spin" />
-            <p className="text-sm text-gray-600">Cargando documento...</p>
-          </div>
-        </div>
-      </div>
-    );
+  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+    setNumPages(numPages);
+    setLoading(false);
+    setError(false);
   }
+
+  function onDocumentLoadError(error: Error) {
+    console.error("Error loading PDF document:", error);
+    setLoading(false);
+    setError(true);
+  }
+
+  // Options for PDF.js to work with Next.js 15+ (memoized to avoid unnecessary reloads)
+  const options = useMemo(
+    () => ({
+      cMapUrl: "https://unpkg.com/pdfjs-dist@5.4.449/cmaps/",
+      cMapPacked: true,
+      standardFontDataUrl: "https://unpkg.com/pdfjs-dist@5.4.449/standard_fonts/",
+    }),
+    []
+  );
+
+  // Effect to handle responsive width
+  useEffect(() => {
+    const handleResize = () => {
+      const container = document.getElementById("pdf-container");
+      if (container) {
+        setContainerWidth(container.offsetWidth);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    handleResize(); // Initial call
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   if (error) {
     return (
       <div className="w-full rounded-xl bg-white overflow-hidden">
         <div className="px-5 pt-5">
           <h3 className="text-base font-semibold text-gray-900 mb-2">
-            Guía de envío
+            Guía de envío (Error de visualización)
           </h3>
-          <p className="text-sm text-gray-700 mb-3">
-            No se pudo cargar el PDF en el visor.
-          </p>
+          <p className="text-sm text-gray-700 mb-3">No se pudo cargar el visor.</p>
         </div>
-        <div className="w-full h-[380px] sm:h-[480px] md:h-[600px] bg-gray-50 flex items-center justify-center">
-          <div className="text-center p-6">
-            <svg
-              className="w-16 h-16 text-gray-400 mx-auto mb-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-              />
-            </svg>
-            <p className="text-gray-600 mb-4">
-              El visor no está disponible en este navegador.
-            </p>
-            <button
-              onClick={onDownload}
-              className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md"
-            >
-              Descargar PDF
-            </button>
-          </div>
+        <div className="w-full h-[300px] bg-gray-50 flex flex-col items-center justify-center p-4 text-center">
+          <p className="text-gray-600 mb-4">
+            Ocurrió un error al procesar el documento.
+          </p>
+          <button
+            onClick={onDownload}
+            className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md"
+          >
+            Descargar PDF
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="w-full rounded-xl bg-white overflow-hidden">
-      <div className="px-5 pt-5">
-        <h3 className="text-base font-semibold text-gray-900 mb-2">
-          Guía de envío
-        </h3>
-        <p className="text-sm text-gray-700 mb-3">
-          Vista previa del documento.
-        </p>
+    <div className="w-full rounded-xl bg-white overflow-hidden" id="pdf-container">
+      <div className="px-5 pt-5 flex items-center justify-between">
+        <div>
+          <h3 className="text-base font-semibold text-gray-900 mb-2">
+            Guía de envío
+          </h3>
+          <p className="text-sm text-gray-700 mb-3">
+            Vista previa del documento.
+          </p>
+        </div>
+        
+        {/* Navigation arrows for multiple shipments */}
+        {shipments && shipments.length > 1 && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => onSelectShipment?.(Math.max(selectedShipmentIndex - 1, 0))}
+              disabled={selectedShipmentIndex === 0}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              aria-label="Guía anterior"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
+              Guía {selectedShipmentIndex + 1} de {shipments.length}
+            </span>
+            <button
+              onClick={() => onSelectShipment?.(Math.min(selectedShipmentIndex + 1, shipments.length - 1))}
+              disabled={selectedShipmentIndex === shipments.length - 1}
+              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+              aria-label="Guía siguiente"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* PDF Canvas Container */}
-      <div className="w-full h-[380px] sm:h-[480px] md:h-[600px] bg-gray-50 overflow-auto flex items-start justify-center p-4">
-        <canvas
-          ref={canvasRef}
-          className="max-w-full h-auto shadow-lg"
-        />
+      <div className="w-full bg-gray-100 min-h-[400px] flex flex-col items-center justify-center p-4 overflow-hidden relative">
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full border-4 border-gray-300 border-t-black animate-spin" />
+              <span className="text-gray-600 text-sm font-medium">Cargando PDF...</span>
+            </div>
+          </div>
+        )}
+
+        <Document
+          file={file}
+          onLoadSuccess={onDocumentLoadSuccess}
+          onLoadError={onDocumentLoadError}
+          loading={null} // Handled by custom loader above
+          className="shadow-lg max-w-full"
+          options={options}
+        >
+          <Page
+            pageNumber={pageNumber}
+            width={Math.min(containerWidth - 32, 600)} // Responsive width, max 600px
+            renderTextLayer={false}
+            renderAnnotationLayer={false}
+            className="bg-white"
+          />
+        </Document>
       </div>
 
       {/* Controls */}
-      <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        {/* Page Navigation */}
+      <div className="px-5 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-gray-100">
         {numPages > 1 && (
           <div className="flex items-center gap-3">
             <button
-              onClick={goToPrevPage}
-              disabled={currentPage <= 1}
+              onClick={() => setPageNumber((prev) => Math.max(prev - 1, 1))}
+              disabled={pageNumber <= 1}
               className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              aria-label="Página anterior"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 19l-7-7 7-7"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <span className="text-sm text-gray-600 min-w-[80px] text-center">
-              Página {currentPage} de {numPages}
+            <span className="text-sm text-gray-600">
+              Página {pageNumber} de {numPages}
             </span>
             <button
-              onClick={goToNextPage}
-              disabled={currentPage >= numPages}
+              onClick={() => setPageNumber((prev) => Math.min(prev + 1, numPages))}
+              disabled={pageNumber >= numPages}
               className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition"
-              aria-label="Página siguiente"
             >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
         )}
 
-        {/* Download Button */}
         <button
           onClick={onDownload}
-          className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md"
-          aria-label="Descargar guía"
+          className="px-5 py-2 rounded-full bg-black text-white hover:brightness-110 transition shadow-md flex items-center gap-2"
         >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
           Descargar PDF
         </button>
       </div>

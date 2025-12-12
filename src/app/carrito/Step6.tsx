@@ -41,11 +41,12 @@ interface BillingData {
 export default function Step6({ onBack, onContinue }: Step6Props) {
   const router = useRouter();
   const { user } = useAuthContext();
-  const { products } = useCart();
+  const { products, isLoading: isCartLoading } = useCart();
 
   const [billingType, setBillingType] = useState<BillingType>("natural");
   const [useShippingData, setUseShippingData] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Estados para direcciones
   const [addresses, setAddresses] = useState<Address[]>([]);
@@ -80,8 +81,20 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     errorMessage?: string;
   }>({ isValid: true, productsWithoutRetoma: [], hasMultipleProducts: false });
 
-  // Validar Trade-In cuando cambian los productos
+  // Redirigir si el carrito está vacío después de cargar
   useEffect(() => {
+    if (!isCartLoading && products.length === 0) {
+      router.push("/carrito");
+    }
+  }, [isCartLoading, products, router]);
+
+  // Validar Trade-In cuando cambian los productos (solo si el carrito ya cargó)
+  useEffect(() => {
+    // Solo ejecutar validación si el carrito ya terminó de cargar y hay productos
+    if (isCartLoading || products.length === 0) {
+      return;
+    }
+
     const validation = validateTradeInProducts(products);
     setTradeInValidation(validation);
 
@@ -99,7 +112,7 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
         duration: 5000,
       });
     }
-  }, [products]);
+  }, [products, isCartLoading]);
 
   // Redirigir a Step3 si la dirección cambia desde el header
   useEffect(() => {
@@ -345,10 +358,6 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
       if (!billingData.nit?.trim()) {
         newErrors.nit = "El NIT es requerido";
       }
-      if (!billingData.nombreRepresentante?.trim()) {
-        newErrors.nombreRepresentante =
-          "El nombre del representante es requerido";
-      }
     }
 
     setErrors(newErrors);
@@ -356,55 +365,68 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
   };
 
   const handleContinue = () => {
-    // Validar Trade-In antes de continuar
-    const validation = validateTradeInProducts(products);
-    if (!validation.isValid) {
-      alert(getTradeInValidationMessage(validation));
-      return;
-    }
+    setIsProcessing(true);
 
-    // Siempre validar el formulario para mostrar errores
-    if (!validateForm()) {
-      // Hacer scroll al primer error
-      const firstErrorElement = document.querySelector('.border-red-500');
-      if (firstErrorElement) {
-        firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try {
+      // Validar Trade-In antes de continuar
+      const validation = validateTradeInProducts(products);
+      if (!validation.isValid) {
+        alert(getTradeInValidationMessage(validation));
+        setIsProcessing(false);
+        return;
       }
-      return;
-    }
 
-    // Preparar datos a guardar; si se usa la dirección de envío, asegurar que guardamos su `id`
-    let billingToSave: BillingData = { ...billingData };
-    if (useShippingData) {
-      const shippingAddressStr = localStorage.getItem("checkout-address");
-      if (shippingAddressStr) {
-        try {
-          const parsed = JSON.parse(shippingAddressStr);
-          if (parsed && typeof parsed === "object") {
-            // Asegurar que la dirección en el billing incluye el id del checkout-address
-            billingToSave = {
-              ...billingToSave,
-              direccion: {
-                ...(billingToSave.direccion || {}),
-                ...parsed,
-              },
-            };
+      // Siempre validar el formulario para mostrar errores
+      if (!validateForm()) {
+        // Mostrar toast de error
+        toast.error("Por favor completa todos los campos requeridos");
+
+        // Hacer scroll al primer error
+        const firstErrorElement = document.querySelector('.border-red-500');
+        if (firstErrorElement) {
+          firstErrorElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        setIsProcessing(false);
+        return;
+      }
+
+      // Preparar datos a guardar; si se usa la dirección de envío, asegurar que guardamos su `id`
+      let billingToSave: BillingData = { ...billingData };
+      if (useShippingData) {
+        const shippingAddressStr = localStorage.getItem("checkout-address");
+        if (shippingAddressStr) {
+          try {
+            const parsed = JSON.parse(shippingAddressStr);
+            if (parsed && typeof parsed === "object") {
+              // Asegurar que la dirección en el billing incluye el id del checkout-address
+              billingToSave = {
+                ...billingToSave,
+                direccion: {
+                  ...(billingToSave.direccion || {}),
+                  ...parsed,
+                },
+              };
+            }
+          } catch (err) {
+            // Si falla el parseo, no interrumpir el guardado; seguimos con billingData actual
+            console.error("Error parsing checkout-address for billing id:", err);
           }
-        } catch (err) {
-          // Si falla el parseo, no interrumpir el guardado; seguimos con billingData actual
-          console.error("Error parsing checkout-address for billing id:", err);
         }
       }
-    }
 
-    // Guardar datos en localStorage
-    localStorage.setItem(
-      "checkout-billing-data",
-      JSON.stringify(billingToSave)
-    );
+      // Guardar datos en localStorage
+      localStorage.setItem(
+        "checkout-billing-data",
+        JSON.stringify(billingToSave)
+      );
 
-    if (onContinue) {
-      onContinue();
+      if (onContinue) {
+        onContinue();
+      }
+    } catch (error) {
+      console.error("Error en handleContinue:", error);
+      toast.error("Ocurrió un error. Por favor intenta de nuevo");
+      setIsProcessing(false);
     }
   };
 
@@ -533,6 +555,18 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
     );
   };
 
+  // Mostrar loading mientras el carrito se carga
+  if (isCartLoading) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen w-full pb-40 md:pb-0">
       <div className="w-full max-w-7xl mx-auto px-4 py-6">
@@ -540,37 +574,24 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Formulario de facturación */}
           <div className="lg:col-span-2 space-y-4">
             <div className="bg-white rounded-lg p-6 border border-gray-200">
-              {/* Header con título y selector de tipo de persona */}
+              {/* Header con título y checkbox Persona Jurídica */}
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
                 <h2 className="text-[22px] font-bold">
                   Datos de facturación
                 </h2>
 
-                {/* Selector de tipo de persona */}
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={() => handleTypeChange("natural")}
-                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
-                      billingType === "natural"
-                        ? "border-black bg-gray-50 text-black"
-                        : "border-gray-300 text-gray-600 hover:border-gray-400"
-                    }`}
-                  >
-                    Persona Natural
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleTypeChange("juridica")}
-                    className={`px-4 py-2 rounded-lg border-2 font-semibold transition-all text-sm ${
-                      billingType === "juridica"
-                        ? "border-black bg-gray-50 text-black"
-                        : "border-gray-300 text-gray-600 hover:border-gray-400"
-                    }`}
-                  >
-                    Persona Jurídica
-                  </button>
-                </div>
+                {/* Checkbox Compra empresa */}
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={billingType === "juridica"}
+                    onChange={(e) => handleTypeChange(e.target.checked ? "juridica" : "natural")}
+                    className="w-5 h-5 accent-black"
+                  />
+                  <span className="text-base font-semibold text-gray-700">
+                    Compra empresa
+                  </span>
+                </label>
               </div>
 
               {/* Checkbox: Usar mismos datos de envío */}
@@ -592,8 +613,8 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {billingType === "juridica" && (
                   <>
-                    {/* Razón Social - ocupa 2 columnas */}
-                    <div className="md:col-span-2">
+                    {/* Razón Social */}
+                    <div>
                       <label
                         htmlFor="razonSocial"
                         className="block text-sm font-medium text-gray-700 mb-2"
@@ -644,39 +665,6 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
                       {errors.nit && (
                         <p className="text-red-500 text-xs mt-1">
                           {errors.nit}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Nombre del Representante Legal */}
-                    <div>
-                      <label
-                        htmlFor="nombreRepresentante"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Nombre del Representante Legal{" "}
-                        <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="nombreRepresentante"
-                        type="text"
-                        value={billingData.nombreRepresentante || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            "nombreRepresentante",
-                            e.target.value
-                          )
-                        }
-                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black ${
-                          errors.nombreRepresentante
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        placeholder="Juan Pérez"
-                      />
-                      {errors.nombreRepresentante && (
-                        <p className="text-red-500 text-xs mt-1">
-                          {errors.nombreRepresentante}
                         </p>
                       )}
                     </div>
@@ -870,7 +858,8 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
               onFinishPayment={handleContinue}
               onBack={onBack}
               buttonText="Continuar"
-              disabled={!tradeInValidation.isValid}
+              disabled={!tradeInValidation.isValid || isProcessing}
+              isProcessing={isProcessing}
               isSticky={false}
               deliveryMethod={
                 typeof window !== "undefined"
@@ -917,14 +906,14 @@ export default function Step6({ onBack, onContinue }: Step6Props) {
           {/* Botón continuar */}
           <button
             className={`w-full font-bold py-3 rounded-lg text-base transition text-white ${
-              !tradeInValidation.isValid
+              !tradeInValidation.isValid || isProcessing
                 ? "bg-gray-400 cursor-not-allowed opacity-70"
                 : "bg-[#222] hover:bg-[#333] cursor-pointer"
             }`}
             onClick={handleContinue}
-            disabled={!tradeInValidation.isValid}
+            disabled={!tradeInValidation.isValid || isProcessing}
           >
-            Continuar
+            {isProcessing ? "Procesando..." : "Continuar"}
           </button>
         </div>
       </div>

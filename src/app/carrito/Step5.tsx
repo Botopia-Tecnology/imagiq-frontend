@@ -7,6 +7,8 @@ import { useCart } from "@/hooks/useCart";
 import { validateTradeInProducts, getTradeInValidationMessage } from "./utils/validateTradeIn";
 import { toast } from "sonner";
 import { CheckZeroInterestResponse } from "./types";
+import { DBCard } from "@/features/profile/types";
+import CardBrandLogo from "@/components/ui/CardBrandLogo";
 
 interface Step5Props {
   onBack?: () => void;
@@ -27,6 +29,7 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
   const [selectedInstallments, setSelectedInstallments] = useState<number | null>(null);
   const [zeroInterestData, setZeroInterestData] = useState<CheckZeroInterestResponse | null>(null);
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [savedCards, setSavedCards] = useState<DBCard[]>([]);
 
   // Trade-In state management
   const [tradeInData, setTradeInData] = useState<{
@@ -56,6 +59,17 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
     // Cargar ID de tarjeta seleccionada
     const cardId = localStorage.getItem("checkout-saved-card-id");
     setSelectedCardId(cardId);
+
+    // Cargar tarjetas guardadas desde el cache
+    try {
+      const cardsData = localStorage.getItem("checkout-cards-cache");
+      if (cardsData) {
+        const parsed = JSON.parse(cardsData) as DBCard[];
+        setSavedCards(parsed);
+      }
+    } catch (error) {
+      console.error("Error loading saved cards:", error);
+    }
 
     // Load Trade-In data
     const storedTradeIn = localStorage.getItem("imagiq_trade_in");
@@ -256,11 +270,46 @@ export default function Step5({ onBack, onContinue }: Step5Props) {
               {/* Título y tarjeta seleccionada */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[22px] font-bold">Elige las cuotas</h2>
-                {selectedCardId && (
-                  <p className="text-sm text-gray-600">
-                    Tarjeta terminada en •••• {selectedCardId.slice(-4)}
-                  </p>
-                )}
+                {selectedCardId && (() => {
+                  const selectedCard = savedCards.find(card => String(card.id) === selectedCardId);
+
+                  if (!selectedCard) {
+                    return (
+                      <p className="text-sm text-gray-600">
+                        Tarjeta terminada en •••• {selectedCardId.slice(-4)}
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div className="flex items-center gap-3">
+                      {/* Logo de marca */}
+                      <div className="flex-shrink-0">
+                        <CardBrandLogo brand={selectedCard.marca} size="lg" />
+                      </div>
+
+                      {/* Información de la tarjeta */}
+                      <div className="flex flex-col items-end">
+                        <p className="font-bold text-gray-900 tracking-wider text-sm">
+                          •••• {selectedCard.ultimos_dijitos}
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          {selectedCard.banco && (
+                            <span>{selectedCard.banco}</span>
+                          )}
+                          {selectedCard.nombre_titular && (
+                            <>
+                              {selectedCard.banco && <span>•</span>}
+                              <span className="uppercase truncate max-w-[120px]">
+                                {selectedCard.nombre_titular}
+                              </span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Nota sobre intereses */}

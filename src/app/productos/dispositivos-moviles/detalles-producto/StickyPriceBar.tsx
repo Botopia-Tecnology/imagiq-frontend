@@ -104,9 +104,8 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
             <div className="text-xs sm:text-sm md:text-base lg:text-lg font-bold text-[#222] leading-tight">
               {textoCompletoFinal}
             </div>
-            <div className="text-[10px] text-gray-500">o</div>
-            <div className="text-[13px] sm:text-sm md:text-base font-bold text-[#222]">
-              {formatPrice(basePrice)}
+            <div className="text-[13px] sm:text-sm md:text-base font-semibold text-[#222]">
+              ó {formatPrice(basePrice)}
             </div>
           </div>
         </div>
@@ -252,14 +251,6 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Línea decorativa superior con gradiente Samsung */}
-      <div
-        className="h-0.5 w-full"
-        style={{
-          background: "linear-gradient(90deg, #0066CC 0%, #00A3E0 100%)",
-        }}
-      />
     </>
   );
 
@@ -268,7 +259,7 @@ const StickyPriceBar: React.FC<StickyPriceBarProps> = ({
       {/* Versión inicial: siempre visible debajo del navbar principal */}
       {!isVisible && (
         <div
-          className="fixed top-[50px] md:top-[70px] xl:top-[95px] left-0 right-0 z-[1500] bg-white border-b border-gray-200 shadow-sm"
+          className="fixed top-[50px] md:top-[70px] xl:top-[95px] left-0 right-0 z-[1500] bg-white"
           style={{ fontFamily: "SamsungSharpSans" }}
         >
           <BarContent />

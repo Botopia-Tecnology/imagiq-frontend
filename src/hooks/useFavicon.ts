@@ -3,7 +3,8 @@ import { useLogos } from './useLogos'
 
 /**
  * Hook para actualizar el favicon dinámicamente
- * Similar a cómo se cargan los banners
+ * SOLUCIÓN: Query y update en lugar de remove/create
+ * Esto previene race conditions con React 19 concurrent rendering
  */
 export function useFavicon() {
   const { favicon, loading } = useLogos()
@@ -16,27 +17,40 @@ export function useFavicon() {
 
     console.log('🎯 [useFavicon] Actualizando favicon:', favicon.image_url)
 
-    // ELIMINAR todos los favicons existentes (incluyendo el de Next.js)
-    const existingLinks = document.querySelectorAll("link[rel*='icon']")
-    console.log(`🗑️ [useFavicon] Eliminando ${existingLinks.length} favicon(s) existente(s)`)
-    existingLinks.forEach((link) => link.remove())
+    // 🔧 SOLUCIÓN ROBUSTA: Query y update (sin remove)
+    // Esto previene race conditions con React 19 concurrent rendering
+    let iconLink: HTMLLinkElement | null = document.querySelector("link[rel='icon']")
 
-    // Crear un NUEVO favicon con el URL dinámico
-    const newLink = document.createElement('link')
-    newLink.rel = 'icon'
-    newLink.type = 'image/png' // Especificar tipo PNG
-    newLink.href = favicon.image_url
-    document.head.appendChild(newLink)
-    console.log('✅ [useFavicon] Favicon dinámico creado:', favicon.image_url)
+    if (!iconLink) {
+      iconLink = document.createElement('link')
+      iconLink.rel = 'icon'
+      document.head.appendChild(iconLink)
+      console.log('✅ [useFavicon] Nuevo link[rel=icon] creado')
+    } else {
+      console.log('🔄 [useFavicon] Reutilizando link[rel=icon] existente')
+    }
 
-    // También crear shortcut icon para mayor compatibilidad
-    const shortcutLink = document.createElement('link')
-    shortcutLink.rel = 'shortcut icon'
+    iconLink.type = 'image/png'
+    iconLink.href = favicon.image_url
+
+    // También actualizar shortcut icon para mayor compatibilidad
+    let shortcutLink: HTMLLinkElement | null = document.querySelector("link[rel='shortcut icon']")
+
+    if (!shortcutLink) {
+      shortcutLink = document.createElement('link')
+      shortcutLink.rel = 'shortcut icon'
+      document.head.appendChild(shortcutLink)
+      console.log('✅ [useFavicon] Nuevo shortcut icon creado')
+    } else {
+      console.log('🔄 [useFavicon] Reutilizando shortcut icon existente')
+    }
+
     shortcutLink.type = 'image/png'
     shortcutLink.href = favicon.image_url
-    document.head.appendChild(shortcutLink)
-    console.log('✅ [useFavicon] Shortcut icon creado')
-  }, [favicon, loading])
+
+    console.log('✅ [useFavicon] Favicon actualizado exitosamente')
+
+  }, [favicon?.image_url, loading]) // Dependencias específicas
 
   return { favicon, loading }
 }

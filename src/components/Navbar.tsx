@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
+import { useLogos } from "@/hooks/useLogos";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
@@ -82,6 +83,7 @@ export default function Navbar() {
   const { getNavbarRoutes, loading } = useVisibleCategories();
   const { isAuthenticated, user } = useAuthContext();
   const { address: defaultMobileAddress } = useDefaultAddress("ENVIO");
+  const { logoDark, logoLight } = useLogos();
 
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
@@ -406,8 +408,8 @@ export default function Navbar() {
               <Image
                 src={
                   shouldShowWhiteItemsMobile
-                    ? "/frame_white.png"
-                    : "/frame_black.png"
+                    ? logoLight?.image_url || "/frame_white.png"
+                    : logoDark?.image_url || "/frame_black.png"
                 }
                 alt="Q Logo"
                 height={40}
@@ -764,7 +766,7 @@ export default function Navbar() {
             <div className="w-full flex items-center justify-end gap-4">
               {/* Dirección predeterminada del usuario con dropdown */}
               {/* Se muestra siempre: si no está logueado, muestra "Agregar dirección" y redirige a login */}
-              <div className="flex-none min-w-0 w-[240px] xl:w-[280px] 2xl:w-[320px]">
+              <div className="flex-none min-w-0 w-[200px] xl:w-[220px] 2xl:w-[260px]">
                 <AddressDropdown showWhiteItems={shouldShowWhiteItems} />
               </div>
 

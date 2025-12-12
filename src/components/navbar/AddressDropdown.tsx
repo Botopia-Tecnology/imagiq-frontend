@@ -354,7 +354,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           {/* Botón para Desktop (>= 1280px) - Una línea */}
           <button
             className={cn(
-              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] lg:text-[11px] xl:text-[10px] font-medium max-w-[280px] xl:max-w-[220px] 2xl:max-w-[260px] truncate hover:opacity-80 transition-opacity cursor-pointer",
               showWhiteItems ? "text-white/90" : "text-black/80"
             )}
             onClick={handleToggle}
@@ -554,7 +554,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
     return (
       <div className="relative" ref={dropdownRef}>
         {/* Skeleton para Desktop (>= 1280px) */}
-        <div className="hidden xl:flex items-center gap-1.5 max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
+        <div className="hidden xl:flex items-center gap-1.5 max-w-[280px] xl:max-w-[220px] 2xl:max-w-[260px]">
           <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0" />
           <div className="h-4 bg-gray-300 rounded animate-pulse flex-1" />
           <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0 ml-1" />
@@ -618,7 +618,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
       return (
         <div className="relative" ref={dropdownRef}>
           {/* Skeleton para Desktop (>= 1280px) */}
-          <div className="hidden xl:flex items-center gap-1.5 max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px]">
+          <div className="hidden xl:flex items-center gap-1.5 max-w-[280px] xl:max-w-[220px] 2xl:max-w-[260px]">
             <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0" />
             <div className="h-4 bg-gray-300 rounded animate-pulse flex-1" />
             <div className="w-3.5 h-3.5 bg-gray-300 rounded animate-pulse flex-shrink-0 ml-1" />
@@ -644,7 +644,7 @@ const AddressDropdown: React.FC<AddressDropdownProps> = React.memo(({
           {/* Botón para Desktop (>= 1280px) */}
           <button
             className={cn(
-              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] font-medium max-w-[280px] xl:max-w-[320px] 2xl:max-w-[360px] truncate hover:opacity-80 transition-opacity cursor-pointer",
+              "hidden xl:flex items-center gap-1.5 text-[12px] md:text-[13px] lg:text-[11px] xl:text-[10px] font-medium max-w-[280px] xl:max-w-[220px] 2xl:max-w-[260px] truncate hover:opacity-80 transition-opacity cursor-pointer",
               showWhiteItems ? "text-white/90" : "text-black/80"
             )}
             onClick={handleAddNewAddress}

@@ -69,7 +69,7 @@ export function BannerMedia({
       {/* Imagen */}
       {imageUrl && (
         <div
-          className="absolute inset-0 bg-cover bg-center transition-opacity duration-500"
+          className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-opacity duration-500"
           style={{
             backgroundImage: `url(${imageUrl})`,
             opacity: imageOpacity,

@@ -97,12 +97,32 @@ class BannersService {
     const desktopImage = banner.desktop_image_url || "";
     const mobileImage = banner.mobile_image_url || "";
 
-    // Parsear posiciones del nuevo sistema
-    const positionDesktop = parsePosition(banner.position_desktop);
-    const positionMobile = parsePosition(banner.position_mobile);
-
     // Parsear estilos de texto (puede ser null)
-    const textStyles = parseTextStyles(banner.text_styles);
+    const textStyles = parseTextStyles(banner['text_styles']);
+
+    // Debug: verificar si content_blocks existe
+    if (banner.content_blocks) {
+      console.log('[mapBannerToHeroConfig] Banner has content_blocks:', typeof banner.content_blocks === 'string' ? 'JSON string' : 'Array');
+    }
+
+    // NOTA: position_desktop y position_mobile están deprecated
+    // Ahora cada elemento en content_blocks tiene su propia posición
+    // Solo incluimos posiciones legacy si no hay content_blocks (compatibilidad)
+    const hasContentBlocks = banner.content_blocks && (
+      typeof banner.content_blocks === 'string'
+        ? banner.content_blocks.length > 2  // Más que "[]"
+        : Array.isArray(banner.content_blocks) && banner.content_blocks.length > 0
+    );
+
+    let positionDesktop;
+    let positionMobile;
+
+    if (!hasContentBlocks) {
+      // Compatibilidad legacy: Usar posiciones deprecated solo si no hay content_blocks
+      // Los warnings de deprecated son esperados y aceptables aquí para mantener retrocompatibilidad
+      positionDesktop = parsePosition(banner.position_desktop);
+      positionMobile = parsePosition(banner.position_mobile);
+    }
 
     return {
       videoSrc: desktopVideo,
@@ -112,16 +132,20 @@ class BannersService {
       // Mantener por compatibilidad
       poster: desktopImage,
       mobilePoster: mobileImage,
-      heading: banner.title || "",
-      subheading: banner.description || "",
-      ctaText: banner.cta || "Ver más",
+      heading: banner['title'] || "",
+      subheading: banner['description'] || "",
+      ctaText: banner['cta'] || "Ver más",
       ctaLink: banner.link_url || "#",
-      textColor: banner.color_font || "#000000",
-      // Posiciones parseadas
+      // Posiciones parseadas (solo si no hay content_blocks)
       positionDesktop: positionDesktop || undefined,
       positionMobile: positionMobile || undefined,
       // Estilos de texto personalizados
       textStyles: textStyles,
+      // NUEVO: Content blocks con configuración desktop/mobile independiente
+      content_blocks: banner.content_blocks || undefined,
+      // Color del header (para banners hero) - controla el tema del navbar
+      // Mapear text_color_default del backend a colorFont
+      colorFont: banner['color_font'] || banner.text_color_default || "#ffffff",
       // Mostrar el contenido cuando el video termine por defecto.
       // Si en el futuro el API incluye un flag específico, podemos mapearlo aquí.
       showContentOnEnd: true,

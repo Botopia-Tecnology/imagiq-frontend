@@ -452,20 +452,11 @@ export default function Step4OrderSummary({
         }
       }
 
-      // Invalidar caché usando import dinámico
-      import('../utils/globalCanPickUpCache').then(({ invalidateCacheOnAddressChange, clearGlobalCanPickUpCache }) => {
-        if (newAddressId) {
-          invalidateCacheOnAddressChange(newAddressId);
-        } else {
-          // Si no hay addressId, limpiar caché completamente
-          clearGlobalCanPickUpCache();
-        }
-
-        // Recalcular después de invalidar caché
-        fetchGlobalCanPickUp();
-      }).catch((error) => {
-        console.error('Error al invalidar caché:', error);
-      });
+      // NO invalidar caché manualmente aquí.
+      // useDelivery.tsx es el encargado de gestionar el ciclo de vida del caché.
+      // Si useDelivery decide hacer fetch, limpiará el caché. Si no (debounce),
+      // el caché actual sigue siendo válido y evitamos el loop infinito.
+      fetchGlobalCanPickUp();
     };
 
     globalThis.window.addEventListener("address-changed", handleAddressChange as EventListener);
@@ -632,11 +623,10 @@ export default function Step4OrderSummary({
 
         <button
           type="button"
-          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${
-            buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
-          } ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
-            ? "opacity-70 cursor-not-allowed"
-            : "cursor-pointer"
+          className={`shrink-0 bg-black text-white font-bold py-3 px-6 rounded-lg text-sm hover:bg-gray-800 transition flex items-center justify-center ${buttonText === "Registrarse como invitado" ? "min-h-[4.5rem] whitespace-normal flex-wrap" : ""
+            } ${isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)
+              ? "opacity-70 cursor-not-allowed"
+              : "cursor-pointer"
             }`}
           disabled={isProcessing || disabled || (userClickedWhileLoading && isLoadingCanPickUp)}
           data-testid="checkout-finish-btn"
@@ -657,9 +647,8 @@ export default function Step4OrderSummary({
         >
           {(isProcessing || (userClickedWhileLoading && isLoadingCanPickUp)) ? (
             <span
-              className={`flex gap-2 ${
-                buttonText === "Registrarse como invitado" ? "flex-wrap items-center justify-center whitespace-normal text-center" : "items-center justify-center"
-              }`}
+              className={`flex gap-2 ${buttonText === "Registrarse como invitado" ? "flex-wrap items-center justify-center whitespace-normal text-center" : "items-center justify-center"
+                }`}
               aria-live="polite"
             >
               <svg

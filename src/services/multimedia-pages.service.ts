@@ -85,6 +85,10 @@ export interface MultimediaPageBanner {
   created_at: string;
   updated_at: string;
   created_by: string | null;
+  // NUEVO SISTEMA: Cajas de contenido con posiciones independientes
+  title_boxes: string | null;
+  description_boxes: string | null;
+  cta_boxes: string | null;
 }
 
 export interface MultimediaPageFAQ {

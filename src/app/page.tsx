@@ -58,11 +58,6 @@ export default function HomePage() {
   }, []);
 
   // Configuración para animaciones scroll reveal
-  const heroReveal = useScrollReveal<HTMLDivElement>({
-    offset: 100,
-    duration: 700,
-    direction: "up",
-  });
   // const categoriesReveal = useScrollReveal<HTMLDivElement>({
   //   offset: 80,
   //   duration: 600,
@@ -116,9 +111,8 @@ export default function HomePage() {
         id="main-page"
         className="min-h-screen md:mr-0 md:overflow-x-clip"
       >
-        <motion.div ref={heroReveal.ref} {...heroReveal.motionProps}>
-          <HeroSection />
-        </motion.div>
+        <HeroSection />
+        
         {/* Removed Framer Motion to avoid conflicts with internal carousel animations */}
         <DynamicBanner placement="home-2" className="mt-6 md:mt-8 lg:mt-12">
           <GalaxyShowcaseBanner />

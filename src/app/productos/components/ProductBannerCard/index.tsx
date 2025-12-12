@@ -12,10 +12,12 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { parsePosition, positionToCSS, parseTextStyles } from "@/utils/bannerCoordinates";
-import type { Banner } from "@/types/banner";
+import type { Banner, ContentBlock } from "@/types/banner";
 import { BannerMedia } from "./BannerMedia";
 import { BannerContent } from "./BannerContent";
+import { ContentBlockRenderer } from "@/components/banners/ContentBlockRenderer";
 import { useCarouselController } from "@/hooks/useCarouselController";
+import { useDeviceType } from "@/components/responsive";
 
 interface ProductBannerCardProps {
   config: Banner | Banner[];
@@ -44,10 +46,27 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
   const showImmediately = !hasVideo;
   const effectiveVideoEnded = showImmediately || videoEnded;
 
-  // Estilos de posicionamiento del contenido usando el nuevo sistema
-  const position = parsePosition(currentBanner.position_desktop);
+  // Device detection para mobile
+  const deviceType = useDeviceType();
+  const isMobile = deviceType === 'mobile';
+
+  // Parsear content_blocks si existe
+  let contentBlocks: ContentBlock[] = [];
+  if (currentBanner.content_blocks) {
+    try {
+      contentBlocks = typeof currentBanner.content_blocks === 'string'
+        ? JSON.parse(currentBanner.content_blocks)
+        : currentBanner.content_blocks;
+    } catch (e) {
+      console.error('Error parsing content_blocks:', e);
+    }
+  }
+
+  // Sistema legacy - solo si NO hay content_blocks
+  const hasLegacyContent = !contentBlocks.length && (currentBanner['title'] || currentBanner['description'] || currentBanner['cta']);
+  const position = parsePosition(currentBanner['position_desktop']);
   const positionStyle = positionToCSS(position);
-  const textStyles = parseTextStyles(currentBanner.text_styles);
+  const textStyles = parseTextStyles(currentBanner['text_styles']);
 
   const handleVideoEnd = () => {
     setVideoEnded(true);
@@ -86,7 +105,7 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
   }, [isCarousel, hasVideo, controller.currentIndex, goToNext]);
 
   return (
-    <div className="relative w-full max-w-[350px] mx-auto aspect-[5/9] overflow-hidden rounded-lg bg-gray-100 group shadow-sm hover:shadow-lg transition-shadow">
+    <div className="relative w-full max-w-md mx-auto aspect-[9/16] overflow-hidden rounded-lg bg-gray-100 group shadow-sm hover:shadow-lg transition-shadow">
       {/* Media de fondo con transición de slide */}
       <div 
         className="relative w-full h-full transition-transform duration-500 ease-in-out"
@@ -115,33 +134,51 @@ export function ProductBannerCard({ config }: Readonly<ProductBannerCardProps>) 
       {/* Overlay de hover */}
       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
 
-      {/* Contenido del banner */}
-      <BannerContent
-        title={currentBanner.title}
-        description={currentBanner.description}
-        cta={currentBanner.cta}
-        linkUrl={currentBanner.link_url}
-        colorFont={currentBanner.color_font}
-        positionStyle={positionStyle}
-        isVisible={effectiveVideoEnded}
-        textStyles={textStyles}
-      />
+      {/* Contenido del banner - Sistema de content_blocks */}
+      {contentBlocks.length > 0 && (
+        <div className="absolute inset-0 z-10 pointer-events-none">
+          {contentBlocks.map((block) => (
+            <ContentBlockRenderer
+              key={block.id}
+              block={block}
+              isMobile={false}
+              videoEnded={effectiveVideoEnded}
+              scale={0.41}
+              centerContent={true}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Contenido del banner - Sistema legacy (solo si no hay content_blocks) */}
+      {hasLegacyContent && (
+        <BannerContent
+          title={currentBanner['title'] ?? null}
+          description={currentBanner['description'] ?? null}
+          cta={currentBanner['cta'] ?? null}
+          linkUrl={currentBanner.link_url ?? null}
+          colorFont={currentBanner['color_font'] ?? "#ffffff"}
+          positionStyle={positionStyle}
+          isVisible={effectiveVideoEnded}
+          textStyles={textStyles}
+        />
+      )}
 
       {/* Overlay clickeable si no tiene CTA pero tiene link */}
-      {currentBanner.link_url && !currentBanner.cta && (
+      {currentBanner.link_url && !currentBanner['cta'] && (
         <Link
           href={currentBanner.link_url}
           className="absolute inset-0 z-20"
-          aria-label={currentBanner.title || "Ver más"}
+          aria-label={currentBanner['title'] || "Ver más"}
         />
       )}
 
       {/* Indicadores de carrusel (solo si hay múltiples banners) */}
       {isCarousel && (
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-30">
-          {configs.map((_, index) => (
+          {configs.map((banner, index) => (
             <button
-              key={index}
+              key={`indicator-${banner.id}-${index}`}
               onClick={() => controller.goToIndex(index)}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
                 index === controller.currentIndex

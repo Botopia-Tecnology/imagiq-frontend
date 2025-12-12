@@ -26,7 +26,7 @@ const DEFAULT_HERO_CONFIG: HeroBannerConfig = {
   subheading: '0% de interés a 3, 6 o 12 cuotas',
   ctaText: 'Más información',
   ctaLink: '/productos/ofertas?seccion=smartphones-tablets',
-  textColor: '#ffffff',
+  colorFont: '#ffffff',
   // Posiciones en porcentajes (centro)
   positionDesktop: { x: 50, y: 50, imageWidth: 1920, imageHeight: 1080 },
   positionMobile: { x: 50, y: 75, imageWidth: 750, imageHeight: 1334 },

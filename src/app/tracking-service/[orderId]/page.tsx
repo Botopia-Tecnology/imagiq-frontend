@@ -174,6 +174,8 @@ export default function TrackingService({
 
           // Procesar datos de la tienda y limpiar coordenadas
           if (envioData.tienda_origen) {
+            const isWarehouse = envioData.tienda_origen.codBodega === "001" || envioData.tienda_origen.codBodega === "CD";
+
             tiendaData = {
               nombre: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
               descripcion: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
@@ -185,10 +187,10 @@ export default function TrackingService({
               horario: (envioData.tienda_origen.horario != null && envioData.tienda_origen.horario !== "")
                 ? String(envioData.tienda_origen.horario).trim()
                 : undefined,
-              latitud: envioData.tienda_origen.latitud
+              latitud: !isWarehouse && envioData.tienda_origen.latitud
                 ? String(envioData.tienda_origen.latitud).trim()
                 : undefined,
-              longitud: envioData.tienda_origen.longitud
+              longitud: !isWarehouse && envioData.tienda_origen.longitud
                 ? String(envioData.tienda_origen.longitud).trim()
                 : undefined,
             };
@@ -209,8 +211,8 @@ export default function TrackingService({
             }
           }
 
-          // Set order number from envio
-          numeroGuia = envioData.numero_guia || data.serial_id || data.id || "...";
+          // Set order number from envio - Prioritize serial_id for Imagiq as requested
+          numeroGuia = data.serial_id || envioData.numero_guia || data.id || "...";
 
           // Handle estimated delivery date - calcular solo días hábiles
           if (envioData.tiempo_entrega_estimado && data.fecha_creacion) {

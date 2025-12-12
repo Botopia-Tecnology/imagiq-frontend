@@ -138,14 +138,14 @@ export function ShippingOrderView({
             />
           ) : (
             // Product View
-            <div className="w-full rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden min-h-[600px]">
+            <div className={`w-full rounded-xl bg-white border border-gray-200 shadow-sm overflow-hidden ${isCoordinadora ? 'min-h-[400px]' : 'min-h-[600px]'}`}>
               {guideProducts.length > 0 ? (
                 isCoordinadora ? (
                   // Vista compacta para Coordinadora
                   <div className="h-full flex flex-col">
                     {/* Navigation arrows for multiple products - Coordinadora style */}
                     {hasMultipleProducts && (
-                      <div className="px-5 pt-5 pb-3 flex items-center justify-center gap-3">
+                      <div className="px-5 pt-4 pb-2 flex items-center justify-center gap-3">
                         <button
                           onClick={goToPrevProduct}
                           className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition"
@@ -171,19 +171,19 @@ export function ShippingOrderView({
                     )}
 
                     {/* Product Info Compact */}
-                    <div className="px-6 pt-3 pb-4 border-b border-gray-100">
-                      <h3 className="font-semibold text-gray-900 text-base mb-1">
+                    <div className="px-5 pt-2 pb-3 border-b border-gray-100">
+                      <h3 className="font-semibold text-gray-900 text-sm mb-1">
                         {currentProduct?.desdetallada || currentProduct?.nombre || "Producto"}
                       </h3>
                       {currentProduct?.precio && (
-                        <span className="text-xl font-bold text-[#17407A]">
+                        <span className="text-lg font-bold text-[#17407A]">
                           ${currentProduct.precio.toLocaleString("es-CO")}
                         </span>
                       )}
                     </div>
 
                     {/* Image Area - Compact */}
-                    <div className="relative flex-1 flex items-center justify-center bg-white p-8 min-h-[400px]">
+                    <div className="relative flex-1 flex items-center justify-center bg-white p-4 min-h-[300px]">
                       {currentProduct?.imagen ? (
                         <img
                           src={currentProduct.imagen}

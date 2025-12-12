@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 import { useNavbarLogic } from "@/hooks/navbarLogic";
 import { posthogUtils } from "@/lib/posthogClient";
 import { useVisibleCategories } from "@/hooks/useVisibleCategories";
-import { useLogos } from "@/hooks/useLogos";
 import { usePreloadCategoryMenus } from "@/hooks/usePreloadCategoryMenus";
 import { usePrefetchProducts } from "@/hooks/usePrefetchProducts";
 import { useOfertasDirectas } from "@/hooks/useOfertasDirectas";
@@ -83,7 +82,6 @@ export default function Navbar() {
   const { getNavbarRoutes, loading } = useVisibleCategories();
   const { isAuthenticated, user } = useAuthContext();
   const { address: defaultMobileAddress } = useDefaultAddress("ENVIO");
-  const { logoDark, logoLight } = useLogos();
 
   // Pre-cargar menús de todas las categorías dinámicas al cargar la página
   // La función prioritizeCategory permite priorizar la carga cuando el usuario hace hover
@@ -408,8 +406,8 @@ export default function Navbar() {
               <Image
                 src={
                   shouldShowWhiteItemsMobile
-                    ? logoLight?.image_url || "/frame_white.png"
-                    : logoDark?.image_url || "/frame_black.png"
+                    ? "/frame_white.png"
+                    : "/frame_black.png"
                 }
                 alt="Q Logo"
                 height={40}

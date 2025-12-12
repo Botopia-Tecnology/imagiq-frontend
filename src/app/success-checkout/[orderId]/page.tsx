@@ -156,6 +156,7 @@ export default function SuccessCheckoutPage({
     sendPurchaseEvent();
   }, [pathParams.orderId, trackPurchase]);
 
+  /*
   // Enviar mensaje de WhatsApp cuando se carga la página
   useEffect(() => {
     const sendWhatsAppMessage = async () => {
@@ -812,6 +813,7 @@ export default function SuccessCheckoutPage({
     sendEmailConfirmation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathParams.orderId, loggedUser?.id]); // Depende del orderId y loggedUser.id, useRef previene duplicados
+  */
 
   // Coordenadas para el efecto de expansión de la animación (centrado)
   const [triggerPosition, setTriggerPosition] = useState(() => {

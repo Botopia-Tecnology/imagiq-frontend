@@ -119,7 +119,7 @@ export default function TrackingService({
           // IMAGIQ - estructura diferente con data.envio
           const envioData = data.envio || {};
           productosData = data.items || [];
-          
+
           // Procesar datos de la tienda y limpiar coordenadas
           if (envioData.tienda_origen) {
             tiendaData = {
@@ -127,23 +127,23 @@ export default function TrackingService({
               descripcion: envioData.tienda_origen.descripcion?.replace(/^Ses\s+/i, '').trim() || undefined,
               direccion: envioData.tienda_origen.direccion || "Tienda IMAGIQ",
               ciudad: envioData.tienda_origen.ciudad || "Bogotá",
-              telefono: (envioData.tienda_origen.telefono != null && envioData.tienda_origen.telefono !== "") 
-                ? String(envioData.tienda_origen.telefono).trim() 
+              telefono: (envioData.tienda_origen.telefono != null && envioData.tienda_origen.telefono !== "")
+                ? String(envioData.tienda_origen.telefono).trim()
                 : undefined,
-              horario: (envioData.tienda_origen.horario != null && envioData.tienda_origen.horario !== "") 
-                ? String(envioData.tienda_origen.horario).trim() 
+              horario: (envioData.tienda_origen.horario != null && envioData.tienda_origen.horario !== "")
+                ? String(envioData.tienda_origen.horario).trim()
                 : undefined,
-              latitud: envioData.tienda_origen.latitud 
-                ? String(envioData.tienda_origen.latitud).trim() 
+              latitud: envioData.tienda_origen.latitud
+                ? String(envioData.tienda_origen.latitud).trim()
                 : undefined,
-              longitud: envioData.tienda_origen.longitud 
-                ? String(envioData.tienda_origen.longitud).trim() 
+              longitud: envioData.tienda_origen.longitud
+                ? String(envioData.tienda_origen.longitud).trim()
                 : undefined,
             };
           } else {
             tiendaData = null;
           }
-          
+
           direccionEntrega = envioData.direccion_destino?.linea_uno || envioData.direccion_destino?.direccion_formateada || "";
           ciudadEntrega = "";
 
@@ -181,7 +181,7 @@ export default function TrackingService({
         } else if (metodoEnvio === 2) {
           // PICKUP - estructura con data.items y data.tienda
           productosData = data.items || [];
-          
+
           // Mapear datos de la tienda explícitamente - asegurar que todos los campos se mapeen
           if (data.tienda && (data.tienda.direccion || data.tienda.ciudad || data.tienda.descripcion)) {
             // Asegurar que direccion y ciudad siempre tengan valores (requeridos por la interfaz)
@@ -192,27 +192,27 @@ export default function TrackingService({
             const ciudadTienda = (data.tienda.ciudad != null && data.tienda.ciudad !== "")
               ? String(data.tienda.ciudad).trim()
               : "";
-            
+
             tiendaData = {
-              nombre: (data.tienda.nombre != null && data.tienda.nombre !== "") 
-                ? String(data.tienda.nombre).trim() 
+              nombre: (data.tienda.nombre != null && data.tienda.nombre !== "")
+                ? String(data.tienda.nombre).trim()
                 : undefined,
-              descripcion: (data.tienda.descripcion != null && data.tienda.descripcion !== "") 
-                ? String(data.tienda.descripcion).trim() 
+              descripcion: (data.tienda.descripcion != null && data.tienda.descripcion !== "")
+                ? String(data.tienda.descripcion).trim()
                 : undefined,
               direccion: direccionTienda || "Tienda IMAGIQ",
               ciudad: ciudadTienda || "Bogotá",
-              telefono: (data.tienda.telefono != null && data.tienda.telefono !== "") 
-                ? String(data.tienda.telefono).trim() 
+              telefono: (data.tienda.telefono != null && data.tienda.telefono !== "")
+                ? String(data.tienda.telefono).trim()
                 : undefined,
-              horario: (data.tienda.horario != null && data.tienda.horario !== "") 
-                ? String(data.tienda.horario).trim() 
+              horario: (data.tienda.horario != null && data.tienda.horario !== "")
+                ? String(data.tienda.horario).trim()
                 : undefined,
-              latitud: (data.tienda.latitud != null && data.tienda.latitud !== "") 
-                ? String(data.tienda.latitud).trim() 
+              latitud: (data.tienda.latitud != null && data.tienda.latitud !== "")
+                ? String(data.tienda.latitud).trim()
                 : undefined,
-              longitud: (data.tienda.longitud != null && data.tienda.longitud !== "") 
-                ? String(data.tienda.longitud).trim() 
+              longitud: (data.tienda.longitud != null && data.tienda.longitud !== "")
+                ? String(data.tienda.longitud).trim()
                 : undefined,
             };
           } else {
@@ -264,6 +264,7 @@ export default function TrackingService({
           imagen: String(producto.imagen || producto.image_preview_url || ''),
           cantidad: Number(producto.cantidad || 0),
           precio: producto.precio ? Number(producto.precio) : (producto.unit_price ? parseFloat(String(producto.unit_price)) : undefined),
+          numero_guia: producto.numero_guia || producto.guideNumber,
         }));
 
         setProductos(mappedProductos);

@@ -98,45 +98,34 @@ export function PDFViewer({
 
   return (
     <div className="w-full rounded-xl bg-white overflow-hidden" id="pdf-container">
-      <div className="px-5 pt-5 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 mb-2">
-            Guía de envío
-          </h3>
-          <p className="text-sm text-gray-700 mb-3">
-            Vista previa del documento.
-          </p>
+      {/* Navigation arrows for multiple shipments */}
+      {shipments && shipments.length > 1 && (
+        <div className="px-5 pt-5 pb-3 flex items-center justify-center gap-3">
+          <button
+            onClick={() => onSelectShipment?.(Math.max(selectedShipmentIndex - 1, 0))}
+            disabled={selectedShipmentIndex === 0}
+            className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            aria-label="Guía anterior"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
+            Guía {selectedShipmentIndex + 1} de {shipments.length}
+          </span>
+          <button
+            onClick={() => onSelectShipment?.(Math.min(selectedShipmentIndex + 1, shipments.length - 1))}
+            disabled={selectedShipmentIndex === shipments.length - 1}
+            className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            aria-label="Guía siguiente"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
-        
-        {/* Navigation arrows for multiple shipments */}
-        {shipments && shipments.length > 1 && (
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => onSelectShipment?.(Math.max(selectedShipmentIndex - 1, 0))}
-              disabled={selectedShipmentIndex === 0}
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
-              aria-label="Guía anterior"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <span className="text-sm font-medium text-gray-700 min-w-[80px] text-center">
-              Guía {selectedShipmentIndex + 1} de {shipments.length}
-            </span>
-            <button
-              onClick={() => onSelectShipment?.(Math.min(selectedShipmentIndex + 1, shipments.length - 1))}
-              disabled={selectedShipmentIndex === shipments.length - 1}
-              className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed transition"
-              aria-label="Guía siguiente"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        )}
-      </div>
+      )}
 
       <div className="w-full bg-gray-100 min-h-[400px] flex flex-col items-center justify-center p-4 overflow-hidden relative">
         {loading && (

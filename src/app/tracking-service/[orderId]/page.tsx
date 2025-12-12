@@ -123,26 +123,40 @@ export default function TrackingService({
         const deliveryMethod = deliveryMethodRes.data;
         const metodoEnvio = deliveryMethod.metodo_envio;
 
-        // Seleccionar el endpoint correcto según el método de envío
+        // Seleccionar endpoints
         let orderEndpoint = `/api/orders/shipping-info/${pathParams.orderId}`;
+        let productDetailsEndpoint = "";
+
         if (metodoEnvio === 3) {
           // IMAGIQ - usar endpoint específico
           orderEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
         } else if (metodoEnvio === 2) {
           // Pickup - usar endpoint específico
           orderEndpoint = `/api/orders/${pathParams.orderId}/tiendas`;
+        } else {
+          // COORDINADORA (1) o Default
+          // Usamos shipping-info para tracking, PERO necesitamos el endpoint de imagiq para los productos (imágenes)
+          productDetailsEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
         }
-        // metodoEnvio === 1 (Coordinadora) usa shipping-info
 
-        return Promise.all([
+        const promises: Promise<any>[] = [
           apiClient.get<OrderDetails>(orderEndpoint),
           Promise.resolve(deliveryMethodRes)
-        ]);
+        ];
+
+        if (productDetailsEndpoint) {
+          promises.push(apiClient.get(productDetailsEndpoint).catch(() => ({ data: null })));
+        }
+
+        return Promise.all(promises);
       })
-      .then(([orderRes, deliveryMethodRes]) => {
+      .then(([orderRes, deliveryMethodRes, extraProductRes]) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const data = orderRes.data as any;
         const deliveryMethod = deliveryMethodRes.data;
+        // Datos extra de productos (si existen)
+        const productsExtraData = extraProductRes?.data;
+
         const metodoEnvio = deliveryMethod.metodo_envio;
 
         // Manejar datos según el método de envío
@@ -268,7 +282,15 @@ export default function TrackingService({
           setEnvios(enviosList);
           setSelectedEnvioIndex(0);
 
-          productosData = data.productos || [];
+          // COORDINADORA
+          // Intentar obtener productos desde el endpoint extra (imagiq) si está disponible, ya que tiene imágenes
+          if (productsExtraData?.items && productsExtraData.items.length > 0) {
+            productosData = productsExtraData.items;
+          } else {
+            // Fallback a lo que venga en shipping-info
+            productosData = data.productos || [];
+          }
+
           tiendaData = data.tienda || null;
           direccionEntrega = data.direccion_entrega || "";
           ciudadEntrega = data.ciudad_entrega || "";
@@ -421,6 +443,8 @@ export default function TrackingService({
               shipments={envios}
               selectedShipmentIndex={selectedEnvioIndex}
               onSelectShipment={setSelectedEnvioIndex}
+              products={productos}
+              shippingType={shippingType}
             />
           )}
         </div>

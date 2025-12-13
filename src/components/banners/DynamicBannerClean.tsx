@@ -236,7 +236,7 @@ function ContentBlocksOverlay({
             style={{
               left: `${position.x}%`,
               top: `${position.y}%`,
-              transform: 'translate(0, 0)',
+              transform: 'translate(-50%, -50%)',
               maxWidth,
             }}
           >

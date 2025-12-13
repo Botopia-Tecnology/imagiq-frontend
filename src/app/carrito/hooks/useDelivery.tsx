@@ -295,7 +295,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
         setStoresLoading(false);
         return;
       }
-      
+
       console.log('✅ [onlyReadCache] Dirección verificada correctamente, continuando con lectura del cache');
 
       const cacheKey = buildGlobalCanPickUpKey({
@@ -489,7 +489,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
       cacheKey
     });
 
-      // Si hay datos en caché, usarlos INMEDIATAMENTE sin activar skeleton
+    // Si hay datos en caché, usarlos INMEDIATAMENTE sin activar skeleton
     if (cachedResponse) {
       console.log('✅✅✅ Datos encontrados en caché, usando respuesta cacheada SIN activar skeleton');
       isFetchingRef.current = true;
@@ -932,6 +932,52 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [products, canFetchFromEndpoint, onlyReadCache]); // Depender de products completo pero con protección de hash
 
+  // NUEVO: Escuchar cuando imagiq_user se establece en localStorage
+  // Esto soluciona el race condition donde products se cargan antes que la autenticación
+  useEffect(() => {
+    if (globalThis.window === undefined) return;
+    if (!canFetchFromEndpoint || onlyReadCache) return;
+
+    const handleUserChange = (e: StorageEvent) => {
+      if (e.key === 'imagiq_user' && e.newValue) {
+        console.log('🔄 [useDelivery] imagiq_user cambió - verificando si necesita re-fetch...');
+
+        // Verificar si hay productos pero aún no se ha hecho el fetch
+        if (products.length > 0 && stores.length === 0 && !isFetchingRef.current) {
+          console.log('✅ [useDelivery] Productos listos + usuario recién logueado - llamando fetchCandidateStores');
+          // Reset the products hash to force a new fetch
+          productsHashRef.current = '';
+          setTimeout(() => {
+            fetchCandidateStores();
+          }, 200);
+        }
+      }
+    };
+
+    const handleLocalStorageChange = (e: Event) => {
+      const customEvent = e as CustomEvent<{ key: string }>;
+      if (customEvent.detail?.key === 'imagiq_user') {
+        console.log('🔄 [useDelivery] imagiq_user cambió (evento local) - verificando si necesita re-fetch...');
+
+        if (products.length > 0 && stores.length === 0 && !isFetchingRef.current) {
+          console.log('✅ [useDelivery] Productos listos + usuario recién logueado - llamando fetchCandidateStores');
+          productsHashRef.current = '';
+          setTimeout(() => {
+            fetchCandidateStores();
+          }, 200);
+        }
+      }
+    };
+
+    globalThis.window.addEventListener('storage', handleUserChange);
+    globalThis.window.addEventListener('localStorageChange', handleLocalStorageChange);
+
+    return () => {
+      globalThis.window?.removeEventListener('storage', handleUserChange);
+      globalThis.window?.removeEventListener('localStorageChange', handleLocalStorageChange);
+    };
+  }, [products, stores.length, canFetchFromEndpoint, onlyReadCache, fetchCandidateStores]);
+
   // Escuchar cambios de dirección (desde header O desde checkout)
   useEffect(() => {
     const handleAddressChange = async (event: Event) => {
@@ -1071,7 +1117,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
 
           // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando cambia la dirección
           allowFetchOnAddressChangeRef.current = true;
-          
+
           // Recalcular canPickUp global y tiendas cuando cambia la dirección
           // El debounce de 8000ms en fetchCandidateStores evitará peticiones múltiples
           fetchCandidateStores().finally(() => {
@@ -1203,7 +1249,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
             lastCheckoutAddress = currentCheckoutAddress;
             return;
           }
-          
+
           const lastParsed = JSON.parse(lastCheckoutAddress || '{}') as Address;
           // Solo considerar cambio si el ID cambió
           if (parsed.id !== lastParsed.id) {
@@ -1433,7 +1479,7 @@ export const useDelivery = (config?: UseDeliveryConfig) => {
     console.log('✅ Forzando recarga de tiendas - limpiando protecciones');
     // IMPORTANTE: Permitir petición aunque onlyReadCache=true cuando se fuerza recarga
     allowFetchOnAddressChangeRef.current = true;
-    
+
     // Limpiar refs de protección para forzar la recarga
     lastSuccessfulHashRef.current = null;
     lastFetchTimeRef.current = 0;

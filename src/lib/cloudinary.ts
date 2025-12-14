@@ -74,12 +74,13 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
   'catalog-banner': 'f_auto,q_90,c_fill,g_auto,w_800,h_600,fl_progressive',
 
   // Banner Landing - 1260x310px, dimensiones del dashboard
-  // c_limit: No recorta ni estira, solo limita el tamaño máximo preservando aspect ratio
-  'landing-banner': 'f_auto,q_95,c_limit,w_1260,h_310,fl_progressive',
+  // c_fill: Escala y recorta para llenar exactamente 1260x310, enfocando contenido importante
+  // g_auto: Auto-enfoque en contenido importante para recorte inteligente
+  'landing-banner': 'f_auto,q_95,c_fill,g_auto,w_1260,h_310,fl_progressive',
 
   // Banner Mobile - 414x310px, dimensiones del dashboard
-  // c_limit: Preserva proporciones originales de la imagen
-  'mobile-banner': 'f_auto,q_90,c_limit,w_414,h_310,fl_progressive',
+  // c_fill: Escala y recorta para llenar exactamente las dimensiones móviles
+  'mobile-banner': 'f_auto,q_90,c_fill,g_auto,w_414,h_310,fl_progressive',
 
   // Original - alta calidad sin transformación de tamaño
   original: 'f_auto,q_95,fl_progressive',

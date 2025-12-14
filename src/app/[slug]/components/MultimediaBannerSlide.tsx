@@ -211,7 +211,7 @@ export default function MultimediaBannerSlide({
             color: banner.color_font,
             left: `${position.x}%`,
             top: `${position.y}%`,
-            transform: 'translate(-50%, -50%)',
+            transform: 'translate(0, 0)',
             textAlign: getTextAlign(),
           }}
         >

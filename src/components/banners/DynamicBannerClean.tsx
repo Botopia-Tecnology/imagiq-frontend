@@ -192,10 +192,12 @@ function ContentBlocksOverlay({
   blocks,
   isMobile,
   forceShow,
+  bannerLinkUrl,
 }: Readonly<{
   blocks: ContentBlock[];
   isMobile?: boolean;
   forceShow?: boolean; // Forzar mostrar sin clases responsive
+  bannerLinkUrl?: string | null; // URL del banner como fallback para CTAs
 }>) {
   return (
     <>
@@ -236,8 +238,9 @@ function ContentBlocksOverlay({
             style={{
               left: `${position.x}%`,
               top: `${position.y}%`,
-              transform: 'translate(0, 0)',
+              transform: 'translate(-50%, -50%)',
               maxWidth,
+              position: 'relative', // Necesario para stretched link
             }}
           >
             <div
@@ -318,11 +321,14 @@ function ContentBlocksOverlay({
                   border: (isMobile && block.cta_mobile?.border) || block.cta.border || 'none',
                   textTransform: (isMobile && block.cta_mobile?.textTransform) || block.cta.textTransform || 'none',
                 };
+                // Usar link_url del CTA, o fallback al link_url del banner
+                const href = block.cta.link_url || bannerLinkUrl || '#';
+
                 return (
                   <div style={{ textAlign }}>
                     <a
-                      href={block.cta.link_url || '#'}
-                      className="inline-block transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                      href={href}
+                      className="stretched-link inline-block transition-all duration-300 hover:scale-105 hover:shadow-lg"
                       style={{
                         ...ctaStyles,
                         textDecoration: 'none',
@@ -504,6 +510,21 @@ export default function DynamicBannerClean({
   const currentBanner = banners[controller.currentIndex];
   if (!currentBanner) return <>{children || null}</>;
 
+  // Parsear content_blocks para detectar CTAs
+  let contentBlocks: ContentBlock[] = [];
+  if (currentBanner.content_blocks) {
+    try {
+      contentBlocks = typeof currentBanner.content_blocks === 'string'
+        ? JSON.parse(currentBanner.content_blocks)
+        : currentBanner.content_blocks;
+    } catch (e) {
+      console.error('Error parsing content_blocks:', e);
+    }
+  }
+
+  // Detectar si hay CTAs en los content blocks
+  const hasCTAsInBlocks = contentBlocks.some(block => block.cta);
+
   const content = (
     <div className={`relative w-full overflow-hidden ${className}`}>
       <div className="relative w-full min-h-[700px] md:min-h-[500px] lg:min-h-[800px] rounded-lg overflow-hidden">
@@ -618,8 +639,8 @@ export default function DynamicBannerClean({
               <div className="absolute inset-0 z-20">
                 {hasContentBlocks ? (
                   <>
-                    {!forceMobileView && <ContentBlocksOverlay blocks={contentBlocks} isMobile={false} />}
-                    <ContentBlocksOverlay blocks={contentBlocks} isMobile={true} forceShow={forceMobileView} />
+                    {!forceMobileView && <ContentBlocksOverlay blocks={contentBlocks} isMobile={false} bannerLinkUrl={banner.link_url} />}
+                    <ContentBlocksOverlay blocks={contentBlocks} isMobile={true} forceShow={forceMobileView} bannerLinkUrl={banner.link_url} />
                   </>
                 ) : (
                   <>
@@ -686,8 +707,13 @@ export default function DynamicBannerClean({
     </div>
   );
 
-  return currentBanner.link_url ? (
-    <Link href={currentBanner.link_url} className="block">
+  // Solo envolver en Link si:
+  // 1. El banner tiene link_url
+  // 2. Y NO hay CTAs en los content blocks (evitar enlaces anidados)
+  const shouldWrapInLink = currentBanner.link_url && !hasCTAsInBlocks;
+
+  return shouldWrapInLink ? (
+    <Link href={currentBanner.link_url!} className="block">
       {content}
     </Link>
   ) : (

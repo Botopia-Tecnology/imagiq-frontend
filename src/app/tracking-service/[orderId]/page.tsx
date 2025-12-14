@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useState, useCallback } from "react";
 
 // Importación de iconos
-import { apiClient } from "@/lib/api";
+import { apiClient, type ApiResponse } from "@/lib/api";
 import { OrderDetails, EnvioEvento, ProductoDetalle, TiendaInfo, DetalleEnvio } from "../interfaces/types.d";
 import {
   LoadingSpinner,
@@ -62,7 +62,7 @@ export default function TrackingService({
     }
   };
 
-  const updateCoordinadoraView = (envio: any, fechaBase: string) => {
+  const updateCoordinadoraView = useCallback((envio: Partial<DetalleEnvio>, fechaBase: string) => {
     if (!envio) return;
 
     // Usar número de guía si existe, si no fallback
@@ -84,7 +84,7 @@ export default function TrackingService({
 
     setTrackingSteps(envio.eventos || []);
     setPdfBase64(envio.pdf_base64 || "");
-  };
+  }, []);
 
   // Efecto para actualizar la vista cuando cambia la selección de envío
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function TrackingService({
       // Solo si es modo coordinadora (envios populated)
       updateCoordinadoraView(envios[selectedEnvioIndex], fechaCreacion);
     }
-  }, [selectedEnvioIndex, envios, fechaCreacion]);
+  }, [selectedEnvioIndex, envios, fechaCreacion, updateCoordinadoraView]);
 
 
   // Determinar el tipo de envío basado en medio_pago o fallback a metodo_envio
@@ -139,13 +139,18 @@ export default function TrackingService({
           productDetailsEndpoint = `/api/orders/${pathParams.orderId}/imagiq`;
         }
 
-        const promises: Promise<any>[] = [
+        const promises: Array<Promise<ApiResponse<OrderDetails | { metodo_envio: number } | null>>> = [
           apiClient.get<OrderDetails>(orderEndpoint),
           Promise.resolve(deliveryMethodRes)
         ];
 
         if (productDetailsEndpoint) {
-          promises.push(apiClient.get(productDetailsEndpoint).catch(() => ({ data: null })));
+          promises.push(
+            apiClient.get<OrderDetails>(productDetailsEndpoint).catch(() => ({ 
+              data: null, 
+              success: false 
+            } as ApiResponse<null>))
+          );
         }
 
         return Promise.all(promises);
@@ -156,6 +161,10 @@ export default function TrackingService({
         const deliveryMethod = deliveryMethodRes.data;
         // Datos extra de productos (si existen)
         const productsExtraData = extraProductRes?.data;
+
+        if (!deliveryMethod) {
+          throw new Error("Delivery method data is missing");
+        }
 
         const metodoEnvio = deliveryMethod.metodo_envio;
 
@@ -286,7 +295,8 @@ export default function TrackingService({
 
           // COORDINADORA
           // Intentar obtener productos desde el endpoint extra (imagiq) si está disponible, ya que tiene imágenes
-          if (productsExtraData?.items && productsExtraData.items.length > 0) {
+          // Type guard: check if productsExtraData is OrderDetails (has items property)
+          if (productsExtraData && 'items' in productsExtraData && productsExtraData.items && productsExtraData.items.length > 0) {
             productosData = productsExtraData.items;
           } else {
             // Fallback a lo que venga en shipping-info

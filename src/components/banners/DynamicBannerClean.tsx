@@ -713,7 +713,7 @@ export default function DynamicBannerClean({
   const shouldWrapInLink = currentBanner.link_url && !hasCTAsInBlocks;
 
   return shouldWrapInLink ? (
-    <Link href={currentBanner.link_url} className="block">
+    <Link href={currentBanner.link_url!} className="block">
       {content}
     </Link>
   ) : (

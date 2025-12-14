@@ -388,6 +388,9 @@ export default function Step7({ onBack }: Step7Props) {
     try {
       const receivedByClientStr = localStorage.getItem("checkout-received-by-client");
       const recipientDataStr = localStorage.getItem("checkout-recipient-data");
+      // Leemos también billing data para tener los datos del cliente si él recibe
+      const billingDataStr = localStorage.getItem("checkout-billing-data");
+      const userStr = localStorage.getItem("imagiq_user");
 
       const receivedByClient = receivedByClientStr ? JSON.parse(receivedByClientStr) : true;
 
@@ -401,8 +404,40 @@ export default function Step7({ onBack }: Step7Props) {
           phone: parsed.phone,
         });
       } else {
+        // Si recibe el cliente, intentamos poblar con sus datos de facturación o usuario
+        let clientFirstName = "";
+        let clientLastName = "";
+        let clientEmail = "";
+        let clientPhone = "";
+
+        if (billingDataStr) {
+          try {
+            const billing = JSON.parse(billingDataStr);
+            // Intentar separar nombre y apellido si vienen juntos
+            const nameParts = (billing.nombre || "").trim().split(" ");
+            if (nameParts.length > 0) {
+              clientFirstName = nameParts[0];
+              clientLastName = nameParts.slice(1).join(" ");
+            }
+            clientEmail = billing.email || "";
+            clientPhone = billing.telefono || "";
+          } catch (e) { console.error("Error parsing billing for recipient", e); }
+        } else if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            clientFirstName = user.nombre || "";
+            clientLastName = user.apellido || "";
+            clientEmail = user.email || "";
+            clientPhone = user.telefono || user.celular || "";
+          } catch (e) { console.error("Error parsing user for recipient", e); }
+        }
+
         setRecipientData({
           receivedByClient: true,
+          firstName: clientFirstName,
+          lastName: clientLastName,
+          email: clientEmail,
+          phone: clientPhone,
         });
       }
     } catch (error) {
@@ -1469,10 +1504,10 @@ export default function Step7({ onBack }: Step7Props) {
             </div>
           ) : (
             <>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-bold text-gray-900 inline">
                 Confirma tu pedido
               </h1>
-              <p className="text-gray-600 mt-1">
+              <p className="text-gray-600 inline ml-2">
                 Revisa todos los detalles antes de confirmar tu compra
               </p>
             </>
@@ -1486,7 +1521,7 @@ export default function Step7({ onBack }: Step7Props) {
               /* Skeleton de toda la sección mientras carga */
               <>
                 {/* Skeleton Método de pago */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1503,7 +1538,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Método de entrega */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1518,7 +1553,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Información del receptor */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1532,7 +1567,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Datos de facturación */}
-                <div className="bg-white rounded-lg p-6 border border-gray-200 animate-pulse">
+                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1569,7 +1604,7 @@ export default function Step7({ onBack }: Step7Props) {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Método de pago */}
                   {paymentData && (
-                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="bg-white rounded-lg p-6 border border-gray-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1599,122 +1634,124 @@ export default function Step7({ onBack }: Step7Props) {
                         <>
                           {/* Mostrar detalles de tarjeta guardada */}
                           {paymentData.savedCard && (
-                            <>
-                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                              <div className="flex flex-col items-center gap-1 min-w-[60px]">
                                 <CardBrandLogo
                                   brand={paymentData.savedCard.marca}
                                   size="md"
                                 />
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-900 tracking-wider">
-                                      •••• {paymentData.savedCard.ultimos_dijitos}
+                                {paymentData.savedCard.nombre_titular && (
+                                  <span className="text-[10px] text-gray-500 uppercase text-center leading-tight">
+                                    {paymentData.savedCard.nombre_titular}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1 flex flex-col justify-center">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-gray-900 tracking-wider">
+                                    •••• {paymentData.savedCard.ultimos_dijitos}
+                                  </span>
+                                  {paymentData.savedCard.tipo_tarjeta && (
+                                    <span className="text-xs text-gray-500 uppercase">
+                                      {paymentData.savedCard.tipo_tarjeta
+                                        .toUpperCase()
+                                        .includes("CREDIT")
+                                        ? "Crédito"
+                                        : "Débito"}
                                     </span>
-                                    {paymentData.savedCard.tipo_tarjeta && (
-                                      <span className="text-xs text-gray-500 uppercase">
-                                        {paymentData.savedCard.tipo_tarjeta
-                                          .toUpperCase()
-                                          .includes("CREDIT")
-                                          ? "Crédito"
-                                          : "Débito"}
+                                  )}
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-gray-600 w-full">
+                                  {paymentData.savedCard.banco ? (
+                                    <span>{paymentData.savedCard.banco}</span>
+                                  ) : <span></span>}
+                                  
+                                  {paymentData.installments && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-gray-500">Cuotas:</span>
+                                      <span className="font-medium text-gray-900">
+                                        {paymentData.installments}x
+                                        {paymentData.savedCard &&
+                                          isInstallmentEligibleForZeroInterest(
+                                            paymentData.installments,
+                                            String(paymentData.savedCard.id)
+                                          ) && (
+                                            <span className="ml-1 text-green-600 font-semibold">
+                                              (0%)
+                                            </span>
+                                          )}
                                       </span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
-                                    {paymentData.savedCard.nombre_titular && (
-                                      <span className="uppercase">
-                                        {paymentData.savedCard.nombre_titular}
-                                      </span>
-                                    )}
-                                    {paymentData.savedCard.banco && (
-                                      <span>{paymentData.savedCard.banco}</span>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              {paymentData.installments && (
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Cuotas:</span>
-                                  <span className="font-medium text-gray-900">
-                                    {paymentData.installments}x
-                                    {paymentData.savedCard &&
-                                      isInstallmentEligibleForZeroInterest(
-                                        paymentData.installments,
-                                        String(paymentData.savedCard.id)
-                                      ) && (
-                                        <span className="ml-2 text-green-600 font-semibold">
-                                          (sin interés)
-                                        </span>
-                                      )}
-                                  </span>
-                                </div>
-                              )}
-                            </>
+                            </div>
                           )}
                           {/* Mostrar detalles de tarjeta nueva */}
                           {paymentData.cardData && (
-                            <>
-                              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                              <div className="flex flex-col items-center gap-1 min-w-[60px]">
                                 {paymentData.cardData.brand && (
                                   <CardBrandLogo
                                     brand={paymentData.cardData.brand}
                                     size="md"
                                   />
                                 )}
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-900 tracking-wider">
-                                      ••••{" "}
-                                      {paymentData.cardData.cardNumber.slice(-4)}
+                                {paymentData.cardData.cardHolder && (
+                                  <span className="text-[10px] text-gray-500 uppercase text-center leading-tight">
+                                    {paymentData.cardData.cardHolder}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex-1 flex flex-col justify-center">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-semibold text-gray-900 tracking-wider">
+                                    ••••{" "}
+                                    {paymentData.cardData.cardNumber.slice(-4)}
+                                  </span>
+                                  {paymentData.cardData.cardType && (
+                                    <span className="text-xs text-gray-500 uppercase">
+                                      {paymentData.cardData.cardType
+                                        .toUpperCase()
+                                        .includes("CREDIT")
+                                        ? "Crédito"
+                                        : "Débito"}
                                     </span>
-                                    {paymentData.cardData.cardType && (
-                                      <span className="text-xs text-gray-500 uppercase">
-                                        {paymentData.cardData.cardType
-                                          .toUpperCase()
-                                          .includes("CREDIT")
-                                          ? "Crédito"
-                                          : "Débito"}
+                                  )}
+                                </div>
+                                <div className="flex justify-between items-center text-xs text-gray-600 w-full">
+                                  {paymentData.cardData.bank ? (
+                                    <span>{paymentData.cardData.bank}</span>
+                                  ) : <span></span>}
+                                  
+                                  {paymentData.installments && (
+                                    <div className="flex items-center gap-1">
+                                      <span className="text-gray-500">Cuotas:</span>
+                                      <span className="font-medium text-gray-900">
+                                        {paymentData.installments}x
+                                        {(() => {
+                                          // Para tarjetas nuevas, intentar obtener el ID de localStorage
+                                          const savedCardId = localStorage.getItem(
+                                            "checkout-saved-card-id"
+                                          );
+                                          return (
+                                            savedCardId &&
+                                            isInstallmentEligibleForZeroInterest(
+                                              paymentData.installments,
+                                              savedCardId
+                                            ) && (
+                                              <span className="ml-1 text-green-600 font-semibold">
+                                                (0%)
+                                              </span>
+                                            )
+                                          );
+                                        })()}
                                       </span>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col gap-1 mt-1 text-xs text-gray-600">
-                                    {paymentData.cardData.cardHolder && (
-                                      <span className="uppercase">
-                                        {paymentData.cardData.cardHolder}
-                                      </span>
-                                    )}
-                                    {paymentData.cardData.bank && (
-                                      <span>{paymentData.cardData.bank}</span>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                              {paymentData.installments && (
-                                <div className="flex justify-between text-sm">
-                                  <span className="text-gray-600">Cuotas:</span>
-                                  <span className="font-medium text-gray-900">
-                                    {paymentData.installments}x
-                                    {(() => {
-                                      // Para tarjetas nuevas, intentar obtener el ID de localStorage
-                                      const savedCardId = localStorage.getItem(
-                                        "checkout-saved-card-id"
-                                      );
-                                      return (
-                                        savedCardId &&
-                                        isInstallmentEligibleForZeroInterest(
-                                          paymentData.installments,
-                                          savedCardId
-                                        ) && (
-                                          <span className="ml-2 text-green-600 font-semibold">
-                                            (sin interés)
-                                          </span>
-                                        )
-                                      );
-                                    })()}
-                                  </span>
-                                </div>
-                              )}
-                            </>
+                            </div>
                           )}
                         </>
                       )}
@@ -1732,7 +1769,7 @@ export default function Step7({ onBack }: Step7Props) {
 
                   {/* Información del receptor */}
                   {recipientData && (
-                    <div className="bg-white rounded-lg p-6 border border-gray-200">
+                    <div className="bg-white rounded-lg p-6 border border-gray-300">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1759,52 +1796,53 @@ export default function Step7({ onBack }: Step7Props) {
                         </button>
                       </div>
 
-                      {!recipientData.receivedByClient && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          {/* Nombre */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Nombre</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {recipientData.firstName}
-                            </p>
-                          </div>
-
-                          {/* Apellido */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">Apellido</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {recipientData.lastName}
-                            </p>
-                          </div>
-
-                          {/* Email */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">
-                              Correo electrónico
-                            </p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {recipientData.email}
-                            </p>
-                          </div>
-
-                          {/* Teléfono */}
-                          <div>
-                            <p className="text-xs text-gray-500 mb-1">
-                              Número de celular
-                            </p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {recipientData.phone}
-                            </p>
-                          </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Nombre */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Nombre</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {recipientData.firstName || "-"}
+                          </p>
                         </div>
-                      )}
+
+                        {/* Apellido */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">Apellido</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {recipientData.lastName || "-"}
+                          </p>
+                        </div>
+
+                        {/* Email */}
+                        <div className="overflow-hidden">
+                          <p className="text-xs text-gray-500 mb-1">
+                            Correo electrónico
+                          </p>
+                          <p 
+                            className="text-sm font-medium text-gray-900 truncate"
+                            title={recipientData.email || ""}
+                          >
+                            {recipientData.email || "-"}
+                          </p>
+                        </div>
+
+                        {/* Teléfono */}
+                        <div>
+                          <p className="text-xs text-gray-500 mb-1">
+                            Número de celular
+                          </p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {recipientData.phone || "-"}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* Método de entrega */}
                 {shippingData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="bg-white rounded-lg p-6 border border-gray-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1883,7 +1921,7 @@ export default function Step7({ onBack }: Step7Props) {
 
                 {/* Datos de facturación */}
                 {billingData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-200">
+                  <div className="bg-white rounded-lg p-6 border border-gray-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -2228,7 +2266,7 @@ export default function Step7({ onBack }: Step7Props) {
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-300 shadow-lg z-50">
         <div className="p-4">
           {/* Resumen compacto */}
           <div className="flex items-center justify-between mb-3">

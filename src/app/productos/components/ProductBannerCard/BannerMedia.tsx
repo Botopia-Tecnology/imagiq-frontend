@@ -5,6 +5,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 interface BannerMediaProps {
   videoUrl: string | null;
@@ -44,6 +45,9 @@ export function BannerMedia({
     }
   }, [videoUrl]);
 
+  // Optimizar imagen con Cloudinary
+  const optimizedImageUrl = imageUrl ? getCloudinaryUrl(imageUrl, 'catalog-banner') : null;
+
   return (
     <div className="absolute inset-0">
       {/* Video */}
@@ -56,6 +60,7 @@ export function BannerMedia({
           loop={false}
           playsInline
           preload="metadata"
+          poster={optimizedImageUrl || undefined}
           onEnded={onVideoEnd || undefined}
           style={{
             opacity: videoOpacity,
@@ -67,11 +72,11 @@ export function BannerMedia({
       )}
 
       {/* Imagen */}
-      {imageUrl && (
+      {optimizedImageUrl && (
         <div
           className="absolute inset-0 bg-contain bg-center bg-no-repeat transition-opacity duration-500"
           style={{
-            backgroundImage: `url(${imageUrl})`,
+            backgroundImage: `url(${optimizedImageUrl})`,
             opacity: imageOpacity,
           }}
         />

@@ -10,6 +10,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import type { MultimediaPageBanner } from '@/services/multimedia-pages.service';
 import type { BannerTextStyles, TextBox, CTABox } from '@/types/banner';
+import { getCloudinaryUrl } from '@/lib/cloudinary';
 
 interface MultimediaBannerSlideProps {
   banner: MultimediaPageBanner;
@@ -68,9 +69,14 @@ export default function MultimediaBannerSlide({
 
   // Renderizar media apropiado
   const shouldShowVideo = videoUrl && !hasPlayedVideo;
-  
+
   let mediaContent: React.ReactNode = null;
   if (shouldShowVideo) {
+    // Optimizar poster del video si hay imagen disponible
+    const optimizedPoster = imageUrl
+      ? getCloudinaryUrl(imageUrl, isMobile ? 'mobile-banner' : 'landing-banner')
+      : undefined;
+
     mediaContent = (
       <video
         ref={videoRef}
@@ -78,18 +84,25 @@ export default function MultimediaBannerSlide({
         style={{ maxHeight: '310px', objectFit: 'cover' }}
         muted
         playsInline
+        poster={optimizedPoster}
         onEnded={handleVideoEnd}
       >
         <source src={videoUrl} type="video/mp4" />
       </video>
     );
   } else if (imageUrl) {
+    // Aplicar optimizaciones de Cloudinary para landing pages
+    const optimizedImageUrl = getCloudinaryUrl(
+      imageUrl,
+      isMobile ? 'mobile-banner' : 'landing-banner'
+    );
+
     mediaContent = (
       <Image
-        src={imageUrl}
+        src={optimizedImageUrl}
         alt={banner.title || banner.name}
         width={1260}
-        height={621}
+        height={310}
         className="w-full h-auto"
         style={{ maxHeight: '310px', objectFit: 'cover' }}
         priority={isActive}

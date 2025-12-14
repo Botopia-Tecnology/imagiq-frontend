@@ -80,8 +80,7 @@ export default function MultimediaBannerSlide({
     mediaContent = (
       <video
         ref={videoRef}
-        className="w-full h-auto"
-        style={{ maxHeight: '310px', objectFit: 'cover' }}
+        className="w-full h-full object-cover"
         muted
         playsInline
         poster={optimizedPoster}
@@ -101,17 +100,15 @@ export default function MultimediaBannerSlide({
       <Image
         src={optimizedImageUrl}
         alt={banner.title || banner.name}
-        width={1260}
-        height={310}
-        className="w-full h-auto"
-        style={{ maxHeight: '310px', objectFit: 'cover' }}
+        fill
+        className="object-cover"
         priority={isActive}
       />
     );
   }
 
   return (
-    <div className="relative w-full" style={{ maxHeight: '310px', overflow: 'hidden' }}>
+    <div className="relative w-full aspect-[1260/310] overflow-hidden">
       {/* Fondo - Imagen o Video */}
       {mediaContent}
 

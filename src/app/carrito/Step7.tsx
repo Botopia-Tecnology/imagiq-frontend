@@ -1514,14 +1514,14 @@ export default function Step7({ onBack }: Step7Props) {
           )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Sección de resumen */}
           <div className="lg:col-span-2 space-y-4">
             {isLoadingCanPickUp ? (
               /* Skeleton de toda la sección mientras carga */
               <>
                 {/* Skeleton Método de pago */}
-                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
+                <div className="bg-white rounded-lg p-4 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1538,7 +1538,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Método de entrega */}
-                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
+                <div className="bg-white rounded-lg p-4 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1553,7 +1553,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Información del receptor */}
-                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
+                <div className="bg-white rounded-lg p-4 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1567,7 +1567,7 @@ export default function Step7({ onBack }: Step7Props) {
                 </div>
 
                 {/* Skeleton Datos de facturación */}
-                <div className="bg-white rounded-lg p-6 border border-gray-300 animate-pulse">
+                <div className="bg-white rounded-lg p-4 border border-gray-300 animate-pulse">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
@@ -1604,7 +1604,7 @@ export default function Step7({ onBack }: Step7Props) {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Método de pago */}
                   {paymentData && (
-                    <div className="bg-white rounded-lg p-6 border border-gray-300">
+                    <div className="bg-white rounded-lg p-4 border border-gray-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1635,19 +1635,19 @@ export default function Step7({ onBack }: Step7Props) {
                           {/* Mostrar detalles de tarjeta guardada */}
                           {paymentData.savedCard && (
                             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                              <div className="flex flex-col items-center gap-1 min-w-[60px]">
+                              <div className="flex flex-col items-start gap-1 min-w-[60px]">
                                 <CardBrandLogo
                                   brand={paymentData.savedCard.marca}
                                   size="md"
                                 />
                                 {paymentData.savedCard.nombre_titular && (
-                                  <span className="text-[10px] text-gray-500 uppercase text-center leading-tight">
+                                  <span className="text-[10px] text-gray-500 uppercase leading-tight">
                                     {paymentData.savedCard.nombre_titular}
                                   </span>
                                 )}
                               </div>
                               <div className="flex-1 flex flex-col justify-center">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-4 mb-1">
                                   <span className="font-semibold text-gray-900 tracking-wider">
                                     •••• {paymentData.savedCard.ultimos_dijitos}
                                   </span>
@@ -1690,7 +1690,7 @@ export default function Step7({ onBack }: Step7Props) {
                           {/* Mostrar detalles de tarjeta nueva */}
                           {paymentData.cardData && (
                             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                              <div className="flex flex-col items-center gap-1 min-w-[60px]">
+                              <div className="flex flex-col items-start gap-1 min-w-[60px]">
                                 {paymentData.cardData.brand && (
                                   <CardBrandLogo
                                     brand={paymentData.cardData.brand}
@@ -1698,13 +1698,13 @@ export default function Step7({ onBack }: Step7Props) {
                                   />
                                 )}
                                 {paymentData.cardData.cardHolder && (
-                                  <span className="text-[10px] text-gray-500 uppercase text-center leading-tight">
+                                  <span className="text-[10px] text-gray-500 uppercase leading-tight">
                                     {paymentData.cardData.cardHolder}
                                   </span>
                                 )}
                               </div>
                               <div className="flex-1 flex flex-col justify-center">
-                                <div className="flex items-center gap-2 mb-1">
+                                <div className="flex items-center gap-4 mb-1">
                                   <span className="font-semibold text-gray-900 tracking-wider">
                                     ••••{" "}
                                     {paymentData.cardData.cardNumber.slice(-4)}
@@ -1769,7 +1769,7 @@ export default function Step7({ onBack }: Step7Props) {
 
                   {/* Información del receptor */}
                   {recipientData && (
-                    <div className="bg-white rounded-lg p-6 border border-gray-300">
+                    <div className="bg-white rounded-lg p-4 border border-gray-300">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -1842,86 +1842,83 @@ export default function Step7({ onBack }: Step7Props) {
 
                 {/* Método de entrega */}
                 {shippingData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-300">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+                  <div className="bg-white rounded-lg p-4 border border-gray-300">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3 w-full">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
                           {shippingData.type === "delivery" ? (
                             <Truck className="w-5 h-5 text-gray-600" />
                           ) : (
                             <Store className="w-5 h-5 text-gray-600" />
                           )}
                         </div>
-                        <div>
-                          <h2 className="text-lg font-bold text-gray-900">
-                            Método de entrega
-                          </h2>
-                          <p className="text-sm text-gray-600">
-                            {shippingData.type === "delivery"
-                              ? "Envío a domicilio"
-                              : "Recogida en tienda"}
-                          </p>
+                        
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2">
+                          {/* Columna Izquierda: Título */}
+                          <div>
+                            <h2 className="text-lg font-bold text-gray-900">
+                              Método de entrega
+                            </h2>
+                            <p className="text-sm text-gray-600">
+                              {shippingData.type === "delivery"
+                                ? "Envío a domicilio"
+                                : "Recogida en tienda"}
+                            </p>
+                          </div>
+
+                          {/* Columna Derecha: Detalles */}
+                          <div className="text-sm">
+                            {shippingData.type === "delivery" ? (
+                              <div className="flex flex-col text-gray-700">
+                                <span className="font-medium text-gray-900 break-words">
+                                  {shippingData.address}
+                                </span>
+                                <div className="flex flex-col text-xs text-gray-600 mt-1">
+                                  {shippingData.city && (
+                                    <span>{shippingData.city}</span>
+                                  )}
+                                  {checkoutAddress?.pais && (
+                                    <span>{checkoutAddress.pais}</span>
+                                  )}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="flex flex-col text-gray-700">
+                                <span className="font-medium text-gray-900">
+                                  {shippingData.store?.name || "Recoger en tienda"}
+                                </span>
+                                {shippingData.store?.address && (
+                                  <span className="text-xs text-gray-600 mt-1">{shippingData.store.address}</span>
+                                )}
+                                {shippingData.store?.city && (
+                                  <span className="text-xs text-gray-500">{shippingData.store.city}</span>
+                                )}
+                                {shippingData.store?.schedule && (
+                                  <span className="text-xs text-gray-500 mt-1">
+                                    Horario: {shippingData.store.schedule}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
+
                       <button
                         type="button"
                         onClick={() => router.push("/carrito/step3")}
-                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium flex items-center gap-1 ml-4 flex-shrink-0"
                       >
                         <Edit2 className="w-4 h-4" />
                         Editar
                       </button>
                     </div>
-
-                    {shippingData.type === "delivery" && (
-                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                        <MapPin className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">
-                            {shippingData.address}
-                          </p>
-                          {shippingData.city && (
-                            <p className="text-xs text-gray-600 mt-1">
-                              {shippingData.city}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {shippingData.type === "pickup" && (
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                          <Store className="w-5 h-5 text-gray-400 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">
-                              {shippingData.store?.name || "Recoger en tienda"}
-                            </p>
-                            {shippingData.store?.address && (
-                              <p className="text-xs text-gray-600 mt-1">
-                                {shippingData.store.address}
-                              </p>
-                            )}
-                            {shippingData.store?.city && (
-                              <p className="text-xs text-gray-500">
-                                {shippingData.store.city}
-                              </p>
-                            )}
-                            {shippingData.store?.schedule && (
-                              <p className="text-xs text-gray-500 mt-1">
-                                Horario: {shippingData.store.schedule}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
 
                 {/* Datos de facturación */}
                 {billingData && (
-                  <div className="bg-white rounded-lg p-6 border border-gray-300">
+                  <div className="bg-white rounded-lg p-4 border border-gray-300">
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
@@ -2013,7 +2010,7 @@ export default function Step7({ onBack }: Step7Props) {
                           <p className="text-xs text-gray-500 mb-1">
                             Dirección de facturación
                           </p>
-                          <div className="flex items-start gap-2 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-start gap-4 p-3 bg-gray-50 rounded-lg">
                             <MapPin className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
                             <div>
                               <p className="text-sm font-medium text-gray-900">
@@ -2039,7 +2036,7 @@ export default function Step7({ onBack }: Step7Props) {
           <aside className="hidden md:block lg:col-span-1 space-y-4">
             {isLoadingCanPickUp ? (
               /* Skeleton del resumen mientras carga */
-              <div className="bg-white rounded-2xl p-6 shadow border border-[#E5E5E5] animate-pulse">
+              <div className="bg-white rounded-2xl p-4 shadow border border-[#E5E5E5] animate-pulse">
                 <div className="space-y-4">
                   {/* Título */}
                   <div className="h-6 w-40 bg-gray-200 rounded"></div>
@@ -2129,11 +2126,11 @@ export default function Step7({ onBack }: Step7Props) {
                   /* Skeleton mientras carga - incluye título */
                   <div className="animate-pulse space-y-3">
                     <div className="h-4 w-40 bg-blue-200 rounded mb-3"></div>
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-4">
                       <div className="h-4 w-16 bg-blue-200 rounded"></div>
                       <div className="h-4 w-32 bg-blue-200 rounded"></div>
                     </div>
-                    <div className="p-2 bg-white/50 rounded border border-blue-200">
+                    <div className="p-4 bg-white/50 rounded border border-blue-200">
                       <div className="h-3 w-40 bg-blue-200 rounded mb-2"></div>
                       <div className="space-y-1.5">
                         <div className="h-3 w-full bg-blue-200 rounded"></div>
@@ -2150,14 +2147,14 @@ export default function Step7({ onBack }: Step7Props) {
                     <div className="space-y-2 text-sm text-blue-800">
                       {shippingData?.type === "pickup" ? (
                         <>
-                          <div className="flex items-start gap-2">
+                          <div className="flex items-start gap-4">
                             <span className="font-semibold">Método:</span>
                             <span className="text-green-700 font-bold">
                               🏪 Recoge en tienda
                             </span>
                           </div>
                           {shippingData.store?.name && (
-                            <div className="flex items-start gap-2">
+                            <div className="flex items-start gap-4">
                               <span className="font-semibold">Tienda:</span>
                               <span>{shippingData.store.name}</span>
                             </div>
@@ -2165,7 +2162,7 @@ export default function Step7({ onBack }: Step7Props) {
                         </>
                       ) : (
                         <>
-                          <div className="flex items-start gap-2">
+                          <div className="flex items-start gap-4">
                             <span className="font-semibold">Método:</span>
                             {shippingVerification?.envio_imagiq === true ? (
                               <span className="text-green-700 font-bold">
@@ -2177,7 +2174,7 @@ export default function Step7({ onBack }: Step7Props) {
                               </span>
                             )}
                           </div>
-                          <div className="mt-2 p-2 bg-white/50 rounded border border-blue-200">
+                          <div className="mt-2 p-4 bg-white/50 rounded border border-blue-200">
                             <p className="text-xs font-semibold mb-1">
                               Detalles de verificación:
                             </p>
@@ -2283,7 +2280,7 @@ export default function Step7({ onBack }: Step7Props) {
 
           {/* Botón confirmar */}
           <button
-            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-2 ${isProcessing || !tradeInValidation.isValid
+            className={`w-full font-bold py-3 rounded-lg text-base transition text-white flex items-center justify-center gap-4 ${isProcessing || !tradeInValidation.isValid
               ? "bg-gray-400 cursor-not-allowed opacity-70"
               : "bg-[#222] hover:bg-[#333] cursor-pointer"
               }`}

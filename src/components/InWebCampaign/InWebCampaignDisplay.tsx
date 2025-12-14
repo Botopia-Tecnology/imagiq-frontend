@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { CampaignData } from "./types";
 
 interface InWebCampaignDisplayProps {
@@ -88,8 +88,140 @@ function SliderDisplay({
   onClose: () => void;
   onClick: () => void;
 }) {
+  const [translateX, setTranslateX] = useState(0);
+  const [translateY, setTranslateY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [swipeDirection, setSwipeDirection] = useState<'up' | 'left' | null>(null);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchStartTime = useRef<number | null>(null);
+  const SWIPE_THRESHOLD = 50; // Minimum distance in pixels to trigger swipe
+  const VELOCITY_THRESHOLD = 0.3; // Minimum velocity (px/ms) to trigger swipe
+  const DIRECTION_THRESHOLD = 20; // Minimum movement to determine direction
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    touchStartTime.current = Date.now();
+    setIsDragging(true);
+    setSwipeDirection(null);
+    setTranslateX(0);
+    setTranslateY(0);
+    // Prevent default to stop any potential scrolling when starting to interact with slider
+    e.stopPropagation();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const deltaX = currentX - touchStartX.current;
+    const deltaY = currentY - touchStartY.current;
+
+    const absDeltaX = Math.abs(deltaX);
+    const absDeltaY = Math.abs(deltaY);
+
+    // CRITICAL: Check for ANY upward movement (even 1px) FIRST
+    // This prevents ANY X-axis movement when there's upward component
+    if (deltaY < 0) {
+      // Any upward movement detected - immediately lock X to 0
+      if (swipeDirection !== 'up') {
+        setSwipeDirection('up');
+      }
+      setTranslateX(0); // ALWAYS lock X to 0 when moving up
+      setTranslateY(deltaY);
+      e.preventDefault();
+      e.stopPropagation();
+      return; // Exit early to prevent any other logic from running
+    }
+
+    // Only process left swipe if there's NO upward movement
+    if (deltaX < 0 && absDeltaX > DIRECTION_THRESHOLD && absDeltaX > absDeltaY * 1.2) {
+      if (!swipeDirection || swipeDirection !== 'left') {
+        setSwipeDirection('left');
+      }
+      setTranslateY(0);
+      setTranslateX(deltaX);
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    // If direction is already 'left', continue left swipe
+    if (swipeDirection === 'left' && deltaX < 0) {
+      setTranslateX(deltaX);
+      setTranslateY(0);
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleTouchEnd = () => {
+    if (touchStartX.current === null || touchStartY.current === null || touchStartTime.current === null) {
+      setIsDragging(false);
+      setSwipeDirection(null);
+      return;
+    }
+
+    const deltaX = translateX;
+    const deltaY = translateY;
+    const deltaTime = Date.now() - touchStartTime.current;
+    const velocityX = Math.abs(deltaX) / deltaTime;
+    const velocityY = Math.abs(deltaY) / deltaTime;
+
+    // Determine which direction to close based on the swipe direction
+    const shouldCloseUp = swipeDirection === 'up' && (deltaY < -SWIPE_THRESHOLD || (deltaY < 0 && velocityY > VELOCITY_THRESHOLD));
+    const shouldCloseLeft = swipeDirection === 'left' && (deltaX < -SWIPE_THRESHOLD || (deltaX < 0 && velocityX > VELOCITY_THRESHOLD));
+
+    if (shouldCloseUp) {
+      // Animate straight up
+      setTranslateY(-window.innerHeight);
+      setTranslateX(0);
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    } else if (shouldCloseLeft) {
+      // Animate straight left
+      setTranslateX(-window.innerWidth);
+      setTranslateY(0);
+      setTimeout(() => {
+        onClose();
+      }, 200);
+    } else {
+      // Snap back to original position
+      setTranslateX(0);
+      setTranslateY(0);
+    }
+
+    // Reset
+    touchStartX.current = null;
+    touchStartY.current = null;
+    touchStartTime.current = null;
+    setIsDragging(false);
+    setSwipeDirection(null);
+  };
+
+  // Apply transform when dragging or dismissing
+  // ALWAYS force translateX to 0 if there's ANY upward movement OR if direction is 'up'
+  const finalTranslateX = (swipeDirection === 'up' || translateY < 0) ? 0 : translateX;
+  const hasTransform = finalTranslateX !== 0 || translateY !== 0;
+  const transformStyle = hasTransform
+    ? { transform: `translate(calc(-50% + ${finalTranslateX}px), ${translateY}px)` }
+    : {};
+
   return (
-    <div className="fixed top-12 md:top-32 left-1/2 -translate-x-1/2 z-[999999] max-w-sm w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500">
+    <div 
+      className="fixed top-32 md:top-32 left-1/2 -translate-x-1/2 z-[999999] w-[calc(100%-1rem)] md:max-w-sm md:w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500"
+      style={{
+        ...transformStyle,
+        transition: hasTransform ? 'transform 0.2s ease-out' : undefined,
+        touchAction: isDragging ? 'none' : 'pan-y', // Prevent scrolling when dragging
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       <div className="relative z-10 max-w-md w-full">
         <button
           onClick={onClose}

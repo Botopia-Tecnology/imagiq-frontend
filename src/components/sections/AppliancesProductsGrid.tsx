@@ -9,87 +9,38 @@
 import { useMemo, useState, useCallback } from "react";
 import { useProducts } from "@/features/products/useProducts";
 import { useFavorites } from "@/features/products/useProducts";
-import ProductCard from "@/app/productos/components/ProductCard";
+import ProductCard, { ProductCardProps } from "@/app/productos/components/ProductCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import GuestDataModal from "@/app/productos/components/GuestDataModal";
 
-export default function AppliancesProductsGrid() {
-  // Obtener productos con límite amplio para incluir electrodomésticos
-  const filters = useMemo(
-    () => ({
-      limit: 300,
+interface AppliancesProductsGridProps {
+  initialProducts?: ProductCardProps[];
+}
+
+export default function AppliancesProductsGrid({ initialProducts }: AppliancesProductsGridProps = {}) {
+  // Solo hacer fetch si NO hay datos iniciales del servidor
+  const shouldFetch = !initialProducts || initialProducts.length === 0;
+
+  const filters = useMemo(() =>
+    shouldFetch ? {
+      limit: 4,
       page: 1,
       minStock: 1,
-    }),
-    []
-  );
+    } : null,
+  [shouldFetch]);
 
-  const { products: allProducts, loading } = useProducts(filters);
+  const { products: apiProducts, loading: apiLoading } = useProducts(filters);
+
+  // Usar productos iniciales si están disponibles, sino usar los de la API
+  const allProducts = initialProducts && initialProducts.length > 0 ? initialProducts : apiProducts;
+  const loading = initialProducts && initialProducts.length > 0 ? false : apiLoading;
   
   // Hook de favoritos
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-  
+
   // Estados para el modal de invitado
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
-
-  // Filtrar electrodomésticos específicos: Lavadora Bespoke AI, Nevera, Microondas, Aspiradora
-  const applianceProducts = useMemo(() => {
-    if (!allProducts || allProducts.length === 0) return [];
-
-    // Función auxiliar para verificar SKU
-    const hasMatchingSKU = (
-      product: { apiProduct?: { sku?: string[] } },
-      skuPrefix: string
-    ): boolean => {
-      const skuArray = product.apiProduct?.sku;
-      if (!Array.isArray(skuArray)) return false;
-      return skuArray.some((sku: string) => sku?.includes(skuPrefix));
-    };
-
-    const foundProducts = [];
-
-    // 1. Lavadora con SKU WD26FB8690BECO
-    const lavadora1 = allProducts.find(
-      (p) => p.id === "WD26FB8690BECO" || hasMatchingSKU(p, "WD26FB8690")
-    );
-    if (lavadora1) foundProducts.push(lavadora1);
-
-    // 2. Lavadora con SKU WF90F26ADSCO
-    const lavadora2 = allProducts.find(
-      (p) => p.id === "WF90F26ADSCO" || hasMatchingSKU(p, "WF90F26ADS")
-    );
-    if (lavadora2) foundProducts.push(lavadora2);
-
-    // 3. Aire acondicionado con SKU AC024MN4PKH/CB
-    const aireAcondicionado = allProducts.find(
-      (p) => p.id === "AC024MN4PKH/CB" || hasMatchingSKU(p, "AC024MN4PKH")
-    );
-    if (aireAcondicionado) foundProducts.push(aireAcondicionado);
-
-    // 4. Aspiradora más cara
-    const aspiradoras = allProducts.filter(
-      (p) =>
-        p.apiProduct?.subcategoria === "Aspiradoras" ||
-        p.apiProduct?.subcategoria === "Limpieza" ||
-        (p.apiProduct?.nombreMarket?.[0]?.toLowerCase().includes("aspiradora") ?? false)
-    );
-    const aspiradorasOrdenadas = aspiradoras.toSorted((a, b) => {
-      const precioA =
-        a.apiProduct?.precioeccommerce?.[0] ||
-        a.apiProduct?.precioNormal?.[0] ||
-        0;
-      const precioB =
-        b.apiProduct?.precioeccommerce?.[0] ||
-        b.apiProduct?.precioNormal?.[0] ||
-        0;
-      return precioB - precioA;
-    });
-    const aspiradoraMasCara = aspiradorasOrdenadas[0];
-    if (aspiradoraMasCara) foundProducts.push(aspiradoraMasCara);
-
-    return foundProducts;
-  }, [allProducts]);
   
   // Manejar toggle de favoritos
   const handleToggleFavorite = useCallback(async (productId: string) => {
@@ -182,7 +133,7 @@ export default function AppliancesProductsGrid() {
   }
 
   // Si no hay productos, no mostrar nada
-  if (!applianceProducts || applianceProducts.length === 0) {
+  if (!allProducts || allProducts.length === 0) {
     return null;
   }
 
@@ -190,9 +141,9 @@ export default function AppliancesProductsGrid() {
     <section className="w-full flex justify-center bg-white pt-[25px] pb-0">
       <div className="w-full" style={{ maxWidth: "1440px" }}>
         <div className="hidden md:grid md:grid-cols-4 gap-[25px]">
-          {applianceProducts.map((product) => (
-            <ProductCard 
-              key={product.id} 
+          {allProducts.map((product) => (
+            <ProductCard
+              key={product.id}
               {...product}
               isFavorite={isFavorite(product.id)}
               onToggleFavorite={handleToggleFavorite}
@@ -201,9 +152,12 @@ export default function AppliancesProductsGrid() {
         </div>
         <div className="md:hidden overflow-x-auto scrollbar-hide">
           <div className="flex gap-[25px] px-4">
-            {applianceProducts.map((product) => (
-              <div key={product.id} className="shrink-0 w-[280px]">
-                <ProductCard 
+            {allProducts.map((product) => (
+              <div
+                key={product.id}
+                className="shrink-0 w-[280px]"
+              >
+                <ProductCard
                   {...product}
                   isFavorite={isFavorite(product.id)}
                   onToggleFavorite={handleToggleFavorite}

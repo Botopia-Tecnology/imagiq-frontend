@@ -9,38 +9,38 @@
 import { useMemo, useState, useCallback } from "react";
 import { useProducts } from "@/features/products/useProducts";
 import { useFavorites } from "@/features/products/useProducts";
-import ProductCard from "@/app/productos/components/ProductCard";
+import ProductCard, { ProductCardProps } from "@/app/productos/components/ProductCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import GuestDataModal from "@/app/productos/components/GuestDataModal";
 
-export default function TVProductsGrid() {
-  // Obtener productos de la categoría Televisores
-  const filters = useMemo(() => ({
-    limit: 50,
-    page: 1,
-    minStock: 1,
-  }), []);
+interface TVProductsGridProps {
+  initialProducts?: ProductCardProps[];
+}
 
-  const { products: allProducts, loading } = useProducts(filters);
-  
+export default function TVProductsGrid({ initialProducts }: TVProductsGridProps = {}) {
+  // Solo hacer fetch si NO hay datos iniciales del servidor
+  const shouldFetch = !initialProducts || initialProducts.length === 0;
+
+  const filters = useMemo(() =>
+    shouldFetch ? {
+      limit: 4,
+      page: 1,
+      minStock: 1,
+    } : null,
+  [shouldFetch]);
+
+  const { products: apiProducts, loading: apiLoading } = useProducts(filters);
+
+  // Usar productos iniciales si están disponibles, sino usar los de la API
+  const tvProducts = initialProducts && initialProducts.length > 0 ? initialProducts : apiProducts;
+  const loading = initialProducts && initialProducts.length > 0 ? false : apiLoading;
+
   // Hook de favoritos
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();
-  
+
   // Estados para el modal de invitado
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [pendingFavorite, setPendingFavorite] = useState<string | null>(null);
-
-  // Filtrar televisores
-  const tvProducts = useMemo(() => {
-    if (!allProducts || allProducts.length === 0) return [];
-
-    const tvs = allProducts.filter(p =>
-      p.apiProduct?.subcategoria === 'Televisores' ||
-      p.apiProduct?.categoria === 'Televisores'
-    );
-
-    return tvs.slice(0, 4);
-  }, [allProducts]);
   
   // Manejar toggle de favoritos
   const handleToggleFavorite = useCallback(async (productId: string) => {

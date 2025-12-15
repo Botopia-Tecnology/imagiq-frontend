@@ -11,6 +11,7 @@ import { useHeroContext } from "@/contexts/HeroContext";
 import { positionToCSS, parseTextStyles } from "@/utils/bannerCoordinates";
 import Link from "next/link";
 import type { HeroBannerConfig, ContentBlock } from "@/types/banner";
+import { getCloudinaryUrl } from "@/lib/cloudinary";
 
 /**
  * Componente de contenido del Hero (reutilizable para desktop y mobile)
@@ -446,7 +447,7 @@ export default function HeroSection() {
                     playsInline
                     preload="metadata"
                     onEnded={isActive ? handleVideoEnd : undefined}
-                    poster={config.imageSrc || undefined}
+                    poster={config.imageSrc ? getCloudinaryUrl(config.imageSrc, 'hero-banner') : undefined}
                     style={{
                       opacity: bannerVideoEnded ? 0 : 1,
                       width: `${100 - scrollProgress * 8}%`,
@@ -462,7 +463,7 @@ export default function HeroSection() {
                     <div
                       className="absolute top-0 left-0 bg-cover bg-center"
                       style={{
-                        backgroundImage: `url(${config.imageSrc})`,
+                        backgroundImage: `url(${getCloudinaryUrl(config.imageSrc, 'hero-banner')})`,
                         opacity: bannerVideoEnded ? 1 : 0,
                         width: `${100 - scrollProgress * 8}%`,
                         height: '100%',
@@ -479,7 +480,7 @@ export default function HeroSection() {
                     key={`hero-desktop-image-${index}`}
                     className="w-full h-full bg-cover bg-center"
                     style={{
-                      backgroundImage: `url(${config.imageSrc})`,
+                      backgroundImage: `url(${getCloudinaryUrl(config.imageSrc, 'hero-banner')})`,
                       width: `${100 - scrollProgress * 8}%`,
                       marginLeft: `${scrollProgress * 4}%`,
                       marginRight: `${scrollProgress * 4}%`,
@@ -504,7 +505,7 @@ export default function HeroSection() {
                     playsInline
                     preload="metadata"
                     onEnded={isActive ? handleVideoEnd : undefined}
-                    poster={config.mobileImageSrc || undefined}
+                    poster={config.mobileImageSrc ? getCloudinaryUrl(config.mobileImageSrc, 'mobile-banner') : undefined}
                     style={{
                       opacity: bannerVideoEnded ? 0 : 1,
                       width: `${100 - scrollProgress * 8}%`,
@@ -520,7 +521,7 @@ export default function HeroSection() {
                     <div
                       className="absolute top-0 left-0 bg-cover bg-center"
                       style={{
-                        backgroundImage: `url(${config.mobileImageSrc})`,
+                        backgroundImage: `url(${getCloudinaryUrl(config.mobileImageSrc, 'mobile-banner')})`,
                         opacity: bannerVideoEnded ? 1 : 0,
                         width: `${100 - scrollProgress * 8}%`,
                         height: '100%',
@@ -537,7 +538,7 @@ export default function HeroSection() {
                     key={`hero-mobile-image-${index}`}
                     className="w-full h-full bg-cover bg-center"
                     style={{
-                      backgroundImage: `url(${config.mobileImageSrc})`,
+                      backgroundImage: `url(${getCloudinaryUrl(config.mobileImageSrc, 'mobile-banner')})`,
                       width: `${100 - scrollProgress * 8}%`,
                       marginLeft: `${scrollProgress * 4}%`,
                       marginRight: `${scrollProgress * 4}%`,

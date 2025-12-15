@@ -128,9 +128,16 @@ const initializeLeaflet = async () => {
   return L;
 };
 
-export default function LocationMap() {
+interface LocationMapProps {
+  initialStores?: FormattedStore[];
+}
+
+export default function LocationMap({ initialStores }: LocationMapProps = {}) {
   // Obtener tiendas desde el endpoint usando el hook
   const { stores: apiStores, loading: loadingStores } = useStores();
+
+  // Usar stores iniciales si están disponibles, sino usar los de la API
+  const effectiveStores = initialStores && initialStores.length > 0 ? initialStores : apiStores;
   const { selectedStoreCode, setSelectedStoreCode } = useSelectedStore();
 
   const [selectedCity, setSelectedCity] =
@@ -145,11 +152,11 @@ export default function LocationMap() {
 
   // Filtrar solo tiendas con coordenadas válidas
   const stores = useMemo(() => {
-    return apiStores.filter(
+    return effectiveStores.filter(
       (store) => store.latitud !== 0 && store.longitud !== 0 &&
                  !isNaN(store.latitud) && !isNaN(store.longitud)
     );
-  }, [apiStores]);
+  }, [effectiveStores]);
 
   // Initialize Leaflet
   useEffect(() => {

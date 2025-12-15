@@ -17,6 +17,7 @@ import { useDynamicBanner } from "@/hooks/useDynamicBanner";
 import { useCarouselController } from "@/hooks/useCarouselController";
 import { parsePosition, parseTextStyles } from "@/utils/bannerCoordinates";
 import type { Banner, BannerPosition, BannerTextStyles, ContentBlock } from "@/types/banner";
+import { getCloudinaryUrl, isBannerVideo } from "@/lib/cloudinary";
 
 type CSS = React.CSSProperties;
 
@@ -555,13 +556,18 @@ export default function DynamicBannerClean({
           // Renderizar media desktop
           let bannerDesktopMedia: React.ReactNode = null;
           if (banner.desktop_video_url) {
+            // Optimizar poster del video (si existe) pero mantener video sin transformaciones
+            const optimizedPoster = banner.desktop_image_url
+              ? getCloudinaryUrl(banner.desktop_image_url, 'hero-banner')
+              : undefined;
+
             bannerDesktopMedia = (
               <video
                 autoPlay={isActive}
                 muted
                 playsInline
                 preload="metadata"
-                poster={banner.desktop_image_url || undefined}
+                poster={optimizedPoster}
                 className="w-full h-full object-contain"
                 onEnded={isActive ? controller.handleVideoEnd : undefined}
                 key={`desktop-video-${banner.id}-${index}`}
@@ -570,10 +576,13 @@ export default function DynamicBannerClean({
               </video>
             );
           } else if (banner.desktop_image_url) {
+            // Aplicar optimizaciones de Cloudinary a imágenes
+            const optimizedImageUrl = getCloudinaryUrl(banner.desktop_image_url, 'hero-banner');
+
             bannerDesktopMedia = (
               <div
                 className="w-full h-full bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${banner.desktop_image_url})` }}
+                style={{ backgroundImage: `url(${optimizedImageUrl})` }}
                 key={`desktop-image-${banner.id}-${index}`}
               />
             );
@@ -582,13 +591,18 @@ export default function DynamicBannerClean({
           // Renderizar media mobile
           let bannerMobileMedia: React.ReactNode = null;
           if (banner.mobile_video_url) {
+            // Optimizar poster del video mobile (si existe) pero mantener video sin transformaciones
+            const optimizedMobilePoster = banner.mobile_image_url
+              ? getCloudinaryUrl(banner.mobile_image_url, 'mobile-banner')
+              : undefined;
+
             bannerMobileMedia = (
               <video
                 autoPlay={isActive}
                 muted
                 playsInline
                 preload="metadata"
-                poster={banner.mobile_image_url || undefined}
+                poster={optimizedMobilePoster}
                 className="w-full h-full object-contain"
                 onEnded={isActive ? controller.handleVideoEnd : undefined}
                 key={`mobile-video-${banner.id}-${index}`}
@@ -597,10 +611,13 @@ export default function DynamicBannerClean({
               </video>
             );
           } else if (banner.mobile_image_url) {
+            // Aplicar optimizaciones de Cloudinary a imágenes mobile
+            const optimizedMobileImageUrl = getCloudinaryUrl(banner.mobile_image_url, 'mobile-banner');
+
             bannerMobileMedia = (
               <div
                 className="w-full h-full bg-contain bg-center bg-no-repeat"
-                style={{ backgroundImage: `url(${banner.mobile_image_url})` }}
+                style={{ backgroundImage: `url(${optimizedMobileImageUrl})` }}
                 key={`mobile-image-${banner.id}-${index}`}
               />
             );

@@ -18,6 +18,7 @@ import {
 } from "react";
 import { apiClient } from "@/lib/api";
 import { User } from "@/types/user";
+import { addressesService } from "@/services/addresses.service";
 
 interface AuthContextType {
   user: User | null;
@@ -38,31 +39,80 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem("imagiq_user");
-    const savedToken = localStorage.getItem("imagiq_token");
+    const loadSession = async () => {
+      const savedUser = localStorage.getItem("imagiq_user");
+      const savedToken = localStorage.getItem("imagiq_token");
 
-    // Validar token: debe existir, no estar vacío, y tener formato JWT (3 partes separadas por punto)
-    const isTokenValid =
-      savedToken &&
-      typeof savedToken === "string" &&
-      savedToken.split(".").length === 3;
+      // Validar token: debe existir, no estar vacío, y tener formato JWT (3 partes separadas por punto)
+      const isTokenValid =
+        savedToken &&
+        typeof savedToken === "string" &&
+        savedToken.split(".").length === 3;
 
-    if (savedUser && isTokenValid) {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        apiClient.setAuthToken(savedToken!);
-      } catch (error) {
-        console.error("Error parsing saved user data:", error);
+      if (savedUser && isTokenValid) {
+        try {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          apiClient.setAuthToken(savedToken!);
+
+          // ✅ NUEVO: Cargar dirección predeterminada si no está en localStorage
+          const existingAddress = localStorage.getItem('checkout-address');
+          if (!existingAddress || existingAddress === 'null' || existingAddress === 'undefined') {
+            try {
+              console.log('🔄 [AuthContext] Cargando dirección predeterminada al restaurar sesión...');
+              const defaultAddress = await addressesService.getDefaultAddress("ENVIO");
+              
+              if (defaultAddress) {
+                console.log('✅ [AuthContext] Dirección predeterminada encontrada:', defaultAddress.nombreDireccion);
+                
+                // Convertir Address a formato de checkout-address (Direccion con snake_case)
+                const checkoutAddress = {
+                  id: defaultAddress.id,
+                  usuario_id: defaultAddress.usuarioId,
+                  email: userData.email || '',
+                  nombreDireccion: defaultAddress.nombreDireccion,
+                  linea_uno: defaultAddress.lineaUno || defaultAddress.direccionFormateada,
+                  codigo_dane: defaultAddress.codigo_dane,
+                  ciudad: defaultAddress.ciudad,
+                  departamento: defaultAddress.departamento || '',
+                  pais: defaultAddress.pais || 'Colombia',
+                  esPredeterminada: defaultAddress.esPredeterminada || false,
+                  // Campos adicionales que pueden ser útiles
+                  googlePlaceId: defaultAddress.googlePlaceId,
+                  direccionFormateada: defaultAddress.direccionFormateada,
+                  latitud: defaultAddress.latitud,
+                  longitud: defaultAddress.longitud,
+                };
+                
+                // Guardar en localStorage
+                localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+                localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
+                
+                console.log('✅ [AuthContext] Dirección guardada en localStorage');
+                
+                // Disparar evento para que los componentes se enteren
+                window.dispatchEvent(new Event('address-changed'));
+              } else {
+                console.log('⚠️ [AuthContext] Usuario no tiene dirección predeterminada');
+              }
+            } catch (error) {
+              console.error('❌ [AuthContext] Error cargando dirección predeterminada:', error);
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing saved user data:", error);
+          localStorage.removeItem("imagiq_token");
+          setUser(null);
+        }
+      } else {
+        // Si el token no es válido, limpiar sesión
         localStorage.removeItem("imagiq_token");
         setUser(null);
       }
-    } else {
-      // Si el token no es válido, limpiar sesión
-      localStorage.removeItem("imagiq_token");
-      setUser(null);
-    }
-    setIsLoading(false);
+      setIsLoading(false);
+    };
+
+    loadSession();
   }, []);
 
   // Login function
@@ -74,6 +124,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const token = localStorage.getItem("imagiq_token");
     if (token) {
       apiClient.setAuthToken(token);
+    }
+
+    // ✅ NUEVO: Cargar dirección predeterminada del usuario
+    try {
+      console.log('🔄 [AuthContext] Cargando dirección predeterminada del usuario...');
+      const defaultAddress = await addressesService.getDefaultAddress("ENVIO");
+      
+      if (defaultAddress) {
+        console.log('✅ [AuthContext] Dirección predeterminada encontrada:', defaultAddress.nombreDireccion);
+        
+        // Convertir Address a formato de checkout-address (Direccion con snake_case)
+        const checkoutAddress = {
+          id: defaultAddress.id,
+          usuario_id: defaultAddress.usuarioId,
+          email: userData.email || '',
+          nombreDireccion: defaultAddress.nombreDireccion,
+          linea_uno: defaultAddress.lineaUno || defaultAddress.direccionFormateada,
+          codigo_dane: defaultAddress.codigo_dane,
+          ciudad: defaultAddress.ciudad,
+          departamento: defaultAddress.departamento || '',
+          pais: defaultAddress.pais || 'Colombia',
+          esPredeterminada: defaultAddress.esPredeterminada || false,
+          // Campos adicionales que pueden ser útiles
+          googlePlaceId: defaultAddress.googlePlaceId,
+          direccionFormateada: defaultAddress.direccionFormateada,
+          latitud: defaultAddress.latitud,
+          longitud: defaultAddress.longitud,
+        };
+        
+        // Guardar en localStorage
+        localStorage.setItem('checkout-address', JSON.stringify(checkoutAddress));
+        localStorage.setItem('imagiq_default_address', JSON.stringify(checkoutAddress));
+        
+        console.log('✅ [AuthContext] Dirección guardada en localStorage');
+        
+        // Disparar evento para que los componentes se enteren
+        window.dispatchEvent(new Event('address-changed'));
+      } else {
+        console.log('⚠️ [AuthContext] Usuario no tiene dirección predeterminada');
+      }
+    } catch (error) {
+      console.error('❌ [AuthContext] Error cargando dirección predeterminada:', error);
+      // No lanzar error, solo loguear. El usuario puede agregar dirección después
     }
   };
 

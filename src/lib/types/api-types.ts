@@ -178,5 +178,4 @@ export interface Campaign {
   fecha_inicio: Date;
   fecha_final: Date;
   activo: boolean;
-  [key: string]: any;
 }

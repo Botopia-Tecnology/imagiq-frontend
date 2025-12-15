@@ -226,15 +226,22 @@ export default function Step4OrderSummary({
         const savedAddress = globalThis.window.localStorage.getItem(
           "checkout-address"
         );
+        console.log('🔍 [Step4OrderSummary] checkout-address raw:', savedAddress);
         if (savedAddress && savedAddress !== "undefined" && savedAddress !== "null") {
           const parsed = JSON.parse(savedAddress) as { id?: string; ciudad?: string; linea_uno?: string };
+          console.log('🔍 [Step4OrderSummary] checkout-address parsed:', { ciudad: parsed.ciudad, linea_uno: parsed.linea_uno, id: parsed.id });
           // Verificar que la dirección tenga al menos los campos mínimos (ciudad y línea_uno)
           if (parsed.ciudad && parsed.linea_uno) {
             hasValidAddress = true;
             if (parsed?.id) {
               addressId = parsed.id;
             }
+            console.log('✅ [Step4OrderSummary] Dirección válida encontrada');
+          } else {
+            console.log('⚠️ [Step4OrderSummary] Dirección sin ciudad o linea_uno');
           }
+        } else {
+          console.log('⚠️ [Step4OrderSummary] No hay checkout-address válido');
         }
       } catch (error) {
         console.error(
@@ -246,6 +253,7 @@ export default function Step4OrderSummary({
 
     // Si no hay dirección válida, no mostrar loading, solo mostrar null
     if (!hasValidAddress) {
+      console.log('❌ [Step4OrderSummary] No hay dirección válida, retornando null');
       setGlobalCanPickUp(null);
       setIsLoadingCanPickUp(false);
       return;
@@ -258,23 +266,23 @@ export default function Step4OrderSummary({
       addressId,
     });
 
-    // console.log('🔑 [Step4OrderSummary] Buscando en caché con clave:', {
-    //   userId,
-    //   addressId,
-    //   productsCount: productsToCheck.length,
-    //   cacheKey: cacheKey.substring(0, 100) + '...'
-    // });
+    console.log('🔑 [Step4OrderSummary] Buscando en caché con clave:', {
+      userId,
+      addressId,
+      productsCount: productsToCheck.length,
+      cacheKey: cacheKey.substring(0, 100) + '...'
+    });
 
     const cachedValue = getGlobalCanPickUpFromCache(cacheKey);
 
     if (cachedValue !== null) {
-      // console.log('✅ [Step4OrderSummary] Valor encontrado en caché:', cachedValue);
+      console.log('✅ [Step4OrderSummary] Valor encontrado en caché:', cachedValue);
       setGlobalCanPickUp(cachedValue);
       setIsLoadingCanPickUp(false);
       return;
     }
 
-    // console.log('⚠️ [Step4OrderSummary] No hay valor en caché para esta clave');
+    console.log('⚠️ [Step4OrderSummary] No hay valor en caché para esta clave');
     // Si no hay caché disponible, establecer loading=true para mostrar "⏳ loading..."
     // mientras esperamos a que el endpoint responda y llene el caché
     // El caché se llenará cuando useDelivery en Step1 obtenga la respuesta

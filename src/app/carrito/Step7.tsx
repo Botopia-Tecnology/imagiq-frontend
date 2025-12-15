@@ -1265,6 +1265,7 @@ export default function Step7({ onBack }: Step7Props) {
             currency: "COP",
             dues: String(paymentData.installments || "1"),
             items: products.map((p) => ({
+              id: String(p.id),
               sku: String(p.sku),
               name: String(p.name),
               quantity: String(p.quantity),
@@ -1368,6 +1369,7 @@ export default function Step7({ onBack }: Step7Props) {
             shippingAmount: String(calculations.shipping),
             currency: "COP",
             items: products.map((p) => ({
+              id: String(p.id),
               sku: String(p.sku),
               name: String(p.name),
               quantity: String(p.quantity),
@@ -1421,6 +1423,7 @@ export default function Step7({ onBack }: Step7Props) {
             shippingAmount: String(calculations.shipping),
             currency: "COP",
             items: products.map((p) => ({
+              id: String(p.id),
               sku: String(p.sku),
               name: String(p.name),
               quantity: String(p.quantity),
@@ -2116,7 +2119,7 @@ export default function Step7({ onBack }: Step7Props) {
                 shippingVerification={shippingVerification}
                 deliveryMethod={shippingData?.type}
                 error={error}
-                shouldCalculateCanPickUp={false}
+                shouldCalculateCanPickUp={true}
               />
             )}
             {/* Información del método de envío - Solo se muestra cuando NEXT_PUBLIC_SHOW_PRODUCT_CODES es true */}

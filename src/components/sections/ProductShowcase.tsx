@@ -1,3 +1,5 @@
+"use client";
+
 import { useMemo, useState, useCallback } from "react";
 import { useProducts } from "@/features/products/useProducts";
 import { useFavorites } from "@/features/products/useProducts";
@@ -5,15 +7,27 @@ import ProductCard, { ProductCardProps } from "@/app/productos/components/Produc
 import SkeletonCard from "@/components/SkeletonCard";
 import GuestDataModal from "@/app/productos/components/GuestDataModal";
 
-export default function ProductShowcase() {
-  // Obtener productos con límite amplio que incluya diferentes categorías
-  const filters = useMemo(() => ({
-    limit: 300, // Límite muy alto para asegurar que incluya todos los productos
-    page: 1,
-    minStock: 1,
-  }), []);
+interface ProductShowcaseProps {
+  initialProducts?: ProductCardProps[];
+}
 
-  const { products: allProducts, loading } = useProducts(filters);
+export default function ProductShowcase({ initialProducts }: ProductShowcaseProps = {}) {
+  // Solo hacer fetch si NO hay datos iniciales del servidor
+  const shouldFetch = !initialProducts || initialProducts.length === 0;
+
+  const filters = useMemo(() =>
+    shouldFetch ? {
+      limit: 300, // Límite muy alto para asegurar que incluya todos los productos
+      page: 1,
+      minStock: 1,
+    } : null,
+  [shouldFetch]);
+
+  const { products: apiProducts, loading: apiLoading } = useProducts(filters);
+
+  // Usar productos iniciales si están disponibles, sino usar los de la API
+  const allProducts = initialProducts && initialProducts.length > 0 ? initialProducts : apiProducts;
+  const loading = initialProducts && initialProducts.length > 0 ? false : apiLoading;
 
   // Hook de favoritos
   const { addToFavorites, removeFromFavorites, isFavorite } = useFavorites();

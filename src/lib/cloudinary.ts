@@ -13,12 +13,20 @@ const CLOUDINARY_BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}
  * Tipos de transformación disponibles por contexto de uso
  */
 export type ImageTransformType =
-  | 'catalog'          // Grid de productos (400x400)
-  | 'product-main'     // Vista principal de producto (800x800)
-  | 'product-detail'   // Detalle ampliado (1000x1000)
-  | 'thumbnail'        // Miniaturas (150x150)
-  | 'comparison'       // Comparación de productos (300x300)
-  | 'hero'             // Banners/Hero sections (1200x600)
+  // Productos
+  | 'catalog'          // Grid de productos (1000x1000)
+  | 'product-main'     // Vista principal de producto (1200x1200)
+  | 'product-detail'   // Detalle ampliado (1200x1200)
+  | 'thumbnail'        // Miniaturas (200x200)
+  | 'comparison'       // Comparación de productos (400x400)
+  // Banners
+  | 'hero'             // Banners/Hero sections legacy (1600x800)
+  | 'hero-banner'      // Banner principal/Hero (1440x810)
+  | 'catalog-banner'   // Banners intercalados en grids HORIZONTALES (800x600)
+  | 'vertical-banner'  // Banners verticales aspect-[9/16] (600x1067)
+  | 'landing-banner'   // Landing pages full-width (1600x900)
+  | 'mobile-banner'    // Banners mobile (750x1000)
+  // General
   | 'original';        // Sin transformación
 
 /**
@@ -54,8 +62,31 @@ const TRANSFORM_CONFIGS: Record<ImageTransformType, string> = {
   // Comparación - 400x400, calidad óptima
   comparison: 'f_auto,q_90,c_pad,g_auto,w_400,h_400,b_auto:predominant',
 
-  // Hero/Banner - 1600x800, alta calidad para heros
+  // Hero/Banner legacy - 1600x800, alta calidad (mantener para compatibilidad)
   hero: 'f_auto,q_95,c_pad,g_auto,w_1600,h_800,fl_progressive',
+
+  // Banner Hero/Principal - 1440x810, calidad premium para banners principales
+  // c_fill: Relleno completo evitando espacios vacíos
+  // g_auto: Auto-enfoque en contenido importante
+  'hero-banner': 'f_auto,q_95,c_fill,g_auto,w_1440,h_810,fl_progressive',
+
+  // Banner Catálogo HORIZONTAL - 800x600, banners intercalados en grids de productos
+  // Calidad balanceada para múltiples banners por página
+  'catalog-banner': 'f_auto,q_90,c_fill,g_auto,w_800,h_600,fl_progressive',
+
+  // Banner VERTICAL - 600x1067 (aspect ratio 9:16), banners verticales tipo stories
+  // c_fit: Mantiene imagen completa sin recortar, escala para caber dentro de las dimensiones
+  // Sin g_auto porque c_fit no necesita gravity
+  'vertical-banner': 'f_auto,q_90,c_fit,w_600,h_1067,fl_progressive',
+
+  // Banner Landing - 1210x310px, dimensiones del dashboard
+  // c_fill: Escala y recorta para llenar exactamente 1210x310, enfocando contenido importante
+  // g_auto: Auto-enfoque en contenido importante para recorte inteligente
+  'landing-banner': 'f_auto,q_100,c_pad,w_2520,h_620,fl_progressive',
+
+  // Banner Mobile - 414x310px, dimensiones del dashboard
+  // c_fill: Escala y recorta para llenar exactamente las dimensiones móviles
+  'mobile-banner': 'f_auto,q_100,c_pad,w_828,h_620,fl_progressive',
 
   // Original - alta calidad sin transformación de tamaño
   original: 'f_auto,q_95,fl_progressive',
@@ -196,12 +227,20 @@ export function getResponsiveSrcSet(
  * Dimensiones optimizadas para balance calidad/rendimiento
  */
 export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; height: number }> = {
+  // Productos
   catalog: { width: 1000, height: 1000 },
   'product-main': { width: 1200, height: 1200 },
   'product-detail': { width: 1200, height: 1200 },
   thumbnail: { width: 200, height: 200 },
   comparison: { width: 400, height: 400 },
+  // Banners
   hero: { width: 1600, height: 800 },
+  'hero-banner': { width: 1440, height: 810 },
+  'catalog-banner': { width: 800, height: 600 },
+  'vertical-banner': { width: 600, height: 1067 }, // Aspect ratio 9:16
+  'landing-banner': { width: 1210, height: 310 }, // Dimensiones del dashboard
+  'mobile-banner': { width: 414, height: 310 }, // Dimensiones del dashboard
+  // General
   original: { width: 1200, height: 1200 },
 };
 
@@ -209,3 +248,26 @@ export const IMAGE_DIMENSIONS: Record<ImageTransformType, { width: number; heigh
  * Alias para getCloudinaryUrl (para compatibilidad)
  */
 export const getCloudinaryImageUrl = getCloudinaryUrl;
+
+/**
+ * Verifica si un banner contiene video en lugar de imagen
+ * Útil para evitar aplicar transformaciones de imagen a videos
+ *
+ * @param banner - Objeto banner con URLs de media
+ * @returns true si el banner tiene video, false si es imagen
+ *
+ * @example
+ * ```ts
+ * if (isBannerVideo(banner)) {
+ *   // Renderizar video sin transformaciones
+ * } else {
+ *   // Aplicar optimizaciones de imagen
+ * }
+ * ```
+ */
+export function isBannerVideo(banner: {
+  desktop_video_url?: string | null;
+  mobile_video_url?: string | null;
+}): boolean {
+  return Boolean(banner.desktop_video_url || banner.mobile_video_url);
+}

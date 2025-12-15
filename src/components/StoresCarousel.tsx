@@ -11,9 +11,18 @@ import { ChevronLeft, ChevronRight, Navigation, Search } from "lucide-react";
 import Image from "next/image";
 import { useSelectedStore } from "@/contexts/SelectedStoreContext";
 import StoreCarouselSkeleton from "./StoreCarouselSkeleton";
+import type { FormattedStore } from "@/types/store";
 
-export default function StoresCarousel() {
-  const { stores: apiStores, loading } = useStores();
+interface StoresCarouselProps {
+  initialStores?: FormattedStore[];
+}
+
+export default function StoresCarousel({ initialStores }: StoresCarouselProps = {}) {
+  const { stores: apiStores, loading: apiLoading } = useStores();
+
+  // Usar stores iniciales si están disponibles, sino usar los de la API
+  const effectiveStores = initialStores && initialStores.length > 0 ? initialStores : apiStores;
+  const loading = initialStores && initialStores.length > 0 ? false : apiLoading;
   const [selectedCity, setSelectedCity] = useState<string>("Todas las ciudades");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isSearchingNearby, setIsSearchingNearby] = useState(false);
@@ -23,14 +32,14 @@ export default function StoresCarousel() {
 
   // Filtrar solo tiendas con coordenadas válidas
   const stores = useMemo(() => {
-    return apiStores.filter(
+    return effectiveStores.filter(
       (store) =>
         store.latitud !== 0 &&
         store.longitud !== 0 &&
         !isNaN(store.latitud) &&
         !isNaN(store.longitud)
     );
-  }, [apiStores]);
+  }, [effectiveStores]);
 
   // Obtener ciudades únicas
   const cities = useMemo(

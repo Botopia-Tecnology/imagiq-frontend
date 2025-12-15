@@ -16,6 +16,9 @@ interface OTPStepProps {
   onChangeEmail: (newEmail: string) => void;
   onChangePhone: (newPhone: string) => void;
   disabled?: boolean;
+  showSendButton?: boolean; // Para mostrar botón de enviar en Step2
+  onVerifyOTP?: () => void; // Para verificar el código
+  loading?: boolean; // Estado de carga
 }
 
 export function OTPStep({
@@ -30,6 +33,9 @@ export function OTPStep({
   onChangeEmail,
   onChangePhone,
   disabled,
+  showSendButton = false,
+  onVerifyOTP,
+  loading = false,
 }: OTPStepProps) {
   const [editMode, setEditMode] = useState<'email' | 'phone' | null>(null);
   const [tempEmail, setTempEmail] = useState(email);
@@ -176,7 +182,7 @@ export function OTPStep({
         </div>
 
         {editMode && (
-          <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+          <p className="text-xs text-gray-800 bg-gray-100 p-2 rounded">
             Si cambias estos datos, deberás reenviar un nuevo código de verificación.
           </p>
         )}
@@ -191,38 +197,54 @@ export function OTPStep({
         </p>
 
         {!otpSent && (
-          <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <button
-              type="button"
-              onClick={() => onMethodChange('email')}
-              disabled={disabled}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
-                sendMethod === 'email'
-                  ? 'border-black bg-black text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-              }`}
-            >
-              <Mail className="w-5 h-5" />
-              <span className="font-medium">Email</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => onMethodChange('whatsapp')}
-              disabled={disabled}
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
-                sendMethod === 'whatsapp'
-                  ? 'border-black bg-black text-white'
-                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-              }`}
-            >
-              <MessageCircle className="w-5 h-5" />
-              <span className="font-medium">WhatsApp</span>
-            </button>
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
+              <button
+                type="button"
+                onClick={() => onMethodChange('email')}
+                disabled={disabled}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
+                  sendMethod === 'email'
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                <Mail className="w-5 h-5" />
+                <span className="font-medium">Email</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onMethodChange('whatsapp')}
+                disabled={disabled}
+                className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition ${
+                  sendMethod === 'whatsapp'
+                    ? 'border-black bg-black text-white'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                }`}
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="font-medium">WhatsApp</span>
+              </button>
+            </div>
+            
+            {/* Botón de enviar código (solo en Step2) */}
+            {showSendButton && (
+              <div className="flex justify-center">
+                <Button
+                  type="button"
+                  onClick={() => onSendOTP(sendMethod)}
+                  disabled={disabled}
+                  className="bg-black text-white hover:bg-gray-800 disabled:opacity-50 font-bold py-3 px-8 text-base rounded-lg"
+                >
+                  Enviar código
+                </Button>
+              </div>
+            )}
           </div>
         )}
 
         {otpSent && (
-          <div className="max-w-xs mx-auto space-y-4">
+          <div className="max-w-md mx-auto space-y-4">
             <div className="space-y-2">
               <Label htmlFor="otp">Código de verificación</Label>
               <Input
@@ -235,15 +257,29 @@ export function OTPStep({
                 maxLength={6}
               />
             </div>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => onSendOTP(sendMethod)}
-              disabled={disabled}
-              className="text-sm"
-            >
-              Reenviar código
-            </Button>
+            
+            {/* Botones en la misma fila */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                type="button"
+                onClick={() => onSendOTP(sendMethod)}
+                disabled={disabled || loading}
+                className="bg-black text-white hover:bg-gray-800 disabled:opacity-50 font-bold py-3 px-8 text-base rounded-lg"
+              >
+                Reenviar código
+              </Button>
+              
+              {onVerifyOTP && (
+                <Button
+                  type="button"
+                  onClick={onVerifyOTP}
+                  disabled={disabled || loading || otpCode.length !== 6}
+                  className="bg-black text-white hover:bg-gray-800 disabled:opacity-50 font-bold py-3 px-8 text-base rounded-lg"
+                >
+                  {loading ? "Verificando..." : "Verificar código"}
+                </Button>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -15,6 +15,7 @@ import TradeInCompletedSummary from "@/app/productos/dispositivos-moviles/detall
 import TradeInModal from "@/app/productos/dispositivos-moviles/detalles-producto/estreno-y-entrego/TradeInModal";
 import AddNewAddressForm from "./components/AddNewAddressForm";
 import type { Address } from "@/types/address";
+import { OTPStep } from "@/app/login/create-account/components/OTPStep";
 import {
   validateTradeInProducts,
   getTradeInValidationMessage,
@@ -92,6 +93,13 @@ export default function Step2({
 
   // Estado para verificar si ya se registró como invitado
   const [isRegisteredAsGuest, setIsRegisteredAsGuest] = useState(false);
+
+  // Estados para el flujo OTP
+  const [guestStep, setGuestStep] = useState<'form' | 'otp' | 'verified'>('form');
+  const [otpCode, setOtpCode] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [sendMethod, setSendMethod] = useState<'email' | 'whatsapp'>('whatsapp');
+  const [guestUserId, setGuestUserId] = useState<string | null>(null);
 
   // Estado para verificar si el formulario de dirección está completo y válido
   const [isAddressFormValid, setIsAddressFormValid] = useState(false);
@@ -211,7 +219,7 @@ export default function Step2({
 
   /**
    * Maneja el envío del formulario de invitado.
-   * Valida los campos, guarda la información en localStorage y abre el modal para agregar dirección.
+   * Solo registra sin verificar y envía OTP. La cuenta se crea después de verificar OTP.
    */
   const handleGuestSubmit = async (e?: React.FormEvent) => {
     if (e) {
@@ -227,59 +235,54 @@ export default function Step2({
       return;
     }
 
-    // Guardar dirección y cédula en localStorage para autocompletar en Step3 y Step4
-    if (globalThis.window !== undefined) {
-      globalThis.window.localStorage.setItem(
-        "checkout-document",
-        guestForm.cedula
-      );
-    }
-
-    // Guardar en localStorage bajo la clave 'guest-payment-info'
     setLoading(true);
     try {
-      const data = await apiPost<GuestUserResponse>("/api/users/guest/new", {
-        guestInfo: {
-          nombre: guestForm.nombre,
-          apellido: guestForm.apellido,
-          email: guestForm.email,
-          numero_documento: guestForm.cedula,
-          telefono: guestForm.celular,
-          tipo_documento: guestForm.tipo_documento,
-        },
+      // 1. Registrar usuario sin verificar como invitado (rol 3, sin contraseña)
+      const registerResult = await apiPost<{ message: string; userId: string }>("/api/auth/register-unverified", {
+        email: guestForm.email.toLowerCase(),
+        nombre: guestForm.nombre,
+        apellido: guestForm.apellido,
+        contrasena: "", // Cuenta invitado sin contraseña → rol 3
+        // fecha_nacimiento no se envía (opcional para invitados)
+        telefono: guestForm.celular,
+        codigo_pais: "57",
+        tipo_documento: guestForm.tipo_documento,
+        numero_documento: guestForm.cedula,
       });
-      // IMPORTANTE: Preservar el carrito antes de guardar el usuario
-      const currentCart = localStorage.getItem("cart-items");
-      
-      // IMPORTANTE: NO guardar checkout-address aquí cuando se registra como invitado
-      // Solo guardar cuando el usuario agregue una dirección completa en el formulario
-      // Esto evita que se calcule candidate stores antes de tiempo
-      // localStorage.setItem("checkout-address", JSON.stringify(data.address));
-      localStorage.setItem("imagiq_user", JSON.stringify(data.user));
 
-      // IMPORTANTE: Restaurar el carrito después de guardar el usuario (por si el backend lo limpió)
-      if (currentCart) {
+      // Guardar userId temporalmente (solo en estado, no en localStorage todavía)
+      setGuestUserId(registerResult.userId);
+
+      // 2. Enviar OTP por WhatsApp (método por defecto)
+      try {
+        await apiPost("/api/auth/otp/send-register", {
+          telefono: guestForm.celular,
+          metodo: "whatsapp",
+        });
+        setOtpSent(true);
+      } catch (otpError) {
+        // Si falla WhatsApp, intentar por email
         try {
-          const cartData = JSON.parse(currentCart);
-          if (Array.isArray(cartData) && cartData.length > 0) {
-            localStorage.setItem("cart-items", currentCart);
-            // Disparar evento para sincronizar el carrito
-            if (globalThis.window) {
-              globalThis.window.dispatchEvent(new Event("storage"));
-              globalThis.window.dispatchEvent(
-                new CustomEvent("localStorageChange", {
-                  detail: { key: "cart-items" },
-                })
-              );
-            }
-          }
-        } catch (error) {
-          console.error("Error restaurando carrito:", error);
+          await apiPost("/api/auth/otp/send-email-register", {
+            email: guestForm.email,
+          });
+          setSendMethod('email');
+          setOtpSent(true);
+        } catch (emailError) {
+          throw new Error("No se pudo enviar el código de verificación. Por favor intenta de nuevo.");
         }
       }
 
-      // Marcar como registrado - el formulario de dirección aparecerá automáticamente
-      setIsRegisteredAsGuest(true);
+      // 3. Guardar estado temporal en sessionStorage (se elimina al cerrar navegador)
+      sessionStorage.setItem("guest-otp-process", JSON.stringify({
+        guestForm,
+        userId: registerResult.userId,
+        sendMethod,
+        timestamp: Date.now(),
+      }));
+
+      // 4. Cambiar a paso de OTP
+      setGuestStep('otp');
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -299,20 +302,16 @@ export default function Step2({
         errorMessage = String(error);
       }
 
-      // Verificar si el error es porque el correo ya está asociado a una cuenta
+      // Verificar el tipo de error específico
       const lowerErrorMessage = errorMessage.toLowerCase();
+      
+      // Error de EMAIL
       if (
-        lowerErrorMessage.includes("internal server error") ||
-        lowerErrorMessage.includes("ya existe") ||
-        lowerErrorMessage.includes("ya está registrado") ||
-        lowerErrorMessage.includes("already exists") ||
-        (lowerErrorMessage.includes("email") &&
-          (lowerErrorMessage.includes("registered") ||
-            lowerErrorMessage.includes("existe"))) ||
-        lowerErrorMessage.includes("usuario ya existe") ||
-        lowerErrorMessage.includes("correo ya existe") ||
-        lowerErrorMessage.includes("duplicate") ||
-        lowerErrorMessage.includes("conflict")
+        (lowerErrorMessage.includes("email") || lowerErrorMessage.includes("correo")) &&
+        (lowerErrorMessage.includes("ya está registrado") ||
+          lowerErrorMessage.includes("ya existe") ||
+          lowerErrorMessage.includes("registered") ||
+          lowerErrorMessage.includes("duplicate"))
       ) {
         setError(
           `El correo ${guestForm.email} ya está asociado a una cuenta. Por favor, inicia sesión para continuar.`
@@ -321,6 +320,34 @@ export default function Step2({
           ...prev,
           email:
             "Este correo ya está registrado. Inicia sesión para continuar.",
+        }));
+        return;
+      }
+      
+      // Error de TELÉFONO
+      if (
+        (lowerErrorMessage.includes("teléfono") || lowerErrorMessage.includes("telefono") || lowerErrorMessage.includes("celular")) &&
+        (lowerErrorMessage.includes("ya está registrado") ||
+          lowerErrorMessage.includes("ya existe"))
+      ) {
+        setError(errorMessage);
+        setFieldErrors((prev) => ({
+          ...prev,
+          celular: errorMessage,
+        }));
+        return;
+      }
+      
+      // Error de DOCUMENTO
+      if (
+        (lowerErrorMessage.includes("documento") || lowerErrorMessage.includes("cédula") || lowerErrorMessage.includes("cedula")) &&
+        (lowerErrorMessage.includes("ya está registrado") ||
+          lowerErrorMessage.includes("ya existe"))
+      ) {
+        setError(errorMessage);
+        setFieldErrors((prev) => ({
+          ...prev,
+          cedula: errorMessage,
         }));
         return;
       }
@@ -338,6 +365,134 @@ export default function Step2({
         );
       }
       return;
+    }
+  };
+
+  /**
+   * Maneja el envío de OTP
+   */
+  const handleSendOTP = async (method?: 'email' | 'whatsapp') => {
+    if (!guestUserId) {
+      setError("No hay un proceso de registro en curso");
+      return;
+    }
+
+    const methodToUse = method || sendMethod;
+    setLoading(true);
+    setError("");
+
+    try {
+      if (methodToUse === 'email') {
+        await apiPost("/api/auth/otp/send-email-register", {
+          email: guestForm.email,
+        });
+      } else {
+        await apiPost("/api/auth/otp/send-register", {
+          telefono: guestForm.celular,
+          metodo: "whatsapp",
+        });
+      }
+      setOtpSent(true);
+      setSendMethod(methodToUse);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al enviar código de verificación";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * Maneja la verificación del OTP y completa el registro del invitado
+   */
+  const handleVerifyOTP = async () => {
+    if (!otpCode || otpCode.length !== 6) {
+      setError("El código debe tener 6 dígitos");
+      return;
+    }
+
+    if (!guestUserId) {
+      setError("No hay un proceso de registro en curso");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      let result: {
+        access_token: string;
+        user: {
+          id: string;
+          nombre: string;
+          apellido: string;
+          email: string;
+          numero_documento: string;
+          telefono: string;
+        };
+      };
+
+      if (sendMethod === 'email') {
+        result = await apiPost("/api/auth/otp/verify-email", {
+          email: guestForm.email,
+          codigo: otpCode,
+        });
+      } else {
+        result = await apiPost("/api/auth/otp/verify-register", {
+          telefono: guestForm.celular,
+          codigo: otpCode,
+        });
+      }
+
+      // IMPORTANTE: Solo ahora guardamos en localStorage después de verificar OTP
+      if (result.access_token && result.user) {
+        // Preservar el carrito antes de guardar el usuario
+        const currentCart = localStorage.getItem("cart-items");
+
+        // Guardar token y usuario - cuenta de invitado creada y verificada
+        localStorage.setItem("imagiq_token", result.access_token);
+        localStorage.setItem("imagiq_user", JSON.stringify(result.user));
+
+        // Guardar cédula para autocompletar
+        if (globalThis.window !== undefined) {
+          globalThis.window.localStorage.setItem(
+            "checkout-document",
+            guestForm.cedula
+          );
+        }
+
+        // Restaurar el carrito después de guardar el usuario
+        if (currentCart) {
+          try {
+            const cartData = JSON.parse(currentCart);
+            if (Array.isArray(cartData) && cartData.length > 0) {
+              localStorage.setItem("cart-items", currentCart);
+              if (globalThis.window) {
+                globalThis.window.dispatchEvent(new Event("storage"));
+                globalThis.window.dispatchEvent(
+                  new CustomEvent("localStorageChange", {
+                    detail: { key: "cart-items" },
+                  })
+                );
+              }
+            }
+          } catch (error) {
+            console.error("Error restaurando carrito:", error);
+          }
+        }
+
+        // Limpiar sessionStorage temporal
+        sessionStorage.removeItem("guest-otp-process");
+
+        // Marcar como registrado y verificado
+        setIsRegisteredAsGuest(true);
+        setGuestStep('verified');
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Error al verificar código";
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -381,8 +536,8 @@ export default function Step2({
       return;
     }
 
-    // Si no está registrado como invitado, hacer el registro
-    if (!isRegisteredAsGuest) {
+    // Si está en paso de formulario de invitado, hacer el registro
+    if (guestStep === 'form' && !isRegisteredAsGuest) {
       if (!isGuestFormValid) {
         setError("Por favor completa todos los campos obligatorios.");
         const newFieldErrors: typeof fieldErrors = {
@@ -402,6 +557,18 @@ export default function Step2({
       return;
     }
 
+    // Si está en paso OTP, enviar código o verificar
+    if (guestStep === 'otp' && !isRegisteredAsGuest) {
+      if (!otpSent) {
+        await handleSendOTP(sendMethod);
+      } else if (otpCode.length === 6) {
+        await handleVerifyOTP();
+      } else {
+        setError("Por favor ingresa el código de 6 dígitos");
+      }
+      return;
+    }
+
     // Si ya está registrado pero no tiene dirección, el formulario ya está visible
     // No hacer nada, el usuario debe completar el formulario de dirección
     if (isRegisteredAsGuest && !hasAddedAddress) {
@@ -416,7 +583,25 @@ export default function Step2({
   };
   // IMPORTANTE: Cargar datos del usuario invitado desde localStorage al montar
   useEffect(() => {
-    // Cargar datos del usuario guardado
+    // Primero verificar si hay un proceso OTP en curso (sessionStorage)
+    const otpProcess = sessionStorage.getItem("guest-otp-process");
+    if (otpProcess) {
+      try {
+        const processData = JSON.parse(otpProcess);
+        // Restaurar datos del formulario
+        setGuestForm(processData.guestForm);
+        setGuestUserId(processData.userId);
+        setSendMethod(processData.sendMethod || 'whatsapp');
+        setGuestStep('otp'); // Continuar en paso OTP
+        setOtpSent(true);
+      } catch (err) {
+        console.error("Error restaurando proceso OTP:", err);
+        sessionStorage.removeItem("guest-otp-process");
+      }
+      return;
+    }
+
+    // Si no hay proceso OTP, verificar si ya hay usuario guardado (cuenta ya verificada)
     const savedUser = safeGetLocalStorage<{
       email?: string;
       nombre?: string;
@@ -437,27 +622,18 @@ export default function Step2({
         tipo_documento: savedUser.tipo_documento || "",
       });
 
-      // Marcar como registrado como invitado
+      // Marcar como registrado como invitado (ya verificado)
       setIsRegisteredAsGuest(true);
+      setGuestStep('verified');
 
       // IMPORTANTE: Verificar si ya tiene dirección agregada
-      // Si tiene dirección con ID, significa que ya fue guardada en el backend
       const savedAddress = safeGetLocalStorage<Address | null>(
         "checkout-address",
         null
       );
-      if (savedAddress) {
-        // Si tiene dirección guardada (con o sin ID), marcar como agregada
-        // Esto mantiene el estado correcto al refrescar la página
-        if (savedAddress.id) {
-          setHasAddedAddress(true);
-        } else {
-          // Si tiene dirección pero sin ID, significa que está en proceso
-          // Mantener el formulario de dirección visible
-          setHasAddedAddress(false);
-        }
+      if (savedAddress && savedAddress.id) {
+        setHasAddedAddress(true);
       } else {
-        // Si no hay dirección, mantener el formulario de dirección visible
         setHasAddedAddress(false);
       }
     }
@@ -785,6 +961,7 @@ export default function Step2({
         console.error('❌ No se encontró user_id para consultar candidate stores');
         console.log('⚠️ Avanzando al Step3 sin consultar candidate stores (no hay userId)');
         // Avanzar sin candidate stores si no hay userId
+        setHasAddedAddress(true);
         setIsSavingAddress(false);
         if (typeof onContinue === "function") {
           onContinue();
@@ -853,7 +1030,11 @@ export default function Step2({
 
       // IMPORTANTE: Solo avanzar DESPUÉS de guardar en caché exitosamente
       console.log('🏁 Candidate stores calculado y guardado en caché, ahora sí avanzando a Step3');
+      
+      // Marcar que se agregó la dirección exitosamente
+      setHasAddedAddress(true);
       setIsSavingAddress(false);
+      
       if (typeof onContinue === "function") {
         console.log("✅ Avanzando automáticamente a Step3");
         onContinue();
@@ -870,6 +1051,7 @@ export default function Step2({
       });
       // IMPORTANTE: Avanzar de todas formas al Step3 a pesar del error
       console.log('⚠️ Avanzando al Step3 a pesar del error en candidate stores');
+      setHasAddedAddress(true);
       setIsSavingAddress(false);
       if (typeof onContinue === "function") {
         onContinue();
@@ -1072,8 +1254,8 @@ export default function Step2({
             </div>
           )}
 
-          {/* Invitado - Solo mostrar si no está registrado */}
-          {!isRegisteredAsGuest && (
+          {/* Invitado - Mostrar formulario solo en paso 'form' */}
+          {guestStep === 'form' && !isRegisteredAsGuest && (
             <div className="bg-[#ECE9E6] rounded-xl p-8 flex flex-col gap-4 border border-[#e5e5e5]">
             <h2 className="text-xl font-bold mb-2">Continua como invitado</h2>
             <p className="text-gray-700 mb-4">
@@ -1282,6 +1464,64 @@ export default function Step2({
           </div>
           )}
 
+          {/* Vista OTP - Mostrar cuando está en paso 'otp' */}
+          {guestStep === 'otp' && !isRegisteredAsGuest && (
+            <div className="bg-[#ECE9E6] rounded-xl p-8 flex flex-col gap-4 border border-[#e5e5e5]">
+              <h2 className="text-xl font-bold mb-2">Verifica tu cuenta</h2>
+              <p className="text-gray-700 mb-4">
+                Te enviamos un código de verificación para completar tu registro
+              </p>
+              
+              <OTPStep
+                email={guestForm.email}
+                telefono={guestForm.celular}
+                otpCode={otpCode}
+                otpSent={otpSent}
+                sendMethod={sendMethod}
+                onOTPChange={setOtpCode}
+                onSendOTP={handleSendOTP}
+                onMethodChange={setSendMethod}
+                onChangeEmail={async (newEmail: string) => {
+                  // Actualizar el email en el formulario
+                  setGuestForm({ ...guestForm, email: newEmail });
+                  setOtpSent(false);
+                  setOtpCode("");
+                }}
+                onChangePhone={async (newPhone: string) => {
+                  // Actualizar el teléfono en el formulario
+                  setGuestForm({ ...guestForm, celular: newPhone });
+                  setOtpSent(false);
+                  setOtpCode("");
+                }}
+                disabled={loading}
+                showSendButton={true}
+                onVerifyOTP={handleVerifyOTP}
+                loading={loading}
+              />
+
+              {error && (
+                <div className="text-red-500 text-sm mt-2 text-center bg-red-50 py-2 px-4 rounded-lg">
+                  {error}
+                </div>
+              )}
+
+              {/* Botón para volver al formulario */}
+              <button
+                type="button"
+                onClick={() => {
+                  setGuestStep('form');
+                  setOtpSent(false);
+                  setOtpCode("");
+                  sessionStorage.removeItem("guest-otp-process");
+                }}
+                disabled={loading}
+                className="text-gray-600 hover:text-gray-800 text-sm underline disabled:opacity-50"
+              >
+                ← Volver a editar datos
+              </button>
+            </div>
+          )}
+
           {/* Formulario de dirección - Mostrar siempre cuando está registrado como invitado */}
           {isRegisteredAsGuest && (
             <div className="bg-white rounded-xl p-8 shadow-lg border border-gray-200">
@@ -1324,8 +1564,12 @@ export default function Step2({
                   ? "Procesando..."
                   : isSavingAddress
                   ? "Guardando"
-                  : !isRegisteredAsGuest
+                  : guestStep === 'form'
                   ? "Registrarse como invitado"
+                  : guestStep === 'otp' && !otpSent
+                  ? "Enviar código"
+                  : guestStep === 'otp' && otpSent
+                  ? "Verificar código"
                   : !hasAddedAddress
                   ? "Agregar dirección"
                   : "Continuar pago"
@@ -1335,6 +1579,7 @@ export default function Step2({
                 isSavingAddress ||
                 (!isRegisteredAsGuest && !isGuestFormValid) ||
                 (isRegisteredAsGuest && !hasAddedAddress && !isAddressFormValid) ||
+                (guestStep === 'otp' && otpSent && otpCode.length !== 6) ||
                 !tradeInValidation.isValid
               }
               isProcessing={loading || isSavingAddress}

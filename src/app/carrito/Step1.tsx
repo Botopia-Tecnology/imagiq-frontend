@@ -1065,7 +1065,11 @@ export default function Step1({
       </div>
       {/* Sugerencias: fila completa debajo del grid principal */}
       <div className="max-w-6xl mx-auto mt-4 mb-4 md:mb-0">
-        <Sugerencias onAdd={handleAddSugerencia} cartProducts={cartProducts} />
+        <Sugerencias 
+          key={`sugerencias-${cartProducts.map(p => p.sku).join('-')}`} 
+          onAdd={handleAddSugerencia} 
+          cartProducts={cartProducts} 
+        />
       </div>
 
       {/* Sticky Bottom Bar - Solo Mobile */}

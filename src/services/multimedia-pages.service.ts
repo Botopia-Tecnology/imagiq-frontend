@@ -67,6 +67,7 @@ export interface MultimediaPageBanner {
   mobile_video_url: string | null;
   link_url: string;
   status: string;
+  // LEGACY: Campos del sistema antiguo (mantener para compatibilidad)
   description: string;
   cta: string;
   title: string;
@@ -82,13 +83,14 @@ export interface MultimediaPageBanner {
     y: number;
   };
   text_styles: Record<string, unknown> | null;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
-  // NUEVO SISTEMA: Cajas de contenido con posiciones independientes
   title_boxes: string | null;
   description_boxes: string | null;
   cta_boxes: string | null;
+  // SISTEMA ACTUAL: ContentBlocks unificado
+  content_blocks: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null;
 }
 
 export interface MultimediaPageFAQ {

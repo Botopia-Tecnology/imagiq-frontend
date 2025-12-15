@@ -15,7 +15,7 @@ import type {
   CategoriaCompleta,
   Campaign,
 } from "./types/api-types";
-import type { FormattedStore } from "@/types/store";
+import type { FormattedStore, Store } from "@/types/store";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -208,7 +208,7 @@ export async function getCategoriesV2(): Promise<CategoriaCompleta[]> {
  * Obtiene todas las tiendas físicas y las formatea
  */
 export async function getStores(): Promise<FormattedStore[]> {
-  const stores = await serverFetch<any[]>("/api/stores");
+  const stores = await serverFetch<Store[]>("/api/stores");
 
   // Formatear stores para que tengan el campo position y coordenadas como números
   return stores.map(store => {

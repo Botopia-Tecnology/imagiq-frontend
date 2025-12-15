@@ -1,9 +1,9 @@
 "use client";
 
 import { Plus } from "lucide-react";
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import Image from "next/image";
-import { productEndpoints, type ProductApiData } from "@/lib/api";
+import { productEndpoints, type ProductApiData, type ApiResponse, type ProductApiResponse } from "@/lib/api";
 import { getCloudinaryUrl } from "@/lib/cloudinary";
 import type { CartProduct } from "@/hooks/useCart";
 import { isBundle } from "@/lib/productMapper";
@@ -12,7 +12,8 @@ import SugerenciasSkeleton from "./components/SugerenciasSkeleton";
 // Cache keys para sessionStorage
 const CACHE_KEY = "sugerencias_accesorios_cache";
 const CACHE_KEY_UNIVERSAL = "sugerencias_universales_cache";
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+// Cambiar la duración del cache de 5 minutos a 15 minutos
+const CACHE_DURATION = 15 * 60 * 1000; // 15 minutos en lugar de 5
 
 interface CacheData {
   modelos: string[];
@@ -207,7 +208,7 @@ function isAccessoryCompatible(
 function hasStock(product: ProductApiData): boolean {
   if (!product.stockTotal || product.stockTotal.length === 0) return false;
 
-  const totalStock = product.stockTotal.reduce((sum, stock) => sum + (stock || 0), 0);
+  const totalStock = product.stockTotal.reduce((sum: number, stock: number) => sum + (stock || 0), 0);
   return totalStock > 0;
 }
 
@@ -271,6 +272,11 @@ export default function Sugerencias({
   const [sugerenciasCompatibles, setSugerenciasCompatibles] = useState<ProductApiData[]>([]);
   const [sugerenciasUniversales, setSugerenciasUniversales] = useState<ProductApiData[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Use refs to prevent infinite loops
+  const isFetchingRef = useRef(false);
+  const hasFetchedRef = useRef(false);
+  const lastFetchKeyRef = useRef<string>("");
 
   // Extraer modelos únicos de los productos del carrito
   const modelos = useMemo(() => extractUniqueModelos(cartProducts), [cartProducts]);
@@ -281,92 +287,228 @@ export default function Sugerencias({
   // SKUs de productos ya en el carrito (para no sugerirlos)
   const cartSkus = useMemo(() => new Set(cartProducts.map(p => p.sku)), [cartProducts]);
 
-  // El cache se valida automáticamente en fetchAccessoriosRelacionados usando los modelos
-  // No es necesario limpiarlo explícitamente al cambiar la longitud del carrito
+  // Create stable string keys for comparison
+  const modelosKey = useMemo(() => 
+    modelos.map(m => m.normalized).sort().join(","), 
+    [modelos]
+  );
+  
+  const categoriesKey = useMemo(() => 
+    Array.from(cartCategories).sort().join(","), 
+    [cartCategories]
+  );
+  
+  const cartSkusKey = useMemo(() => 
+    Array.from(cartSkus).sort().join(","), 
+    [cartSkus]
+  );
+
+  // Create a stable fetch key that changes only when relevant data changes
+  const fetchKey = useMemo(() => 
+    `${modelosKey}|${categoriesKey}|${cartSkusKey}`, 
+    [modelosKey, categoriesKey, cartSkusKey]
+  );
 
   const fetchAccessoriosRelacionados = useCallback(async () => {
-    // Intentar usar caché primero
-    const cachedCompatibles = getCachedData(modelos);
-    const cachedUniversal = getCachedUniversalData();
-
-    // Si tenemos ambos caches válidos, usarlos directamente
-    if (cachedCompatibles && cachedUniversal) {
-      setSugerenciasCompatibles(cachedCompatibles.filter(p => !cartSkus.has(p.sku[0])));
-      setSugerenciasUniversales(cachedUniversal.filter(p => !cartSkus.has(p.sku[0])));
-      setLoading(false);
+    // Prevent multiple simultaneous fetches
+    if (isFetchingRef.current) {
       return;
     }
 
-    setLoading(true);
-
-    try {
-      const response = await productEndpoints.getFiltered({
-        subcategoria: "Accesorios",
-        limit: 50, // Reducido de 100 - solo necesitamos ~8 productos
-        sortBy: "precio",
-        sortOrder: "desc",
-      });
-
-      if (!response.success || !response.data?.products) {
-        setSugerenciasCompatibles([]);
-        setSugerenciasUniversales([]);
+    // Check if we already fetched for this exact combination
+    // Pero permitir re-fetch si no tenemos productos mostrados
+    if (lastFetchKeyRef.current === fetchKey && hasFetchedRef.current) {
+      // Si no hay productos mostrados, intentar de nuevo
+      if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
+        // Resetear el flag para permitir un nuevo intento
+        hasFetchedRef.current = false;
+      } else {
         return;
       }
+    }
 
-      const allProducts = response.data.products;
-      const seenSkus = new Set<string>();
-      const compatibleAccessories: ProductApiData[] = [];
-      const universalAccessories: ProductApiData[] = [];
+    isFetchingRef.current = true;
+    setLoading(true);
 
-      for (const item of allProducts) {
-        // Filtrar bundles - solo procesar productos regulares
-        if (isBundle(item)) continue;
+    // Obtener cache para usar como fallback, pero SIEMPRE intentar fetch fresco
+    const cachedCompatibles = getCachedData(modelos);
+    const cachedUniversal = getCachedUniversalData();
 
-        const product = item; // TypeScript ahora sabe que es ProductApiData
-        const sku = product.sku[0];
-        if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
-        seenSkus.add(sku);
+    // Si hay cache válido (aunque sea solo uno), mostrarlo inmediatamente mientras se hace el fetch fresco
+    // Esto asegura que siempre se muestren productos cuando están disponibles
+    if (!hasFetchedRef.current) {
+      if (cachedCompatibles) {
+        setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+      }
+      if (cachedUniversal) {
+        setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+      }
+      // Si tenemos al menos un tipo de cache, mostrar y continuar con fetch en background
+      if (cachedCompatibles || cachedUniversal) {
+        setLoading(false);
+      }
+    }
 
-        if (!product.imagePreviewUrl?.[0] || product.imagePreviewUrl[0].trim() === '') continue;
-        if (!hasStock(product)) continue;
+    // SIEMPRE intentar hacer el fetch fresco, incluso si hay cache
+    // Retry logic: intentar hasta 3 veces
+    let lastError: Error | null = null;
+    const maxRetries = 3;
+    const retryDelay = 1000; // 1 segundo entre reintentos
 
-        if (isUniversalAccessory(product, cartCategories)) {
-          if (universalAccessories.length < 4) universalAccessories.push(product);
-        } else if (modelos.length > 0) {
-          const isCompatible = isAccessoryCompatible(product, modelos);
-          if (isCompatible && compatibleAccessories.length < 4) {
-            compatibleAccessories.push(product);
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const response = await fetchWithTimeout(
+          productEndpoints.getFiltered({
+            subcategoria: "Accesorios",
+            limit: 50,
+            sortBy: "precio",
+            sortOrder: "desc",
+          }),
+          8000 // Reducir timeout a 8 segundos
+        );
+
+        if (!response.success || !response.data?.products) {
+          // Si no hay productos pero la respuesta fue exitosa, usar cache si existe
+          // Asegurar que siempre mostramos cache si está disponible
+          if (cachedCompatibles) {
+            setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
           }
+          if (cachedUniversal) {
+            setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+          }
+          // Si tenemos cache, mostrarlo y terminar
+          if (cachedCompatibles || cachedUniversal) {
+            setLoading(false);
+            isFetchingRef.current = false;
+            hasFetchedRef.current = true;
+            lastFetchKeyRef.current = fetchKey;
+            return;
+          }
+          // Si no hay cache y no hay productos, intentar de nuevo
+          if (attempt < maxRetries) {
+            await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
+            continue;
+          }
+          // Último intento fallido: usar cache si existe, sino arrays vacíos
+          const filteredCompatibles: ProductApiData[] = cachedCompatibles !== null
+            ? (cachedCompatibles as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
+            : [];
+          const filteredUniversales: ProductApiData[] = cachedUniversal !== null
+            ? (cachedUniversal as ProductApiData[]).filter((p: ProductApiData) => !cartSkus.has(p.sku[0]))
+            : [];
+          setSugerenciasCompatibles(filteredCompatibles);
+          setSugerenciasUniversales(filteredUniversales);
+          setLoading(false);
+          isFetchingRef.current = false;
+          hasFetchedRef.current = true;
+          lastFetchKeyRef.current = fetchKey;
+          return;
         }
 
-        // Early exit si ya tenemos suficientes
-        if (compatibleAccessories.length >= 4 && universalAccessories.length >= 4) break;
+        const allProducts = response.data.products;
+        const seenSkus = new Set<string>();
+        const compatibleAccessories: ProductApiData[] = [];
+        const universalAccessories: ProductApiData[] = [];
+
+        for (const item of allProducts) {
+          // Filtrar bundles - solo procesar productos regulares
+          if (isBundle(item)) continue;
+
+          const product = item;
+          const sku = product.sku[0];
+          if (seenSkus.has(sku) || cartSkus.has(sku)) continue;
+          seenSkus.add(sku);
+
+          if (!product.imagePreviewUrl?.[0] || product.imagePreviewUrl[0].trim() === '') continue;
+          if (!hasStock(product)) continue;
+
+          if (isUniversalAccessory(product, cartCategories)) {
+            if (universalAccessories.length < 4) universalAccessories.push(product);
+          } else if (modelos.length > 0) {
+            const isCompatible = isAccessoryCompatible(product, modelos);
+            if (isCompatible && compatibleAccessories.length < 4) {
+              compatibleAccessories.push(product);
+            }
+          }
+
+          // Early exit si ya tenemos suficientes
+          if (compatibleAccessories.length >= 4 && universalAccessories.length >= 4) break;
+        }
+
+        // Ordenar por precio (mayor primero)
+        compatibleAccessories.sort((a, b) => {
+          const priceA = a.precioeccommerce?.[0] || a.precioNormal?.[0] || 0;
+          const priceB = b.precioeccommerce?.[0] || b.precioNormal?.[0] || 0;
+          return priceB - priceA;
+        });
+
+        setSugerenciasCompatibles(compatibleAccessories);
+        setCacheData(modelos, compatibleAccessories);
+
+        setSugerenciasUniversales(universalAccessories);
+        setCacheUniversalData(universalAccessories);
+
+        setLoading(false);
+        isFetchingRef.current = false;
+        hasFetchedRef.current = true;
+        lastFetchKeyRef.current = fetchKey;
+        return; // Éxito, salir del loop
+
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Intento ${attempt}/${maxRetries} falló:`, error);
+        
+        // Si es el último intento, usar cache si existe
+        if (attempt === maxRetries) {
+          if (cachedCompatibles || cachedUniversal) {
+            console.log("Usando cache después de fallos en API");
+            if (cachedCompatibles) {
+              setSugerenciasCompatibles(cachedCompatibles.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+            } else {
+              setSugerenciasCompatibles([]);
+            }
+            if (cachedUniversal) {
+              setSugerenciasUniversales(cachedUniversal.filter((p: ProductApiData) => !cartSkus.has(p.sku[0])));
+            } else {
+              setSugerenciasUniversales([]);
+            }
+          } else {
+            // Si no hay cache, intentar usar lo que ya está mostrado
+            // Si no hay nada mostrado, dejar arrays vacíos pero no ocultar el componente
+            // para que pueda intentar de nuevo en el siguiente render
+            if (sugerenciasCompatibles.length === 0 && sugerenciasUniversales.length === 0) {
+              // No establecer arrays vacíos aquí, permitir que el componente intente de nuevo
+              // Solo marcar como no cargando para que no quede en loading infinito
+              setLoading(false);
+            }
+          }
+          setLoading(false);
+          isFetchingRef.current = false;
+          hasFetchedRef.current = true;
+          lastFetchKeyRef.current = fetchKey;
+          return;
+        }
+        
+        // Esperar antes del siguiente intento (backoff exponencial)
+        await new Promise(resolve => setTimeout(resolve, retryDelay * attempt));
       }
-
-      // Ordenar por precio (mayor primero)
-      compatibleAccessories.sort((a, b) => {
-        const priceA = a.precioeccommerce?.[0] || a.precioNormal?.[0] || 0;
-        const priceB = b.precioeccommerce?.[0] || b.precioNormal?.[0] || 0;
-        return priceB - priceA;
-      });
-
-      setSugerenciasCompatibles(compatibleAccessories);
-      setCacheData(modelos, compatibleAccessories);
-
-      setSugerenciasUniversales(universalAccessories);
-      setCacheUniversalData(universalAccessories);
-
-    } catch {
-      setSugerenciasCompatibles([]);
-      setSugerenciasUniversales([]);
-    } finally {
-      setLoading(false);
     }
-  }, [modelos, cartSkus, cartCategories]);
+  }, [modelos, cartSkus, cartCategories, fetchKey]);
 
+  // Always attempt to fetch when component mounts or fetchKey changes
   useEffect(() => {
-    fetchAccessoriosRelacionados();
-  }, [fetchAccessoriosRelacionados]);
+    // Reset fetch state when key changes
+    if (lastFetchKeyRef.current !== fetchKey) {
+      hasFetchedRef.current = false;
+      isFetchingRef.current = false;
+    }
+    
+    // Always try to fetch if not currently fetching
+    // This ensures products are always loaded when possible
+    if (!isFetchingRef.current) {
+      fetchAccessoriosRelacionados();
+    }
+  }, [fetchKey, fetchAccessoriosRelacionados]);
 
   // Componente reutilizable para renderizar una fila de productos
   const renderProductRow = (productos: ProductApiData[]) => (
@@ -438,3 +580,14 @@ export default function Sugerencias({
     </section>
   );
 }
+
+// En fetchAccessoriosRelacionados, agregar timeout
+const fetchWithTimeout = async (
+  promise: Promise<ApiResponse<ProductApiResponse>>, 
+  timeoutMs: number
+): Promise<ApiResponse<ProductApiResponse>> => {
+  const timeout = new Promise<never>((_, reject) => 
+    setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+  );
+  return Promise.race([promise, timeout]);
+};

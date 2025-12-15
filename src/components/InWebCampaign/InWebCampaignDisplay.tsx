@@ -20,7 +20,7 @@ function CampaignContent({
   const hasLink = !!campaign.content_url;
   return (
     <div
-      className={hasLink ? "cursor-pointer" : ""}
+      className={`w-full max-w-full ${hasLink ? "cursor-pointer" : ""}`}
       onClick={onClick}
       role={hasLink ? "button" : undefined}
       tabIndex={hasLink ? 0 : undefined}
@@ -208,21 +208,35 @@ function SliderDisplay({
   const hasTransform = finalTranslateX !== 0 || translateY !== 0;
   const transformStyle = hasTransform
     ? { transform: `translate(calc(-50% + ${finalTranslateX}px), ${translateY}px)` }
-    : {};
+    : undefined;
 
   return (
-    <div 
-      className="fixed top-32 md:top-32 left-1/2 -translate-x-1/2 z-[999999] w-[calc(100%-1rem)] md:max-w-sm md:w-[calc(100%-2rem)] animate-in slide-in-from-top duration-500"
-      style={{
-        ...transformStyle,
-        transition: hasTransform ? 'transform 0.2s ease-out' : undefined,
-        touchAction: isDragging ? 'none' : 'pan-y', // Prevent scrolling when dragging
-      }}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-    >
-      <div className="relative z-10 max-w-md w-full">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes slideDownVertical {
+          from {
+            transform: translate(-50%, -100%);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+      `}} />
+      <div 
+        className="fixed top-24 md:top-32 left-1/2 z-[999999] w-[calc(100%-1rem)] max-w-md md:w-[calc(100%-2rem)] md:max-w-lg"
+        style={{
+          transform: transformStyle?.transform || undefined,
+          transition: hasTransform ? 'transform 0.2s ease-out' : undefined,
+          animation: !hasTransform ? 'slideDownVertical 0.5s ease-out forwards' : undefined,
+          touchAction: isDragging ? 'none' : 'pan-y', // Prevent scrolling when dragging
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+      <div className="relative z-10 w-full max-w-full">
         <button
           onClick={onClose}
           className="absolute -top-10 right-0 rounded-full p-2 hover:bg-white/10 transition-colors z-20 cursor-pointer"
@@ -250,11 +264,12 @@ function SliderDisplay({
           </div>
         </button>
 
-        <div className="rounded-lg overflow-hidden shadow-lg max-h-40 animate-in zoom-in-95 duration-300">
+        <div className="rounded-lg overflow-hidden shadow-lg max-h-40 animate-in zoom-in-95 duration-300 w-full">
           <CampaignContent campaign={campaign} onClick={onClick} />
         </div>
       </div>
     </div>
+    </>
   );
 }
 

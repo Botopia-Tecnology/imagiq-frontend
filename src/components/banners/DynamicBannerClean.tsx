@@ -201,15 +201,16 @@ function ContentBlocksOverlay({
   bannerLinkUrl?: string | null; // URL del banner como fallback para CTAs
 }>) {
   return (
-    <>
-      {blocks.map((block) => {
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ padding: '2%' }}>
+      <div className="relative w-full h-full pointer-events-auto">
+        {blocks.map((block) => {
         const position = isMobile ? block.position_mobile : block.position_desktop;
         
         // Configuración del contenedor: usar mobile si existe, sino desktop
         const textAlign = isMobile && block.textAlign_mobile 
           ? block.textAlign_mobile 
           : block.textAlign || 'left';
-        const maxWidth = isMobile && block.maxWidth_mobile 
+        const configuredMaxWidth = isMobile && block.maxWidth_mobile 
           ? block.maxWidth_mobile 
           : block.maxWidth || '600px';
         const gap = isMobile && block.gap_mobile 
@@ -220,6 +221,23 @@ function ContentBlocksOverlay({
         const visibilityClass = forceShow 
           ? 'absolute' 
           : `absolute ${isMobile ? 'md:hidden' : 'hidden md:block'}`;
+
+        // CÁLCULO INTELIGENTE: Limitar maxWidth basado en la posición para evitar overflow
+        // El bloque usa transform: translate(-50%, -50%), así que se expande en ambas direcciones
+        const safetyMargin = 4; // 4% de margen de seguridad
+        
+        // Calcular espacio disponible hacia los lados (el contenido se centra con translate -50%)
+        const spaceLeft = position.x - safetyMargin; // Espacio a la izquierda
+        const spaceRight = 100 - position.x - safetyMargin; // Espacio a la derecha
+        const availableHorizontalSpace = Math.min(spaceLeft, spaceRight) * 2; // Multiplicar por 2 porque se expande en ambas direcciones
+        
+        // Convertir configuredMaxWidth a un porcentaje si está en px
+        const maxWidthInVw = configuredMaxWidth.includes('px') 
+          ? `min(${configuredMaxWidth}, ${availableHorizontalSpace}vw)` 
+          : `min(${configuredMaxWidth}, ${availableHorizontalSpace}%)`;
+        
+        // Aplicar límite inteligente
+        const maxWidth = maxWidthInVw;
 
         // Estilos del título: usar mobile si existe, sino desktop
         const titleStyles = block.title && {
@@ -232,6 +250,12 @@ function ContentBlocksOverlay({
           textShadow: (isMobile && block.title_mobile?.textShadow) || block.title.textShadow || '2px 2px 4px rgba(0,0,0,0.5)',
         };
 
+        // Calcular espacio disponible vertical (top/bottom)
+        const spaceTop = position.y - safetyMargin;
+        const spaceBottom = 100 - position.y - safetyMargin;
+        const availableVerticalSpace = Math.min(spaceTop, spaceBottom) * 2;
+        const maxHeight = `${availableVerticalSpace}vh`;
+
         return (
           <div
             key={block.id}
@@ -241,13 +265,21 @@ function ContentBlocksOverlay({
               top: `${position.y}%`,
               transform: 'translate(-50%, -50%)',
               maxWidth,
+              maxHeight,
               position: 'relative', // Necesario para stretched link
+              overflow: 'hidden', // Importante: cortar cualquier contenido que se salga
+              boxSizing: 'border-box',
             }}
           >
             <div
               className="flex flex-col"
               style={{
                 gap,
+                // Aplicar word-wrap para evitar desbordamiento de texto
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                hyphens: 'auto',
+                maxWidth: '100%',
               }}
             >
               {/* Título */}
@@ -346,7 +378,8 @@ function ContentBlocksOverlay({
           </div>
         );
       })}
-    </>
+      </div>
+    </div>
   );
 }
 
